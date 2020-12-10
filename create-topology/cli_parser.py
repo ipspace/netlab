@@ -17,14 +17,14 @@ def parse():
                   help='Create Vagrantfile')
   parser.add_argument('-i','--inventory', dest='inventory', action='store', nargs='?', const='hosts.yml',
                   help='Create Ansible inventory file')
-  parser.add_argument('--hostvars', dest='hostvars', action='store_true',
+  parser.add_argument('--hostvars', dest='hostvars', action='store', nargs='?', const='min',
                   help='Create Ansible hostvars')
   parser.add_argument('--log', dest='logging', action='store_true',
                   help='Enable basic logging')
   parser.add_argument('-q','--quiet', dest='quiet', action='store_true',
                   help='Report only major errors')
-  parser.add_argument('-v','--verbose', dest='verbose', action='store_true',
-                  help='Enable more verbose logging')
+  parser.add_argument('-v','--view', dest='verbose', action='store_true',
+                  help='Display data instead of creating a file')
   args = parser.parse_args()
 
   common.VERBOSE = args.verbose
