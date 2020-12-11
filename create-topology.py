@@ -17,6 +17,7 @@ import cli_parser
 import read_topology
 import augment
 import inventory
+import vagrant
 
 LOGGING=False
 VERBOSE=False
@@ -34,17 +35,6 @@ def write_topology_data(topology,fname):
     output.close()
     print("Created expanded topology file: %s" % args.xpand)
 
-def dump_vagrant_data(topology,path):
-  print("\nVagrantfile")
-  print("============================")
-  print(common.template('Vagrantfile.j2',topology,path))
-
-def create_vagrantfile(topology,fname,path):
-  with open(fname,"w") as output:
-    output.write(common.template('Vagrantfile.j2',topology,path))
-    output.close()
-    print("Created Vagrantfile: %s" % fname)
-
 def main():
   args = cli_parser.parse()
 
@@ -58,9 +48,9 @@ def main():
   augment.augment(topology)
   if args.vagrant:
     if args.verbose:
-      dump_vagrant_data(topology,path)
+      vagrant.dump(topology,path)
     else:
-      create_vagrantfile(topology,args.vagrant,path)
+      vagrant.create(topology,args.vagrant,path)
 
   if args.xpand:
     if args.verbose:

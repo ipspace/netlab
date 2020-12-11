@@ -1,0 +1,22 @@
+Vagrant.configure("2") do |config|
+{% for n in nodes %}
+{%   set name = n.name %}
+  config.vm.define "{{ name }}" do |{{name}}|
+{%   if n.mgmt_mac is defined %}
+    {{ name }}.vm.provider :libvirt do |domain|
+      domain.management_network_mac = "{{n.mgmt_mac}}"
+    end
+{%   endif %}
+{%  include n.device ~ "-domain.j2" %}
+
+{%   for l in n.links %}
+{%     if 'bridge' in l: %}
+{%       include "libvirt-bridge.j2" %}
+{%     else %}
+{%       include "libvirt-tunnel.j2" %}
+{%     endif %}
+
+{%   endfor %}
+  end
+{% endfor %}
+end

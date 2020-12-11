@@ -54,8 +54,22 @@ def augment_nodes(topology,defaults):
     if 'loopback' in defaults:
       n['loopback'] = defaults['loopback'] % id
 
+    mgmt_if = common.get_value( \
+                data=defaults,
+                path=['devices',n['device'],'mgmt_if'])
+    if not mgmt_if:
+      ifname_format = common.get_value( \
+                data=defaults,
+                path=['devices',n['device'],'interface_name'])
+      ifindex_offset = common.get_value( \
+                data=defaults,
+                path=['devices',n['device'],'ifindex_offset'], \
+                default=0)
+      mgmt_if = ifname_format % ifindex_offset
+    n['mgmt_if'] = mgmt_if
+
     if not n.get('name'):
-      print("ERROR: node does not have a name %s" % str(n))
+      common.error("ERROR: node does not have a name %s" % str(n))
       return
 
     ndict[n['name']] = n
@@ -63,18 +77,21 @@ def augment_nodes(topology,defaults):
   topology['nodes_map'] = ndict
   return ndict
 
-def add_node_interface(node,ifdata,**kwargs):
+def add_node_interface(node,ifdata,defaults={}):
   node_links = node.get('links')
   if node_links is None:
     node_links = []
 
-  ifindex = len(node_links) + 1
+  ifindex_offset = common.get_value( \
+                     data=defaults, \
+                     path=['devices',node['device'],'ifindex_offset'], \
+                     default=0)
+  ifindex = len(node_links) + 1 + ifindex_offset
 
-  defaults = kwargs.get('defaults',{})
-  ifname_format = None
-  if 'devices' in defaults:
-    if node['device'] in defaults['devices']:
-      ifname_format = defaults['devices'][node['device']].get('interface_name')
+  ifname_format = common.get_value( \
+                    data=defaults,
+                    path=['devices',node['device'],'interface_name'], \
+                    default=None)
 
   ifdata['ifindex'] = ifindex
   if ifname_format is not None:

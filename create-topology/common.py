@@ -26,3 +26,12 @@ def template(j2,data,path):
   ENV = Environment(loader=FileSystemLoader(path),trim_blocks=True,lstrip_blocks=True)
   template = ENV.get_template(j2)
   return template.render(**data)
+
+def get_value(data,path=[],default=None):
+  for k in path:
+    if not(type(data) is dict):
+      return data
+    if not data.get(k):
+      return default
+    data = data.get(k)
+  return data
