@@ -6,7 +6,7 @@
 ipSpace.net Network Simulation Tools
 ====================================================
 
-The ipSpace.net network simulation tools will help you be more proficient once you decide to drop GUI-based network simulators and to build your labs using CLI and infrastructure-as-code principles.
+The `ipSpace.net network simulation tools <https://github.com/ipspace/netsim-tools>`_ will help you be more proficient once you decide to drop GUI-based network simulators and to build your labs using CLI and infrastructure-as-code principles.
 
 An overview of tools:
 
@@ -38,6 +38,7 @@ More details
    :caption: Tool description:
 
    create-topology.md
+   platforms.md
 
 .. Hidden (not needed for the moment)
    Indices and tables
