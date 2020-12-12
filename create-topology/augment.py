@@ -41,36 +41,37 @@ def augment_nodes(topology,defaults):
   for n in topology['nodes']:
     id = id + 1
     n['id'] = id
-    if not 'device' in n:
-      n['device'] = defaults.get('device')
-      if not n['device'] in defaults.get('devices'):
-        print("WARNING: Unsupported device type %s" % n['device'])
-    if 'mac' in defaults:
-      n['mgmt_mac'] = defaults['mac'] % id
-
-    if 'mgmt' in defaults:
-      n['mgmt_ip'] = defaults['mgmt'] % id
-
-    if 'loopback' in defaults:
-      n['loopback'] = defaults['loopback'] % id
-
-    mgmt_if = common.get_value( \
-                data=defaults,
-                path=['devices',n['device'],'mgmt_if'])
-    if not mgmt_if:
-      ifname_format = common.get_value( \
-                data=defaults,
-                path=['devices',n['device'],'interface_name'])
-      ifindex_offset = common.get_value( \
-                data=defaults,
-                path=['devices',n['device'],'ifindex_offset'], \
-                default=1)
-      mgmt_if = ifname_format % (ifindex_offset - 1)
-    n['mgmt_if'] = mgmt_if
 
     if not n.get('name'):
       common.error("ERROR: node does not have a name %s" % str(n))
-      return
+      continue
+
+    for id_param in ['mgmt_mac','mgmt_ip','loopback']:
+      if id_param in defaults:
+        n[id_param] = defaults[id_param] % id
+
+    if not 'device' in n:
+      n['device'] = defaults.get('device')
+
+    device_data = common.get_value( \
+                data=defaults,
+                path=['devices',n['device']])
+    if not device_data:
+      common.error("ERROR: Unsupported device type %s" % n['device'])
+      continue
+
+    mgmt_if = device_data.get('mgmt_if')
+    if not mgmt_if:
+      ifname_format = device_data.get('interface_name')
+      if not ifname_format:
+        common.fatal("FATAL: Missing interface name template for device type %s" % n['device'])
+
+      ifindex_offset = device_data.get('ifindex_offset',1)
+      mgmt_if = ifname_format % (ifindex_offset - 1)
+    n['mgmt_if'] = mgmt_if
+
+    if 'box' in device_data:
+      n['box'] = device_data['box']
 
     ndict[n['name']] = n
 
