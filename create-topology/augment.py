@@ -64,8 +64,8 @@ def augment_nodes(topology,defaults):
       ifindex_offset = common.get_value( \
                 data=defaults,
                 path=['devices',n['device'],'ifindex_offset'], \
-                default=0)
-      mgmt_if = ifname_format % ifindex_offset
+                default=1)
+      mgmt_if = ifname_format % (ifindex_offset - 1)
     n['mgmt_if'] = mgmt_if
 
     if not n.get('name'):
@@ -85,8 +85,8 @@ def add_node_interface(node,ifdata,defaults={}):
   ifindex_offset = common.get_value( \
                      data=defaults, \
                      path=['devices',node['device'],'ifindex_offset'], \
-                     default=0)
-  ifindex = len(node_links) + 1 + ifindex_offset
+                     default=1)
+  ifindex = len(node_links) + ifindex_offset
 
   ifname_format = common.get_value( \
                     data=defaults,
