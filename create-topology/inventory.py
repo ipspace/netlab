@@ -40,6 +40,8 @@ def create(nodes,defaults):
   return inventory
 
 def dump(data):
+  print("Ansible inventory data")
+  print("===============================")
   print(yaml.dump(create(data['nodes'],data.get('defaults',{}))))
 
 def write_yaml(data,fname,header):
