@@ -4,7 +4,7 @@ This script creates a device-level and link-level data structures describing des
 
 ## Usage
 
-The **create-topology.py** script reads:
+The **create-topology** script reads:
 
 * Network topology in YAML format (default: `topology.yml`)
 * Optional default settings in YAML format (default: `topology-defaults.yml`)
@@ -17,7 +17,7 @@ The **create-topology.py** script reads:
 * YAML file with expanded topology data (in case you need it for further automation tasks)
 
 ```
-usage: create-topology.py [-h] ...
+usage: create-topology [-h] ...
 
 Create topology data from topology description
 
@@ -40,10 +40,10 @@ optional arguments:
 
 Typical uses:
 
-* **create-topology.py** to read and validate topology file
-* **create-topology.py -x -v** to display expanded topology data structure
-* **create-topology.py -g -v** to display Vagrantfile and **create-topology.py -g** to create Vagrantfile
-* **create-topology.py -i -v** to display Ansible inventory data structure, and **create-topology.py -i --hostvars** to create Ansible inventory (in **hosts.yml**), **group_vars** and **host_vars**
+* **create-topology** to read and validate topology file
+* **create-topology -x -v** to display expanded topology data structure
+* **create-topology -g -v** to display Vagrantfile and **create-topology -g** to create Vagrantfile
+* **create-topology -i -v** to display Ansible inventory data structure, and **create-topology -i --hostvars** to create Ansible inventory (in **hosts.yml**), **group_vars** and **host_vars**
 
 ## Topology Format
 
@@ -100,7 +100,7 @@ links:
 
 ### Defaults
 
-You can specify these topology-wide defaults. Most default values must be specified somewhere (the **create-topology.py** script expects to get them):
+You can specify these topology-wide defaults. Most default values must be specified somewhere (the **create-topology** script expects to get them):
 
 * In **default** element of the topology file
 * In **topology-defaults.yml** file in the same directory as the topology file
