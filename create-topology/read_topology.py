@@ -4,6 +4,7 @@
 import yaml
 import common
 import os
+import sys
 
 def merge_defaults(data,defaults):
   if not data:
@@ -25,7 +26,7 @@ def read_yaml(fname):
   try:
     data = yaml.load(stream,Loader=yaml.SafeLoader)
   except:
-    common.fatal("Cannot read YAML from %s: %s " % (fname,sys.exc_info()[0]))
+    common.fatal("Cannot read YAML from %s: %s " % (fname,str(sys.exc_info()[1])))
   stream.close()
   if common.LOGGING or common.VERBOSE:
     print("Read YAML data from %s" % fname)
