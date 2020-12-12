@@ -25,7 +25,8 @@ An overview of tools:
 **connect.sh**
   Use Ansible invetory to SSH to a network using inventory name. Device IP address (**ansible_host**) and username/passwords are retrived from from Ansible inventory. Ideal when you use centralized Vagrant environments and want to connect to the devices while being in playbook development directory.
 
-## Libvirt-specific tools
+Libvirt-specific tools
+----------------------
 
 **enable-lldp.sh**
   Given libvirt network name, change group_fwd_mask for the corresponding Linux bridge to enable LLDP passthrough across the Linux bridge.
