@@ -4,11 +4,31 @@
   hosts: all
   gather_facts: false
   vars:
-    config_dir: "{{ lookup('env','PWD') + '/'}}"
   tasks:
-  - cisco.ios.ios_config:
-      src: "{{ config_dir + config + '.j2' }}"
-    when: ansible_network_os == 'ios'
-  - arista.eos.eos_config:
-      src: "{{ config_dir + config + '.j2' }}"
-    when: ansible_network_os == 'eos'
+  - fail: msg="Specify configuration template name with an external variable"
+    when: config is not defined
+    run_once: true
+
+  - set_fact:
+      config_template: "{{ lookup('first_found',params,errors='ignore') }}"
+    vars:
+      params:
+        paths:
+        - "{{ lookup('env','PWD') }}"
+        - "."
+        files:
+        - "{{ config + '.' + ansible_network_os + '.j2' }}"
+        - "{{ config + '.j2' }}"
+
+  - fail: msg="Cannot find configuration template {{ config }}.j2"
+    when: config_template == ''
+    run_once: true
+
+  - debug:
+      msg: |
+        Config for {{ inventory_hostname }}
+        ===================================
+        {{ lookup('template',config_template) }}
+      verbosity: 1
+
+  - include_tasks: "ansible/config/{{ansible_network_os}}.yml"
