@@ -5,7 +5,7 @@ I'm building my network simulation environments with Vagrant using libvirt plugi
 An overview of tools:
 
 **create-topology**
-: Creates a full-blown network topology, Vagrantfile and Ansible inventory from a simple list of nodes and links. [More details](README-topology.md)
+: Creates a full-blown network topology, Vagrantfile and Ansible inventory from a simple list of nodes and links. [More details](https://netsim-tools.readthedocs.io/en/latest/)
 
 **config.ansible**
 : Applies Jinja2 configuration template to network devices
