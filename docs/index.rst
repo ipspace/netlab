@@ -31,15 +31,14 @@ Libvirt-specific tools
 **enable-lldp.sh**
   Given libvirt network name, change group_fwd_mask for the corresponding Linux bridge to enable LLDP passthrough across the Linux bridge.
 
-More details
-------------
-
 .. toctree::
+   :caption: More Details
    :maxdepth: 2
-   :caption: Tool description:
 
+   install.md
    create-topology.md
    platforms.md
+
 
 .. Hidden (not needed for the moment)
    Indices and tables
