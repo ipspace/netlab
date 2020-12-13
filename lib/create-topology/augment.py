@@ -120,7 +120,7 @@ def augment_lan_link(link,pfx_list,ndict,defaults={}):
 
   interfaces = {}
 
-  link_attr = ['bridge']
+  link_attr = ['bridge','type']
   link_attr.extend(defaults.get('link_attr',[]))
 
   for (node,value) in link.items():
@@ -169,7 +169,7 @@ def augment_p2p_link(link,pfx_list,ndict,defaults={}):
     print("Too many nodes specified on a P2P link")
     return
 
-  link_attr = ['bridge']
+  link_attr = ['bridge','type']
   link_attr.extend(defaults.get('link_attr',[]))
 
   for i in range(0,len(nodes)):
