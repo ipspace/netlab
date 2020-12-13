@@ -102,11 +102,26 @@ def add_node_interface(node,ifdata,defaults={}):
   node['links'] = node_links
   return ifdata
 
-def augment_bridge_link(link,pfx_list,ndict,**kwargs):
-  pfx = next(pfx_list)
-  link['prefix'] = str(pfx)
+link_attr_list = [ 'bridge','type','prefix' ]
+
+def interface_data(link,link_attr=[],ifdata={}):
+  for k in link_attr:
+    if k in link:
+      ifdata[k] = link[k]
+
+  return ifdata
+
+def augment_lan_link(link,pfx_list,ndict,defaults={}):
+  if 'prefix' in link:
+    pfx = netaddr.IPNetwork(link['prefix'])
+  else:
+    pfx = next(pfx_list)
+    link['prefix'] = str(pfx)
 
   interfaces = {}
+
+  link_attr = ['bridge']
+  link_attr.extend(defaults.get('link_attr',[]))
 
   for (node,value) in link.items():
     if node in ndict:
@@ -117,12 +132,8 @@ def augment_bridge_link(link,pfx_list,ndict,**kwargs):
       value['ip'] = str(ip)
       link[node] = value
 
-      interfaces[node] = add_node_interface(ndict[node], \
-         { 'ip' : value['ip'], 'bridge': link['bridge'] }, \
-         defaults=kwargs.get('defaults'))
-
-    elif not node in ['bridge','prefix','type']:
-      print("Unknown LAN link attribute '%s': %s" % (node,str(link)))
+      ifdata = interface_data(link=link,link_attr=link_attr,ifdata={ 'ip': link[node]['ip'] })
+      interfaces[node] = add_node_interface(ndict[node],ifdata,defaults)
 
   for node in interfaces.keys():
     interfaces[node]['neighbors'] = {}
@@ -132,12 +143,14 @@ def augment_bridge_link(link,pfx_list,ndict,**kwargs):
           'ip': interfaces[remote]['ip'], \
           'ifname': interfaces[remote]['ifname'] }
 
-def augment_p2p_link(link,pfx_list,ndict,**kwargs):
-  end_names = ['left','right']
+def augment_p2p_link(link,pfx_list,ndict,defaults={}):
+  if 'prefix' in link:
+    pfx = netaddr.IPNetwork(link['prefix'])
+  else:
+    pfx = next(pfx_list)
+    link['prefix'] = str(pfx)
 
-  pfx = next(pfx_list)
-  link['prefix'] = str(pfx)
-  augment = {}
+  end_names = ['left','right']
   nodes = []
   interfaces = []
 
@@ -151,16 +164,18 @@ def augment_p2p_link(link,pfx_list,ndict,**kwargs):
       value['ip'] = str(ip)
       link[node] = value
       nodes.append({ 'name': node, 'link': value })
-    elif not node in ['type','prefix','bridge']:
-      print("Unknown P2P link attribute '%s': %s" % (node,str(link)))
 
   if len(nodes) > len(end_names):
     print("Too many nodes specified on a P2P link")
     return
 
+  link_attr = ['bridge']
+  link_attr.extend(defaults.get('link_attr',[]))
+
   for i in range(0,len(nodes)):
     node = nodes[i]['name']
-    interfaces.append(add_node_interface(ndict[node],{ 'ip': link[node]['ip'] },defaults=kwargs.get('defaults')))
+    ifdata = interface_data(link=link,link_attr=link_attr,ifdata={ 'ip': link[node]['ip'] })
+    interfaces.append(add_node_interface(ndict[node],ifdata,defaults))
 
   for i in range(0,2):
     if 'bridge' in link:
@@ -177,6 +192,54 @@ def augment_p2p_link(link,pfx_list,ndict,**kwargs):
 
   return link
 
+def check_link_attributes(data,nodes={},valid=[]):
+  ok = True
+  for k in data.keys():
+    if k not in nodes and k not in valid:
+      common.error("Invalid link attributes '%s' in %s" % (k,data))
+      ok = False
+
+  return ok
+
+def link_node_count(data,nodes):
+  node_cnt = 0
+  for k in data.keys():
+    if k in nodes:
+      node_cnt = node_cnt + 1
+  return node_cnt
+
+def get_link_type(data,nodes):
+  if data.get('type'):
+    return data['type']
+
+  node_cnt = link_node_count(data,nodes)
+  return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
+
+def check_link_type(data,nodes):
+  node_cnt = link_node_count(data,nodes)
+  link_type = data.get('type')
+
+  if not link_type:
+    common.fatal('Link type still undefined in check_link_type: %s' % data)
+    return False
+
+  if node_cnt == 0:
+    common.error('No valid nodes on link %s' % data)
+    return False
+
+  if link_type == 'stub' and node_cnt > 1:
+    common.error('More than one node connected to a stub link: %s' % data)
+    return False
+
+  if link_type == 'p2p' and node_cnt != 2:
+    common.error('Point-to-point link needs exactly two nodes: %s' % data)
+    return False
+
+  if not link_type in [ 'stub','p2p','lan']:
+    common.error('Invalid link type %s: %s' % (link_type,data))
+    return False
+  return True
+
 def augment_links(link_list,defaults,ndict):
   lan_pfx   = defaults.get('lan','10.0.0.0/16')
   lan_subnet= defaults.get('lan_subnet',24)
@@ -185,12 +248,28 @@ def augment_links(link_list,defaults,ndict):
   lan_list  = netaddr.IPNetwork(lan_pfx).subnet(lan_subnet)
   p2p_list  = netaddr.IPNetwork(p2p_pfx).subnet(p2p_subnet)
 
+  link_attr_list.extend(defaults.get('link_attr',[]))
+  linkindex = defaults.get('link_index',1)
+
   for link in link_list:
-    # multi-access links have bridge names
-    if 'bridge' in link and link.get('type','') != 'p2p':
-      augment_bridge_link(link,lan_list,ndict,defaults=defaults)
-    else:
+    if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_list):
+      continue
+
+    if not link.get('type'):
+      link['type'] = get_link_type(data=link,nodes=ndict)
+
+    if not check_link_type(data=link,nodes=ndict):
+      continue
+
+    link['index'] = linkindex
+    if link['type'] == 'p2p':
       augment_p2p_link(link,p2p_list,ndict,defaults=defaults)
+    else:
+      augment_lan_link(link,lan_list,ndict,defaults=defaults)
+      if not 'bridge' in link:
+        link['bridge'] = "%s_%d" % (defaults['name'],linkindex)
+
+    linkindex = linkindex + 1
   return link_list
 
 def augment(topology):

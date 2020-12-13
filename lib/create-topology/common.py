@@ -15,10 +15,12 @@ def fatal(text):
 err_count = 0
 
 def error(text):
+  global err_count
   print(text,file=sys.stderr)
   err_count = err_count + 1
 
 def exit_on_error():
+  global err_count
   if err_count > 0:
     sys.exit(1)
 
