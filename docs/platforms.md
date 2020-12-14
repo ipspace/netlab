@@ -5,7 +5,7 @@ Virtual network devices supported by **config-generate** (require `topology-defa
 * Cisco IOSv
 * Cisco CSR1000v
 * Cisco Nexus 9300v
-* Arista EOSv
+* Arista vEOS
 
 Network operating systems supported by **config.ansible** (require device-specific task list in `ansible/config`):
 
@@ -13,11 +13,11 @@ Network operating systems supported by **config.ansible** (require device-specif
 * Cisco Nexus OS
 * Arista EOS
 
-Virtual network devices supported by **initial-config.ansible** (require **config.ansible** support and initial device configuration template in `templates/initial`):
+Network operating systems supported by **initial-config.ansible** (require **config.ansible** support and initial device configuration template in `templates/initial`):
 
 * Cisco IOS (IOSv and CSR 1000v)
 * Cisco Nexus OS (Nexus 9300v)
-* Arista EOS (EOSv)
+* Arista EOS (vEOS)
 
 Vagrant providers supported by **config-generate** (require Vagrantfile templates in `templates/vagrant/provider`):
 
