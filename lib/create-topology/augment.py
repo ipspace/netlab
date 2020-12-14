@@ -57,7 +57,7 @@ def augment_nodes(topology,defaults):
                 data=defaults,
                 path=['devices',n['device']])
     if not device_data:
-      common.error("ERROR: Unsupported device type %s" % n['device'])
+      common.error("ERROR: Unsupported device type %s: %s" % (n['device'],n))
       continue
 
     mgmt_if = device_data.get('mgmt_if')
@@ -275,7 +275,11 @@ def augment_links(link_list,defaults,ndict):
 def augment(topology):
   check_required_elements(topology)
   topology['nodes'] = adjust_node_list(topology['nodes'])
+  common.exit_on_error()
   topology['links'] = adjust_link_list(topology['links'])
+  common.exit_on_error()
 
   ndict = augment_nodes(topology,topology.get('defaults',{}))
+  common.exit_on_error()
   augment_links(topology['links'],topology.get('defaults',{}),ndict)
+  common.exit_on_error()
