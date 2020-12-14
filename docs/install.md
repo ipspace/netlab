@@ -21,3 +21,45 @@ The Vagrantfile templates for individual network devices were derived from the f
 * [Cisco Nexus 9300v](https://github.com/mweisel/cisco-nxos9kv-vagrant-libvirt) ([Marc Weisel](https://www.linkedin.com/in/marcweisel/))
 
 For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
+
+### Notes on Arista EOS *vagrant-libvirt* Box
+
+I used the [recipe published by Brad Searle](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) and modified it slightly to make it work flawlessly with EOS 4.25.0. After applying Brad's initial configuration (**do not** configure his event handlers), execute these commands to generate PKI key and certificate:
+
+```
+security pki key generate rsa 2048 default
+security pki certificate generate self-signed default key default ↩
+  param common-name Arista
+```
+
+After generating PKI certificate add these configuration commands to enable NETCONF and RESTCONF
+
+```
+management api http-commands
+ no shutdown
+!
+management api netconf
+ transport ssh default
+!
+management api restconf
+ transport https default
+  ssl profile default
+  port 6040
+!
+management security
+ ssl profile default
+  certificate default key default
+```
+
+Finally, remove custom shell from *vagrant* user with
+
+```
+no user vagrant shell
+```
+
+Vagrant will be totally confused when it sees something that looks like a Linux box but doesn't behave like one, so add these commands to Vagrantfile (already included in `eos-domain.j2` template):
+
+```
+config.ssh.shell = "bash"
+config.vm.guest = :freebsd
+```
