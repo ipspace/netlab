@@ -1,0 +1,40 @@
+---
+- name: ArcOS config pre 2.10
+  block:
+    - name: Push BGP Candidate config
+      template:
+        src: '{{ config_template }}'
+        dest: '/tmp/.{{ inventory_hostname }}.xml'
+
+    - name: Apply candidate config
+      arcos_config:
+        src: "/tmp/.{{ inventory_hostname }}.xml"
+        load_operation: merge
+        comment: "initial config pushed by netsim"
+
+    - name: Remove temp file
+      file:
+        state: absent
+        path: '/tmp/.{{ inventory_hostname }}.xml'
+
+  when: ansible_version.full < "2.10.0"
+
+- name: ArcOS config 2.10
+  block:
+    - name: Push Candidate Config
+      template:
+        src: '{{ config_template }}'
+        dest: '/tmp/.{{ inventory_hostname }}.xml'
+
+    - name: Apply candidate config
+      arrcus.arcos.arcos_config:
+        src: "/tmp/.{{ inventory_hostname }}.xml"
+        load_operation: merge
+        comment: "initial config pushed by netsim"
+
+    - name: Remove temp file
+      file:
+        state: absent
+        path: '/tmp/.{{ inventory_hostname }}.xml'
+
+  when: ansible_version.full > "2.10.0"
