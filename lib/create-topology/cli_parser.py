@@ -10,13 +10,15 @@ def parse():
   parser.add_argument('-t','--topology', dest='topology', action='store', default='topology.yml',
                   help='Topology file')
   parser.add_argument('--defaults', dest='defaults', action='store', default='topology-defaults.yml',
-                  help='Local topology defaults')
+                  help='Local topology defaults file')
   parser.add_argument('-x','--expanded', dest='xpand', action='store', nargs='?', const='topology-expanded.yml',
                   help='Create expanded topology file')
   parser.add_argument('-g','--vagrantfile', dest='vagrant', action='store', nargs='?', const='Vagrantfile',
                   help='Create Vagrantfile')
   parser.add_argument('-i','--inventory', dest='inventory', action='store', nargs='?', const='hosts.yml',
-                  help='Create Ansible inventory file')
+                  help='Create Ansible inventory file, default hosts.yml')
+  parser.add_argument('-c','--config', dest='config', action='store', nargs='?', const='ansible.cfg',
+                  help='Create Ansible configuration file, default ansible.cfg')
   parser.add_argument('--hostvars', dest='hostvars', action='store', nargs='?', const='min',
                   help='Create Ansible hostvars')
   parser.add_argument('--log', dest='logging', action='store_true',
