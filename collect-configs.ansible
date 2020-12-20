@@ -1,0 +1,26 @@
+#!/usr/local/bin/ansible-playbook
+---
+- name: Collect device configurations
+  hosts: all
+  gather_facts: true
+  module_defaults:
+    ansible.legacy.ios_facts:
+      gather_subset: config
+    ansible.legacy.eos_facts:
+      gather_subset: config
+    ansible.legacy.nxos_facts:
+      gather_subset: config
+    ansible.legacy.junos_facts:
+      gather_subset: config
+  vars:
+    config_dir: "{{ lookup('env','PWD') }}/config"
+  tasks:
+  - file:
+      path: "{{ config_dir }}"
+      state: directory
+    run_once: true
+    delegate_to: localhost
+  - copy:
+      content: "{{ ansible_net_config }}"
+      dest: "{{ config_dir }}/{{ inventory_hostname }}.cfg"
+    delegate_to: localhost
