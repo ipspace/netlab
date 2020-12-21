@@ -22,6 +22,7 @@ The Vagrantfile templates for individual network devices were derived from the f
 
 **Notes:**
 
+* Nexus 9300v takes almost exactly a minute after SSH becomes available on the management interface to "boot" the Ethernet linecard (module 1) and activate Ethernet interfaces. Leave it alone for a while even when Vagrant tells you the VM is ready.
 * If you're experiencing high CPU utilization with Cisco CSR, [set halt_poll_ns to zero](https://codingpackets.com/blog/kvm-host-high-cpu-fix/).
 * For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
 
