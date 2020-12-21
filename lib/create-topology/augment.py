@@ -25,6 +25,9 @@ def adjust_node_list(nodes):
 
 def adjust_link_list(links):
   link_list = []
+
+  if not(links):
+    return
   for l in links:
     if type(l) is dict:
       link_list.append(l)
@@ -241,6 +244,9 @@ def check_link_type(data,nodes):
   return True
 
 def augment_links(link_list,defaults,ndict):
+  if not link_list:
+    return
+
   lan_pfx   = defaults.get('lan','10.0.0.0/16')
   lan_subnet= defaults.get('lan_subnet',24)
   p2p_pfx   = defaults.get('p2p','10.1.0.0/16')
