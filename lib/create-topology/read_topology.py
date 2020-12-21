@@ -44,11 +44,11 @@ def load(fname,defaults,settings):
   local_defaults = read_yaml(defaults)
   if local_defaults:
     topology['input'].append(defaults)
-    merge_defaults(topology['defaults'],local_defaults)
+    topology['defaults'] = merge_defaults(topology['defaults'],local_defaults)
 
   global_defaults = read_yaml(settings)
   if global_defaults:
     topology['input'].append(os.path.relpath(settings))
-    merge_defaults(topology['defaults'],global_defaults)
+    topology['defaults'] = merge_defaults(topology['defaults'],global_defaults)
 
   return topology
