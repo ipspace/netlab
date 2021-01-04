@@ -5,6 +5,7 @@
 import yaml
 import os
 import sys
+import common
 
 topo_to_host = { 'mgmt_ip': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
@@ -87,3 +88,9 @@ def write(data,fname,hostvars):
 
     write_yaml(inventory,fname,header)
     print("Created minimized Ansible inventory %s" % fname)
+
+def config(config_file,inventory_file,path):
+  with open(config_file,"w") as output:
+    output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file },path + '/templates'))
+    output.close()
+    print("Created Ansible configuration file: %s" % config_file)

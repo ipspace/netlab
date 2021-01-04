@@ -17,7 +17,7 @@ The **create-topology** script reads:
 * YAML file with expanded topology data (in case you need it for further automation tasks)
 
 ```
-usage: create-topology [-h] ...
+usage: create-topology ...
 
 Create topology data from topology description
 
@@ -25,17 +25,20 @@ optional arguments:
   -h, --help            show this help message and exit
   -t TOPOLOGY, --topology TOPOLOGY
                         Topology file
-  --defaults DEFAULTS   Local topology defaults
+  --defaults DEFAULTS   Local topology defaults file
   -x [XPAND], --expanded [XPAND]
                         Create expanded topology file
   -g [VAGRANT], --vagrantfile [VAGRANT]
                         Create Vagrantfile
   -i [INVENTORY], --inventory [INVENTORY]
-                        Create Ansible inventory file
-  --hostvars            Create Ansible hostvars
+                        Create Ansible inventory file, default hosts.yml
+  -c [CONFIG], --config [CONFIG]
+                        Create Ansible configuration file, default ansible.cfg
+  --hostvars [HOSTVARS]
+                        Create Ansible hostvars
   --log                 Enable basic logging
   -q, --quiet           Report only major errors
-  -v, --view.           Display data instead of creating a file
+  -v, --view            Display data instead of creating a file
 ```
 
 Typical uses:
