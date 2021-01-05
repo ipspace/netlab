@@ -1,20 +1,8 @@
 ---
 - name: save config
-  arrcus.arcos.arcos_command:
-   commands: "show running-config |  save /tmp/.{{ inventory_hostname }}"
-   encoding: text
+  shell: echo 'show run' | confd_cli
+  register: arcos_run_config
 
-- name: fetch config
-  ansible.builtin.slurp:
-   src: "/tmp/.{{ inventory_hostname }}"
-  register: arcosconfig
-
-- name: set net config for ArcOS
-  ansible.builtin.set_fact:
-    ansible_net_config:  "{{ arcosconfig['content'] | b64decode }}"
-
-- name: remove old backup
-  ansible.builtin.file:
-   path: "/tmp/.{{ inventory_hostname }}"
-   state: absent
+- set_fact:
+    ansible_net_config: "{{ arcos_run_config.stdout }}"
 
