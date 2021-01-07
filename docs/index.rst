@@ -38,6 +38,7 @@ Libvirt-specific tools
    install.md
    create-topology.md
    platforms.md
+   release.rst
 
 
 .. Hidden (not needed for the moment)

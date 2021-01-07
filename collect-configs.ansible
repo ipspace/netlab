@@ -2,16 +2,7 @@
 ---
 - name: Collect device configurations
   hosts: all
-  gather_facts: true
-  module_defaults:
-    ansible.legacy.ios_facts:
-      gather_subset: config
-    ansible.legacy.eos_facts:
-      gather_subset: config
-    ansible.legacy.nxos_facts:
-      gather_subset: config
-    ansible.legacy.junos_facts:
-      gather_subset: config
+  gather_facts: false
   vars:
     config_dir: "{{ lookup('env','PWD') }}/config"
   tasks:
@@ -21,10 +12,8 @@
     run_once: true
     delegate_to: localhost
 
-  - name: gather ArcOS config
-    include_tasks: vendor_specific_tasks/arcos/collect_config.yml
-    when: ansible_network_os == 'arcos'
-    
+  - include_tasks: "ansible/fetch-config/{{ansible_network_os}}.yml"
+
   - copy:
       content: "{{ ansible_net_config }}"
       dest: "{{ config_dir }}/{{ inventory_hostname }}.cfg"

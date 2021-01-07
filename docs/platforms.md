@@ -6,18 +6,22 @@ Virtual network devices supported by **config-generate** (require `topology-defa
 * Cisco CSR1000v
 * Cisco Nexus 9300v
 * Arista vEOS
+* Arrcus ArcOS
 
 Network operating systems supported by **config.ansible** (require device-specific task list in `ansible/config`):
 
 * Cisco IOS
 * Cisco Nexus OS
+* Cisco Nexus 9300v
 * Arista EOS
+* Arrcus ArcOS
 
 Network operating systems supported by **initial-config.ansible** (require **config.ansible** support and initial device configuration template in `templates/initial`):
 
 * Cisco IOS (IOSv and CSR 1000v)
 * Cisco Nexus OS (Nexus 9300v)
 * Arista EOS (vEOS)
+* Arrcus ArcOS
 
 Vagrant providers supported by **config-generate** (require Vagrantfile templates in `templates/vagrant/provider`):
 
