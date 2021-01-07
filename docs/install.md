@@ -67,3 +67,6 @@ Vagrant will be totally confused when it sees something that looks like a Linux 
 config.ssh.shell = "bash"
 config.vm.guest = :freebsd
 ```
+### Notes on Arrcus ArcOS *vagrant-libvirt* Box and Ansible Collections
+Please reach out to your Arrcus Customer Engineering Representative or [Contact Arrcus](https://www.arrcus.com/contact-us) for access to the Arrcus Vagrant Box file and ArcOS Ansible collections.
+
