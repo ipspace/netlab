@@ -67,6 +67,17 @@ Vagrant will be totally confused when it sees something that looks like a Linux 
 config.ssh.shell = "bash"
 config.vm.guest = :freebsd
 ```
+
+### Notes on Juniper vSRX Vagrantfile template
+
+The Vagrant template for vSRX uses _default\_prefix_ libvirt parameter to set the domain (VM) name and uses the VM name to set libvirt vCPU quota.
+
+The template has been tested with Vagrant version 2.2.14. Some earlier versions of Vagrant generated VM names using a slightly different algorithm (the underscore between _default\_prefix_ and VM name was added automatically) and might thus generate an unexpected VM name. To fix that problem remove parts of **vsrx-domain.j2** template:
+
+* Remove _domain.default\_prefix_ parameter (default value should generate the expected VM name) or
+* Remove the whole CPU-limiting logic (trading CPU cycles for simplicity)
+
 ### Notes on Arrcus ArcOS *vagrant-libvirt* Box and Ansible Collections
+
 Please reach out to your Arrcus Customer Engineering Representative or [Contact Arrcus](https://www.arrcus.com/contact-us) for access to the Arrcus Vagrant Box file and ArcOS Ansible collections.
 
