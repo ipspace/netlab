@@ -33,7 +33,7 @@ def get_value(data,path=[],default=None):
   for k in path:
     if not(type(data) is dict):
       return data
-    if not data.get(k):
+    if not k in data:
       return default
     data = data.get(k)
   return data
