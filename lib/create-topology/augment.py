@@ -271,9 +271,9 @@ def augment_links(link_list,defaults,ndict):
     if link['type'] == 'p2p':
       augment_p2p_link(link,p2p_list,ndict,defaults=defaults)
     else:
-      augment_lan_link(link,lan_list,ndict,defaults=defaults)
       if not 'bridge' in link:
         link['bridge'] = "%s_%d" % (defaults['name'],linkindex)
+      augment_lan_link(link,lan_list,ndict,defaults=defaults)
 
     linkindex = linkindex + 1
   return link_list
