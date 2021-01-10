@@ -1,7 +1,7 @@
 Release notes
 =============
 
-2021-01-07 (release 0.2)
+2021-01-07 ([release 0.11](https://github.com/ipspace/netsim-tools/releases/tag/release_0.11))
    Arrcus ArcOS support contributed by Dave Thelen
 
    Refactored configuration gathering -- use explicit **device_facts** modules or platform-specific tasks
