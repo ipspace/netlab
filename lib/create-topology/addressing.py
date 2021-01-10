@@ -74,6 +74,9 @@ def setup_pools(addrs = {},defaults = {}):
   for pool,pfx in addrs.items():
     if not isinstance(pfx,dict):
       addrs[pool] = { 'ipv4': pfx, 'prefix': 32 if 'loopback' in pool else 24 }
+    for af in 'ipv4','ipv6':
+      if af in addrs[pool] and addrs[pool][af] is None:
+        del addrs[pool][af]
 
   return addrs
 

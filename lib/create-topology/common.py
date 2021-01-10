@@ -44,7 +44,8 @@ def merge_defaults(data,defaults):
 
   if type(data) is dict and type(defaults) is dict:
     for (k,v) in defaults.items():
-      data[k] = merge_defaults(data.get(k),defaults[k])
+      if not k in data or isinstance(data.get(k),dict):
+        data[k] = merge_defaults(data.get(k),defaults[k])
   return data
 
 def set_verbose():
