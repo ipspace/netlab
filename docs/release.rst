@@ -16,3 +16,13 @@ Release notes
    Nexus 9300v support
 2020-12-17
    Initial release (IOSv, CSR, EOS)
+
+Future plans
+------------
+Release 0.21
+  Add support for per-node link data (example: OSPF priority)
+
+  Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
+
+Release 0.3
+  Add network models (example: IGP, BGP + IGP)
