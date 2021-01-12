@@ -4,6 +4,7 @@
 
 import netaddr
 import common
+import addressing
 import os
 
 def check_required_elements(topology):
@@ -37,7 +38,35 @@ def adjust_link_list(links):
       link_list.append({ key: None for key in l.split('-') })
   return link_list
 
-def augment_nodes(topology,defaults):
+def augment_mgmt_if(node,device_data,addrs):
+  node['mgmt'] = {}
+
+  mgmt_if = device_data.get('mgmt_if')
+  if not mgmt_if:
+    ifname_format = device_data.get('interface_name')
+    if not ifname_format:
+      common.fatal("FATAL: Missing interface name template for device type %s" % n['device'])
+
+    ifindex_offset = device_data.get('ifindex_offset',1)
+    mgmt_if = ifname_format % (ifindex_offset - 1)
+  node['mgmt']['ifname'] = mgmt_if
+
+  if addrs:
+    for af in 'ipv4','ipv6':
+      pfx = af + '_pfx'
+      if pfx in addrs:
+        node['mgmt'][af] = str(addrs[pfx][node['id']+addrs['start']])
+
+    if 'mac_eui' in addrs:
+      addrs['mac_eui'][5] = node['id']
+      node['mgmt']['mac'] = str(addrs['mac_eui'])
+
+def get_addr_mask(pfx,host):
+  host_ip = netaddr.IPNetwork(pfx[host])
+  host_ip.prefixlen = pfx.prefixlen
+  return str(host_ip)
+
+def augment_nodes(topology,defaults,pools):
   id = 0
 
   ndict = {}
@@ -49,9 +78,14 @@ def augment_nodes(topology,defaults):
       common.error("ERROR: node does not have a name %s" % str(n))
       continue
 
-    for id_param in ['mgmt_mac','mgmt_ip','loopback']:
-      if id_param in defaults:
-        n[id_param] = defaults[id_param] % id
+    if 'loopback' in pools:
+      n['loopback'] = {}
+      prefix_list = addressing.get(pools,['loopback'])
+      for af in prefix_list:
+        if af == 'ipv6':
+          n['loopback'][af] = get_addr_mask(prefix_list[af],1)
+        else:
+          n['loopback'][af] = str(prefix_list[af])
 
     if not 'device' in n:
       n['device'] = defaults.get('device')
@@ -63,15 +97,7 @@ def augment_nodes(topology,defaults):
       common.error("ERROR: Unsupported device type %s: %s" % (n['device'],n))
       continue
 
-    mgmt_if = device_data.get('mgmt_if')
-    if not mgmt_if:
-      ifname_format = device_data.get('interface_name')
-      if not ifname_format:
-        common.fatal("FATAL: Missing interface name template for device type %s" % n['device'])
-
-      ifindex_offset = device_data.get('ifindex_offset',1)
-      mgmt_if = ifname_format % (ifindex_offset - 1)
-    n['mgmt_if'] = mgmt_if
+    augment_mgmt_if(n,device_data,topology['addressing'].get('mgmt'))
 
     if 'box' in device_data:
       n['box'] = device_data['box']
@@ -114,12 +140,12 @@ def interface_data(link,link_attr=[],ifdata={}):
 
   return ifdata
 
-def augment_lan_link(link,pfx_list,ndict,defaults={}):
+def augment_lan_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
-    pfx = netaddr.IPNetwork(link['prefix'])
+    pfx_list = addressing.parse_prefix(link['prefix'])
   else:
-    pfx = next(pfx_list)
-    link['prefix'] = str(pfx)
+    pfx_list = addressing.get(addr_pools,['lan'])
+    link['prefix'] = { af: str(pfx_list[af]) for af in pfx_list }
 
   interfaces = {}
 
@@ -128,14 +154,19 @@ def augment_lan_link(link,pfx_list,ndict,defaults={}):
 
   for (node,value) in link.items():
     if node in ndict:
+      ifaddr = {}
       if value is None:
         value = {}
-      ip = netaddr.IPNetwork(pfx[ndict[node]['id']])
-      ip.prefixlen = pfx.prefixlen
-      value['ip'] = str(ip)
+
+      for af,pfx in pfx_list.items():
+        ip = netaddr.IPNetwork(pfx[ndict[node]['id']])
+        ip.prefixlen = pfx.prefixlen
+        value[af] = str(ip)
+        ifaddr[af] = value[af]
+
       link[node] = value
 
-      ifdata = interface_data(link=link,link_attr=link_attr,ifdata={ 'ip': link[node]['ip'] })
+      ifdata = interface_data(link=link,link_attr=link_attr,ifdata=ifaddr)
       interfaces[node] = add_node_interface(ndict[node],ifdata,defaults)
 
   for node in interfaces.keys():
@@ -143,15 +174,17 @@ def augment_lan_link(link,pfx_list,ndict,defaults={}):
     for remote in interfaces.keys():
       if remote != node:
         interfaces[node]['neighbors'][remote] = { \
-          'ip': interfaces[remote]['ip'], \
           'ifname': interfaces[remote]['ifname'] }
+        for af in ('ipv4','ipv6'):
+          if af in interfaces[remote]:
+            interfaces[node]['neighbors'][remote][af] = interfaces[remote][af]
 
-def augment_p2p_link(link,pfx_list,ndict,defaults={}):
+def augment_p2p_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
-    pfx = netaddr.IPNetwork(link['prefix'])
+    pfx_list = addressing.parse_prefix(link['prefix'])
   else:
-    pfx = next(pfx_list)
-    link['prefix'] = str(pfx)
+    pfx_list = addressing.get(addr_pools,['p2p','lan'])
+    link['prefix'] = { af: str(pfx_list[af]) for af in pfx_list }
 
   end_names = ['left','right']
   nodes = []
@@ -160,13 +193,18 @@ def augment_p2p_link(link,pfx_list,ndict,defaults={}):
   for (node,value) in link.items():
     if node in ndict:
       ecount = len(nodes)
+      ifaddr = {}
       if value is None:
         value = {}
-      ip = netaddr.IPNetwork(pfx[ecount+1])
-      ip.prefixlen = pfx.prefixlen
-      value['ip'] = str(ip)
+
+      for af,pfx in pfx_list.items():
+        ip = netaddr.IPNetwork(pfx[ecount+1])
+        ip.prefixlen = pfx.prefixlen
+        value[af] = str(ip)
+        ifaddr[af] = value[af]
+
       link[node] = value
-      nodes.append({ 'name': node, 'link': value })
+      nodes.append({ 'name': node, 'link': value, 'ifaddr': ifaddr })
 
   if len(nodes) > len(end_names):
     print("Too many nodes specified on a P2P link")
@@ -177,7 +215,7 @@ def augment_p2p_link(link,pfx_list,ndict,defaults={}):
 
   for i in range(0,len(nodes)):
     node = nodes[i]['name']
-    ifdata = interface_data(link=link,link_attr=link_attr,ifdata={ 'ip': link[node]['ip'] })
+    ifdata = interface_data(link=link,link_attr=link_attr,ifdata=nodes[i]['ifaddr'])
     interfaces.append(add_node_interface(ndict[node],ifdata,defaults))
 
   for i in range(0,2):
@@ -186,12 +224,17 @@ def augment_p2p_link(link,pfx_list,ndict,defaults={}):
     else:
       interfaces[i]['remote_id'] = ndict[nodes[1-i]['name']]['id']
       interfaces[i]['remote_ifindex'] = interfaces[1-i]['ifindex']
-    interfaces[i]['neighbors'] = { nodes[1-i]['name'] : { \
-      'ifname' : interfaces[1-i]['ifname'], \
-      'ip': interfaces[1-i]['ip'] }}
 
-  for i in range(0,2):
-    link[end_names[i]] = { 'node': nodes[i]['name'], 'ip': interfaces[i]['ip'], 'ifname': interfaces[i].get('ifname') }
+    link[end_names[i]] = { 'node': nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
+
+    remote = nodes[1-i]['name']
+    interfaces[i]['neighbors'] = { remote : { \
+      'ifname' : interfaces[1-i]['ifname'] }}
+    for af in ('ipv4','ipv6'):
+      if af in interfaces[1-i]:
+        interfaces[i]['neighbors'][remote][af] = interfaces[1-i][af]
+      if af in interfaces[i]:
+        link[end_names[i]][af] = interfaces[i][af]
 
   return link
 
@@ -243,16 +286,9 @@ def check_link_type(data,nodes):
     return False
   return True
 
-def augment_links(link_list,defaults,ndict):
+def augment_links(link_list,defaults,ndict,pools):
   if not link_list:
     return
-
-  lan_pfx   = defaults.get('lan','10.0.0.0/16')
-  lan_subnet= defaults.get('lan_subnet',24)
-  p2p_pfx   = defaults.get('p2p','10.1.0.0/16')
-  p2p_subnet= defaults.get('p2p_subnet',30)
-  lan_list  = netaddr.IPNetwork(lan_pfx).subnet(lan_subnet)
-  p2p_list  = netaddr.IPNetwork(p2p_pfx).subnet(p2p_subnet)
 
   link_attr_list.extend(defaults.get('link_attr',[]))
   linkindex = defaults.get('link_index',1)
@@ -269,11 +305,11 @@ def augment_links(link_list,defaults,ndict):
 
     link['index'] = linkindex
     if link['type'] == 'p2p':
-      augment_p2p_link(link,p2p_list,ndict,defaults=defaults)
+      augment_p2p_link(link,pools,ndict,defaults=defaults)
     else:
       if not 'bridge' in link:
         link['bridge'] = "%s_%d" % (defaults['name'],linkindex)
-      augment_lan_link(link,lan_list,ndict,defaults=defaults)
+      augment_lan_link(link,pools,ndict,defaults=defaults)
 
     linkindex = linkindex + 1
   return link_list
@@ -285,7 +321,12 @@ def augment(topology):
   topology['links'] = adjust_link_list(topology['links'])
   common.exit_on_error()
 
-  ndict = augment_nodes(topology,topology.get('defaults',{}))
+  if not 'defaults' in topology:
+    topology['defaults'] = {}
+  addressing.setup(topology,topology['defaults'])
+
+  ndict = augment_nodes(topology,topology['defaults'],topology['pools'])
   common.exit_on_error()
-  augment_links(topology['links'],topology.get('defaults',{}),ndict)
+  augment_links(topology['links'],topology['defaults'],ndict,topology['pools'])
   common.exit_on_error()
+  del topology['pools']

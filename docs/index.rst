@@ -37,6 +37,7 @@ Libvirt-specific tools
 
    install.md
    create-topology.md
+   topology-reference.md
    platforms.md
    release.rst
 

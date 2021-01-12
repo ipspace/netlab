@@ -1,7 +1,13 @@
 Release notes
 =============
 
-2021-01-07 ([release 0.11](https://github.com/ipspace/netsim-tools/releases/tag/release_0.11))
+2021-01-12 (`release 0.2 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.2>`_)
+   Major refactoring of addressing configuration
+
+   * Structured address pools (loopback, lan, p2p)
+   * IPv4 and IPv6 support
+   * Initial configuration modules updated to work in dual-stack or IPv6-only environments
+2021-01-07 (`release 0.11 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.11>`_)
    Arrcus ArcOS support contributed by Dave Thelen
 
    Refactored configuration gathering -- use explicit **device_facts** modules or platform-specific tasks

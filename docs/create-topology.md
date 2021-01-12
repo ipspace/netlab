@@ -53,6 +53,7 @@ Typical uses:
 Topology description file is a YAML file with three elements:
 
 * **defaults** - describing topology-wide defaults like default device type
+* **addressing** - IPv4 and IPv6 pools used to address management, loopback, LAN, P2P and stub interfaces
 * **nodes** - list of nodes
 * **links** - list of links
 
@@ -91,13 +92,13 @@ Example:
 links:
 - pe1-p1
 - [ pe1, p2 ]
-- description: Primary uplink between PE2 and P1 
+- description: Primary uplink between PE2 and P1
 	prefix: 10.0.2.0/24
 	bridge: PVLAN
 	pe2:
 	  ip: 10.0.2.17/24
   p1:
-    ip: 10.0.2.18/24 
+    ip: 10.0.2.18/24
 - pe2-p2
 ```
 
@@ -112,23 +113,5 @@ You can specify these topology-wide defaults. Most default values must be specif
 **device**
 : Default device type. Used unless you specified **device** element in node dictionary.
 
-**mgmt**
-: Python string format used to generate management interface IP address from node ID. Use %d or %02d to insert the node ID into IP address (example: `192.168.121.1%02d`)
-
-**mac**
-: Python string format used to generate management interface MAC address from node ID. Use %d or %02d to insert the node ID into MAC address (example: `08-4F-A9-00-00-%02d`)
-
-**mgmt**
-: Python string format used to generate loopback interface IP address from node ID. Use %d or %02d to insert the node ID into IP address (example: `10.0.0.%d`)
-
-**lan**
-: IP prefix used to address LAN interfaces (example: `172.16.0.0/16`)
-
-**lan_subnet**
-: Size of LAN subnets (example: 24)
-
-**p2p**
-: IP prefix used to address P2P interfaces (example: `10.1.0.0/16`)
-
-**p2p_subnet**
-: Size of LAN subnets (example: 30)
+**addressing**
+: Default address pools see [addressing](addressing.md) for more details.
