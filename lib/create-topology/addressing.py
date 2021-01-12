@@ -170,7 +170,7 @@ def parse_prefix(prefix):
   supported_af = ['ip','ipv4','ipv6']
   prefix_list = {}
   if isinstance(prefix,dict):
-    for af,pfx in prefix:
+    for af,pfx in prefix.items():
       if not af in supported_af:
         common.error('Unknown address family %s in prefix %s' % (af,prefix))
       else:

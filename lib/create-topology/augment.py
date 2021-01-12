@@ -206,7 +206,7 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
   nodes = []
   interfaces = []
 
-  for (node,value) in link.items():
+  for (node,value) in sorted(link.items()):
     if node in ndict:
       ecount = len(nodes)
       ifaddr = {}
