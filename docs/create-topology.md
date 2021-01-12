@@ -17,7 +17,7 @@ The **create-topology** script reads:
 * YAML file with expanded topology data (in case you need it for further automation tasks)
 
 ```
-usage: create-topology [-h] ...
+usage: create-topology ...
 
 Create topology data from topology description
 
@@ -25,17 +25,20 @@ optional arguments:
   -h, --help            show this help message and exit
   -t TOPOLOGY, --topology TOPOLOGY
                         Topology file
-  --defaults DEFAULTS   Local topology defaults
+  --defaults DEFAULTS   Local topology defaults file
   -x [XPAND], --expanded [XPAND]
                         Create expanded topology file
   -g [VAGRANT], --vagrantfile [VAGRANT]
                         Create Vagrantfile
   -i [INVENTORY], --inventory [INVENTORY]
-                        Create Ansible inventory file
-  --hostvars            Create Ansible hostvars
+                        Create Ansible inventory file, default hosts.yml
+  -c [CONFIG], --config [CONFIG]
+                        Create Ansible configuration file, default ansible.cfg
+  --hostvars [HOSTVARS]
+                        Create Ansible hostvars
   --log                 Enable basic logging
   -q, --quiet           Report only major errors
-  -v, --view.           Display data instead of creating a file
+  -v, --view            Display data instead of creating a file
 ```
 
 Typical uses:
@@ -50,6 +53,7 @@ Typical uses:
 Topology description file is a YAML file with three elements:
 
 * **defaults** - describing topology-wide defaults like default device type
+* **addressing** - IPv4 and IPv6 pools used to address management, loopback, LAN, P2P and stub interfaces
 * **nodes** - list of nodes
 * **links** - list of links
 
@@ -88,13 +92,13 @@ Example:
 links:
 - pe1-p1
 - [ pe1, p2 ]
-- description: Primary uplink between PE2 and P1 
+- description: Primary uplink between PE2 and P1
 	prefix: 10.0.2.0/24
 	bridge: PVLAN
 	pe2:
 	  ip: 10.0.2.17/24
   p1:
-    ip: 10.0.2.18/24 
+    ip: 10.0.2.18/24
 - pe2-p2
 ```
 
@@ -109,23 +113,5 @@ You can specify these topology-wide defaults. Most default values must be specif
 **device**
 : Default device type. Used unless you specified **device** element in node dictionary.
 
-**mgmt**
-: Python string format used to generate management interface IP address from node ID. Use %d or %02d to insert the node ID into IP address (example: `192.168.121.1%02d`)
-
-**mac**
-: Python string format used to generate management interface MAC address from node ID. Use %d or %02d to insert the node ID into MAC address (example: `08-4F-A9-00-00-%02d`)
-
-**mgmt**
-: Python string format used to generate loopback interface IP address from node ID. Use %d or %02d to insert the node ID into IP address (example: `10.0.0.%d`)
-
-**lan**
-: IP prefix used to address LAN interfaces (example: `172.16.0.0/16`)
-
-**lan_subnet**
-: Size of LAN subnets (example: 24)
-
-**p2p**
-: IP prefix used to address P2P interfaces (example: `10.1.0.0/16`)
-
-**p2p_subnet**
-: Size of LAN subnets (example: 30)
+**addressing**
+: Default address pools see [addressing](addressing.md) for more details.

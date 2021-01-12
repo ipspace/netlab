@@ -5,15 +5,17 @@
 import yaml
 import os
 import sys
+import common
 
-topo_to_host = { 'mgmt_ip': 'ansible_host', 'id': 'id' }
+topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
 
 def ansible_inventory_host(node):
   host = {}
   for (node_key,inv_key) in topo_to_host.items():
-    if node.get(node_key):
-      host[inv_key] = node[node_key]
+    value = common.get_value(node,node_key.split('.'))
+    if value:
+      host[inv_key] = value
 
   for (k,v) in node.items():
     if not k in topo_to_host_skip:
@@ -87,3 +89,9 @@ def write(data,fname,hostvars):
 
     write_yaml(inventory,fname,header)
     print("Created minimized Ansible inventory %s" % fname)
+
+def config(config_file,inventory_file,path):
+  with open(config_file,"w") as output:
+    output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file },path + '/templates'))
+    output.close()
+    print("Created Ansible configuration file: %s" % config_file)
