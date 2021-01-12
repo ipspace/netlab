@@ -55,7 +55,7 @@ Topology description file is a YAML file with three elements:
 * **defaults** - describing topology-wide defaults like default device type
 * **addressing** - [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
 * **nodes** - [list of nodes](nodes.md)
-* **links** - list of links
+* **links** - [list of links](links.md)
 
 Optionally, you can use the fourth element (**name**) to give the topology a name. That name (default: directory name) will be used when creating Vagrant virtual networks.
 

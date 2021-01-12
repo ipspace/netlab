@@ -13,5 +13,6 @@ The lab topology used by **create-topology** tool has four major components:
    :maxdepth: 2
 
    nodes.md
+   links.md
    addressing.md
 ```
