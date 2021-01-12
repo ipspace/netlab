@@ -4,17 +4,31 @@ no ip domain-lookup
 !
 lldp run
 !
-interface Loopback0
- ip address {{ loopback }} 255.255.255.255
+{% if ('ipv6' in loopback) or ('ipv6'|map('extract',links)) %}
+ipv6 unicast-routing
 !
-interface {{ mgmt_if|default('GigabitEthernet0/0') }}
+{% endif %}
+interface Loopback0
+{% if 'ipv4' in loopback %}
+ ip address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 address {{ loopback.ipv6 }}
+{% endif %}
+!
+interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
  no lldp transmit
  no lldp receive
 !
 {% for l in links %}
 interface {{ l.ifname }}
  no shutdown
- ip address {{ l.ip|ipaddr('address') }} {{ l.ip|ipaddr('netmask') }}
+{% if l.ipv4 is defined %}
+ ip address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
+{% endif %}
+{% if l.ipv6 is defined %}
+ ipv6 address {{ l.ipv6 }}
+{% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
 {% endif %}

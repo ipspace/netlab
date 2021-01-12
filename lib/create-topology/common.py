@@ -33,7 +33,24 @@ def get_value(data,path=[],default=None):
   for k in path:
     if not(type(data) is dict):
       return data
-    if not data.get(k):
+    if not k in data:
       return default
     data = data.get(k)
   return data
+
+def merge_defaults(data,defaults):
+  if not data:
+    return defaults
+
+  if type(data) is dict and type(defaults) is dict:
+    for (k,v) in defaults.items():
+      if not k in data or isinstance(data.get(k),dict):
+        data[k] = merge_defaults(data.get(k),defaults[k])
+  return data
+
+def set_verbose():
+  VERBOSE=True
+
+def print_verbose(t):
+  if VERBOSE:
+    print(t)

@@ -6,15 +6,6 @@ import common
 import os
 import sys
 
-def merge_defaults(data,defaults):
-  if not data:
-    return defaults
-
-  if type(data) is dict and type(defaults) is dict:
-    for (k,v) in defaults.items():
-      data[k] = merge_defaults(data.get(k),defaults[k])
-  return data
-
 def read_yaml(fname):
   try:
     stream = open(fname,'r')
@@ -44,11 +35,11 @@ def load(fname,defaults,settings):
   local_defaults = read_yaml(defaults)
   if local_defaults:
     topology['input'].append(defaults)
-    merge_defaults(topology['defaults'],local_defaults)
+    topology['defaults'] = common.merge_defaults(topology['defaults'],local_defaults)
 
   global_defaults = read_yaml(settings)
   if global_defaults:
     topology['input'].append(os.path.relpath(settings))
-    merge_defaults(topology['defaults'],global_defaults)
+    topology['defaults'] = common.merge_defaults(topology['defaults'],global_defaults)
 
   return topology

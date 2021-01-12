@@ -2,7 +2,12 @@
 
 I'm building my network simulation environments with Vagrant using libvirt plugin on a Ubuntu 20.04 system... and I always hated how boring it was to set up a new topology and initial device configurations. The tools in this repository should make that task easier, and you're most welcome to submit pull requests adding support for other environments or platforms.
 
-An overview of tools:
+Latest release: 0.2 (read [upgrade warning](https://netsim-tools.readthedocs.io/en/latest/release.html))
+Stable release: [0.11](https://github.com/ipspace/netsim-tools/releases/tag/release_0.11)
+
+More information in [Release Notes](https://netsim-tools.readthedocs.io/en/latest/release.html)
+
+## An overview of tools:
 
 **create-topology**
 : Creates a full-blown network topology, Vagrantfile and Ansible inventory from a simple list of nodes and links. [More details](https://netsim-tools.readthedocs.io/en/latest/)
