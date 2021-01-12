@@ -53,8 +53,8 @@ Typical uses:
 Topology description file is a YAML file with three elements:
 
 * **defaults** - describing topology-wide defaults like default device type
-* **addressing** - IPv4 and IPv6 pools used to address management, loopback, LAN, P2P and stub interfaces
-* **nodes** - list of nodes
+* **addressing** - [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
+* **nodes** - [list of nodes](nodes.md)
 * **links** - list of links
 
 Optionally, you can use the fourth element (**name**) to give the topology a name. That name (default: directory name) will be used when creating Vagrant virtual networks.
@@ -63,21 +63,23 @@ Optionally, you can use the fourth element (**name**) to give the topology a nam
 
 Topology files should include a *list of nodes*. Individual nodes could be specified by node *name* (string) or a dictionary of node attributes including **name**. Use a node dictionary when you want to specify non-default device type or additional node attributes.
 
-**Note:** additional attributes specified in a node dictionary are copied directly into Ansible inventory.
-
 Example:
 ```
 nodes:
 - node: pe1
-	as: 65000
-	bgp: [ pe2 ]
-	device: csr
+  as: 65000
+  bgp: [ pe2 ]
+  device: csr
 - p1
 - p2
 - node: pe2
-	as: 65000
-	bgp: [ pe2 ]
+  as: 65000
+  bgp: [ pe1 ]
 ```
+
+**Notes:** 
+* For more details read the [nodes](nodes.md) part of [lab topology reference](topology-reference.md)
+* Additional attributes specified in a node dictionary are copied directly into Ansible inventory.
 
 ### Links
 

@@ -8,7 +8,7 @@ import addressing
 import os
 
 def check_required_elements(topology):
-  for rq in ['nodes','links','defaults']:
+  for rq in ['nodes','defaults']:
     if not rq in topology:
       common.error("Topology error: missing '%s' element" % rq)
 
@@ -20,8 +20,18 @@ def check_required_elements(topology):
 
 def adjust_node_list(nodes):
   node_list = []
-  for n in nodes:
-    node_list.append(n if type(n) is dict else { 'name': n})
+  if isinstance(nodes, dict):
+    for k,v in sorted(nodes.items()):
+      if v is None:
+        v = {}
+      elif not isinstance(v,dict):
+        common.error('Node data for node %s must be a dictionary' % k)
+        v = { 'extra': v }
+      v['name'] = k
+      node_list.append(v)
+  else:
+    for n in nodes:
+      node_list.append(n if type(n) is dict else { 'name': n })
   return node_list
 
 def adjust_link_list(links):
@@ -39,27 +49,31 @@ def adjust_link_list(links):
   return link_list
 
 def augment_mgmt_if(node,device_data,addrs):
-  node['mgmt'] = {}
+  if 'mgmt' not in node:
+    node['mgmt'] = {}
 
-  mgmt_if = device_data.get('mgmt_if')
-  if not mgmt_if:
-    ifname_format = device_data.get('interface_name')
-    if not ifname_format:
-      common.fatal("FATAL: Missing interface name template for device type %s" % n['device'])
+  if 'ifname' not in node['mgmt']:
+    mgmt_if = device_data.get('mgmt_if')
+    if not mgmt_if:
+      ifname_format = device_data.get('interface_name')
+      if not ifname_format:
+        common.fatal("FATAL: Missing interface name template for device type %s" % n['device'])
 
-    ifindex_offset = device_data.get('ifindex_offset',1)
-    mgmt_if = ifname_format % (ifindex_offset - 1)
-  node['mgmt']['ifname'] = mgmt_if
+      ifindex_offset = device_data.get('ifindex_offset',1)
+      mgmt_if = ifname_format % (ifindex_offset - 1)
+    node['mgmt']['ifname'] = mgmt_if
 
   if addrs:
     for af in 'ipv4','ipv6':
       pfx = af + '_pfx'
       if pfx in addrs:
-        node['mgmt'][af] = str(addrs[pfx][node['id']+addrs['start']])
+        if not af in node['mgmt']:
+          node['mgmt'][af] = str(addrs[pfx][node['id']+addrs['start']])
 
     if 'mac_eui' in addrs:
       addrs['mac_eui'][5] = node['id']
-      node['mgmt']['mac'] = str(addrs['mac_eui'])
+      if not 'mac' in node['mgmt']:
+        node['mgmt']['mac'] = str(addrs['mac_eui'])
 
 def get_addr_mask(pfx,host):
   host_ip = netaddr.IPNetwork(pfx[host])
@@ -72,6 +86,8 @@ def augment_nodes(topology,defaults,pools):
   ndict = {}
   for n in topology['nodes']:
     id = id + 1
+    if 'id' in n:
+      common.error("ERROR: static node IDs are not supported, overwriting with %d: %s" % (id,str(n)))
     n['id'] = id
 
     if not n.get('name'):
@@ -318,7 +334,8 @@ def augment(topology):
   check_required_elements(topology)
   topology['nodes'] = adjust_node_list(topology['nodes'])
   common.exit_on_error()
-  topology['links'] = adjust_link_list(topology['links'])
+  if 'links' in topology:
+    topology['links'] = adjust_link_list(topology['links'])
   common.exit_on_error()
 
   if not 'defaults' in topology:
@@ -327,6 +344,7 @@ def augment(topology):
 
   ndict = augment_nodes(topology,topology['defaults'],topology['pools'])
   common.exit_on_error()
-  augment_links(topology['links'],topology['defaults'],ndict,topology['pools'])
+  if 'links' in topology:
+    augment_links(topology['links'],topology['defaults'],ndict,topology['pools'])
   common.exit_on_error()
   del topology['pools']
