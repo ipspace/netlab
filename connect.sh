@@ -1,10 +1,16 @@
 #!/bin/bash
 if [ -z "$1" ]; then
-  echo 'Usage: connect.sh <host>'
+  echo 'Usage: connect.sh [ --debug ] <host> [ <command> ]'
   exit 1
 fi
 set -e
-data=$(ansible-inventory --host $1)
+if [ "$1" = "--debug" ]; then
+  debug=1
+  shift
+fi
+ssh_host=$1
+shift
+data=$(ansible-inventory --host $ssh_host)
 host=$(echo $data|jq -r .ansible_host)
 user=$(echo $data|jq -r .ansible_user)
 pass=$(echo $data|jq -r .ansible_ssh_pass)
@@ -16,5 +22,8 @@ if [ -n "$pass" ]; then
   cmd=(sshpass -p $pass "${cmd[@]}")
 fi
 cmd+=($host)
-echo "executing ${cmd[@]}"
+cmd+=($@)
+if [ $debug ]; then
+  echo 1>&2 "executing ${cmd[@]}"
+fi
 "${cmd[@]}"
