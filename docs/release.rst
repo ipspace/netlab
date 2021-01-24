@@ -1,7 +1,7 @@
 Release notes
 =============
 
-2021-01-xx (`release 0.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.3>`_)
+2021-01-24 (`release 0.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.3>`_)
   * Support for multiple virtualization providers
   * Vagrant with VirtualBox
   * EOS and Nexus OS supported on Vagrant/VirtualBox
