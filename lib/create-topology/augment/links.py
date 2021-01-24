@@ -7,32 +7,8 @@ import common
 import addressing
 import os
 
-def check_required_elements(topology):
-  for rq in ['nodes','defaults']:
-    if not rq in topology:
-      common.error("Topology error: missing '%s' element" % rq)
-
-  if not 'name' in topology:
-    topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))
-    topology['name'] = topo_name
-
-  topology['defaults']['name'] = topology['name']
-
-def adjust_node_list(nodes):
-  node_list = []
-  if isinstance(nodes, dict):
-    for k,v in sorted(nodes.items()):
-      if v is None:
-        v = {}
-      elif not isinstance(v,dict):
-        common.error('Node data for node %s must be a dictionary' % k)
-        v = { 'extra': v }
-      v['name'] = k
-      node_list.append(v)
-  else:
-    for n in nodes:
-      node_list.append(n if type(n) is dict else { 'name': n })
-  return node_list
+link_attr_base = [ 'bridge','type','linkindex' ]
+link_attr_full = [ 'prefix' ]
 
 def adjust_link_list(links):
   link_list = []
@@ -48,86 +24,8 @@ def adjust_link_list(links):
       link_list.append({ key: None for key in l.split('-') })
   return link_list
 
-def augment_mgmt_if(node,device_data,addrs):
-  if 'mgmt' not in node:
-    node['mgmt'] = {}
-
-  if 'ifname' not in node['mgmt']:
-    mgmt_if = device_data.get('mgmt_if')
-    if not mgmt_if:
-      ifname_format = device_data.get('interface_name')
-      if not ifname_format:
-        common.fatal("FATAL: Missing interface name template for device type %s" % n['device'])
-
-      ifindex_offset = device_data.get('ifindex_offset',1)
-      mgmt_if = ifname_format % (ifindex_offset - 1)
-    node['mgmt']['ifname'] = mgmt_if
-
-  if addrs:
-    for af in 'ipv4','ipv6':
-      pfx = af + '_pfx'
-      if pfx in addrs:
-        if not af in node['mgmt']:
-          node['mgmt'][af] = str(addrs[pfx][node['id']+addrs['start']])
-
-    if 'mac_eui' in addrs:
-      addrs['mac_eui'][5] = node['id']
-      if not 'mac' in node['mgmt']:
-        node['mgmt']['mac'] = str(addrs['mac_eui'])
-
-def get_addr_mask(pfx,host):
-  host_ip = netaddr.IPNetwork(pfx[host])
-  host_ip.prefixlen = pfx.prefixlen
-  return str(host_ip)
-
-def augment_nodes(topology,defaults,pools):
-  id = 0
-
-  ndict = {}
-  for n in topology['nodes']:
-    id = id + 1
-    if 'id' in n:
-      common.error("ERROR: static node IDs are not supported, overwriting with %d: %s" % (id,str(n)))
-    n['id'] = id
-
-    if not n.get('name'):
-      common.error("ERROR: node does not have a name %s" % str(n))
-      continue
-
-    if 'loopback' in pools:
-      n['loopback'] = {}
-      prefix_list = addressing.get(pools,['loopback'])
-      for af in prefix_list:
-        if af == 'ipv6':
-          n['loopback'][af] = get_addr_mask(prefix_list[af],1)
-        else:
-          n['loopback'][af] = str(prefix_list[af])
-
-    if not 'device' in n:
-      n['device'] = defaults.get('device')
-
-    device_data = common.get_value( \
-                data=defaults,
-                path=['devices',n['device']])
-    if not device_data:
-      common.error("ERROR: Unsupported device type %s: %s" % (n['device'],n))
-      continue
-
-    augment_mgmt_if(n,device_data,topology['addressing'].get('mgmt'))
-
-    if 'box' in device_data:
-      n['box'] = device_data['box']
-
-    ndict[n['name']] = n
-
-  topology['nodes_map'] = ndict
-  return ndict
-
 def add_node_interface(node,ifdata,defaults={}):
-  node_links = node.get('links')
-  if node_links is None:
-    node_links = []
-
+  node_links = node.get('links',[])
   ifindex_offset = common.get_value( \
                      data=defaults, \
                      path=['devices',node['device'],'ifindex_offset'], \
@@ -147,8 +45,6 @@ def add_node_interface(node,ifdata,defaults={}):
   node['links'] = node_links
   return ifdata
 
-link_attr_list = [ 'bridge','type','prefix' ]
-
 def interface_data(link,link_attr=[],ifdata={}):
   for k in link_attr:
     if k in link:
@@ -165,9 +61,6 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
 
   interfaces = {}
 
-  link_attr = ['bridge','type']
-  link_attr.extend(defaults.get('link_attr',[]))
-
   for (node,value) in link.items():
     if node in ndict:
       ifaddr = {}
@@ -182,7 +75,7 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
 
       link[node] = value
 
-      ifdata = interface_data(link=link,link_attr=link_attr,ifdata=ifaddr)
+      ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
       interfaces[node] = add_node_interface(ndict[node],ifdata,defaults)
 
   for node in interfaces.keys():
@@ -226,12 +119,9 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
     print("Too many nodes specified on a P2P link")
     return
 
-  link_attr = ['bridge','type']
-  link_attr.extend(defaults.get('link_attr',[]))
-
   for i in range(0,len(nodes)):
     node = nodes[i]['name']
-    ifdata = interface_data(link=link,link_attr=link_attr,ifdata=nodes[i]['ifaddr'])
+    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=nodes[i]['ifaddr'])
     interfaces.append(add_node_interface(ndict[node],ifdata,defaults))
 
   for i in range(0,2):
@@ -302,15 +192,17 @@ def check_link_type(data,nodes):
     return False
   return True
 
-def augment_links(link_list,defaults,ndict,pools):
+def transform(link_list,defaults,ndict,pools):
   if not link_list:
     return
 
-  link_attr_list.extend(defaults.get('link_attr',[]))
+  link_attr_base.extend(defaults.get('link_attr',[]))
+  link_attr_full.extend(link_attr_base)
+
   linkindex = defaults.get('link_index',1)
 
   for link in link_list:
-    if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_list):
+    if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
       continue
 
     if not link.get('type'):
@@ -319,7 +211,7 @@ def augment_links(link_list,defaults,ndict,pools):
     if not check_link_type(data=link,nodes=ndict):
       continue
 
-    link['index'] = linkindex
+    link['linkindex'] = linkindex
     if link['type'] == 'p2p':
       augment_p2p_link(link,pools,ndict,defaults=defaults)
     else:
@@ -329,22 +221,3 @@ def augment_links(link_list,defaults,ndict,pools):
 
     linkindex = linkindex + 1
   return link_list
-
-def augment(topology):
-  check_required_elements(topology)
-  topology['nodes'] = adjust_node_list(topology['nodes'])
-  common.exit_on_error()
-  if 'links' in topology:
-    topology['links'] = adjust_link_list(topology['links'])
-  common.exit_on_error()
-
-  if not 'defaults' in topology:
-    topology['defaults'] = {}
-  addressing.setup(topology,topology['defaults'])
-
-  ndict = augment_nodes(topology,topology['defaults'],topology['pools'])
-  common.exit_on_error()
-  if 'links' in topology:
-    augment_links(topology['links'],topology['defaults'],ndict,topology['pools'])
-  common.exit_on_error()
-  del topology['pools']

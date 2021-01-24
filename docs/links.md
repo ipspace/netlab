@@ -38,6 +38,7 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **prefix** - [prefix (or a set of prefixes)](#custom-link-addressing) used on the link
 * **type** - [link type](#link-types) (lan, p2p, stub)
 * **bridge** - [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
+* **linkindex** [R/O] - link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
 
 Links could contain additional attributes like *bandwidth*. These attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names.
 
@@ -145,7 +146,7 @@ Final link data:
     ipv4: 10.1.0.1/30
   e2:
     ipv4: 10.1.0.2/30
-  index: 1
+  linkindex: 1
   left:
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.1/30
@@ -173,7 +174,7 @@ Final link data:
 ```
 - e1:
     ipv6: 2001:db8:cafe:1::1/64
-  index: 2
+  linkindex: 2
   left:
     ifname: GigabitEthernet0/2
     ipv6: 2001:db8:cafe:1::1/64
@@ -203,7 +204,7 @@ Final link data:
 - bridge: tests_3
   e2:
     ipv4: 172.16.0.2/24
-  index: 3
+  linkindex: 3
   pe1:
     ipv4: 172.16.0.3/24
   prefix:
@@ -242,6 +243,7 @@ The **links** dictionary in E1 node data describes E1 interfaces (other node att
   - ifindex: 1
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.1/30
+    linkindex: 1
     neighbors:
       e2:
         ifname: GigabitEthernet0/1
@@ -252,6 +254,7 @@ The **links** dictionary in E1 node data describes E1 interfaces (other node att
   - ifindex: 2
     ifname: GigabitEthernet0/2
     ipv6: 2001:db8:cafe:1::1/64
+    linkindex: 2
     neighbors:
       pe1:
         ifname: GigabitEthernet2
@@ -287,6 +290,7 @@ E2 node data contains the following interface data:
   - ifindex: 1
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.2/30
+    linkindex: 1
     neighbors:
       e1:
         ifname: GigabitEthernet0/1
@@ -298,6 +302,7 @@ E2 node data contains the following interface data:
     ifindex: 2
     ifname: GigabitEthernet0/2
     ipv4: 172.16.0.2/24
+    linkindex: 3
     neighbors:
       pe1:
         ifname: GigabitEthernet3

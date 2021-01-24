@@ -178,3 +178,8 @@ def parse_prefix(prefix):
     return prefix_list
   else:
     return { 'ipv4' : netaddr.IPNetwork(prefix) }
+
+def get_addr_mask(pfx,host):
+  host_ip = netaddr.IPNetwork(pfx[host])
+  host_ip.prefixlen = pfx.prefixlen
+  return str(host_ip)

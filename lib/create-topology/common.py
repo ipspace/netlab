@@ -3,13 +3,13 @@
 #
 import sys
 import os
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, Undefined, StrictUndefined, make_logging_undefined
 
 LOGGING=False
 VERBOSE=False
 
 def fatal(text):
-  print(text,file=sys.stderr)
+  print('FATAL: %s' % text,file=sys.stderr)
   sys.exit(1)
 
 err_count = 0
@@ -25,7 +25,9 @@ def exit_on_error():
     sys.exit(1)
 
 def template(j2,data,path):
-  ENV = Environment(loader=FileSystemLoader(path),trim_blocks=True,lstrip_blocks=True)
+  ENV = Environment(loader=FileSystemLoader(path), \
+          trim_blocks=True,lstrip_blocks=True, \
+          undefined=make_logging_undefined(base=StrictUndefined))
   template = ENV.get_template(j2)
   return template.render(**data)
 
@@ -37,6 +39,11 @@ def get_value(data,path=[],default=None):
       return default
     data = data.get(k)
   return data
+
+def get_default(data,key,path=[],default=None):
+  if key in data:
+    return data[key]
+  return get_value(data=data,path=path,default=default)
 
 def merge_defaults(data,defaults):
   if not data:

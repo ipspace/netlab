@@ -15,9 +15,9 @@ sys.path[0] = sys.path[0] + '/lib/create-topology'
 import common
 import cli_parser
 import read_topology
-import augment
+import augment.main
 import inventory
-import vagrant
+import provider
 
 LOGGING=False
 VERBOSE=False
@@ -45,28 +45,27 @@ def main():
     dump_topology_data(topology,'Collected')
   common.exit_on_error()
 
-  augment.augment(topology)
+  augment.main.transform(topology)
   common.exit_on_error()
   if args.vagrant:
     if args.verbose:
-      vagrant.dump(topology,path)
+      provider.dump(topology,path)
     else:
-      vagrant.create(topology,args.vagrant,path)
+      provider.create(topology,args.vagrant,path)
 
   if args.xpand:
     if args.verbose:
       dump_topology_data(topology,'Augmented')
     else:
-      create_topology_file(topology)
+      create_topology_file(topology,args.xpand)
 
   if args.inventory:
     if args.verbose:
       inventory.dump(topology)
     else:
       inventory.write(topology,args.inventory,args.hostvars)
-      if args.config:
-        inventory.config(args.config,args.inventory,path)
-#    with open(args.inventory,"w") as output:
-#      output.write(yaml.dump(create_ansible_inventory(topology['nodes'],defaults,args.hostvars)))
+
+  if args.config:
+    inventory.config(args.config,args.inventory,path)
 
 main()

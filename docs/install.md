@@ -10,6 +10,10 @@ Installing the tools:
 
 The current version of the **config-generate** tool contains templates needed to create a Vagrant topology containing Cisco IOSv, Cisco CSR 1000v, Cisco Nexus 9300v, and Arista vEOS devices with *vagrant-libvirt* provider. The Vagrant templates were tested on Ubuntu 20.04; if your environment needs specific adjustments please submit a pull request.
 
+Release 0.3 added rudimentary Vagrant-with-VirtualBox support; the only tested device is Nexus 9300v ([more details](platforms.html#virtualbox-support-limitations))
+
+### Building a *libvirt*-based Lab
+
 If you're new to *libvirt*, read [Using Libvirt Provider with Vagrant](https://codingpackets.com/blog/using-the-libvirt-provider-with-vagrant/) blog post by [Brad Searle](https://www.linkedin.com/in/bradleysearle/).
 
 The Vagrantfile templates for individual network devices were derived from the following *build your own Vagrant box for vagrant-libvirt environment* blog posts:

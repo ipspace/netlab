@@ -28,8 +28,16 @@ Network operating systems supported by **initial-config.ansible** (require **con
 Vagrant providers supported by **config-generate** (require Vagrantfile templates in `templates/vagrant/provider`):
 
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks (link type: **lan**) and P2P tunnels (link type: **p2p**).
+* Rudimentary [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox) support
 
-## Contributing new devices
+## VirtualBox Support Limitations
+
+* Most networking vendors don't ship Vagrant boxes, and I had no interest in building VirtualBox boxes from scratch after setting up a *libvirt*-based lab on an Intel NUC. The only boxes I could get with zero hassle were Cisco Nexus 9300v and Arista vEOS.
+* Release 0.3 includes VirtualBox Vagrant provider configuration defaults and Vagrantfile templates for Cisco Nexus 9300v and Arista vEOS.
+* I couldn't get vEOS to run on my version of Vagrant and VirtualBox on macOS Catalina; Nexus 9300v ran fine. If you manage to get other devices to run on VirtualBox, I'd appreciate pull requests with Vagrantfile snippets.
+* Vagrantfile created by **create-topology** sets up port forwarding for SSH (22), HTTP (80) and NETCONF (830), but the corresponding Ansible inventory uses contains only **ansible_port** (SSH). You could edit the final inventory by hand, add extra file to `host_vars`, or fix my code. Should you decide to do the latter, please contact me in advance to discuss the necessary data structures.
+
+## Contributing New Devices
 
 * Get or build Vagrant box
 * Add device-specific Vagrantfile configuration to `templates/vagrant/provider/device-domain.j2`

@@ -7,10 +7,26 @@ import os
 import sys
 import common
 
+forwarded_port_name = { 'ssh': 'ansible_port', }
+
+def provider_inventory_settings(node,defaults):
+  p_data = common.get_value(defaults,[ 'providers',defaults['provider']])
+  if not p_data:
+    return
+
+  if 'inventory' in p_data:
+    for k,v in p_data['inventory'].items():
+      node[k] = v
+
+  if 'inventory_port_map' in p_data and 'forwarded' in p_data:
+    for k,v in p_data['inventory_port_map'].items():
+      if k in p_data['forwarded']:
+        node[v] = p_data['forwarded'][k] + node['id']
+
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
 
-def ansible_inventory_host(node):
+def ansible_inventory_host(node,defaults):
   host = {}
   for (node_key,inv_key) in topo_to_host.items():
     value = common.get_value(node,node_key.split('.'))
@@ -21,6 +37,7 @@ def ansible_inventory_host(node):
     if not k in topo_to_host_skip:
       host[k] = v
 
+  provider_inventory_settings(host,defaults)
   return host
 
 def create(nodes,defaults):
@@ -30,7 +47,7 @@ def create(nodes,defaults):
     group = node.get('device','all')
     if not group in inventory:
       inventory[group] = { 'hosts': {} }
-    inventory[group]['hosts'][node['name']] = ansible_inventory_host(node)
+    inventory[group]['hosts'][node['name']] = ansible_inventory_host(node,defaults)
 
   if 'devices' in defaults:
     for group in inventory.keys():
@@ -56,7 +73,7 @@ def write_yaml(data,fname,header):
     output.write(yaml.dump(data))
     output.close()
 
-min_inventory_data = [ 'id','ansible_host' ]
+min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
 def write(data,fname,hostvars):
   inventory = create(data['nodes'],data.get('defaults',{}))

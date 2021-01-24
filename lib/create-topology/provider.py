@@ -6,7 +6,7 @@ import common
 import os
 
 def get_template_path(topology,path):
-  return path + '/templates/vagrant/' + topology['defaults'].get('virtualization','libvirt')
+  return path + '/templates/provider/' + topology['provider']
 
 def dump(topology,path):
   template_path = get_template_path(topology,path)
