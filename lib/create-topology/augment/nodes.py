@@ -57,6 +57,7 @@ def augment_node_images(topology):
     common.fatal('Device defaults (defaults.devices) are missing')
 
   for n in topology['nodes']:
+    n.setdefault('device',topology['defaults'].get('device'))
     if 'box' in n:
       continue
     if 'image' in n:
@@ -99,9 +100,6 @@ def transform(topology,defaults,pools):
           n['loopback'][af] = addressing.get_addr_mask(prefix_list[af],1)
         else:
           n['loopback'][af] = str(prefix_list[af])
-
-    if not 'device' in n:
-      n['device'] = defaults.get('device')
 
     device_data = common.get_value( \
                 data=defaults,
