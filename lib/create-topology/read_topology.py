@@ -5,41 +5,46 @@ import yaml
 import common
 import os
 import sys
+from box import Box
 
 def read_yaml(fname):
-  try:
-    stream = open(fname,'r')
-  except:
+  if not os.path.isfile(fname):
     if common.LOGGING or common.VERBOSE:
-      print("Cannot open YAML file %s" % fname)
+      print("YAML file %s does not exist" % fname)
     return None
 
   try:
-    data = yaml.load(stream,Loader=yaml.SafeLoader)
+    data = Box().from_yaml(filename=fname,default_box=True,box_dots=True,default_box_none_transform=False)
   except:
     common.fatal("Cannot read YAML from %s: %s " % (fname,str(sys.exc_info()[1])))
-  stream.close()
+
   if common.LOGGING or common.VERBOSE:
     print("Read YAML data from %s" % fname)
   return data
 
+def include_defaults(topo,fname):
+  defaults = read_yaml(fname)
+  if defaults:
+    topo.input.append(fname)
+    topo.defaults = defaults + topo.defaults
+
 def load(fname,defaults,settings):
   topology = read_yaml(fname)
   if topology is None:
-    common.fatal('Cannot open topology file: %s' % sys.exc_info()[0])
-  topology['input'] = [ fname ]
+    common.fatal('Cannot read topology file: %s' % sys.exc_info()[0])
+  topology.input = [ fname ]
+  topology.setdefault('defaults',{})
+  topology.setdefault('includes',[ 'defaults', 'global_defaults' ])
+  if not isinstance(topology.includes,list):
+    common.error( \
+      "Topology 'includes' element (if present) should be a list", \
+      category=common.IncorrectValue,module="topology")
+    topology.includes = []
 
-  if not 'defaults' in topology:
-    topology['defaults'] = {}
+  if defaults and 'defaults' in topology.includes:
+    include_defaults(topology,defaults)
 
-  local_defaults = read_yaml(defaults)
-  if local_defaults:
-    topology['input'].append(defaults)
-    topology['defaults'] = common.merge_defaults(topology['defaults'],local_defaults)
-
-  global_defaults = read_yaml(settings)
-  if global_defaults:
-    topology['input'].append(os.path.relpath(settings))
-    topology['defaults'] = common.merge_defaults(topology['defaults'],global_defaults)
+  if settings and 'global_defaults' in topology.includes:
+    include_defaults(topology,settings)
 
   return topology

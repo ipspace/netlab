@@ -3,26 +3,42 @@
 #
 import sys
 import os
+import warnings
 from jinja2 import Environment, FileSystemLoader, Undefined, StrictUndefined, make_logging_undefined
+from box import Box
 
 LOGGING=False
 VERBOSE=False
+RAISE_ON_ERROR=False
+
+class MissingValue(Warning):
+  pass
+
+class IncorrectValue(Warning):
+  pass
+
+class FatalError(Exception):
+  pass
 
 def fatal(text):
-  print('FATAL: %s' % text,file=sys.stderr)
-  sys.exit(1)
+  if RAISE_ON_ERROR:
+    raise FatalError(text)
+  else:
+    print('FATAL: %s' % text,file=sys.stderr)
+    sys.exit(1)
 
 err_count = 0
 
-def error(text):
+def error(text,category=UserWarning,module='topology'):
   global err_count
-  print(text,file=sys.stderr)
   err_count = err_count + 1
+  warnings.warn_explicit(text,category,filename=module,lineno=err_count)
+#  print(text,file=sys.stderr)
 
 def exit_on_error():
   global err_count
   if err_count > 0:
-    sys.exit(1)
+    fatal('Cannot proceed beyond this point due to errors, exiting')
 
 def template(j2,data,path):
   ENV = Environment(loader=FileSystemLoader(path), \
@@ -31,29 +47,12 @@ def template(j2,data,path):
   template = ENV.get_template(j2)
   return template.render(**data)
 
-def get_value(data,path=[],default=None):
-  for k in path:
-    if not(type(data) is dict):
-      return data
-    if not k in data:
-      return default
-    data = data.get(k)
-  return data
-
-def get_default(data,key,path=[],default=None):
-  if key in data:
-    return data[key]
-  return get_value(data=data,path=path,default=default)
-
-def merge_defaults(data,defaults):
-  if not data:
-    return defaults
-
-  if type(data) is dict and type(defaults) is dict:
-    for (k,v) in defaults.items():
-      if not k in data or isinstance(data.get(k),dict):
-        data[k] = merge_defaults(data.get(k),defaults[k])
-  return data
+def null_to_string(d):
+  for k in d.keys():
+    if isinstance(d[k],dict):
+      null_to_string(d[k])
+    elif d[k] is None:
+      d[k] = ""
 
 def set_verbose():
   VERBOSE=True

@@ -4,7 +4,7 @@
 
 import yaml
 
-def transformation_results_yaml(topology,ignore=('addressing','defaults','nodes_map')):
+def transformation_results_yaml(topology,ignore=('addressing','defaults','nodes_map','includes')):
   """
   Return the results of topology transformation YAML format
 

@@ -6,6 +6,9 @@ import netaddr
 import common
 import addressing
 import os
+import sys
+import yaml
+from box import Box
 
 link_attr_base = [ 'bridge','type','linkindex' ]
 link_attr_full = [ 'prefix' ]
@@ -14,9 +17,9 @@ def adjust_link_list(links):
   link_list = []
 
   if not(links):
-    return
+    return                   # pragma: no cover (this is a sanity-check safeguard)
   for l in links:
-    if type(l) is dict:
+    if isinstance(l,dict):
       link_list.append(l)
     elif type(l) is list:
       link_list.append({ key: None for key in l })
@@ -25,25 +28,18 @@ def adjust_link_list(links):
   return link_list
 
 def add_node_interface(node,ifdata,defaults={}):
-  node_links = node.get('links',[])
-  ifindex_offset = common.get_value( \
-                     data=defaults, \
-                     path=['devices',node['device'],'ifindex_offset'], \
-                     default=1)
-  ifindex = len(node_links) + ifindex_offset
+  node.setdefault('links',[])
+  ifindex_offset = defaults.devices[node.device].get('ifindex_offset',1)
+  ifindex = len(node.links) + ifindex_offset
 
-  ifname_format = common.get_value( \
-                    data=defaults,
-                    path=['devices',node['device'],'interface_name'], \
-                    default=None)
+  ifname_format = defaults.devices[node.device].interface_name
 
-  ifdata['ifindex'] = ifindex
-  if ifname_format is not None:
-    ifdata['ifname'] = ifname_format % ifindex
+  ifdata.ifindex = ifindex
+  if ifname_format:
+    ifdata.ifname = ifname_format % ifindex
 
-  node_links.append(ifdata)
-  node['links'] = node_links
-  return ifdata
+  node.links.append(ifdata)
+  return len(node.links)
 
 def interface_data(link,link_attr=[],ifdata={}):
   for k in link_attr:
@@ -54,46 +50,48 @@ def interface_data(link,link_attr=[],ifdata={}):
 
 def augment_lan_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
-    pfx_list = addressing.parse_prefix(link['prefix'])
+    pfx_list = addressing.parse_prefix(link.prefix)
   else:
     pfx_list = addressing.get(addr_pools,['lan'])
-    link['prefix'] = { af: str(pfx_list[af]) for af in pfx_list }
+    link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
 
   interfaces = {}
 
   for (node,value) in link.items():
     if node in ndict:
-      ifaddr = {}
+      ifaddr = Box({},default_box=True)
       if value is None:
-        value = {}
+        value = Box({},default_box=True)
 
       for af,pfx in pfx_list.items():
-        ip = netaddr.IPNetwork(pfx[ndict[node]['id']])
+        ip = netaddr.IPNetwork(pfx[ndict[node].id])
         ip.prefixlen = pfx.prefixlen
         value[af] = str(ip)
         ifaddr[af] = value[af]
 
       link[node] = value
 
-      ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
-      interfaces[node] = add_node_interface(ndict[node],ifdata,defaults)
+      interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
+      add_node_interface(ndict[node],interfaces[node],defaults)
 
   for node in interfaces.keys():
-    interfaces[node]['neighbors'] = {}
+    interfaces[node].neighbors = {}
     for remote in interfaces.keys():
       if remote != node:
-        interfaces[node]['neighbors'][remote] = { \
+        interfaces[node].neighbors[remote] = { \
           'ifname': interfaces[remote]['ifname'] }
         for af in ('ipv4','ipv6'):
           if af in interfaces[remote]:
-            interfaces[node]['neighbors'][remote][af] = interfaces[remote][af]
+            interfaces[node].neighbors[remote][af] = interfaces[remote][af]
+    ifindex = len(ndict[node].links) - 1
+    ndict[node].links[ifindex] = interfaces[node]
 
 def augment_p2p_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
-    pfx_list = addressing.parse_prefix(link['prefix'])
+    pfx_list = addressing.parse_prefix(link.prefix)
   else:
     pfx_list = addressing.get(addr_pools,['p2p','lan'])
-    link['prefix'] = { af: str(pfx_list[af]) for af in pfx_list }
+    link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
 
   end_names = ['left','right']
   nodes = []
@@ -102,9 +100,9 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
   for (node,value) in sorted(link.items()):
     if node in ndict:
       ecount = len(nodes)
-      ifaddr = {}
+      ifaddr = Box({},default_box=True)
       if value is None:
-        value = {}
+        value = Box({},default_box=True)
 
       for af,pfx in pfx_list.items():
         ip = netaddr.IPNetwork(pfx[ecount+1])
@@ -113,27 +111,28 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
         ifaddr[af] = value[af]
 
       link[node] = value
-      nodes.append({ 'name': node, 'link': value, 'ifaddr': ifaddr })
+      nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
   if len(nodes) > len(end_names):
     print("Too many nodes specified on a P2P link")
     return
 
   for i in range(0,len(nodes)):
-    node = nodes[i]['name']
-    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=nodes[i]['ifaddr'])
-    interfaces.append(add_node_interface(ndict[node],ifdata,defaults))
+    node = nodes[i].name
+    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=nodes[i].ifaddr)
+    add_node_interface(ndict[node],ifdata,defaults)
+    interfaces.append(ifdata)
 
   for i in range(0,2):
     if 'bridge' in link:
-      interfaces[i]['bridge'] = link['bridge']
+      interfaces[i].bridge = link.bridge
     else:
-      interfaces[i]['remote_id'] = ndict[nodes[1-i]['name']]['id']
-      interfaces[i]['remote_ifindex'] = interfaces[1-i]['ifindex']
+      interfaces[i].remote_id = ndict[nodes[1-i].name].id
+      interfaces[i].remote_ifindex = interfaces[1-i].ifindex
 
     link[end_names[i]] = { 'node': nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
 
-    remote = nodes[1-i]['name']
+    remote = nodes[1-i].name
     interfaces[i]['neighbors'] = { remote : { \
       'ifname' : interfaces[1-i]['ifname'] }}
     for af in ('ipv4','ipv6'):
@@ -141,6 +140,10 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
         interfaces[i]['neighbors'][remote][af] = interfaces[1-i][af]
       if af in interfaces[i]:
         link[end_names[i]][af] = interfaces[i][af]
+
+    node = nodes[i].name
+    ifindex = len(ndict[node].links) - 1
+    ndict[node].links[ifindex] = interfaces[i]
 
   return link
 
@@ -196,27 +199,27 @@ def transform(link_list,defaults,ndict,pools):
   if not link_list:
     return
 
-  link_attr_base.extend(defaults.get('link_attr',[]))
+  link_attr_base.extend(defaults.link_attr or [])
   link_attr_full.extend(link_attr_base)
 
-  linkindex = defaults.get('link_index',1)
+  linkindex = defaults.link_index or 1
 
   for link in link_list:
     if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
       continue
 
-    if not link.get('type'):
+    if not link.type:
       link['type'] = get_link_type(data=link,nodes=ndict)
 
     if not check_link_type(data=link,nodes=ndict):
       continue
 
-    link['linkindex'] = linkindex
-    if link['type'] == 'p2p':
+    link.linkindex = linkindex
+    if link.type == 'p2p':
       augment_p2p_link(link,pools,ndict,defaults=defaults)
     else:
       if not 'bridge' in link:
-        link['bridge'] = "%s_%d" % (defaults['name'],linkindex)
+        link['bridge'] = "%s_%d" % (defaults.name,linkindex)
       augment_lan_link(link,pools,ndict,defaults=defaults)
 
     linkindex = linkindex + 1

@@ -1,6 +1,15 @@
 Release notes
 =============
 
+2021-02-01
+  * Replaced standard Python dicts with python-box.
+  * Wrote a ton of transformation tests to verify that migration to Box
+    didn't break anything.
+  * Started working on getting as much code as feasible covered with
+    various tests (not that you'd care about that)
+
+  :doc:`More details <release/0.4>`
+
 2021-01-24 (`release 0.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.3>`_)
   * Support for multiple virtualization providers
   * Vagrant with VirtualBox
@@ -28,16 +37,14 @@ Release notes
 
 Future plans
 ------------
-Release 0.21
-  Add support for per-node link data (example: OSPF priority)
-
-  Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
-
 Release 0.4
-  Add network models (example: IGP, BGP + IGP)
+  * Add network models (example: IGP, BGP + IGP)
+  * Add support for per-node link data (example: OSPF priority)
+  * Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
 
 .. toctree::
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/0.4.md
    release/0.3.md

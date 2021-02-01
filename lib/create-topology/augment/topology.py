@@ -10,9 +10,14 @@ import common
 import os
 
 def check_required_elements(topology):
+  invalid_topo = False
   for rq in ['nodes','defaults']:
     if not rq in topology:
-      common.error("Topology error: missing '%s' element" % rq)
+      common.error("Missing '%s' element" % rq,category=common.MissingValue,module="topology")
+      invalid_topo = True
+
+  if invalid_topo:
+    common.fatal("Fatal topology errors, aborting")
 
   if not 'name' in topology:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))
@@ -27,14 +32,13 @@ def check_required_elements(topology):
 # but not the whole topology
 #
 def adjust_global_parameters(topology):
-  topology['provider'] = common.get_default(data=topology,key='provider',path=['defaults','provider'])
-  provider = topology['provider']
-  topology['defaults']['provider'] = provider
+  topology.setdefault('provider',topology.defaults.provider)
+  topology.defaults.provider = topology.provider
 
-  if not provider:
+  if not topology.provider:
     common.fatal('Virtualization provider is not defined in either "provider" or "defaults.provider" elements')
 
-  providers = common.get_value(data=topology,path=['defaults','providers'],default={})
-  if not provider in providers:
+  providers = topology.defaults.providers
+  if not topology.provider in providers:
     plist = ', '.join(providers.keys())
-    common.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (provider,plist))
+    common.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (topology.provider,plist))
