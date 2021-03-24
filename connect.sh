@@ -12,7 +12,7 @@ ssh_host=$1
 shift
 data=$(ansible-inventory --host $ssh_host)
 host=$(echo $data|jq -r .ansible_host)
-port=$(echo $data|jq -r .ansible_port)
+port=$(echo $data|(jq -e -r .ansible_port || echo 22))
 user=$(echo $data|jq -r .ansible_user)
 pass=$(echo $data|jq -r .ansible_ssh_pass)
 cmd=(ssh -o 'UserKnownHostsFile=/dev/null' -o 'StrictHostKeyChecking=no' -o "LogLevel ERROR")
