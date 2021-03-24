@@ -6,11 +6,12 @@ import yaml
 import os
 import sys
 import common
+from box import Box
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
 def provider_inventory_settings(node,defaults):
-  p_data = common.get_value(defaults,[ 'providers',defaults['provider']])
+  p_data = defaults.providers[defaults.provider]
   if not p_data:
     return
 
@@ -27,9 +28,9 @@ topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
 
 def ansible_inventory_host(node,defaults):
-  host = {}
+  host = Box({})
   for (node_key,inv_key) in topo_to_host.items():
-    value = common.get_value(node,node_key.split('.'))
+    value = node[node_key]
     if value:
       host[inv_key] = value
 
@@ -41,7 +42,7 @@ def ansible_inventory_host(node,defaults):
   return host
 
 def create(nodes,defaults):
-  inventory = {}
+  inventory = Box({})
 
   for node in nodes:
     group = node.get('device','all')
@@ -70,7 +71,10 @@ def write_yaml(data,fname,header):
 
   with open(fname,"w") as output:
     output.write(header)
-    output.write(yaml.dump(data))
+    if callable(getattr(data,"to_yaml",None)):
+      output.write(data.to_yaml())
+    else:
+      output.write(yaml.dump(data))
     output.close()
 
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
@@ -92,8 +96,8 @@ def write(data,fname,hostvars):
       if 'hosts' in inventory[g]:
         hosts = inventory[g]['hosts']
         for h in hosts.keys():
-          min_host = {}
-          vars_host = {}
+          min_host = Box({})
+          vars_host = Box({})
           for item in hosts[h].keys():
             if item in min_inventory_data:
               min_host[item] = hosts[h][item]
