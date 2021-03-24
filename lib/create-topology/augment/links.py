@@ -10,7 +10,7 @@ import sys
 import yaml
 from box import Box
 
-link_attr_base = [ 'bridge','type','linkindex' ]
+link_attr_base = [ 'bridge','type','linkindex','role' ]
 link_attr_full = [ 'prefix' ]
 
 def adjust_link_list(links):
@@ -52,7 +52,7 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
   else:
-    pfx_list = addressing.get(addr_pools,['lan'])
+    pfx_list = addressing.get(addr_pools,[link.get('role'),'lan'])
     link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
 
   interfaces = {}
@@ -90,8 +90,11 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
   else:
-    pfx_list = addressing.get(addr_pools,['p2p','lan'])
+    pool = addressing.get_pool(addr_pools,[link.get('role'),'p2p','lan'])
+    pfx_list = addressing.get_pool_prefix(addr_pools,pool)
     link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
+    if pool and addr_pools[pool].unnumbered:
+      link.unnumbered = True
 
   end_names = ['left','right']
   nodes = []
@@ -101,6 +104,8 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
     if node in ndict:
       ecount = len(nodes)
       ifaddr = Box({},default_box=True)
+      if link.unnumbered:
+        ifaddr.unnumbered = True
       if value is None:
         value = Box({},default_box=True)
 
@@ -163,9 +168,15 @@ def link_node_count(data,nodes):
       node_cnt = node_cnt + 1
   return node_cnt
 
-def get_link_type(data,nodes):
+def get_link_type(data,nodes,pools):
   if data.get('type'):
     return data['type']
+
+  role = data.get('role',None)
+  if role:
+    pool = pools.get(role,None)
+    if pool and pool.get('type'):
+      return pool.get('type')
 
   node_cnt = link_node_count(data,nodes)
   return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
@@ -208,9 +219,7 @@ def transform(link_list,defaults,ndict,pools):
     if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
       continue
 
-    if not link.type:
-      link['type'] = get_link_type(data=link,nodes=ndict)
-
+    link['type'] = get_link_type(data=link,nodes=ndict,pools=pools)
     if not check_link_type(data=link,nodes=ndict):
       continue
 

@@ -8,7 +8,8 @@ The network model needs three types of addressing pools:
 * P2P addresses
 * LAN and stub link addresses
 
-Each pool could have IPv4 and IPv6 component.
+Each pool could have IPv4 and IPv6 component. Alternatively, a pool
+could be unnumbered (using IPv6 LLA and IPv4 address from loopback interface).
 
 Notes:
 * _lan_ pool is used for stub and P2P prefixes if the corresponding
@@ -112,10 +113,19 @@ def validate_pools(addrs = {}):
           category=common.IncorrectValue,module='addressing')
         continue
 
-    if not 'ipv4' in pfx and not 'ipv6' in pfx:
-      common.error( \
-        "Addressing pool '%s' has no IPv4 or IPv6 address prefix" % pool, \
-        category=common.MissingValue,module='addressing')
+    if 'unnumbered' in pfx:
+      p_type = pfx.get('type',None)
+      if p_type and p_type != 'p2p':
+        common.error( \
+          "Unnumbered pools are by definition P2P links: %s" % pool, \
+          category=common.IncorrectValue,module='addressing')
+      else:
+        pfx['type'] = 'p2p'
+    else:
+      if not 'ipv4' in pfx and not 'ipv6' in pfx:
+        common.error( \
+          "Addressing pool '%s' has no IPv4 or IPv6 address prefix" % pool, \
+          category=common.MissingValue,module='addressing')
 
     if 'ipv4' in pfx and pool != 'mgmt':
       if not 'prefix' in pfx:
@@ -147,6 +157,8 @@ def create_pool_generators(addrs = {}):
   gen = {}
   for pool,pfx in addrs.items():
     gen[pool] = {}
+    if pfx.unnumbered:
+      gen[pool]['unnumbered'] = True
     for key,data in pfx.items():
       if "_pfx" in key:
         af   = key.replace('_pfx','')
@@ -156,18 +168,30 @@ def create_pool_generators(addrs = {}):
           next(gen[pool][af])
   return gen
 
-def get(pools,pool_list = ['lan']):
-  prefixes = {}
+def get_pool(pools,pool_list):
   for p in pool_list:
     if p in pools:
-      for af in pools[p]:
-        prefixes[af] = next(pools[p][af])
-      return prefixes
+      return p
 
   common.error( \
-    'Cannot get a prefix for any of these pools: ' % pool_list, \
+    'Cannot get addressing for any of these pools: ' % pool_list, \
     category=common.MissingValue,module='addressing')
+  return None
+
+def get_pool_prefix(pools,p):
+  prefixes = {}
+  if pools[p].get('unnumbered'):
+    return prefixes
+  for af in pools[p]:
+    prefixes[af] = next(pools[p][af])
   return prefixes
+
+def get(pools,pool_list = ['lan']):
+  p = get_pool(pools,pool_list)
+  if p:
+    return get_pool_prefix(pools,p)
+  else:
+    return {}
 
 def setup(topo,defaults):
   common.null_to_string(topo.addressing)
