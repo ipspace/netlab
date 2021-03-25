@@ -13,7 +13,7 @@ interface Loopback0
  ip address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
 {% endif %}
 {% if 'ipv6' in loopback %}
- ipv6 address {{ loopback.ipv6 }}
+ ipv6 address {{ loopback.ipv6|upper }}
 {% endif %}
 !
 interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
@@ -23,11 +23,18 @@ interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
 {% for l in links|default([]) %}
 interface {{ l.ifname }}
  no shutdown
+{% if l.name is defined %}
+ description {{ l.name }}
+{% endif %}
 {% if l.ipv4 is defined %}
  ip address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
 {% endif %}
 {% if l.ipv6 is defined %}
- ipv6 address {{ l.ipv6 }}
+ ipv6 address {{ l.ipv6|upper }}
+{% endif %}
+{% if l.unnumbered is defined %}
+ ip unnumbered Loopback0 poll
+ ipv6 enable
 {% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
