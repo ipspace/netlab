@@ -157,7 +157,7 @@ def create_pool_generators(addrs = {}):
   gen = {}
   for pool,pfx in addrs.items():
     gen[pool] = {}
-    if pfx.unnumbered:
+    if 'unnumbered' in pfx:
       gen[pool]['unnumbered'] = True
     for key,data in pfx.items():
       if "_pfx" in key:

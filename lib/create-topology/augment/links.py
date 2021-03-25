@@ -10,7 +10,7 @@ import sys
 import yaml
 from box import Box
 
-link_attr_base = [ 'bridge','type','linkindex','role' ]
+link_attr_base = [ 'bridge','type','linkindex','role','name' ]
 link_attr_full = [ 'prefix' ]
 
 def adjust_link_list(links):
@@ -41,12 +41,26 @@ def add_node_interface(node,ifdata,defaults={}):
   node.links.append(ifdata)
   return len(node.links)
 
+# Add common interface data to node ifaddr structure
+#
 def interface_data(link,link_attr=[],ifdata={}):
   for k in link_attr:
     if k in link:
       ifdata[k] = link[k]
 
   return ifdata
+
+#
+# Add model-specific data to node ifaddr structure
+#
+# Iterate over models, for every matching key in link definition
+# copy the value into node ifaddr
+#
+def ifaddr_add_models(ifaddr,link,models):
+  if models:
+    for m in models:
+      if m in link:
+        ifaddr[m] = link[m]
 
 def augment_lan_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
@@ -70,6 +84,7 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
         ifaddr[af] = value[af]
 
       link[node] = value
+      ifaddr_add_models(ifaddr,link,defaults.get('models'))
 
       interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
       add_node_interface(ndict[node],interfaces[node],defaults)
@@ -93,7 +108,7 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
     pool = addressing.get_pool(addr_pools,[link.get('role'),'p2p','lan'])
     pfx_list = addressing.get_pool_prefix(addr_pools,pool)
     link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
-    if pool and addr_pools[pool].unnumbered:
+    if pool and addr_pools[pool].get('unnumbered',None):
       link.unnumbered = True
 
   end_names = ['left','right']
@@ -104,7 +119,7 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
     if node in ndict:
       ecount = len(nodes)
       ifaddr = Box({},default_box=True)
-      if link.unnumbered:
+      if link.get('unnumbered',None):
         ifaddr.unnumbered = True
       if value is None:
         value = Box({},default_box=True)
@@ -115,6 +130,7 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
         value[af] = str(ip)
         ifaddr[af] = value[af]
 
+      ifaddr_add_models(ifaddr,link,defaults.get('models'))
       link[node] = value
       nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
@@ -122,9 +138,13 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
     print("Too many nodes specified on a P2P link")
     return
 
+  if not 'name' in link:
+    link.name = nodes[0].name + " - " + nodes[1].name
+
   for i in range(0,len(nodes)):
     node = nodes[i].name
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=nodes[i].ifaddr)
+    ifdata.name = nodes[i].name + " -> " + nodes[1-i].name
     add_node_interface(ndict[node],ifdata,defaults)
     interfaces.append(ifdata)
 
@@ -210,10 +230,12 @@ def transform(link_list,defaults,ndict,pools):
   if not link_list:
     return
 
-  link_attr_base.extend(defaults.link_attr or [])
+  link_attr_base.extend(defaults.get('link_attr',[]))
   link_attr_full.extend(link_attr_base)
+  if 'models' in defaults:
+    link_attr_full.extend(defaults.models)
 
-  linkindex = defaults.link_index or 1
+  linkindex = defaults.get('link_index',1)
 
   for link in link_list:
     if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
