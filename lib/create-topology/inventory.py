@@ -84,6 +84,9 @@ def write(data,fname,hostvars):
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
 
   if not hostvars:
+    hostvars = "dirs"
+
+  if hostvars == "min":
     write_yaml(inventory,fname,header)
     print("Created single-file Ansible inventory %s" % fname)
   else:

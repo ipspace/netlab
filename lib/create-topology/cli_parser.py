@@ -19,8 +19,9 @@ def parse():
                   help='Create Ansible inventory file, default hosts.yml')
   parser.add_argument('-c','--config', dest='config', action='store', nargs='?', const='ansible.cfg',
                   help='Create Ansible configuration file, default ansible.cfg')
-  parser.add_argument('--hostvars', dest='hostvars', action='store', nargs='?', const='min',
-                  help='Create Ansible hostvars')
+  parser.add_argument('--hostvars', dest='hostvars', action='store', default='dirs',
+                  choices=['min','files','dirs'],
+                  help='Ansible hostvars format')
   parser.add_argument('--log', dest='logging', action='store_true',
                   help='Enable basic logging')
   parser.add_argument('-q','--quiet', dest='quiet', action='store_true',
