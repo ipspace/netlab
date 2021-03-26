@@ -42,7 +42,7 @@ def ansible_inventory_host(node,defaults):
   return host
 
 def create(nodes,defaults):
-  inventory = Box({})
+  inventory = Box({},default_box=True,box_dots=True)
 
   for node in nodes:
     group = node.get('device','all')
@@ -59,10 +59,22 @@ def create(nodes,defaults):
 
   return inventory
 
+def add_global_modules(inventory,data):
+  if not 'module' in data:
+    return
+
+  inventory.all.vars.module = data.module
+  for m in data.module:
+    if m in data:
+      inventory.all.vars[m] = data[m]
+
 def dump(data):
   print("Ansible inventory data")
   print("===============================")
-  print(yaml.dump(create(data['nodes'],data.get('defaults',{}))))
+  inventory = create(data.nodes,data.defaults)
+  if 'module' in data:
+    add_global_modules(inventory,data)
+  print(inventory.to_yaml())
 
 def write_yaml(data,fname,header):
   dirname = os.path.dirname(fname)
@@ -81,6 +93,9 @@ min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
 def write(data,fname,hostvars):
   inventory = create(data['nodes'],data.get('defaults',{}))
+  if 'module' in data:
+    add_global_modules(inventory,data)
+
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
 
   if not hostvars:
