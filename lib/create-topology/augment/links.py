@@ -1,5 +1,6 @@
 #
-# Build full-blown topology data model from high-level topology
+# Create detailed link data structures including automatic interface numbering
+# from high-level topology
 #
 
 import netaddr
@@ -51,14 +52,14 @@ def interface_data(link,link_attr=[],ifdata={}):
   return ifdata
 
 #
-# Add model-specific data to node ifaddr structure
+# Add module-specific data to node ifaddr structure
 #
-# Iterate over models, for every matching key in link definition
+# Iterate over modules, for every matching key in link definition
 # copy the value into node ifaddr
 #
-def ifaddr_add_models(ifaddr,link,models):
-  if models:
-    for m in models:
+def ifaddr_add_module(ifaddr,link,module):
+  if module:
+    for m in module:
       if m in link:
         ifaddr[m] = link[m]
 
@@ -84,7 +85,7 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
         ifaddr[af] = value[af]
 
       link[node] = value
-      ifaddr_add_models(ifaddr,link,defaults.get('models'))
+      ifaddr_add_module(ifaddr,link,defaults.get('module'))
 
       interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
       add_node_interface(ndict[node],interfaces[node],defaults)
@@ -130,7 +131,7 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
         value[af] = str(ip)
         ifaddr[af] = value[af]
 
-      ifaddr_add_models(ifaddr,link,defaults.get('models'))
+      ifaddr_add_module(ifaddr,link,defaults.get('module'))
       link[node] = value
       nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
@@ -232,8 +233,8 @@ def transform(link_list,defaults,ndict,pools):
 
   link_attr_base.extend(defaults.get('link_attr',[]))
   link_attr_full.extend(link_attr_base)
-  if 'models' in defaults:
-    link_attr_full.extend(defaults.models)
+  if 'module' in defaults:
+    link_attr_full.extend(defaults.module)
 
   linkindex = defaults.get('link_index',1)
 

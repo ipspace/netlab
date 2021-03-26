@@ -1,5 +1,5 @@
 #
-# Build full-blown topology data model from high-level topology
+# Build full-blown topology data structures (nodes, links, global parameter) from high-level topology
 #
 
 import netaddr

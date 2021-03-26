@@ -1,16 +1,18 @@
-#
-# Topology-level data model transformation
-#
-# * Check for required elements (nodes, defaults)
-# * Adjust 'provider' parameter
-#
+'''
+Topology-level transformation:
+
+* Check for required elements (nodes, defaults)
+* Check for extraneous elements
+* Adjust 'provider' parameter
+* Create expanded topology file in YAML format (mostly for troubleshooting purposes)
+'''
 
 import netaddr
 import common
 import os
 from box import Box
 
-topo_main_elements = ['addressing','defaults','links','models','name','nodes','provider']
+topo_main_elements = ['addressing','defaults','links','module','name','nodes','provider']
 topo_internal_elements = ['input','includes']
 
 def check_required_elements(topology):
@@ -29,9 +31,9 @@ def check_required_elements(topology):
 
   topology.defaults.name = topology.name
   topo_elements = topo_main_elements + topo_internal_elements
-  if topology.get('models'):
-    topology.defaults.models = topology.models
-    topo_elements = topo_elements + topology.models
+  if topology.get('module'):
+    topology.defaults.module = topology.module
+    topo_elements = topo_elements + topology.module
 
   for k in topology.keys():
     if not k in topo_elements:

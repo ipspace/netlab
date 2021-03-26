@@ -2,7 +2,7 @@
 Set up network addressing
 =========================
 
-The network model needs three types of addressing pools:
+The network topology needs three types of addressing pools:
 
 * Loopback addresses
 * P2P addresses
@@ -15,7 +15,7 @@ Notes:
 * _lan_ pool is used for stub and P2P prefixes if the corresponding
   pools are not defined
 
-The addressing pools are set up in _addressing_ part of model
+The addressing pools are set up in _addressing_ part of topology
 defaults (local or global), for example:
 
 addressing:
