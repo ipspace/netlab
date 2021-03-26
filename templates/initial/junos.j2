@@ -1,42 +1,51 @@
 system {
-    host-name {{ inventory_hostname }}
+  host-name {{ inventory_hostname }}
 }
 interfaces {
-    lo0 {
-        unit 0 {
+  lo0 {
+    unit 0 {
 {% if 'ipv4' in loopback %}
-            family inet {
-                address {{ loopback.ipv4 }};
-            }
+      family inet {
+        address {{ loopback.ipv4 }};
+      }
 {% endif %}
 {% if 'ipv6' in loopback %}
-            family inet6 {
-                address {{ loopback.ipv6 }};
-            }
+      family inet6 {
+        address {{ loopback.ipv6 }};
+      }
 {% endif %}
-        }
     }
+  }
 {% for l in links|default([]) %}
-    {{ l.ifname }} {
-        unit 0 {
+  {{ l.ifname }} {
+{% if l.name is defined %}
+    description "{{ l.name }}";
+{% endif %}
+    unit 0 {
 {% if 'ipv4' in l %}
-            family inet {
-                address {{ l.ipv4 }};
-            }
+      family inet {
+        address {{ l.ipv4 }};
+      }
 {% endif %}
 {% if 'ipv6' in l %}
-            family inet6 {
-                address {{ l.ipv6 }};
-            }
+      family inet6 {
+        address {{ l.ipv6 }};
+      }
 {% endif %}
-        }
+{% if l.unnumbered is defined %}
+      family inet {
+        unnumbered-address lo0.0
+      }
+      family inet6
+{% endif %}
     }
+  }
 {% endfor %}
 }
 protocols {
-    lldp {
-        interface {{ mgmt.ifname|default('fxp0') }} {
-            disable;
-        }
+  lldp {
+    interface {{ mgmt.ifname|default('fxp0') }} {
+      disable;
     }
+  }
 }

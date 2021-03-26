@@ -1,6 +1,10 @@
-#
-# Build full-blown topology data model from high-level topology
-#
+'''
+Create detailed node-level data structures from topology
+
+* Discover desired imagex (boxes)
+* Add default module list to nodes without specific modules
+* Set loopback and management interface data
+'''
 
 import netaddr
 import common
@@ -50,6 +54,9 @@ def augment_mgmt_if(node,device_data,addrs):
       addrs.mac_eui[5] = node['id']
       node.mgmt.setdefault('mac',str(addrs['mac_eui']))
 
+#
+# Add device (box) images from defaults
+#
 def augment_node_images(topology):
   provider = topology.provider
   devices = topology.defaults.devices
@@ -81,8 +88,22 @@ def augment_node_images(topology):
 
     n.box = box
 
+#
+# If the topology has module(s) but individual devices don't, add
+# topology module list to devices.
+#
+def augment_node_module(topology):
+  if not 'module' in topology:
+    return
+
+  module = topology['module']
+  for n in topology.nodes:
+    if not 'module' in n:
+      n.module = module
+
 def transform(topology,defaults,pools):
   augment_node_images(topology)
+  augment_node_module(topology)
 
   id = 0
   ndict = {}

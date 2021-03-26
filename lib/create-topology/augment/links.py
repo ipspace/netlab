@@ -1,5 +1,6 @@
 #
-# Build full-blown topology data model from high-level topology
+# Create detailed link data structures including automatic interface numbering
+# from high-level topology
 #
 
 import netaddr
@@ -10,8 +11,8 @@ import sys
 import yaml
 from box import Box
 
-link_attr_base = [ 'bridge','type','linkindex' ]
-link_attr_full = [ 'prefix' ]
+link_attr_base = [ 'bridge','type','linkindex','role','name' ]
+link_attr_full = [ 'prefix','bandwidth' ]
 
 def adjust_link_list(links):
   link_list = []
@@ -21,7 +22,7 @@ def adjust_link_list(links):
   for l in links:
     if isinstance(l,dict):
       link_list.append(l)
-    elif type(l) is list:
+    elif isinstance(l,list):
       link_list.append({ key: None for key in l })
     else:
       link_list.append({ key: None for key in l.split('-') })
@@ -41,6 +42,8 @@ def add_node_interface(node,ifdata,defaults={}):
   node.links.append(ifdata)
   return len(node.links)
 
+# Add common interface data to node ifaddr structure
+#
 def interface_data(link,link_attr=[],ifdata={}):
   for k in link_attr:
     if k in link:
@@ -48,11 +51,23 @@ def interface_data(link,link_attr=[],ifdata={}):
 
   return ifdata
 
+#
+# Add module-specific data to node ifaddr structure
+#
+# Iterate over modules, for every matching key in link definition
+# copy the value into node ifaddr
+#
+def ifaddr_add_module(ifaddr,link,module):
+  if module:
+    for m in module:
+      if m in link:
+        ifaddr[m] = link[m]
+
 def augment_lan_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
   else:
-    pfx_list = addressing.get(addr_pools,['lan'])
+    pfx_list = addressing.get(addr_pools,[link.get('role'),'lan'])
     link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
 
   interfaces = {}
@@ -70,6 +85,11 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
         ifaddr[af] = value[af]
 
       link[node] = value
+      ifaddr_add_module(ifaddr,link,defaults.get('module'))
+
+      if link.type != "stub":
+        n_list = filter(lambda n: n in ndict and n != node,link.keys())
+        ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
 
       interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
       add_node_interface(ndict[node],interfaces[node],defaults)
@@ -90,8 +110,11 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
   else:
-    pfx_list = addressing.get(addr_pools,['p2p','lan'])
+    pool = addressing.get_pool(addr_pools,[link.get('role'),'p2p','lan'])
+    pfx_list = addressing.get_pool_prefix(addr_pools,pool)
     link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
+    if pool and addr_pools[pool].get('unnumbered',None):
+      link.unnumbered = True
 
   end_names = ['left','right']
   nodes = []
@@ -101,6 +124,8 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
     if node in ndict:
       ecount = len(nodes)
       ifaddr = Box({},default_box=True)
+      if link.get('unnumbered',None):
+        ifaddr.unnumbered = True
       if value is None:
         value = Box({},default_box=True)
 
@@ -110,6 +135,7 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
         value[af] = str(ip)
         ifaddr[af] = value[af]
 
+      ifaddr_add_module(ifaddr,link,defaults.get('module'))
       link[node] = value
       nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
@@ -120,8 +146,12 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
   for i in range(0,len(nodes)):
     node = nodes[i].name
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=nodes[i].ifaddr)
+    ifdata.name = link.get("name") or (nodes[i].name + " -> " + nodes[1-i].name)
     add_node_interface(ndict[node],ifdata,defaults)
     interfaces.append(ifdata)
+
+  if not 'name' in link:
+    link.name = nodes[0].name + " - " + nodes[1].name
 
   for i in range(0,2):
     if 'bridge' in link:
@@ -163,9 +193,15 @@ def link_node_count(data,nodes):
       node_cnt = node_cnt + 1
   return node_cnt
 
-def get_link_type(data,nodes):
+def get_link_type(data,nodes,pools):
   if data.get('type'):
     return data['type']
+
+  role = data.get('role',None)
+  if role:
+    pool = pools.get(role,None)
+    if pool and pool.get('type'):
+      return pool.get('type')
 
   node_cnt = link_node_count(data,nodes)
   return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
@@ -199,18 +235,18 @@ def transform(link_list,defaults,ndict,pools):
   if not link_list:
     return
 
-  link_attr_base.extend(defaults.link_attr or [])
+  link_attr_base.extend(defaults.get('link_attr',[]))
   link_attr_full.extend(link_attr_base)
+  if 'module' in defaults:
+    link_attr_full.extend(defaults.module)
 
-  linkindex = defaults.link_index or 1
+  linkindex = defaults.get('link_index',1)
 
   for link in link_list:
     if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
       continue
 
-    if not link.type:
-      link['type'] = get_link_type(data=link,nodes=ndict)
-
+    link['type'] = get_link_type(data=link,nodes=ndict,pools=pools)
     if not check_link_type(data=link,nodes=ndict):
       continue
 

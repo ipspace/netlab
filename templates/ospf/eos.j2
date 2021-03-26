@@ -1,0 +1,18 @@
+{% set pid = ospf.process|default(1) %}
+{% set area = ospf.area|default("0.0.0.0") %}
+router ospf {{ pid }}
+!
+interface Loopback0
+ ip ospf area {{ area }}
+!
+{% for l in links|default([]) %}
+interface {{ l.ifname }}
+ ip ospf area {{ l.ospf.area|default(area) }}
+{% if l.type|default("") == "p2p" %}
+ ip ospf network point-to-point
+{% endif %}
+{% if l.ospf.cost is defined %}
+ ip ospf cost {{ l.ospf.cost }}
+{% endif %}
+!
+{% endfor %}

@@ -1,13 +1,19 @@
-#
-# Topology-level data model transformation
-#
-# * Check for required elements (nodes, defaults)
-# * Adjust 'provider' parameter
-#
+'''
+Topology-level transformation:
+
+* Check for required elements (nodes, defaults)
+* Check for extraneous elements
+* Adjust 'provider' parameter
+* Create expanded topology file in YAML format (mostly for troubleshooting purposes)
+'''
 
 import netaddr
 import common
 import os
+from box import Box
+
+topo_main_elements = ['addressing','defaults','links','module','name','nodes','provider']
+topo_internal_elements = ['input','includes']
 
 def check_required_elements(topology):
   invalid_topo = False
@@ -21,10 +27,17 @@ def check_required_elements(topology):
 
   if not 'name' in topology:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))
-    topology['name'] = topo_name
+    topology.name = topo_name
 
-  topology['defaults']['name'] = topology['name']
+  topology.defaults.name = topology.name
+  topo_elements = topo_main_elements + topo_internal_elements
+  if topology.get('module'):
+    topology.defaults.module = topology.module
+    topo_elements = topo_elements + topology.module
 
+  for k in topology.keys():
+    if not k in topo_elements:
+      common.error("Unknown top-level element %s" % k,category=common.IncorrectValue,module="topology")
 #
 # Find virtualization provider, set provider and defaults.provider to that value
 #
@@ -42,3 +55,25 @@ def adjust_global_parameters(topology):
   if not topology.provider in providers:
     plist = ', '.join(providers.keys())
     common.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (topology.provider,plist))
+
+#
+# Write expanded topology file in YAML format
+#
+def create_topology_file(topology,fname):
+  # This should create a deep copy
+  #
+  topo_copy = Box(topology)
+
+  # Remove PFX generators from addressing section
+  #
+  for k,v in topo_copy.addressing.items():
+    for p in list(v.keys()):
+      if "_pfx" in p or "_eui" in p:
+        v.pop(p,None)
+
+  with open(fname,"w") as output:
+    output.write("# Expanded topology created from %s\n" % topology.get('input','<unknown>'))
+    output.write(topo_copy.to_yaml())
+    output.close()
+    print("Created expanded topology file: %s" % fname)
+
