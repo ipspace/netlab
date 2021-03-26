@@ -3,7 +3,8 @@
 Installing the tools:
 
 * Clone the [netsim-tools Github repository](https://github.com/ipspace/netsim-tools) (or the [netsim-examples repository](https://github.com/ipspace/netsim-examples/) which includes netsim-tools repository as a submodule.
-* Install PyYAML and Jinja2 Python libraries with **pip install pyyaml jinja2** (these libraries are automatically installed if you decide to install Ansible).
+* If needed, select the desired release with **git checkout _release-tag_**. Use **git tag** to get the list of release tags.
+* Within the **netsim-tools** directory, install PyYAML, Jinja2, netaddr and python-box Python libraries with **pip3 install -r requirements.txt**.
 * Optional: install Ansible or use [ipSpace network automation container image](https://hub.docker.com/r/ipspace/automation). The tools were tested with Ansible 2.9 and 2.10.
 
 ## Building Your Lab

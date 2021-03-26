@@ -7,6 +7,11 @@ The lab topology used by **create-topology** tool has four major components:
 * Address pools
 * Default settings
 
+Optional topology elements include:
+
+* [List of modules](modules.md)
+* Module-specific global parameters (example: default OSPF area)
+
 ```eval_rst
 .. toctree::
    :caption: Topology Components

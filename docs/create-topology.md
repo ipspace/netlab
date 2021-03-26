@@ -34,30 +34,45 @@ optional arguments:
                         Create Ansible inventory file, default hosts.yml
   -c [CONFIG], --config [CONFIG]
                         Create Ansible configuration file, default ansible.cfg
-  --hostvars [HOSTVARS]
-                        Create Ansible hostvars
+  --hostvars {min,files,dirs}
+                        Ansible hostvars format
   --log                 Enable basic logging
   -q, --quiet           Report only major errors
   -v, --view            Display data instead of creating a file
 ```
 
-Typical uses:
+Typical uses (testing topology and inspecting results):
 
 * **create-topology** to read and validate topology file
 * **create-topology -x -v** to display expanded topology data structure
-* **create-topology -g -v** to display Vagrantfile and **create-topology -g** to create Vagrantfile
-* **create-topology -i -v** to display Ansible inventory data structure, and **create-topology -i --hostvars** to create Ansible inventory (in **hosts.yml**), **group_vars** and **host_vars**
+* **create-topology -g -v** to display Vagrantfile 
+* **create-topology -i -v** to display Ansible inventory data structure
+
+Typical uses (creating configuration files):
+
+* **create-topology -g -i -c** to create everything you need to get started
+* **create-topology -g** to create Vagrantfile
+* **create-topology -i -c** to create Ansible inventory (in **hosts.yml**), **ansible.cfg** (making inventory file the default inventory), **group_vars** and **host_vars**
+* **create-topology -i --hostvars min** to dump all data structures into a single Ansible inventory file (**hosts.yml**)
 
 ## Topology Format
 
-Topology description file is a YAML file with three elements:
+Topology description file is a YAML file with these top-level elements:
 
-* **defaults** - describing topology-wide defaults like default device type
-* **addressing** - [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
-* **nodes** - [list of nodes](nodes.md)
-* **links** - [list of links](links.md)
+* **defaults** -- describing topology-wide defaults like default device type
+* **addressing** -- [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
+* **nodes** -- [list of nodes](nodes.md)
+* **links** -- [list of links](links.md)
+* **module** -- list of [modules](modules.md) used by this network topology
+* **name** -- topology name (used in bridge names)
 
-Optionally, you can use the fourth element (**name**) to give the topology a name. That name (default: directory name) will be used when creating Vagrant virtual networks.
+**Notes:**
+
+* All elements apart from **nodes** are optional.
+* Default values of **defaults** and **addressing** elements are taken from default settings.
+* Missing **links** element indicates a topology without inter-node links (just the management interfaces)
+* List of modules is used to specify additional initial configuration elements (example: OSPF routing)
+* Default topology name is the directory name.
 
 ### Nodes
 
@@ -78,6 +93,7 @@ nodes:
 ```
 
 **Notes:** 
+
 * For more details read the [nodes](nodes.md) part of [lab topology reference](topology-reference.md)
 * Additional attributes specified in a node dictionary are copied directly into Ansible inventory.
 

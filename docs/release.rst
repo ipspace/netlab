@@ -1,14 +1,19 @@
 Release notes
 =============
 
-2021-02-01
+2021-03-26  (`release 0.4 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.4>`_)
+  * Unnumbered interfaces
+  * Configuration modules framework
+  * Baseline OSPF module
+
+  :doc:`More details <release/0.4>`
+
+2021-02-01 (interim merge into master branch)
   * Replaced standard Python dicts with python-box.
   * Wrote a ton of transformation tests to verify that migration to Box
     didn't break anything.
   * Started working on getting as much code as feasible covered with
     various tests (not that you'd care about that)
-
-  :doc:`More details <release/0.4>`
 
 2021-01-24 (`release 0.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.3>`_)
   * Support for multiple virtualization providers
@@ -37,10 +42,10 @@ Release notes
 
 Future plans
 ------------
-Release 0.4
-  * Add network models (example: IGP, BGP + IGP)
-  * Add support for per-node link data (example: OSPF priority)
+Release 0.5
   * Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
+  * Improve OSPF module
+  * Add BGP configuration module
 
 .. toctree::
    :caption: Individual release notes

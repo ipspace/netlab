@@ -10,13 +10,28 @@ The initial release of **create-topology** tool used simple address configuratio
 * **loopback** pool: Loopback IPv4 and IPv6 addresses.
 * **lan** pool: IPv4 and IPv6 addresses used on multi-access segments (connecting more than two nodes or having **type** set to *lan*)
 * **p2p** pool (optional): IPv4 and IPv6 addresses used on point-to-point links
-* **stub** pool (optional): IPv4 and IPv6 addresses used on stub links (links connected to a single network device). This pool is not used in release 0.2
+* **stub** pool (optional): IPv4 and IPv6 addresses used on stub links (links connected to a single network device). This pool is not used for stub networks in release 0.4; to use it specify **role: stub** link attribute.
 
-You can specify additional address pools, but they are not used in release 0.2. A future release will add support for custom address pools.
+You can specify additional address pools, and use them with the **role** link attribute.
 
 ## Dual-Stack Support
 
 Every address pool could have an IPv4 and an IPv6 prefix, supporting IPv4-only, dual-stack or IPv6-only deployments. Pool address space is specified in **ipv4** or **ipv6** CIDR prefix. Size of individual IPv4 address allocations is specified with the **prefix** parameter, IPv6 prefixes are currently fixed  (/64).
+
+## Unnumbered Interface Support
+
+Release 0.4 added support for *unnumbered interfaces* based on *loopback* address. To use unnumbered interfaces:
+
+* Create a custom address pool with **unnumbered** attribute set to **true**
+* Use **role** attribute on a P2P link to select the unnumbered address pool
+
+**Notes:**
+
+* Don't use change one of the built-in pools into an unnumbered pool... or at least don't complain if it doesn't work.
+* Unnumbered address pools can only be used on P2P links. When used on LAN or stub links you'll get no IPv4/IPv6 addresses on the link.
+* Implementation details of unnumbered interfaces are device-specific. Whenever possible, the unnumbered interfaces use loopback IPv4 address and link-local IPv6 address.
+
+For more details, see *[Unnumbered Interface Example](#unnumbered-interface-example)* below.
 
 ## Specifying Address Pools
 
@@ -26,6 +41,7 @@ Address pools could be specified:
 * In **addressing** part of local or global defaults file.
 
 **Notes:**
+
 * Local defaults file is specified with `--defaults` CLI option (default value: `topology-defaults.yml` in current directory)
 * Global defaults file is `topology-defaults.yml` in script directory.
 
@@ -35,6 +51,8 @@ Each address pool specification is a dictionary of address pools. Individual add
 * **ipv6** - IPv6 CIDR prefix
 * **prefix** - IPv4 subnet allocation size (IPv6 subnets use /64 prefixes)
 * **start** - first subnet or first IP address offset. Used primarily with **loopback** pool to ensure the first devices gets x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address).
+
+Alternatively, an address pool could be *[unnumbered](#unnumbered-interface-support)*. An unnumbered pool must have **unnumbered** attribute set to **true** and should not have any other attributes (not enforced in release 0.4).
 
 **Notes:**
 
@@ -115,6 +133,71 @@ mgmt:
 p2p:
   ipv4: 10.1.0.0/16
   prefix: 30
+```
+
+## Unnumbered Interface Example
+
+The following topology file creates a LAN and an unnumbered P2P link between a pair of Cisco CSR1000v routers:
+
+```
+addressing:
+  core:
+    unnumbered: true
+
+defaults:
+  device: csr
+
+nodes:
+- r1
+- r2
+
+links:
+- name: P2P link between R1 and R2
+  r1:
+  r2:
+  role: core
+
+- name: LAN link between R1 and R2
+  r1:
+  r2:
+  type: lan
+```
+
+The topology results in the following Ansible inventory data for R1 (please note **unnumbered** attribute and lack of IPv4/IPv6 addresses on the first link).
+
+```
+---
+box: cisco/csr1000v
+links:
+- ifindex: 2
+  ifname: GigabitEthernet2
+  linkindex: 1
+  name: r1 -> r2
+  neighbors:
+    r2:
+      ifname: GigabitEthernet2
+  remote_id: 2
+  remote_ifindex: 2
+  role: core
+  type: p2p
+  unnumbered: true
+- bridge: y_2
+  ifindex: 3
+  ifname: GigabitEthernet3
+  ipv4: 172.16.0.1/24
+  linkindex: 2
+  name: LAN link between R1 and R2
+  neighbors:
+    r2:
+      ifname: GigabitEthernet3
+      ipv4: 172.16.0.2/24
+  type: lan
+loopback:
+  ipv4: 10.0.0.1/32
+mgmt:
+  ifname: GigabitEthernet1
+  ipv4: 192.168.121.101
+  mac: 08-4F-A9-00-00-01
 ```
 
 ## Legacy Addressing Configuration (Release 0.1)
