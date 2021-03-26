@@ -12,7 +12,7 @@ import yaml
 from box import Box
 
 link_attr_base = [ 'bridge','type','linkindex','role','name' ]
-link_attr_full = [ 'prefix' ]
+link_attr_full = [ 'prefix','bandwidth' ]
 
 def adjust_link_list(links):
   link_list = []
@@ -22,7 +22,7 @@ def adjust_link_list(links):
   for l in links:
     if isinstance(l,dict):
       link_list.append(l)
-    elif type(l) is list:
+    elif isinstance(l,list):
       link_list.append({ key: None for key in l })
     else:
       link_list.append({ key: None for key in l.split('-') })
@@ -87,6 +87,10 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
       link[node] = value
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
 
+      if link.type != "stub":
+        n_list = filter(lambda n: n in ndict and n != node,link.keys())
+        ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
+
       interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
       add_node_interface(ndict[node],interfaces[node],defaults)
 
@@ -139,15 +143,15 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
     print("Too many nodes specified on a P2P link")
     return
 
-  if not 'name' in link:
-    link.name = nodes[0].name + " - " + nodes[1].name
-
   for i in range(0,len(nodes)):
     node = nodes[i].name
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=nodes[i].ifaddr)
-    ifdata.name = nodes[i].name + " -> " + nodes[1-i].name
+    ifdata.name = link.get("name") or (nodes[i].name + " -> " + nodes[1-i].name)
     add_node_interface(ndict[node],ifdata,defaults)
     interfaces.append(ifdata)
+
+  if not 'name' in link:
+    link.name = nodes[0].name + " - " + nodes[1].name
 
   for i in range(0,2):
     if 'bridge' in link:
