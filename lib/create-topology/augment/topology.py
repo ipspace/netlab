@@ -56,6 +56,27 @@ def adjust_global_parameters(topology):
     plist = ', '.join(providers.keys())
     common.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (topology.provider,plist))
 
+'''
+adjust_modules: last phase of global module adjustments
+
+* add node-specific modules into global list of modules after the node
+  modules have been set to default global values
+* merge default settings with global settings
+'''
+def adjust_modules(topology):
+  mod_dict = { m : None for m in topology.get('module',[]) }
+  for n in topology.nodes:
+    for m in n.get('module',[]):
+      mod_dict[m] = None
+
+  if not mod_dict:
+    return
+
+  topology.module = list(mod_dict.keys())
+  for m in topology.module:
+    if topology.defaults.get(m):
+      topology[m] = topology.defaults[m] + topology[m]
+
 #
 # Write expanded topology file in YAML format
 #
