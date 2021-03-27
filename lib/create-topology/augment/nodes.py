@@ -88,9 +88,8 @@ def augment_node_images(topology):
 
     n.box = box
 
-#
-# If the topology has module(s) but individual devices don't, add
-# topology module list to devices.
+
+# Set default list of modules for nodes without specific module list
 #
 def augment_node_module(topology):
   if not 'module' in topology:
@@ -101,9 +100,25 @@ def augment_node_module(topology):
     if not 'module' in n:
       n.module = module
 
+# Merge global module parameters with per-node module parameters
+#
+def merge_node_module_params(topology):
+  for n in topology.nodes:
+    if 'module' in n:
+      for m in n.module:
+        if m in topology:
+          n[m] = topology[m] + n[m]
+
+'''
+Main node transformation code
+
+* set node ID
+* set loopback address(es)
+* copy device data from defaults
+* set management IP and MAC addresses
+'''
 def transform(topology,defaults,pools):
   augment_node_images(topology)
-  augment_node_module(topology)
 
   id = 0
   ndict = {}
