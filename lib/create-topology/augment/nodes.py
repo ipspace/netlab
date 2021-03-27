@@ -118,7 +118,6 @@ Main node transformation code
 '''
 def transform(topology,defaults,pools):
   augment_node_images(topology)
-  augment_node_module(topology)
 
   id = 0
   ndict = {}
