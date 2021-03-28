@@ -43,7 +43,7 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 
-Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.md#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
+Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.html#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
 
 ### Example
 
@@ -84,7 +84,7 @@ Lab topology could contain *stub*, *p2p* and *lan* links. The link type could be
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address, the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address is the [node ID](nodes.md#augmenting-node-data)
+* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address is the [node ID](nodes.html#augmenting-node-data)
 * Stub links are treated exactly like LAN links.
 
 ## Link Names
@@ -185,7 +185,7 @@ Point-to-point links between network devices are implemented with P2P tunnels (a
 
 Multi-access and stub links are implemented with custom networks (as supported by the underlying virtualization environment). The **bridge** attribute allows you to specify the custom network name; its default value is *name_N* where:
 
-* *name* is the [topology name](create-topology.md#topology-format) or current directory name;
+* *name* is the [topology name](create-topology.html#topology-format) or current directory name;
 * *N* is the link ID (position of link object in **links** list) starting with 1.
 
 ## Augmenting Link Data
