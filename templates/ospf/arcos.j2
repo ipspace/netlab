@@ -1,0 +1,19 @@
+{% set pid = ospf.process|default(1) %}
+{% set area = ospf.area|default("0.0.0.0") %}
+
+network-instance default protocol OSPF p{{ pid }}
+  global log-adjacency-changes LOG_ADJ_ENABLE_DETAILED 
+  area {{ area }}
+    interface Loopback0
+    {% for l in links|default([]) %}
+    interface {{ l.ifname }}
+      {% if l.type|default("") == "p2p" %}
+        network-type POINT_TO_POINT_NETWORK
+      {% endif %}
+      {% if l.ospf.cost is defined %}
+        metric {{ l.ospf.cost }}
+      {% endif %}
+    {% endfor %}
+
+       
+  
