@@ -1,4 +1,4 @@
 #!/bin/bash
 coverage erase
-PYTHONPATH="../lib/create-topology" coverage run --source ../lib -m pytest
+PYTHONPATH="../" coverage run --source ../netsim -m pytest
 coverage html

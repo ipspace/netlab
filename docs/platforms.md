@@ -29,6 +29,7 @@ Vagrant providers supported by **config-generate** (require Vagrantfile template
 
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks (link type: **lan**) and P2P tunnels (link type: **p2p**).
 * Rudimentary [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox) support
+* Initial [Containerlab](https://containerlab.srlinux.dev/) support (release 0.5)
 
 ## VirtualBox Support Limitations
 
@@ -37,13 +38,20 @@ Vagrant providers supported by **config-generate** (require Vagrantfile template
 * I couldn't get vEOS to run on my version of Vagrant and VirtualBox on macOS Catalina; Nexus 9300v ran fine. If you manage to get other devices to run on VirtualBox, I'd appreciate pull requests with Vagrantfile snippets.
 * Vagrantfile created by **create-topology** sets up port forwarding for SSH (22), HTTP (80) and NETCONF (830), but the corresponding Ansible inventory uses contains only **ansible_port** (SSH). You could edit the final inventory by hand, add extra file to `host_vars`, or fix my code. Should you decide to do the latter, please contact me in advance to discuss the necessary data structures.
 
+## Containerlab Support Details
+
+* The only device currently supported is Arista cEOS
+* Feel free to extend the templates and defaults to support other network devices
+
 ## Contributing New Devices
 
 * Get or build Vagrant box
 * Add device-specific Vagrantfile configuration to `templates/vagrant/provider/device-domain.j2`
-* Add device defaults including Ansible group variables to **topology-defaults.yml**
+* Add device defaults including Ansible group variables to system **topology-defaults.yml** (within *netsim* directory)
 * Add initial device configuration template (based on **ansible_network_os** value) to `templates/initial`
-* Add configuration task list using device-specific configuration module to `ansible/config`.
+* Optional: add device configuration templates for individual modules. Example: OSPF routing configuration is in `templates/ospf`
+* Add configuration deployment task list using device-specific Ansible configuration module to `ansible/deploy-config` directory.
+* Add configuration retrieval task list using device-specific Ansible module(s) to `ansible/fetch-config` directory.
 
 Test your changes:
 
@@ -57,3 +65,7 @@ Final steps:
 
 * Fix the documentation (at least install.md and platforms.md)
 * Submit a pull request ;)
+
+## Contributing New Virtualization Providers
+
+TBD

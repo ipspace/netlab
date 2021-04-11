@@ -1,0 +1,134 @@
+input:
+- topology/input/vbox.yml
+- package:topology-defaults.yml
+links:
+- a_eos:
+    ipv4: 172.16.0.2/24
+  a_eos_2:
+    ipv4: 172.16.0.3/24
+  bridge: input_1
+  c_nxos:
+    ipv4: 172.16.0.1/24
+  linkindex: 1
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+- a_eos:
+    ipv4: 10.1.0.1/30
+  c_nxos:
+    ipv4: 10.1.0.2/30
+  left:
+    ifname: Ethernet2
+    ipv4: 10.1.0.1/30
+    node: a_eos
+  linkindex: 2
+  name: a_eos - c_nxos
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: Ethernet1/2
+    ipv4: 10.1.0.2/30
+    node: c_nxos
+  type: p2p
+name: input
+nodes:
+- box: cisco/nexus9300v
+  device: nxos
+  id: 1
+  links:
+  - bridge: input_1
+    ifindex: 1
+    ifname: Ethernet1/1
+    ipv4: 172.16.0.1/24
+    linkindex: 1
+    name: c_nxos -> [a_eos,a_eos_2]
+    neighbors:
+      a_eos:
+        ifname: Ethernet1
+        ipv4: 172.16.0.2/24
+      a_eos_2:
+        ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+    type: lan
+  - ifindex: 2
+    ifname: Ethernet1/2
+    ipv4: 10.1.0.2/30
+    linkindex: 2
+    name: c_nxos -> a_eos
+    neighbors:
+      a_eos:
+        ifname: Ethernet2
+        ipv4: 10.1.0.1/30
+    remote_id: 2
+    remote_ifindex: 2
+    type: p2p
+  loopback:
+    ipv4: 10.0.0.1/32
+  mgmt:
+    ifname: mgmt0
+    ipv4: 192.168.121.101
+    mac: 08-4F-A9-00-00-01
+  name: c_nxos
+- box: arista/veos
+  device: eos
+  id: 2
+  links:
+  - bridge: input_1
+    ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.0.2/24
+    linkindex: 1
+    name: a_eos -> [c_nxos,a_eos_2]
+    neighbors:
+      a_eos_2:
+        ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+      c_nxos:
+        ifname: Ethernet1/1
+        ipv4: 172.16.0.1/24
+    type: lan
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.1/30
+    linkindex: 2
+    name: a_eos -> c_nxos
+    neighbors:
+      c_nxos:
+        ifname: Ethernet1/2
+        ipv4: 10.1.0.2/30
+    remote_id: 1
+    remote_ifindex: 2
+    type: p2p
+  loopback:
+    ipv4: 10.0.0.2/32
+  mgmt:
+    ifname: Management1
+    ipv4: 192.168.121.102
+    mac: 08-4F-A9-00-00-02
+  name: a_eos
+- box: arista/veos
+  device: eos
+  id: 3
+  links:
+  - bridge: input_1
+    ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.0.3/24
+    linkindex: 1
+    name: a_eos_2 -> [c_nxos,a_eos]
+    neighbors:
+      a_eos:
+        ifname: Ethernet1
+        ipv4: 172.16.0.2/24
+      c_nxos:
+        ifname: Ethernet1/1
+        ipv4: 172.16.0.1/24
+    type: lan
+  loopback:
+    ipv4: 10.0.0.3/32
+  mgmt:
+    ifname: Management1
+    ipv4: 192.168.121.103
+    mac: 08-4F-A9-00-00-03
+  name: a_eos_2
+provider: virtualbox

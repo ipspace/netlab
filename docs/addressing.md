@@ -43,7 +43,7 @@ Address pools could be specified:
 **Notes:**
 
 * Local defaults file is specified with `--defaults` CLI option (default value: `topology-defaults.yml` in current directory)
-* Global defaults file is `topology-defaults.yml` in script directory.
+* Global defaults file is `topology-defaults.yml` in *netsim* package directory.
 
 Each address pool specification is a dictionary of address pools. Individual address pools are specified with these parameters:
 

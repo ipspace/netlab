@@ -2,9 +2,8 @@
 
 I'm building my network simulation environments with Vagrant using libvirt plugin on a Ubuntu 20.04 system... and I always hated how boring it was to set up a new topology and initial device configurations. The tools in this repository should make that task easier, and you're most welcome to submit pull requests adding support for other environments or platforms.
 
-* Latest release: [release_0.4](/ipspace/netsim-tools/releases/tag/release_0.4) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.4.html))
-* If you find bugs in release 0.4, please report them and use [release_0.3](/ipspace/netsim-tools/releases/tag/release_0.3) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.3.html))
-* Latest legacy (pre-addressing-pools) release: 0.2 (read [upgrade warning](https://netsim-tools.readthedocs.io/en/latest/release.html))
+* Latest release: [release_0.5](/ipspace/netsim-tools/releases/tag/release_0.5) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.5.html))
+* If you find bugs in release 0.5, please report them and use [release_0.4](/ipspace/netsim-tools/releases/tag/release_0.4) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.4.html))
 
 You might also want to [read the documentation](https://netsim-tools.readthedocs.io/en/latest/), and [installation guidelines](https://netsim-tools.readthedocs.io/en/latest/install.html).
 

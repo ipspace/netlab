@@ -8,7 +8,7 @@ The **create-topology** script reads:
 
 * Network topology in YAML format (default: `topology.yml`)
 * Optional default settings in YAML format (default: `topology-defaults.yml`)
-* Global default settings (`topology-defaults.yml` in script directory)
+* Global default settings (`topology-defaults.yml` in *netsim* package directory)
 
 ... and creates device- and link-level data structures fully describing network topology and IP addressing. These data structures can then be used to create:
 
@@ -122,11 +122,11 @@ links:
 
 ### Defaults
 
-You can specify these topology-wide defaults. Most default values must be specified somewhere (the **create-topology** script expects to get them):
+You can specify these topology-wide defaults. Most default values must be specified somewhere; the **create-topology** script expects to get them:
 
 * In **default** element of the topology file
 * In **topology-defaults.yml** file in the same directory as the topology file
-* In global **topology-defaults.yml** file.
+* In global **topology-defaults.yml** file (shipped within *netsim* package directory)
 
 **device**
 : Default device type. Used unless you specified **device** element in node dictionary.

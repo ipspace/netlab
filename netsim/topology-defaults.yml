@@ -1,0 +1,145 @@
+#
+# Global topology defaults
+#
+---
+provider: libvirt
+#
+# Default loopback, LAN, and P2P prefixes
+addressing:
+  loopback:
+    ipv4: 10.0.0.0/24
+  lan:
+    ipv4: 172.16.0.0/16
+  p2p:
+    ipv4: 10.1.0.0/16
+  mgmt:
+    ipv4: 192.168.121.0/24
+    start: 100
+    mac: 08-4F-A9-00-00-00
+
+#
+# Provider defaults
+#
+providers:
+  libvirt:
+    config: Vagrantfile
+  virtualbox:
+    config: Vagrantfile
+    inventory:
+      ansible_host: 127.0.0.1
+    inventory_port_map:
+      ssh: ansible_port
+
+    forwarded:
+      ssh: 2000
+      http: 8000
+      netconf: 3000
+
+  clab:
+    config: clab.yml
+    template: clab.j2
+    devices:
+      eos:
+        provider_interface_name: eth%d
+        mgmt_if: Management0
+        provider_kind: ceos
+        image:
+          clab: ceos:4.25.0F
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin
+          ansible_become: yes
+          ansible_become_method: enable
+
+ports:
+  ssh: 22
+  http: 80
+  https: 443
+  netconf: 830
+
+#
+# Device defaults
+#
+# Don't change this section unless you plan to add new devices
+#
+# Keys in "devices" dictionary are platform names.
+#
+# Each platform MUST have an interface name template, all other
+# parameters are optional
+#
+# interface_name: Python formatting string used to generate interface names
+# mgmt_if:        Name of management interface if it uses a name outside of
+#                 interface_name scheme. When missing, "interface_name" and
+#                 "ifindex_offset-1" are used to generate mgmt interface name
+# ifindex_offset: Number of first data interface (default: 1)
+# group_vars:     Ansible group variables
+#
+devices:
+  iosv:
+    interface_name: GigabitEthernet0/%d
+    image:
+      libvirt: cisco/iosv
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      ansible_become_method: enable
+      ansible_become_password: vagrant
+      ansible_network_os: ios
+      ansible_connection: network_cli
+  csr:
+    interface_name: GigabitEthernet%d
+    ifindex_offset: 2
+    image:
+      libvirt: cisco/csr1000v
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      ansible_become_method: enable
+      ansible_become_password: vagrant
+      ansible_network_os: ios
+      ansible_connection: network_cli
+  nxos:
+    interface_name: Ethernet1/%d
+    mgmt_if: mgmt0
+    image:
+      libvirt: cisco/nexus9300v
+      virtualbox: cisco/nexus9300v
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      ansible_network_os: nxos
+      ansible_connection: network_cli
+
+  eos:
+    interface_name: Ethernet%d
+    mgmt_if: Management1
+    image:
+      libvirt: arista/veos
+      virtualbox: arista/veos
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      ansible_network_os: eos
+      ansible_connection: network_cli
+
+  vsrx:
+    interface_name: ge-0/0/%d
+    ifindex_offset: 0
+    mgmt_if: fxp0
+    image:
+      libvirt: juniper/vsrx3
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: Vagrant
+      ansible_network_os: junos
+      ansible_connection: netconf
+  arcos:
+    interface_name: swp%d
+    mgmt_if: ma1
+    image:
+      libvirt: arcos/arcos4.1.1
+    group_vars:
+      ansible_user: root
+      ansible_ssh_pass: arcos
+      ansible_network_os: arcos
+

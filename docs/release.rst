@@ -1,7 +1,13 @@
 Release notes
 =============
 
-2021-03-26  (`release 0.4 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.4>`_)
+2021-04-11 (`release 0.5 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.5>`_)
+  * containerlab support
+  * Flexible virtualization provider framework
+
+  :doc:`More details <release/0.5>`
+
+2021-03-26 (`release 0.4 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.4>`_)
   * Unnumbered interfaces
   * Configuration modules framework
   * Baseline OSPF module
@@ -40,16 +46,18 @@ Release notes
 2020-12-17
    Initial release (IOSv, CSR, EOS)
 
-Future plans
-------------
-Release 0.5
-  * Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
-  * Improve OSPF module
-  * Add BGP configuration module
-
 .. toctree::
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/0.5.md
    release/0.4.md
    release/0.3.md
+
+Future plans
+------------
+Release 0.6
+
+  * Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
+  * Improve OSPF module (passive interfaces, external links)
+  * Add IS-IS and BGP configuration module
