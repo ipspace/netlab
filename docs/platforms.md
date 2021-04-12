@@ -25,20 +25,21 @@ Network operating systems supported by **initial-config.ansible** (require **con
 * Arrcus ArcOS
 * Junos (vSRX 3.0)
 
-Vagrant providers supported by **config-generate** (require Vagrantfile templates in `templates/vagrant/provider`):
+Virtualization providers supported by **config-generate**:
 
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks (link type: **lan**) and P2P tunnels (link type: **p2p**).
-* Rudimentary [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox) support
-* Initial [Containerlab](https://containerlab.srlinux.dev/) support (release 0.5)
+* [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
+* [Containerlab](https://containerlab.srlinux.dev/) (added in release 0.5)
 
-## VirtualBox Support Limitations
+Details of VirtualBox and Containerlab support are described below, for extensive vagrant-libvirt details please [refer to the installation guide](install.html#building-a-libvirt-based-lab).
 
-* Most networking vendors don't ship Vagrant boxes, and I had no interest in building VirtualBox boxes from scratch after setting up a *libvirt*-based lab on an Intel NUC. The only boxes I could get with zero hassle were Cisco Nexus 9300v and Arista vEOS.
-* Release 0.3 includes VirtualBox Vagrant provider configuration defaults and Vagrantfile templates for Cisco Nexus 9300v and Arista vEOS.
-* I couldn't get vEOS to run on my version of Vagrant and VirtualBox on macOS Catalina; Nexus 9300v ran fine. If you manage to get other devices to run on VirtualBox, I'd appreciate pull requests with Vagrantfile snippets.
+## Vagrant with VirtualBox
+
+* Most networking vendors don't ship Vagrant boxes, and I had no interest in building VirtualBox boxes from scratch after setting up a *libvirt*-based lab on an Intel NUC. The only boxes I could get with zero hassle were Cisco Nexus 9300v and Arista vEOS, and they both work fine. If you want to add other devices, you'll have to modify *topology-defaults.yml* file.
+* The latest version of Arista vEOS available as Vagrant box for VirtualBox is 4.21.14M.
 * Vagrantfile created by **create-topology** sets up port forwarding for SSH (22), HTTP (80) and NETCONF (830), but the corresponding Ansible inventory uses contains only **ansible_port** (SSH). You could edit the final inventory by hand, add extra file to `host_vars`, or fix my code. Should you decide to do the latter, please contact me in advance to discuss the necessary data structures.
 
-## Containerlab Support Details
+## Containerlab
 
 * The only device currently supported is Arista cEOS
 * Feel free to extend the templates and defaults to support other network devices
