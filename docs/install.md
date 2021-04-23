@@ -19,14 +19,16 @@ The Vagrant templates were tested on Ubuntu 20.04; if your environment needs spe
 
 ### Building a *libvirt*-based Lab
 
-If you're new to *libvirt*, read [Using Libvirt Provider with Vagrant](https://codingpackets.com/blog/using-the-libvirt-provider-with-vagrant/) blog post by [Brad Searle](https://www.linkedin.com/in/bradleysearle/).
+If you're new to *libvirt*, read [Using Libvirt Provider with Vagrant](https://codingpackets.com/blog/using-the-libvirt-provider-with-vagrant/) blog post by [Brad Searle](https://www.linkedin.com/in/bradleysearle/). 
+
+The *vagrant-libvirt* network needs static DHCP bindings to ensure the network devices get consistent management IP addresses. See *[creating vagrant-libvirt network](#creating-vagrant-libvirt-network)* for details.
 
 The Vagrantfile templates for individual network devices were derived from the following *build your own Vagrant box for vagrant-libvirt environment* blog posts:
 
 * [Cisco IOSv](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com)
 * [Cisco CSR](https://codingpackets.com/blog/cisco-csr-1000v-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com)
-* [Arista vEOS](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com)
-* [Juniper vSRX 3.0](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com)
+* [Arista vEOS](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com) [[notes](#notes-on-arista-eos-vagrant-libvirt-box)]
+* [Juniper vSRX 3.0](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com) [[notes](#notes-on-juniper-vsrx-vagrantfile-template)]
 * [Cisco Nexus 9300v](https://github.com/mweisel/cisco-nxos9kv-vagrant-libvirt) ([Marc Weisel](https://www.linkedin.com/in/marcweisel/))
 
 **Notes:**
@@ -34,6 +36,47 @@ The Vagrantfile templates for individual network devices were derived from the f
 * Nexus 9300v takes almost exactly a minute after SSH becomes available on the management interface to "boot" the Ethernet linecard (module 1) and activate Ethernet interfaces. Leave it alone for a while even when Vagrant tells you the VM is ready.
 * If you're experiencing high CPU utilization with Cisco CSR, [set halt_poll_ns to zero](https://codingpackets.com/blog/kvm-host-high-cpu-fix/).
 * For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
+
+### Creating vagrant-libvirt Network
+
+Vagrant *libvirt* provider connects management interfaces of managed VMs to *vagrant-libvirt* virtual network. Vagrant can figure out the device IP address based on dynamic DHCP mappings; **netsim-tools** can't. To make the Ansible inventory created by **create-topology** tool work your virtual network MUST include static DHCP bindings that map MAC addresses used by **create-topology** into expected IP addresses.
+
+The easiest way to create the management network is to use the XML file `netsim/templates/provider/libvirt/vagrant-libvirt.xml`
+:
+
+* If needed, delete the existing *vagrant-libvirt* network with **virsh net-destroy vagrant-libvirt**
+* Create the management network with **virsh net-create *path*/vagrant-libvirt.xml**
+
+You could also add DHCP bindings to your existing *vagrant-libvirt* network; here's the XML definition:
+
+```
+<network>
+  <name>vagrant-libvirt</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='virbr1' stp='on' delay='0'/>
+  <mac address='52:54:00:d8:3f:0d'/>
+  <ip address='192.168.121.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.121.2' end='192.168.121.99'/>
+      <host mac='08:4F:A9:00:00:01' ip='192.168.121.101'/>
+      <host mac='08:4F:A9:00:00:02' ip='192.168.121.102'/>
+      <host mac='08:4F:A9:00:00:03' ip='192.168.121.103'/>
+      <host mac='08:4F:A9:00:00:04' ip='192.168.121.104'/>
+      <host mac='08:4F:A9:00:00:05' ip='192.168.121.105'/>
+      <host mac='08:4F:A9:00:00:06' ip='192.168.121.106'/>
+      <host mac='08:4F:A9:00:00:07' ip='192.168.121.107'/>
+      <host mac='08:4F:A9:00:00:08' ip='192.168.121.108'/>
+      <host mac='08:4F:A9:00:00:09' ip='192.168.121.109'/>
+      <host mac='08:4F:A9:00:00:10' ip='192.168.121.110'/>
+      <host mac='08:4F:A9:00:00:11' ip='192.168.121.111'/>
+    </dhcp>
+  </ip>
+</network>
+```
 
 ### Notes on Arista EOS *vagrant-libvirt* Box
 

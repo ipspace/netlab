@@ -4,23 +4,14 @@
 
 import netaddr
 import os
+import sys
 
 # Related modules
 from .. import common
 from .. import addressing
 from .. import augment
-from ..provider import Provider
-
-'''
-adjust_modules: somewhat intricate multi-step config module adjustments
-
-* Set node default modules based on global modules
-* Adjust global module list based on node modules
-'''
-def adjust_modules(topology):
-  augment.nodes.augment_node_module(topology)
-  augment.topology.adjust_modules(topology)
-  augment.nodes.merge_node_module_params(topology)
+from ..providers import Provider
+from .. import modules
 
 def transform(topology):
   topology.setdefault('defaults',{})
@@ -37,12 +28,14 @@ def transform(topology):
   common.exit_on_error()
 
   addressing.setup(topology,topology.defaults)
-  adjust_modules(topology)
+  modules.pre_transform(topology)
 
   ndict = augment.nodes.transform(topology,topology.defaults,topology.pools)
   common.exit_on_error()
   if 'links' in topology:
     augment.links.transform(topology.links,topology.defaults,ndict,topology.pools)
+
+  modules.post_transform(topology)
   common.exit_on_error()
   del topology.pools
   del topology.Provider

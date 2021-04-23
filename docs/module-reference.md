@@ -4,7 +4,10 @@ The following configuration modules are included in **netsim-tools** distributio
 
 ```eval_rst
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
+   module/bgp.md
    module/ospf.md
+   module/isis.md
+   module/sr-mpls.md
 ```

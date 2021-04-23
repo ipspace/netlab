@@ -92,6 +92,8 @@ def augment_lan_link(link,addr_pools,ndict,defaults={}):
 
       link[node] = value
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
+      if isinstance(value,Box):
+        ifaddr = ifaddr + value
 
       if link.type != "stub":
         n_list = filter(lambda n: n in ndict and n != node,link.keys())
@@ -142,6 +144,8 @@ def augment_p2p_link(link,addr_pools,ndict,defaults={}):
         ifaddr[af] = value[af]
 
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
+      if isinstance(value,Box):
+        ifaddr = ifaddr + value
       link[node] = value
       nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 

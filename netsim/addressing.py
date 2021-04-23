@@ -150,7 +150,7 @@ def validate_pools(addrs = {}):
               "IPv4 subnet prefix length in '%s' addressing pool is not longer than pool prefix" % pool, \
               category=common.IncorrectValue,module='addressing')
 
-    if 'ipv6' in pfx:
+    if 'ipv6' in pfx and 'ipv6_pfx' in pfx:
       if pfx.ipv6_pfx.prefixlen > 56:
         common.error( \
           "Error in '%s' addressing pool: IPv6 pool prefix cannot be longer than /56" % pool, \

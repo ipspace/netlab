@@ -15,7 +15,7 @@ forwarded_port_name = { 'ssh': 'ansible_port', }
 def provider_inventory_settings(node,defaults):
   p_data = defaults.providers[defaults.provider]
   if not p_data:
-    return
+    return        # pragma: no cover -- won't create an extra test case just to cover the "do nothing" scenario
 
   if 'inventory' in p_data:
     for k,v in p_data['inventory'].items():
@@ -32,7 +32,10 @@ topo_to_host_skip = [ 'name','device' ]
 def ansible_inventory_host(node,defaults):
   host = Box({})
   for (node_key,inv_key) in topo_to_host.items():
-    value = node[node_key]
+    if "." in node_key:
+      value = node[node_key]
+    else:
+      value = node.get(node_key,None)
     if value:
       host[inv_key] = value
 
@@ -61,21 +64,10 @@ def create(nodes,defaults):
 
   return inventory
 
-def add_global_modules(inventory,data):
-  if not 'module' in data:
-    return
-
-  inventory.all.vars.module = data.module
-  for m in data.module:
-    if m in data:
-      inventory.all.vars[m] = data[m]
-
 def dump(data):
   print("Ansible inventory data")
   print("===============================")
   inventory = create(data.nodes,data.defaults)
-  if 'module' in data:
-    add_global_modules(inventory,data)
   print(inventory.to_yaml())
 
 def write_yaml(data,fname,header):
@@ -87,7 +79,7 @@ def write_yaml(data,fname,header):
     output.write(header)
     if callable(getattr(data,"to_yaml",None)):
       output.write(data.to_yaml())
-    else:
+    else:                            # pragma: no cover -- this should never happen as we're using Box, but just in case...
       output.write(yaml.dump(data))
     output.close()
 
@@ -95,8 +87,6 @@ min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
 def write(data,fname,hostvars):
   inventory = create(data['nodes'],data.get('defaults',{}))
-  if 'module' in data:
-    add_global_modules(inventory,data)
 
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
 

@@ -4,6 +4,10 @@ no ip domain-lookup
 !
 feature lldp
 !
+{% for k,v in hostvars.items() if v.loopback.ipv4 is defined %}
+ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}
+{% endfor %}
+!
 interface loopback0
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4 }}
@@ -22,7 +26,9 @@ interface {{ l.ifname }}
  no switchport
  mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
 {% if l.name is defined %}
- description {{ l.name }}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
 {% endif %}
 {% if 'ipv4' in l %}
  ip address {{ l.ipv4 }}

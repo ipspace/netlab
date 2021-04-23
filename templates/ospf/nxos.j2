@@ -8,13 +8,20 @@ interface loopback0
  ip router ospf {{ pid }} area {{ area }}
 !
 {% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+! OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
 interface {{ l.ifname }}
  ip router ospf {{ pid }} area {{ l.ospf.area|default(area) }}
-{% if l.type|default("") == "p2p" %}
+{%     if l.type|default("") == "p2p" %}
  ip ospf network point-to-point
-{% endif %}
-{% if l.ospf.cost is defined %}
+{%     endif %}
+{%     if l.ospf.cost is defined %}
  ip ospf cost {{ l.ospf.cost }}
-{% endif %}
+{%     endif %}
+{%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+ ip ospf passive-interface
+{%     endif %}
+{%   endif %}
 !
 {% endfor %}

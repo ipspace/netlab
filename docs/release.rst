@@ -1,6 +1,14 @@
 Release notes
 =============
 
+2021-04-23 (`release 0.6 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.6>`_)
+  * BGP configuration module
+  * IS-IS configuration module
+  * Segment Routing with MPLS
+  * OSPF configuration improvements: external links and passive interfaces
+
+  :doc:`More details <release/0.6>`
+
 2021-04-11 (`release 0.5 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.5>`_)
   * containerlab support
   * Flexible virtualization provider framework
@@ -13,13 +21,6 @@ Release notes
   * Baseline OSPF module
 
   :doc:`More details <release/0.4>`
-
-2021-02-01 (interim merge into master branch)
-  * Replaced standard Python dicts with python-box.
-  * Wrote a ton of transformation tests to verify that migration to Box
-    didn't break anything.
-  * Started working on getting as much code as feasible covered with
-    various tests (not that you'd care about that)
 
 2021-01-24 (`release 0.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.3>`_)
   * Support for multiple virtualization providers
@@ -50,14 +51,13 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/0.6.md
    release/0.5.md
    release/0.4.md
    release/0.3.md
 
 Future plans
 ------------
-Release 0.6
+Release 0.7
 
-  * Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
-  * Improve OSPF module (passive interfaces, external links)
-  * Add IS-IS and BGP configuration module
+  * Add Cumulus VX support

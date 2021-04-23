@@ -17,10 +17,10 @@ def read_yaml(filename=None,string=None):
   if string is not None:
     try:
       data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False)
-    except:
+    except:                                                                    # pragma: no cover -- can't get here unless there's a package error
       common.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
   elif filename is None:
-    common.fatal("read_yaml: have no idea what to do")
+    common.fatal("read_yaml: have no idea what to do") # pragma: no cover -- sanity check
   elif "package:" in filename:
     package = '.'.join(__name__.split('.')[:-1])
     with resources.open_text(package,filename.replace("package:","")) as fid:
@@ -28,7 +28,7 @@ def read_yaml(filename=None,string=None):
   else:
     if not os.path.isfile(filename):
       if common.LOGGING or common.VERBOSE:
-        print("YAML file %s does not exist" % filename)
+        print("YAML file %s does not exist" % filename) # pragma: no cover -- too hard to test to bother
       return None
     try:
       data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
@@ -48,7 +48,7 @@ def include_defaults(topo,fname):
 def load(fname,defaults,settings):
   topology = read_yaml(fname)
   if topology is None:
-    common.fatal('Cannot read topology file: %s' % sys.exc_info()[0])
+    common.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
   topology.input = [ fname ]
   topology.setdefault('defaults',{})
   topology.setdefault('includes',[ 'defaults', 'global_defaults' ])

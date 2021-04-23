@@ -1,0 +1,29 @@
+feature bgp
+!
+router bgp {{ bgp.as }}
+ address-family ipv4 unicast
+!
+{% if loopback.ipv4 is defined %}
+  network {{ loopback.ipv4 }}
+{% endif %}
+!
+{% for l in links|default([]) if l.bgp.advertise|default("") and l.ipv4 is defined %}
+  network {{ l.ipv4|ipaddr(0) }}
+{% endfor %}
+{% for n in bgp.neighbors if n.ipv4 is defined %}
+ neighbor {{ n.ipv4 }} remote-as {{ n.as }}
+  description {{ n.name }}
+{%   if n.type == 'ibgp' %}
+  update-source loopback0
+{%   endif %}
+  address-family ipv4 unicast
+{%   if n.type == 'ibgp' %}
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+   next-hop-self
+{%     endif %}
+{%     if bgp.rr|default('') and not n.rr|default('') %}
+   route-reflector-client
+{%     endif %}
+{%   endif %}
+!
+{% endfor %}

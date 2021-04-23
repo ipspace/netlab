@@ -30,4 +30,4 @@ Default passwords and other default configuration parameters are supposed to be 
 
 ## Module configurations
 
-Module-specific device configurations are created from templates in **templates/_module_** directory. Device-specific configuration template is selected using **ansible_network_os** value. See the module descriptions for list of supported parameters.
+Module-specific device configurations are created from templates in **templates/_module_** directory. Device-specific configuration template is selected using **ansible_network_os** value. See the [module descriptions](module-reference.md) for list of supported parameters.

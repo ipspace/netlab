@@ -1,0 +1,26 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Create initial device configurations
+  hosts: all
+  gather_facts: false
+  vars:
+    config: "{{ lookup('env','PWD') }}/config"
+  tasks:
+  - block:
+    - name: Create config directory
+      file:
+        path: "{{ config }}"
+        state: directory
+      run_once: true
+    - name: Create initial configurations (IP addressing)
+      template:
+        src: "templates/initial/{{ ansible_network_os }}.j2"
+        dest: "{{config}}/{{inventory_hostname}}.initial.cfg"
+    - name: Create module-specific configurations
+      template:
+        src: "templates/{{ item }}/{{ ansible_network_os }}.j2"
+        dest: "{{config}}/{{inventory_hostname}}.{{item}}.cfg"
+      loop: "{{ module | default([]) }}"
+      when: module is defined
+
+    delegate_to: localhost

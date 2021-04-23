@@ -1,0 +1,59 @@
+protocols {
+  delete: isis;
+}
+protocols {
+  isis {
+    topologies {
+      ipv6-unicast;
+    }
+    interface lo0.0;
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+   # IS-IS not configured on external interface {{ l.ifname }}
+{%   else %}
+    interface {{ l.ifname }} {
+{%     if l.type|default("") == "p2p" %}
+      point-to-point;
+{%     endif %}
+{%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+      passive;
+{%     endif %}
+{%     if l.isis.metric is defined or l.isis.cost is defined %}
+      level 1 metric {{ l.isis.metric|default(l.isis.cost) }};
+      level 2 metric {{ l.isis.metric|default(l.isis.cost) }};
+{%     endif %}
+    }
+{%   endif %}
+{% endfor %}
+  }
+}
+security {
+  forwarding-options {
+    family {
+      iso {
+        mode packet-based;
+      }
+    }
+  }
+}
+
+interfaces {
+  lo0 {
+    unit 0 {
+      family iso {
+{% if isis.net is defined %}
+        address {{ isis.net }}
+{% elif isis.area is defined %}
+        address {{ "%s.0000.0000.%04d.00" % (isis.area,id) }}
+{% endif %}
+      }
+    }
+  }
+{% for l in links|default([]) if not "external" in l.role|default("") %}
+  {{ l.ifname }} {
+    unit 0 {
+      family iso;
+    }
+  }
+{% endfor %}
+}

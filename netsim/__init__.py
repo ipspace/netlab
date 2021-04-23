@@ -8,14 +8,14 @@ import sys
 import os
 import yaml
 import re
-from jinja2 import Environment, FileSystemLoader, Undefined, StrictUndefined, make_logging_undefined
+from box import Box
 
 from . import common
 from . import cli_parser
 from . import read_topology
 from . import augment
 from . import inventory
-from .provider import Provider
+from .providers import Provider
 
 LOGGING=False
 VERBOSE=False
@@ -23,7 +23,11 @@ VERBOSE=False
 def dump_topology_data(topology,state):
   print("%s topology data" % state)
   print("===============================")
-  print(topology.to_yaml())
+
+  topo_copy = Box(topology,box_dots=True)
+
+  topo_copy.pop("nodes_map",None)
+  print(topo_copy.to_yaml())
 
 def main():
   args = cli_parser.parse()

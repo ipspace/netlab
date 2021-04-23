@@ -3,6 +3,11 @@ hostname {{ inventory_hostname.replace("_","-") }}
 lldp run
 ip routing
 !
+{% for k,v in hostvars.items() if v.loopback.ipv4 is defined %}
+ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if l.ipv4 is defined %} {{ l.ipv4|ipaddr('address') }}{%- endfor %}
+
+{% endfor %}
+!
 interface Loopback0
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4 }}
@@ -20,7 +25,9 @@ interface {{ l.ifname }}
  no shutdown
  no switchport
 {% if l.name is defined %}
- description {{ l.name }}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
 {% endif %}
 {% if 'ipv4' in l %}
  ip address {{ l.ipv4 }}

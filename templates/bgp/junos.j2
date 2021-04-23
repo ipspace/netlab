@@ -1,0 +1,67 @@
+routing-options {
+  autonomous-system {{ bgp.as }};
+}
+policy-options {
+  delete: policy-statement ibgp-export;
+  delete: policy-statement ebgp-export;
+}
+policy-options {
+  policy-statement ibgp-export {
+    term advertise {
+      from {
+        protocol direct;
+        interface [ lo0.0 {%- for l in links if l.bgp.advertise|default("") %}l.ifname {%- endfor %} ];
+      }
+      then accept;
+    }
+{% if bgp.next_hop_self is defined and bgp.next_hop_self %}
+    term next-hop-self {
+      from {
+        route-type external;
+      }
+      then {
+        next-hop self;
+      }
+    }
+{% endif %}
+  }
+  policy-statement ebgp-export {
+    term advertise {
+      from {
+        protocol direct;
+        interface [ lo0.0 {%- for l in links if l.bgp.advertise|default("") %}l.ifname {%- endfor %} ];
+      }
+      then accept;
+    }
+  }
+}
+protocols {
+  delete: bgp;
+}
+protocols {
+  bgp {
+    group ibgp-peers {
+      type internal;
+      export ibgp-export;
+      local-address {{ loopback.ipv4|ipaddr('address') }}
+{% if bgp.rr is defined %}
+      cluster {{ loopback.ipv4|ipaddr('address') }}
+{% endif %}
+{% for n in bgp.neighbors if n.ipv4 is defined and n.type == 'ibgp' %}
+      neighbor {{ n.ipv4 }} {
+        description {{ n.name }};
+      }
+{% endfor %}
+    }
+    group ebgp-peers {
+      export ebgp-export;
+      advertise-inactive;
+{% for n in bgp.neighbors if n.ipv4 is defined and n.type == 'ebgp' %}
+      neighbor {{ n.ipv4 }} {
+        peer-as {{ n.as }};
+        description {{ n.name }};
+      }
+{% endfor %}
+    }
+  }
+}

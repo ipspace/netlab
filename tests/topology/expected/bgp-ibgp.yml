@@ -1,0 +1,287 @@
+bgp:
+  as: 65000
+  ebgp_role: ''
+  next_hop_self: true
+  rr_list:
+  - s1
+  - s2
+input:
+- topology/input/bgp-ibgp.yml
+- package:topology-defaults.yml
+links:
+- l1: {}
+  left:
+    ifname: Ethernet1/1
+    node: l1
+  linkindex: 1
+  name: l1 - s1
+  prefix: {}
+  right:
+    ifname: Ethernet1/1
+    node: s1
+  s1: {}
+  type: p2p
+  unnumbered: true
+- l2: {}
+  left:
+    ifname: Ethernet1
+    node: l2
+  linkindex: 2
+  name: l2 - s1
+  prefix: {}
+  right:
+    ifname: Ethernet1/2
+    node: s1
+  s1: {}
+  type: p2p
+  unnumbered: true
+- l1: {}
+  left:
+    ifname: Ethernet1/2
+    node: l1
+  linkindex: 3
+  name: l1 - s2
+  prefix: {}
+  right:
+    ifname: Ethernet1/1
+    node: s2
+  s2: {}
+  type: p2p
+  unnumbered: true
+- l2: {}
+  left:
+    ifname: Ethernet2
+    node: l2
+  linkindex: 4
+  name: l2 - s2
+  prefix: {}
+  right:
+    ifname: Ethernet1/2
+    node: s2
+  s2: {}
+  type: p2p
+  unnumbered: true
+module:
+- bgp
+- ospf
+name: input
+nodes:
+- bgp:
+    as: 65000
+    neighbors:
+    - as: 65000
+      ipv4: 10.0.0.3
+      name: s1
+      rr: true
+      type: ibgp
+    - as: 65000
+      ipv4: 10.0.0.4
+      name: s2
+      rr: true
+      type: ibgp
+    next_hop_self: true
+  box: cisco/nexus9300v
+  device: nxos
+  id: 1
+  links:
+  - ifindex: 1
+    ifname: Ethernet1/1
+    linkindex: 1
+    name: l1 -> s1
+    neighbors:
+      s1:
+        ifname: Ethernet1/1
+    remote_id: 3
+    remote_ifindex: 1
+    type: p2p
+    unnumbered: true
+  - ifindex: 2
+    ifname: Ethernet1/2
+    linkindex: 3
+    name: l1 -> s2
+    neighbors:
+      s2:
+        ifname: Ethernet1/1
+    remote_id: 4
+    remote_ifindex: 1
+    type: p2p
+    unnumbered: true
+  loopback:
+    ipv4: 10.0.0.1/32
+  mgmt:
+    ifname: mgmt0
+    ipv4: 192.168.121.101
+    mac: 08-4F-A9-00-00-01
+  module:
+  - bgp
+  - ospf
+  name: l1
+  ospf:
+    area: 0.0.0.0
+- bgp:
+    as: 65000
+    neighbors:
+    - as: 65000
+      ipv4: 10.0.0.3
+      name: s1
+      rr: true
+      type: ibgp
+    - as: 65000
+      ipv4: 10.0.0.4
+      name: s2
+      rr: true
+      type: ibgp
+    next_hop_self: true
+  box: arista/veos
+  device: eos
+  id: 2
+  links:
+  - ifindex: 1
+    ifname: Ethernet1
+    linkindex: 2
+    name: l2 -> s1
+    neighbors:
+      s1:
+        ifname: Ethernet1/2
+    remote_id: 3
+    remote_ifindex: 2
+    type: p2p
+    unnumbered: true
+  - ifindex: 2
+    ifname: Ethernet2
+    linkindex: 4
+    name: l2 -> s2
+    neighbors:
+      s2:
+        ifname: Ethernet1/2
+    remote_id: 4
+    remote_ifindex: 2
+    type: p2p
+    unnumbered: true
+  loopback:
+    ipv4: 10.0.0.2/32
+  mgmt:
+    ifname: Management1
+    ipv4: 192.168.121.102
+    mac: 08-4F-A9-00-00-02
+  module:
+  - bgp
+  - ospf
+  name: l2
+  ospf:
+    area: 0.0.0.0
+- bgp:
+    as: 65000
+    neighbors:
+    - as: 65000
+      ipv4: 10.0.0.1
+      name: l1
+      type: ibgp
+    - as: 65000
+      ipv4: 10.0.0.2
+      name: l2
+      type: ibgp
+    - as: 65000
+      ipv4: 10.0.0.4
+      name: s2
+      rr: true
+      type: ibgp
+    next_hop_self: true
+    rr: true
+  box: cisco/nexus9300v
+  device: nxos
+  id: 3
+  links:
+  - ifindex: 1
+    ifname: Ethernet1/1
+    linkindex: 1
+    name: s1 -> l1
+    neighbors:
+      l1:
+        ifname: Ethernet1/1
+    remote_id: 1
+    remote_ifindex: 1
+    type: p2p
+    unnumbered: true
+  - ifindex: 2
+    ifname: Ethernet1/2
+    linkindex: 2
+    name: s1 -> l2
+    neighbors:
+      l2:
+        ifname: Ethernet1
+    remote_id: 2
+    remote_ifindex: 1
+    type: p2p
+    unnumbered: true
+  loopback:
+    ipv4: 10.0.0.3/32
+  mgmt:
+    ifname: mgmt0
+    ipv4: 192.168.121.103
+    mac: 08-4F-A9-00-00-03
+  module:
+  - bgp
+  - ospf
+  name: s1
+  ospf:
+    area: 0.0.0.0
+- bgp:
+    as: 65000
+    neighbors:
+    - as: 65000
+      ipv4: 10.0.0.1
+      name: l1
+      type: ibgp
+    - as: 65000
+      ipv4: 10.0.0.2
+      name: l2
+      type: ibgp
+    - as: 65000
+      ipv4: 10.0.0.3
+      name: s1
+      rr: true
+      type: ibgp
+    next_hop_self: true
+    rr: true
+  box: cisco/nexus9300v
+  device: nxos
+  id: 4
+  links:
+  - ifindex: 1
+    ifname: Ethernet1/1
+    linkindex: 3
+    name: s2 -> l1
+    neighbors:
+      l1:
+        ifname: Ethernet1/2
+    remote_id: 1
+    remote_ifindex: 2
+    type: p2p
+    unnumbered: true
+  - ifindex: 2
+    ifname: Ethernet1/2
+    linkindex: 4
+    name: s2 -> l2
+    neighbors:
+      l2:
+        ifname: Ethernet2
+    remote_id: 2
+    remote_ifindex: 2
+    type: p2p
+    unnumbered: true
+  loopback:
+    ipv4: 10.0.0.4/32
+  mgmt:
+    ifname: mgmt0
+    ipv4: 192.168.121.104
+    mac: 08-4F-A9-00-00-04
+  module:
+  - bgp
+  - ospf
+  name: s2
+  ospf:
+    area: 0.0.0.0
+ospf:
+  area: 0.0.0.0
+provider: libvirt

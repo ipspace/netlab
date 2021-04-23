@@ -2,7 +2,7 @@
 # Vagrant/libvirt provider module
 #
 
-from ..provider import Provider
+from . import Provider
 
 class Containerlab(Provider):
 
