@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+set -e
+#
+# Create bash profile script
+#
+cat <<SCRIPT >/root/.bash_profile
+#!/bin/bash
+#
+export PS1="\h(bash)#"
+echo "Use vtysh to connect to FRR daemon"
+echo
+SCRIPT
+#
+# Build hosts file
+#
+{% for k,v in hostvars.items() if v.loopback.ipv4 is defined and k != inventory_hostname %}
+echo "{{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if l.ipv4 is defined %} {{ l.ipv4|ipaddr('address') }}{%- endfor %} {{ k }}" >>/etc/hosts
+{% endfor %}
+#
+# Enable FRR modules
+#
+{% set modlist = {'bgp':'bgpd','ospf':'ospfd','isis':'isisd'} %}
+{% for m in module|default([]) if modlist[m] is defined %}
+echo "{{ modlist[m] }}=yes" >>/etc/frr/daemons
+{% endfor %}
+/usr/lib/frr/frrinit.sh restart
+#
+# Add lo0 interface
+#
+if [ ! -e /sys/devices/virtual/net/lo0 ]; then
+  ip link add lo0 type dummy
+fi
+#
+# Add vtysh.conf file
+echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+#
+# Rest of initial configuration done through VTYSH
+#
+cat >/tmp/config <<CONFIG
+hostname {{ inventory_hostname }}
+!
+ipv6 forwarding
+!
+interface lo0
+ no shutdown
+{% if 'ipv4' in loopback %}
+ ip address {{ loopback.ipv4 }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 address {{ loopback.ipv6 }}
+{% endif %}
+!
+{% for l in links|default([]) %}
+interface {{ l.ifname }}
+! no shutdown
+{% if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
+{% endif %}
+{% if l.ipv4 is defined %}
+ ip address {{ l.ipv4 }}
+{% endif %}
+{% if l.ipv6 is defined %}
+ ipv6 address {{ l.ipv6 }}
+{% endif %}
+{% if l.bandwidth is defined %}
+ bandwidth {{ l.bandwidth  }}
+{% endif %}
+!
+{% endfor %}
+do write
+CONFIG
+vtysh -f /tmp/config
