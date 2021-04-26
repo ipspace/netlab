@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+set -e
+#
+# Build VTYSH config file
+#
+cat >/tmp/config <<CONFIG
+router bgp {{ bgp.as }}
+  no bgp ebgp-requires-policy
+!
+{% for n in bgp.neighbors if n.ipv4 is defined %}
+  neighbor {{ n.ipv4 }} remote-as {{ n.as }}
+  neighbor {{ n.ipv4 }} description {{ n.name }}
+{%   if n.type == 'ibgp' %}
+  neighbor {{ n.ipv4 }} update-source lo0
+{%   endif %}
+!
+{% endfor %}
+ address-family ipv4 unicast
+!
+{% if loopback.ipv4 is defined %}
+  network {{ loopback.ipv4 }}
+{% endif %}
+!
+{% for l in links|default([]) if l.bgp.advertise|default("") and l.ipv4 is defined %}
+  network {{ l.ipv4 }}
+{% endfor %}
+!
+{% for n in bgp.neighbors if n.ipv4 is defined %}
+  neighbor {{ n.ipv4 }} activate
+{%   if n.type == 'ibgp' %}
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+  neighbor {{ n.ipv4 }} next-hop-self
+{%     endif %}
+{%     if bgp.rr|default('') and not n.rr|default('') %}
+  neighbor {{ n.ipv4 }} route-reflector-client
+{%     endif %}
+{%   endif %}
+{% endfor %}
+do write
+CONFIG
+vtysh -f /tmp/config
