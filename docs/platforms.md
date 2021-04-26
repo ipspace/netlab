@@ -7,6 +7,7 @@ The following virtual network devices are supported by **config-generate** (use 
 * Cisco Nexus 9300v (nxos)
 * Arista vEOS (eos)
 * Arrcus ArcOS (arcos)
+* FRR 7.5.0 (frr) -- containerlab only
 * Juniper vSRX 3.0 (vsrx)
 
 ## Supported Network Operating Systems
@@ -18,6 +19,7 @@ Network operating systems supported by **config.ansible** and **collect-configs.
 * Cisco Nexus OS
 * Arista EOS
 * Arrcus ArcOS
+* FRR container image
 * Junos
 
 ## Supported Initial Device Configurations
@@ -29,12 +31,13 @@ Network operating systems supported by **initial-config.ansible**:
 * Cisco Nexus OS (Nexus 9300v)
 * Arista EOS (vEOS)
 * Arrcus ArcOS
+* FRR/Ubuntu
 * Junos (vSRX 3.0)
 
 ## Supported Configuration Modules
 
 * OSPF configuration module is available for all supported devices.
-* BGP and IS-IS configuration modules are available for Cisco IOS, Cisco Nexus OS, Arista EOS and Junos.
+* BGP and IS-IS configuration modules are available for Cisco IOS, Cisco Nexus OS, Arista EOS, FRR, and Junos.
 * SR-MPLS configuration module is available for Cisco IOS XE and Arista EOS.
 
 ## Supported Virtualization Providers
@@ -55,5 +58,5 @@ Details of VirtualBox and Containerlab support are described below, for extensiv
 
 ### Containerlab
 
-* The only device currently supported is Arista cEOS
+* The only devices currently supported are Arista cEOS and FRR
 * Feel free to extend the templates and defaults to support other network devices

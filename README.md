@@ -2,7 +2,7 @@
 
 I'm building my network simulation environments with Vagrant using libvirt plugin on a Ubuntu 20.04 system... and I always hated how boring it was to set up a new topology and initial device configurations. The tools in this repository should make that task easier, and you're most welcome to submit pull requests adding support for other environments or platforms.
 
-* Latest release: [release_0.6](https://github.com/ipspace/netsim-tools/releases/tag/release_0.6) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.6.html))
+* Latest release: [release_0.6.1](https://github.com/ipspace/netsim-tools/releases/tag/release_0.6.1) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.6.html))
 * If you find bugs in release 0.6, please report them and use [release_0.5](https://github.com/ipspace/netsim-tools/releases/tag/release_0.5) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.5.html))
 
 You might also want to [read the documentation](https://netsim-tools.readthedocs.io/en/latest/), and [installation guidelines](https://netsim-tools.readthedocs.io/en/latest/install.html).
@@ -28,7 +28,7 @@ You might also want to [read the documentation](https://netsim-tools.readthedocs
 : Using Ansible fact gathering collect device neighbor data (usually LLDP neighbors) and displays them. Use YAML Ansible output callback for maximum readability.
 
 **connect.sh**
-: SSH to a network using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords from Ansible inventory. Ideal when you use centralized Vagrant environments and want to connect to the devices while being in playbook development directory.
+: Use SSH or **docker exec** to connect to a lab device using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords from Ansible inventory. Ideal when you use centralized Vagrant environments and want to connect to the devices while being in playbook development directory.
 
 ## Libvirt-specific tools
 

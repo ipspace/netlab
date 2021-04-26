@@ -1,11 +1,12 @@
 Release notes
 =============
 
-2021-04-23 (`release 0.6 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.6>`_)
+2021-04-26 (`release 0.6.1 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.6.1>`_)
   * BGP configuration module
   * IS-IS configuration module
   * Segment Routing with MPLS
   * OSPF configuration improvements: external links and passive interfaces
+  * FRR support
 
   :doc:`More details <release/0.6>`
 
