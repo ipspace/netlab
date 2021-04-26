@@ -61,7 +61,7 @@ class BGP(Module):
         "bgp.as_list should be a dictionary of AS parameters",
         common.IncorrectValue)
       return
-    
+
     node_data = Box({},default_box=True,box_dots=True)
     for asn,data in topology.bgp.as_list.items():
       for n in data.get('members',{}):
@@ -122,7 +122,8 @@ class BGP(Module):
       if n in topology.nodes_map:
         if "bgp" in topology.nodes_map[n]:
           node_as = topology.nodes_map[n].bgp.get("as")
-        as_set[node_as] = True
+          if node_as:
+            as_set[node_as] = True
 
     if len(as_set) > 1 and not link.get("role"):
       link.role = ebgp_role
