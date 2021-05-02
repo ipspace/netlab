@@ -7,6 +7,16 @@ Installing the tools:
 * Within the **netsim-tools** directory, install PyYAML, Jinja2, netaddr and python-box Python libraries with **pip3 install -r requirements.txt**.
 * Optional: install Ansible or use [ipSpace network automation container image](https://hub.docker.com/r/ipspace/automation). The tools were tested with Ansible 2.9 and 2.10.
 
+Alternatively, there is a playbook called **install.libvirt** available for installation (tested on a Ubuntu 20.04 virtual machine) which you can use as follows:
+```bash
+$ ansible-playbook install.libvirt --ask-become
+```
+This does all of the following things:
+- Set up all the dependencies required to use the *libvirt* Vagrant backend (including the *vagrant-libvirt* plugin) 
+- Configure the *vagrant-libvirt* network
+- Clone the `netsim-tools` repository and assigns permissions to the current user
+- Instantiate a new virtual Python environment and install the Python dependencies into it
+
 ## Building Your Lab
 
 The current version of the **config-generate** tool contains templates needed to create a Vagrant topology containing Cisco IOSv, Cisco CSR 1000v, Cisco Nexus 9300v, and Arista vEOS devices with *vagrant-libvirt* or *virtualbox* provider. The tool also supports container-based network operating systems powered by *containerlab*.
