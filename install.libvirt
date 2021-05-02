@@ -1,0 +1,61 @@
+- name: Install netsim-tools and dependencies for libvirt provider
+  hosts: localhost
+  connection: local
+  vars:
+    plugin_file: "{{ lookup('file','~/.vagrant.d/plugins.json', errors=False) | from_json }}"
+    clone_to: /opt/netsim-tools
+    vagrant_libvirt_version: 0.4.1
+    netsim_tools_version: release_0.6.1
+    vagrant_libvirt_installed: "{{ plugin_file.installed.vagrant_libvirt is not defined or plugin_file.installed.vagrant_libvirt.gem_version != vagrant_libvirt_version }}"
+  tasks:
+  - name: Install apt dependencies
+    apt:
+      pkg:
+        - libvirt-dev
+        - qemu-kvm
+        - vagrant
+        - virtinst
+        - ruby-libvirt
+        - qemu
+        - libvirt-daemon-system
+        - libvirt-clients
+        - ebtables
+        - dnsmasq-base
+        - libxslt-dev
+        - libxml2-dev
+        - zlib1g-dev
+        - ruby-dev
+        - python3-venv
+        - sshpass
+        - jq
+    become: yes
+  - name: Install vagrant-libvirt Vagrant plugin
+    shell: "vagrant plugin install vagrant-libvirt --plugin-version={{ vagrant_libvirt_version }}"
+    when: not vagrant_libvirt_installed
+  - name: Clone netsim-tools
+    git:
+      repo: https://github.com/ipspace/netsim-tools.git
+      version: "{{ netsim_tools_version }}"
+      dest: "{{ clone_to }}"
+    become: yes
+  - name: Change owner of netsim-tools folder to current user
+    file:
+      path: "{{ clone_to }}"
+      owner: "{{ ansible_effective_user_id }}"
+      group: "{{ ansible_effective_group_id }}"
+      recurse: yes
+    become: yes
+  - name: Create a python virtual environment and install requirements
+    shell:
+      cmd: python3 -m venv venv
+      chdir: "{{ clone_to }}"
+      creates: "{{ clone_to }}/venv"
+  - name: Install requirements.txt
+    shell:
+      cmd: "{{ clone_to }}/venv/bin/pip install -r requirements.txt"
+      chdir: "{{ clone_to }}"
+  - name: Delete existing vagrant-libvirt network
+    shell: virsh net-undefine vagrant-libvirt && virsh net-destroy vagrant-libvirt
+    failed_when: False
+  - name: Add vagrant-libvirt virtual network from netsim-tools template
+    shell: "virsh net-define {{ clone_to + '/netsim/templates/provider/libvirt/vagrant-libvirt.xml' }}"
