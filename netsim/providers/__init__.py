@@ -49,8 +49,8 @@ class Provider(Callback):
     return self._default_template_name
 
   def transform(self,topology):
-    if "processor" not in topology:
-      topology["processor"] = platform.processor().split()[0]
+    if "processor" not in topology.defaults:
+      topology.defaults.processor = platform.processor().split()[0]
 
   def dump(self,topology):
     template_path = self.get_template_path()
