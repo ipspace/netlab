@@ -5,6 +5,7 @@
 # Provider class and replacing or augmenting its methods (most commonly, transform)
 #
 
+import platform
 import os
 import sys
 import importlib
@@ -48,7 +49,8 @@ class Provider(Callback):
     return self._default_template_name
 
   def transform(self,topology):
-    pass
+    if "processor" not in topology:
+      topology["processor"] = platform.processor().split()[0]
 
   def dump(self,topology):
     template_path = self.get_template_path()
