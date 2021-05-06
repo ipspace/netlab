@@ -6,6 +6,7 @@
 #
 
 import platform
+import subprocess
 import os
 import sys
 import importlib
@@ -49,8 +50,16 @@ class Provider(Callback):
     return self._default_template_name
 
   def transform(self,topology):
+    processor_name = ""
+    if platform.system() == "Windows":
+        processor_name = platform.processor()
+    elif platform.system() == "Darwin":
+        raise NotImplementedError()
+    elif platform.system() == "Linux":
+        command = "cat /proc/cpuinfo"
+        processor_name = subprocess.check_output("cat /proc/cpuinfo", shell=True).splitlines()[1].split()[2]
     if "processor" not in topology.defaults:
-      topology.defaults.processor = platform.processor().split()[0]
+      topology.defaults.processor = processor_name
 
   def dump(self,topology):
     template_path = self.get_template_path()
