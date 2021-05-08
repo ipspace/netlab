@@ -54,9 +54,8 @@ class Provider(Callback):
     if platform.system() == "Windows":
         processor_name = platform.processor()
     elif platform.system() == "Darwin":
-        raise NotImplementedError()
+        processor_name = "intel"  # Assume Intel for MacOS
     elif platform.system() == "Linux":
-        command = "cat /proc/cpuinfo"
         processor_name = subprocess.check_output("cat /proc/cpuinfo", shell=True).splitlines()[1].split()[2]
     if "processor" not in topology.defaults:
       topology.defaults.processor = processor_name
