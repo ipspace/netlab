@@ -50,14 +50,16 @@ class Provider(Callback):
     return self._default_template_name
 
   def transform(self,topology):
-    processor_name = ""
-    if platform.system() == "Windows":
+    if "processor" in topology.defaults:
+      return
+    else:
+      processor_name = ""
+      if platform.system() == "Windows":
         processor_name = platform.processor()
-    elif platform.system() == "Darwin":
+      elif platform.system() == "Darwin":
         processor_name = "intel"  # Assume Intel for MacOS
-    elif platform.system() == "Linux":
+      elif platform.system() == "Linux":
         processor_name = subprocess.check_output("cat /proc/cpuinfo", shell=True).splitlines()[1].split()[2]
-    if "processor" not in topology.defaults:
       topology.defaults.processor = processor_name
 
   def dump(self,topology):
