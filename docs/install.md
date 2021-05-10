@@ -10,7 +10,7 @@ Installing the tools:
 Alternatively, you could use **install.libvirt** Ansible playbook to install Vagrant, *libvirt* Vagrant plugin, **netsim-tools**, and all their dependencies on Ubuntu (tested on a Ubuntu 20.04 virtual machine):
 
 ```bash
-$ wget https://github.com/ipspace/netsim-tools/blob/master/install.libvirt
+$ wget https://raw.githubusercontent.com/ipspace/netsim-tools/master/install.libvirt https://raw.githubusercontent.com/ipspace/netsim-tools/master/requirements.yml
 $ ansible-playbook install.libvirt --ask-become
 ```
 
