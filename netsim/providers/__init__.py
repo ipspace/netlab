@@ -5,6 +5,8 @@
 # Provider class and replacing or augmenting its methods (most commonly, transform)
 #
 
+import platform
+import subprocess
 import os
 import sys
 import importlib
@@ -48,7 +50,17 @@ class Provider(Callback):
     return self._default_template_name
 
   def transform(self,topology):
-    pass
+    if "processor" in topology.defaults:
+      return
+    else:
+      processor_name = ""
+      if platform.system() == "Windows":
+        processor_name = platform.processor()
+      elif platform.system() == "Darwin":
+        processor_name = "intel"  # Assume Intel for MacOS
+      elif platform.system() == "Linux":
+        processor_name = subprocess.check_output("cat /proc/cpuinfo", shell=True).splitlines()[1].split()[2]
+      topology.defaults.processor = processor_name
 
   def dump(self,topology):
     template_path = self.get_template_path()

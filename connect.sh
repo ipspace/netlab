@@ -27,7 +27,12 @@ connect_ssh() {
 connect_docker() {
   host=$(echo $data|jq -r .ansible_host)
   echo "Connecting to container $host, starting bash..."
-  docker exec -it $host bash -il
+  cmd=(docker exec -it $host bash -il)
+  if [ "$@" ]; then
+    cmd+=(-c $@)
+  fi
+  echo 1>&2 "executing ${cmd[@]}"
+  "${cmd[@]}"
 }
 
 if [ -z "$1" ]; then
@@ -44,7 +49,7 @@ shift
 data=$(ansible-inventory --host $ssh_host)
 connection=$(echo $data|jq -r .ansible_connection)
 if [[ "$connection" == *docker* ]]; then
-  connect_docker
+  connect_docker $@
 else
-  connect_ssh
+  connect_ssh $@
 fi

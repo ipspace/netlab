@@ -10,16 +10,18 @@ Installing the tools:
 Alternatively, you could use **install.libvirt** Ansible playbook to install Vagrant, *libvirt* Vagrant plugin, **netsim-tools**, and all their dependencies on Ubuntu (tested on a Ubuntu 20.04 virtual machine):
 
 ```bash
-$ wget https://github.com/ipspace/netsim-tools/blob/master/install.libvirt
-$ ansible-playbook install.libvirt --ask-become
+$ wget https://raw.githubusercontent.com/ipspace/netsim-tools/master/install.libvirt
+$ ansible-playbook install.libvirt
 ```
 
 The playbook:
 
-- Installs all software packages required to use the *libvirt* Vagrant backend (including the *vagrant-libvirt* plugin) 
+- Installs all software packages required to use the *libvirt* Vagrant backend (including the *vagrant-libvirt* plugin)
+- Adds current user to *libvirt* group
 - Configures the *vagrant-libvirt* network
 - Clones the `netsim-tools` repository into `/opt/netsim-tools` and makes that directory writeable by the current user
 - Instantiates a new Python virtual environment in `/opt/netsim-tools` and install the Python dependencies into it.
+- Installs Ansible collections for supported network devices (IOS, NXOS, EOS, Junos)
 
 ## Building Your Lab
 
@@ -43,7 +45,13 @@ The Vagrantfile templates for individual network devices were derived from the f
 * [Cisco CSR](https://codingpackets.com/blog/cisco-csr-1000v-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com)
 * [Arista vEOS](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com) [[notes](#notes-on-arista-eos-vagrant-libvirt-box)]
 * [Juniper vSRX 3.0](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/) (Brad Searle/codingpackets.com) [[notes](#notes-on-juniper-vsrx-vagrantfile-template)]
-* [Cisco Nexus 9300v](https://github.com/mweisel/cisco-nxos9kv-vagrant-libvirt) ([Marc Weisel](https://www.linkedin.com/in/marcweisel/))
+
+Use **vagrant mutate** plugin to migrate Cisco Nexus 9300v *virtualbox* image into *libvirt* image:
+
+* Download the .box file from the vendor web site;
+* Install the _virtualbox_ box with **vagrant box add _filename_ --name _boxname_** command (use `cisco/nexus9300v` for Nexus 9300v)
+* Mutate the *virtualbox* image into *libvirt* image with **vagrant mutate _boxname_ libvirt** command.
+* Remove the _virtualbox_ box with **vagrant box remove _boxname_ --provider virtualbox** command.
 
 **Notes:**
 
