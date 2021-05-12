@@ -1,16 +1,31 @@
+#!/usr/bin/env ansible-playbook
+#
 - name: Install netsim-tools and dependencies for libvirt provider
   hosts: localhost
   connection: local
   vars:
-    plugin_file: "{{ lookup('file','~/.vagrant.d/plugins.json', errors='ignore') | from_json }}"
     clone_to: /opt/netsim-tools
     vagrant_libvirt_version: 0.4.1
-    netsim_tools_version: release_0.6.1
-    vagrant_libvirt_installed: "{{ plugin_file.installed.vagrant_libvirt is not defined or plugin_file.installed.vagrant_libvirt.gem_version != vagrant_libvirt_version }}"
+    netsim_tools_version: master
+    ansible_collections:
+    - cisco.ios
+    - cisco.nxos
+    - arista.eos
+    - junipernetworks.junos
   tasks:
+  - copy:
+      dest: /tmp/ansible-collections.yml
+      content: |
+        ---
+        collections:
+        {% for c in ansible_collections %}
+        - name: {{ c }}
+        {% endfor %}
   - name: Install apt dependencies
     apt:
+      update_cache: yes
       pkg:
+        - ansible
         - libvirt-dev
         - qemu-kvm
         - vagrant
@@ -27,11 +42,20 @@
         - ruby-dev
         - python3-venv
         - sshpass
+        - tree
         - jq
     become: yes
+  - name: Install ansible dependencies
+    shell: "ansible-galaxy collection install -r /tmp/ansible-collections.yml"
+    register: galaxy_install
+    changed_when: '"Installing" in galaxy_install.stdout'
   - name: Install vagrant-libvirt Vagrant plugin
     shell: "vagrant plugin install vagrant-libvirt --plugin-version={{ vagrant_libvirt_version }}"
-    when: not vagrant_libvirt_installed
+  - name: Add vagrant user to libvirt group
+    user:
+      name: "{{ lookup('env', 'USER') }}"
+      groups: libvirt
+      append: yes
   - name: Clone netsim-tools
     git:
       repo: https://github.com/ipspace/netsim-tools.git
@@ -57,5 +81,7 @@
   - name: Delete existing vagrant-libvirt network
     shell: virsh net-undefine vagrant-libvirt && virsh net-destroy vagrant-libvirt
     failed_when: False
+    become: yes
   - name: Add vagrant-libvirt virtual network from netsim-tools template
     shell: "virsh net-define {{ clone_to + '/netsim/templates/provider/libvirt/vagrant-libvirt.xml' }}"
+    become: yes
