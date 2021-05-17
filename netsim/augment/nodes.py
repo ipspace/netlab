@@ -6,12 +6,10 @@ Create detailed node-level data structures from topology
 * Set loopback and management interface data
 '''
 
-import netaddr
+from box import Box
+
 from .. import common
 from .. import addressing
-import os
-import yaml
-from box import Box
 
 def adjust_node_list(nodes):
   node_list = []

@@ -47,8 +47,6 @@ parameters when the corresponding addressing parameteres are missing:
 * _p2p_ and _p2p_subnet_ defaults are used to create _p2p_ pool
 '''
 
-import os
-import yaml
 import sys
 
 import netaddr

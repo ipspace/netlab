@@ -4,10 +4,6 @@
 # topology file
 #
 
-import sys
-import os
-import yaml
-import re
 from box import Box
 
 from . import common

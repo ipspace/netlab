@@ -8,9 +8,6 @@
 import platform
 import subprocess
 import os
-import sys
-import importlib
-import inspect
 
 # Related modules
 from .. import common
