@@ -7,7 +7,6 @@ Topology-level transformation:
 * Create expanded topology file in YAML format (mostly for troubleshooting purposes)
 '''
 
-import netaddr
 import os
 
 from box import Box
