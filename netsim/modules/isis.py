@@ -2,11 +2,7 @@
 # IS-IS transformation module
 #
 
-from box import Box
-import netaddr
-
 from . import Module
-from .. import common
 
 class ISIS(Module):
 

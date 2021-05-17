@@ -3,11 +3,7 @@
 # from high-level topology
 #
 
-import os
-import sys
-
 import netaddr
-import yaml
 from box import Box
 
 # Related modules

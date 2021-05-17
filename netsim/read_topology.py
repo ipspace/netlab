@@ -3,7 +3,6 @@
 #
 import os
 import sys
-import yaml
 from box import Box
 from importlib import resources
 

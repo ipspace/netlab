@@ -2,10 +2,8 @@
 # Common routines for create-topology script
 #
 import sys
-import os
 import warnings
-from jinja2 import Environment, FileSystemLoader, PackageLoader, Undefined, StrictUndefined, make_logging_undefined
-from box import Box
+from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 
 LOGGING=False
 VERBOSE=False
