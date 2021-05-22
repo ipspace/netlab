@@ -17,7 +17,7 @@ from .. import common
 topo_main_elements = ['addressing','defaults','links','module','name','nodes','provider','Provider']
 topo_internal_elements = ['input','includes']
 
-def check_required_elements(topology):
+def check_required_elements(topology: Box) -> None:
   invalid_topo = False
   for rq in ['nodes','defaults']:
     if not rq in topology:
@@ -46,7 +46,7 @@ def check_required_elements(topology):
 # Note: defaults.provider is needed in some output routines that get defaults data structure
 # but not the whole topology
 #
-def adjust_global_parameters(topology):
+def adjust_global_parameters(topology: Box) -> None:
   topology.setdefault('provider',topology.defaults.provider)
   topology.defaults.provider = topology.provider
 
@@ -67,7 +67,7 @@ def adjust_global_parameters(topology):
 #
 # Write expanded topology file in YAML format
 #
-def create_topology_file(topology,fname):
+def create_topology_file(topology: Box, fname: str) -> None:
   # This should create a deep copy
   #
   topo_copy = Box(topology)

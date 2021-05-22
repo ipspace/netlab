@@ -1,6 +1,7 @@
 #
 # BGP transformation module
 #
+import typing
 
 from box import Box
 import netaddr
@@ -8,12 +9,12 @@ import netaddr
 from . import Module
 from .. import common
 
-def check_bgp_parameters(node):
+def check_bgp_parameters(node: Box) -> None:
   if "bgp" in node:
     if not "as" in node.bgp:
       common.error("Node %s has BGP enabled but no AS number specified" % node.name)
 
-def find_bgp_rr(bgp_as,topology):
+def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
   rrlist = []
   for n in topology.nodes:
     if not "bgp" in n:
@@ -22,7 +23,9 @@ def find_bgp_rr(bgp_as,topology):
       rrlist.append(n)
   return rrlist
 
-def bgp_neighbor(n,intf,ctype,extra_data={}):
+def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[Box] = None) -> Box:
+  if not extra_data:
+    extra_data = Box[{}]
   ngb = Box(extra_data,default_box=True,box_dots=True)
   ngb.name = n.name
   ngb["as"] = n.bgp.get("as")
@@ -32,7 +35,7 @@ def bgp_neighbor(n,intf,ctype,extra_data={}):
       ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
   return ngb
 
-def get_neighbor_rr(n):
+def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
   if "rr" in n.get("bgp"):
     return { "rr" : n.bgp.rr }
 
@@ -49,7 +52,7 @@ class BGP(Module):
   We could implement this one as node pre_default, but then we'd have to repeatedly
   scan the AS_list
   """
-  def module_pre_default(self,topology):
+  def module_pre_default(self, topology: Box) -> None:
     if not 'bgp' in topology:                            # Do we have global BGP settings?
       return
 
@@ -101,7 +104,7 @@ class BGP(Module):
   global bgp.rr attribute. Also, delete the global bgp.rr attribute so it's not propagated
   down to nodes
   """
-  def node_pre_transform(self,node,topology):
+  def node_pre_transform(self, node: Box, topology: Box) -> None:
     if "rr_list" in topology.get("bgp",{}):
       if node.name in topology.bgp.rr_list:
         node.bgp.rr = True
@@ -112,7 +115,7 @@ class BGP(Module):
   If the nodes belong to at least two autonomous systems, and the ebgp_role
   variable is set, set the link role to ebgp_role
   """
-  def link_pre_transform(self,link,topology):
+  def link_pre_transform(self, link: Box, topology: Box) -> None:
     ebgp_role = topology.bgp.get("ebgp_role",None) or topology.defaults.bgp.get("ebgp_role",None)
     if not ebgp_role:
       return
@@ -136,7 +139,7 @@ class BGP(Module):
   * EBGP sessions are established whenever two nodes on the same link have different AS
   * Links matching 'advertise_roles' get 'advertise' attribute set
   """
-  def node_post_transform(self,node,topology):
+  def node_post_transform(self, node: Box, topology: Box) -> None:
     if not "bgp" in node:
       common.error("Node %s has BGP module enabled but no BGP parameters" % node.name)
     check_bgp_parameters(node)

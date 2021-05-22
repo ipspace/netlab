@@ -1,12 +1,13 @@
 #
 # IS-IS transformation module
 #
+from box import Box
 
 from . import Module
 
 class ISIS(Module):
 
-  def node_post_transform(self,node,topology):
+  def node_post_transform(self, node: Box, topology: Box) -> None:
     for af in ['ipv4','ipv6']:
       if af in node.loopback:     # Address family enabled on loopback?
         node.isis[af] = True      # ... we need it in IS-IS

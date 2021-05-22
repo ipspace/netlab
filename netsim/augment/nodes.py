@@ -5,13 +5,14 @@ Create detailed node-level data structures from topology
 * Add default module list to nodes without specific modules
 * Set loopback and management interface data
 '''
+import typing
 
 from box import Box
 
 from .. import common
 from .. import addressing
 
-def adjust_node_list(nodes):
+def adjust_node_list(nodes: typing.Union[typing.Dict, typing.List]) -> typing.List[Box]:
   node_list = []
   if isinstance(nodes, dict):
     for k,v in sorted(nodes.items()):
@@ -30,7 +31,7 @@ def adjust_node_list(nodes):
       node_list.append(n if isinstance(n,dict) else { 'name': n })
   return node_list
 
-def augment_mgmt_if(node,device_data,addrs):
+def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) -> None:
   node.setdefault('mgmt',{})
 
   if 'ifname' not in node.mgmt:
@@ -58,7 +59,7 @@ def augment_mgmt_if(node,device_data,addrs):
 #
 # Add device (box) images from defaults
 #
-def augment_node_provider_data(topology):
+def augment_node_provider_data(topology: Box) -> None:
   provider = topology.provider
   devices = topology.defaults.devices
   if not devices:
@@ -95,7 +96,7 @@ def augment_node_provider_data(topology):
 
 # Rebuild nodes-by-name dict
 #
-def rebuild_nodes_map(topology):
+def rebuild_nodes_map(topology: Box) -> None:
   topology.nodes_map = { n.name : n for n in topology.get('nodes',[]) }
 
 '''
@@ -106,7 +107,7 @@ Main node transformation code
 * copy device data from defaults
 * set management IP and MAC addresses
 '''
-def transform(topology,defaults,pools):
+def transform(topology: Box, defaults: Box, pools: Box) -> typing.Dict:
   augment_node_provider_data(topology)
 
   id = 0

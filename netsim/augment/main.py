@@ -2,6 +2,8 @@
 # Build full-blown topology data structures (nodes, links, global parameter) from high-level topology
 #
 
+from box import Box
+
 # Related modules
 from .. import common
 from .. import addressing
@@ -9,7 +11,7 @@ from .. import augment
 from ..providers import Provider
 from .. import modules
 
-def transform(topology):
+def transform(topology: Box) -> None:
   topology.setdefault('defaults',{})
   augment.topology.check_required_elements(topology)
   augment.topology.adjust_global_parameters(topology)

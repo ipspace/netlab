@@ -6,7 +6,7 @@ import argparse
 # Related modules
 from . import common
 
-def parse():
+def parse() -> argparse.Namespace:
   parser = argparse.ArgumentParser(description='Create topology data from topology description')
   parser.add_argument('-t','--topology', dest='topology', action='store', default='topology.yml',
                   help='Topology file')

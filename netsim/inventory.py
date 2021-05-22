@@ -1,6 +1,7 @@
 #
 # Create Ansible inventory
 #
+import typing
 
 import yaml
 import os
@@ -11,7 +12,7 @@ from . import common
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
-def provider_inventory_settings(node,defaults):
+def provider_inventory_settings(node: Box, defaults: Box) -> None:
   p_data = defaults.providers[defaults.provider]
   if not p_data:
     return        # pragma: no cover -- won't create an extra test case just to cover the "do nothing" scenario
@@ -28,7 +29,7 @@ def provider_inventory_settings(node,defaults):
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
 
-def ansible_inventory_host(node,defaults):
+def ansible_inventory_host(node: Box, defaults: Box) -> Box:
   host = Box({})
   for (node_key,inv_key) in topo_to_host.items():
     if "." in node_key:
@@ -45,7 +46,7 @@ def ansible_inventory_host(node,defaults):
   provider_inventory_settings(host,defaults)
   return host
 
-def create(nodes,defaults):
+def create(nodes: typing.List[Box], defaults: Box) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
   for node in nodes:
@@ -63,13 +64,13 @@ def create(nodes,defaults):
 
   return inventory
 
-def dump(data):
+def dump(data: Box) -> None:
   print("Ansible inventory data")
   print("===============================")
   inventory = create(data.nodes,data.defaults)
   print(inventory.to_yaml())
 
-def write_yaml(data,fname,header):
+def write_yaml(data: Box, fname: str, header: str) -> None:
   dirname = os.path.dirname(fname)
   if dirname and not os.path.exists(dirname):
     os.makedirs(dirname)
@@ -84,7 +85,7 @@ def write_yaml(data,fname,header):
 
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
-def write(data,fname,hostvars):
+def write(data: Box, fname: str, hostvars: str) -> None:
   inventory = create(data['nodes'],data.get('defaults',{}))
 
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
@@ -120,7 +121,7 @@ def write(data,fname,hostvars):
     write_yaml(inventory,fname,header)
     print("Created minimized Ansible inventory %s" % fname)
 
-def config(config_file,inventory_file):
+def config(config_file: str , inventory_file: str) -> None:
   with open(config_file,"w") as output:
     output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates'))
     output.close()
