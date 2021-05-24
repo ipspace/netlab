@@ -14,7 +14,7 @@ The module depends on IS-IS module and will trigger a configuration error if the
 **Notes:**
 * Cisco IOS XE (that I used in my lab) does not support IPv6 Node SID with IS-IS. The Cisco IOS configuration templates are thus IPv4-only.
 
-### Parameters
+## Parameters
 
 The SR-MPLS module has no configurable parameters.
 

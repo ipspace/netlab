@@ -2,10 +2,6 @@
 # Build full-blown topology data structures (nodes, links, global parameter) from high-level topology
 #
 
-import netaddr
-import os
-import sys
-
 # Related modules
 from .. import common
 from .. import addressing

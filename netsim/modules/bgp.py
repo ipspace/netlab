@@ -5,7 +5,7 @@
 from box import Box
 import netaddr
 
-from . import Module
+from . import _Module
 from .. import common
 
 def check_bgp_parameters(node):
@@ -38,7 +38,7 @@ def get_neighbor_rr(n):
 
   return {}
 
-class BGP(Module):
+class BGP(_Module):
 
   """
   Module pre-default:

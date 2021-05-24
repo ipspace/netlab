@@ -14,24 +14,24 @@ Supported IS-IS features:
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
 
-### Global Parameters
+## Global Parameters
 
 * **isis.area** -- CLNS area prefix. Router address (NET) is computed from area prefix, 6-byte system ID (using **id** node attribute) and NSAP selector (.00)
 * **isis.type** -- IS-IS router type (default: **level-2**)
 
-### Node Parameters
+## Node Parameters
 
 You can specify node parameters as global values (top-level topology elements) or within individual nodes. You can also specify **isis.net** on individual nodes instead of using **isis.area** (see [example](#example) for details).
 
 **Note:**
 * When specifying **isis.net**, avoid values in range *area.0000.0000.0001.00* through *area.0000.0000.0099.00* as they are used for auto-generated NETs.
 
-### Link Parameters
+## Link Parameters
 
 * **isis.type** -- Link type (L1/L2/L1-2). Recognized as a valid attribute but not implemented. Please feel free to fix the configuration templates and submit a pull request.
 * **isis.metric** or **isis.cost** -- Interface cost. Both parameters are recognized to make IS-IS configuration similar to OSPF (*metric* takes precedence over *cost*)
 
-### Other Parameters
+## Other Parameters
 
 Link type is used to set IS-IS network type:
 
@@ -41,7 +41,7 @@ Link type is used to set IS-IS network type:
 
 Stub links must have exactly one device attached to them. To create multi-router stub links, use **role: stub** link attribute (see below).
 
-### Using Link Roles
+## Using Link Roles
 
 Link roles are used together with link types to decide whether to include an interface in an IS-IS process, and whether to make an interface passive:
 

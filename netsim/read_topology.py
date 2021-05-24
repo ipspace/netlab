@@ -3,7 +3,6 @@
 #
 import os
 import sys
-import yaml
 from box import Box
 from importlib import resources
 
@@ -58,8 +57,15 @@ def load(fname,defaults,settings):
       category=common.IncorrectValue,module="topology")
     topology.includes = []
 
-  if defaults and 'defaults' in topology.includes:
-    include_defaults(topology,defaults)
+  if 'defaults' in topology.includes:
+    local_defaults = os.path.dirname(os.path.abspath(fname))+"/topology-defaults.yml"
+    user_defaults  = os.path.expanduser('~/topology-defaults.yml')
+    if defaults:
+      include_defaults(topology,defaults)
+    elif os.path.isfile(local_defaults):
+      include_defaults(topology,local_defaults)
+    elif os.path.isfile(user_defaults):
+      include_defaults(topology,user_defaults)
 
   if settings and 'global_defaults' in topology.includes:
     include_defaults(topology,settings)

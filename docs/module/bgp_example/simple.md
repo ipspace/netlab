@@ -49,7 +49,7 @@ links:
 ```
 
 
-### Resulting Data Structures
+## Resulting Data Structures
 
 This is the BGP-related part of transformed node data on PE1. It's extremely easy to generate BGP configuration out of it:
 
@@ -99,11 +99,11 @@ Interface information on PE1 includes the link role (*external*) which the OSPF 
     type: p2p
 ```
 
-### Resulting Device Configurations
+## Resulting Device Configurations
 
 The above topology generates the following device configurations
 
-#### PE1 (Cisco IOS)
+### PE1 (Cisco IOS)
 
 ```
 interface Loopback0
@@ -131,7 +131,7 @@ router bgp 65000
  exit-address-family
  ```
 
-#### PE2 (Cisco IOS)
+### PE2 (Cisco IOS)
 
 ```
 interface Loopback0
@@ -167,7 +167,7 @@ router bgp 65000
  exit-address-family
 ```
 
-#### E1 (Arista EOS)
+### E1 (Arista EOS)
 
 ```
 interface Ethernet1
@@ -190,7 +190,7 @@ router ospf 1
    interface unnumbered hello mask tx 0.0.0.0
 ```
 
-### Complete network topology
+## Complete network topology
 
 ```
 module: [ bgp,ospf ]

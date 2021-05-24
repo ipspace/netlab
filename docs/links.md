@@ -2,13 +2,13 @@
 
 Links between virtual lab devices are specified in **links** element of the topology file -- a list of links in one of these formats:
 
-* A dictionary of node names and other link attributes
-* A list of node names
-* A string in format *a-b*
+* A dictionary of node names and other link attributes. Use this format when you want to have a tight control over interface attributes like IP addresses, or when you have to specify additional link attributes like OSPF cost.
+* A list of node names. Use this format for multi-access interface when you're OK with default IP addressing and don't need to specify any additional link attributes.
+* A string in *node*-*node* format. Use this format for a point-to-point link.
 
 You can use all three link formats in the same topology file -- they are always converted into a dictionary format first, and then augmented with addressing details.
 
-### Examples
+## Link Formats Example
 
 The following link definition contains all variants of specifying nodes connected to a link:
 
@@ -43,7 +43,7 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 
-Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.html#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
+Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.md#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
 
 ### Example
 
@@ -84,7 +84,7 @@ Lab topology could contain *stub*, *p2p* and *lan* links. The link type could be
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address, the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address is the [node ID](nodes.html#augmenting-node-data)
+* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address is the [node ID](nodes.md#augmenting-node-data)
 * Stub links are treated exactly like LAN links.
 
 ## Link Names
@@ -155,7 +155,7 @@ In dual-stack or IPv6-only environments you have to use the prefix dictionary sy
 
 ## Selecting Custom Address Pools
 
-The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.html#address-pools-overview)*). 
+The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.md#address-pools-overview)*). 
 
 Use **role** attribute to specify a custom address pool for a link. For example, the following topology uses unnumbered (core) link between **r1** and **r2**:
 
@@ -185,7 +185,7 @@ Point-to-point links between network devices are implemented with P2P tunnels (a
 
 Multi-access and stub links are implemented with custom networks (as supported by the underlying virtualization environment). The **bridge** attribute allows you to specify the custom network name; its default value is *name_N* where:
 
-* *name* is the [topology name](create-topology.html#topology-format) or current directory name;
+* *name* is the [topology name](topology-overview.md) or current directory name;
 * *N* is the link ID (position of link object in **links** list) starting with 1.
 
 ## Augmenting Link Data

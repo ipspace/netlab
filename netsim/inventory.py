@@ -4,7 +4,6 @@
 
 import yaml
 import os
-import sys
 from box import Box
 
 # Related modules

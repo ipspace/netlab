@@ -93,13 +93,7 @@ Numerous default address pool configurations are merged during the topology proc
 * **defaults.addressing** topology section is deep-merged with **addressing** topology section
 * Legacy parameters (release 0.1 syntax) from the **defaults** topology section are deep-merged with the **addressing** section (making them least-preferred).
 
-**Notes on deep merging:**
-
-The **create-topology** tool performs recursive merge of configuration dictionaries:
-
-* Dictionary keys not present in target dictionary are added from the defaults dictionary;
-* Whenever a key in the target dictionary is itself a dictionary, and the same key is present in the defaults dictionary, the merge process recurses, resulting in a recursive merge of child dictionaries.
-* Lists and scalar values are not merged.
+For more information on *deep merging*, please read the [topology defaults](defaults.md) document.
 
 ### Example
 

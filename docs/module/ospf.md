@@ -9,21 +9,21 @@ Supported features:
 * Unnumbered point-to-point interfaces
 * Passive interfaces
 
-### Node Parameters
+## Node Parameters
 
 * **ospf.process** -- process ID (default: 1)
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area, and on loopback interface.
 
 You can specify node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 
-### Link Parameters
+## Link Parameters
 
 * **ospf.cost** -- OSPF cost
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
 
 **Note:** the same parameters can be specified for individual link nodes.
 
-### Other Parameters
+## Other Parameters
 
 Link type is used to set OSPF network type:
 
@@ -33,7 +33,7 @@ Link type is used to set OSPF network type:
 
 Stub links must have exactly one device attached to them. To create multi-router stub links, use **role: stub** link attribute (see below).
 
-### Using Link Roles
+## Using Link Roles
 
 Link roles are used together with link types to decide whether to include an interface in an OSPF process, and whether to make an interface passive:
 

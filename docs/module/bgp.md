@@ -17,7 +17,7 @@ You could use *global* or *per-node* parameters to configure BGP autonomous syst
 * Using a global **as_list**, specify members and route reflectors in an autonomous system.
 * Specify BGP AS and route reflector status of individual nodes with **bgp.as** and **bgp.rr** node parameters.
 
-### Global BGP Configuration Parameters
+## Global BGP Configuration Parameters
 
 Use **bgp.as_list** global parameter to specify a dictionary of autonomous systems. Every autonomous system should have two elements:
 
@@ -48,14 +48,14 @@ bgp:
 
 See [IBGP-over-OSPF Data Center Fabric example](bgp_example/ibgp.md) for details.
 
-#### Advanced Global Configuration Parameters
+## Advanced Global Configuration Parameters
 
 Advanced global configuration parameters include:
 
 * **advertise_roles** -- list of link types and roles. Links matching any element of the list will be advertised into BGP. See *[Advertised BGP Prefixes](#advertised-bgp-prefixes)* for details.
 * **ebgp_role** -- link role set on links connecting nodes from different autonomous systems. See *[Interaction with IGP](#interaction-with-igp)* for details.
 
-### Node Configuration Parameters
+## Node Configuration Parameters
 
 Instead of using a global list of autonomous systems, you could specify a BGP autonomous system and route reflector role on individual nodes using these parameters:
 
@@ -70,7 +70,7 @@ Specifying a BGP autonomous system on individual nodes makes sense when each nod
 * The node AS number could be derived from the global **bgp.as_list**, from the default (global) value of **bgp.as** parameter, or specified on the node itself. Explore [simple BGP example](bgp_example/simple.md) to see how you can combine global AS number with node AS number.
 * You could enable BGP configuration module globally using `module: [ bgp ]` as a top-level topology element, or for an individual node using `module: [ bgp ]` within node data. See [Segment Routing with BGP topology](https://github.com/ipspace/netsim-examples/blob/master/routing/sr-mpls-bgp/sr%2Bbgp.yml) for an example.
 
-### Link-Level Parameters
+## Link-Level Parameters
 
 You can also use these link-level parameters to influence the BGP prefix advertisements:
 
@@ -78,7 +78,7 @@ You can also use these link-level parameters to influence the BGP prefix adverti
 
 See [examples](#examples) for sample usage guidelines.
 
-### Advertised BGP Prefixes
+## Advertised BGP Prefixes
 
 The following IP prefixes are configured with **network** statements within the BGP routing process:
 
@@ -118,7 +118,7 @@ defaults:
 ``` 
 
 
-### BGP Sessions
+## BGP Sessions
 
 The BGP transformation module builds a list of BGP neighbors for ever node. That list of neighbors is then used to configure BGP neighbors within the BGP routing process:
 
@@ -135,7 +135,7 @@ See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 
 See the [Simple BGP Example](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) example for more details.
 
-#### Notes on Unnumbered EBGP Sessions
+### Notes on Unnumbered EBGP Sessions
 
 Unnumbered EBGP sessions are supported by the data model, but not by configuration templates. The transformed data model includes **unnumbered** and **ifindex** elements on EBGP neighbors reachable over unnumbered interfaces -- compare a regular EBGP neighbor (L2) with an unnumbered EBGP neighbor (L1):
 
@@ -156,7 +156,7 @@ Unnumbered EBGP sessions are supported by the data model, but not by configurati
 
 The transformed data model gives you enough information to create Cumulus-style BGP neighbor statements.
 
-### Interaction with IGP
+## Interaction with IGP
 
 BGP transformation module can set link *role* on links used for EBGP sessions. The link role (when not specified on the link itself) is set to the value of **defaults.bgp.ebgp_role** (default system value: **external**).
 

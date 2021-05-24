@@ -25,9 +25,12 @@ When using this format you cannot specify the device types or any other node att
 
 ## List of Node Objects
 
-When you have to specify additional node attributes, or when you're building a lab topology containing multiple device types, specify nodes as a list of node objects (dictionaries). Node name is specified in **name** attribute, device type (if non-default) in **device** attribute. You can add any additional attributes you need (for example, BGP AS number).
+When you have to specify additional node attributes, or when you're building a lab topology containing multiple device types, specify nodes as a list of node objects (dictionaries). Node name is specified in **name** attribute, device type (if non-default) in **device** attribute. 
+
+You can add any additional attributes you need (for example, BGP AS number). Additional per-node attributes specified in a node dictionary are copied into Ansible inventory.
 
 Simple example:
+
 ```
 nodes:
 - name: c_ios
@@ -43,17 +46,21 @@ nodes:
 ```
 
 More complex example with additional node attributes:
+
 ```
 nodes:
 - name: e1
-  igp: [ ospf, eigrp ]
-  edge: true
+  module: [ ospf, bgp ]
+  bgp:
+    as: 65000
 - name: e2
-  igp: [ ospf ]
+  module: [ ospf ]
   edge: true
 - name: pe1
   device: csr
-  igp: [ ospf, eigrp ]
+  module: [ ospf, bgp ]
+  bgp:
+    as: 65001
 ```
 
 You can also combine the first two formats, specifying some nodes as strings (using default device type) and others as objects:
@@ -73,12 +80,15 @@ You can also specify the nodes as a dictionary of node objects, for example:
 ```
 nodes:
   e1:
-    igp: [ ospf, eigrp ]
-    edge: true
+    module: [ ospf, bgp ]
+    bgp:
+      as: 65000
   e2:
   pe1:
     device: csr
-    igp: [ ospf, eigrp ]
+    module: [ ospf, bgp ]
+    bgp:
+      as: 65000
 ```
 
 Nodes specified as a dictionary are converted into a list sorted by node names before further processing.
@@ -192,3 +202,4 @@ nodes:
     ipv4: 192.168.121.103
     mac: 08-4F-A9-00-00-03
   name: pe1
+```

@@ -2,10 +2,8 @@
 # CLI parser for create-topology script
 #
 import argparse
-import sys
 
 # Related modules
-# 
 from . import common
 
 def parse():
