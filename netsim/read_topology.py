@@ -4,7 +4,10 @@
 import os
 import sys
 from box import Box
-from importlib import resources
+try:
+  from importlib import resources
+except ImportError:
+  import importlib_resources as resources
 
 # Related modules
 from . import common
