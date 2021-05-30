@@ -1,12 +1,15 @@
 #
 # OSPF transformation module
 #
+import typing
+
+from box import Box
 
 from . import _Module
 
 class OSPF(_Module):
 
-  def node_post_transform(self,node,topology):
+  def node_post_transform(self, node: Box, topology: Box) -> None:
     if not 'links' in node:
       return
 

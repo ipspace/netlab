@@ -66,7 +66,7 @@ def test_error_cases():
   for test_case in list(glob.glob('errors/*yml')):
     print("Test case: %s" % test_case)
     common.err_count = 0
-    with pytest.raises(common.FatalError):
+    with pytest.raises(common.ErrorAbort):
       topo = run_test(test_case)
 
 
@@ -77,7 +77,7 @@ def test_minimal_cases():
   for test_case in list(glob.glob('minimal_errors/*yml')):
     print("Test case: %s" % test_case)
     common.err_count = 0
-    with pytest.raises(common.FatalError):
+    with pytest.raises(common.ErrorAbort):
       run_test(test_case,None,None)
 
 if __name__ == "__main__":

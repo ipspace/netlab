@@ -107,12 +107,43 @@ The following interface parameters are configured on supported network operating
 
 Individual **netsim-tools** [configuration modules](module-reference.md) are supported on these devices:
 
-| Operating system | OSPF | IS-IS | BGP | SR-MPLS |
-|------------------------|:-:|:-:|:-:|:-:|
-| Arista EOS             | ✅ | ✅ | ✅ | ✅ 
-| Arrcus ArcOS           | ✅ | ❌ | ❌ | ❌ |
-| Cisco IOS/IOS XE       | ✅ | ✅ | ✅ | ✅ |
-| Cisco Nexus OS         | ✅ | ✅ | ✅ | ❌ |
-| Cumulus Linux          | ✅ | ❌ | ✅ |  ❌ |
-| FRR 7.5.0              | ✅ | ✅ | ✅ | ❌ |
-| Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ❌ |
+| Operating system | OSPF | IS-IS | EIGRP | BGP | SR-MPLS |
+|------------------------|:-:|:-:|:-:|:-:|:-:|
+| Arista EOS             | ✅ | ✅ | ❌ | ✅ | ✅ 
+| Arrcus ArcOS           | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Cisco IOS              | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Cisco IOS XE           | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco Nexus OS         | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Cumulus Linux          | ✅ | ❌ | ❌ | ✅ |  ❌ |
+| FRR 7.5.0              | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Juniper vSRX 3.0       | ✅ | ✅ | ❌ | ✅ | ❌ |
+
+## IPv6 Support
+
+Core functionality of *netsim-tools* and all multi-protocol routing protocol configuration modules fully supports IPv6. OSPFv3 is not implemented yet.
+
+| Operating system | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
+|------------------------|:-:|:-:|:-:|:-:|:-:|:-:|
+| Arista EOS             | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| Arrcus ArcOS           | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Cisco IOS              | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
+| Cisco IOS XE           | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
+| Cisco Nexus OS         | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
+| Cumulus Linux          | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
+| FRR 7.5.0              | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
+| Juniper vSRX 3.0       | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
+
+<!--
+## BGP Support
+
+Some BGP parameters are not supported on all devices:
+
+| Operating system | IPv6 address<br />family |
+|------------------------|:-:|
+| Arista EOS             | ❌ |
+| Cisco IOS/IOS XE       | ❌ |
+| Cisco Nexus OS         | ❌ |
+| Cumulus Linux          | ❌ |
+| FRR 7.5.0              | ❌ |
+| Juniper vSRX 3.0       | ❌ |
+-->

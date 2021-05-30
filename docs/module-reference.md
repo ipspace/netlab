@@ -9,5 +9,6 @@ The following configuration modules are included in **netsim-tools** distributio
    module/bgp.md
    module/ospf.md
    module/isis.md
+   module/eigrp.md
    module/sr-mpls.md
 ```

@@ -3,8 +3,13 @@
 #
 import os
 import sys
+import typing
+
 from box import Box
-from importlib import resources
+try:
+  from importlib import resources
+except ImportError:
+  import importlib_resources as resources # type: ignore
 
 # Related modules
 from . import common
@@ -12,7 +17,7 @@ from . import common
 #
 # Read YAML from file, package file, or string
 #
-def read_yaml(filename=None,string=None):
+def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
   if string is not None:
     try:
       data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False)
@@ -38,16 +43,17 @@ def read_yaml(filename=None,string=None):
     print("Read YAML data from %s" % (filename or "string"))
   return data
 
-def include_defaults(topo,fname):
+def include_defaults(topo: Box, fname: str) -> None:
   defaults = read_yaml(fname)
   if defaults:
     topo.input.append(fname)
     topo.defaults = defaults + topo.defaults
 
-def load(fname,defaults,settings):
+def load(fname: str , defaults: Box, settings: str) ->Box:
   topology = read_yaml(fname)
   if topology is None:
     common.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
+  assert topology is not None
   topology.input = [ fname ]
   topology.setdefault('defaults',{})
   topology.setdefault('includes',[ 'defaults', 'global_defaults' ])

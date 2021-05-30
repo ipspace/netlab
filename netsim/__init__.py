@@ -16,7 +16,7 @@ from .providers import Provider
 LOGGING=False
 VERBOSE=False
 
-def dump_topology_data(topology,state):
+def dump_topology_data(topology: Box, state: str) -> None:
   print("%s topology data" % state)
   print("===============================")
 
@@ -25,7 +25,7 @@ def dump_topology_data(topology,state):
   topo_copy.pop("nodes_map",None)
   print(topo_copy.to_yaml())
 
-def main():
+def main() -> None:
   args = cli_parser.parse()
 
   topology = read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")

@@ -2,65 +2,99 @@
 
 Adding new devices to netsim-tools shouldn't be too hard:
 
-* Figure out the device image to use
-* Modify system settings
-* Add Ansible task lists to deploy and fetch device configurations
-* Add configuration templates.
+* [Figure out the device image to use](#device-images)
+* [Modify system settings](#system-settings) including [Ansible variables](#using-your-device-with-ansible-playbooks)
+* Add [Ansible task lists](#configuring-the-device) to deploy and fetch device configurations
+* Add [initial](#initial-device-configuration)- and [module-specific](#configuration-modules) configuration templates
+* [Test and document your work](#test-your-changes)
 
-You don't have to go all the way. Here are the steps you could follow:
+[Adding support for a new virtualization provider](#adding-an-existing-device-to-a-new-virtualization-provider) to an existing device is even simpler.
 
-* To use a network device in **create-topology** script, add device-specific settings to **devices** section of `netsim/topology-defaults.yml` configuration file.
-* To use a network device with a specific virtualization provider, add device-specific template to corresponding `netsim/templates/provider` directory.
-* To use a network device with netsim-tools Ansible playbooks, add device-specific task lists to `ansible/deploy-config` and `ansible/fetch-config` directories.
-* Deploying initial device configuration with **initial-config.ansible** requires device-specific task list in `ansible/deploy-config` and device configuration template in `templates/initial` directory.
-* To use a specific configuration module with a network device, follow the requirements for initial device configurations, and add module-specific configuration template to `templates/module` directory.
+## Device Images
 
-## Adding a Existing Device to a New Virtualization Provider
+*netsim-tools* supports three virtualization providers: *Vagrant* with *libvirt* and *Virtualbox*, and *containerlab* running Docker container images. 
 
-To add a device that is already supported by netsim-tools to a new virtualization environment follow these steps:
+If you can create a Vagrant box for the network device you want to use, or get a Docker container, it makes sense to proceed. Otherwise, yell at your vendor.
+
+In this step, you should have a repeatable *build my box* recipe. It's perfectly understandable that one might have to register at a vendor web site to download a container or a Vagrant box, or the images used to build a Vagrant box. Asking the potential users to "_contact the account team_" is not[^1].
+
+[^1]: ArcOS was a not-to-be-repeated one-off.
+
+## System Settings
+
+After building a Vagrant box or a container, you have to integrate it with *netsim-tools*. You'll need
+
+* A template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for details.
+* Device parameters within the **devices** section of `netsim/topology-defaults.yml`.
+
+The device parameters will have to include:
+
+* Interface name template (**interface_name**), including `%d` to insert interface number.
+* The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
+* Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.
+* Image name or box name for every supported virtualization provider (**image**).
+
+After adding the device parameters into `netsim/topology-defaults.yml`, you'll be able to use your device in network topology and use **create-topology** script to create detailed device data and virtualization provider configuration file.
+
+## Using Your Device with Ansible Playbooks
+
+If you want to use your device with Ansible playbooks included with *netsim-tools*, or connect to your device with **connect.sh** script, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory into the **group_vars** part of your device settings.
+
+The Ansible variables should include:
+
+* `ansible_connection` -- use **paramiko** for SSH access; you wouldn't want to be bothered with invalid SSH keys in a lab setup, and recent versions of Ansible became somewhat inconsistent in that regard.
+
+* `ansible_network_os` -- must be specified even if your device does not use **network_cli** connection. The value of this variable is used to select the configuration templates in the **initial-config.ansible** playbook.
+
+* `ansible_user` and `ansible_ssh_pass` must often be set to the default values included in the network device image.
+
+If you want to use the same device with multiple virtualization providers, you might have to specify provider-specific Ansible group variables (see **providers.clab.devices.eos** settings for details).
+
+## Configuring the Device
+
+To configure your device (including initial device configuration), you'll have to create an Ansible task list that deploys configuration snippets onto your device. *netsim-tools* rely on merging configuration snippets with existing device configuration, not replacing it.
+
+The configuration deployment task list has to be in the `ansible/deploy-config` and must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`.
+
+You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook -- add a task list collecting the device configuration into the `ansible/fetch-config` directory.
+
+## Initial Device Configuration
+
+Most lab users will want to use **initial-config.ansible** script to build and deploy initial device configurations, from IP addressing to routing protocol configuration.
+
+Create Jinja2 templates that will generate IP addressing and LLDP configuration within the `templates/initial` directory. The name of your template must match the `ansible_network_os` value from `netsim/topology-defaults.yml`.
+
+Use existing configuration templates and *[initial device configurations](platforms.md#initial-device-configurations)* part of *[supported platforms](platforms.md)* document to figure out what settings your templates should support.
+
+## Configuration Modules
+
+Similar to the initial device configuration, create templates supporting [individual configuration modules](module-reference.md) in module-specific subdirectories of the `templates` directory.
+
+Use existing configuration templates and module description to figure out which settings your templates should support.
+
+For every configuration module you add, update the module's `supported_on` list in `netsim/topology-defaults.yml` to indicate that the configuration module is supported by the network device. The list of supported devices is used by the **create-topology** script to ensure the final lab topology doesn't contain unsupported/unimplemented module/device combinations.
+
+## Adding an Existing Device to a New Virtualization Provider
+
+To add a device that is already supported by *netsim-tools* to a new virtualization environment follow these steps:
 
 * Get or build a Vagrant box or container image.
-* Add device-specific configuration to provider-specific subdirectory of `netsim/templates/vagrant/provider` directory. Use existing templates to figure out what exactly needs to be done.
+* Add device-specific virtualization provider configuration to provider-specific subdirectory of `netsim/templates/provider` directory. Use existing templates to figure out what exactly needs to be done.
 * You might need to add provider-specific device settings to system defaults (`netsim/topology-defaults.yml`). See **providers.clab.devices.eos** settings for details.
 
 **Notes**
 * Provider-specific device settings starting with **provider_** prefix are copied directly into node data (removing **provider_** prefix while doing that).
 * Other provider-specific device settings overwrite global device settings.
 
-## Adding a New Device Type
-
-To add a new device to netsim-tools, add device-specific settings to **devices** part of system settings (in `netsim/topology-defaults.yml` file). You should specify at least:
-
-* Interface name template (**interface_name**)
-* Device image used for all supported virtualization providers (**image**)
-
-You might also specify:
-
-* Management interface name (**mgmt_if**)
-* Interface number of the first usable interface (**ifindex_offset**)
-
-Next, [add virtualization provider settings](#adding-a-existing-device-to-a-new-virtualization-provider) for your device.
-
-To use your new device with Ansible playbooks:
-
-* In **devices** part of system settings (`netsim/topology-defaults.yml` file), specify Ansible group variables (**group_vars**), including **ansible_user**, **ansible_ssh_pass** (if needed), **ansible_network_os** and **ansible_connection**. If you want to use the same device with multiple virtualization providers, you might have to specify provider-specific Ansible group variables (see **providers.clab.devices.eos** settings for details).
-* Add configuration deployment task list using device-specific Ansible configuration module to `ansible/deploy-config` directory. The name of your task list must match the **ansible_network_os** value you specified for your device.
-* Add configuration retrieval task list using device-specific Ansible module(s) to `ansible/fetch-config` directory. The name of your task list must match the **ansible_network_os** value you specified for your device.
-* Add initial device configuration template to `templates/initial` directory. The template name must match **ansible_network_os** value specified in system settings.
-
-* Optional: add device configuration templates for individual modules. 
-
-To add configuration module support, add device configuration template to corresponding `templates/module` directory. Use existing configuration templates to figure out which settings your templates should support. For example, to add OSPF support for Cumulus VX, create NCLU configuration template in `templates/ospf/cumulus.j2` (assuming you set the **ansible_network_os** value to *cumulus*).
-
 ## Test Your Changes
 
-* Create a simple topology using your new device type
+* Create a simple topology using your new device type in the `tests/integration` directory
 * Create Ansible inventory and Vagrantfile with `create-topology -p -i`
 * Start your virtual lab
 * Perform initial device configuration with `initial-config.ansible`
 * Log into the device and verify interface state and interface IP addresses
 
-Final steps:
+## Final Steps
 
-* Fix the documentation (at least install.md and platforms.md)
-* Submit a pull request ;)
+* Fix the documentation (at least **install.md** and **platforms.md** documents)
+* Submit a pull request against the latest development (**dev_xxx**) branch.

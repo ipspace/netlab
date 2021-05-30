@@ -48,6 +48,7 @@ parameters when the corresponding addressing parameteres are missing:
 '''
 
 import sys
+import typing
 
 import netaddr
 from box import Box
@@ -55,7 +56,11 @@ from box import Box
 # Related modules
 from . import common
 
-def setup_pools(addrs = {},defaults = {}):
+def setup_pools(addrs: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
+  if not addrs:
+    addrs = Box({})
+  if not defaults:
+    defaults = Box({})
   legacy = Box({},default_box=True)
 
   legacy.lan = { 'ipv4': defaults.get('lan','10.0.0.0/16'), 'prefix': defaults.get('lan_subnet',24) }
@@ -63,7 +68,7 @@ def setup_pools(addrs = {},defaults = {}):
     legacy['lan']['start'] = 1
   legacy.loopback = { 'ipv4': (defaults.get('loopback','10.0.0.%d') % 0) + '/24', 'prefix': 32 }
   legacy.p2p = { 'ipv4': defaults.get('p2p','10.2.0.0/16'), 'prefix': defaults.get('p2p_subnet',30) }
-  legacy.mgmt = {}
+  legacy.mgmt = Box({},default_box=True)
 
   if 'mgmt_ip' in defaults:
     legacy.mgmt.ipv4 = defaults.get('mgmt_ip') % 0
@@ -83,7 +88,9 @@ def setup_pools(addrs = {},defaults = {}):
 
   return addrs
 
-def validate_pools(addrs = {}):
+def validate_pools(addrs: typing.Optional[Box] = None) -> None:
+  if not addrs:
+    addrs = Box({})
   for k in ('lan','loopback'):
     if not k in addrs:
       common.error( \
@@ -154,8 +161,10 @@ def validate_pools(addrs = {}):
           "Error in '%s' addressing pool: IPv6 pool prefix cannot be longer than /56" % pool, \
           category=common.IncorrectValue,module='addressing')
 
-def create_pool_generators(addrs = {}):
-  gen = {}
+def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
+  if not addrs:
+    addrs = Box({})
+  gen: typing.Dict = {}
   for pool,pfx in addrs.items():
     gen[pool] = {}
     if 'unnumbered' in pfx:
@@ -169,32 +178,34 @@ def create_pool_generators(addrs = {}):
           next(gen[pool][af])
   return gen
 
-def get_pool(pools,pool_list):
+def get_pool(pools: Box, pool_list: typing.List[str]) -> typing.Optional[str]:
   for p in pool_list:
     if p in pools:
       return p
 
   common.error( \
-    'Cannot get addressing for any of these pools: ' % pool_list, \
+    'Cannot get addressing for any of these pools: %s' % str(pool_list), \
     category=common.MissingValue,module='addressing')
   return None
 
-def get_pool_prefix(pools,p):
-  prefixes = {}
+def get_pool_prefix(pools: typing.Dict, p: str) -> typing.Dict:
+  prefixes: typing.Dict = {}
   if pools[p].get('unnumbered'):
     return prefixes
   for af in pools[p]:
     prefixes[af] = next(pools[p][af])
   return prefixes
 
-def get(pools,pool_list = ['lan']):
+def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None) -> typing.Dict:
+  if not pool_list:
+    pool_list = ['lan']
   p = get_pool(pools,pool_list)
   if p:
     return get_pool_prefix(pools,p)
   else:
     return {}
 
-def setup(topo,defaults):
+def setup(topo: Box, defaults: Box) -> None:
   common.null_to_string(topo.addressing)
   addrs = setup_pools(defaults.addressing + topo.addressing,defaults)
 
@@ -208,12 +219,12 @@ def setup(topo,defaults):
   topo.addressing = addrs
   common.exit_on_error()
 
-def normalize_af(af):
+def normalize_af(af: str) -> str:
   return 'ipv4' if af == 'ip' else af
 
-def parse_prefix(prefix):
+def parse_prefix(prefix: str) -> typing.Dict:
   supported_af = ['ip','ipv4','ipv6']
-  prefix_list = {}
+  prefix_list: typing.Dict = {}
   if isinstance(prefix,dict):
     for af,pfx in prefix.items():
       if not af in supported_af:
@@ -226,7 +237,7 @@ def parse_prefix(prefix):
   else:
     return { 'ipv4' : netaddr.IPNetwork(prefix) }
 
-def get_addr_mask(pfx,host):
+def get_addr_mask(pfx: netaddr.IPNetwork, host: int) -> str:
   host_ip = netaddr.IPNetwork(pfx[host])
   host_ip.prefixlen = pfx.prefixlen
   return str(host_ip)

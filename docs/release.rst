@@ -1,6 +1,17 @@
 Release notes
 =============
 
+2021-05-31 (release 0.7)
+  * EIGRP configuration module
+  * BGP parameters: advertise_loopback, originate prefixes, community propagation
+  * BGP IPv6 address family configuration
+  * OSPF reference bandwidth
+  * IS-IS P2P network type on all P2P links (not just unnumbered)
+  * Single-module initial configuration
+  * Python type hinting and mypy checks
+
+  :doc:`More details <release/0.7>`
+
 2021-05-24 (`release 0.6.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.6.3>`_)
   * BGP configuration module
   * IS-IS configuration module
@@ -54,6 +65,7 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/0.7.md
    release/0.6.md
    release/0.5.md
    release/0.4.md

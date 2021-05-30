@@ -1,3 +1,16 @@
+<!--
+# Development Notes
+
+This is development branch for what might become release 0.7 or release 0.6.4 (depending on how many changes we'll accumulate in this release).
+
+Changes from release 0.6.3 ([more details](https://netsim-tools.readthedocs.io/en/dev_0.7/release/0.6x.html)):
+
+* Static typing in Python code and **mypy** tests
+* **bgp.advertise_loopback** parameter to disable loopback prefix advertisements
+* **bgp.originate** node parameter to originate additional prefixes
+* **ospf.reference_bandwidth** global/node parameter to set the OSPF reference bandwidth
+-->
+
 # Overview
 
 *netsim-tools* are bringing infrastructure-as-code concepts to networking labs. You'll describe your high-level network topology and routing design in a YAML file, and the tools in this repository will
@@ -5,19 +18,19 @@
 * Create *Vagrantfile* configuration file for *virtualbox* or *libvirt* environment
 * Create *containerlab* configuration file
 * Create Ansible inventory and configuration file
-* Create IPv4 and IPv6 addressing plan and OSPF, IS-IS and BGP routing design
-* Configure IPv4, IPv6, LLDP, OSPF, IS-IS, BGP or SR-MPLS on your lab devices.
+* Create IPv4 and IPv6 addressing plan and OSPF, EIGRP, IS-IS, and BGP routing design
+* Configure IPv4, IPv6, LLDP, OSPF, EIGRP, IS-IS, BGP, or SR-MPLS on your lab devices.
 
 Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
 ## Releases
 
-* Latest release: [release_0.6.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.6.3) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.6.html))
-* If you find bugs in the latest 0.6 release, please report them and use and earlier 0.6 release or [release_0.5](https://github.com/ipspace/netsim-tools/releases/tag/release_0.5).
+* Latest release: [release_0.7](https://github.com/ipspace/netsim-tools/releases/tag/release_0.7) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.7.html))
+* If you find bugs in the 0.7 release, please report them and use the [latest 0.6 release](https://github.com/ipspace/netsim-tools/releases/tag/release_0.6.3).
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 
-You might also want to [read the documentation](https://netsim-tools.readthedocs.io/en/latest/), and [installation guidelines](https://netsim-tools.readthedocs.io/en/latest/install.html).
+You might also want to [read the documentation](https://netsim-tools.readthedocs.io/), and [installation guidelines](https://netsim-tools.readthedocs.io/en/latest/install.html).
 
 ## An overview of tools:
 

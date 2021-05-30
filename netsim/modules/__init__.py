@@ -4,6 +4,7 @@
 # Individual configuration modules are defined as Python files within this directory inheriting
 # Module class and adding transformation methods
 #
+import typing
 
 from box import Box
 
@@ -18,17 +19,29 @@ no_propagate_list = ["attributes","requires","supported_on","no_propagate"]
 
 class _Module(Callback):
 
-  def __init__(self,data):
+  def __init__(self, data: Box) -> None:
     pass
 
   @classmethod
-  def load(self,module,data):
+  def load(self, module: str, data: Box) -> typing.Any:
     module_name = __name__+"."+module
     obj = self.find_class(module_name)
     if obj:
       return obj(data)
     else:
       return _Module(data)
+
+  def set_af_flag(self, node: Box, model_data: Box) -> None:
+    for af in ['ipv4','ipv6']:
+      if af in node.loopback:        # Address family enabled on loopback?
+        model_data[af] = True        # ... we need it in the module
+        continue
+
+      for l in node.get('links',[]): # Scan all links
+        if af in l:                  # Do we have AF enabled on any of them?
+          model_data[af] = True      # Found it - we need it the module
+          continue
+
 
 """
 pre_transform: executed just before the main data model transformation is started
@@ -37,7 +50,7 @@ pre_transform: executed just before the main data model transformation is starte
 * Call module-specific node transformation code
 * Call module-specific link transformation code
 """
-def pre_transform(topology):
+def pre_transform(topology: Box) -> None:
   adjust_modules(topology)
   check_module_parameters(topology)
   node_transform("pre_transform",topology)
@@ -48,14 +61,14 @@ post_transform:
   execute module-specific code after the main link- and node
   transformations has completed
 """
-def post_transform(topology):
+def post_transform(topology: Box) -> None:
   check_supported_node_devices(topology)       # A bit late, but we can do this check only after node data has been adjusted
   node_transform("post_transform",topology)
   link_transform("post_transform",topology)
 
 # Set default list of modules for nodes without specific module list
 #
-def augment_node_module(topology):
+def augment_node_module(topology: Box) -> None:
   if not 'module' in topology:
     return
 
@@ -67,7 +80,7 @@ def augment_node_module(topology):
 # Check whether the modules defined on individual nodes are valid
 # and supported
 #
-def check_supported_node_devices(topology):
+def check_supported_node_devices(topology: Box) -> None:
   for n in topology.nodes:
     for m in n.get("module",[]):                                # Iterate across all modules used by a node
       if not m in topology.defaults:                            # Do we know about the module?
@@ -86,7 +99,7 @@ def check_supported_node_devices(topology):
 # Remove "no_propagate" values (default: "attributes")
 # before merging the global settings
 #
-def merge_node_module_params(topology):
+def merge_node_module_params(topology: Box) -> None:
   global no_propagate_list
 
   for n in topology.nodes:
@@ -110,7 +123,7 @@ adjust_global_modules: last phase of global module adjustments
 * merge default settings with global settings
 * copy global settings into node settings (apart from no_propagate attributes)
 '''
-def adjust_global_modules(topology):
+def adjust_global_modules(topology: Box) -> None:
   mod_dict = { m : None for m in topology.get('module',[]) }
   for n in topology.nodes:
     for m in n.get('module',[]):
@@ -157,7 +170,7 @@ adjust_modules: somewhat intricate multi-step config module adjustments
 * Check whether the module parameters specified globally, or on node/link level, are valid
 * Merge global module parametres into nodes
 '''
-def adjust_modules(topology):
+def adjust_modules(topology: Box) -> None:
   augment_node_module(topology)
   adjust_global_modules(topology)
   check_module_parameters(topology)
@@ -183,7 +196,7 @@ Global attributes are used as default value for node attributes.
 Link attributes are used as default value for node-on-link attributes.
 """
 
-def check_module_parameters(topology):
+def check_module_parameters(topology: Box) -> None:
   mod_attr = Box({},default_box=True,box_dots=True)
 
   for m in topology.get("module",[]):                      # Iterate over all active modules
@@ -228,7 +241,7 @@ def check_module_parameters(topology):
                                                   # ... link-level node attributes report error
                 common.error("Node %s has invalid attribute %s for module %s on link %s" % (n,k,m,l),common.IncorrectValue)
 
-def parse_module_attributes(a):
+def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> typing.Union[typing.Dict, Box]:
   if isinstance(a,dict):
     attr = Box(a,default_box=True,box_dots=True)
     attr.link_node = attr.get("link_node",attr.link)
@@ -248,7 +261,7 @@ check_module_dependencies:
 For every module used by the topology, check is the module has "requires" attribute, and if
 it does, check that everything in that list is also in the topology modules list.
 """
-def check_module_dependencies(topology):
+def check_module_dependencies(topology:  Box) -> None:
   for m in topology.get("module",[]):               # Use this format in case we don't use any modules
     mod_def = topology.defaults.get(m,{})           # Get module defaults
     if mod_def:                                     # Are they meaningful?
@@ -266,9 +279,9 @@ Callback transformation routines
 Note: mod_load is a global cache of loaded modules
 """
 
-mod_load = {}
+mod_load: typing.Dict = {}
 
-def module_transform(method,topology):
+def module_transform(method: str, topology: Box) -> None:
   global mod_load
 
   for m in topology.get('module',[]):
@@ -276,7 +289,7 @@ def module_transform(method,topology):
       mod_load[m] = _Module.load(m,topology.get(m))
     mod_load[m].call("module_"+method,topology)
 
-def node_transform(method,topology):
+def node_transform(method: str , topology: Box) -> None:
   global mod_load
 
   rebuild_nodes_map(topology)
@@ -287,12 +300,12 @@ def node_transform(method,topology):
         mod_load[m] = _Module.load(m,topology.get(m))
       mod_load[m].call("node_"+method,n,topology)
 
-def link_transform(method,topology):
+def link_transform(method: str, topology: Box) -> None:
   global mod_load
 
   rebuild_nodes_map(topology)
   for l in topology.get("links",[]):
-    mod_list = {}
+    mod_list: typing.Dict = {}
     for n in l.keys():
       if not n in topology.nodes_map:
         continue

@@ -6,13 +6,19 @@ Supported features:
 
 * Multi-area deployment
 * Per-link cost and asymmetric costs
+* Reference bandwidth
 * Unnumbered point-to-point interfaces
 * Passive interfaces
+
+## Global Parameters
+
+* **ospf.reference_bandwidth** sets the OSPF auto-cost reference bandwidth (in Mbps) for all devices in the network.
 
 ## Node Parameters
 
 * **ospf.process** -- process ID (default: 1)
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area, and on loopback interface.
+* **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 
 You can specify node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 

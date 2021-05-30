@@ -1,0 +1,48 @@
+{#
+
+Configure IPv4 EIGRP
+
+#}
+{% if eigrp.ipv4|default("") %}
+router eigrp {{ eigrp.as }}
+ network 0.0.0.0 255.255.255.255
+{% for l in links|default([])
+     if l.type|default("") == "stub"
+       or l.role|default("NONE") in ["stub","passive","external"]
+       or l.eigrp.passive|default(False) %}
+ passive-interface {{ l.ifname }}
+{% endfor %}
+{% if mgmt.ifname|default("") %}
+ passive-interface {{ mgmt.ifname }}
+{% endif %}
+!
+{% endif %}
+{#
+
+Configure IPv6 EIGRP - totally separate configuration
+
+#}
+{% if eigrp.ipv6|default("") %}
+ipv6 router eigrp {{ eigrp.as }}
+{% for l in links|default([])
+     if l.type|default("") == "stub"
+       or l.role|default("NONE") in ["stub","passive","external"]
+       or l.eigrp.passive|default(False) %}
+ passive-interface {{ l.ifname }}
+{% endfor %}
+{% if 'ipv6' in loopback %}
+!
+interface Loopback0
+ ipv6 eigrp {{ eigrp.as }}
+{% endif %}
+!
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+! IPv6 EIGRP not configured on external interface {{ l.ifname }}
+{%   elif 'ipv6' in l or 'unnumbered' in l %}
+interface {{ l.ifname }}
+ ipv6 eigrp {{ eigrp.as }}
+!
+{% endif %}
+{% endfor %}
+{% endif %}

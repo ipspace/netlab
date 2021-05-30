@@ -1,6 +1,7 @@
 #
 # BGP transformation module
 #
+import typing
 
 from box import Box
 import netaddr
@@ -8,12 +9,32 @@ import netaddr
 from . import _Module
 from .. import common
 
-def check_bgp_parameters(node):
-  if "bgp" in node:
-    if not "as" in node.bgp:
-      common.error("Node %s has BGP enabled but no AS number specified" % node.name)
+def check_bgp_parameters(node: Box) -> None:
+  if not "bgp" in node:
+    return
+  if not "as" in node.bgp:
+    common.error("Node %s has BGP enabled but no AS number specified" % node.name)
 
-def find_bgp_rr(bgp_as,topology):
+  if "community" in node.bgp:
+    bgp_comm = node.bgp.community
+    if isinstance(bgp_comm,str):
+      node.bgp.community = { 'ibgp' : [ bgp_comm ], 'ebgp': [ bgp_comm ]}
+    elif isinstance(bgp_comm,list):
+      node.bgp.community = { 'ibgp' : bgp_comm, 'ebgp': bgp_comm }
+    elif not(isinstance(bgp_comm,dict)):
+      common.error("bgp.community attribute in node %s should be a string, a list, or a dictionary (%s)" % (node.name,str(bgp_comm)))
+      return
+
+    for k in node.bgp.community.keys():
+      if not k in ['ibgp','ebgp']:
+        common.error("Invalid BGP community setting in node %s: %s" % (node.name,k))
+      if isinstance(node.bgp.community[k],str):
+        node.bgp.community[k] = [ node.bgp.community[k] ]
+      for v in node.bgp.community[k]:
+        if not v in ['standard','extended']:
+          common.error("Invalid BGP community propagation setting for %s sessions in node %s: %s" % (k,node.name,v))
+
+def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
   rrlist = []
   for n in topology.nodes:
     if not "bgp" in n:
@@ -22,7 +43,9 @@ def find_bgp_rr(bgp_as,topology):
       rrlist.append(n)
   return rrlist
 
-def bgp_neighbor(n,intf,ctype,extra_data={}):
+def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[Box] = None) -> Box:
+  if not extra_data:
+    extra_data = {}
   ngb = Box(extra_data,default_box=True,box_dots=True)
   ngb.name = n.name
   ngb["as"] = n.bgp.get("as")
@@ -32,7 +55,7 @@ def bgp_neighbor(n,intf,ctype,extra_data={}):
       ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
   return ngb
 
-def get_neighbor_rr(n):
+def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
   if "rr" in n.get("bgp"):
     return { "rr" : n.bgp.rr }
 
@@ -49,7 +72,7 @@ class BGP(_Module):
   We could implement this one as node pre_default, but then we'd have to repeatedly
   scan the AS_list
   """
-  def module_pre_default(self,topology):
+  def module_pre_default(self, topology: Box) -> None:
     if not 'bgp' in topology:                            # Do we have global BGP settings?
       return
 
@@ -101,7 +124,7 @@ class BGP(_Module):
   global bgp.rr attribute. Also, delete the global bgp.rr attribute so it's not propagated
   down to nodes
   """
-  def node_pre_transform(self,node,topology):
+  def node_pre_transform(self, node: Box, topology: Box) -> None:
     if "rr_list" in topology.get("bgp",{}):
       if node.name in topology.bgp.rr_list:
         node.bgp.rr = True
@@ -112,7 +135,7 @@ class BGP(_Module):
   If the nodes belong to at least two autonomous systems, and the ebgp_role
   variable is set, set the link role to ebgp_role
   """
-  def link_pre_transform(self,link,topology):
+  def link_pre_transform(self, link: Box, topology: Box) -> None:
     ebgp_role = topology.bgp.get("ebgp_role",None) or topology.defaults.bgp.get("ebgp_role",None)
     if not ebgp_role:
       return
@@ -136,7 +159,7 @@ class BGP(_Module):
   * EBGP sessions are established whenever two nodes on the same link have different AS
   * Links matching 'advertise_roles' get 'advertise' attribute set
   """
-  def node_post_transform(self,node,topology):
+  def node_post_transform(self, node: Box, topology: Box) -> None:
     if not "bgp" in node:
       common.error("Node %s has BGP module enabled but no BGP parameters" % node.name)
     check_bgp_parameters(node)
@@ -168,10 +191,18 @@ class BGP(_Module):
           continue
         if neighbor.bgp.get("as") and neighbor.bgp.get("as") != node.bgp.get("as"):
           extra_data = Box({})
+          extra_data.ifindex = l.ifindex
           if "unnumbered" in l:
             extra_data.unnumbered = True
-            extra_data.ifindex = l.ifindex
           node.bgp.neighbors.append(bgp_neighbor(neighbor,ngb_ifdata,'ebgp',extra_data))
+
+    # Calculate BGP address families
+    #
+    for af in ['ipv4','ipv6']:
+      for n in node.bgp.neighbors:
+        if af in n:
+          node.bgp[af] = True
+          break
 
     # Set bgp.advertise flag on stub links
     #

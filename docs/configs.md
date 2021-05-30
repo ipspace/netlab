@@ -11,7 +11,7 @@ When run without the **--tags** parameter, the playbook deploys all relevant con
 
 When run with **-v** parameter, the playbook displays device configurations before deploying them. You could use **-v --tags test** parameters to display device configurations without deploying them.
 
-## Initial device configurations
+## Initial Device Configurations
 
 Initial device configurations are created from inventory data and templates in **templates/initial** directory. Device-specific configuration template is selected using **ansible_network_os** value (making IOSv and CSR 1000v templates identical).
 
@@ -28,6 +28,12 @@ The initial configuration also includes LLDP running on all interfaces apart fro
 
 Default passwords and other default configuration parameters are supposed to be provided by the Vagrant boxes.
 
-## Module configurations
+## Module Configurations
 
 Module-specific device configurations are created from templates in **templates/_module_** directory. Device-specific configuration template is selected using **ansible_network_os** value. See the [module descriptions](module-reference.md) for list of supported parameters.
+
+This part of the configuration deployment could be limited with **modlist** external variable -- a subset of configuration modules to be deployed. For example, to configure just OSPF (in a network running OSPF and BGP) on R1, use:
+
+```
+$ initial-config.ansible -l r1 -e modlist=[ospf]
+```
