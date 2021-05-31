@@ -27,9 +27,10 @@ connect_ssh() {
 connect_docker() {
   host=$(echo $data|jq -r .ansible_host)
   echo "Connecting to container $host, starting bash..."
-  cmd=(docker exec -it $host bash -il)
-  if [ "$@" ]; then
-    cmd+=(-c $@)
+  cmd=(docker exec -it $host bash -il -c)
+  if [ $# -gt 0 ]; then
+    cmd_usr="$@"
+    cmd+=("${cmd_usr}")
   fi
   echo 1>&2 "executing ${cmd[@]}"
   "${cmd[@]}"
