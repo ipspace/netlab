@@ -83,7 +83,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
       output.write(yaml.dump(data))
     output.close()
 
-min_inventory_data = [ 'id','ansible_host','ansible_port' ]
+min_inventory_data = [ 'id', 'ansible_host', 'ansible_port', 'connection_type', 'container_host' ]
 
 def write(data: Box, fname: str, hostvars: str) -> None:
   inventory = create(data['nodes'],data.get('defaults',{}))
