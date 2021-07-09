@@ -6,40 +6,39 @@ Building a *vagrant-libvirt*-based lab might take a bit longer than using Vagran
 
 Libvirt is a Linux-based virtualization management tool. To use it with Vagrant:
 
-* install KVM and libvirt
+* Install KVM and libvirt
 * Install Vagrant
-* Install *vagrant-libvirt* plugin with **vagrant plugin install libvirt**
+* Install *vagrant-libvirt* plugin with **vagrant plugin install libvirt --plugin-version=0.4.1**
 
-To simplify the installation process, use **install.libvirt** Ansible playbook to install Vagrant, *libvirt* Vagrant plugin, **netsim-tools**, and all their dependencies on Ubuntu (tested on a Ubuntu 20.04 virtual machine):
+To simplify the installation process, use **netlab install** command to install Ansible, vagrant, libvirt, and all their prerequisites (tested on a Ubuntu 20.04 virtual machine):
 
 ```bash
-$ wget https://raw.githubusercontent.com/ipspace/netsim-tools/master/install.libvirt
-$ ansible-playbook install.libvirt
+$ netlab install ubuntu ansible libvirt
 ```
 
-The playbook:
+The *libvirt* installation scripts:
 
-- Installs all software packages required to use the *libvirt* Vagrant backend (including the *vagrant-libvirt* plugin)
+- Install all software packages required to use the *libvirt* Vagrant backend (including the *vagrant-libvirt* plugin)
 - Adds current user to *libvirt* group
 - Configures the *vagrant-libvirt* network
-- Clones the `netsim-tools` repository into `/opt/netsim-tools` and makes that directory writeable by the current user
-- Instantiates a new Python virtual environment in `/opt/netsim-tools` and install the Python dependencies into it.
-- Installs Ansible collections for supported network devices (IOS, NXOS, EOS, Junos)
 
-<div class='admonition tip'>
-<p class='title'>Tip on **sudo** passwords</p>
-The playbook uses **sudo** (or **become** as Ansible documentation likes to call it) to install system software. If **sudo** requires a password on your system, start **ansible-playbook** with `--ask-become-pass` option.
-</div>
+```{tip}
+The installation scripts use **sudo** to install system software.
+```
 
 For more details, read *[A Quick Introduction to Netsim-Tools](https://blog.kirchne.red/netsim-tools-quickstart.html)* by [Leo Kirchner](https://www.linkedin.com/in/leo-kirchner/).
 
 ## Creating *vagrant-libvirt* Virtual Network
 
-Vagrant *libvirt* provider connects management interfaces of managed VMs to *vagrant-libvirt* virtual network. Vagrant can figure out the device IP address based on dynamic DHCP mappings; **netsim-tools** can't. To make the Ansible inventory created by **create-topology** tool work, your virtual network MUST include static DHCP bindings that map MAC addresses used by **create-topology** into expected IP addresses.
+Vagrant *libvirt* provider connects management interfaces of managed VMs to *vagrant-libvirt* virtual network. Vagrant can figure out the device IP address based on dynamic DHCP mappings; *netsim-tools* can't. To make the Ansible inventory created by **[netlab create](../netlab/create.md)** tool work, your virtual network MUST include static DHCP bindings that map management MAC addresses defined in *netsim-tools* data model into expected IP addresses.
 
-The static DHCP bindings must map MAC addresses `08:4F:A9:00:00:xx` into IP addresses `192.168.121.1xx`. The easiest way to create the virtual network and static DHCP mappings is to use the `netsim/templates/provider/libvirt/vagrant-libvirt.xml` file supplied with **netsim-tools**:
+```{tip}
+The _vagrant-libvirt_ virtual network is created as part of `netlab install libvirt` installation script.
+```
 
-* If needed, delete the existing *vagrant-libvirt* network with **virsh net-destroy vagrant-libvirt**
+The static DHCP bindings must map MAC addresses `08:4F:A9:00:00:xx` into IP addresses `192.168.121.1xx`. The easiest way to create the virtual network and static DHCP mappings is to use the `netsim/templates/provider/libvirt/vagrant-libvirt.xml` file supplied with *netsim-tools*:
+
+* If needed, delete the existing *vagrant-libvirt* network with **virsh net-destroy vagrant-libvirt** and **virsh net-undefine vagrant-libvirt**
 * Create the management network with **virsh net-create _path_/vagrant-libvirt.xml**
 
 You could also use **virsh net-edit _vagrant-libvirt_** to edit the XML definition of your existing *vagrant-libvirt* network -- replace the exiting **ip** element with this XML snippet:
@@ -67,6 +66,8 @@ For more details, see [Using Libvirt Provider with Vagrant](https://codingpacket
 
 ## Testing the Installation
 
+The easiest way to test your installation is to use **[netlab test](../netlab/test.md)** command. If you prefer to do step-by-step tests, you might find this recipe useful:
+
 * Create an empty directory and `topology.yml` file with the following contents within that directory:
 
 ```
@@ -78,7 +79,7 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3, s1-s2-s3 ]
 ```
 
-* Create Vagrantfile with `create-topology -t topology.yml -p`
+* Create Vagrantfile with `netlab create` command
 * Execute `vagrant up` to spin up three Cumulus VX virtual machines
 * Connect to the Cumulus VX devices with `vagrant ssh`
 * Destroy the lab with `vagrant destroy -f`

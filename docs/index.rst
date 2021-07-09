@@ -1,35 +1,30 @@
-.. Network Simulation Tools documentation master file, created by
-   sphinx-quickstart on Sat Dec 12 17:27:51 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 ipSpace.net Network Simulation Tools
 ====================================================
 
-The `ipSpace.net network simulation tools <https://github.com/ipspace/netsim-tools>`_ will help you be more proficient once you decide to drop GUI-based network simulators and to build your labs using CLI and infrastructure-as-code principles.
+The `ipSpace.net network simulation tools <https://github.com/ipspace/netsim-tools>`_ will help you be more proficient once you decide to drop GUI-based network simulators and build your labs using CLI and infrastructure-as-code principles.
 
-The *netsim-tools* tools will help you:
+*netsim-tools* will help you:
 
 * Describe high-level lab topology in YAML format without worrying about the specific implementation details
 * Use the same lab topology with multiple virtualization providers (Virtualbox, KVM/libvirt, Docker containers)
 * Create Vagrant configuration files and Ansible inventory from the lab topology
 
-Based on your lab topology the :doc:`create-topology<create-topology>` script will:
+Based on your lab topology the :doc:`netlab create<netlab/create>` command will:
 
 * Create an IPv4 and IPv6 addressing plan for your lab
 * Prepare all the necessary configuration files to start the lab
 
-Once the lab is started you can use the :doc:`initial-config.ansible <configs>` Ansible playbook to:
+Once the lab is started you can use the :doc:`netlab initial <netlab/initial>` command to:
 
 * Deploy initial configurations (interfaces, IP addresses, usernames...) to your lab devices
 * Configure OSPF, IS-IS, BGP and SR-MPLS in your lab.
 
 When the lab is fully configured you could:
 
-* Use the **connect.sh** script to connect to network devices via SSH or **docker exec**
-* Use **config.ansible** playbook to deploy custom configuration snippets
+* Use the **netlab connect** command to connect to network devices via SSH or **docker exec**
+* Use **netlab config** command to deploy custom configuration snippets
 
-Before shutting down your lab, you might want to run the **collect-config.ansible** playbook to
+Before shutting down your lab, you might want to run the **netlab collect** command to
 save the configuration changes you made.
 
 Getting Started
@@ -56,16 +51,15 @@ Getting Started
 
    tutorials.md
    topology-overview.md
-   tool-overview.md
-   create-topology.md
-   configs.md
+   cli-overview.md
 ..
 
 .. toctree::
    :caption: Reference Materials
-   :maxdepth: 2
+   :maxdepth: 1
    :hidden:
 
+   netlab/cli.md
    topology-reference.md
    modules.md
    module-reference.md
@@ -79,4 +73,5 @@ Getting Started
 
    release.rst
    contribute.md
+   legacy-cli/legacy.md
 ..

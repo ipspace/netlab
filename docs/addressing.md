@@ -1,10 +1,10 @@
 # Topology Address Pools
 
-The initial release of **create-topology** tool used simple address configuration described at the bottom of this document. Release 0.2 introduced structured address pools.
+```{tip}
+The initial release of *‌netsim-tools* used simple address configuration described at the bottom of this document. Release 0.2 introduced structured address pools described in the rest of this document.
+```
 
-## Address Pools Overview
-
-**create-topology** tool uses multiple address pools to create automatic address plans for the desired lab topology:
+Lab topology transformation code uses multiple address pools to create automatic address plans for the desired lab topology:
 
 * **mgmt** pool: Management IPv4 and MAC addresses. IPv6 addresses are assigned if specified, but not used at the moment.
 * **loopback** pool: Loopback IPv4 and IPv6 addresses.
@@ -206,4 +206,4 @@ Release 0.1 used individual parameters in **defaults** section (specified in top
 * **p2p**: IPv4 CIDR prefix for P2P links
 * **p2p_subnet**: Prefix size for subnets in *p2p* pool
 
-These parameters SHOULD NOT be used in release 0.2. When they're present in **defaults** section or a defaults file they're merged with the corresponding **addressing** parameters.
+These parameters SHOULD NOT be used in release 0.2 or above. When they're present in **defaults** section or a defaults file they're merged with the corresponding **addressing** parameters.

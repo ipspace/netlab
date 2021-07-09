@@ -7,14 +7,12 @@
 from box import Box
 
 from . import common
-from . import cli_parser
 from . import read_topology
 from . import augment
 from . import inventory
 from .providers import Provider
 
-LOGGING=False
-VERBOSE=False
+import argparse
 
 def dump_topology_data(topology: Box, state: str) -> None:
   print("%s topology data" % state)
@@ -25,9 +23,15 @@ def dump_topology_data(topology: Box, state: str) -> None:
   topo_copy.pop("nodes_map",None)
   print(topo_copy.to_yaml())
 
-def main() -> None:
-  args = cli_parser.parse()
+def set_logging_flags(args: argparse.Namespace) -> None:
+  if args.verbose:
+    common.VERBOSE = True
 
+  if args.logging:
+    common.LOGGING = True
+
+def main(args: argparse.Namespace) -> None:
+  set_logging_flags(args)
   topology = read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")
   if args.verbose:
     dump_topology_data(topology,'Collected')

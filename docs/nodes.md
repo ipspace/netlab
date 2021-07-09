@@ -95,7 +95,7 @@ Nodes specified as a dictionary are converted into a list sorted by node names b
 
 ## Augmenting Node Data
 
-After the initial cleanup, **create-topology** script augments node data as follows (bold text indicates attribute names):
+After the initial cleanup, *netsim-tools* topology transformation code augments node data as follows (bold text indicates attribute names):
 
 * Node **id** is set based on node's position in the list starting with 1
 * **loopback** addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.

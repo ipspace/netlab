@@ -1,4 +1,10 @@
-# Create Lab Configuration Files
+# create-topology
+
+```{warning}
+**create-topology** script has been replaced with significantly simpler **‌netlab create** command in release 0.8. If you want to use the original CLI options, use the (undocumented) **netlab topology** command. 
+
+To use the **create-topology** script, download the source code from GitHub and use `source setup.sh` to set up PATH variable.
+```
 
 The **create-topology** script reads:
 
@@ -8,7 +14,7 @@ The **create-topology** script reads:
 
 ... and creates device- and link-level data structures fully describing network topology and IP addressing. These data structures can then be used to create:
 
-* **Vagrantfile** supporting *[libvirt](labs/libvirt.md)* or *[virtualbox](labs/virtualbox.md)* environment
+* **Vagrantfile** supporting *[libvirt](../labs/libvirt.md)* or *[virtualbox](../labs/virtualbox.md)* environment
 * **clab.yml** file used by *containerlab*.
 * Ansible inventory, either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
 * YAML file with expanded topology data (in case you need it for further automation tasks)
@@ -52,4 +58,4 @@ Typical uses (creating configuration files):
 * `create-topology -i -c` to create Ansible inventory (in **hosts.yml**), **ansible.cfg** (making inventory file the default inventory), **group_vars** and **host_vars**
 * `create-topology -i --hostvars min` to dump all data structures into a single Ansible inventory file (**hosts.yml**)
 
-For more details on topology file format, please read the [lab topology overview](topology-overview.md) and [reference documentation](topology-reference.md).
+For more details on topology file format, please read the [lab topology overview](../topology-overview.md) and [reference documentation](../topology-reference.md).

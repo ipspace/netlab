@@ -10,7 +10,7 @@ from .. import augment
 from ..providers import Provider
 from .. import modules
 
-def transform(topology: Box) -> None:
+def transform_setup(topology: Box) -> None:
   topology.setdefault('defaults',{})
   augment.topology.check_required_elements(topology)
   augment.topology.adjust_global_parameters(topology)
@@ -24,6 +24,7 @@ def transform(topology: Box) -> None:
     topology.links = augment.links.adjust_link_list(topology.links)
   common.exit_on_error()
 
+def transform_data(topology: Box) -> None:
   addressing.setup(topology,topology.defaults)
   modules.pre_transform(topology)
 
@@ -36,3 +37,7 @@ def transform(topology: Box) -> None:
   common.exit_on_error()
   del topology.pools
   del topology.Provider
+
+def transform(topology: Box) -> None:
+  transform_setup(topology)
+  transform_data(topology)

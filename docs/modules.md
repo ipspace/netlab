@@ -94,12 +94,12 @@ The link between R2 and R3 should be in area 0. Set OSPF area with a link attrib
 
 ## Using Modules when Deploying Device Configurations
 
-During the initial device configuration, the **[initial-config.ansible](configs.md)** playbook generates and deploys configuration snippets for every module specified on individual network devices.
+During the initial device configuration, the **[netlab initial](../netlab/initial.md)** command generates and deploys configuration snippets for every module specified on individual network devices.
 
 **Notes:**
 
-* The configuration snippets are created from templates in the **templates/_module_** directory.
-* The device-specific template is selected based on **ansible_network_os** value. For example, `templates/ospf/eos.j2` will be used to create OSPF configuration for an Arista EOS device.
+* The configuration snippets are created from templates in the **netsim/ansible/templates/_module_** directory.
+* The device-specific template is selected based on **ansible_network_os** value. For example, `netsim/ansible/templates/ospf/eos.j2` will be used to create OSPF configuration for an Arista EOS device.
 
 For more information, see [list of configuration modules](module-reference.md)
 

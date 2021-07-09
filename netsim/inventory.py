@@ -85,11 +85,13 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
 
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
-def write(data: Box, fname: str, hostvars: str) -> None:
+def write(data: Box, fname: typing.Union[str,None] = 'hosts.yml', hostvars: str = 'dirs') -> None:
   inventory = create(data['nodes'],data.get('defaults',{}))
 
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
 
+  if not fname:
+    fname = 'hosts.yml'
   if not hostvars:
     hostvars = "dirs"
 
@@ -121,7 +123,12 @@ def write(data: Box, fname: str, hostvars: str) -> None:
     write_yaml(inventory,fname,header)
     print("Created minimized Ansible inventory %s" % fname)
 
-def config(config_file: str , inventory_file: str) -> None:
+def config(config_file: typing.Union[str,None] = 'ansible.cfg', inventory_file: typing.Union[str,None] = 'hosts.yml') -> None:
+  if not config_file:
+    config_file = 'ansible.cfg'
+  if not inventory_file:
+    inventory_file = 'hosts.yml'
+
   with open(config_file,"w") as output:
     output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates'))
     output.close()

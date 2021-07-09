@@ -34,6 +34,8 @@ def check_required_elements(topology: Box) -> None:
   topology.defaults.name = topology.name
   topo_elements = topo_main_elements + topo_internal_elements
   if topology.get('module'):
+    if isinstance(topology.module,str):
+      topology.module = [ topology.module ]
     topology.defaults.module = topology.module
     topo_elements = topo_elements + topology.module
 
@@ -65,11 +67,10 @@ def adjust_global_parameters(topology: Box) -> None:
       topology.defaults[k] = topology.defaults[k] + topology.defaults.providers[topology.provider][k]
 
 #
-# Write expanded topology file in YAML format
+# Cleanup the topology
 #
-def create_topology_file(topology: Box, fname: str) -> None:
-  # This should create a deep copy
-  #
+
+def cleanup_topology(topology: Box) -> Box:
   topo_copy = Box(topology)
   topo_copy.pop("nodes_map")
 
@@ -80,9 +81,15 @@ def create_topology_file(topology: Box, fname: str) -> None:
       if "_pfx" in p or "_eui" in p:
         v.pop(p,None)
 
+  return topo_copy
+
+#
+# Write expanded topology file in YAML format
+#
+def create_topology_file(topology: Box, fname: str) -> None:
+  topo_copy = cleanup_topology(topology)
   with open(fname,"w") as output:
     output.write("# Expanded topology created from %s\n" % topology.get('input','<unknown>'))
     output.write(topo_copy.to_yaml())
     output.close()
     print("Created expanded topology file: %s" % fname)
-

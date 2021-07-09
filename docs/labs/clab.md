@@ -5,12 +5,12 @@
 * Follow the [containerlab installation guide](https://containerlab.srlinux.dev/install/)
 * Install network device container images
 * Create [lab topology file](../topology-overview.md). Use `provider: clab` in lab topology to select the *containerlab* virtualization provider.
-* Create *containerlab* topology file (`clab.yml`) with **create-topology** script
+* Create *containerlab* topology file (`clab.yml`) with **netlab create** command
 * Start the lab with **sudo containerlab deploy** command
 
 ## Container Images
 
-Lab topology file created by **create-topology** script uses these container images:
+Lab topology file created by **netlab create** command uses these container images:
 
 | Virtual network device | Container image      |
 |------------------------|----------------------|

@@ -34,17 +34,17 @@ The device parameters will have to include:
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.
 * Image name or box name for every supported virtualization provider (**image**).
 
-After adding the device parameters into `netsim/topology-defaults.yml`, you'll be able to use your device in network topology and use **create-topology** script to create detailed device data and virtualization provider configuration file.
+After adding the device parameters into `netsim/topology-defaults.yml`, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.
 
 ## Using Your Device with Ansible Playbooks
 
-If you want to use your device with Ansible playbooks included with *netsim-tools*, or connect to your device with **connect.sh** script, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory into the **group_vars** part of your device settings.
+If you want to configure your device with **[netlab initial](netlab/initial.md)** or **[netlab config](netlab/config.md)**, or connect to your device with **[netlab connect](netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory into the **group_vars** part of your device settings.
 
 The Ansible variables should include:
 
 * `ansible_connection` -- use **paramiko** for SSH access; you wouldn't want to be bothered with invalid SSH keys in a lab setup, and recent versions of Ansible became somewhat inconsistent in that regard.
 
-* `ansible_network_os` -- must be specified even if your device does not use **network_cli** connection. The value of this variable is used to select the configuration templates in the **initial-config.ansible** playbook.
+* `ansible_network_os` -- must be specified even if your device does not use **network_cli** connection. The value of this variable is used to select the configuration templates in the **initial-config.ansible** playbook used by **[netlab initial](netlab/initial.md)** command.
 
 * `ansible_user` and `ansible_ssh_pass` must often be set to the default values included in the network device image.
 
@@ -54,15 +54,15 @@ If you want to use the same device with multiple virtualization providers, you m
 
 To configure your device (including initial device configuration), you'll have to create an Ansible task list that deploys configuration snippets onto your device. *netsim-tools* rely on merging configuration snippets with existing device configuration, not replacing it.
 
-The configuration deployment task list has to be in the `ansible/deploy-config` and must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`.
+The configuration deployment task list has to be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`.
 
-You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook -- add a task list collecting the device configuration into the `ansible/fetch-config` directory.
+You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
 
 ## Initial Device Configuration
 
-Most lab users will want to use **initial-config.ansible** script to build and deploy initial device configurations, from IP addressing to routing protocol configuration.
+Most lab users will want to use **netlab initial** script to build and deploy initial device configurations, from IP addressing to routing protocol configuration.
 
-Create Jinja2 templates that will generate IP addressing and LLDP configuration within the `templates/initial` directory. The name of your template must match the `ansible_network_os` value from `netsim/topology-defaults.yml`.
+Create Jinja2 templates that will generate IP addressing and LLDP configuration within the `netsim/ansible/templates/initial` directory. The name of your template must match the `ansible_network_os` value from `netsim/topology-defaults.yml`.
 
 Use existing configuration templates and *[initial device configurations](platforms.md#initial-device-configurations)* part of *[supported platforms](platforms.md)* document to figure out what settings your templates should support.
 
@@ -72,7 +72,7 @@ Similar to the initial device configuration, create templates supporting [indivi
 
 Use existing configuration templates and module description to figure out which settings your templates should support.
 
-For every configuration module you add, update the module's `supported_on` list in `netsim/topology-defaults.yml` to indicate that the configuration module is supported by the network device. The list of supported devices is used by the **create-topology** script to ensure the final lab topology doesn't contain unsupported/unimplemented module/device combinations.
+For every configuration module you add, update the module's `supported_on` list in `netsim/topology-defaults.yml` to indicate that the configuration module is supported by the network device. The list of supported devices is used by the **netsim create** command to ensure the final lab topology doesn't contain unsupported/unimplemented module/device combinations.
 
 ## Adding an Existing Device to a New Virtualization Provider
 
@@ -89,9 +89,9 @@ To add a device that is already supported by *netsim-tools* to a new virtualizat
 ## Test Your Changes
 
 * Create a simple topology using your new device type in the `tests/integration` directory
-* Create Ansible inventory and Vagrantfile with `create-topology -p -i`
+* Create Ansible inventory and Vagrantfile with `netlab create`
 * Start your virtual lab
-* Perform initial device configuration with `initial-config.ansible`
+* Perform initial device configuration with `netlab initial`
 * Log into the device and verify interface state and interface IP addresses
 
 ## Final Steps
