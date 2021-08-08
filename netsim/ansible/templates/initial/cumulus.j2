@@ -15,6 +15,7 @@ SCRIPT
 # Build hosts file
 #
 hostname {{ inventory_hostname }}
+{% if ansible_connection != "docker" %}
 awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
 echo "127.0.0.1 {{ inventory_hostname }}" >>/tmp/hosts
 {% for k,v in hostvars.items() if v.loopback.ipv4 is defined and k != inventory_hostname %}
@@ -23,6 +24,7 @@ echo "{{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if
 cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
 mv /tmp/hosts-start /etc/hosts
 sort /tmp/hosts|uniq >>/etc/hosts
+{% endif %}
 #
 # Enable LLDP
 #

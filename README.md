@@ -18,7 +18,7 @@ Instead of wasting time creating lab topology in a GUI and configuring boring de
 
 ## Releases
 
-* Latest release: [release_0.8](https://github.com/ipspace/netsim-tools/releases/tag/release_0.8) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.8.html))
+* Latest release: [release_0.8.1](https://github.com/ipspace/netsim-tools/releases/tag/release_0.8.1) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.8.html))
 * If you find bugs in the 0.8 release, please report them and use the [release 0.7](https://github.com/ipspace/netsim-tools/releases/tag/release_0.7).
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).

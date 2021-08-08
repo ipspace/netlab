@@ -117,7 +117,17 @@ def cleanup_working_directory(args: argparse.Namespace) -> None:
   if args.verbose:
     print("\nCleaning up -- removing %s and its contents" % args.workdir)
   os.chdir("..")
-  shutil.rmtree(args.workdir)
+  try:
+    shutil.rmtree(args.workdir)
+  except:
+    print("... cannot clean up working directory, trying to run 'sudo rm -fr'")
+    try:
+      subprocess.run(["sudo","rm","-fr",args.workdir],check=True)
+      print("... that worked ;)")
+    except:
+      print("... rm -fr failed, please clean up %s manually" % args.workdir)
+      return
+
   if args.verbose:
     print("... done, test completed\n")
 

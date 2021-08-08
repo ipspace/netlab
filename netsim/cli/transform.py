@@ -7,7 +7,7 @@ import typing
 import sys
 import argparse
 
-from . import common_parse_args
+from . import common_parse_args, topology_parse_args
 from .. import set_logging_flags
 from .. import read_topology
 from .. import common
@@ -19,7 +19,7 @@ from ..augment.topology import cleanup_topology
 #
 def transform_topology_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
-    parents=[ common_parse_args() ],
+    parents=[ common_parse_args(),topology_parse_args() ],
     prog="netlab read",
     description='Read network topology, do the data model transformation, and dump the results')
 
@@ -48,6 +48,7 @@ def run(cli_args: typing.List[str]) -> None:
   args = transform_topology_parse(cli_args)
   set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
+  read_topology.add_cli_args(topology,args)
   common.exit_on_error()
 
   augment.main.transform(topology)

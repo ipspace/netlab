@@ -4,6 +4,7 @@
 import os
 import sys
 import typing
+import argparse
 
 from box import Box
 try:
@@ -41,6 +42,8 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
 
   if common.LOGGING or common.VERBOSE:
     print("Read YAML data from %s" % (filename or "string"))
+
+  common.unroll_dots(data)
   return data
 
 def include_defaults(topo: Box, fname: str) -> None:
@@ -77,3 +80,20 @@ def load(fname: str , defaults: Box, settings: str) ->Box:
     include_defaults(topology,settings)
 
   return topology
+
+def add_cli_args(topo: Box, args: argparse.Namespace) -> None:
+  if args.device:
+    topo.defaults.device = args.device
+
+  if args.provider:
+    topo.provider = args.provider
+
+  if args.settings:
+    for s in args.settings:
+      if not "=" in s:
+        common.error("Invalid CLI setting %s, should be in format key=value" % s)
+      (k,v) = s.split("=")
+      if '.' in k:
+        common.set_dots(topo,k.split('.'),v)
+      else:
+        topo[k] = v

@@ -5,12 +5,13 @@
 ## Usage
 
 ```text
-usage: netlab test [-h] [-w WORKDIR] [-v] {libvirt,virtualbox}
+usage: netlab test [-h] [-w WORKDIR] [-v] {libvirt,virtualbox,clab}
 
 Test virtual lab installation
 
 positional arguments:
-  {libvirt,virtualbox}  Run tests for the specified provider
+  {libvirt,virtualbox,clab}
+                        Run tests for the specified provider
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -30,3 +31,8 @@ optional arguments:
 * Deploys initial device configurations and configure OSPF with **netlab initial**.
 * Destroys the lab with **vagrant destroy -f**
 * Cleans up the working directory
+
+## Notes on Containerlab Tests
+
+* *containerlab* tests start Cumulus VX containers in *Docker* mode (container, not a micro-VM) and thus test the *containerlab* but not *firecracker* or *KVM* functionality.
+* See [Platform Support](../platforms.md) for more details on Cumulus VX running under *containerlab*.

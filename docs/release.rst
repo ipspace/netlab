@@ -4,6 +4,7 @@ Release notes
 2021-07-09 (release 0.8)
   * Python package
   * Unified CLI
+  * Support for Cumulus VX and Nokia SR Linux containers
   * Installation and testing scripts
 
   :doc:`More details <release/0.8>`

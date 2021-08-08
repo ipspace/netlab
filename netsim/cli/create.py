@@ -42,6 +42,7 @@ def run(cli_args: typing.List[str]) -> None:
   args = create_topology_parse(cli_args)
   set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
+  read_topology.add_cli_args(topology,args)
   common.exit_on_error()
 
   augment.main.transform(topology)
@@ -50,7 +51,7 @@ def run(cli_args: typing.List[str]) -> None:
   # Create provider configuration file
   #
   provider = Provider.load(topology.provider,topology.defaults.providers[topology.provider])
-  provider.create(topology,args.provider)
+  provider.create(topology,args.vagrantfile)
 
   inventory.write(data=topology,fname=args.inventory)
   inventory.config(args.config,args.inventory)

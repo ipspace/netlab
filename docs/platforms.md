@@ -1,6 +1,6 @@
 # Supported Platforms
 
-The following virtual network devices are supported by **config-generate**:
+The following virtual network devices are supported by *netsim-tools*:
 
 | Virtual network device | netsim device type |
 |------------------------|--------------------|
@@ -12,6 +12,7 @@ The following virtual network devices are supported by **config-generate**:
 | Cumulus Linux          | cumulus            |
 | FRR 7.5.0              | frr                |
 | Juniper vSRX 3.0       | vsrx               |
+| Nokia SR Linux         | srlinux            |
 
 **Notes:**
 * **netsim-tools** support FRR containers with **containerlab**. It seems that the FRR build tools changed the file system layout after release 7.5.0, crashing **containerlab** deployment process.
@@ -39,7 +40,7 @@ nodes: [ s1, s2, s3 ]
 
 ## Supported Virtualization Providers
 
-**config-generate** script can generate configuration files for these virtualization providers:
+**netlab create** can generate configuration files for these virtualization providers:
 
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks (link type: **lan**) and P2P tunnels (link type: **p2p**).
 * [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
@@ -54,11 +55,17 @@ You cannot use all supported network devices with all virtualization providers:
 | Cisco IOSv             | ✅ | ❌ | ❌ |
 | Cisco CRS 1000v        | ✅ | ❌ | ❌ |
 | Cisco Nexus 9300v      | ✅ | ✅ | ❌ |
-| Cumulus Linux          | ✅ | ✅ | ❌ |
-| FRR 7.5.0.             | ❌ | ❌ | ✅ |
+| Cumulus Linux          | ✅ | ✅ | ✅ |
+| FRR 7.5.0              | ❌ | ❌ | ✅ |
 | Juniper vSRX 3.0       | ✅ | ❌ | ❌ |
+| Nokia SR Linux         | ❌ | ❌ | ✅ |
 
-**Notes:**
+**Implementation Caveats**
+* *containerlab* could run Cumulus Linux as a container or as a micro-VM with *firecracker* (default, requires KVM). To run Cumulus VX as a pure container, add **runtime: docker** parameter to node data.
+* Release 0.8.1 uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.providers.clab.devices.cumulus.image.clab** parameter (or by editing the `topology-defaults.yml` file included with *netsim-tools*).
+
+**Notes on Extending Device- or Virtualization Provider Support**
+
 * It's possible to run Cisco IOSv/CSR or Juniper vSRX under Virtualbox if you build your own Vagrant boxes.
 * After building Vagrant boxes, edit **devices** section of **topology-defaults.yml** file to add Virtualbox support for individual network devices.
 * If you feel like building a downloadable Vagrant box for FRR, please send us the box name and we'll add it to **topology-defaults.yml** file.
@@ -76,6 +83,7 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Cumulus Linux          | ✅ | ✅ |
 | FRR container          | ✅ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ |
+| Nokia SR Linux         | ❌ | ❌ |
 
 ## Initial Device Configurations
 
@@ -90,6 +98,7 @@ The following system-wide features are configured on supported network operating
 | Cumulus Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR 7.5.0              | ✅ | ❌ | ❌ | ✅ | ✅ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
@@ -117,6 +126,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Cumulus Linux          | ✅ | ❌ | ❌ | ✅ |  ❌ |
 | FRR 7.5.0              | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ## IPv6 Support
 

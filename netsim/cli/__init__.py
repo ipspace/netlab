@@ -25,6 +25,7 @@ def topology_parse_args() -> argparse.ArgumentParser:
                   help='Local topology defaults file')
   parser.add_argument('-d','--device', dest='device', action='store', help='Default device type')
   parser.add_argument('-p','--provider', dest='provider', action='store',help='Override virtualization provider')
+  parser.add_argument('-s','--set',dest='settings', action='append',help='Additional parameters added to topology file')
   return parser
 
 #
