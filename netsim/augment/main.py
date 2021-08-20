@@ -11,7 +11,6 @@ from ..providers import Provider
 from .. import modules
 
 def transform_setup(topology: Box) -> None:
-  topology.setdefault('defaults',{})
   augment.topology.check_required_elements(topology)
   augment.topology.adjust_global_parameters(topology)
   topology.Provider = Provider.load(topology.provider,topology.defaults.providers[topology.provider])

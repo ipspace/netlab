@@ -1,9 +1,11 @@
 <!--
 # Development Notes
 
-This is development branch for what might become release 0.8 or release 0.7.1 (depending on how many changes we'll accumulate in this release).
--->
+This is development branch for release 0.9. Target functionality:
 
+* Configurable **netlab create** output
+* Network diagrams in DOT format
+-->
 # Overview
 
 *netsim-tools* are bringing infrastructure-as-code concepts to networking labs. You'll describe your high-level network topology and routing design in a YAML file, and the tools in this repository will
@@ -16,14 +18,13 @@ This is development branch for what might become release 0.8 or release 0.7.1 (d
 
 Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
+Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [installation guidelines](https://netsim-tools.readthedocs.io/en/latest/install.html).
+
 ## Releases
 
-* Latest release: [release_0.8.1](https://github.com/ipspace/netsim-tools/releases/tag/release_0.8.1) (read [release notes](https://netsim-tools.readthedocs.io/en/latest/release/0.8.html))
-* If you find bugs in the 0.8 release, please report them and use the [release 0.7](https://github.com/ipspace/netsim-tools/releases/tag/release_0.7).
+Use [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9) if at all possible. [Release 0.8.1](https://github.com/ipspace/netsim-tools/releases/tag/release_0.8.1) does **not** work with *python-box* version 5.4.0. To use release 0.8.1 or earlier releases, manually install *python-box* release 5.3.0.
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
-
-You might also want to [read the documentation](https://netsim-tools.readthedocs.io/), and [installation guidelines](https://netsim-tools.readthedocs.io/en/latest/install.html).
 
 ## An overview of tools:
 

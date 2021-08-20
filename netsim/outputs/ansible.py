@@ -7,8 +7,8 @@ import yaml
 import os
 from box import Box
 
-# Related modules
-from . import common
+from .. import common
+from . import _TopologyOutput
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
@@ -85,7 +85,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
 
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
-def write(data: Box, fname: typing.Union[str,None] = 'hosts.yml', hostvars: str = 'dirs') -> None:
+def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', hostvars: typing.Optional[str] = 'dirs') -> None:
   inventory = create(data['nodes'],data.get('defaults',{}))
 
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
@@ -123,7 +123,7 @@ def write(data: Box, fname: typing.Union[str,None] = 'hosts.yml', hostvars: str 
     write_yaml(inventory,fname,header)
     print("Created minimized Ansible inventory %s" % fname)
 
-def config(config_file: typing.Union[str,None] = 'ansible.cfg', inventory_file: typing.Union[str,None] = 'hosts.yml') -> None:
+def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventory_file: typing.Union[str,None] = 'hosts.yml') -> None:
   if not config_file:
     config_file = 'ansible.cfg'
   if not inventory_file:
@@ -133,3 +133,23 @@ def config(config_file: typing.Union[str,None] = 'ansible.cfg', inventory_file: 
     output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates'))
     output.close()
     print("Created Ansible configuration file: %s" % config_file)
+
+class AnsibleInventory(_TopologyOutput):
+
+  def write(self, topology: Box) -> None:
+    hostfile = self.settings.hostfile or 'hosts.yml'
+    configfile = self.settings.configfile or 'ansible.cfg'
+    output_format = None
+
+    if hasattr(self,'filenames'):
+      hostfile = self.filenames[0]
+      if len(self.filenames) > 1:
+        configfile = self.filenames[1]
+      if len(self.filenames) > 2:
+        common.error('Extra output filename(s) ignored: %s' % str(self.filenames[2:]),common.IncorrectValue,'ansible')
+
+    if self.format:
+      output_format = self.format[0]
+
+    ansible_inventory(topology,hostfile,output_format)
+    ansible_config(configfile,hostfile)

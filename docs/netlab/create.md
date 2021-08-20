@@ -17,13 +17,14 @@ After reading the network topology, **netlab create** performs a complex data tr
 * **Vagrantfile** supporting *[libvirt](../labs/libvirt.md)* or *[virtualbox](../labs/virtualbox.md)* environment
 * **clab.yml** file used by *containerlab*.
 * Ansible inventory, either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
+* YAML or JSON representation of transformed lab topology
+* Various graphs in *graphviz* DOT format
 
 ## Usage
 
 ```text
 usage: netlab create [-h] [--log] [-q] [-v] [--defaults DEFAULTS] [-d DEVICE]
-                     [-p PROVIDER] [-s SETTINGS] [-i INVENTORY] [-c CONFIG]
-                     [-g VAGRANTFILE] [--hostvars {min,files,dirs}]
+                     [-p PROVIDER] [-s SETTINGS] [-o OUTPUT]
                      [topology]
 
 Create provider- and automation configuration files
@@ -43,16 +44,25 @@ optional arguments:
                         Override virtualization provider
   -s SETTINGS, --set SETTINGS
                         Additional parameters added to topology file
-  -i INVENTORY, --inventory INVENTORY
-                        Automation inventory file name (default: hosts.yml)
-  -c CONFIG, --config CONFIG
-                        Automation configuration file (default: ansible.cfg)
-  -g VAGRANTFILE        Virtualization provider configuration file name
-  --hostvars {min,files,dirs}
-                        Ansible hostvars format
+  -o OUTPUT, --output OUTPUT
+                        Output format(s): format:option=filename
+
+output files created when no output is specified:
+
+  * Virtualization provider file with provider-specific filename
+    (Vagrantfile or clab.yml)
+  * Ansible inventory file (hosts.yml) and configuration (ansible.cfg)
+
+For a complete list of output formats please consult the documentation
 ```
 
 For more details on topology file format, please read the [lab topology overview](../topology-overview.md) and [reference documentation](../topology-reference.md).
+
+## Output Formats
+
+Without specifying the output format(s), **netlab create** creates a provider configuration file (*Vagrantfile* or *clab.yml*) and Ansible inventory data (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*).
+
+You could specify one or more output formats with the `-o` CLI parameter. For more details please read the [output formats](../outputs/index.md) part of the documentation.
 
 ## Setting Topology Parameters from Command Line
 

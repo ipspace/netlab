@@ -29,7 +29,9 @@ def adjust_link_list(links: typing.Optional[typing.List[typing.Any]]) -> typing.
   return link_list
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> int:
-  node.setdefault('links',[])
+  if not 'links' in node:
+    node.links = []
+
   ifindex_offset = defaults.devices[node.device].get('ifindex_offset',1)
   ifindex = len(node.links) + ifindex_offset
 
@@ -66,7 +68,7 @@ def ifaddr_add_module(ifaddr: Box, link: Box, module: Box) -> None:
       if m in link:
         ifaddr[m] = link[m]
 
-def augment_lan_link(link: Box, addr_pools: Box, ndict: Box, defaults: typing.Optional[Box] = None) -> None:
+def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.Optional[Box] = None) -> None:
   if not defaults:
     defaults = Box({})
   if 'prefix' in link:
@@ -113,7 +115,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: Box, defaults: typing.Op
     ifindex = len(ndict[node].links) - 1
     ndict[node].links[ifindex] = interfaces[node]
 
-def augment_p2p_link(link: Box, addr_pools: Box, ndict: Box, defaults: typing.Optional[Box] = None) -> typing.Optional[Box]:
+def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.Optional[Box] = None) -> typing.Optional[Box]:
   if not defaults:
     defaults = Box({})
   if 'prefix' in link:
@@ -192,11 +194,9 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: Box, defaults: typing.Op
 
   return link
 
-def check_link_attributes(data: Box, nodes: typing.Optional[Box] = None, valid: typing.Optional[typing.List] = None) -> bool:
-  if not nodes:
-    nodes = Box({})
-  if not valid:
-    valid = []
+def check_link_attributes(data: Box, nodes: typing.Optional[dict] = None, valid: typing.Optional[typing.List] = None) -> bool:
+  nodes = nodes or {}
+  valid = valid or []
   ok = True
   for k in data.keys():
     if k not in nodes and k not in valid:
@@ -205,14 +205,14 @@ def check_link_attributes(data: Box, nodes: typing.Optional[Box] = None, valid: 
 
   return ok
 
-def link_node_count(data: Box, nodes: Box) -> int:
+def link_node_count(data: Box, nodes: dict) -> int:
   node_cnt = 0
   for k in data.keys():
     if k in nodes:
       node_cnt = node_cnt + 1
   return node_cnt
 
-def get_link_type(data: Box, nodes: Box, pools: Box) -> str:
+def get_link_type(data: Box, nodes: dict, pools: Box) -> str:
   if data.get('type'):
     return data['type']
 
@@ -225,7 +225,7 @@ def get_link_type(data: Box, nodes: Box, pools: Box) -> str:
   node_cnt = link_node_count(data,nodes)
   return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
 
-def check_link_type(data: Box, nodes: Box) -> bool:
+def check_link_type(data: Box, nodes: dict) -> bool:
   node_cnt = link_node_count(data,nodes)
   link_type = data.get('type')
 
@@ -250,7 +250,7 @@ def check_link_type(data: Box, nodes: Box) -> bool:
     return False
   return True
 
-def transform(link_list: typing.Optional[Box], defaults: Box, ndict: typing.Union[typing.Dict, Box], pools: Box) -> typing.Optional[Box]:
+def transform(link_list: typing.Optional[Box], defaults: Box, ndict: dict, pools: Box) -> typing.Optional[Box]:
   if not link_list:
     return None
 

@@ -137,6 +137,10 @@ def run(cli_args: typing.List[str]) -> None:
     common.fatal("Specify the virtualization environment to test or use -h to get help","test")
     return
 
+  if not settings:
+    common.fatal("Cannot read the global defaults","test")
+    return
+
   args = test_parse(cli_args,settings)
   if os.path.exists(args.workdir):
     common.fatal("Directory %s already exists, aborting" % args.workdir,"test")

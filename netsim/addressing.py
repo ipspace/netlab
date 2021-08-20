@@ -56,11 +56,9 @@ from box import Box
 # Related modules
 from . import common
 
-def setup_pools(addrs: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
-  if not addrs:
-    addrs = Box({})
-  if not defaults:
-    defaults = Box({})
+def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
+  addrs = addr_pools or Box({},default_box=True)
+  defaults = defaults or Box({},default_box=True)
   legacy = Box({},default_box=True)
 
   legacy.lan = { 'ipv4': defaults.get('lan','10.0.0.0/16'), 'prefix': defaults.get('lan_subnet',24) }
@@ -98,7 +96,8 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
         category=common.MissingValue,module='addressing')
 
   if isinstance(addrs.mgmt,dict):
-    addrs.mgmt.setdefault('prefix',24)
+    if not 'prefix' in addrs.mgmt:
+      addrs.mgmt['prefix'] = 24
 
   for pool,pfx in addrs.items():
     for k in ('ipv4','ipv6'):

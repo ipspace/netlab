@@ -19,7 +19,7 @@ topo_internal_elements = ['input','includes']
 
 def check_required_elements(topology: Box) -> None:
   invalid_topo = False
-  for rq in ['nodes','defaults']:
+  for rq in ['nodes']:
     if not rq in topology:
       common.error("Missing '%s' element" % rq,category=common.MissingValue,module="topology")
       invalid_topo = True
@@ -49,8 +49,10 @@ def check_required_elements(topology: Box) -> None:
 # but not the whole topology
 #
 def adjust_global_parameters(topology: Box) -> None:
-  topology.setdefault('provider',topology.defaults.provider)
-  topology.defaults.provider = topology.provider
+  if not 'provider' in topology:
+    topology.provider = topology.defaults.provider
+  else:
+    topology.defaults.provider = topology.provider
 
   if not topology.provider:
     common.fatal('Virtualization provider is not defined in either "provider" or "defaults.provider" elements')

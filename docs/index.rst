@@ -64,6 +64,7 @@ Getting Started
    modules.md
    module-reference.md
    defaults.md
+   outputs/index.md
 ..
 
 .. toctree::

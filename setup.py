@@ -6,7 +6,7 @@ with open("requirements.txt", "r") as fs:
 
 setup(
   name="netsim-tools",
-  version="0.8.1",
+  version="0.9",
   packages=find_packages(),
   author="Ivan Pepelnjak",
   author_email="ip@ipspace.net",

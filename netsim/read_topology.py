@@ -52,14 +52,14 @@ def include_defaults(topo: Box, fname: str) -> None:
     topo.input.append(fname)
     topo.defaults = defaults + topo.defaults
 
-def load(fname: str , defaults: Box, settings: str) ->Box:
+def load(fname: str , local_defaults: str, sys_defaults: str) ->Box:
   topology = read_yaml(fname)
   if topology is None:
     common.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
   assert topology is not None
   topology.input = [ fname ]
-  topology.setdefault('defaults',{})
-  topology.setdefault('includes',[ 'defaults', 'global_defaults' ])
+  if not 'includes' in topology:
+    topology.includes = [ 'defaults', 'global_defaults' ]
   if not isinstance(topology.includes,list):
     common.error( \
       "Topology 'includes' element (if present) should be a list", \
@@ -67,17 +67,18 @@ def load(fname: str , defaults: Box, settings: str) ->Box:
     topology.includes = []
 
   if 'defaults' in topology.includes:
-    local_defaults = os.path.dirname(os.path.abspath(fname))+"/topology-defaults.yml"
-    user_defaults  = os.path.expanduser('~/topology-defaults.yml')
-    if defaults:
-      include_defaults(topology,defaults)
-    elif os.path.isfile(local_defaults):
+    if local_defaults:
       include_defaults(topology,local_defaults)
-    elif os.path.isfile(user_defaults):
-      include_defaults(topology,user_defaults)
+    else:
+      local_defaults = os.path.dirname(os.path.abspath(fname))+"/topology-defaults.yml"
+      user_defaults  = os.path.expanduser('~/topology-defaults.yml')
+      if os.path.isfile(local_defaults):
+        include_defaults(topology,local_defaults)
+      elif os.path.isfile(user_defaults):
+        include_defaults(topology,user_defaults)
 
-  if settings and 'global_defaults' in topology.includes:
-    include_defaults(topology,settings)
+  if sys_defaults and 'global_defaults' in topology.includes:
+    include_defaults(topology,sys_defaults)
 
   return topology
 

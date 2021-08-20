@@ -32,8 +32,6 @@ def adjust_node_list(nodes: typing.Union[typing.Dict, typing.List]) -> typing.Li
   return node_list
 
 def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) -> None:
-  node.setdefault('mgmt',{})
-
   if 'ifname' not in node.mgmt:
     mgmt_if = device_data.mgmt_if
     if not mgmt_if:
@@ -52,9 +50,9 @@ def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) ->
         if not af in node.mgmt:
           node.mgmt[af] = str(addrs[pfx][node['id']+addrs['start']])
 
-    if addrs.mac_eui:
+    if addrs.mac_eui and not 'mac' in node.mgmt:
       addrs.mac_eui[5] = node['id']
-      node.mgmt.setdefault('mac',str(addrs['mac_eui']))
+      node.mgmt.mac = str(addrs['mac_eui'])
 
 #
 # Add device (box) images from defaults
@@ -66,7 +64,9 @@ def augment_node_provider_data(topology: Box) -> None:
     common.fatal('Device defaults (defaults.devices) are missing')
 
   for n in topology.nodes:
-    n.setdefault('device',topology.defaults.get('device'))
+    if not n.device:
+      n.device = topology.defaults.device
+
     if not n.device:
       common.error('No device type specified for node %s and there is no default device type' % n.name)
       continue
@@ -107,7 +107,7 @@ Main node transformation code
 * copy device data from defaults
 * set management IP and MAC addresses
 '''
-def transform(topology: Box, defaults: Box, pools: Box) -> typing.Dict:
+def transform(topology: Box, defaults: Box, pools: Box) -> dict:
   augment_node_provider_data(topology)
 
   id = 0

@@ -6,11 +6,12 @@
 #
 import argparse
 import typing
+import textwrap
 
 from . import common_parse_args, topology_parse_args
 from .. import set_logging_flags
-from .. import read_topology,inventory,augment,common
-from ..providers import Provider
+from .. import read_topology,augment,common
+from ..outputs import _TopologyOutput
 
 #
 # CLI parser for create-topology script
@@ -18,28 +19,33 @@ from ..providers import Provider
 def create_topology_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     parents=[ common_parse_args(), topology_parse_args() ],
+    formatter_class=argparse.RawDescriptionHelpFormatter,
     prog="netlab create",
-    description='Create provider- and automation configuration files')
+    description='Create provider- and automation configuration files',
+    epilog=textwrap.dedent('''
+      output files created when no output is specified:
+
+        * Virtualization provider file with provider-specific filename
+          (Vagrantfile or clab.yml)
+        * Ansible inventory file (hosts.yml) and configuration (ansible.cfg)
+
+      For a complete list of output formats please consult the documentation
+    '''))
 
   parser.add_argument(
     dest='topology', action='store', nargs='?',
     type=argparse.FileType('r'),
     default='topology.yml',
     help='Topology file (default: topology.yml)')
-  parser.add_argument(
-    '-i','--inventory',
-    dest='inventory',
-    action='store',
-    help='Automation inventory file name (default: hosts.yml)')
-  parser.add_argument('-c','--config',dest='config', action='store', help='Automation configuration file (default: ansible.cfg)')
-  parser.add_argument('-g',dest='vagrantfile', action='store',help='Virtualization provider configuration file name')
-  parser.add_argument('--hostvars', dest='hostvars', action='store', default='dirs',
-                  choices=['min','files','dirs'],
-                  help='Ansible hostvars format')
+  parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
+
   return parser.parse_args(args)
 
 def run(cli_args: typing.List[str]) -> None:
   args = create_topology_parse(cli_args)
+  if not args.output:
+    args.output = ['provider','ansible:dirs']
+
   set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
   read_topology.add_cli_args(topology,args)
@@ -48,10 +54,14 @@ def run(cli_args: typing.List[str]) -> None:
   augment.main.transform(topology)
   common.exit_on_error()
 
+  for output_format in args.output:
+    output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format])
+    if output_module:
+      output_module.write(topology)
+    else:
+      common.error('Unknown output format %s' % output_format,common.IncorrectValue,'create')
+
+  return
   # Create provider configuration file
   #
-  provider = Provider.load(topology.provider,topology.defaults.providers[topology.provider])
-  provider.create(topology,args.vagrantfile)
 
-  inventory.write(data=topology,fname=args.inventory)
-  inventory.config(args.config,args.inventory)

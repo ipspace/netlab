@@ -16,7 +16,7 @@ import utils
 from netsim import common
 from netsim import read_topology
 from netsim import augment
-from netsim import inventory
+from netsim.outputs import ansible
 
 def run_test(fname,local_defaults="topology-defaults.yml",sys_defaults="package:topology-defaults.yml"):
   topology = read_topology.load(fname,local_defaults,sys_defaults)
@@ -33,10 +33,10 @@ def test_transformation_cases(tmpdir):
 
     if topology.defaults.get("inventory"):
       print("Writing inventory... %s" % topology.defaults.inventory)
-      inventory.write(topology,tmpdir+"/extra/hosts.yml",topology.defaults.get("inventory").replace("dump",""))
-      inventory.config(tmpdir+"/ansible.cfg",tmpdir+"/hosts.yml")
+      ansible.ansible_inventory(topology,tmpdir+"/extra/hosts.yml",topology.defaults.get("inventory").replace("dump",""))
+      ansible.ansible_config(tmpdir+"/ansible.cfg",tmpdir+"/hosts.yml")
       if topology.defaults.inventory == "dump":
-        inventory.dump(topology)
+        ansible.dump(topology)
 
     result = utils.transformation_results_yaml(topology)
     exp_test_case = "topology/expected/"+os.path.basename(test_case)

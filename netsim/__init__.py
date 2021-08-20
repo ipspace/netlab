@@ -9,7 +9,7 @@ from box import Box
 from . import common
 from . import read_topology
 from . import augment
-from . import inventory
+from .outputs import ansible
 from .providers import Provider
 
 import argparse
@@ -42,7 +42,7 @@ def main(args: argparse.Namespace) -> None:
   if args.provider is not None:
     provider = Provider.load(topology.provider,topology.defaults.providers[topology.provider])
     if args.verbose:
-      provider.dump(topology)
+      common.error("Use 'netlab create -o provider=-' to write provider configuration file to stdout")
     else:
       provider.create(topology,args.provider)
 
@@ -54,9 +54,9 @@ def main(args: argparse.Namespace) -> None:
 
   if args.inventory:
     if args.verbose:
-      inventory.dump(topology)
+      ansible.dump(topology)
     else:
-      inventory.write(topology,args.inventory,args.hostvars)
+      ansible.ansible_inventory(topology,args.inventory,args.hostvars)
 
   if args.config:
-    inventory.config(args.config,args.inventory)
+    ansible.ansible_config(args.config,args.inventory)
