@@ -48,7 +48,7 @@ The networking lab specified in the above topology file:
 
 ## Starting the Lab
 
-Create **Vagrantfile**, **hosts.yml** (Ansible inventory file) and **ansible.cfg** (Ansible configuration file) with **[netlab initial](../netlab/initial.md)** tool:
+Create **Vagrantfile**, **hosts.yml** (Ansible inventory file) and **ansible.cfg** (Ansible configuration file) with **[netlab create](../netlab/create.md)** tool:
 
 ```
 $ netlab create
