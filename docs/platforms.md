@@ -11,11 +11,11 @@ The following virtual network devices are supported by *netsim-tools*:
 | Cisco Nexus 9300v      | nxos               |
 | Cumulus Linux          | cumulus            |
 | FRR 7.5.0              | frr                |
+| Generic Linux host     | linux              |
 | Juniper vSRX 3.0       | vsrx               |
 | Nokia SR Linux         | srlinux            |
 
 **Notes:**
-* **netsim-tools** support FRR containers with **containerlab**. It seems that the FRR build tools changed the file system layout after release 7.5.0, crashing **containerlab** deployment process.
 
 To specify the device type of a node in your virtual lab:
 
@@ -38,6 +38,8 @@ defaults:
 nodes: [ s1, s2, s3 ]
 ```
 
+See [lab topology overview](topology-overview.md) for more details.
+
 ## Supported Virtualization Providers
 
 **netlab create** can generate configuration files for these virtualization providers:
@@ -57,12 +59,19 @@ You cannot use all supported network devices with all virtualization providers:
 | Cisco Nexus 9300v      | ✅ | ✅ | ❌ |
 | Cumulus Linux          | ✅ | ✅ | ✅ |
 | FRR 7.5.0              | ❌ | ❌ | ✅ |
+| Generic Linux (Ubuntu/Alpine) | ✅ | ✅ | ✅ | 
 | Juniper vSRX 3.0       | ✅ | ❌ | ❌ |
 | Nokia SR Linux         | ❌ | ❌ | ✅ |
 
 **Implementation Caveats**
+
 * *containerlab* could run Cumulus Linux as a container or as a micro-VM with *firecracker* (default, requires KVM). To run Cumulus VX as a pure container, add **runtime: docker** parameter to node data.
-* Release 0.8.1 uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.providers.clab.devices.cumulus.image.clab** parameter (or by editing the `topology-defaults.yml` file included with *netsim-tools*).
+* *netsim-tools* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.providers.clab.devices.cumulus.image.clab** parameter (or by editing the `topology-defaults.yml` file included with *netsim-tools*).
+* *containerlab* FRR containers run FRR release 7.5.0 -- the latest release that survives FRR daemon restart during the initial configuration process.
+* FRR project does not create usable Ubuntu packages. Use Cumulus Linux if you'd like to run FRR within a VM.
+* *Generic Linux device* is a Linux VM running Ubuntu 20.04 or an Alpine/Python container. To use any other Linux distribution, add **image** attribute with the name of Vagrant box or Docker container to the node data[^1]; the only requirements are working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration. See also [host routing](#host-routing).
+
+[^1]: You can also set the **defaults.devices.linux.image._provider_** attribute to change the Vagrant box for all Linux hosts in your lab.
 
 **Notes on Extending Device- or Virtualization Provider Support**
 
@@ -82,6 +91,7 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Cisco Nexus OS         | ✅ | ✅ |
 | Cumulus Linux          | ✅ | ✅ |
 | FRR container          | ✅ | ❌ |
+| Generic Linux          | ✅ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ |
 | Nokia SR Linux         | ❌ | ❌ |
 
@@ -97,8 +107,13 @@ The following system-wide features are configured on supported network operating
 | Cisco Nexus OS         | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR 7.5.0              | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Generic Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+**Caveats:**
+
+* LLDP on Generic Linux is started in Ubuntu VMs but not in Alpine containers.
 
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
@@ -110,6 +125,7 @@ The following interface parameters are configured on supported network operating
 | Cisco Nexus OS         | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR 7.5.0              | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Generic Linux          | ✅ | ✅ | ❌ | ❌  | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Supported Configuration Modules
@@ -125,6 +141,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Cisco Nexus OS         | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Cumulus Linux          | ✅ | ❌ | ❌ | ✅ |  ❌ |
 | FRR 7.5.0              | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Generic Linux          | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
 
@@ -141,7 +158,18 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Cisco Nexus OS         | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
 | Cumulus Linux          | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
 | FRR 7.5.0              | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
+| Generic Linux          | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
+
+## Host Routing
+
+Generic Linux device is an IP host that does not support IP forwarding or IP routing protocols. It uses static routes set up as follows:
+
+* IPv4 default route points to Vagrant management interface (set by Vagrant/DHCP).
+* IPv6 default route points to whichever adjacent device is sending IPv6 Route Advertisement messages (default Linux behavior).
+* IPv4 static routes for all IPv4 address pools defined in lab topology point to the first neighbor on the first non-management interface.
+
+**Corollary:** Linux devices SHOULD have a single P2P link to an adjacent network device. If you encounter problems using any other lab topology, please submit a Pull Request fixing it instead of complaining ;)
 
 <!--
 ## BGP Support

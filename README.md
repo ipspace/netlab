@@ -22,7 +22,7 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-Use [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9) if at all possible. [Release 0.8.1](https://github.com/ipspace/netsim-tools/releases/tag/release_0.8.1) does **not** work with *python-box* version 5.4.0. To use release 0.8.1 or earlier releases, manually install *python-box* release 5.3.0.
+The latest release is [release_0.9.1](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.1), the fallback release is [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9).
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 

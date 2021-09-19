@@ -1,0 +1,97 @@
+#!/bin/bash
+#
+set -e
+#
+# Create bash profile script
+#
+cat <<SCRIPT >/root/.bash_profile
+#!/bin/bash
+#
+export PS1="\h(bash)$ "
+SCRIPT
+#
+# Build hosts file
+#
+hostname {{ inventory_hostname }}
+{% if ansible_connection != "docker" %}
+awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
+echo "127.0.0.1 {{ inventory_hostname }}" >>/tmp/hosts
+{% for k,v in hostvars.items() if v.loopback.ipv4 is defined and k != inventory_hostname %}
+echo "{{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if l.ipv4 is defined %} {{ l.ipv4|ipaddr('address') }}{%- endfor %} {{ k }}" >>/tmp/hosts
+{% endfor %}
+cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
+mv /tmp/hosts-start /etc/hosts
+sort /tmp/hosts|uniq >>/etc/hosts
+#
+# Enable LLDP
+#
+apt-get install -qq lldpd net-tools
+cat <<CONFIG >/etc/lldpd.d/system.conf
+configure lldp tx-interval 30
+configure lldp tx-hold 3
+configure system interface pattern *,!eth0,eth*
+CONFIG
+service lldpd restart
+{% endif %}
+#
+# Disable IPv4 and IPv6 forwarding
+#
+sysctl -w net.ipv4.ip_forward=0
+sysctl -w net.ipv6.conf.all.forwarding=0
+#
+# Loopback addressing
+#
+{% if 'ipv4' in loopback %}
+set +e
+ip addr del {{ loopback.ipv4 }} dev lo 2>/dev/null
+set -e
+ip addr add {{ loopback.ipv4 }} dev lo
+{% endif %}
+{% if 'ipv6' in loopback %}
+sysctl -w net.ipv6.conf.lo.disable_ipv6=0
+set +e
+ip -6 addr del {{ loopback.ipv6 }} dev lo 2>/dev/null
+set -e
+ip -6 addr add {{ loopback.ipv6 }} dev lo
+{% endif %}
+#
+# Interface addressing
+#
+{% for l in links|default([]) %}
+ip link set dev {{ l.ifname }} up
+{% if l.ipv4 is defined %}
+set +e
+ip addr del {{ l.ipv4 }} dev {{ l.ifname }} 2>/dev/null
+set -e
+ip addr add {{ l.ipv4 }} dev {{ l.ifname }}
+{% endif %}
+{% if l.ipv6 is defined %}
+sysctl -w net.ipv6.conf.{{ l.ifname }}.disable_ipv6=0
+set +e
+ip -6 addr del {{ l.ipv6 }} dev {{ l.ifname }} 2>/dev/null
+set -e
+ip -6 addr add {{ l.ipv6 }} dev {{ l.ifname }}
+{% endif %}
+{% endfor %}
+#
+# Add routes to IPv4 address pools pointing to the first neighbor on the first link
+#
+# If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+#
+{% if links|length %}
+{%   set uplink = links[0] %}
+{%   if uplink.neighbors|default({})|length %}
+{%     set defrtr = uplink.neighbors.values()|first %}
+{%     if defrtr.ipv4 is defined %}
+{%       set nh = defrtr.ipv4 %}
+{%       for name,pool in pools.items()|default({}) %}
+{%         for af,pfx in pool.items() if af == 'ipv4' %}
+set +e
+ip route del {{ pfx }} 2>/dev/null
+set -e
+ip route add {{ pfx }} via {{ nh|ipaddr('address') }}
+{%         endfor %}
+{%       endfor %}
+{%     endif %}
+{%   endif %}
+{% endif  %}

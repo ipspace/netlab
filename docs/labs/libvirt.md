@@ -121,6 +121,8 @@ Cisco Nexus 9300v and Arista vEOS are available as Virtualbox boxes. To use them
 * [Arista vEOS](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) [[notes](#notes-on-arista-eos-vagrant-libvirt-box)]
 * [Juniper vSRX 3.0](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/) [[notes](#notes-on-juniper-vsrx-vagrantfile-template)]
 
+Pete Crocker published similar recipe for [Fortinet firewalls](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) (not yet supported by *netsim-tools*, PR welcome).
+
 **Notes:**
 
 * If you're experiencing high CPU utilization with Cisco CSR, [set halt_poll_ns to zero](https://codingpackets.com/blog/kvm-host-high-cpu-fix/).
