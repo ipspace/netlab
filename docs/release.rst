@@ -1,6 +1,11 @@
 Release notes
 =============
 
+2021-09-19 (release 0.9.1)
+  * End hosts in network labs (Linux VMs or containers)
+
+  :doc:`More details <release/0.9>`
+
 2021-08-20 (release 0.9)
   * Topology graphs (physical topology and BGP sessions)
   * YAML or JSON representation of transformed network topology
