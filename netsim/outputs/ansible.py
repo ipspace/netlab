@@ -46,8 +46,15 @@ def ansible_inventory_host(node: Box, defaults: Box) -> Box:
   provider_inventory_settings(host,defaults)
   return host
 
-def create(nodes: typing.List[Box], defaults: Box) -> Box:
+def create(nodes: typing.List[Box], defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
+
+  if addressing:
+    inventory.all.vars.pools = addressing
+    for name,pool in inventory.all.vars.pools.items():
+      for k in list(pool.keys()):
+        if ('_pfx' in k) or ('_eui' in k):
+          del pool[k]
 
   for node in nodes:
     group = node.get('device','all')
@@ -86,8 +93,9 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
 def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', hostvars: typing.Optional[str] = 'dirs') -> None:
-  inventory = create(data['nodes'],data.get('defaults',{}))
+  inventory = create(data['nodes'],data.get('defaults',{}),data.get('addressing',{}))
 
+#  import ipdb; ipdb.set_trace()
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
 
   if not fname:
