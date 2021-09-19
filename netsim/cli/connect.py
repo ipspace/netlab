@@ -39,7 +39,9 @@ def get_inventory_data(host: str) -> typing.Optional[dict]:
 
 def docker_connect(data: Box, rest: typing.List[str], verbose: bool = False) -> None:
   host = data.ansible_host or data.host
-  args = ['docker','exec','-it',host,'bash','-il']
+
+  shell = data.get('docker_shell','bash')
+  args = ['docker','exec','-it',host,shell,'-il']
   if rest:
     sys.stderr.write("Connecting to container %s, executing %s\n" % (host," ".join(rest)))
     args.extend(['-c','"'+' '.join(rest)+'"'])
