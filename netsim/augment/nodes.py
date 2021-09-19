@@ -47,6 +47,8 @@ def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) ->
     for af in 'ipv4','ipv6':
       pfx = af + '_pfx'
       if pfx in addrs:
+        if not 'start' in addrs:
+          common.fatal("Start offset missing in management address pool for AF %s" % af)
         if not af in node.mgmt:
           node.mgmt[af] = str(addrs[pfx][node['id']+addrs['start']])
 
@@ -71,7 +73,16 @@ def augment_node_provider_data(topology: Box) -> None:
       common.error('No device type specified for node %s and there is no default device type' % n.name)
       continue
 
-    for k,v in topology.defaults.devices[n.device].items():
+    devtype = n.device
+
+    if not devtype in devices:
+      common.error('Unknown device %s in node %s' % (devtype,n.name))
+      continue
+
+    if not isinstance(devices[devtype],dict):
+      common.fatal("Device data for device %s must be a dictionary" % devtype)
+
+    for k,v in topology.defaults.devices[devtype].items():
       if "provider_" in k:
         n[k.replace("provider_","")] = v
 
@@ -82,9 +93,12 @@ def augment_node_provider_data(topology: Box) -> None:
       del n['image']
       continue
 
-    devtype = n.device
-    if not devtype in devices:
-      common.error('Unknown device %s in node %s' % (devtype,n.name))
+    if not 'image' in devices[devtype]:
+      common.error("No image data for device type %s used by node %s" % (devtype,n['name']))
+      continue
+
+    if not isinstance(devices[devtype].image,dict):
+      common.error("Image data for device type %s used by node %s should be a dictionary" % (devtype,n['name']))
       continue
 
     box = devices[devtype].image[provider]
