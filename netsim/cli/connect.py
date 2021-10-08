@@ -12,6 +12,7 @@ import subprocess
 from box import Box
 
 from . import ansible
+from ..outputs import devices
 from . import common_parse_args
 from .. import common
 
@@ -29,13 +30,24 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     action='store_true',
     help='Verbose logging')
   parser.add_argument(
+    '-d','--devices',
+    dest='devices',
+    action='store_true',
+    help='Use netsim-devices.yml as inventory source')
+  parser.add_argument(
     dest='host', action='store',
     help='Device to connect to')
 
   return parser.parse_known_args(args)
 
-def get_inventory_data(host: str) -> typing.Optional[dict]:
-  return ansible.inventory(host)
+def get_inventory_data(host: str,source: str) -> typing.Optional[dict]:
+  if source == 'ansible':
+    return ansible.inventory(host)
+  elif source == 'devices':
+    return devices.read_inventory(host)
+  else:
+    common.fatal('Unknown inventory source %s' % source,'connect')
+    return None
 
 def docker_connect(data: Box, rest: typing.List[str], verbose: bool = False) -> None:
   host = data.ansible_host or data.host
@@ -76,8 +88,14 @@ def ssh_connect(data: Box, rest: typing.List[str], verbose: bool = False) -> Non
 
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = connect_parse(cli_args)
+  inventory_source = 'devices' if args.devices else 'ansible'
 
-  host_data = Box(get_inventory_data(args.host),box_dots=True,default_box=True)
+  host_inventory = get_inventory_data(args.host,inventory_source)
+  if not host_inventory:
+    common.fatal('Hostname %s not found in %s inventory' % (args.host,inventory_source))
+    return
+
+  host_data = Box(host_inventory,box_dots=True,default_box=True)
   host_data.host = args.host
   connection = host_data.ansible_connection
 

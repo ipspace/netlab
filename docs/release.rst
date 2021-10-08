@@ -1,6 +1,11 @@
 Release notes
 =============
 
+2021-10-08 (release 0.9.2)
+  * Add a simple YAML-based inventory file to replace **ansible_inventory** if you happen to hate Ansible.
+
+  :doc:`More details <release/0.9>`
+
 2021-09-19 (release 0.9.1)
   * End hosts in network labs (Linux VMs or containers)
 

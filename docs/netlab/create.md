@@ -16,9 +16,11 @@ After reading the network topology, **netlab create** performs a complex data tr
 
 * **Vagrantfile** supporting *[libvirt](../labs/libvirt.md)* or *[virtualbox](../labs/virtualbox.md)* environment
 * **clab.yml** file used by *containerlab*.
-* Ansible inventory, either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
+* Ansible inventory[^1], either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
 * YAML or JSON representation of transformed lab topology
 * Various graphs in *graphviz* DOT format
+
+[^1]: Or *netsim-devices.yml* file when the `--devices` flag is used
 
 ## Usage
 
@@ -46,6 +48,7 @@ optional arguments:
                         Additional parameters added to topology file
   -o OUTPUT, --output OUTPUT
                         Output format(s): format:option=filename
+  --devices             Create provider configuration file and netsim-devices.yml
 
 output files created when no output is specified:
 
@@ -60,7 +63,7 @@ For more details on topology file format, please read the [lab topology overview
 
 ## Output Formats
 
-Without specifying the output format(s), **netlab create** creates a provider configuration file (*Vagrantfile* or *clab.yml*) and Ansible inventory data (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*).
+Without specifying the output format(s), **netlab create** creates a provider configuration file (*Vagrantfile* or *clab.yml*) and either [Ansible inventory data](../outputs/ansible.md) (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*) or [*netsim-devices.yml* file](../outputs/devices.md) (if the `--devices` flag was specified).
 
 You could specify one or more output formats with the `-o` CLI parameter. For more details please read the [output formats](../outputs/index.md) part of the documentation.
 

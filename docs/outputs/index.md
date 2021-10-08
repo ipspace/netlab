@@ -18,4 +18,5 @@ The following output modules are included in **netsim-tools** distribution; you 
    ansible.md
    graph.md
    yaml-or-json.md
+   devices.md
 ```
