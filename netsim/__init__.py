@@ -14,6 +14,8 @@ from .providers import Provider
 
 import argparse
 
+__version__ = "0.9.2"
+
 def dump_topology_data(topology: Box, state: str) -> None:
   print("%s topology data" % state)
   print("===============================")
