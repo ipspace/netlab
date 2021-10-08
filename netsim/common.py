@@ -4,6 +4,8 @@
 import sys
 import typing
 import warnings
+import argparse
+
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 from box import Box
 
@@ -68,6 +70,15 @@ def set_verbose() -> None:
 def print_verbose(t: typing.Any) -> None:
   if VERBOSE:
     print(t)
+
+def set_logging_flags(args: argparse.Namespace) -> None:
+  global VERBOSE, LOGGING
+  
+  if args.verbose:
+    VERBOSE = True
+
+  if args.logging:
+    LOGGING = True
 
 #
 # Change all NULL values in a nested dictionary structure to empty strings

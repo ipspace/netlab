@@ -8,7 +8,6 @@ import sys
 import argparse
 
 from . import common_parse_args, topology_parse_args
-from .. import set_logging_flags
 from .. import read_topology,common
 from ..augment.main import transform_setup
 
@@ -33,7 +32,7 @@ def read_topology_parse(args: typing.List[str]) -> argparse.Namespace:
 
 def run(cli_args: typing.List[str]) -> None:
   args = read_topology_parse(cli_args)
-  set_logging_flags(args)
+  common.set_logging_flags(args)
   topology = read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")
   read_topology.add_cli_args(topology,args)
   common.exit_on_error()

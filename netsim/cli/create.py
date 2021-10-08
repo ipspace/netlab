@@ -9,7 +9,6 @@ import typing
 import textwrap
 
 from . import common_parse_args, topology_parse_args
-from .. import set_logging_flags
 from .. import read_topology,augment,common
 from ..outputs import _TopologyOutput
 
@@ -49,7 +48,7 @@ def run(cli_args: typing.List[str]) -> None:
   elif args.devices:
     common.error('--output and --devices flags are mutually exclusive',common.IncorrectValue,'create')
 
-  set_logging_flags(args)
+  common.set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
   read_topology.add_cli_args(topology,args)
   common.exit_on_error()

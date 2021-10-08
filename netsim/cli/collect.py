@@ -9,7 +9,7 @@ import argparse
 
 from . import common_parse_args
 from . import ansible
-from .. import set_logging_flags
+from ..common import set_logging_flags
 
 #
 # CLI parser for 'netlab collect' command

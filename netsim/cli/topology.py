@@ -5,7 +5,10 @@
 #
 import argparse
 import typing
-from .. import main
+from .. import common,read_topology,augment
+
+from ..outputs import ansible
+from ..providers import Provider
 
 #
 # CLI parser for create-topology script
@@ -35,8 +38,35 @@ def create_topology_parse(args: typing.Optional[typing.List[str]] = None) -> arg
                   help='Display data instead of creating a file')
   return parser.parse_args(args)
 
-def legacy() -> None:
-  main(create_topology_parse(None))
+#
+# Moved old main routine from __init__.py
+#
+
+def legacy_main(args: argparse.Namespace) -> None:
+  common.set_logging_flags(args)
+  topology = read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")
+  common.exit_on_error()
+
+  augment.main.transform(topology)
+  common.exit_on_error()
+  if args.provider is not None:
+    provider = Provider.load(topology.provider,topology.defaults.providers[topology.provider])
+    if args.verbose:
+      common.error("Use 'netlab create -o provider=-' to write provider configuration file to stdout")
+    else:
+      provider.create(topology,args.provider)
+
+  if args.xpand:
+    augment.topology.create_topology_file(topology,args.xpand)
+
+  if args.inventory:
+    if args.verbose:
+      ansible.dump(topology)
+    else:
+      ansible.ansible_inventory(topology,args.inventory,args.hostvars)
+
+  if args.config:
+    ansible.ansible_config(args.config,args.inventory)
 
 def run(cli_args: typing.List[str]) -> None:
-  main(create_topology_parse(cli_args))
+  legacy_main(create_topology_parse(cli_args))
