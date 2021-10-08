@@ -22,7 +22,7 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release_0.9.1](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.1), the fallback release is [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9).
+The latest release is [release_0.9.2](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.2), the fallback release is [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9).
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 
