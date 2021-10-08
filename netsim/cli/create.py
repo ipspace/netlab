@@ -38,13 +38,16 @@ def create_topology_parse(args: typing.List[str]) -> argparse.Namespace:
     default='topology.yml',
     help='Topology file (default: topology.yml)')
   parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
+  parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netsim-devices.yml')
 
   return parser.parse_args(args)
 
 def run(cli_args: typing.List[str]) -> None:
   args = create_topology_parse(cli_args)
   if not args.output:
-    args.output = ['provider','ansible:dirs']
+    args.output = ['provider','devices'] if args.devices else ['provider','ansible:dirs']
+  elif args.devices:
+    common.error('--output and --devices flags are mutually exclusive',common.IncorrectValue,'create')
 
   set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
