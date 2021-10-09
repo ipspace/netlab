@@ -16,20 +16,20 @@ from box import Box
 from .. import common
 from ..callback import Callback
 
-class Provider(Callback):
+class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
     self.provider = provider
     if 'template' in data:
       self._default_template_name = data.template
 
   @classmethod
-  def load(self, provider: str, data: Box) -> 'Provider':
+  def load(self, provider: str, data: Box) -> '_Provider':
     module_name = __name__+"."+provider
     obj = self.find_class(module_name)
     if obj:
       return obj(provider,data)
     else:
-      return Provider(provider,data)
+      return _Provider(provider,data)
 
   def get_template_path(self) -> str:
     return 'templates/provider/' + self.provider
@@ -49,7 +49,18 @@ class Provider(Callback):
   def get_root_template(self) -> str:
     return self._default_template_name
 
+  def node_image_version(self, topology: Box) -> None:
+    for n in topology.nodes:
+      if '.' in n.box:
+        image_spec = n.box.split(':')
+        n.box = image_spec[0]
+        n.box_version = image_spec[1]
+
+  def transform_node_images(self, topology: Box) -> None:
+    pass
+
   def transform(self, topology: Box) -> None:
+    self.transform_node_images(topology)
     if "processor" in topology.defaults:
       return
     else:

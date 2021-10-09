@@ -7,13 +7,13 @@ from box import Box
 from .. import common
 from .. import addressing
 from .. import augment
-from ..providers import Provider
+from ..providers import _Provider
 from .. import modules
 
 def transform_setup(topology: Box) -> None:
   augment.topology.check_required_elements(topology)
   augment.topology.adjust_global_parameters(topology)
-  topology.Provider = Provider.load(topology.provider,topology.defaults.providers[topology.provider])
+  topology.Provider = _Provider.load(topology.provider,topology.defaults.providers[topology.provider])
   common.exit_on_error()
 
   topology.nodes = augment.nodes.adjust_node_list(topology.nodes)

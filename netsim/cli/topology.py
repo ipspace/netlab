@@ -8,7 +8,7 @@ import typing
 from .. import common,read_topology,augment
 
 from ..outputs import ansible
-from ..providers import Provider
+from ..providers import _Provider
 
 #
 # CLI parser for create-topology script
@@ -50,7 +50,7 @@ def legacy_main(args: argparse.Namespace) -> None:
   augment.main.transform(topology)
   common.exit_on_error()
   if args.provider is not None:
-    provider = Provider.load(topology.provider,topology.defaults.providers[topology.provider])
+    provider = _Provider.load(topology.provider,topology.defaults.providers[topology.provider])
     if args.verbose:
       common.error("Use 'netlab create -o provider=-' to write provider configuration file to stdout")
     else:

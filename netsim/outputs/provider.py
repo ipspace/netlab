@@ -10,7 +10,7 @@ from .. import common
 class ProviderConfiguration(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
-    provider = providers.Provider.load(topology.provider,topology.defaults.providers[topology.provider])
+    provider = providers._Provider.load(topology.provider,topology.defaults.providers[topology.provider])
 
     filename = None
     if hasattr(self,'filenames'):
