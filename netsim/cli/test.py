@@ -15,6 +15,7 @@ from pathlib import Path
 
 from .. import common
 from .. import read_topology
+from . import external_commands
 
 #
 # CLI parser for 'netlab config' command
@@ -43,31 +44,6 @@ def test_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
 
   return parser.parse_args(args)
 
-def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
-  if spacing:
-    print()
-  print("Step %d: %s" % (n,txt))
-  print("=" * 60)
-
-def test_probe(p : str) -> bool:
-  args = p.split(" ")
-  try:
-    result = subprocess.run(args,capture_output=True,check=True,text=True)
-    return result.stdout != ""
-  except:
-    return False
-
-def run_probes(settings: Box, args: argparse.Namespace) -> None:
-  if args.verbose:
-    print("Checking virtualization provider installation")
-  for p in settings.providers[args.provider].probe:
-    if args.verbose:
-      print(".. executing: %s" % p)
-    if not test_probe(p):
-      common.fatal("%s failed, aborting" % p)
-  if args.verbose:
-    print(".. all tests succeeded, moving on\n")
-
 def copy_topology(args: argparse.Namespace) -> None:
   if args.verbose:
     print("Creating test topology file in %s" % args.workdir)
@@ -83,35 +59,12 @@ def copy_topology(args: argparse.Namespace) -> None:
   if args.verbose:
     print("... done, moving on\n")
 
-def create_configs(args: argparse.Namespace) -> None:
-  print_step(1,"creating configuration files")
+def create_configs() -> None:
+  external_commands.print_step(1,"creating configuration files")
   try:
     subprocess.run(["netlab","create"],check=True)
   except:
     common.fatal("netlab create failed, aborting...","test")
-
-def start_lab(settings: Box, args: argparse.Namespace) -> None:
-  print_step(2,"starting the lab",True)
-  cmd = settings.providers[args.provider].start
-  try:
-    subprocess.run(cmd.split(" "),check=True)
-  except:
-    common.fatal("%s failed, aborting..." % cmd,"test")
-
-def deploy_configs(args: argparse.Namespace) -> None:
-  print_step(3,"deploying initial device configurations")
-  try:
-    subprocess.run(["netlab","initial"],check=True)
-  except:
-    common.fatal("netlab initial failed, aborting...","test")
-
-def stop_lab(settings: Box, args: argparse.Namespace) -> None:
-  print_step(4,"stopping the lab",True)
-  cmd = settings.providers[args.provider].stop
-  try:
-    subprocess.run(cmd.split(" "),check=True)
-  except:
-    common.fatal("%s failed, aborting..." % cmd,"test")
 
 def cleanup_working_directory(args: argparse.Namespace) -> None:
   if args.verbose:
@@ -145,10 +98,10 @@ def run(cli_args: typing.List[str]) -> None:
   if os.path.exists(args.workdir):
     common.fatal("Directory %s already exists, aborting" % args.workdir,"test")
 
-  run_probes(settings,args)
+  external_commands.run_probes(settings,args.provider)
   copy_topology(args)
-  create_configs(args)
-  start_lab(settings,args)
-  deploy_configs(args)
-  stop_lab(settings,args)
+  create_configs()
+  external_commands.start_lab(settings,args.provider,2)
+  external_commands.deploy_configs(3)
+  external_commands.stop_lab(settings,args.provider,4)
   cleanup_working_directory(args)

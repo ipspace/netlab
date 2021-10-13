@@ -7,6 +7,7 @@
 import argparse
 import typing
 import textwrap
+from box import Box
 
 from . import common_parse_args, topology_parse_args
 from .. import read_topology,augment,common
@@ -15,13 +16,11 @@ from ..outputs import _TopologyOutput
 #
 # CLI parser for create-topology script
 #
-def create_topology_parse(args: typing.List[str]) -> argparse.Namespace:
-  parser = argparse.ArgumentParser(
-    parents=[ common_parse_args(), topology_parse_args() ],
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    prog="netlab create",
-    description='Create provider- and automation configuration files',
-    epilog=textwrap.dedent('''
+def create_topology_parse(args: typing.List[str], cmd: str) -> argparse.Namespace:
+  if cmd:
+    epilog = ""
+  else:
+    epilog = textwrap.dedent('''
       output files created when no output is specified:
 
         * Virtualization provider file with provider-specific filename
@@ -29,20 +28,32 @@ def create_topology_parse(args: typing.List[str]) -> argparse.Namespace:
         * Ansible inventory file (hosts.yml) and configuration (ansible.cfg)
 
       For a complete list of output formats please consult the documentation
-    '''))
+    ''')
+  parser = argparse.ArgumentParser(
+    parents=[ common_parse_args(), topology_parse_args() ],
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    prog="netlab %s" % cmd,
+    description='Create provider- and automation configuration files',
+    epilog=epilog)
 
   parser.add_argument(
     dest='topology', action='store', nargs='?',
     type=argparse.FileType('r'),
     default='topology.yml',
     help='Topology file (default: topology.yml)')
-  parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
-  parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netsim-devices.yml')
+  if not cmd:
+    parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
+    parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netsim-devices.yml')
 
   return parser.parse_args(args)
 
-def run(cli_args: typing.List[str]) -> None:
-  args = create_topology_parse(cli_args)
+def run(cli_args: typing.List[str], cli_command: str = 'create') -> Box:
+  args = create_topology_parse(cli_args, cli_command)
+  if not 'output' in args:
+    args.output = None
+  if not 'devices' in args:
+    args.devices = None
+
   if not args.output:
     args.output = ['provider','devices'] if args.devices else ['provider','ansible:dirs']
   elif args.devices:
@@ -63,7 +74,4 @@ def run(cli_args: typing.List[str]) -> None:
     else:
       common.error('Unknown output format %s' % output_format,common.IncorrectValue,'create')
 
-  return
-  # Create provider configuration file
-  #
-
+  return topology

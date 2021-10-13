@@ -19,13 +19,16 @@ Once the lab is started you can use the :doc:`netlab initial <netlab/initial>` c
 * Deploy initial configurations (interfaces, IP addresses, usernames...) to your lab devices
 * Configure OSPF, IS-IS, BGP and SR-MPLS in your lab.
 
+To make your life even easier, use :doc:`netlab up <netlab/up>` command to create configuration
+files, start the lab, and deploy device configurations.
+
 When the lab is fully configured you could:
 
 * Use the **netlab connect** command to connect to network devices via SSH or **docker exec**
 * Use **netlab config** command to deploy custom configuration snippets
 
-Before shutting down your lab, you might want to run the **netlab collect** command to
-save the configuration changes you made.
+Before shutting down your lab with :doc:`netlab down <netlab/down>`, you might want to run the **netlab collect**
+command to save the configuration changes you made.
 
 Getting Started
 ---------------
