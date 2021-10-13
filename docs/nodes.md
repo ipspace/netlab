@@ -97,11 +97,13 @@ Nodes specified as a dictionary are converted into a list sorted by node names b
 
 After the initial cleanup, *netsim-tools* topology transformation code augments node data as follows (bold text indicates attribute names):
 
-* Node **id** is set based on node's position in the list starting with 1
+* Unless the node data contain an **id** attribute[^id], the node **id** is set based on node's position in the list -- starting with 1 and skipping static **id** used by other nodes.
 * **loopback** addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.
 * **device** type is copied from **defaults.device** if not already set.
 * Vagrant **box** is set from device data if not specified in the node attributes
 * Management interface parameters are saved in **mgmt** element. Management interface name (**ifname**) is computed from device data. **mac** address and **ipv4** and **ipv6** addresses are computed from corresponding parameters in *mgmt* pool. You can overwrite any of these parameters (at your own risk) by specifying them in **mgmt** dictionary within node data.
+
+[^id]: Node **id** must be an integer between 1 and 250. When using the standard management interface IP addressing (where management IPv4 addresses start with .100), the node **id** should not exceed 150.
 
 ### Examples
 
@@ -202,4 +204,53 @@ nodes:
     ipv4: 192.168.121.103
     mac: 08-4F-A9-00-00-03
   name: pe1
+```
+
+The following topology data with one of the nodes having a static **id**...
+
+```
+defaults:
+  device: cumulus
+
+nodes:
+  r1:
+  r2:
+  r3:
+    id: 1
+```
+
+... results in the following node data:
+
+```
+nodes:
+- box: CumulusCommunity/cumulus-vx
+  device: cumulus
+  id: 2
+  loopback:
+    ipv4: 10.0.0.2/32
+  mgmt:
+    ifname: eth0
+    ipv4: 192.168.121.102
+    mac: 08-4F-A9-00-00-02
+  name: r1
+- box: CumulusCommunity/cumulus-vx
+  device: cumulus
+  id: 3
+  loopback:
+    ipv4: 10.0.0.3/32
+  mgmt:
+    ifname: eth0
+    ipv4: 192.168.121.103
+    mac: 08-4F-A9-00-00-03
+  name: r2
+- box: CumulusCommunity/cumulus-vx
+  device: cumulus
+  id: 1
+  loopback:
+    ipv4: 10.0.0.1/32
+  mgmt:
+    ifname: eth0
+    ipv4: 192.168.121.101
+    mac: 08-4F-A9-00-00-01
+  name: r3
 ```

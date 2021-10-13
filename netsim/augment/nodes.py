@@ -159,7 +159,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> dict:
       continue
 
     if pools.loopback:
-      prefix_list = addressing.get(pools,['loopback'])
+      prefix_list = addressing.get(pools,['loopback'],n.id)
       for af in prefix_list:
         if af == 'ipv6':
           n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)

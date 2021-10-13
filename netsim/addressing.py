@@ -187,20 +187,33 @@ def get_pool(pools: Box, pool_list: typing.List[str]) -> typing.Optional[str]:
     category=common.MissingValue,module='addressing')
   return None
 
-def get_pool_prefix(pools: typing.Dict, p: str) -> typing.Dict:
+def get_nth_subnet(n: int, subnet: netaddr.IPNetwork.subnet, cache_list: list) -> netaddr.IPNetwork:
+  while len(cache_list) < n:
+    cache_list.append(next(subnet))
+  return cache_list[n-1]
+
+def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) -> typing.Dict:
   prefixes: typing.Dict = {}
   if pools[p].get('unnumbered'):
     return prefixes
-  for af in pools[p]:
-    prefixes[af] = next(pools[p][af])
+  for af in list(pools[p]):
+    if not 'cache' in af:
+      if n:
+        subnet_cache = 'cache_%s' % af
+        if not subnet_cache in pools[p]:
+          pools[p][subnet_cache] = []
+        prefixes[af] = get_nth_subnet(n,pools[p][af],pools[p][subnet_cache])
+      else:
+        prefixes[af] = next(pools[p][af])
+
   return prefixes
 
-def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None) -> typing.Dict:
+def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typing.Optional[int] = None) -> typing.Dict:
   if not pool_list:
     pool_list = ['lan']
   p = get_pool(pools,pool_list)
   if p:
-    return get_pool_prefix(pools,p)
+    return get_pool_prefix(pools,p,n)
   else:
     return {}
 
