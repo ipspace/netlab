@@ -49,6 +49,8 @@ def ansible_inventory_host(node: Box, defaults: Box) -> Box:
 def create(nodes: typing.List[Box], defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
+  inventory.all.vars.netlab_provider = defaults.provider
+
   if addressing:
     inventory.all.vars.pools = addressing
     for name,pool in inventory.all.vars.pools.items():

@@ -24,7 +24,7 @@ class Callback():
       for name,obj in inspect.getmembers(module):
         if inspect.isclass(obj) and issubclass(obj,Callback):
           if common.VERBOSE:
-            print("Found %s " % obj)
+            print("... found %s " % obj)
           return obj
       return None
 

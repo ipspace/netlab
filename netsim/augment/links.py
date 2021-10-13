@@ -86,8 +86,17 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
         value = Box({},default_box=True)
 
       for af,pfx in pfx_list.items():
-        ip = netaddr.IPNetwork(pfx[ndict[node].id])
-        ip.prefixlen = pfx.prefixlen
+        if not value[af]:
+          ip = netaddr.IPNetwork(pfx[ndict[node].id])
+        else:
+          try:
+            ip = netaddr.IPNetwork(value[af])
+          except:
+            common.error('Invalid %s link address for node %s: %s' % (af,node,value[af]))
+            continue
+
+        if ip.first == ip.last:
+          ip.prefixlen = pfx.prefixlen
         value[af] = str(ip)
         ifaddr[af] = value[af]
 

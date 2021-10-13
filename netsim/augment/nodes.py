@@ -114,6 +114,18 @@ def rebuild_nodes_map(topology: Box) -> None:
   topology.nodes_map = { n.name : n for n in topology.get('nodes',[]) }
 
 '''
+get_next_id: given a list of static IDs and the last ID, get the next device ID
+'''
+def get_next_id(id_list: list, id: int) -> int:
+  while id < 254:
+    id = id + 1
+    if not id in id_list:
+      return id
+
+  common.fatal('Cannot get the next device ID. The lab topology is probably too big')
+  return -1  # should never get there, but this makes mypy happy
+
+'''
 Main node transformation code
 
 * set node ID
@@ -126,18 +138,28 @@ def transform(topology: Box, defaults: Box, pools: Box) -> dict:
 
   id = 0
   ndict = {}
+  id_list = []
+
   for n in topology['nodes']:
-    id = id + 1
-    if n.id:
-      common.error("ERROR: static node IDs are not supported, overwriting with %d: %s" % (id,str(n)))
-    n.id = id
+    if 'id' in n:
+      if isinstance(n.id,int) and n.id > 0 and n.id <= 250:
+        id_list.append(n.id)
+      else:
+        common.error('Device ID must be an integer between 1 and 250')
+
+  common.exit_on_error()
+
+  for n in topology['nodes']:
+    if not 'id' in n:
+      id = get_next_id(id_list,id)
+      n.id = id
 
     if not n.name:
       common.error("ERROR: node does not have a name %s" % str(n))
       continue
 
     if pools.loopback:
-      prefix_list = addressing.get(pools,['loopback'])
+      prefix_list = addressing.get(pools,['loopback'],n.id)
       for af in prefix_list:
         if af == 'ipv6':
           n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)

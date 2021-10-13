@@ -1,6 +1,12 @@
 Release notes
 =============
 
+2021-10-13 (release 0.9.3)
+  * Add **netlab up** and **netlab down** commands
+  * Add static node IDs and interface addresses
+
+  :doc:`More details <release/0.9>`
+
 2021-10-08 (release 0.9.2)
   * Add a simple YAML-based inventory file to replace **ansible_inventory** if you happen to hate Ansible.
 

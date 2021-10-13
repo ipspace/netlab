@@ -22,11 +22,17 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release_0.9.2](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.2), the fallback release is [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9).
+The latest release is [release_0.9.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.3), the fallback release is [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9).
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 
 ## An overview of tools:
+
+**netlab up**
+: Uses **netlab create** to create configuration files, starts the virtual lab, and uses **netlab initial** to deploy device configurations. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/up.html) 
+
+**netlab down**
+: Destroys the virtual lab. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/down.html) 
 
 **netlab create**
 : Creates a full-blown network topology, Vagrantfile and Ansible inventory from a simple list of nodes and links. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/create.html)

@@ -2,7 +2,13 @@
 
 The following programs, scripts and Ansible playbooks are included with *netsim-tools* and available as a subcommand of **netlab** command.
 
-## Creating the Lab
+## Creating and Destroying the Lab
+
+**netlab up**
+: Uses **netlab create** to create configuration files, starts the virtual lab, and uses **netlab initial** to deploy initial device configurations. [More details...](netlab/up.md)
+
+**netlab down**
+: Destroys the virtual lab. [More details...](netlab/down.md)
 
 **netlab create**
 : Creates a full-blown network topology, Vagrantfile and Ansible inventory from a simple list of nodes and links. [More details...](netlab/create.md)

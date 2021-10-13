@@ -35,7 +35,7 @@ links:
 
 A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netsim-tools* data transformation routines:
 
-* **prefix** -- [prefix (or a set of prefixes)](#custom-link-addressing) used on the link
+* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link
 * **type** -- [link type](#link-types) (lan, p2p, stub)
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
@@ -124,9 +124,9 @@ links:
 3. `P2P link`
 4. `LAN link`
 
-## Custom Link Addressing
+## Static Link Addressing
 
-You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool (see above).
+You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
 
 The **prefix** attribute could be either an IPv4 CIDR prefix or a dictionary with **ipv4** and/or **ipv6** elements.
 
@@ -152,6 +152,33 @@ In dual-stack or IPv6-only environments you have to use the prefix dictionary sy
     ipv4: 192.168.23.0/24
     ipv6: 2001:db8:cafe:2::/64
 ```
+
+### Static Interface Addressing
+
+You can specify static interface address with the **ipv4** and/or **ipv6** attributes within the link-specific node data. The following example uses static interface addresses for two out of three nodes connected to a LAN link:
+
+```
+- e2:
+    ipv4: 192.168.22.17
+  e1:
+    ipv4: 10.42.0.2/29
+  e3:
+  prefix: 192.168.22.0/24
+```
+
+These interface address are assigned to the three nodes during the topology transformation process:
+
+* e1: 10.42.0.2/29 (unchanged)
+* e2: 192.168.22.17/24 (subnet mask copied from on-link prefix)
+* e3: 192.168.22.3/24 (IPv4 address derived from on-link prefix and node **id**).
+
+**Caveats**
+
+* Static interface addressing does not work on P2P links. Nodes attached to a P2P link always get the first and the second IP address from the link prefix. To use static interface addressing, set the link **type** to **lan**.
+* An interface address could use a subnet mask that does not match the link subnet mask[^smm]. If you don't specify a subnet mask in an interface address, it's copied from the link prefix.
+* You could specify an IPv6 interface address on an IPv4-only link (or vice versa). An interface address belonging to an address family that is not specified in the link prefix (static or derived from an address pool) is not checked.
+
+[^smm]: Not recommended for obvious reasons, but you could do it.
 
 ## Selecting Custom Address Pools
 
