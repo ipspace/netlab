@@ -83,3 +83,6 @@ class _Provider(Callback):
       print("Created provider configuration file: %s" % fname)
     else:
       output.write("\n")
+
+  def start_lab(self, topology: Box) -> None:
+    pass
