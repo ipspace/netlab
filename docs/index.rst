@@ -77,5 +77,4 @@ Getting Started
 
    release.rst
    contribute.md
-   legacy-cli/legacy.md
 ..

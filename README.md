@@ -22,7 +22,9 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release_0.9.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.3), the fallback release is [release_0.9](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9).
+The latest release is [release_1.0](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0).
+
+The last release containing the old (obsolete) CLI commands is [release_0.9.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.3).
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 
@@ -48,8 +50,3 @@ More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/re
 
 **netlab connect**
 : Use SSH or **docker exec** to connect to a lab device using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords from Ansible inventory. Ideal when you use centralized Vagrant environments and want to connect to the devices while being in playbook development directory.
-
-## Libvirt-specific tools
-
-**enable-lldp.sh**
-: Given libvirt network name, change group_fwd_mask for the corresponding Linux bridge to enable LLDP passthrough across the Linux bridge.

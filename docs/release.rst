@@ -1,6 +1,12 @@
 Release notes
 =============
 
+2021-10-25 (release 1.0)
+  * **netlab up** enables *LLDP passthrough* on Linux bridges created with *libvirt* Vagrant plugin
+  * Cleanup: remove the old CLI commands and related documentation
+
+  :doc:`More details <release/1.0>`
+
 2021-10-13 (release 0.9.3)
   * Add **netlab up** and **netlab down** commands
   * Add static node IDs and interface addresses
@@ -96,6 +102,7 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.0.md
    release/0.9.md
    release/0.8.md
    release/0.7.md

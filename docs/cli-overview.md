@@ -28,8 +28,3 @@ The following programs, scripts and Ansible playbooks are included with *netsim-
 
 **netlab collect**
 : Using Ansible fact gathering or other device-specific Ansible modules, collects device configurations and saves them in specified directory. [More details...](netlab/collect.md)
-
-## Libvirt Tools
-
-**enable-lldp.sh**
-: Given libvirt network name, change group_fwd_mask for the corresponding Linux bridge to enable LLDP passthrough across the Linux bridge.
