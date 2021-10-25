@@ -19,12 +19,12 @@ class Libvirt(_Provider):
     for l in topology.links:
       brname = l.get('bridge',None)
       if not brname:
-        next
+        continue
       try:
         result = subprocess.run(['virsh','net-info',brname],capture_output=True,check=True,text=True)
       except:
         common.error('Cannot run net-info for libvirt network %s' % brname, module='libvirt')
-        next
+        continue
 
       match = None
       if result and result.returncode == 0:
