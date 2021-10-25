@@ -7,7 +7,7 @@ Supported features:
 * Multiple autonomous systems
 * Direct (single-hop) EBGP sessions
 * IBGP sessions between loopback interfaces
-* BGP route reflectors
+* BGP route reflectors (for caveats see [implementation details](#implementation-details))
 * Next-hop-self control on IBGP sessions
 * BGP community propagation
 * IPv4 and IPv6 address families
@@ -230,6 +230,19 @@ nodes:
   r1:
     bgp:
       community: []
+```
+
+## Implementation Details
+
+Arista EOS BGP implementation changes the BGP next hop on reflected routes when configured with **neighbor next-hop-self**. To make an Arista EOS node work as a typical BGP route reflector, set the **bgp.next_hop_self** node parameter to *false*.
+
+```
+nodes:
+  eos_rr:
+    device: eos
+    bgp:
+      rr: true
+      next_hop_self: false
 ```
 
 ## More Examples
