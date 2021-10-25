@@ -43,12 +43,22 @@ The networking lab specified in the above topology file:
 * Has three links -- a stub network connected to *r1*, another stub network connected to *r2*, and a link between *r1* and *r2*.
 
 **Notes:**
-* If you're using *libvirt*, remove the **provider** line.
+* If you're using *libvirt*, replace the **provider** line with `provider: libvirt`.
 * If you prefer using Cumulus VX, replace `device: eos` with `device: cumulus`
 
 ## Starting the Lab
 
-Create **Vagrantfile**, **hosts.yml** (Ansible inventory file) and **ansible.cfg** (Ansible configuration file) with **[netlab create](../netlab/create.md)** tool:
+The easiest way to start the lab is to execute **[netlab up](../netlab/up.md)** command which:
+
+* Creates `Vagrantfile` and Ansible inventory files;
+* Starts the devices with **vagrant up** command
+* Configures the devices with **netlab initial** command.
+
+To execute individual steps in this process, follow the rest of this section, otherwise skip to [connecting to network devices](#connecting-to-network-devices).
+
+### Creating Configuration Files
+
+Create `Vagrantfile`, `hosts.yml` (Ansible inventory file) and `ansible.cfg` (Ansible configuration file) with **[netlab create](../netlab/create.md)** command:
 
 ```
 $ netlab create
@@ -60,7 +70,9 @@ Created minimized Ansible inventory hosts.yml
 Created Ansible configuration file: ansible.cfg
 ```
 
-Start the lab with `vagrant up`. Once all the lab devices have started, connect to individual devices with `vagrant ssh`.
+### Start the Virtual Devices
+
+Start the lab with **vagrant up**. Once all the lab devices have started, connect to individual devices with **vagrant ssh** or **[netlab connect](../netlab/connect.md)**.
 
 ```
 $ vagrant up
@@ -88,9 +100,9 @@ Bringing machine 'r2' up with 'virtualbox' provider...
 ... rest deleted...
 ```
 
-## Deploying Device Configurations
+### Deploy Device Configurations
 
-You'll need a working Ansible installation for the rest of this tutorial. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1].
+You'll need a working Ansible installation for the rest of this tutorial. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1] or use **[netlab install ansible](../netlab/install.md)**.
 
 [^1]: I prefer using **homebrew** to install Ansible on MacOS.
 
@@ -182,7 +194,7 @@ r1#
 
 ## Cleanup
 
-Destroy the lab with `vagrant destroy -f`:
+Destroy the lab with **[netlab down](../netlab/down.md)** or **vagrant destroy -f**:
 
 ```
 $ vagrant destroy -f

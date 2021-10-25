@@ -19,7 +19,7 @@ from recommonmark.transform import AutoStructify
 # -- Project information -----------------------------------------------------
 
 project = 'Network Simulation Tools'
-copyright = '2020, Ivan Pepelnjak'
+copyright = '2020–2021, Ivan Pepelnjak'
 author = 'Ivan Pepelnjak'
 
 
