@@ -101,7 +101,9 @@ def run(cli_args: typing.List[str]) -> None:
 
   if connection == 'docker':
     docker_connect(host_data,rest,args.verbose)
-  elif connection in ['paramiko','ssh','network_cli'] or not connection:
+  elif connection in ['paramiko','ssh','network_cli','netconf'] or not connection:
+    if connection == 'netconf':
+      print("Using SSH to connect to a device configured with NETCONF connection")
     ssh_connect(host_data,rest,args.verbose)
   else:
     common.fatal('Unknown connection method %s for host %s' % (connection,args.host),'connect')

@@ -32,11 +32,19 @@ In all other cases, **netlab connect** uses **ansible-inventory** command to fet
 
 **netlab connect** command uses the following device inventory variables:
 
-* `ansible_connection`: use **docker exec** instead of **ssh** if the connection is set to `docker`
+* `ansible_connection`: Use **docker exec** if the connection is set to `docker`[^cd]. Use **ssh** if the connection is set to `ssh`, `paramiko`[^cp], `network_cli`[^cc] or `netconf`[^cn]. Fail for all other connection types.
 * `ansible_host`: IP address or alternate FQDN for the lab device (default: host name specified on the command line)
 * `ansible_user`: remote username for SSH session (default: not specified)
 * `ansible_ssh_pass` to specify password (default: use SSH keys)
 * `ansible_port` to specify alternate SSH port (used primarily in VirtualBox environment)
+
+[^cd]: FRR and Linux devices running under _containerlab_
+
+[^cc]: Devices with traditional networking CLI, including Cisco IOSv, Cisco IOS-XE, Cisco Nexus OS, and Arista EOS.
+
+[^cp]: Linux virtual machines, including Cumulus VX and Nokia SR Linux.
+
+[^cn]: Junos
 
 ## Executing a Single Command
 
