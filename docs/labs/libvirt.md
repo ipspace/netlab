@@ -106,7 +106,7 @@ The only box currently available on Vagrant Cloud is the Cumulus VX box. Vagrant
 
 Cisco Nexus 9300v and Arista vEOS are available as Virtualbox boxes. To use them with *vagrant-libvirt*:
 
-* Install Vagrant *mutate* plugin with **vagrant plugin install mutate**
+* Install Vagrant *mutate* plugin with **vagrant plugin install vagrant-mutate**
 * Download the box file from vendor web site
 * Install *virtualbox* version of the box file with **vagrant box add *filename* \-\-name _boxname_**
 * Transform *virtualbox* box into *libvirt* box with **vagrant mutate _boxname_ libvirt**
