@@ -1,13 +1,14 @@
 #!/bin/bash
+me=${BASH_SOURCE:-$_}
 echo "Set up paths for netsim-tools downloaded from Github"
 echo
 dir=$(pwd)
-if [ "$BASH_SOURCE" == "$0" ]; then
-  echo "Run the setup script as 'source $BASH_SOURCE'"
+if [ -z "$me" ]; then
+  echo "Cannot figure out who I am. Aborting..."
 else
-  cd $(dirname "$BASH_SOURCE")
+  cd $(dirname "$me")
   pwd=$(pwd)
-  export PATH=$pwd:$pwd/netsim/ansible:$pwd/shell:$PATH
-  echo "added $pwd and [ansible,shell] directories to PATH"
+  export PATH=$PATH:$pwd:$pwd/netsim/ansible
+  echo "added $pwd and netsim/ansible directories to PATH"
   cd "$dir"
 fi

@@ -46,7 +46,7 @@ def ansible_inventory_host(node: Box, defaults: Box) -> Box:
   provider_inventory_settings(host,defaults)
   return host
 
-def create(nodes: typing.List[Box], defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
+def create(nodes: typing.List[Box], groups: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
   inventory.all.vars.netlab_provider = defaults.provider
@@ -71,12 +71,24 @@ def create(nodes: typing.List[Box], defaults: Box, addressing: typing.Optional[B
         if group_vars:
           inventory[group]['vars'] = group_vars
 
+  for gname,gdata in groups.items():
+    if not gname in inventory:
+      inventory[gname] = { 'hosts': {} }
+
+    if 'vars' in gdata:
+      inventory[gname].vars = inventory[gname].get('vars',{}) + gdata.vars
+
+    if 'members' in gdata:
+      for node in gdata.members:
+        if not node in inventory[gname].hosts:
+          inventory[gname].hosts[node] = {}
+
   return inventory
 
 def dump(data: Box) -> None:
   print("Ansible inventory data")
   print("===============================")
-  inventory = create(data.nodes,data.defaults)
+  inventory = create(data.nodes,data.get('groups',{}),data.defaults)
   print(inventory.to_yaml())
 
 def write_yaml(data: Box, fname: str, header: str) -> None:
@@ -95,7 +107,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
 def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', hostvars: typing.Optional[str] = 'dirs') -> None:
-  inventory = create(data['nodes'],data.get('defaults',{}),data.get('addressing',{}))
+  inventory = create(data['nodes'],data.get('groups',{}),data.get('defaults',{}),data.get('addressing',{}))
 
 #  import ipdb; ipdb.set_trace()
   header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
@@ -118,6 +130,8 @@ def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', host
       if 'hosts' in inventory[g]:
         hosts = inventory[g]['hosts']
         for h in hosts.keys():
+          if not hosts[h]:
+            continue
           min_host = Box({})
           vars_host = Box({})
           for item in hosts[h].keys():

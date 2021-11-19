@@ -2,7 +2,7 @@
 
 Topology description file is a YAML file with these top-level elements:
 
-**defaults**
+**defaults** (optional)
 : Topology-wide defaults like default device type. Further default settings are taken from [user- or system-wide defaults](defaults.md).
 
 **addressing** (optional)
@@ -11,16 +11,19 @@ Topology description file is a YAML file with these top-level elements:
 **nodes**
 : Lab devices (nodes). Individual nodes could be specified by node *name* (string) or a dictionary of node attributes including **name**. Use a node dictionary when you want to specify non-default device type or additional node attributes. See [Topology Reference -- Nodes](nodes.md) for more details.
 
+**groups**
+: [Groups of lab devices (nodes)](groups.md). Used to create inventory groups, either to add group variables, or for simpler deployment of group-wide custom configurations.
+
 **links**
 : [List of links](links.md) between lab devices. Formatted as a list of strings or dictionaries.
 
-**module**
+**module** (optional)
 : List of [optional configuration modules](modules.md) used by this network topology
 
-**name**
+**name** (optional)
 : Topology name -- used to name Linux bridges when using *libvirt* Vagrant plugin
 
-**provider**
+**provider** (optional)
 : Virtualization provider (*libvirt*, *virtualbox* or *clab*). Default value: *libvirt*.
 
 Sounds confusing? The following sample topology file should help you grasp the concepts. You might also want to [explore the tutorials](tutorials.md).

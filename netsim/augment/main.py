@@ -29,8 +29,12 @@ def transform_data(topology: Box) -> None:
 
   ndict = augment.nodes.transform(topology,topology.defaults,topology.pools)
   common.exit_on_error()
+
   if 'links' in topology:
     augment.links.transform(topology.links,topology.defaults,ndict,topology.pools)
+  common.exit_on_error()
+
+  augment.groups.adjust_groups(topology)
 
   modules.post_transform(topology)
   common.exit_on_error()

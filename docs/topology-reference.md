@@ -9,6 +9,7 @@ The lab topology is described in a YAML file using a dictionary format. The thre
 Other topology elements include:
 
 * **provider** -- virtualization provider (default: libvirt)
+* **groups** -- optional [groups of nodes](groups.md)
 * **module** -- list of [modules](modules.md) used by this network topology
 * **addressing** -- [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
 * **name** -- topology name (used in bridge names)
@@ -29,6 +30,7 @@ You'll find sample topology files in the [tutorials](tutorials.md).
 
    nodes.md
    links.md
+   groups.md
    addressing.md
    modules.md
    defaults.md
