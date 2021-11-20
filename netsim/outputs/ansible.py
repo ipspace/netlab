@@ -125,7 +125,8 @@ def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', host
       gvars = inventory[g].pop('vars',None)
       if gvars:
         write_yaml(gvars,'group_vars/%s/topology.yml' % g,header)
-        print("Created group_vars for %s" % g)
+        if not common.QUIET:
+          print("Created group_vars for %s" % g)
 
       if 'hosts' in inventory[g]:
         hosts = inventory[g]['hosts']
@@ -141,7 +142,8 @@ def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', host
               vars_host[item] = hosts[h][item]
 
           write_yaml(vars_host,'host_vars/%s/topology.yml' % h,header)
-          print("Created host_vars for %s" % h)
+          if not common.QUIET:
+            print("Created host_vars for %s" % h)
           hosts[h] = min_host
 
     write_yaml(inventory,fname,header)
@@ -156,7 +158,8 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
   with open(config_file,"w") as output:
     output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates'))
     output.close()
-    print("Created Ansible configuration file: %s" % config_file)
+    if not common.QUIET:
+      print("Created Ansible configuration file: %s" % config_file)
 
 class AnsibleInventory(_TopologyOutput):
 

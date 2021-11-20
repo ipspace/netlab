@@ -75,7 +75,7 @@ def print_verbose(t: typing.Any) -> None:
     print(t)
 
 def set_logging_flags(args: argparse.Namespace) -> None:
-  global VERBOSE, LOGGING, DEBUG
+  global VERBOSE, LOGGING, DEBUG, QUIET
   
   if args.verbose:
     VERBOSE = True
@@ -85,6 +85,9 @@ def set_logging_flags(args: argparse.Namespace) -> None:
 
   if 'debug' in args and args.debug:
     DEBUG = True
+
+  if 'quiet' in args and args.quiet:
+    QUIET = True
 
 #
 # Change all NULL values in a nested dictionary structure to empty strings
