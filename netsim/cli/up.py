@@ -19,7 +19,7 @@ from . import external_commands
 from .. import providers
 
 def run(cli_args: typing.List[str]) -> None:
-  topology = create.run(cli_args,'up')
+  topology = create.run(cli_args,'up','Create configuration files, start a virtual lab, and configure it')
   settings = topology.defaults
 
   external_commands.run_probes(settings,topology.provider)
@@ -30,3 +30,11 @@ def run(cli_args: typing.List[str]) -> None:
     provider.start_lab(topology)
 
   external_commands.deploy_configs(3)
+
+  step = 4
+  if 'groups' in topology:
+    for gname,gdata in topology.groups.items():
+      if 'config' in gdata:
+        for template in gdata.config:
+          external_commands.custom_configs(template,gname,step)
+          step = step + 1

@@ -45,6 +45,13 @@ def adjust_groups(topology: Box) -> None:
       if not isinstance(gdata.vars,dict):
         common.error('Group variables must be a dictionary: %s' % grp)
 
+    if 'config' in gdata:
+      if not isinstance(gdata.config,list):
+        if not isinstance(gdata.config,str):
+          common.error('Config group attribute should be a string or a list: %s' % grp)
+        else:
+          gdata.config = [ gdata.config ]
+
     for k in gdata.keys():
       if not k in group_attr:
         common.error('Unknown attribute "%s" in group %s' % (k,grp))

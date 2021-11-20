@@ -9,7 +9,7 @@ import argparse
 
 from . import usage
 
-def common_parse_args() -> argparse.ArgumentParser:
+def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
   parser.add_argument('--log', dest='logging', action='store_true',
                   help='Enable basic logging')
@@ -17,6 +17,10 @@ def common_parse_args() -> argparse.ArgumentParser:
                   help='Report only major errors')
   parser.add_argument('-v','--verbose', dest='verbose', action='store_true',
                   help='Verbose logging')
+  if debugging:
+    parser.add_argument('--debug', dest='debug', action='store_true',
+                    help='Debugging (might not execute external commands)')
+
   return parser
 
 def topology_parse_args() -> argparse.ArgumentParser:

@@ -18,7 +18,7 @@ from .. import read_topology,augment,common
 #
 def down_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
-    parents=[ common_parse_args() ],
+    parents=[ common_parse_args(True) ],
     prog="netlab down",
     description='Destroy the virtual lab')
 

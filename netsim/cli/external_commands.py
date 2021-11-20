@@ -22,8 +22,12 @@ def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None
 def test_probe(p : str) -> bool:
   args = p.split(" ")
   try:
-    result = subprocess.run(args,capture_output=True,check=True,text=True)
-    return result.stdout != ""
+    if common.DEBUG:
+      print("Not running: %s" % args)
+      return True
+    else:
+      result = subprocess.run(args,capture_output=True,check=True,text=True)
+      return result.stdout != ""
   except:
     return False
 
@@ -42,7 +46,10 @@ def start_lab(settings: Box, provider: str, step: int = 2) -> None:
   print_step(step,"starting the lab",True)
   cmd = settings.providers[provider].start
   try:
-    subprocess.run(cmd.split(" "),check=True)
+    if common.DEBUG:
+      print("Not running: %s" % cmd)
+    else:
+      subprocess.run(cmd.split(" "),check=True)
   except:
     common.fatal("%s failed, aborting..." % cmd,"test")
 
@@ -52,7 +59,23 @@ def deploy_configs(step : int = 3) -> None:
   if common.VERBOSE:
     cmd.append("-v")
   try:
-    subprocess.run(cmd,check=True)
+    if common.DEBUG:
+      print("Not running: %s" % cmd)
+    else:
+      subprocess.run(cmd,check=True)
+  except:
+    common.fatal("netlab initial failed, aborting...","test")
+
+def custom_configs(config : str, group: str, step : int = 4) -> None:
+  print_step(step,"deploying custom configuration template %s for group %s" % (config,group))
+  cmd = ["netlab","config",config,"--limit",group]
+  if common.VERBOSE:
+    cmd.append("-v")
+  try:
+    if common.DEBUG:
+      print("Not running: %s" % cmd)
+    else:
+      subprocess.run(cmd,check=True)
   except:
     common.fatal("netlab initial failed, aborting...","test")
 
@@ -60,6 +83,9 @@ def stop_lab(settings: Box, provider: str, step: int = 4) -> None:
   print_step(step,"stopping the lab",True)
   cmd = settings.providers[provider].stop
   try:
-    subprocess.run(cmd.split(" "),check=True)
+    if common.DEBUG:
+      print("Not running: %s" % cmd)
+    else:
+      subprocess.run(cmd.split(" "),check=True)
   except:
     common.fatal("%s failed, aborting..." % cmd,"test")

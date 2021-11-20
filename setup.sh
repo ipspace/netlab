@@ -8,7 +8,7 @@ if [ -z "$me" ]; then
 else
   cd $(dirname "$me")
   pwd=$(pwd)
-  export PATH=$PATH:$pwd:$pwd/netsim/ansible
+  export PATH=$pwd:$pwd/netsim/ansible:$PATH
   echo "added $pwd and netsim/ansible directories to PATH"
   cd "$dir"
 fi

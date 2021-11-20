@@ -11,6 +11,9 @@ from box import Box
 
 LOGGING=False
 VERBOSE=False
+DEBUG=False
+QUIET=False
+
 RAISE_ON_ERROR=False
 err_count = 0
 
@@ -72,13 +75,16 @@ def print_verbose(t: typing.Any) -> None:
     print(t)
 
 def set_logging_flags(args: argparse.Namespace) -> None:
-  global VERBOSE, LOGGING
+  global VERBOSE, LOGGING, DEBUG
   
   if args.verbose:
     VERBOSE = True
 
   if args.logging:
     LOGGING = True
+
+  if 'debug' in args and args.debug:
+    DEBUG = True
 
 #
 # Change all NULL values in a nested dictionary structure to empty strings

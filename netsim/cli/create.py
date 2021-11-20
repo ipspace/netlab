@@ -16,7 +16,7 @@ from ..outputs import _TopologyOutput
 #
 # CLI parser for create-topology script
 #
-def create_topology_parse(args: typing.List[str], cmd: str) -> argparse.Namespace:
+def create_topology_parse(args: typing.List[str], cmd: str, description: str) -> argparse.Namespace:
   if cmd != 'create':
     epilog = ""
   else:
@@ -30,10 +30,10 @@ def create_topology_parse(args: typing.List[str], cmd: str) -> argparse.Namespac
       For a complete list of output formats please consult the documentation
     ''')
   parser = argparse.ArgumentParser(
-    parents=[ common_parse_args(), topology_parse_args() ],
+    parents=[ common_parse_args(cmd != 'create'), topology_parse_args() ],
     formatter_class=argparse.RawDescriptionHelpFormatter,
     prog="netlab %s" % cmd,
-    description='Create provider- and automation configuration files',
+    description=description,
     epilog=epilog)
 
   parser.add_argument(
@@ -48,8 +48,10 @@ def create_topology_parse(args: typing.List[str], cmd: str) -> argparse.Namespac
 
   return parser.parse_args(args)
 
-def run(cli_args: typing.List[str], cli_command: str = 'create') -> Box:
-  args = create_topology_parse(cli_args, cli_command)
+def run(cli_args: typing.List[str],
+        cli_command: str = 'create',
+        cli_describe: str = 'Create provider- and automation configuration files') -> Box:
+  args = create_topology_parse(cli_args, cli_command, cli_describe)
   if not 'output' in args:
     args.output = None
   if not 'devices' in args:

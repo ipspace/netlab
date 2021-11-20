@@ -25,6 +25,30 @@ The custom node groups are used to create additional groups in Ansible inventory
 
 For example, `netlab config mpls.j2 --limit g1` would deploy configuration template `mpls.j2` only on lab devices A, B and C.
 
+## Custom Configuration Templates
+
+You can building complex labs with functionality that is not yet part of *netsim-tools* with the help of **[netlab config](netlab/config.md)** command that deploys custom configuration template to a set of lab devices. 
+
+To make the deployment of custom configuration template(s) part of a regular lab creating process[^CC], use **config** group attribute that can specify either a single template or a list of templates.
+
+[^CC]: ... once your configuration templates are thoroughly tested ;)
+
+For example, to deploy `ospf-anycast-loopback.j2` template on members of `anycast` group and `mpls-ldp.j2` on all devices in your lab during the **[netlab up](netlab/up.md)** process, use the following topology file:
+
+```
+defaults:
+  device: iosv
+
+groups:
+  anycast:
+    members: [ a1, a2, a3 ]
+    config: [ ospf-anycast-loopback.j2 ]
+  all:
+    config: [ mpls-ldp.j2 ]
+
+nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
+```
+
 ## Group Variables
 
 Group definition could include group variables in the **vars** element. Group variables are a dictionary of name/value pairs:
