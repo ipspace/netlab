@@ -22,7 +22,7 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release_1.0](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0).
+The latest release is [release_1.0.1](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0.1).
 
 The last release containing the old (obsolete) CLI commands is [release_0.9.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.3).
 
@@ -31,7 +31,7 @@ More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/re
 ## An overview of tools:
 
 **netlab up**
-: Uses **netlab create** to create configuration files, starts the virtual lab, and uses **netlab initial** to deploy device configurations. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/up.html) 
+: Uses **netlab create** to create configuration files, starts the virtual lab, and uses **netlab initial** and **netlab config** to deploy device configurations. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/up.html) 
 
 **netlab down**
 : Destroys the virtual lab. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/down.html) 

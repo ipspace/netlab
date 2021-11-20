@@ -1,6 +1,14 @@
 Release notes
 =============
 
+2021-11-20 (release 1.0.1)
+  * Custom inventory groups
+  * Group-specific custom configuration templates
+  * Composite command debugging
+  * Quiet run of Ansible playbooks
+
+  :doc:`More details <release/1.0>`
+
 2021-10-25 (release 1.0)
   * **netlab up** enables *LLDP passthrough* on Linux bridges created with *libvirt* Vagrant plugin
   * Cleanup: remove the old CLI commands and related documentation
