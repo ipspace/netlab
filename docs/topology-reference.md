@@ -33,5 +33,6 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    groups.md
    addressing.md
    modules.md
+   plugins.md
    defaults.md
 ```
