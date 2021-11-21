@@ -14,7 +14,7 @@ from box import Box
 # Related modules
 from .. import common
 
-topo_main_elements = ['addressing','defaults','groups','links','module','name','nodes','provider','Provider']
+topo_main_elements = ['addressing','defaults','groups','links','module','name','nodes','plugin','provider','Provider','Plugin']
 topo_internal_elements = ['input','includes']
 
 def check_required_elements(topology: Box) -> None:
