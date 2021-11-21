@@ -9,10 +9,13 @@ import typing
 from box import Box
 
 from .. import common
+from . import nodes
 
-group_attr = [ 'members','vars','config' ]
+group_attr = [ 'members','vars','config','node_data' ]
 
 def adjust_groups(topology: Box) -> None:
+  nodes.rebuild_nodes_map(topology)
+
   if not 'groups' in topology:
     topology.groups = Box({},default_box=True,box_dots=True)
 
@@ -80,6 +83,16 @@ def adjust_groups(topology: Box) -> None:
 
       if not n.name in topology.groups[grpname].members:  # Node not yet in the target group
         topology.groups[grpname].members.append(n.name)   # Add node to the end of the member list
+
+  '''
+  Copy node data from group into group members
+  '''
+  for grp,gdata in topology.groups.items():
+    if 'node_data' in gdata:
+      for ndata in topology.nodes:              # Have to iterate over original node data (nodes_map contains a copy)
+        if ndata.name in gdata.members:
+          for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
+            ndata[k] = ndata.get(k,{}) + v
 
   '''
   Finally, remove 'groups' topology element if it's not needed

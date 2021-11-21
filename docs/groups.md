@@ -105,6 +105,35 @@ nodes: [ a,b,c ]
 groups.cumulus.vars.ansible_user: other
 ```
 
+## Setting Node Data in Groups
+
+Sometimes you'd like to set a node attribute for all members of a group. For example, in a BGP anycast scenario we should set **[bgp.advertise_loopback](module/bgp.md#advertised-bgp-prefixes)** to *false* on all anycast server -- they should advertise only the anycast prefix not individual loopback prefixes. 
+
+While it's perfectly OK to set the desired attribute on individual nodes, it's much more convenient to set it in a group definition with the **node_data** attribute.
+
+**node_data** group attribute contains a set of values that should be set on all members of the group. The data is [deep-merged](defaults.md#deep-merging) with the existing node data -- for example, you could set **bgp.advertise_loopback** attribute without affecting **bgp.as** attribute.
+
+Using **node_data** functionality, a BGP anycast topology file becomes much more concise than it would have been otherwise:
+
+```
+defaults:
+  device: iosv
+
+module: [ bgp, ospf ]
+
+bgp.as: 65000
+
+groups:
+  anycast:
+    members: [ a1, a2, a3 ]
+    node_data:
+      bgp.as: 65001
+      bgp.advertise_loopback: false
+			
+nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
+```
+
+
 ## Specifying Groups in Nodes
 
 You could specify a group or a list of groups a node belongs to in the **group** attribute of a node instead of specifying group members in **groups** topology. You can also combine the two ways of defining groups, for example:
