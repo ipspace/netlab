@@ -3,6 +3,7 @@
 #
 import typing
 
+import re
 from box import Box
 import netaddr
 
@@ -61,16 +62,12 @@ def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
 
 class BGP(_Module):
 
-  """
-  Module pre-default:
-
-  * If the global BGP parameters have as_list attribute, set node AS numbers and node
+  '''
+  process_as_list:
+    If the global BGP parameters have as_list attribute, set node AS numbers and node
     RR flags accordingly
-
-  We could implement this one as node pre_default, but then we'd have to repeatedly
-  scan the AS_list
-  """
-  def module_pre_default(self, topology: Box) -> None:
+  '''
+  def process_as_list(self, topology: Box) -> None:
     if not 'bgp' in topology:                            # Do we have global BGP settings?
       return
 
@@ -131,6 +128,36 @@ class BGP(_Module):
 
         node.bgp = node_data[node.name] + node.bgp
 
+  '''
+  bgp_build_group: create automatic groups based on BGP AS numbers
+  '''
+  def build_bgp_groups(self, topology: Box) -> None:
+    for gname,gdata in topology.groups.items():
+      if re.match('as\\d+$',gname):
+        if 'members' in gdata:
+          common.error('BGP AS groups should not have static members %s' % gname)
+
+    for node in topology.nodes:
+      if 'bgp' in node and 'as' in node.bgp:
+        grpname = "as%s" % node.bgp["as"]
+        if not grpname in topology.groups:
+          topology.groups[grpname] = { 'members': [] }
+
+        if not 'members' in topology.groups[grpname]:
+          topology.groups[grpname].members = []
+
+        topology.groups[grpname].members.append(node.name)
+
+  """
+  Module pre-default:
+
+  * process AS list
+  * create automatic BGP groups
+  """
+  def module_pre_default(self, topology: Box) -> None:
+    self.process_as_list(topology)
+    self.build_bgp_groups(topology)
+
   """
   Node pre-transform: set bgp.rr node attribute to _true_ if the node name is in the
   global bgp.rr attribute. Also, delete the global bgp.rr attribute so it's not propagated
@@ -164,17 +191,14 @@ class BGP(_Module):
       link.role = ebgp_role
 
   """
-  Node post-transform: build BGP sessions
+  build_bgp_sessions: create BGP session data structure
 
   * BGP route reflectors need IBGP session with all other nodes in the same AS
   * Other nodes need IBGP sessions with all RRs in the same AS
   * EBGP sessions are established whenever two nodes on the same link have different AS
   * Links matching 'advertise_roles' get 'advertise' attribute set
   """
-  def node_post_transform(self, node: Box, topology: Box) -> None:
-    if not "bgp" in node:
-      common.error("Node %s has BGP module enabled but no BGP parameters" % node.name)
-    check_bgp_parameters(node)
+  def build_bgp_sessions(self, node: Box, topology: Box) -> None:
     rrlist = find_bgp_rr(node.bgp.get("as"),topology)
     node.bgp.neighbors = []
 
@@ -216,8 +240,10 @@ class BGP(_Module):
           node.bgp[af] = True
           break
 
-    # Set bgp.advertise flag on stub links
-    #
+  '''
+  bgp_set_advertise: set bgp.advertise flag on stub links
+  '''
+  def bgp_set_advertise(self, node: Box, topology: Box) -> None:
     stub_roles = topology.bgp.get("advertise_roles",None) or topology.defaults.bgp.get("advertise_roles",None)
     if stub_roles:
       for l in node.get("links",[]):
@@ -227,3 +253,9 @@ class BGP(_Module):
         if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
           l.bgp.advertise = True
 
+  def node_post_transform(self, node: Box, topology: Box) -> None:
+    if not "bgp" in node:
+      common.error("Node %s has BGP module enabled but no BGP parameters" % node.name)
+    check_bgp_parameters(node)
+    self.build_bgp_sessions(node,topology)
+    self.bgp_set_advertise(node,topology)

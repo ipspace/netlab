@@ -3,16 +3,17 @@ bgp:
   as_list:
     65000:
       members:
-      - rr1
-      - rr2
-      - pe1
-      - pe2
+      - l1
+      - l2
+      - l3
+      - s1
       rr:
-      - rr1
-      - rr2
-    65001:
+      - s1
+    65101:
       members:
-      - e1
+      - a1
+      - a2
+      - a3
   community:
     ebgp:
     - standard
@@ -23,125 +24,129 @@ bgp:
 groups:
   as65000:
     members:
-    - rr1
-    - rr2
-    - pe1
-    - pe2
-  as65001:
+    - l1
+    - l2
+    - l3
+    - s1
+  as65101:
     members:
-    - e1
-  as65002:
-    members:
-    - e2
+    - a1
+    - a2
+    - a3
+    node_data:
+      bgp:
+        advertise_loopback: false
 input:
-- topology/input/bgp-members.yml
+- topology/input/bgp-autogroup.yml
 - package:topology-defaults.yml
 links:
-- left:
+- l1:
+    ipv4: 10.1.0.1/30
+  left:
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.1/30
-    node: pe1
+    node: l1
   linkindex: 1
-  name: pe1 - rr1
-  pe1:
-    ipv4: 10.1.0.1/30
+  name: l1 - s1
   prefix:
     ipv4: 10.1.0.0/30
   right:
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.2/30
-    node: rr1
-  rr1:
+    node: s1
+  s1:
     ipv4: 10.1.0.2/30
   type: p2p
-- left:
+- l2:
+    ipv4: 10.1.0.5/30
+  left:
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.5/30
-    node: pe2
+    node: l2
   linkindex: 2
-  name: pe2 - rr1
-  pe2:
-    ipv4: 10.1.0.5/30
+  name: l2 - s1
   prefix:
     ipv4: 10.1.0.4/30
   right:
     ifname: GigabitEthernet0/2
     ipv4: 10.1.0.6/30
-    node: rr1
-  rr1:
+    node: s1
+  s1:
     ipv4: 10.1.0.6/30
   type: p2p
-- left:
-    ifname: GigabitEthernet0/2
+- l3:
     ipv4: 10.1.0.9/30
-    node: pe1
+  left:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.9/30
+    node: l3
   linkindex: 3
-  name: pe1 - rr2
-  pe1:
-    ipv4: 10.1.0.9/30
+  name: l3 - s1
   prefix:
     ipv4: 10.1.0.8/30
   right:
-    ifname: GigabitEthernet0/1
+    ifname: GigabitEthernet0/3
     ipv4: 10.1.0.10/30
-    node: rr2
-  rr2:
+    node: s1
+  s1:
     ipv4: 10.1.0.10/30
   type: p2p
-- left:
-    ifname: GigabitEthernet0/2
+- a1:
     ipv4: 10.1.0.13/30
-    node: pe2
+  l2:
+    ipv4: 10.1.0.14/30
+  left:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.13/30
+    node: a1
   linkindex: 4
-  name: pe2 - rr2
-  pe2:
-    ipv4: 10.1.0.13/30
+  name: a1 - l2
   prefix:
     ipv4: 10.1.0.12/30
   right:
     ifname: GigabitEthernet0/2
     ipv4: 10.1.0.14/30
-    node: rr2
-  rr2:
-    ipv4: 10.1.0.14/30
+    node: l2
+  role: external
   type: p2p
-- e1:
+- a2:
     ipv4: 10.1.0.17/30
+  l2:
+    ipv4: 10.1.0.18/30
   left:
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.17/30
-    node: e1
+    node: a2
   linkindex: 5
-  name: e1 - pe1
-  pe1:
-    ipv4: 10.1.0.18/30
+  name: a2 - l2
   prefix:
     ipv4: 10.1.0.16/30
   right:
     ifname: GigabitEthernet0/3
     ipv4: 10.1.0.18/30
-    node: pe1
+    node: l2
   role: external
   type: p2p
-- e2:
+- a3:
     ipv4: 10.1.0.21/30
+  l3:
+    ipv4: 10.1.0.22/30
   left:
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.21/30
-    node: e2
+    node: a3
   linkindex: 6
-  name: e2 - pe2
-  pe2:
-    ipv4: 10.1.0.22/30
+  name: a3 - l3
   prefix:
     ipv4: 10.1.0.20/30
   right:
-    ifname: GigabitEthernet0/3
+    ifname: GigabitEthernet0/2
     ipv4: 10.1.0.22/30
-    node: pe2
+    node: l3
   role: external
   type: p2p
 module:
+- ospf
 - bgp
 name: input
 nodes:
@@ -157,45 +162,24 @@ nodes:
     ipv4: true
     neighbors:
     - as: 65000
-      ipv4: 10.0.0.2
-      name: rr2
+      ipv4: 10.0.0.4
+      name: s1
       rr: true
       type: ibgp
-    - as: 65000
-      ipv4: 10.0.0.3
-      name: pe1
-      type: ibgp
-    - as: 65000
-      ipv4: 10.0.0.4
-      name: pe2
-      type: ibgp
     next_hop_self: true
-    rr: true
   box: cisco/iosv
   device: iosv
   id: 1
   links:
   - ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 10.1.0.2/30
+    ipv4: 10.1.0.1/30
     linkindex: 1
-    name: rr1 -> pe1
+    name: l1 -> s1
     neighbors:
-      pe1:
+      s1:
         ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.1/30
-    remote_id: 3
-    remote_ifindex: 1
-    type: p2p
-  - ifindex: 2
-    ifname: GigabitEthernet0/2
-    ipv4: 10.1.0.6/30
-    linkindex: 2
-    name: rr1 -> pe2
-    neighbors:
-      pe2:
-        ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.5/30
+        ipv4: 10.1.0.2/30
     remote_id: 4
     remote_ifindex: 1
     type: p2p
@@ -206,8 +190,9 @@ nodes:
     ipv4: 192.168.121.101
     mac: 08-4F-A9-00-00-01
   module:
+  - ospf
   - bgp
-  name: rr1
+  name: l1
 - bgp:
     advertise_loopback: true
     as: 65000
@@ -220,47 +205,62 @@ nodes:
     ipv4: true
     neighbors:
     - as: 65000
-      ipv4: 10.0.0.1
-      name: rr1
+      ipv4: 10.0.0.4
+      name: s1
       rr: true
       type: ibgp
-    - as: 65000
-      ipv4: 10.0.0.3
-      name: pe1
-      type: ibgp
-    - as: 65000
-      ipv4: 10.0.0.4
-      name: pe2
-      type: ibgp
+    - as: 65101
+      ifindex: 2
+      ipv4: 10.1.0.13
+      name: a1
+      type: ebgp
+    - as: 65101
+      ifindex: 3
+      ipv4: 10.1.0.17
+      name: a2
+      type: ebgp
     next_hop_self: true
-    rr: true
   box: cisco/iosv
   device: iosv
   id: 2
   links:
   - ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 10.1.0.10/30
-    linkindex: 3
-    name: rr2 -> pe1
+    ipv4: 10.1.0.5/30
+    linkindex: 2
+    name: l2 -> s1
     neighbors:
-      pe1:
+      s1:
         ifname: GigabitEthernet0/2
-        ipv4: 10.1.0.9/30
-    remote_id: 3
+        ipv4: 10.1.0.6/30
+    remote_id: 4
     remote_ifindex: 2
     type: p2p
   - ifindex: 2
     ifname: GigabitEthernet0/2
     ipv4: 10.1.0.14/30
     linkindex: 4
-    name: rr2 -> pe2
+    name: l2 -> a1
     neighbors:
-      pe2:
-        ifname: GigabitEthernet0/2
+      a1:
+        ifname: GigabitEthernet0/1
         ipv4: 10.1.0.13/30
-    remote_id: 4
-    remote_ifindex: 2
+    remote_id: 5
+    remote_ifindex: 1
+    role: external
+    type: p2p
+  - ifindex: 3
+    ifname: GigabitEthernet0/3
+    ipv4: 10.1.0.18/30
+    linkindex: 5
+    name: l2 -> a2
+    neighbors:
+      a2:
+        ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.17/30
+    remote_id: 6
+    remote_ifindex: 1
+    role: external
     type: p2p
   loopback:
     ipv4: 10.0.0.2/32
@@ -269,8 +269,9 @@ nodes:
     ipv4: 192.168.121.102
     mac: 08-4F-A9-00-00-02
   module:
+  - ospf
   - bgp
-  name: rr2
+  name: l2
 - bgp:
     advertise_loopback: true
     as: 65000
@@ -283,19 +284,14 @@ nodes:
     ipv4: true
     neighbors:
     - as: 65000
-      ipv4: 10.0.0.1
-      name: rr1
+      ipv4: 10.0.0.4
+      name: s1
       rr: true
       type: ibgp
-    - as: 65000
-      ipv4: 10.0.0.2
-      name: rr2
-      rr: true
-      type: ibgp
-    - as: 65001
-      ifindex: 3
-      ipv4: 10.1.0.17
-      name: e1
+    - as: 65101
+      ifindex: 2
+      ipv4: 10.1.0.21
+      name: a3
       type: ebgp
     next_hop_self: true
   box: cisco/iosv
@@ -304,38 +300,26 @@ nodes:
   links:
   - ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 10.1.0.1/30
-    linkindex: 1
-    name: pe1 -> rr1
+    ipv4: 10.1.0.9/30
+    linkindex: 3
+    name: l3 -> s1
     neighbors:
-      rr1:
-        ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.2/30
-    remote_id: 1
-    remote_ifindex: 1
+      s1:
+        ifname: GigabitEthernet0/3
+        ipv4: 10.1.0.10/30
+    remote_id: 4
+    remote_ifindex: 3
     type: p2p
   - ifindex: 2
     ifname: GigabitEthernet0/2
-    ipv4: 10.1.0.9/30
-    linkindex: 3
-    name: pe1 -> rr2
+    ipv4: 10.1.0.22/30
+    linkindex: 6
+    name: l3 -> a3
     neighbors:
-      rr2:
+      a3:
         ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.10/30
-    remote_id: 2
-    remote_ifindex: 1
-    type: p2p
-  - ifindex: 3
-    ifname: GigabitEthernet0/3
-    ipv4: 10.1.0.18/30
-    linkindex: 5
-    name: pe1 -> e1
-    neighbors:
-      e1:
-        ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.17/30
-    remote_id: 5
+        ipv4: 10.1.0.21/30
+    remote_id: 7
     remote_ifindex: 1
     role: external
     type: p2p
@@ -346,8 +330,9 @@ nodes:
     ipv4: 192.168.121.103
     mac: 08-4F-A9-00-00-03
   module:
+  - ospf
   - bgp
-  name: pe1
+  name: l3
 - bgp:
     advertise_loopback: true
     as: 65000
@@ -361,60 +346,57 @@ nodes:
     neighbors:
     - as: 65000
       ipv4: 10.0.0.1
-      name: rr1
-      rr: true
+      name: l1
       type: ibgp
     - as: 65000
       ipv4: 10.0.0.2
-      name: rr2
-      rr: true
+      name: l2
       type: ibgp
-    - as: 65002
-      ifindex: 3
-      ipv4: 10.1.0.21
-      name: e2
-      type: ebgp
+    - as: 65000
+      ipv4: 10.0.0.3
+      name: l3
+      type: ibgp
     next_hop_self: true
+    rr: true
   box: cisco/iosv
   device: iosv
   id: 4
   links:
   - ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 10.1.0.5/30
-    linkindex: 2
-    name: pe2 -> rr1
+    ipv4: 10.1.0.2/30
+    linkindex: 1
+    name: s1 -> l1
     neighbors:
-      rr1:
-        ifname: GigabitEthernet0/2
-        ipv4: 10.1.0.6/30
+      l1:
+        ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.1/30
     remote_id: 1
-    remote_ifindex: 2
+    remote_ifindex: 1
     type: p2p
   - ifindex: 2
     ifname: GigabitEthernet0/2
-    ipv4: 10.1.0.13/30
-    linkindex: 4
-    name: pe2 -> rr2
+    ipv4: 10.1.0.6/30
+    linkindex: 2
+    name: s1 -> l2
     neighbors:
-      rr2:
-        ifname: GigabitEthernet0/2
-        ipv4: 10.1.0.14/30
+      l2:
+        ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.5/30
     remote_id: 2
-    remote_ifindex: 2
+    remote_ifindex: 1
     type: p2p
   - ifindex: 3
     ifname: GigabitEthernet0/3
-    ipv4: 10.1.0.22/30
-    linkindex: 6
-    name: pe2 -> e2
+    ipv4: 10.1.0.10/30
+    linkindex: 3
+    name: s1 -> l3
     neighbors:
-      e2:
+      l3:
         ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.21/30
-    remote_id: 6
+        ipv4: 10.1.0.9/30
+    remote_id: 3
     remote_ifindex: 1
-    role: external
     type: p2p
   loopback:
     ipv4: 10.0.0.4/32
@@ -423,11 +405,12 @@ nodes:
     ipv4: 192.168.121.104
     mac: 08-4F-A9-00-00-04
   module:
+  - ospf
   - bgp
-  name: pe2
+  name: s1
 - bgp:
-    advertise_loopback: true
-    as: 65001
+    advertise_loopback: false
+    as: 65101
     community:
       ebgp:
       - standard
@@ -436,10 +419,18 @@ nodes:
       - extended
     ipv4: true
     neighbors:
+    - as: 65101
+      ipv4: 10.0.0.6
+      name: a2
+      type: ibgp
+    - as: 65101
+      ipv4: 10.0.0.7
+      name: a3
+      type: ibgp
     - as: 65000
       ifindex: 1
-      ipv4: 10.1.0.18
-      name: pe1
+      ipv4: 10.1.0.14
+      name: l2
       type: ebgp
     next_hop_self: true
   box: cisco/iosv
@@ -448,15 +439,15 @@ nodes:
   links:
   - ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 10.1.0.17/30
-    linkindex: 5
-    name: e1 -> pe1
+    ipv4: 10.1.0.13/30
+    linkindex: 4
+    name: a1 -> l2
     neighbors:
-      pe1:
-        ifname: GigabitEthernet0/3
-        ipv4: 10.1.0.18/30
-    remote_id: 3
-    remote_ifindex: 3
+      l2:
+        ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.14/30
+    remote_id: 2
+    remote_ifindex: 2
     role: external
     type: p2p
   loopback:
@@ -466,11 +457,12 @@ nodes:
     ipv4: 192.168.121.105
     mac: 08-4F-A9-00-00-05
   module:
+  - ospf
   - bgp
-  name: e1
+  name: a1
 - bgp:
-    advertise_loopback: true
-    as: 65002
+    advertise_loopback: false
+    as: 65101
     community:
       ebgp:
       - standard
@@ -479,10 +471,18 @@ nodes:
       - extended
     ipv4: true
     neighbors:
+    - as: 65101
+      ipv4: 10.0.0.5
+      name: a1
+      type: ibgp
+    - as: 65101
+      ipv4: 10.0.0.7
+      name: a3
+      type: ibgp
     - as: 65000
       ifindex: 1
-      ipv4: 10.1.0.22
-      name: pe2
+      ipv4: 10.1.0.18
+      name: l2
       type: ebgp
     next_hop_self: true
   box: cisco/iosv
@@ -491,14 +491,14 @@ nodes:
   links:
   - ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 10.1.0.21/30
-    linkindex: 6
-    name: e2 -> pe2
+    ipv4: 10.1.0.17/30
+    linkindex: 5
+    name: a2 -> l2
     neighbors:
-      pe2:
+      l2:
         ifname: GigabitEthernet0/3
-        ipv4: 10.1.0.22/30
-    remote_id: 4
+        ipv4: 10.1.0.18/30
+    remote_id: 2
     remote_ifindex: 3
     role: external
     type: p2p
@@ -509,6 +509,59 @@ nodes:
     ipv4: 192.168.121.106
     mac: 08-4F-A9-00-00-06
   module:
+  - ospf
   - bgp
-  name: e2
+  name: a2
+- bgp:
+    advertise_loopback: false
+    as: 65101
+    community:
+      ebgp:
+      - standard
+      ibgp:
+      - standard
+      - extended
+    ipv4: true
+    neighbors:
+    - as: 65101
+      ipv4: 10.0.0.5
+      name: a1
+      type: ibgp
+    - as: 65101
+      ipv4: 10.0.0.6
+      name: a2
+      type: ibgp
+    - as: 65000
+      ifindex: 1
+      ipv4: 10.1.0.22
+      name: l3
+      type: ebgp
+    next_hop_self: true
+  box: cisco/iosv
+  device: iosv
+  id: 7
+  links:
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.21/30
+    linkindex: 6
+    name: a3 -> l3
+    neighbors:
+      l3:
+        ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.22/30
+    remote_id: 3
+    remote_ifindex: 2
+    role: external
+    type: p2p
+  loopback:
+    ipv4: 10.0.0.7/32
+  mgmt:
+    ifname: GigabitEthernet0/0
+    ipv4: 192.168.121.107
+    mac: 08-4F-A9-00-00-07
+  module:
+  - ospf
+  - bgp
+  name: a3
 provider: libvirt

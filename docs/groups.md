@@ -133,6 +133,35 @@ groups:
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
 
+## Automatic BGP Groups
+
+BGP module creates a group named *asnnn* where *nnn* is the AS number for every BGP AS present in the lab topology. The members of the group are all nodes in that autonomous system.
+
+You can set inventory variables (with **vars** attribute), deployment templates (with **config** attribute) or node data (with **node_data** attribute) on an automatic BGP group, but you cannot specify static group members.
+
+Here is a BGP anycast topology file that depends on setting node data within an automatic BGP group (the topology file uses [BGP as-list](module/bgp.md#global-bgp-configuration-parameters) functionality to specify AS membership):
+
+```
+defaults:
+  device: iosv
+
+module: [ bgp, ospf ]
+
+bgp:
+  as_list:
+    65000:
+      members: [ l1, l2, l3, s1 ]
+      rr: [ s1 ]
+    65001:
+      members: [ a1, a2, a3 ]
+
+groups:
+  as65001:
+    node_data:
+      bgp.advertise_loopback: false
+
+nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
+```
 
 ## Specifying Groups in Nodes
 
