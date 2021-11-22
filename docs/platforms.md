@@ -14,6 +14,7 @@ The following virtual network devices are supported by *netsim-tools*:
 | Generic Linux host     | linux              |
 | Juniper vSRX 3.0       | vsrx               |
 | Nokia SR Linux         | srlinux            |
+| VyOS                   | vyos               |
 
 **Notes:**
 
@@ -62,6 +63,7 @@ You cannot use all supported network devices with all virtualization providers:
 | Generic Linux (Ubuntu/Alpine) | ✅ | ✅ | ✅ | 
 | Juniper vSRX 3.0       | ✅ | ❌ | ❌ |
 | Nokia SR Linux         | ❌ | ❌ | ✅ |
+| VyOS                   | ✅ | ❌ | ❌ |
 
 **Implementation Caveats**
 
@@ -94,6 +96,7 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Generic Linux          | ✅ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ |
 | Nokia SR Linux         | ❌ | ❌ |
+| VyOS                   | ✅ | ✅ |
 
 ## Initial Device Configurations
 
@@ -110,6 +113,7 @@ The following system-wide features are configured on supported network operating
 | Generic Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
+| VyOS                   | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Caveats:**
 
@@ -127,6 +131,7 @@ The following interface parameters are configured on supported network operating
 | FRR 7.5.0              | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Generic Linux          | ✅ | ✅ | ❌ | ❌  | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
+| VyOS                   | ✅ | ✅ | ❌ | ✅ | ❌ |
 
 ## Supported Configuration Modules
 
@@ -144,6 +149,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Generic Linux          | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
+| VyOS                   | ✅ | ❌ | ❌ | ✅ | ❌ |
 
 ## IPv6 Support
 
@@ -160,6 +166,7 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | FRR 7.5.0              | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
 | Generic Linux          | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
+| VyOS                   | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
 
 ## Host Routing
 
