@@ -1,0 +1,46 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+
+configure
+
+set system host-name '{{ inventory_hostname }}'
+
+{% if 'ipv4' in loopback %}
+set interfaces dummy dum0 address {{ loopback.ipv4 }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+set interfaces dummy dum0 address {{ loopback.ipv6 }}
+{% endif %}
+
+{% for l in links|default([]) %}
+
+{% if l.name is defined %}
+set interfaces ethernet {{ l.ifname }} description '{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}'
+{% elif l.type|default("") == "stub" %}
+set interfaces ethernet {{ l.ifname }} description 'Stub interface'
+{% endif %}
+
+{% if 'ipv4' in l %}
+set interfaces ethernet {{ l.ifname }} address {{ l.ipv4 }}
+{% endif %}
+{% if 'ipv6' in l %}
+set interfaces ethernet {{ l.ifname }} address {{ l.ipv6 }};
+{% endif %}
+
+{% endfor %}
+
+set service lldp interface all
+set service lldp interface {{ mgmt.ifname|default('eth0') }} disable
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
+
