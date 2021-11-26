@@ -15,6 +15,7 @@ The following virtual network devices are supported by *netsim-tools*:
 | Juniper vSRX 3.0       | vsrx               |
 | Nokia SR Linux         | srlinux            |
 | VyOS                   | vyos               |
+| Mikrotik CHR RouterOS  | routeros           |
 
 **Notes:**
 
@@ -64,6 +65,7 @@ You cannot use all supported network devices with all virtualization providers:
 | Juniper vSRX 3.0       | ✅ | ❌ | ❌ |
 | Nokia SR Linux         | ❌ | ❌ | ✅ |
 | VyOS                   | ✅ | ❌ | ❌ |
+| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ |
 
 **Implementation Caveats**
 
@@ -97,6 +99,7 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Juniper vSRX 3.0       | ✅ | ✅ |
 | Nokia SR Linux         | ❌ | ❌ |
 | VyOS                   | ✅ | ✅ |
+| Mikrotik CHR RouterOS  | ✅ | ✅ |
 
 ## Initial Device Configurations
 
@@ -114,10 +117,12 @@ The following system-wide features are configured on supported network operating
 | Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
 | VyOS                   | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Mikrotik CHR RouterOS  | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Caveats:**
 
 * LLDP on Generic Linux is started in Ubuntu VMs but not in Alpine containers.
+* LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
@@ -132,6 +137,7 @@ The following interface parameters are configured on supported network operating
 | Generic Linux          | ✅ | ✅ | ❌ | ❌  | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | VyOS                   | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Mikrotik CHR RouterOS  | ✅ | ✅ | ❌ | ✅ | ❌ |
 
 ## Supported Configuration Modules
 
@@ -150,6 +156,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Juniper vSRX 3.0       | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
 | VyOS                   | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ | ✅ | ❌ |
 
 ## IPv6 Support
 
@@ -167,6 +174,7 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Generic Linux          | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
 | VyOS                   | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
 
 ## Host Routing
 

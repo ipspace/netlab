@@ -1,0 +1,58 @@
+
+{% set area = ospf.area|default("0.0.0.0") %}
+
+{#
+  Create AREA list. If default area != 0.0.0.0, append to list
+#}
+{% set area_list = [] %}
+{% if area != '0.0.0.0' %}
+{{ area_list.append(area) }}
+{% endif %}
+{#
+  For each link, check defined area. If != 0.0.0.0, add to area list
+#}
+{% for l in links|default([]) if l.ospf.area is defined %}
+{% if l.ospf.area != '0.0.0.0' %}
+{{ area_list.append(l.ospf.area) }}
+{% endif %}
+{% endfor %}
+
+{#
+  For each unique area, add to area configuration
+#}
+{% for a_def in area_list|unique %}
+/routing ospf area add name={{ a_def }} area-id={{ a_def }}
+{% endfor %}
+
+{% for l in links|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+/routing ospf interface add interface={{ l.ifname }} passive=yes
+{% endfor %}
+
+/routing ospf interface add interface=loopback passive=yes
+{% if 'ipv4' in loopback %}
+/routing ospf network add area=[/routing ospf area find area-id={{ area }}] network={{ loopback.ipv4 }}
+{% endif %}
+
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+## OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+
+/routing ospf network add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }}] network={{ l.ipv4 | ipaddr('subnet') }}
+
+{% set ospf_intf_params=[] %}
+
+{%     if l.type|default("") == "p2p" %}
+{{ ospf_intf_params.append('network-type=point-to-point') }}
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+{{ ospf_intf_params.append('cost='+l.ospfcost) }}
+{%     endif %}
+
+{%     if ospf_intf_params|length > 0 %}
+/routing ospf interface add interface={{ l.ifname }} {{ ospf_intf_params|join(' ') }}
+{%     endif %}
+
+{%   endif %}
+
+{% endfor %}
