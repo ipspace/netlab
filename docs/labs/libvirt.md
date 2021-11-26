@@ -100,6 +100,7 @@ The Vagrant boxes should have the following names:
 | Cumulus VX             | CumulusCommunity/cumulus-vx |
 | Juniper vSRX 3.0       | juniper/vsrx3      |
 | VyOS                   | vyos/vyos          |
+| Mikrotik CHR RouterOS  | mikrotik/chr       |
 
 The only box currently available on Vagrant Cloud is the Cumulus VX box. Vagrant automatically downloads it whenever you use Cumulus VX in your lab topology.
 
@@ -124,7 +125,9 @@ Cisco Nexus 9300v and Arista vEOS are available as Virtualbox boxes. To use them
 
 Pete Crocker published similar recipe for [Fortinet firewalls](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) (not yet supported by *netsim-tools*, PR welcome).
 
-Stefano Sasso published a recipe for creating a [VyOS](https://github.com/ssasso/packer-vyos-vagrant) box using Packer.
+[Stefano Sasso](http://stefano.dscnet.org) published box-building recipes for the following platforms:
+* [VyOS](https://github.com/ssasso/packer-vyos-vagrant)
+* [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/)
 
 **Notes:**
 
