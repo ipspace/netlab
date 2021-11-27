@@ -12,8 +12,6 @@ Plugins needed by a topology file are listed in the **plugin** top-level element
 plugin: [ bgp-anycast-no-ibgp ]
 
 module: [ ospf, bgp ]
-
-anycast.as: 65101
 ...
 ```
 
@@ -41,16 +39,14 @@ Every plugin function is called with a single *topology* argument: the current t
 
 ## Example
 
-All anycast servers in a BGP anycast topology should have the same AS number, but do not need IBGP sessions between themselves. A custom plugin deletes IBGP sessions with an autonomous system defined in **anycast.as** topology attribute.
+All anycast servers in a BGP anycast topology should have the same AS number, but do not need IBGP sessions between themselves. A custom plugin deletes IBGP sessions for any node with **bgp.anycast** attribute.
 
-The topology file defines a plugin to load and sets (among other things) the **anycast.as** attribute. Please note that this attribute would not be recognized without the plugin:
+This is the topology file used in BGP anycast example. It uses [**node_data** attribute](groups.md#setting-node-data-in-groups) on a [BGP AS group](groups.md#automatic-bgp-groups) to set **bgp.anycast** node attribute on any node in AS 65101
 
 ```yaml
 plugin: [ bgp-anycast-no-ibgp ]
 
 module: [ ospf, bgp ]
-
-anycast.as: 65101
 
 defaults:
   device: iosv
@@ -63,39 +59,34 @@ bgp:
     65101:
       members: [ a1,a2,a3 ]
 
+groups:
+  as65101:
+    node_data:
+      bgp.anycast: 10.42.42.42/32
+
 nodes: 
   [ l1, l2, l3, s1, a1, a2, a3 ]
 
 links: [ s1-l1, s1-l2, s1-l3, l2-a1, l2-a2, l3-a3 ]
 ```
 
-The plugin imports **topology** augmentation module which defines the valid top-level elements. It also imports the **common** netsim module to create error messages.
+The plugin imports **common** netsim module to create error messages.
 
 ```python
 import sys
 from box import Box
-from netsim.augment import topology
 from netsim import common
 ```
 
-The **init** function adds **anycast** keyword to the list of valid top-level elements (figuring out what needs to be done might require wasting time looking at the source code):
-
-```
-def init(topo: Box) -> None:
-  topology.topo_main_elements.append('anycast')
-```
-
-The custom transformation is executed as the last step of the topology transformation -- the **post_transform** function removes IBGP neighbors from all nodes in **anycast.as** autonomous system.
+The custom transformation is executed as the last step of the topology transformation -- the **post_transform** function removes IBGP neighbors from all nodes with **bgp.anycast** attribute.
 
 ```
 def post_transform(topo: Box) -> None:
-  if not topo.anycast['as']:
-    common.error('BGP anycast plugin needs an AS number')
-
   for node in topo.nodes:
     if 'bgp' in node:
-      if node.bgp['as'] == topo.anycast['as']:
-        node.bgp.neighbors = [ 
-          n for n in node.bgp.neighbors 
+      if 'anycast' in node.bgp:
+        node.bgp.advertise_loopback = False
+        node.bgp.neighbors = [
+          n for n in node.bgp.neighbors
             if n.type != 'ibgp' ]
 ```

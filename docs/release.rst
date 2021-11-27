@@ -1,6 +1,14 @@
 Release notes
 =============
 
+2021-11-27 (release 1.0.2)
+  * Support for Mikrotik CHS and Vyos devices (contributed by Stefano Sasso)
+  * Group-specific node data
+  * Automatic creation of AS-based groups
+  * Custom plugins
+
+  :doc:`More details <release/1.0>`
+
 2021-11-20 (release 1.0.1)
   * Custom inventory groups
   * Group-specific custom configuration templates
