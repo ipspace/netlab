@@ -10,12 +10,13 @@ The following virtual network devices are supported by *netsim-tools*:
 | Cisco CRS 1000v        | csr                |
 | Cisco Nexus 9300v      | nxos               |
 | Cumulus Linux          | cumulus            |
+| Fortinet FortiOS       | fortios            |
 | FRR 7.5.0              | frr                |
 | Generic Linux host     | linux              |
 | Juniper vSRX 3.0       | vsrx               |
+| Mikrotik CHR RouterOS  | routeros           |
 | Nokia SR Linux         | srlinux            |
 | VyOS                   | vyos               |
-| Mikrotik CHR RouterOS  | routeros           |
 
 **Notes:**
 
@@ -60,12 +61,13 @@ You cannot use all supported network devices with all virtualization providers:
 | Cisco CRS 1000v        | ✅ | ❌ | ❌ |
 | Cisco Nexus 9300v      | ✅ | ✅ | ❌ |
 | Cumulus Linux          | ✅ | ✅ | ✅ |
+| FortiOS                | ✅ | ❌ | ❌ |
 | FRR 7.5.0              | ❌ | ❌ | ✅ |
 | Generic Linux (Ubuntu/Alpine) | ✅ | ✅ | ✅ | 
 | Juniper vSRX 3.0       | ✅ | ❌ | ❌ |
+| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ |
 | Nokia SR Linux         | ❌ | ❌ | ✅ |
 | VyOS                   | ✅ | ❌ | ❌ |
-| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ |
 
 **Implementation Caveats**
 
@@ -94,12 +96,13 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Cisco IOS / IOS XE     | ✅ | ✅ |
 | Cisco Nexus OS         | ✅ | ✅ |
 | Cumulus Linux          | ✅ | ✅ |
+| Fortinet FortiOS       | ❌ | ❌ |
 | FRR container          | ✅ | ❌ |
 | Generic Linux          | ✅ | ❌ |
 | Juniper vSRX 3.0       | ✅ | ✅ |
+| Mikrotik CHR RouterOS  | ✅ | ✅ |
 | Nokia SR Linux         | ❌ | ❌ |
 | VyOS                   | ✅ | ✅ |
-| Mikrotik CHR RouterOS  | ✅ | ✅ |
 
 ## Initial Device Configurations
 
