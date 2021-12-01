@@ -5,7 +5,7 @@
 
 import sys
 import typing
-from .. import __version__
+import netsim
 
 def run(args: typing.List[str]) -> None:
-  print("netsim-tools version %s" % __version__)
+  print("netsim-tools version %s" % netsim.__version__)
