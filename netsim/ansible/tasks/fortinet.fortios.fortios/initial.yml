@@ -1,0 +1,112 @@
+---
+
+- hosts: {{ inventory_hostname.replace("_","-") }}
+  connection: httpapi
+  collections:
+  - fortinet.fortios
+  vars:
+    vdom: "root"
+    ansible_httpapi_use_ssl: no
+    ansible_httpapi_validate_certs: no
+    ansible_httpapi_port: 80
+  tasks:
+    - name: Configure global attributes
+      fortios_system_global:
+        vdom:  "{{ vdom }}"
+        system_global:
+            hostname: '{{ inventory_hostname.replace("_","-") }}'
+
+    - name: Configure interfaces
+      fortios_system_interface:
+        vdom:  "{{ vdom }}"
+        state: "present"
+        system_interface:
+          interface: "loopback"
+          ip: "<your_own_value>"
+          ipmac: "enable"
+          ipunnumbered: "<your_own_value>"
+          ipv6:
+              interface_identifier: "<your_own_value>"
+              ip6_address: "<your_own_value>"
+              ip6_allowaccess: "ping"
+              ip6_mode: "static"
+              ip6_subnet: "<your_own_value>"
+          lldp_reception: "enable"
+          lldp_transmission: "enable"
+          macaddr: "<your_own_value>"
+          mode: "static"
+          name: "default_name_204"
+          role: "lan"
+          speed: "auto"
+          type: "physical"
+      when: loopback is defined
+
+    - name: Configure interfaces
+      fortios_system_interface:
+        vdom:  "{{ vdom }}"
+        state: "present"
+        system_interface:
+          alias: "<your_own_value>"
+          allowaccess: "ping"
+          bfd: "global"
+          description: "<your_own_value>"
+          external: "enable"
+          interface: "<your_own_value> (source system.interface.name)"
+          ip: "<your_own_value>"
+          ipmac: "enable"
+          ipunnumbered: "<your_own_value>"
+          ipv6:
+              interface_identifier: "<your_own_value>"
+              ip6_address: "<your_own_value>"
+              ip6_allowaccess: "ping"
+              ip6_mode: "static"
+              ip6_subnet: "<your_own_value>"
+          lldp_reception: "enable"
+          lldp_transmission: "enable"
+          macaddr: "<your_own_value>"
+          mode: "static"
+          name: "default_name_204"
+          role: "lan"
+          speed: "auto"
+          type: "physical"
+
+
+---
+
+
+
+
+interface Loopback0
+{% if 'ipv4' in loopback %}
+ ip address {{ loopback.ipv4 }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 address {{ loopback.ipv6 }}
+{% endif %}
+!
+interface {{ mgmt.ifname|default('Management1') }}
+ no lldp transmit
+ no lldp receive
+!
+{% for l in links|default([]) %}
+interface {{ l.ifname }}
+ no shutdown
+ no switchport
+{% if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
+{% endif %}
+{% if 'ipv4' in l %}
+ ip address {{ l.ipv4 }}
+{% endif %}
+{% if 'ipv6' in l %}
+ ipv6 address {{ l.ipv6 }}
+{% endif %}
+{% if l.unnumbered is defined %}
+ ip address unnumbered Loopback 0
+ ipv6 enable
+{% endif %}
+ mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
+!
+{% endfor %}
