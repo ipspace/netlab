@@ -244,13 +244,17 @@ class BGP(_Module):
   bgp_set_advertise: set bgp.advertise flag on stub links
   '''
   def bgp_set_advertise(self, node: Box, topology: Box) -> None:
-    stub_roles = topology.bgp.get("advertise_roles",None) or topology.defaults.bgp.get("advertise_roles",None)
+    stub_roles = topology.defaults.bgp.get("advertise_roles",None)
+    if 'advertise_roles' in topology.bgp:
+      stub_roles = topology.bgp.get("advertise_roles",None)
     if stub_roles:
       for l in node.get("links",[]):
         if "bgp" in l:
           if "advertise" in l.bgp:
             continue
         if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
+          if not 'bgp' in l:
+            l.bgp = {}
           l.bgp.advertise = True
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
