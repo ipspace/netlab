@@ -3,7 +3,7 @@
 The following virtual network devices are supported by *netsim-tools*:
 
 | Virtual network device | netsim device type |
-|------------------------|--------------------|
+| ---------------------- | ------------------ |
 | Arista vEOS            | eos                |
 | Arrcus ArcOS           | arcos              |
 | Cisco IOSv             | iosv               |
@@ -53,21 +53,21 @@ See [lab topology overview](topology-overview.md) for more details.
 
 You cannot use all supported network devices with all virtualization providers:
 
-| Virtual network device | Vagrant<br />Libvirt | Vagrant<br />Virtualbox | Containerlab |
-|------------------------|:-:|:-:|:-:|
-| Arista vEOS            | ✅ | ✅ | ✅ |
-| Arrcus ArcOS           | ✅ | ❌ | ❌ |
-| Cisco IOSv             | ✅ | ❌ | ❌ |
-| Cisco CRS 1000v        | ✅ | ❌ | ❌ |
-| Cisco Nexus 9300v      | ✅ | ✅ | ❌ |
-| Cumulus Linux          | ✅ | ✅ | ✅ |
-| FortiOS                | ✅ | ❌ | ❌ |
-| FRR 7.5.0              | ❌ | ❌ | ✅ |
-| Generic Linux (Ubuntu/Alpine) | ✅ | ✅ | ✅ | 
-| Juniper vSRX 3.0       | ✅ | ❌ | ❌ |
-| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ |
-| Nokia SR Linux         | ❌ | ❌ | ✅ |
-| VyOS                   | ✅ | ❌ | ❌ |
+| Virtual network device        | Vagrant<br />Libvirt | Vagrant<br />Virtualbox | Containerlab |
+| ----------------------------- | :------------------: | :---------------------: | :----------: |
+| Arista vEOS                   |          ✅           |            ✅            |      ✅       |
+| Arrcus ArcOS                  |          ✅           |            ❌            |      ❌       |
+| Cisco IOSv                    |          ✅           |            ❌            |      ❌       |
+| Cisco CRS 1000v               |          ✅           |            ❌            |      ❌       |
+| Cisco Nexus 9300v             |          ✅           |            ✅            |      ❌       |
+| Cumulus Linux                 |          ✅           |            ✅            |      ✅       |
+| Fortinet FortiOS              |          ✅           |            ❌            |      ❌       |
+| FRR 7.5.0                     |          ❌           |            ❌            |      ✅       |
+| Generic Linux (Ubuntu/Alpine) |          ✅           |            ✅            |      ✅       |
+| Juniper vSRX 3.0              |          ✅           |            ❌            |      ❌       |
+| Mikrotik CHR RouterOS         |          ✅           |            ❌            |      ❌       |
+| Nokia SR Linux                |          ❌           |            ❌            |      ✅       |
+| VyOS                          |          ✅           |            ❌            |      ❌       |
 
 **Implementation Caveats**
 
@@ -89,38 +89,39 @@ You cannot use all supported network devices with all virtualization providers:
 
 Ansible playbooks included with **netsim-tools** can deploy and collect device configuration on these network operating systems:
 
-| Operating system | Deploy configuration | Collect configuration |
-|------------------------|:-:|:-:|
-| Arista EOS             | ✅ | ✅ |
-| Arrcus ArcOS           | ✅ | ✅ |
-| Cisco IOS / IOS XE     | ✅ | ✅ |
-| Cisco Nexus OS         | ✅ | ✅ |
-| Cumulus Linux          | ✅ | ✅ |
-| Fortinet FortiOS       | ❌ | ❌ |
-| FRR container          | ✅ | ❌ |
-| Generic Linux          | ✅ | ❌ |
-| Juniper vSRX 3.0       | ✅ | ✅ |
-| Mikrotik CHR RouterOS  | ✅ | ✅ |
-| Nokia SR Linux         | ❌ | ❌ |
-| VyOS                   | ✅ | ✅ |
+| Operating system      | Deploy configuration | Collect configuration |
+| --------------------- | :------------------: | :-------------------: |
+| Arista EOS            |          ✅           |           ✅           |
+| Arrcus ArcOS          |          ✅           |           ✅           |
+| Cisco IOS / IOS XE    |          ✅           |           ✅           |
+| Cisco Nexus OS        |          ✅           |           ✅           |
+| Cumulus Linux         |          ✅           |           ✅           |
+| Fortinet FortiOS      |          ✅           |           ✅           |
+| FRR container         |          ✅           |           ❌           |
+| Generic Linux         |          ✅           |           ❌           |
+| Juniper vSRX 3.0      |          ✅           |           ✅           |
+| Mikrotik CHR RouterOS |          ✅           |           ✅           |
+| Nokia SR Linux        |          ❌           |           ❌           |
+| VyOS                  |          ✅           |           ✅           |
 
 ## Initial Device Configurations
 
 The following system-wide features are configured on supported network operating systems as part of initial device configuration:
 
-| Operating system | Hostname | IPv4 hosts | LLDP | Loopback<br />IPv4 address|Loopback<br />IPv6 address |
-|------------------------|:-:|:-:|:-:|:-:|:-:|
-| Arista EOS             | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Arrcus ArcOS           | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Cisco IOS/IOS XE       | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco Nexus OS         | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cumulus Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| FRR 7.5.0              | ✅ | ❌ | ❌ | ✅ | ✅ |
-| Generic Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
-| VyOS                   | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Mikrotik CHR RouterOS  | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Operating system      | Hostname | IPv4 hosts | LLDP  | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
+| --------------------- | :------: | :--------: | :---: | :------------------------: | :------------------------: |
+| Arista EOS            |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
+| Arrcus ArcOS          |    ✅     |     ❌      |   ✅   |             ✅              |             ✅              |
+| Cisco IOS/IOS XE      |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
+| Cisco Nexus OS        |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
+| Cumulus Linux         |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
+| Fortinet FortiOS      |    ✅     |     ❌      |   ✅   |             ✅              |             ✅              |
+| FRR 7.5.0             |    ✅     |     ❌      |   ❌   |             ✅              |             ✅              |
+| Generic Linux         |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
+| Juniper vSRX 3.0      |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
+| Nokia SR Linux        |    ❌     |     ❌      |   ❌   |             ❌              |             ❌              |
+| VyOS                  |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
+| Mikrotik CHR RouterOS |    ✅     |     ✅      |   ✅   |             ✅              |             ✅              |
 
 **Caveats:**
 
@@ -129,55 +130,56 @@ The following system-wide features are configured on supported network operating
 
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
-| Operating system | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | Interface<br />description | Interface<br />bandwidth |
-|------------------------|:-:|:-:|:-:|:-:|:-:|
-| Arista EOS             | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Arrcus ArcOS           | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Cisco IOS/IOS XE       | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco Nexus OS         | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cumulus Linux          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| FRR 7.5.0              | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Generic Linux          | ✅ | ✅ | ❌ | ❌  | ❌ |
-| Juniper vSRX 3.0       | ✅ | ✅ | ✅ | ✅ | ✅ |
-| VyOS                   | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Mikrotik CHR RouterOS  | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | Interface<br />description | Interface<br />bandwidth |
+| --------------------- | :-----------------: | :-----------------: | :------------------------: | :------------------------: | :----------------------: |
+| Arista EOS            |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Arrcus ArcOS          |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
+| Cisco IOS/IOS XE      |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Cumulus Linux         |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
+| FRR 7.5.0             |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
+| Generic Linux         |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
+| Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Mikrotik CHR RouterOS |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             |
+| VyOS                  |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             |
 
 ## Supported Configuration Modules
 
 Individual **netsim-tools** [configuration modules](module-reference.md) are supported on these devices:
 
-| Operating system | OSPF | IS-IS | EIGRP | BGP | SR-MPLS |
-|------------------------|:-:|:-:|:-:|:-:|:-:|
-| Arista EOS             | ✅ | ✅ | ❌ | ✅ | ✅ 
-| Arrcus ArcOS           | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Cisco IOS              | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cisco IOS XE           | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco Nexus OS         | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cumulus Linux          | ✅ | ❌ | ❌ | ✅ |  ❌ |
-| FRR 7.5.0              | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Generic Linux          | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Juniper vSRX 3.0       | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Nokia SR Linux         | ❌ | ❌ | ❌ | ❌ | ❌ |
-| VyOS                   | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Operating system      | OSPF  | IS-IS | EIGRP |  BGP  | SR-MPLS |
+| --------------------- | :---: | :---: | :---: | :---: | :-----: |
+| Arista EOS            |   ✅   |   ✅   |   ❌   |   ✅   |    ✅    |
+| Arrcus ArcOS          |   ✅   |   ❌   |   ❌   |   ❌   |    ❌    |
+| Cisco IOS             |   ✅   |   ✅   |   ✅   |   ✅   |    ❌    |
+| Cisco IOS XE          |   ✅   |   ✅   |   ✅   |   ✅   |    ✅    |
+| Cisco Nexus OS        |   ✅   |   ✅   |   ✅   |   ✅   |    ❌    |
+| Cumulus Linux         |   ✅   |   ❌   |   ❌   |   ✅   |    ❌    |
+| FRR 7.5.0             |   ✅   |   ✅   |   ❌   |   ✅   |    ❌    |
+| Generic Linux         |   ❌   |   ❌   |   ❌   |   ❌   |    ❌    |
+| Juniper vSRX 3.0      |   ✅   |   ✅   |   ❌   |   ✅   |    ❌    |
+| Mikrotik CHR RouterOS |   ✅   |   ❌   |   ❌   |   ✅   |    ❌    |
+| Nokia SR Linux        |   ❌   |   ❌   |   ❌   |   ❌   |    ❌    |
+| VyOS                  |   ✅   |   ❌   |   ❌   |   ✅   |    ❌    |
 
 ## IPv6 Support
 
 Core functionality of *netsim-tools* and all multi-protocol routing protocol configuration modules fully supports IPv6. OSPFv3 is not implemented yet.
 
-| Operating system | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
-|------------------------|:-:|:-:|:-:|:-:|:-:|:-:|
-| Arista EOS             | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
-| Arrcus ArcOS           | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Cisco IOS              | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
-| Cisco IOS XE           | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
-| Cisco Nexus OS         | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
-| Cumulus Linux          | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
-| FRR 7.5.0              | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
-| Generic Linux          | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Juniper vSRX 3.0       | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
-| VyOS                   | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Mikrotik CHR RouterOS  | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
+| --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |
+| Arista EOS            |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ✅    |
+| Arrcus ArcOS          |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
+| Cisco IOS             |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco IOS XE          |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| FRR 7.5.0             |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
+| Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| VyOS                  |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
 
 ## Host Routing
 
@@ -195,11 +197,11 @@ Generic Linux device is an IP host that does not support IP forwarding or IP rou
 Some BGP parameters are not supported on all devices:
 
 | Operating system | IPv6 address<br />family |
-|------------------------|:-:|
-| Arista EOS             | ❌ |
-| Cisco IOS/IOS XE       | ❌ |
-| Cisco Nexus OS         | ❌ |
-| Cumulus Linux          | ❌ |
-| FRR 7.5.0              | ❌ |
-| Juniper vSRX 3.0       | ❌ |
+| ---------------- | :----------------------: |
+| Arista EOS       |            ❌             |
+| Cisco IOS/IOS XE |            ❌             |
+| Cisco Nexus OS   |            ❌             |
+| Cumulus Linux    |            ❌             |
+| FRR 7.5.0        |            ❌             |
+| Juniper vSRX 3.0 |            ❌             |
 -->
