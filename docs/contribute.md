@@ -54,15 +54,22 @@ If you want to use the same device with multiple virtualization providers, you m
 
 To configure your device (including initial device configuration), you'll have to create an Ansible task list that deploys configuration snippets onto your device. *netsim-tools* rely on merging configuration snippets with existing device configuration, not replacing it.
 
-The configuration deployment task list has to be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`.
+There are two ways to configure a devices:
+
+* **Configuration templates**: you'll have to create a single Ansible *configuration deployment task list* that will deploy configuration templates. The configuration deployment task list has to be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`.
+* **Ansible modules** (or REST API): you'll have to create an Ansible task list for initial configuration and any other configuration module supported by the device. The task list has to be in the device-specific subdirectory of `netsim/ansible/templates/` directory; the subdirectory name must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`. The task list name has to be `initial.yml` for initial configuration deployment or `module.yml` for individual configuration modules (replace *module* with the module name).
 
 You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
 
 ## Initial Device Configuration
 
-Most lab users will want to use **netlab initial** script to build and deploy initial device configurations, from IP addressing to routing protocol configuration.
+Most lab users will want to use **netlab initial** or **netlab up** command to build and deploy initial device configurations, from IP addressing to routing protocol configuration.
 
-Create Jinja2 templates that will generate IP addressing and LLDP configuration within the `netsim/ansible/templates/initial` directory. The name of your template must match the `ansible_network_os` value from `netsim/topology-defaults.yml`.
+If decided to configure your devices with configuration templates, you have to create Jinja2 templates for initial device configuration and any configuration module you want to support.
+
+Jinja2 templates that will generate IP addressing and LLDP configuration have to be within the `netsim/ansible/templates/initial` directory. The name of your template must match the `ansible_network_os` value from `netsim/topology-defaults.yml`.
+
+Jinja2 templates for individual configuration modules have to be in a subdirectory of the `netsim/ansible/templates` directory. The subdirectory name has to match the module name and the name of the template must match the `ansible_network_os` value from `netsim/topology-defaults.yml`.
 
 Use existing configuration templates and *[initial device configurations](platforms.md#initial-device-configurations)* part of *[supported platforms](platforms.md)* document to figure out what settings your templates should support.
 

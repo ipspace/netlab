@@ -1,6 +1,13 @@
 Release notes
 =============
 
+2021-12-06 (release 1.0.3)
+  * Initial support for Fortinet devices
+  * Skip devices that cannot be configured during lab initialization process
+  * Bug fixes
+
+  :doc:`More details <release/1.0>`
+  
 2021-11-27 (release 1.0.2)
   * Support for Mikrotik CHS and Vyos devices (contributed by Stefano Sasso)
   * Group-specific node data
