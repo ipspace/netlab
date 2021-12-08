@@ -20,13 +20,22 @@
     vdom: "{{ vdom }}"
     state: "present"
     system_interface:
-      alias: "{{ loopback.name | default(omit) }}"
       interface: "loopback0"
       ip: "{{ loopback.ipv4 | default(omit) }}"
       name: "loopback0"
       type: "loopback"
       vdom: "{{ vdom }}"
   when: loopback is defined
+
+- name: Configure loopback description
+  fortios_system_interface:
+    vdom: "{{ vdom }}"
+    system_interface:
+      alias: '{{ loopback.name.replace(">","-") }}'
+      interface: "loopback0"
+      name: "loopback0"
+      vdom: "{{ vdom }}"
+  when: loopback.name is defined
 
 - name: Configure loopback ipv6 address
   fortios_system_interface:
@@ -45,29 +54,34 @@
     vdom: "{{ vdom }}"
     state: "present"
     system_interface:
-      alias: "{{ item.name | default(omit) }}"
-      estimated_upstream_bandwidth: "{{ item.bandwidth | default(omit) }}"
-      estimated_downstream_bandwidth: "{{ item.bandwidth | default(omit) }}"
-      interface: "{{ item.ifname }}"
-      ip: "{{ item.ipv4 | default(omit) }}"
+      alias: '{{ link.name.replace(">","-") | default(omit) }}'
+      estimated_upstream_bandwidth: "{{ link.bandwidth | default(omit) }}"
+      estimated_downstream_bandwidth: "{{ link.bandwidth | default(omit) }}"
+      interface: "{{ link.ifname }}"
+      ip: "{{ link.ipv4 | default(omit) }}"
       lldp_reception: "enable"
       lldp_transmission: "enable"
       mode: "static"
-      name: "{{ item.ifname }}"
-      macaddr: "52:dc:ca:fe:{{ id }}:{{ item.ifindex }}"
+      name: "{{ link.ifname }}"
+      macaddr: "52:dc:ca:fe:{{ id }}:{{ link.ifindex }}"
       type: "physical"
       vdom: "{{ vdom }}"
   with_items: "{{ links }}"
+  loop_control:
+    loop_var: link
 
 - name: Configure loopback ipv6 address
   fortios_system_interface:
     vdom: "{{ vdom }}"
+    state: "present"
     system_interface:
-      interface: "{{ item.ifname }}"
+      interface: "{{ link.ifname }}"
       ipv6:
-        ip6_address: "{{ item.ipv6 }}"
+        ip6_address: "{{ link.ipv6 }}"
         ip6_mode: "static"
-      name: "{{ item.ifname }}"
+      name: "{{ link.ifname }}"
       vdom: "{{ vdom }}"
   with_items: "{{ links }}"
-  when: item.ipv6 is defined
+  when: link.ipv6 is defined
+  loop_control:
+    loop_var: link

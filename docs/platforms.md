@@ -156,6 +156,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Cisco IOS XE          |   ✅   |   ✅   |   ✅   |   ✅   |    ✅    |
 | Cisco Nexus OS        |   ✅   |   ✅   |   ✅   |   ✅   |    ❌    |
 | Cumulus Linux         |   ✅   |   ❌   |   ❌   |   ✅   |    ❌    |
+| Fortinet FortiOS      |   ✅   |   ❌   |   ❌   |   ❌   |    ❌    |
 | FRR 7.5.0             |   ✅   |   ✅   |   ❌   |   ✅   |    ❌    |
 | Generic Linux         |   ❌   |   ❌   |   ❌   |   ❌   |    ❌    |
 | Juniper vSRX 3.0      |   ✅   |   ✅   |   ❌   |   ✅   |    ❌    |
@@ -175,6 +176,7 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Cisco IOS XE          |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | FRR 7.5.0             |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
