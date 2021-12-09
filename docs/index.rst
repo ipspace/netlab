@@ -76,5 +76,6 @@ Getting Started
    :hidden:
 
    release.rst
+   caveats.md
    contribute.md
 ..
