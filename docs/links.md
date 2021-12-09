@@ -43,6 +43,8 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 
+If you need a link without any IP configuration (i.e., if you need to test VLANs on it), you can specify **prefix** as *false*.
+
 Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.md#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
 
 ### Example
