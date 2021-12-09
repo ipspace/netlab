@@ -1,3 +1,3 @@
 #!/bin/bash
-PYTHONPATH="../" pytest
-cd ..; mypy -p netsim
+PYTHONPATH="../" python3 -m pytest
+cd ..; python3 -m mypy -p netsim
