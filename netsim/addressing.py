@@ -235,7 +235,7 @@ def normalize_af(af: str) -> str:
   return 'ipv4' if af == 'ip' else af
 
 def parse_prefix(prefix: str) -> typing.Dict:
-  if isinstance(prefix,bool) and prefix is False:
+  if not prefix:
     return {}
   supported_af = ['ip','ipv4','ipv6']
   prefix_list: typing.Dict = {}
