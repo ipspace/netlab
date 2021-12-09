@@ -35,13 +35,15 @@ links:
 
 A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netsim-tools* data transformation routines:
 
-* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link
+* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **type** -- [link type](#link-types) (lan, p2p, stub)
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
 * **name** -- link name (used for interface description)
 * **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
+
+[^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
 
 Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.md#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
 
@@ -126,7 +128,7 @@ links:
 
 ## Static Link Addressing
 
-You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
+You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)). To create a link without any IP addressing, set **prefix** to *false*.
 
 The **prefix** attribute could be either an IPv4 CIDR prefix or a dictionary with **ipv4** and/or **ipv6** elements.
 

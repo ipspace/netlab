@@ -1,0 +1,206 @@
+input:
+- topology/input/link-without-prefix.yml
+- package:topology-defaults.yml
+links:
+- left:
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  prefix:
+    ipv4: 10.1.0.0/30
+  r1:
+    ipv4: 10.1.0.1/30
+  r2:
+    ipv4: 10.1.0.2/30
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: r2
+  type: p2p
+- bridge: input_2
+  linkindex: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  r1:
+    ipv4: 172.16.0.1/24
+  r2:
+    ipv4: 172.16.0.2/24
+  r3:
+    ipv4: 172.16.0.3/24
+  type: lan
+- left:
+    ifname: Ethernet3
+    node: r1
+  linkindex: 3
+  name: r1 - r2
+  prefix: false
+  r1: {}
+  r2: {}
+  right:
+    ifname: Ethernet3
+    node: r2
+  type: p2p
+- bridge: input_4
+  linkindex: 4
+  prefix: false
+  r1: {}
+  r2: {}
+  r3: {}
+  type: lan
+name: input
+nodes:
+- box: arista/veos
+  device: eos
+  id: 1
+  links:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    linkindex: 1
+    name: r1 -> r2
+    neighbors:
+      r2:
+        ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+    remote_id: 2
+    remote_ifindex: 1
+    type: p2p
+  - bridge: input_2
+    ifindex: 2
+    ifname: Ethernet2
+    ipv4: 172.16.0.1/24
+    linkindex: 2
+    name: r1 -> [r2,r3]
+    neighbors:
+      r2:
+        ifname: Ethernet2
+        ipv4: 172.16.0.2/24
+      r3:
+        ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+    type: lan
+  - ifindex: 3
+    ifname: Ethernet3
+    linkindex: 3
+    name: r1 -> r2
+    neighbors:
+      r2:
+        ifname: Ethernet3
+    remote_id: 2
+    remote_ifindex: 3
+    type: p2p
+  - bridge: input_4
+    ifindex: 4
+    ifname: Ethernet4
+    linkindex: 4
+    name: r1 -> [r2,r3]
+    neighbors:
+      r2:
+        ifname: Ethernet4
+      r3:
+        ifname: Ethernet2
+    type: lan
+  loopback:
+    ipv4: 10.0.0.1/32
+  mgmt:
+    ifname: Management1
+    ipv4: 192.168.121.101
+    mac: 08-4F-A9-00-00-01
+  name: r1
+- box: arista/veos
+  device: eos
+  id: 2
+  links:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    linkindex: 1
+    name: r2 -> r1
+    neighbors:
+      r1:
+        ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+    remote_id: 1
+    remote_ifindex: 1
+    type: p2p
+  - bridge: input_2
+    ifindex: 2
+    ifname: Ethernet2
+    ipv4: 172.16.0.2/24
+    linkindex: 2
+    name: r2 -> [r1,r3]
+    neighbors:
+      r1:
+        ifname: Ethernet2
+        ipv4: 172.16.0.1/24
+      r3:
+        ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+    type: lan
+  - ifindex: 3
+    ifname: Ethernet3
+    linkindex: 3
+    name: r2 -> r1
+    neighbors:
+      r1:
+        ifname: Ethernet3
+    remote_id: 1
+    remote_ifindex: 3
+    type: p2p
+  - bridge: input_4
+    ifindex: 4
+    ifname: Ethernet4
+    linkindex: 4
+    name: r2 -> [r1,r3]
+    neighbors:
+      r1:
+        ifname: Ethernet4
+      r3:
+        ifname: Ethernet2
+    type: lan
+  loopback:
+    ipv4: 10.0.0.2/32
+  mgmt:
+    ifname: Management1
+    ipv4: 192.168.121.102
+    mac: 08-4F-A9-00-00-02
+  name: r2
+- box: arista/veos
+  device: eos
+  id: 3
+  links:
+  - bridge: input_2
+    ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.0.3/24
+    linkindex: 2
+    name: r3 -> [r1,r2]
+    neighbors:
+      r1:
+        ifname: Ethernet2
+        ipv4: 172.16.0.1/24
+      r2:
+        ifname: Ethernet2
+        ipv4: 172.16.0.2/24
+    type: lan
+  - bridge: input_4
+    ifindex: 2
+    ifname: Ethernet2
+    linkindex: 4
+    name: r3 -> [r1,r2]
+    neighbors:
+      r1:
+        ifname: Ethernet4
+      r2:
+        ifname: Ethernet4
+    type: lan
+  loopback:
+    ipv4: 10.0.0.3/32
+  mgmt:
+    ifname: Management1
+    ipv4: 192.168.121.103
+    mac: 08-4F-A9-00-00-03
+  name: r3
+provider: libvirt
