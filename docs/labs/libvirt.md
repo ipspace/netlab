@@ -90,17 +90,18 @@ Vagrant relies on *boxes* (prepackaged VM images), and while it's possible to do
 
 The Vagrant boxes should have the following names:
 
-| Virtual network device | Vagrant box name   |
-|------------------------|--------------------|
-| Arista vEOS            | arista/veos        |
-| Arrcus ArcOS           | arcos/arcos4.1.1   |
-| Cisco IOSv             | cisco/iosv         |
-| Cisco CRS 1000v        | cisco/csr1000v     |
-| Cisco Nexus 9300v      | cisco/nexus9300v   |
+| Virtual network device | Vagrant box name            |
+| ---------------------- | --------------------------- |
+| Arista vEOS            | arista/veos                 |
+| Arrcus ArcOS           | arcos/arcos4.1.1            |
+| Cisco IOSv             | cisco/iosv                  |
+| Cisco CRS 1000v        | cisco/csr1000v              |
+| Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Cumulus VX             | CumulusCommunity/cumulus-vx |
-| Juniper vSRX 3.0       | juniper/vsrx3      |
-| VyOS                   | vyos/vyos          |
-| Mikrotik CHR RouterOS  | mikrotik/chr       |
+| Fortinet FortiOS       | fortinet/fortios            |
+| Juniper vSRX 3.0       | juniper/vsrx3               |
+| VyOS                   | vyos/vyos                   |
+| Mikrotik CHR RouterOS  | mikrotik/chr                |
 
 The only box currently available on Vagrant Cloud is the Cumulus VX box. Vagrant automatically downloads it whenever you use Cumulus VX in your lab topology.
 
@@ -123,9 +124,10 @@ Cisco Nexus 9300v and Arista vEOS are available as Virtualbox boxes. To use them
 * [Arista vEOS](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) [[notes](#notes-on-arista-eos-vagrant-libvirt-box)]
 * [Juniper vSRX 3.0](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/) [[notes](#notes-on-juniper-vsrx-vagrantfile-template)]
 
-Pete Crocker published similar recipe for [Fortinet firewalls](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) (not yet supported by *netsim-tools*, PR welcome).
+Pete Crocker published a similar recipe for [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/)
 
 [Stefano Sasso](http://stefano.dscnet.org) published box-building recipes for the following platforms:
+
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant)
 * [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/)
 
@@ -190,4 +192,3 @@ The template has been tested with Vagrant version 2.2.14. Some earlier versions 
 ### Notes on Arrcus ArcOS *vagrant-libvirt* Box and Ansible Collections
 
 Please reach out to your Arrcus Customer Engineering Representative or [Contact Arrcus](https://www.arrcus.com/contact-us) for access to the Arrcus Vagrant Box file and ArcOS Ansible collections.
-
