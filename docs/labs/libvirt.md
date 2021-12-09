@@ -30,11 +30,11 @@ For more details, read *[A Quick Introduction to Netsim-Tools](https://blog.kirc
 
 ## Creating *vagrant-libvirt* Virtual Network
 
-Vagrant *libvirt* provider connects management interfaces of managed VMs to *vagrant-libvirt* virtual network. Vagrant can figure out the device IP address based on dynamic DHCP mappings; *netsim-tools* can't. To make the Ansible inventory created by **[netlab create](../netlab/create.md)** tool work, your virtual network MUST include static DHCP bindings that map management MAC addresses defined in *netsim-tools* data model into expected IP addresses.
-
 ```{tip}
-The _vagrant-libvirt_ virtual network is created as part of `netlab install libvirt` installation script.
+Skip this section if you used **netlab install** -- it created the *vagrant-libvirt* virtual network for you.
 ```
+
+Vagrant *libvirt* provider connects management interfaces of managed VMs to *vagrant-libvirt* virtual network. Vagrant can figure out the device IP address based on dynamic DHCP mappings; *netsim-tools* can't. To make the Ansible inventory created by **[netlab create](../netlab/create.md)** tool work, your virtual network MUST include static DHCP bindings that map management MAC addresses defined in *netsim-tools* data model into expected IP addresses.
 
 The static DHCP bindings must map MAC addresses `08:4F:A9:00:00:xx` into IP addresses `192.168.121.1xx`. The easiest way to create the virtual network and static DHCP mappings is to use the `netsim/templates/provider/libvirt/vagrant-libvirt.xml` file supplied with *netsim-tools*:
 
@@ -88,7 +88,7 @@ links: [ s1-s2, s2-s3, s1-s2-s3 ]
 
 Vagrant relies on *boxes* (prepackaged VM images), and while it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
 
-The Vagrant boxes should have the following names:
+You have to use the following box names when installing,  building, or mutating the Vagrant boxes:
 
 | Virtual network device | Vagrant box name            |
 | ---------------------- | --------------------------- |
@@ -97,13 +97,17 @@ The Vagrant boxes should have the following names:
 | Cisco IOSv             | cisco/iosv                  |
 | Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
-| Cumulus VX             | CumulusCommunity/cumulus-vx |
 | Fortinet FortiOS       | fortinet/fortios            |
 | Juniper vSRX 3.0       | juniper/vsrx3               |
 | VyOS                   | vyos/vyos                   |
 | Mikrotik CHR RouterOS  | mikrotik/chr                |
 
-The only box currently available on Vagrant Cloud is the Cumulus VX box. Vagrant automatically downloads it whenever you use Cumulus VX in your lab topology.
+The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
+
+| Virtual network device | Vagrant box name   |
+|------------------------|--------------------|
+| Cumulus VX             | CumulusCommunity/cumulus-vx |
+| Generic Linux          | generic/ubuntu2004 |
 
 ### Mutating Virtualbox Boxes
 

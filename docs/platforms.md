@@ -57,14 +57,14 @@ You cannot use all supported network devices with all virtualization providers:
 | -------------------------------------------------- | :------------------: | :--------------------------: | :----------------------: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
 | Arrcus ArcOS                                       |          ✅           |              ❌               |            ❌             |
-| Cisco IOSv                                         |          ✅           |    [ℹ️](caveats.html#cisco-ios)    |            ❌             |
-| Cisco CSR 1000v                                    |          ✅           |    [ℹ️](caveats.html#cisco-ios)    |            ❌             |
+| Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
+| Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
 | Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
 | FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
 | Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
-| Juniper vSRX 3.0                                   |          ✅           | [ℹ️](caveats.html#juniper-vsrx) |            ❌             |
+| Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
 | Mikrotik CHR RouterOS                              |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
 | VyOS                                               |          ✅           |              ❌               |            ❌             |

@@ -1,8 +1,4 @@
-# Supported Platform Caveats
-
-## Cisco IOS
-
-The *netsim-tools* distribution includes support for Cisco IOSv/CSR running under *libvirt*. You can build your own Virtualbox Vagrant boxes ([CSR 1000v instructions](https://codingpackets.com/blog/cisco-csr-1000v-vagrant-box-install/), IOSv instructions); after building them, edit **devices** section of **topology-defaults.yml** file to add Virtualbox support for Cisco IOS devices
+# Platform Caveats
 
 ## Cumulus Linux in ContainerLab
 
@@ -50,10 +46,6 @@ Generic Linux device is an IP host that does not support IP forwarding or IP rou
 ### LLDP
 
 * LLDP on Generic Linux is started in Ubuntu VMs but not in Alpine containers.
-
-## Juniper vSRX
-
-The *netsim-tools* distribution includes support for Juniper vSRX running under *libvirt*. You can use vSRX with VirtualBox ([instructions](https://codingpackets.com/blog/juniper-vagrant-box-install/)). After installing Vagrant box, add it edit **devices** section of **topology-defaults.yml** file.
 
 ## Mikrotik CHR RouterOS
 
