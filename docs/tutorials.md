@@ -1,8 +1,10 @@
 # Tutorials
 
-In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netsim-tools*](install.md) and all the software needed to run your labs on *[libvirt](labs/libvirt.md)* or *[Virtualbox](labs/virtualbox.md)*.
+In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netsim-tools*](install.md), all the software needed to run your labs on *[libvirt](labs/libvirt.md)* or *[Virtualbox](labs/virtualbox.md)*, and Ansible[^NEED_ANS]
 
-For a step-by-step tutorial covering all the steps, please read *[A Quick Introduction to Netsim-Tools](https://blog.kirchne.red/netsim-tools-quickstart.html)* by [Leo Kirchner](https://www.linkedin.com/in/leo-kirchner/).
+[^NEED_ANS]: Ansible is used to configure network devices and to  parse inventory data for **netlab connect** command. You don't need Ansible if you plan to use *netsim-tools* solely to create Vagrantfile.
+
+For a step-by-step tutorial starting with *let's create a Linux virtual machine on our Windows/Mac laptop*, please read *[A Quick Introduction to Netsim-Tools](https://blog.kirchne.red/netsim-tools-quickstart.html)* by [Leo Kirchner](https://www.linkedin.com/in/leo-kirchner/).
 
 For more complex tutorials, check the *[More Tutorials](#more-tutorials)* section at the end of this document.
 
@@ -206,8 +208,15 @@ $ vagrant destroy -f
 
 ## More Tutorials
 
-* [Use Katacoda to test netsim-tools with Containerlab and FRRouting](https://blog.ipspace.net/2021/04/katacoda-netsim-containerlab-frr.html)
-* [Building Unnumbered Ethernet Lab with netsim-tools](https://blog.ipspace.net/2021/04/build-unnumbered-lab-netsim-tools.html)
+* [Network Topology Graphs](https://blog.ipspace.net/2021/09/netsim-tools-graphs.html)
+* [Creating BGP Multipath Lab with netsim-tools](https://blog.ipspace.net/2021/11/bgp-multipath-netsim-tools.html) (lab topology using BGP and OSPF)
+* [Use Katacoda to test netsim-tools with Containerlab and FRRouting](https://blog.ipspace.net/2021/04/katacoda-netsim-containerlab-frr.html) (using Containerlab)
+* [Building Unnumbered Ethernet Lab with netsim-tools](https://blog.ipspace.net/2021/04/build-unnumbered-lab-netsim-tools.html) (using unnumbered interfaces)
+* [Anycast Works Just Fine with MPLS/LDP](https://blog.ipspace.net/2021/11/anycast-mpls.html) (custom configuration templates)
+* [Optimal BGP Path Selection with BGP Additional Paths](https://blog.ipspace.net/2021/12/bgp-multipath-addpath.html) (custom deployment templates)
+* [Building a BGP Anycast Lab](https://blog.ipspace.net/2021/12/bgp-anycast-lab.html) (group-wide node data, auto-generated groups)
+
+[Even more tutorials...](https://blog.ipspace.net/series/netsim.html)
 
 ### Configuration Module Examples
 

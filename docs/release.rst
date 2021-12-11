@@ -1,6 +1,14 @@
 Release notes
 =============
 
+2021-12-11 (release 1.0.4)
+  * Fortinet configuration (IPv4, IPv6, OSPF)
+  * Links without IP addressing
+  * IOSv, CSR, vSRX on VirtualBox
+  * Bug fixes
+
+  :doc:`More details <release/1.0>`
+
 2021-12-06 (release 1.0.3)
   * Initial support for Fortinet devices
   * Skip devices that cannot be configured during lab initialization process
