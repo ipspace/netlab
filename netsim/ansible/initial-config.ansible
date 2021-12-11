@@ -1,0 +1,40 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Deploy device configuration
+  hosts: all
+  gather_facts: false
+  tasks:
+  - debug:
+      msg: |
+        Config for {{ inventory_hostname }}
+        ===================================
+        {{ lookup('template',item) }}
+      verbosity: 1
+    vars:
+      config_module: initial
+    with_first_found:
+    - "templates/{{ config_module }}/{{ ansible_network_os }}.j2"
+    - "templates/missing.j2"
+    tags: [ initial,test ]
+
+  - include_tasks: "{{ item }}"
+    name: Deploy initial device configuration
+    tags: [ initial ]
+    with_first_found:
+    - "tasks/{{ansible_network_os}}/initial.yml"
+    - "tasks/deploy-config/{{ansible_network_os}}.yml"
+    - "missing.yml"
+    args:
+      apply:
+        vars:
+          config_template: "templates/initial/{{ansible_network_os}}.j2"
+          netsim_action: initial
+        tags: [ always ]
+
+  - name: Deploy module-specific configurations
+    include_tasks: "tasks/deploy-module.yml"
+    tags: [ module,test ]
+    loop: "{{ module | default([]) }}"
+    loop_control:
+      loop_var: config_module
+    when: module is defined and (not(modlist is defined) or item in modlist)

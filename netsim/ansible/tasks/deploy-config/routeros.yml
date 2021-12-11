@@ -1,0 +1,24 @@
+- local_action:
+    module: tempfile
+    state: file
+    suffix: temp
+    prefix: ansible.{{ inventory_hostname }}.
+  register: tempfile_1
+
+- local_action:
+    module: template
+    src: "{{ config_template }}"
+    dest: "{{ tempfile_1.path }}"
+
+- local_action:
+    module: command
+    cmd: "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{ lookup('env', 'HOME') }}/.vagrant.d/insecure_private_key {{ tempfile_1.path }} vagrant@{{ ansible_host }}:config.rsc"
+
+- routeros_command:
+    commands: /import config.rsc
+
+- local_action:
+    module: file
+    path: "{{ tempfile_1.path }}"
+    state: absent
+  when: tempfile_1.path is defined

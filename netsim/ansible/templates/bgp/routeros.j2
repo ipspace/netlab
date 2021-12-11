@@ -1,0 +1,58 @@
+
+/routing bgp instance set 0 as={{ bgp.as }}
+
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     set neigh_id = n[af]|replace('.', '_')|replace(':', '_') %}
+{%     set afi_list = [] %}
+{%     if n['ipv4'] is defined %}
+{{ afi_list.append('ip') }}
+{%     endif %}
+{%     if n['ipv6'] is defined %}
+{{ afi_list.append('ipv6') }}
+{%     endif %}
+
+/routing bgp peer add name={{ neigh_id }} remote-address={{ n[af] }} remote-as={{ n.as }} comment="{{ n.name }}" address-families={{ afi_list|join(',') }}
+{%   if n.type == 'ibgp' %}
+/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] update-source=loopback
+{%   endif %}
+
+{#
+#### NOTE - TODO
+# By Default, routeros has route-reflect=no.
+# THIS MUST BE SET ON THE RR Servers
+# and not on the clients, like it happens on other vendors
+#}
+
+{%    if bgp.next_hop_self is defined and bgp.next_hop_self %}
+/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] nexthop-choice=force-self
+{%    endif %}
+
+{%   endfor %}
+{% endfor %}
+
+{# Set networks to announce #}
+{% for af in ['ipv4','ipv6'] %}
+{%   if bgp[af] is defined %}
+
+{%     if loopback[af] is defined and bgp.advertise_loopback %}
+/routing bgp network add network={{ loopback[af]|ipaddr('0') }}
+{%     endif %}
+
+{%     for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+/routing bgp network add network={{ l[af]|ipaddr('0') }}
+{%     endfor %}
+
+{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+/routing bgp network add network={{ pfx|ipaddr('0') }}
+{%     endfor %}
+
+{%   endif %}
+{% endfor %}
+
+{#
+  Add extra IPv4 prefixes
+#}
+{% for pfx in bgp.originate|default([]) %}
+/ip route add type=blackhole dst-address={{ pfx|ipaddr('0') }}
+{% endfor %}

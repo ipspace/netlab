@@ -1,0 +1,39 @@
+feature eigrp
+!
+router eigrp {{ eigrp.as }}
+{% if eigrp.ipv6 is defined %}
+ address-family ipv6 unicast
+{% endif %}
+!
+interface loopback0
+{% if 'ipv4' in loopback %}
+ ip router eigrp {{ eigrp.as }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 router eigrp {{ eigrp.as }}
+{% endif %}
+!
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+! EIGRP not configured on external interface {{ l.ifname }}
+{%   else %}
+interface {{ l.ifname }}
+{%     if 'ipv4' in l %}
+ ip router eigrp {{ eigrp.as }}
+{%     endif %}
+{%     if 'ipv6' in l %}
+ ipv6 router eigrp {{ eigrp.as }}
+{%     endif %}
+{%     if l.type|default("") == "stub"
+          or l.role|default("NONE") in ["stub","passive"]
+          or l.eigrp.passive|default("") %}
+{%       if 'ipv4' in l %}
+ ip passive-interface eigrp {{ eigrp.as }}
+{%       endif %}
+{%       if 'ipv6' in l %}
+ ipv6 passive-interface eigrp {{ eigrp.as }}
+{%       endif %}
+{%     endif %}
+{%   endif %}
+!
+{% endfor %}

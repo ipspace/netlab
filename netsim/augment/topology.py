@@ -7,7 +7,6 @@ Topology-level transformation:
 * Create expanded topology file in YAML format (mostly for troubleshooting purposes)
 '''
 
-import netaddr
 import os
 
 from box import Box
@@ -15,12 +14,12 @@ from box import Box
 # Related modules
 from .. import common
 
-topo_main_elements = ['addressing','defaults','links','module','name','nodes','provider','Provider']
+topo_main_elements = ['addressing','defaults','groups','links','module','name','nodes','plugin','provider','Provider','Plugin']
 topo_internal_elements = ['input','includes']
 
-def check_required_elements(topology):
+def check_required_elements(topology: Box) -> None:
   invalid_topo = False
-  for rq in ['nodes','defaults']:
+  for rq in ['nodes']:
     if not rq in topology:
       common.error("Missing '%s' element" % rq,category=common.MissingValue,module="topology")
       invalid_topo = True
@@ -35,6 +34,8 @@ def check_required_elements(topology):
   topology.defaults.name = topology.name
   topo_elements = topo_main_elements + topo_internal_elements
   if topology.get('module'):
+    if isinstance(topology.module,str):
+      topology.module = [ topology.module ]
     topology.defaults.module = topology.module
     topo_elements = topo_elements + topology.module
 
@@ -47,9 +48,11 @@ def check_required_elements(topology):
 # Note: defaults.provider is needed in some output routines that get defaults data structure
 # but not the whole topology
 #
-def adjust_global_parameters(topology):
-  topology.setdefault('provider',topology.defaults.provider)
-  topology.defaults.provider = topology.provider
+def adjust_global_parameters(topology: Box) -> None:
+  if not 'provider' in topology:
+    topology.provider = topology.defaults.provider
+  else:
+    topology.defaults.provider = topology.provider
 
   if not topology.provider:
     common.fatal('Virtualization provider is not defined in either "provider" or "defaults.provider" elements')
@@ -65,34 +68,13 @@ def adjust_global_parameters(topology):
     if k in topology.defaults.providers[topology.provider]:
       topology.defaults[k] = topology.defaults[k] + topology.defaults.providers[topology.provider][k]
 
-'''
-adjust_modules: last phase of global module adjustments
-
-* add node-specific modules into global list of modules after the node
-  modules have been set to default global values
-* merge default settings with global settings
-'''
-def adjust_modules(topology):
-  mod_dict = { m : None for m in topology.get('module',[]) }
-  for n in topology.nodes:
-    for m in n.get('module',[]):
-      mod_dict[m] = None
-
-  if not mod_dict:
-    return
-
-  topology.module = list(mod_dict.keys())
-  for m in topology.module:
-    if topology.defaults.get(m):
-      topology[m] = topology.defaults[m] + topology[m]
-
 #
-# Write expanded topology file in YAML format
+# Cleanup the topology
 #
-def create_topology_file(topology,fname):
-  # This should create a deep copy
-  #
+
+def cleanup_topology(topology: Box) -> Box:
   topo_copy = Box(topology)
+  topo_copy.pop("nodes_map")
 
   # Remove PFX generators from addressing section
   #
@@ -101,9 +83,15 @@ def create_topology_file(topology,fname):
       if "_pfx" in p or "_eui" in p:
         v.pop(p,None)
 
+  return topo_copy
+
+#
+# Write expanded topology file in YAML format
+#
+def create_topology_file(topology: Box, fname: str) -> None:
+  topo_copy = cleanup_topology(topology)
   with open(fname,"w") as output:
     output.write("# Expanded topology created from %s\n" % topology.get('input','<unknown>'))
     output.write(topo_copy.to_yaml())
     output.close()
     print("Created expanded topology file: %s" % fname)
-

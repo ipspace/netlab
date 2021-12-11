@@ -1,0 +1,38 @@
+#!/usr/bin/env ansible-playbook
+#
+---
+- name: Deploy device configuration
+  hosts: all
+  gather_facts: false
+  tasks:
+  - block:
+    - fail: msg="Specify configuration template name with an external variable"
+      when: config is not defined
+      run_once: true
+
+    - set_fact:
+        config_template: "{{ lookup('first_found',params,errors='ignore') }}"
+      vars:
+        params:
+          paths:
+          - "{{ lookup('env','PWD') }}"
+          - "."
+          files:
+          - "{{ config + '.' + ansible_network_os + '.j2' }}"
+          - "{{ config }}"
+          - "{{ config + '.j2' }}"
+
+    - fail: msg="Cannot find configuration template {{ config }}"
+      when: config_template == ''
+      run_once: true
+
+    - debug:
+        msg: |
+          Config for {{ inventory_hostname }}
+          ===================================
+          {{ lookup('template',config_template) }}
+        verbosity: 1
+
+    tags: [ always ]
+
+  - include_tasks: "tasks/deploy-config/{{ansible_network_os}}.yml"

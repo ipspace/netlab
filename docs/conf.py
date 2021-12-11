@@ -19,7 +19,7 @@ from recommonmark.transform import AutoStructify
 # -- Project information -----------------------------------------------------
 
 project = 'Network Simulation Tools'
-copyright = '2020, Ivan Pepelnjak'
+copyright = '2020–2021, Ivan Pepelnjak'
 author = 'Ivan Pepelnjak'
 
 
@@ -27,8 +27,22 @@ author = 'Ivan Pepelnjak'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+#  'recommonmark',
 # ones.
-extensions = ['recommonmark']
+extensions = [
+  'myst_parser',
+  'sphinx_markdown_tables'
+]
+
+myst_heading_anchors = 3
+
+myst_enable_extensions = [
+    "deflist",
+    "html_admonition",
+    "replacements",
+    "smartquotes",
+    "tasklist"
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -58,6 +72,8 @@ else:
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+sys.path.insert(0, os.path.abspath('netlab'))
 
 def setup(app):
     app.add_config_value('recommonmark_config', {

@@ -1,0 +1,86 @@
+#
+# Sample multi-vendor configuration that test most features supported by OSPF configuration module
+#
+# Used in manual testing (feel free to write an automated test script ;)
+#
+addressing:
+  p2p:
+    unnumbered: true
+
+module: [ ospf ]
+
+nodes:
+- name: c_nxos
+  device: nxos
+  ospf:
+    area: 0.0.0.1
+- name: c_csr
+  device: csr
+- name: a_eos
+  device: eos
+- name: j_vsrx
+  device: vsrx
+
+links:
+# Regular link in area 1
+# Area 1 is deafult area for NXOS, but not for other devices ==> area has to be specified on the link
+# Also testing per-device link costs
+- c_nxos:
+    ospf:
+      cost: 10
+  c_csr:
+    ospf:
+      cost: 20
+  a_eos:
+    ospf:
+      cost: 30
+  j_vsrx:
+    ospf:
+      cost: 40
+  ospf:
+    area: 0.0.0.1
+
+# Stub links:
+- c_nxos:
+- c_csr:
+- a_eos:
+- j_vsrx:
+
+# Stub link (by role) - should be passive
+# Testing OSPF cost specified on the link
+- role: stub
+  ospf:
+    cost: 50
+  c_nxos:
+  c_csr:
+  a_eos:
+  j_vsrx:
+
+# External link - should no be in OSPF process
+- role: external
+  c_nxos:
+  c_csr:
+  a_eos:
+  j_vsrx:
+
+# P2P links - test unnumbered interfaces
+# NX-OS has a different default area, the area number has to be specified on the link
+# or on the node.
+- c_nxos:
+  a_eos:
+  ospf:
+    area: 0.0.0.0
+
+- c_nxos:
+    ospf:
+      area: 0.0.0.0
+  c_csr:
+
+- c_nxos:
+  j_vsrx:
+    ospf:
+      area: 0.0.0.1
+
+- a_eos-j_vsrx
+- a_eos-c_csr
+- c_csr-j_vsrx

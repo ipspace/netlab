@@ -1,0 +1,83 @@
+{% macro community(list) -%}
+{{ "both" if list|length >= 2 else list[0] }}
+{%- endmacro %}
+!
+{#
+   Global BGP neighbor definition
+#}
+{% macro neighbor_global(n,ip) %}
+  neighbor {{ ip }} remote-as {{ n.as }}
+  neighbor {{ ip }} description {{ n.name }}
+{% if n.type == 'ibgp' %}
+  neighbor {{ ip }} update-source Loopback0
+{% endif %}
+{%- endmacro %}
+{#
+   Address family BGP neighbor definition
+#}
+{% macro neighbor_af(n,ip) %}
+  neighbor {{ ip }} activate
+{% if n.type == 'ibgp' %}
+{%   if bgp.community.ibgp|default([]) %}
+  neighbor {{ ip }} send-community {{ community(bgp.community.ibgp) }}
+{%   endif %}
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+  neighbor {{ ip }} next-hop-self
+{%   endif %}
+{%   if bgp.rr|default('') and not n.rr|default('') %}
+  neighbor {{ ip }} route-reflector-client
+{%   endif %}
+{% else %}{# EBGP IPv4 neighbor #}
+{%   if bgp.community.ebgp|default([]) %}
+  neighbor {{ ip }} send-community {{ community(bgp.community.ebgp) }}
+{%   endif %}
+{% endif %}
+{%- endmacro %}
+{#
+   BGP network statement
+#}
+{% macro bgp_network(af,pfx) %}
+{%   if af == 'ipv4' %}
+  network {{ pfx|ipaddr('network') }} mask {{ pfx|ipaddr('netmask') }}
+{%   else %}
+  network {{ pfx|ipaddr('0') }}
+{%   endif %}
+{%- endmacro %}
+!
+router bgp {{ bgp.as }}
+ no bgp default ipv4-unicast
+{#
+    Configure IPv4 and IPv6 BGP neighbors
+#}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     neighbor_global(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+!
+{# Configure BGP address families #}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ address-family {{ af }}
+!
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+{{     bgp_network(af,loopback[af]) }}
+{%   endif %}
+!
+{%   for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+{{     bgp_network(af,l[af]) }}
+{%   endfor %}
+{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{{     bgp_network(af,pfx) }}
+{%   endfor %}
+!
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     neighbor_af(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+!
+{#
+  Add extra IPv4 prefixes
+#}
+{% for pfx in bgp.originate|default([]) %}
+ip route {{ pfx|ipaddr('network') }} {{ pfx|ipaddr('netmask') }} null 0
+{% endfor %}

@@ -2,13 +2,13 @@
 
 Links between virtual lab devices are specified in **links** element of the topology file -- a list of links in one of these formats:
 
-* A dictionary of node names and other link attributes
-* A list of node names
-* A string in format *a-b*
+* A dictionary of node names and other link attributes. Use this format when you want to have a tight control over interface attributes like IP addresses, or when you have to specify additional link attributes like OSPF cost.
+* A list of node names. Use this format for multi-access interface when you're OK with default IP addressing and don't need to specify any additional link attributes.
+* A string in *node*-*node* format. Use this format for a point-to-point link.
 
 You can use all three link formats in the same topology file -- they are always converted into a dictionary format first, and then augmented with addressing details.
 
-### Examples
+## Link Formats Example
 
 The following link definition contains all variants of specifying nodes connected to a link:
 
@@ -33,9 +33,9 @@ links:
 
 ## Link Attributes
 
-A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by **create-topology** core:
+A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netsim-tools* data transformation routines:
 
-* **prefix** -- [prefix (or a set of prefixes)](#custom-link-addressing) used on the link
+* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **type** -- [link type](#link-types) (lan, p2p, stub)
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
@@ -43,7 +43,9 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 
-Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.html#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
+[^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
+
+Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.md#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
 
 ### Example
 
@@ -84,7 +86,7 @@ Lab topology could contain *stub*, *p2p* and *lan* links. The link type could be
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address, the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address is the [node ID](nodes.html#augmenting-node-data)
+* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address is the [node ID](nodes.md#augmenting-node-data)
 * Stub links are treated exactly like LAN links.
 
 ## Link Names
@@ -124,9 +126,9 @@ links:
 3. `P2P link`
 4. `LAN link`
 
-## Custom Link Addressing
+## Static Link Addressing
 
-You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool (see above).
+You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)). To create a link without any IP addressing, set **prefix** to *false*.
 
 The **prefix** attribute could be either an IPv4 CIDR prefix or a dictionary with **ipv4** and/or **ipv6** elements.
 
@@ -153,9 +155,36 @@ In dual-stack or IPv6-only environments you have to use the prefix dictionary sy
     ipv6: 2001:db8:cafe:2::/64
 ```
 
+### Static Interface Addressing
+
+You can specify static interface address with the **ipv4** and/or **ipv6** attributes within the link-specific node data. The following example uses static interface addresses for two out of three nodes connected to a LAN link:
+
+```
+- e2:
+    ipv4: 192.168.22.17
+  e1:
+    ipv4: 10.42.0.2/29
+  e3:
+  prefix: 192.168.22.0/24
+```
+
+These interface address are assigned to the three nodes during the topology transformation process:
+
+* e1: 10.42.0.2/29 (unchanged)
+* e2: 192.168.22.17/24 (subnet mask copied from on-link prefix)
+* e3: 192.168.22.3/24 (IPv4 address derived from on-link prefix and node **id**).
+
+**Caveats**
+
+* Static interface addressing does not work on P2P links. Nodes attached to a P2P link always get the first and the second IP address from the link prefix. To use static interface addressing, set the link **type** to **lan**.
+* An interface address could use a subnet mask that does not match the link subnet mask[^smm]. If you don't specify a subnet mask in an interface address, it's copied from the link prefix.
+* You could specify an IPv6 interface address on an IPv4-only link (or vice versa). An interface address belonging to an address family that is not specified in the link prefix (static or derived from an address pool) is not checked.
+
+[^smm]: Not recommended for obvious reasons, but you could do it.
+
 ## Selecting Custom Address Pools
 
-The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.html#address-pools-overview)*). 
+The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.md)*). 
 
 Use **role** attribute to specify a custom address pool for a link. For example, the following topology uses unnumbered (core) link between **r1** and **r2**:
 
@@ -185,12 +214,12 @@ Point-to-point links between network devices are implemented with P2P tunnels (a
 
 Multi-access and stub links are implemented with custom networks (as supported by the underlying virtualization environment). The **bridge** attribute allows you to specify the custom network name; its default value is *name_N* where:
 
-* *name* is the [topology name](create-topology.html#topology-format) or current directory name;
+* *name* is the [topology name](topology-overview.md) or current directory name;
 * *N* is the link ID (position of link object in **links** list) starting with 1.
 
 ## Augmenting Link Data
 
-Link data and corresponding node data are heavily augmented by the **create-topology** code. The additional link attributes generated by **create-topology** include:
+Link data and corresponding node data are heavily augmented by the *netsim-tools* data transformation code. The additional link attributes include:
 
 * Global link ID
 * Link IPv4 and/or IPv6 prefix

@@ -1,0 +1,21 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Collect device configurations
+  hosts: all
+  gather_facts: false
+  vars:
+    config_dir: "{{ lookup('env','PWD') }}/{{ target|default('config') }}"
+  tasks:
+  - file:
+      path: "{{ config_dir }}"
+      state: directory
+    run_once: true
+    delegate_to: localhost
+
+  - include_tasks: "tasks/fetch-config/{{ansible_network_os}}.yml"
+
+  - copy:
+      content: "{{ ansible_net_config }}"
+      dest: "{{ config_dir }}/{{ inventory_hostname }}.cfg"
+    delegate_to: localhost
+    when: ansible_net_config is defined

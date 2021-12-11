@@ -1,0 +1,53 @@
+hostname {{ inventory_hostname }}
+!
+no ip domain lookup
+!
+lldp run
+!
+{% for k,v in hostvars.items() if v.loopback.ipv4 is defined %}
+ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if l.ipv4 is defined %} {{ l.ipv4|ipaddr('address') }}{%- endfor %}
+
+{% endfor %}
+!
+{% if ('ipv6' in loopback) or ('ipv6'|map('extract',links|default([]))) %}
+ipv6 unicast-routing
+!
+{% endif %}
+interface Loopback0
+{% if 'ipv4' in loopback %}
+ ip address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 address {{ loopback.ipv6|upper }}
+{% endif %}
+!
+interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
+ no lldp transmit
+ no lldp receive
+!
+{% for l in links|default([]) %}
+interface {{ l.ifname }}
+ no shutdown
+{% if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
+{% endif %}
+{% if l.ipv4 is defined %}
+ ip address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
+{% endif %}
+{% if l.ipv6 is defined %}
+ ipv6 address {{ l.ipv6|upper }}
+{% endif %}
+{% if l.unnumbered is defined %}
+ ip unnumbered Loopback0 poll
+ ipv6 enable
+{% endif %}
+{% if l.bandwidth is defined %}
+ bandwidth {{ l.bandwidth  }}
+{% endif %}
+!
+{% endfor %}
+no banner exec
+no banner login
+no banner incoming

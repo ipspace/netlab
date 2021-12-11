@@ -1,0 +1,28 @@
+{% set pid = ospf.process|default(1) %}
+{% set area = ospf.area|default("0.0.0.0") %}
+router ospf {{ pid }}
+{% for l in links|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+ passive-interface {{ l.ifname }}
+{% endfor %}
+{% if ospf.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+!
+interface lo
+ ip ospf {{ pid }} area {{ area }}
+!
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+! OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+interface {{ l.ifname }}
+ ip ospf {{ pid }} area {{ l.ospf.area|default(area) }}
+{%     if l.type|default("") == "p2p" %}
+ ip ospf network point-to-point
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+ ip ospf cost {{ l.ospf.cost }}
+{%     endif %}
+{%   endif %}
+!
+{% endfor %}

@@ -1,0 +1,85 @@
+---
+- name: Configure OSPF global settings
+  fortinet.fortios.fortios_router_ospf:
+    vdom: "{{ vdom }}"
+    router_ospf:
+      area:
+        -
+          id: "{{ ospf.area | ansible.netcommon.ipaddr('address') | default('0.0.0.0') }}"
+      auto_cost_ref_bandwidth: "{{ ospf.reference_bandwidth | default(omit) }}"
+      router_id: "{{ loopback.ipv4 | ipaddr('address') | default(omit) }}"
+
+- name: Configure OSPF on loopback
+  fortinet.fortios.fortios_router_ospf:
+    vdom: "{{ vdom }}"
+    router_ospf:
+      ospf_interface:
+        -
+          name: "loopback0"
+          interface: "loopback0"
+
+- name: Configure OSPF on non ptp interfaces
+  fortinet.fortios.fortios_router_ospf:
+    vdom: "{{ vdom }}"
+    router_ospf:
+      ospf_interface:
+        -
+          name: "{{ link.ifname }}"
+          interface: "{{ link.ifname }}"
+  with_items: "{{ links }}"
+  when: link.type != "ptp" and not (link.role is defined and link.role == "external")
+  loop_control:
+    loop_var: link
+
+- name: Configure OSPF on ptp interfaces
+  fortinet.fortios.fortios_router_ospf:
+    vdom: "{{ vdom }}"
+    router_ospf:
+      ospf_interface:
+        -
+          name: "{{ link.ifname }}"
+          interface: "{{ link.ifname }}"
+          network_type: "point-to-point"
+  with_items: "{{ links }}"
+  when: link.type == "ptp" and not (link.role is defined and link.role == "external")
+  loop_control:
+    loop_var: link
+
+- name: Configure OSPF on passive interfaces
+  fortinet.fortios.fortios_router_ospf:
+    vdom: "{{ vdom }}"
+    router_ospf:
+      passive_interface:
+        -
+          name: "{{ link.ifname }}"
+          interface: "{{ link.ifname }}"
+  with_items: "{{ links }}"
+  when: (link.type is defined and link.type == "stub") or (link.role is defined and link.role in ["stub","passive"])
+  loop_control:
+    loop_var: link
+
+- name: Configure OSPF interface cost
+  fortinet.fortios.fortios_router_ospf:
+    vdom: "{{ vdom }}"
+    router_ospf:
+      ospf_interface:
+        -
+          name: "{{ link.ifname }}"
+          cost: "{{ link.ospf.cost }}"
+  with_items: "{{ links }}"
+  when: link.ospf.cost is defined
+  loop_control:
+    loop_var: link
+
+# Currently not working due to suspected bug:
+# https://github.com/fortinet-ansible-dev/ansible-galaxy-fortios-collection/issues/150
+# Note: OSPF neighbors won't attempt to establish without network statement
+#
+#- name: Configure OSPF network statement
+#  fortinet.fortios.fortios_router_ospf:
+#    vdom: "{{ vdom }}"
+#    router_ospf:
+#      network:
+#        area: "{{ ospf.area | ansible.netcommon.ipaddr('address') | default('0.0.0.0') }}"
+#        id: 1
+#        prefix: "{{ ospf.network | default('0.0.0.0/0') }}"

@@ -1,0 +1,73 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+
+configure
+
+set protocols bgp local-as {{ bgp.as }}
+
+{% macro neighbor(n,ip) %}
+set protocols bgp neighbor {{ ip }} remote-as {{ n.as }}
+set protocols bgp neighbor {{ ip }} description '{{ n.name }}'
+ 
+{%   if n.type == 'ibgp' %}
+set protocols bgp neighbor {{ ip }} update-source dum0
+{%   endif %}
+{%- endmacro %}
+
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     neighbor(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+
+{# Activate address families #}
+{% for af in ['ipv4','ipv6'] %}
+{%   if bgp[af] is defined %}
+
+# Work on Family {{ af }}
+
+{%     if loopback[af] is defined and bgp.advertise_loopback %}
+set protocols bgp address-family {{ af }}-unicast network {{ loopback[af]|ipaddr('0') }}
+{%     endif %}
+
+{%     for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+set protocols bgp address-family {{ af }}-unicast network {{ l[af]|ipaddr('0') }}
+{%     endfor %}
+
+{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+set protocols bgp address-family {{ af }}-unicast network {{ pfx|ipaddr('0') }}
+{%     endfor %}
+
+{%     for n in bgp.neighbors if n[af] is defined %}
+set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast
+
+{%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
+set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast nexthop-self
+{%       endif %}
+{%       if bgp.rr|default('') and not n.rr|default('') %}
+  set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast route-reflector-client
+{%       endif %}
+{%     endfor %}
+
+{%   endif %}
+{% endfor %}
+
+{#
+  Add extra IPv4 prefixes
+#}
+{% for pfx in bgp.originate|default([]) %}
+set protocols static route {{ pfx|ipaddr('0') }} blackhole
+{% endfor %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
+

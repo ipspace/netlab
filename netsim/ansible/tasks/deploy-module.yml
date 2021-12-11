@@ -1,0 +1,26 @@
+#
+# Deploy module-specific configuration (specified in "item") to a device
+#
+- debug:
+    msg: |
+      {{ config_module }} configuration for {{ inventory_hostname }}
+      =========================================
+      {{ lookup('template',item) }}
+    verbosity: 1
+  tags: [ test,module ]
+  with_first_found:
+  - "../templates/{{ config_module }}/{{ ansible_network_os }}.j2"
+  - "../templates/missing.j2"
+
+- include_tasks: "{{ item }}"
+  tags: [ module ]
+  with_first_found:
+  - "{{ansible_network_os}}/{{ config_module }}.yml"
+  - "deploy-config/{{ansible_network_os}}.yml"
+  - "../missing.yml"
+  args:
+    apply:
+      vars:
+        config_template: "../templates/{{ config_module }}/{{ansible_network_os}}.j2"
+        netsim_action: "{{ config_module }}"
+      tags: [ always ]

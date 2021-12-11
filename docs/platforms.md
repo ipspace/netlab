@@ -1,72 +1,163 @@
 # Supported Platforms
 
-Virtual network devices supported by **config-generate** (require `topology-defaults.yml` settings and Vagrantfile templates in `templates/vagrant/provider`):
+The following virtual network devices are supported by *netsim-tools*:
 
-* Cisco IOSv
-* Cisco CSR1000v
-* Cisco Nexus 9300v
-* Arista vEOS
-* Arrcus ArcOS
-* Juniper vSRX 3.0
+| Virtual network device                    | netsim device type |
+| ----------------------------------------- | ------------------ |
+| Arista vEOS                               | eos                |
+| Arrcus ArcOS                              | arcos              |
+| Cisco IOSv                                | iosv               |
+| Cisco CSR 1000v                           | csr                |
+| Cisco Nexus 9300v                         | nxos               |
+| Cumulus Linux                             | cumulus            |
+| Fortinet FortiOS [❗](caveats.html#fortinet-fortios) | fortios            |
+| FRR 7.5.0                                 | frr                |
+| Generic Linux host                        | linux              |
+| Juniper vSRX 3.0                          | vsrx               |
+| Mikrotik CHR RouterOS                     | routeros           |
+| Nokia SR Linux                            | srlinux            |
+| VyOS                                      | vyos               |
 
-Network operating systems supported by **config.ansible** (require device-specific task list in `ansible/config`):
+**Notes:**
 
-* Cisco IOS
-* Cisco Nexus OS
-* Arista EOS
-* Arrcus ArcOS
-* Junos
+To specify the device type of a node in your virtual lab:
 
-Network operating systems supported by **initial-config.ansible** (require **config.ansible** support and initial device configuration template in `templates/initial`):
+* Specify **device** property in node data
 
-* Cisco IOS (IOSv and CSR 1000v)
-* Cisco Nexus OS (Nexus 9300v)
-* Arista EOS (vEOS)
-* Arrcus ArcOS
-* Junos (vSRX 3.0)
+```
+nodes:
+- name: c_ios
+  device: iosv
+- name: c_csr
+  device: csr
+```
 
-Virtualization providers supported by **config-generate**:
+* Use **defaults.device** setting in lab topology
+
+```
+defaults:
+  device: cumulus
+
+nodes: [ s1, s2, s3 ]
+```
+
+See [lab topology overview](topology-overview.md) for more details.
+
+## Supported Virtualization Providers
+
+**netlab create** can generate configuration files for these virtualization providers:
 
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks (link type: **lan**) and P2P tunnels (link type: **p2p**).
 * [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
-* [Containerlab](https://containerlab.srlinux.dev/) (added in release 0.5)
+* [Containerlab](https://containerlab.srlinux.dev/)
 
-Details of VirtualBox and Containerlab support are described below, for extensive vagrant-libvirt details please [refer to the installation guide](install.html#building-a-libvirt-based-lab).
+You cannot use all supported network devices with all virtualization providers:
 
-## Vagrant with VirtualBox
+| Virtual network device                             | Vagrant<br />Libvirt |   Vagrant<br />Virtualbox    |       Containerlab       |
+| -------------------------------------------------- | :------------------: | :--------------------------: | :----------------------: |
+| Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
+| Arrcus ArcOS                                       |          ✅           |              ❌               |            ❌             |
+| Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
+| Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
+| Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
+| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
+| Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
+| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
+| Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
+| Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
+| Mikrotik CHR RouterOS                              |          ✅           |              ❌               |            ❌             |
+| Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
+| VyOS                                               |          ✅           |              ❌               |            ❌             |
 
-* Most networking vendors don't ship Vagrant boxes, and I had no interest in building VirtualBox boxes from scratch after setting up a *libvirt*-based lab on an Intel NUC. The only boxes I could get with zero hassle were Cisco Nexus 9300v and Arista vEOS, and they both work fine. If you want to add other devices, you'll have to modify *topology-defaults.yml* file.
-* The latest version of Arista vEOS available as Vagrant box for VirtualBox is 4.21.14M.
-* Vagrantfile created by **create-topology** sets up port forwarding for SSH (22), HTTP (80) and NETCONF (830), but the corresponding Ansible inventory uses contains only **ansible_port** (SSH). You could edit the final inventory by hand, add extra file to `host_vars`, or fix my code. Should you decide to do the latter, please contact me in advance to discuss the necessary data structures.
+## Configuration Deployments
 
-## Containerlab
+Ansible playbooks included with **netsim-tools** can deploy and collect device configuration on these network operating systems:
 
-* The only device currently supported is Arista cEOS
-* Feel free to extend the templates and defaults to support other network devices
+| Operating system      | Deploy configuration | Collect configuration |
+| --------------------- | :------------------: | :-------------------: |
+| Arista EOS            |          ✅           |           ✅           |
+| Arrcus ArcOS          |          ✅           |           ✅           |
+| Cisco IOS / IOS XE    |          ✅           |           ✅           |
+| Cisco Nexus OS        |          ✅           |           ✅           |
+| Cumulus Linux         |          ✅           |           ✅           |
+| Fortinet FortiOS      |          ✅           |           ✅           |
+| FRR container         |          ✅           |           ❌           |
+| Generic Linux         |          ✅           |           ❌           |
+| Juniper vSRX 3.0      |          ✅           |           ✅           |
+| Mikrotik CHR RouterOS |          ✅           |           ✅           |
+| Nokia SR Linux        |          ❌           |           ❌           |
+| VyOS                  |          ✅           |           ✅           |
 
-## Contributing New Devices
+## Initial Device Configurations
 
-* Get or build Vagrant box
-* Add device-specific Vagrantfile configuration to `templates/vagrant/provider/device-domain.j2`
-* Add device defaults including Ansible group variables to system **topology-defaults.yml** (within *netsim* directory)
-* Add initial device configuration template (based on **ansible_network_os** value) to `templates/initial`
-* Optional: add device configuration templates for individual modules. Example: OSPF routing configuration is in `templates/ospf`
-* Add configuration deployment task list using device-specific Ansible configuration module to `ansible/deploy-config` directory.
-* Add configuration retrieval task list using device-specific Ansible module(s) to `ansible/fetch-config` directory.
+The following system-wide features are configured on supported network operating systems as part of initial device configuration:
 
-Test your changes:
+| Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
+| --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
+| Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Arrcus ArcOS          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
+| Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
+| FRR 7.5.0             |    ✅     |     ❌      |             ❌             |             ✅              |             ✅              |
+| Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
+| Juniper vSRX 3.0      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Nokia SR Linux        |    ❌     |     ❌      |             ❌             |             ❌              |             ❌              |
+| VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Mikrotik CHR RouterOS |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-chr-routeros) |             ✅              |             ✅              |
 
-* Create a simple topology using your new device type
-* Create Ansible inventory and Vagrantfile with `create-topology -g -i`
-* Start your Vagrant environment
-* Perform initial device configuration with `initial-config.ansible`
-* Log into the device and verify interface state and interface IP addresses
+The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
-Final steps:
+| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | Interface<br />description | Interface<br />bandwidth |
+| --------------------- | :-----------------: | :-----------------: | :------------------------: | :------------------------: | :----------------------: |
+| Arista EOS            |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Arrcus ArcOS          |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
+| Cisco IOS/IOS XE      |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Cumulus Linux         |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
+| FRR 7.5.0             |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
+| Generic Linux         |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
+| Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Mikrotik CHR RouterOS |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             |
+| VyOS                  |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             |
 
-* Fix the documentation (at least install.md and platforms.md)
-* Submit a pull request ;)
+## Supported Configuration Modules
 
-## Contributing New Virtualization Providers
+Individual **netsim-tools** [configuration modules](module-reference.md) are supported on these devices:
 
-TBD
+| Operating system      |           OSPF           | IS-IS | EIGRP |  BGP  | SR-MPLS |
+| --------------------- | :----------------------: | :---: | :---: | :---: | :-----: |
+| Arista EOS            |            ✅             |   ✅   |   ❌   |   ✅   |    ✅    |
+| Arrcus ArcOS          |            ✅             |   ❌   |   ❌   |   ❌   |    ❌    |
+| Cisco IOS             |            ✅             |   ✅   |   ✅   |   ✅   |    ❌    |
+| Cisco IOS XE          |            ✅             |   ✅   |   ✅   |   ✅   |    ✅    |
+| Cisco Nexus OS        |            ✅             |   ✅   |   ✅   |   ✅   |    ❌    |
+| Cumulus Linux         |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
+| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |    ❌    |
+| FRR 7.5.0             |            ✅             |   ✅   |   ❌   |   ✅   |    ❌    |
+| Generic Linux         |            ❌             |   ❌   |   ❌   |   ❌   |    ❌    |
+| Juniper vSRX 3.0      |            ✅             |   ✅   |   ❌   |   ✅   |    ❌    |
+| Mikrotik CHR RouterOS |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
+| Nokia SR Linux        |            ❌             |   ❌   |   ❌   |   ❌   |    ❌    |
+| VyOS                  |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
+
+## IPv6 Support
+
+Core functionality of *netsim-tools* and all multi-protocol routing protocol configuration modules fully supports IPv6. OSPFv3 is not implemented yet.
+
+| Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
+| --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |
+| Arista EOS            |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ✅    |
+| Arrcus ArcOS          |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
+| Cisco IOS             |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco IOS XE          |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
+| FRR 7.5.0             |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
+| Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| VyOS                  |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |

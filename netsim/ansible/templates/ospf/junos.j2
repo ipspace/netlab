@@ -1,0 +1,34 @@
+{% set pid = ospf.process|default(1) %}
+{% set area = ospf.area|default("0.0.0.0") %}
+protocols {
+  delete: ospf;
+}
+protocols {
+  ospf {
+{% if ospf.reference_bandwidth is defined %}
+    reference-bandwidth {{ ospf.reference_bandwidth * 1000000 }};
+{% endif %}
+    area {{ area }} {
+      interface lo0;
+    }
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+   # OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+    area {{ l.ospf.area|default(area) }} {
+      interface {{ l.ifname }} {
+{%     if l.type|default("") == "p2p" %}
+        interface-type p2p;
+{%     endif %}
+{%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+        passive;
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+        metric {{ l.ospf.cost }};
+{%     endif %}
+      }
+    }
+{%   endif %}
+{% endfor %}
+  }
+}

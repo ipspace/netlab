@@ -1,27 +1,55 @@
 # OSPF Configuration Module
 
-The OSPF configuration module configures OSPF routing process.
+This configuration module configures OSPF routing process on Cisco IOS, Cisco Nexus-OS, Arista EOS, Junos, and ArcOS.
 
-### Node Parameters
+Supported features:
+
+* Multi-area deployment
+* Per-link cost and asymmetric costs
+* Reference bandwidth
+* Unnumbered point-to-point interfaces
+* Passive interfaces
+
+## Global Parameters
+
+* **ospf.reference_bandwidth** sets the OSPF auto-cost reference bandwidth (in Mbps) for all devices in the network.
+
+## Node Parameters
 
 * **ospf.process** -- process ID (default: 1)
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area, and on loopback interface.
+* **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 
 You can specify node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 
-### Link Parameters
+## Link Parameters
 
 * **ospf.cost** -- OSPF cost
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
 
-**Note:** Per-link areas are currently not implemented in Junos configuration template. Please feel free to fix the configuration template and submit a pull request.
+**Note:** the same parameters can be specified for individual link nodes.
 
-### Other Parameters
+## Other Parameters
 
 Link type is used to set OSPF network type:
 
 * *P2P link* ⇒ **point-to-point** network
 * Any other link type ⇒ **broadcast** network
+* *Stub link* ⇒ passive interface
+
+Stub links must have exactly one device attached to them. To create multi-router stub links, use **role: stub** link attribute (see below).
+
+## Using Link Roles
+
+Link roles are used together with link types to decide whether to include an interface in an OSPF process, and whether to make an interface passive:
+
+* External links (links with **role: external**) are not included in the OSPF process. 
+* Links with **role** set to **stub** or **passive** are configured as *passive* OSPF interfaces.
+
+**Notes:** 
+
+* Link role could be set by the BGP module -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, making inter-AS links excluded from the OSPF process.
+* Management interfaces are never added to the OSPF process. They are not in the set of device links and thus not considered in the OSPF configuration template.
 
 ## Example
 
@@ -80,11 +108,21 @@ links:
     area: 0.0.0.1
 ```
 
+Alternatively, you could specify the OSPF area just for R2 (as R3 is already in area 1):
+
+```
+links:
+- r2:
+    ospf:
+      area: 0.0.0.1
+  r3:
+```
+
 **Interesting details**: 
 
 * The default value for interface OSPF area is the node OSPF area (specified in configuration template).
-* The default value for node OSPF area is the global OSPF area (which is defined in **all** Ansible inventory group).
-* Due to the propagation of default values, the OSPF area for R2-R3 link would be area 0 on R2 and area 1 on R3. The OSPF area thus needs to be specified within link definition.
+* The default value for node OSPF area is the global OSPF area.
+* Due to the propagation of default values, the OSPF area for R2-R3 link would be area 0 on R2 and area 1 on R3. The OSPF area thus needs to be specified within link definition, or within an individual node connected to a link.
 
 ### Resulting Device Configurations
 

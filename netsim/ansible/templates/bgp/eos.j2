@@ -1,0 +1,64 @@
+{#
+  Define a BGP neighbor
+#}
+{% macro neighbor(n,ip) %}
+!
+  neighbor {{ ip }} remote-as {{ n.as }}
+  neighbor {{ ip }} description {{ n.name }}
+{%     if n.type == 'ibgp' %}
+  neighbor {{ ip }} update-source Loopback0
+{%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
+  neighbor {{ ip }} next-hop-self
+{%       endif %}
+{%       if bgp.rr|default('') and not n.rr|default('') %}
+  neighbor {{ ip }} route-reflector-client
+{%       endif %}
+{%       if bgp.community.ibgp|default([]) %}
+  neighbor {{ ip }} send-community {{ bgp.community.ibgp|join(' ') }}
+{%       endif %}
+{%   else %}
+{%       if bgp.community.ebgp|default([]) %}
+  neighbor {{ ip }} send-community {{ bgp.community.ebgp|join(' ') }}
+{%       endif %}
+{%     endif %}
+{%- endmacro %}
+!
+router bgp {{ bgp.as }}
+  bgp advertise-inactive
+  bgp log-neighbor-changes
+{% if bgp.rr|default('') %}
+  bgp route-reflector preserve-attributes
+{% endif %}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     neighbor(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+!
+{# Activate address families #}
+{% for af in ['ipv4','ipv6'] %}
+{%   if bgp[af] is defined %}
+!
+ address-family {{ af }}
+!
+{%     if loopback[af] is defined and bgp.advertise_loopback %}
+  network {{ loopback[af]|ipaddr('0') }}
+{%     endif %}
+!
+{%     for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+  network {{ l[af]|ipaddr('0') }}
+{%     endfor %}
+!
+{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+  network {{ pfx|ipaddr('0') }}
+{%     endfor %}
+!
+{%     for n in bgp.neighbors if n[af] is defined %}
+  neighbor {{ n[af] }} activate
+{%     endfor %}
+{%   endif %}
+{% endfor %}
+!
+{% for pfx in bgp.originate|default([]) %}
+ip route {{ pfx|ipaddr('0') }} Null0
+{% endfor %}

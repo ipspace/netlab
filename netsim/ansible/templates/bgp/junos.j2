@@ -1,0 +1,91 @@
+routing-options {
+  autonomous-system {{ bgp.as }};
+{% if bgp.originate is defined %}
+  static {
+{% for pfx in bgp.originate|default([]) %}
+    route {{ pfx|ipaddr('0') }} discard;
+{% endfor %}
+  }
+{% endif %}
+}
+policy-options {
+  delete: policy-statement ibgp-export;
+  delete: policy-statement ebgp-export;
+}
+policy-options {
+  policy-statement ibgp-export {
+    term advertise {
+      from {
+        protocol direct;
+        interface [ lo0.0 {%- for l in links if l.bgp.advertise|default("") %}l.ifname {%- endfor %} ];
+      }
+      then accept;
+    }
+{% if bgp.originate is defined %}
+    term originate {
+      from protocol static;
+      then accept;
+    }
+{% endif %}
+{% if bgp.next_hop_self is defined and bgp.next_hop_self %}
+    term next-hop-self {
+      from {
+        route-type external;
+      }
+      then {
+        next-hop self;
+      }
+    }
+{% endif %}
+  }
+  policy-statement ebgp-export {
+    term advertise {
+      from {
+        protocol direct;
+        interface [ {{ "lo0.0" if bgp.advertise_loopback }}{%- for l in links if l.bgp.advertise|default("") %} l.ifname{%- endfor %} ];
+      }
+      then accept;
+    }
+{% if bgp.originate is defined %}
+    term originate {
+      from protocol static;
+      then accept;
+    }
+{% endif %}
+  }
+}
+protocols {
+  delete: bgp;
+}
+protocols {
+  bgp {
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+    group ibgp-peers-{{ af }} {
+      type internal;
+      export ibgp-export;
+      advertise-inactive;
+      local-address {{ loopback[af]|ipaddr('address') }};
+{%   if bgp.rr is defined %}
+      cluster {{ loopback.ipv4|ipaddr('address') }};
+{%   endif %}
+{%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' %}
+      neighbor {{ n[af] }} {
+        description {{ n.name }};
+      }
+{%   endfor %}
+    }
+{% endfor %}
+    group ebgp-peers {
+      export ebgp-export;
+      advertise-inactive;
+{% for n in bgp.neighbors if n.type == 'ebgp' %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+      neighbor {{ n[af] }} {
+        peer-as {{ n.as }};
+        description {{ n.name }};
+      }
+{%   endfor %}
+{% endfor %}
+    }
+  }
+}

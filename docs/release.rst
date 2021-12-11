@@ -1,6 +1,96 @@
 Release notes
 =============
 
+2021-12-11 (release 1.0.4)
+  * Fortinet configuration (IPv4, IPv6, OSPF)
+  * Links without IP addressing
+  * IOSv, CSR, vSRX on VirtualBox
+  * Bug fixes
+
+  :doc:`More details <release/1.0>`
+
+2021-12-06 (release 1.0.3)
+  * Initial support for Fortinet devices
+  * Skip devices that cannot be configured during lab initialization process
+  * Bug fixes
+
+  :doc:`More details <release/1.0>`
+  
+2021-11-27 (release 1.0.2)
+  * Support for Mikrotik CHS and Vyos devices (contributed by Stefano Sasso)
+  * Group-specific node data
+  * Automatic creation of AS-based groups
+  * Custom plugins
+
+  :doc:`More details <release/1.0>`
+
+2021-11-20 (release 1.0.1)
+  * Custom inventory groups
+  * Group-specific custom configuration templates
+  * Composite command debugging
+  * Quiet run of Ansible playbooks
+
+  :doc:`More details <release/1.0>`
+
+2021-10-25 (release 1.0)
+  * **netlab up** enables *LLDP passthrough* on Linux bridges created with *libvirt* Vagrant plugin
+  * Cleanup: remove the old CLI commands and related documentation
+
+  :doc:`More details <release/1.0>`
+
+2021-10-13 (release 0.9.3)
+  * Add **netlab up** and **netlab down** commands
+  * Add static node IDs and interface addresses
+
+  :doc:`More details <release/0.9>`
+
+2021-10-08 (release 0.9.2)
+  * Add a simple YAML-based inventory file to replace **ansible_inventory** if you happen to hate Ansible.
+
+  :doc:`More details <release/0.9>`
+
+2021-09-19 (release 0.9.1)
+  * End hosts in network labs (Linux VMs or containers)
+
+  :doc:`More details <release/0.9>`
+
+2021-08-20 (release 0.9)
+  * Topology graphs (physical topology and BGP sessions)
+  * YAML or JSON representation of transformed network topology
+  * Generic output framework
+
+  :doc:`More details <release/0.9>`
+
+2021-07-09 (release 0.8)
+  * Python package
+  * Unified CLI
+  * Support for Cumulus VX and Nokia SR Linux containers
+  * Installation and testing scripts
+
+  :doc:`More details <release/0.8>`
+
+2021-05-31 (release 0.7)
+  * EIGRP configuration module
+  * BGP parameters: advertise_loopback, originate prefixes, community propagation
+  * BGP IPv6 address family configuration
+  * OSPF reference bandwidth
+  * IS-IS P2P network type on all P2P links (not just unnumbered)
+  * Single-module initial configuration
+  * Python type hinting and mypy checks
+
+  :doc:`More details <release/0.7>`
+
+2021-05-24 (`release 0.6.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.6.3>`_)
+  * BGP configuration module
+  * IS-IS configuration module
+  * Segment Routing with MPLS
+  * OSPF configuration improvements: external links and passive interfaces
+  * FRR and Cumulus VX support
+  * Installation playbook
+  * Bug fixes
+
+  :doc:`More details <release/0.6>`
+
 2021-04-11 (`release 0.5 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.5>`_)
   * containerlab support
   * Flexible virtualization provider framework
@@ -13,13 +103,6 @@ Release notes
   * Baseline OSPF module
 
   :doc:`More details <release/0.4>`
-
-2021-02-01 (interim merge into master branch)
-  * Replaced standard Python dicts with python-box.
-  * Wrote a ton of transformation tests to verify that migration to Box
-    didn't break anything.
-  * Started working on getting as much code as feasible covered with
-    various tests (not that you'd care about that)
 
 2021-01-24 (`release 0.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.3>`_)
   * Support for multiple virtualization providers
@@ -50,14 +133,12 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.0.md
+   release/0.9.md
+   release/0.8.md
+   release/0.7.md
+   release/0.6.md
    release/0.5.md
    release/0.4.md
    release/0.3.md
-
-Future plans
-------------
-Release 0.6
-
-  * Add global custom parameters (example: OSPF reference bandwidth, BGP AS number)
-  * Improve OSPF module (passive interfaces, external links)
-  * Add IS-IS and BGP configuration module
+..

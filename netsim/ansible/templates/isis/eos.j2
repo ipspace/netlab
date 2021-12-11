@@ -1,0 +1,48 @@
+{% if 'ipv6' in isis %}
+ipv6 unicast-routing
+{% endif %}
+!
+router isis Gandalf
+  log-adjacency-changes
+  is-hostname {{ inventory_hostname }}
+  is-type {{ isis.type }}
+{% if isis.net is defined %}
+  net {{ isis.net }}
+{% elif isis.area is defined %}
+  net {{ "%s.0000.0000.%04d.00" % (isis.area,id) }}
+{% endif %}
+{% if isis.ipv4 is defined %}
+  address-family ipv4 unicast
+{% endif %}
+{% if isis.ipv6 is defined %}
+  address-family ipv6 unicast
+    multi-topology
+{% endif %}
+!
+interface Loopback0
+{% if 'ipv6' in isis and not 'ipv6' in loopback %}
+  ipv6 enable
+{% endif %}
+  isis enable Gandalf
+!
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+! ISIS not configured on external interface {{ l.ifname }}
+{%   else %}
+interface {{ l.ifname }}
+{% if 'ipv6' in isis and not 'ipv6' in l %}
+  ipv6 enable
+{% endif %}
+  isis enable Gandalf
+{% if 'unnumbered' in l or l.type|default("") == "p2p" %}
+  isis network point-to-point
+{% endif %}
+{%     if l.isis.cost is defined or l.isis.metric is defined %}
+  isis metric {{ l.isis.metric|default(l.isis.cost) }}
+{%     endif %}
+{%   endif %}
+{% if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+  isis passive
+{% endif %}
+!
+{% endfor %}

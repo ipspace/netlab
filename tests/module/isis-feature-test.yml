@@ -1,0 +1,84 @@
+#
+# Sample multi-vendor configuration that test most features supported by OSPF configuration module
+#
+# Used in manual testing (feel free to write an automated test script ;)
+#
+addressing:
+  p2p:
+    unnumbered: true
+  loopback:
+    ipv6: 2008:db8:cafe::/48
+  stub:
+    ipv4: 172.31.0.0/16
+    prefix: 24
+    ipv6: 2008:db8:0001::/48
+
+isis:
+  area: 49.0002
+
+module: [ isis ]
+
+nodes:
+- name: c_nxos
+  device: nxos
+  isis:
+    net: 49.0003.0000.0000.1234.00
+- name: c_csr
+  device: csr
+  isis:
+    area: 49.0003
+- name: a_eos
+  device: eos
+- name: j_vsrx
+  device: vsrx
+
+links:
+- c_nxos:
+    isis:
+      metric: 10
+  c_csr:
+    isis:
+      metric: 20
+  a_eos:
+    isis:
+      metric: 30
+  j_vsrx:
+    isis:
+      metric: 50
+
+# Stub links:
+- c_nxos:
+- c_csr:
+- a_eos:
+- j_vsrx:
+
+# Stub link (by role) - should be passive
+# Testing IS-IS metric specified on the link
+- role: stub
+  isis:
+    metric: 50
+  c_nxos:
+  c_csr:
+  a_eos:
+  j_vsrx:
+
+# External link - should not be in IGP
+- role: external
+  c_nxos:
+  c_csr:
+  a_eos:
+  j_vsrx:
+
+# P2P links - test unnumbered interfaces
+- c_nxos:
+  a_eos:
+
+- c_nxos:
+  c_csr:
+
+- c_nxos:
+  j_vsrx:
+
+- a_eos-j_vsrx
+- a_eos-c_csr
+- c_csr-j_vsrx

@@ -1,0 +1,57 @@
+feature isis
+!
+router isis Gandalf
+  log-adjacency-changes
+  is-type {{ isis.type }}
+  hostname dynamic
+{% if isis.net is defined %}
+  net {{ isis.net }}
+{% elif isis.area is defined %}
+  net {{ "%s.0000.0000.%04d.00" % (isis.area,id) }}
+{% endif %}
+{% if isis.ipv4 is defined %}
+  address-family ipv4 unicast
+{% endif %}
+{% if isis.ipv6 is defined %}
+  address-family ipv6 unicast
+    multi-topology
+{% endif %}
+!
+interface Loopback0
+{% if 'ipv4' in loopback %}
+  ip router isis Gandalf
+{% endif %}
+{% if 'ipv6' in loopback %}
+  ipv6 router isis Gandalf
+{% endif %}
+!
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+! IS-IS not configured on external interface {{ l.ifname }}
+{%   else %}
+interface {{ l.ifname }}
+{% if 'ipv4' in l %}
+  ip router isis Gandalf
+{% endif %}
+{% if 'ipv6' in l %}
+  ipv6 router isis Gandalf
+{% endif %}
+{% if 'unnumbered' in l or l.type|default("") == "p2p" %}
+  isis network point-to-point
+{%   if 'ipv4' in isis %}
+  ip router isis Gandalf
+{%   endif %}
+{%   if 'ipv6' in isis %}
+  ipv6 router isis Gandalf
+{%   endif %}
+{% endif %}
+{%     if l.isis.cost is defined or l.isis.metric is defined %}
+  isis metric {{ l.isis.metric|default(l.isis.cost) }} level-1
+  isis metric {{ l.isis.metric|default(l.isis.cost) }} level-2
+{%     endif %}
+{%   endif %}
+{% if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+  isis passive-interface level-1-2
+{% endif %}
+!
+{% endfor %}

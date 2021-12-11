@@ -17,14 +17,64 @@ addressing:
     start: 100
     mac: 08-4F-A9-00-00-00
 
+# Built-in module defaults
+#
+bgp:
+  supported_on: [ cumulus, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros ]
+  ebgp_role: external
+  advertise_roles: [ stub ]
+  advertise_loopback: True
+  community:
+    ibgp: [ standard, extended ]
+    ebgp: [ standard ]
+  no_propagate: [ ebgp_role, advertise_roles, rr_list, as_list ]
+  next_hop_self: true
+  attributes:
+    global: [ as, next_hop_self, rr_list, ebgp_role, as_list, advertise_loopback, advertise_roles, community ]
+    node: [ as, next_hop_self, rr, originate, advertise_loopback, community ]
+    link: [ advertise ]
+
+isis:
+  supported_on: [ eos, frr, csr, iosv, nxos, vsrx ]
+  area: 49.0001
+  type: level-2
+  attributes:
+    global: [ area, type ]
+    node: [ area, net, type ]
+    link: [ metric, cost, type ]
+
+ospf:
+  supported_on: [ arcos, cumulus, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros ]
+  attributes:
+    global: [ area, process, reference_bandwidth ]
+    node: [ area, process, id, reference_bandwidth ]
+    link: [ cost, area ]
+
+eigrp:
+  supported_on: [ csr, iosv, nxos ]
+  as: 1
+  attributes:
+    global: [ as ]
+    node: [ as ]
+
+sr:
+  requires: [ isis ]
+  supported_on: [ csr, eos ]
+
 #
 # Provider defaults
 #
 providers:
   libvirt:
     config: Vagrantfile
+    start: vagrant up --provider libvirt
+    stop: vagrant destroy -f
+    probe: [ kvm-ok, virsh net-list, vagrant plugin list ]
   virtualbox:
     config: Vagrantfile
+    start: vagrant up --provider virtualbox
+    stop: vagrant destroy -f
+    probe: [ VBoxManage -h, vagrant plugin list ]
     inventory:
       ansible_host: 127.0.0.1
     inventory_port_map:
@@ -38,18 +88,41 @@ providers:
   clab:
     config: clab.yml
     template: clab.j2
+    start: sudo containerlab deploy -t clab.yml
+    stop: sudo containerlab destroy --cleanup -t clab.yml
+    probe: [ containerlab version ]
     devices:
       eos:
         provider_interface_name: eth%d
         mgmt_if: Management0
         provider_kind: ceos
         image:
-          clab: ceos:4.25.0F
+          clab: ceos:4.25.1F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
           ansible_become: yes
           ansible_become_method: enable
+
+      frr:
+        provider_kind: linux
+
+      linux:
+        provider_kind: linux
+        group_vars:
+          ansible_connection: docker
+          ansible_user: root
+
+      cumulus:
+        provider_kind: cvx
+        image:
+          clab: networkop/cx:4.3.0
+        group_vars:
+          ansible_connection: docker
+          ansible_user: root
+
+      srlinux:
+        provider_kind: srl
 
 ports:
   ssh: 22
@@ -79,6 +152,7 @@ devices:
     interface_name: GigabitEthernet0/%d
     image:
       libvirt: cisco/iosv
+      virtualbox: cisco/iosv
     group_vars:
       ansible_user: vagrant
       ansible_ssh_pass: vagrant
@@ -91,6 +165,7 @@ devices:
     ifindex_offset: 2
     image:
       libvirt: cisco/csr1000v
+      virtualbox: cisco/csr1000v
     group_vars:
       ansible_user: vagrant
       ansible_ssh_pass: vagrant
@@ -115,12 +190,53 @@ devices:
     mgmt_if: Management1
     image:
       libvirt: arista/veos
-      virtualbox: arista/vEOS-lab-4.21.14M
+      virtualbox: arista/veos
     group_vars:
       ansible_user: vagrant
       ansible_ssh_pass: vagrant
       ansible_network_os: eos
       ansible_connection: network_cli
+
+  fortios:
+    interface_name: port%d
+    mgmt_if: port1
+    ifindex_offset: 2
+    image:
+      libvirt: fortinet/fortios
+    group_vars:
+      ansible_user: admin
+      ansible_password: admin
+      ansible_network_os: fortinet.fortios.fortios
+      ansible_connection: httpapi
+      collections:
+        - fortinet.fortios
+      vdom: "root"
+      ansible_httpapi_use_ssl: no
+      ansible_httpapi_validate_certs: no
+      ansible_httpapi_port: 80
+
+  frr:
+    interface_name: eth%d
+    mgmt_if: eth0
+    image:
+      clab: frrouting/frr:v7.5.0
+    group_vars:
+      ansible_connection: docker
+      ansible_network_os: frr
+
+  linux:
+    interface_name: eth%d
+    mgmt_if: eth0
+    image:
+      libvirt: generic/ubuntu2004
+      virtualbox: generic/ubuntu2004
+      clab: python:3.9-alpine
+    group_vars:
+      ansible_network_os: linux
+      ansible_connection: paramiko
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      docker_shell: sh
 
   vsrx:
     interface_name: ge-0/0/%d
@@ -128,11 +244,13 @@ devices:
     mgmt_if: fxp0
     image:
       libvirt: juniper/vsrx3
+      virtualbox: juniper/vsrx3
     group_vars:
       ansible_user: vagrant
       ansible_ssh_pass: Vagrant
       ansible_network_os: junos
       ansible_connection: netconf
+
   arcos:
     interface_name: swp%d
     mgmt_if: ma1
@@ -143,3 +261,64 @@ devices:
       ansible_ssh_pass: arcos
       ansible_network_os: arcos
 
+  cumulus:
+    interface_name: swp%d
+    mgmt_if: eth0
+    image:
+      libvirt: CumulusCommunity/cumulus-vx
+      virtualbox: CumulusCommunity/cumulus-vx:4.3.0
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      ansible_network_os: cumulus
+      ansible_connection: paramiko
+
+  srlinux:
+    mgmt_if: mgmt0
+    interface_name: e1-%d
+    image:
+      clab: ghcr.io/nokia/srlinux
+    group_vars:
+      ansible_user: admin
+      ansible_ssh_pass: admin
+      ansible_network_os: sros
+      ansible_connection: paramiko
+
+  vyos:
+    interface_name: eth%d
+    mgmt_if: eth0
+    image:
+      libvirt: vyos/vyos
+    group_vars:
+      ansible_network_os: vyos
+      ansible_connection: paramiko
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+
+  routeros:
+    interface_name: ether%d
+    mgmt_if: ether1
+    ifindex_offset: 2
+    image:
+      libvirt: mikrotik/chr
+    group_vars:
+      ansible_network_os: routeros
+      ansible_connection: network_cli
+      ansible_user: admin
+      ansible_ssh_pass: admin
+
+#
+# Output settings
+#
+outputs:
+  graph:
+    interface_labels: False
+    as_clusters: True
+    colors:
+      as: "#e8e8e8"
+      node: "#ff9f01"
+      stub: "#d1bfab"
+      ibgp: "#613913"
+      ebgp: "#b21a1a"
+    margins:
+      as: 16

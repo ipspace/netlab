@@ -1,0 +1,44 @@
+hostname {{ inventory_hostname.replace("_","-") }}
+!
+lldp run
+ip routing
+!
+{% for k,v in hostvars.items() if v.loopback.ipv4 is defined %}
+ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if l.ipv4 is defined %} {{ l.ipv4|ipaddr('address') }}{%- endfor %}
+
+{% endfor %}
+!
+interface Loopback0
+{% if 'ipv4' in loopback %}
+ ip address {{ loopback.ipv4 }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 address {{ loopback.ipv6 }}
+{% endif %}
+!
+interface {{ mgmt.ifname|default('Management1') }}
+ no lldp transmit
+ no lldp receive
+!
+{% for l in links|default([]) %}
+interface {{ l.ifname }}
+ no shutdown
+ no switchport
+{% if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
+{% endif %}
+{% if 'ipv4' in l %}
+ ip address {{ l.ipv4 }}
+{% endif %}
+{% if 'ipv6' in l %}
+ ipv6 address {{ l.ipv6 }}
+{% endif %}
+{% if l.unnumbered is defined %}
+ ip address unnumbered Loopback 0
+ ipv6 enable
+{% endif %}
+ mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
+!
+{% endfor %}
