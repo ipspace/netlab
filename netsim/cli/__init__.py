@@ -68,7 +68,8 @@ def lab_commands() -> None:
   else:
     try:
       mod = importlib.import_module("."+cmd,__name__)
-    except:
+    except Exception as ex:
+      print( f"Error importing .{cmd},{__name__}: {ex}" )
       pass
 
   if mod and hasattr(mod,'run'):
