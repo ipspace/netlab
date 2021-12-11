@@ -1,0 +1,30 @@
+{# Configure P-to-P interfaces #}
+
+{% for l in links|default([]) %}
+/ configure port {{ l.ifname }} connector breakout c1-100g
+/ configure port {{ l.ifname }} admin-state enable
+/ configure port {{ l.ifname }}/1 admin-state enable
+/ configure router interface "to-{{ l.name }}" port {{ l.ifname }}/1
+{% if l.ipv4 is defined %}
+/ configure router interface "to-{{ l.name }}" ipv4 primary address {{ l.ipv4|ipaddr('address') }} prefix-length {{ l.ipv4|ipaddr('prefix') }}
+{% endif %}
+{% if l.ipv6 is defined %}
+/ configure router interface "to-{{ l.name }}" ipv6 primary address {{ l.ipv6|ipaddr('address') }} prefix-length {{ l.ipv6|ipaddr('prefix') }}
+{% endif %}
+{% endfor %}
+
+{# Configure system interface #}
+{% if 'ipv4' in loopback %}
+ / configure router interface system ipv4 primary address {{ loopback.ipv4 }} prefix-length 32
+
+ {# policy to allow system ips - including those from neighbors #}
+ / configure policy-options prefix-list system_ip prefix {{ loopback.ipv4 }}/32 type exact
+ / configure policy-options prefix-list system_ip prefix 0.0.0.0/0 type range start-length 32 end-length 32
+ / configure policy-options policy-statement system_ip entry 10 from prefix-list system_ip
+ / configure policy-options policy-statement system_ip entry 10 action action-type accept
+ / configure policy-options policy-statement system_ip default-action action-type reject
+
+{% endif %}
+{% if 'ipv6' in loopback %}
+ / configure router interface system ipv4 primary address {{ loopback.ipv6 }} prefix-length 128
+{% endif %}

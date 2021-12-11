@@ -1,14 +1,4 @@
-# - template:
-#     src: "{{ config_template }}"
-#     dest: /tmp/config.sh
-# - set_fact: deployed_config={{ lookup('template',config_template) }}
-# - command: bash /tmp/config.sh
-#   become: true
-#   when: not ansible_check_mode and ("#!/bin/bash" in deployed_config)
-# - command: vtysh -f /tmp/config.sh
-#   become: true
-#   when: not ansible_check_mode and not ("#!/bin/bash" in deployed_config)
-
+---
 - local_action:
     module: tempfile
     state: file
@@ -26,14 +16,7 @@
       module: command
       cmd: "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ tempfile_1.path }} linuxadmin@{{ ansible_host }}:{{ cfg_file }}"
 
-# Alternatively, use 'docker' connection plugin to run sr_cli -ed --post 'commit save' < /tmp/config
-# - community.network.sros_command:
-#     commands: load file config.json
-#     provider:
-#       host: "{{ ansible_host }}"
-#       username: "{{ ansible_user }}"
-#       password: "{{ ansible_ssh_pass }}"
-#       transport: cli
+  # Uses 'docker' connection plugin to insert CLI config
   - shell: "sr_cli -ed --post 'commit save' < {{ cfg_file }}"
 
   vars:

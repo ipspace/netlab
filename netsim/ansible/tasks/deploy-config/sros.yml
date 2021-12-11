@@ -1,0 +1,29 @@
+---
+- local_action:
+    module: tempfile
+    state: file
+    suffix: temp
+    prefix: ansible.{{ inventory_hostname }}.
+  register: tempfile_1
+
+- local_action:
+    module: template
+    src: "{{ config_template }}"
+    dest: "{{ tempfile_1.path }}"
+
+- wait_for_connection:
+    timeout: 100
+
+- community.network.sros_command:
+   commands: "{{ lookup('file', tempfile_1.path ).splitlines() }}"
+   provider:
+    host: "{{ ansible_host }}"
+    username: "{{ ansible_user }}"
+    password: "{{ ansible_ssh_pass }}"
+    transport: cli
+
+- local_action:
+    module: file
+    path: "{{ tempfile_1.path }}"
+    state: absent
+  when: tempfile_1.path is defined
