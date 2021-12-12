@@ -37,7 +37,7 @@ class _Module(Callback):
         model_data[af] = True        # ... we need it in the module
         continue
 
-      for l in node.get('links',[]): # Scan all links
+      for l in node.get('links',[]) or []: # Scan all links
         if af in l:                  # Do we have AF enabled on any of them?
           model_data[af] = True      # Found it - we need it the module
           continue
@@ -220,8 +220,8 @@ def check_module_parameters(topology: Box) -> None:
             common.error("Node %s: invalid attribute %s for module %s" % (n.name,k,m),common.IncorrectValue)
 
   rebuild_nodes_map(topology)
-  for l in topology.get("links",[]):        # Inspect all links - use get to avoid instantiating links key
-    for m in topology.get("module",[]):     # Iterate over all known modules - get avoids instantiating module key
+  for l in topology.get("links",[]) or []:  # Inspect all links - use get to avoid instantiating links key
+    for m in topology.get("module",[]) or []: # Iterate over all known modules - get avoids instantiating module key
       if m in l and mod_attr[m]:            # ... focusing on modules that have attributes specified on this link
                                             # ... and want to have their attributes checked
         for k in l[m].keys():               # Iterate over link-level module attributes
@@ -304,7 +304,7 @@ def link_transform(method: str, topology: Box) -> None:
   global mod_load
 
   rebuild_nodes_map(topology)
-  for l in topology.get("links",[]):
+  for l in topology.get("links",[]) or []:
     mod_list: typing.Dict = {}
     for n in l.keys():
       if not n in topology.nodes_map:

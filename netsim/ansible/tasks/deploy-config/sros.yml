@@ -11,16 +11,67 @@
     src: "{{ config_template }}"
     dest: "{{ tempfile_1.path }}"
 
-- wait_for_connection:
+- name: Check that prepared config is valid YAML
+  vars:
+    cfg: "{{ lookup('file', tempfile_1.path ) }}"
+  debug: msg="{{ cfg | from_yaml }}"
+
+- name: Wait up to 100s for gNMI(TCP {{ansible_port}}) to be ready on {{ ansible_host }}
+  wait_for:
+    port: "{{ ansible_port }}"
+    host: "{{ ansible_host }}"
+    connect_timeout: 3
     timeout: 100
 
-- community.network.sros_command:
-   commands: "{{ lookup('file', tempfile_1.path ).splitlines() }}"
-   provider:
-    host: "{{ ansible_host }}"
-    username: "{{ ansible_user }}"
-    password: "{{ ansible_ssh_pass }}"
-    transport: cli
+- name: Enable Open Config YAML modules
+  nokia.grpc.gnmi_config:
+    prefix: configure
+    update:
+    - path: system/management-interface/yang-modules/openconfig-modules
+      val: True
+  register: enable_open_config
+
+- debug: var=enable_open_config
+
+- name: Update node configuration (using gNMI SET based on YAML template)
+  vars:
+    cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
+  nokia.grpc.gnmi_config:
+    # prefix: configure
+    delete: "{{ cfg.delete | default([]) }}"
+    replace: "{{ cfg.replace | default([]) }}"
+    update: "{{ cfg.updates | default([]) }}"
+  register: gnmi_set_result
+
+- debug: var=gnmi_set_result
+
+# Alternative: ansible.netcommon.cli_command
+# Uses network_cli connection
+# - community.network.sros_command:
+# - nokia.sros.md:
+#   commands: "{{ lookup('file', tempfile_1.path ).splitlines() }}"
+
+# Let's use Netconf + OpenConfig
+# - name: use lookup filter to provide xml configuration
+  #netconf_config:
+  #  xml: "{{ lookup('file', tempfile_1.path) }}"
+  #  host: "{{ ansible_host }}"
+  #  username: "{{ ansible_user }}"
+  #  password: "{{ ansible_ssh_pass }}"
+#  community.yang.configure:
+
+# - name: Fetch given yang model and its dependencies from remote host
+#   community.yang.fetch:
+#     # name: Nokia
+#     dir: "{{playbook_dir}}/{{inventory_hostname}}/yang_files"
+#   register: result
+#
+# - name: configure interface using structured data in JSON format
+#   community.yang.configure:
+#    config: "{{ lookup('file', tempfile_1.path) | to_json }}"
+#    file: "{{ playbook_dir }}/{{inventory_hostname}}/yang_files/Nokia-ifmgr-cfg.yang"
+#    search_path: "{{ playbook_dir }}/{{inventory_hostname}}/yang_files"
+#   register: result
 
 - local_action:
     module: file
