@@ -32,8 +32,20 @@ ipv{{v}}:
         {{ ip_addr('6',ip_v6) }}
 {% endif %}
 {%- endmacro -%}
+
 updates:
 {% if 'ipv4' in loopback or 'ipv6' in loopback %}
 {{ interface("system","softwareLoopback","loopback interface",
              loopback.ipv4|default(''), loopback.ipv6|default('') ) }}
 {% endif %}
+{% for l in links|default([]) %}
+{% if l.name is defined %}
+{% set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
+{% elif l.type|default("") == "stub" %}
+{% set desc = "Stub interface" %}
+{% endif %}
+- path: configure/port[port-id={{l.ifname}}]
+  val: { connector: { "breakout": "c1-100g" } }
+{{ interface(l.ifname+"/1","ethernetCsmacd",desc,
+             l.ipv4|default(''), l.ipv6|default('') ) }}
+{% endfor %}
