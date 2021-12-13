@@ -1,0 +1,41 @@
+{% set pid = ospf.process|default(0) %}
+{% set area = ospf.area|default("0.0.0.0") %}
+
+{% macro if_name(n) -%}
+{{- ('oc_%s/1_0' if sros_use_openconfig|default(true) else '%s/1.0')|format(n.ifname) -}}
+{%- endmacro %}
+
+updates:
+- path: configure/router[router-name=Base]
+  val:
+   router-id: "{{ loopback['ipv4']|ipaddr('address') }}"
+   ospf:
+   - ospf-instance: {{ pid }}
+     admin-state: enable
+     area:
+     - area-id: "{{ area }}"
+       interface:
+       - interface-name: "system"
+         passive: True
+{% for l in links|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+     - area-id: "{{ l.ospf.area|default(area) }}"
+       interface:
+       - interface-name: "{{ if_name(l) }}"
+         passive: True
+{% endfor %}
+{# Add link interfaces #}
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+# OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+     - area-id: "{{ l.ospf.area|default(area) }}"
+       interface:
+       - interface-name: "{{ if_name(l) }}"
+{%       if l.type|default("") == "p2p" %}
+         interface-type: point-to-point
+{%       endif %}
+{%       if l.ospf.cost is defined %}
+         # TODO ospf cost {{ l.ospf.cost }}
+{%       endif %}
+{%   endif %}
+{% endfor %}

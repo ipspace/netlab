@@ -3,12 +3,22 @@
     module: tempfile
     state: file
     suffix: temp
-    prefix: ansible.{{ inventory_hostname }}.
+    prefix: ansible.sros.{{ inventory_hostname }}.
   register: tempfile_1
+
+- name: Set default provisioning model to use OpenConfig
+  when: sros_use_openconfig|default(true)
+  set_fact:
+    sros_provisioning_model: "sros.openconfig"
+
+- name: Check if OpenConfig can be used as provisioning method/model (config_template={{config_template}})
+  when: "'ospf' in config_template or not sros_use_openconfig|default(true)"
+  set_fact:
+    sros_provisioning_model: "sros.gnmi"
 
 - local_action:
     module: template
-    src: "{{ config_template }}"
+    src: "{{ config_template|replace('sros',sros_provisioning_model) }}"
     dest: "{{ tempfile_1.path }}"
 
 - name: Check that prepared config is valid YAML
@@ -30,7 +40,7 @@
     prefix: configure
     update:
     - path: system/management-interface/yang-modules/openconfig-modules
-      val: True
+      val: True # {{ sros_provisioning_model == "sros.openconfig" }}
   register: enable_open_config
   retries: 3
   delay: 10
@@ -38,7 +48,7 @@
 
 - debug: var=enable_open_config
 
-- name: Update node configuration (using gNMI SET based on YAML template)
+- name: Update node configuration (using gNMI SET based on YAML template {{sros_provisioning_model}})
   vars:
     cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
   nokia.grpc.gnmi_config:
