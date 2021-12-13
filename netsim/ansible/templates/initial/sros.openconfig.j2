@@ -62,6 +62,7 @@ updates:
 {% for l in links|default([]) %}
 {% set v4 = l.ipv4|default('') %}
 {% set v6 = l.ipv6|default('') %}
+{% set ifname = l.ifname+"/1" %}
 {% if l.name is defined %}
 {% set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
 {% elif l.type|default("") == "stub" %}
@@ -69,12 +70,19 @@ updates:
 {% endif %}
 - path: configure/port[port-id={{l.ifname}}]
   val: { connector: { "breakout": "c1-100g" } }
-{{ interface(l.ifname+"/1","ethernetCsmacd",desc,v4,v6) }}
+{{ interface(ifname,"ethernetCsmacd",desc,v4,v6) }}
 
 {# Add interface to the Base routing instance (default VRF) #}
 - path: openconfig-network-instance:network-instances/network-instance[name=Base]
   val:
     interfaces:
      interface:
-     - {{ if_in_base(l.ifname+"/1",v4,v6) }}
+     - {{ if_in_base(ifname,v4,v6) }}
+
+{# Enable LLDP, in the CLI this shows up under /configure port X/Y/Z ethernet lldp #}
+- path: openconfig-lldp:interfaces/interface[name={{ifname}}]
+  val:
+    config:
+     name: {{ ifname }}
+     enabled: True
 {% endfor %}

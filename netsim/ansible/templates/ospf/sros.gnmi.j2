@@ -11,6 +11,9 @@ updates:
    router-id: "{{ loopback['ipv4']|ipaddr('address') }}"
    ospf:
    - ospf-instance: {{ pid }}
+{% if ospf.reference_bandwidth is defined %}
+     reference-bandwidth: {{ ospf.reference_bandwidth }}
+{% endif %}
      admin-state: enable
      area:
      - area-id: "{{ area }}"
@@ -31,11 +34,12 @@ updates:
      - area-id: "{{ l.ospf.area|default(area) }}"
        interface:
        - interface-name: "{{ if_name(l) }}"
+         mtu: 1500 # SRL defaults to 1500
 {%       if l.type|default("") == "p2p" %}
          interface-type: point-to-point
 {%       endif %}
 {%       if l.ospf.cost is defined %}
-         # TODO ospf cost {{ l.ospf.cost }}
+         metric: {{ l.ospf.cost }}
 {%       endif %}
 {%   endif %}
 {% endfor %}
