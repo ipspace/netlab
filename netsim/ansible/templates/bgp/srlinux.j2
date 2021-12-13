@@ -16,9 +16,9 @@
 {#
    Address family BGP neighbor definition
 #}
-{% macro neighbor_af(n,ip) %}
-# neighbor {{ ip }} activate
+{% macro neighbor_af(n,ip,local_loopback) %}
 {% if n.type == 'ibgp' %}
+  neighbor {{ ip }} transport local-address {{ local_loopback }}
 {%   if bgp.community.ibgp|default([]) %}
   # neighbor {{ ip }} send-community {{ community(bgp.community.ibgp) }} true
 {%   endif %}
@@ -78,7 +78,7 @@ group ebgp admin-state enable
 {%   endfor %}
 
 {%   for n in bgp.neighbors if n[af] is defined %}
-{{     neighbor_af(n,n[af]) }}
+{{     neighbor_af(n,n[af],loopback[af]|default('')|ipaddr('address')) }}
 {%   endfor %}
 {% endfor %}
 

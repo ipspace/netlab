@@ -3,7 +3,7 @@
     module: tempfile
     state: file
     suffix: temp
-    prefix: ansible.{{ inventory_hostname }}.
+    prefix: ansible.srl.{{ inventory_hostname }}.
   register: tempfile_1
 
 - local_action:
@@ -12,12 +12,14 @@
     dest: "{{ tempfile_1.path }}"
 
 - block:
-  - local_action:
+  - name: Copy CLI configuration to SRL node {{ ansible_host }} using SCP
+    local_action:
       module: command
       cmd: "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ tempfile_1.path }} linuxadmin@{{ ansible_host }}:{{ cfg_file }}"
 
   # Uses 'docker' connection plugin to insert CLI config
-  - shell: "sr_cli -ed --post 'commit save' < {{ cfg_file }}"
+  - name: Apply CLI configuration
+    shell: "sr_cli -ed --post 'commit save' < {{ cfg_file }}"
 
   vars:
     cfg_file: "/home/linuxadmin/{{ config_template|regex_replace('[\\./]','_') }}.cli"
