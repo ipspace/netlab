@@ -46,11 +46,15 @@
 autonomous-system {{ bgp.as }}
 router-id {{ loopback['ipv4']|ipaddr('address') }}
 ipv4-unicast admin-state disable
+ebgp-default-policy export-reject-all false
+ebgp-default-policy import-reject-all false
 {#
     Configure IPv4 and IPv6 BGP neighbors
 #}
-group ibgp admin-state enable peer-as {{ bgp.as }} next-hop-self {{ bgp.next_hop_self|default(false) }}
-group ebgp admin-state enable
+group ibgp admin-state enable peer-as {{ bgp.as }} next-hop-self {{ bgp.next_hop_self|default(false)|lower }}
+group ibgp timers connect-retry 1 minimum-advertisement-interval 1
+group ebgp admin-state enable next-hop-self {{ bgp.next_hop_self|default(false)|lower }}
+group ebgp timers connect-retry 1 minimum-advertisement-interval 1
 
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
@@ -80,9 +84,31 @@ group ebgp admin-state enable
 {% endfor %}
 
 {#
-  Add extra IPv4 prefixes using static blackhole routes
+  Define default import/export policies for eBGP
+#}
+/routing-policy prefix-set host_ips prefix 0.0.0.0/32 mask-length-range 32..32
+/routing-policy policy ebgp_import statement 10 match prefix-set host_ips
+/routing-policy policy ebgp_import statement 10 action accept
+/routing-policy policy ebgp_import default-action reject
+/routing-policy policy ebgp_export statement 10 match prefix-set host_ips
+/routing-policy policy ebgp_export statement 10 action accept
+/routing-policy policy ebgp_export default-action reject
+/network-instance default protocols bgp group ebgp import-policy ebgp_import export-policy ebgp_export
+
+{#
+  Define default import/export policies for iBGP
+#}
+/routing-policy prefix-set external_routes
+/routing-policy policy ibgp_export default-action reject
+/routing-policy policy ibgp_export statement 10 match prefix-set external_routes
+/routing-policy policy ibgp_export statement 10 action accept
+/network-instance default protocols bgp group ibgp import-policy export-policy ibgp_export
+
+{#
+  Add extra IPv4 prefixes using static blackhole routes, add to export
 #}
 /network-instance default next-hop-groups group blackhole blackhole set generate-icmp true
 {% for pfx in bgp.originate|default([]) %}
 /network-instance default static-routes route {{ pfx }} next-hop-group blackhole
+/routing-policy prefix-set external_routes prefix {{ pfx }} mask-length-range exact
 {% endfor %}
