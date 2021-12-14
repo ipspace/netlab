@@ -24,7 +24,7 @@
 
 - local_action:
     module: template
-    src: "{{ config_template|replace('sros',sros_provisioning_model) }}"
+    src: "{{ config_template|replace('sros.j2',sros_provisioning_model+'.j2') }}"
     dest: "{{ tempfile_1.path }}"
 
 - name: Check that prepared config is valid YAML
@@ -54,15 +54,20 @@
   until: enable_open_config is success
 
 - debug: var=enable_open_config
+# - debug: var=hostvars
 
 - name: Update node configuration (using gNMI SET based on YAML template {{sros_provisioning_model}})
+  when: d!=[] or u!=[] or r!=[]
   vars:
     cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
+    d: "{{ cfg.delete | default([]) }}"
+    u: "{{ cfg.updates | default([]) }}"
+    r: "{{ cfg.replace | default([]) }}"
   nokia.grpc.gnmi_config:
     # prefix: configure
-    delete: "{{ cfg.delete | default([]) }}"
-    replace: "{{ cfg.replace | default([]) }}"
-    update: "{{ cfg.updates | default([]) }}"
+    delete: "{{ d }}"
+    replace: "{{ r }}"
+    update: "{{ u }}"
   register: gnmi_set_result
 
 - debug: var=gnmi_set_result
