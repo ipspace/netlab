@@ -6,16 +6,16 @@
     prefix: ansible.sros.{{ inventory_hostname }}.
   register: tempfile_1
 
-- name: Set default provisioning model to use OpenConfig
+- name: Set default provisioning model to use OpenConfig (sros_use_openconfig={{sros_use_openconfig}})
   when: sros_use_openconfig|default(true)
   set_fact:
     sros_provisioning_model: "sros.openconfig"
 
-- name: Example how to check if a BGP RR is being used
-  vars:
-    rr: "{{ groups['all']|map('extract',hostvars)|map(attribute='bgp.rr')|list }}"
-  set_fact:
-    uses_route_reflector: "{{ rr != [] }}"
+# - name: Example how to check if a BGP RR is being used
+#   vars:
+#     rr: "{{ groups['all']|map('extract',hostvars)|map(attribute='bgp.rr')|list }}"
+#   set_fact:
+#     uses_route_reflector: "{{ rr != [] }}"
 
 - name: Check if OpenConfig can be used as provisioning method/model (config_template={{config_template}})
   when: "'ospf' in config_template or not sros_use_openconfig|default(true)"
@@ -27,7 +27,7 @@
     src: "{{ config_template|replace('sros.j2',sros_provisioning_model+'.j2') }}"
     dest: "{{ tempfile_1.path }}"
 
-- name: Check that prepared config is valid YAML
+- name: Check that prepared config from {{config_template}} in {{tempfile_1.path}} is valid YAML
   vars:
     cfg: "{{ lookup('file', tempfile_1.path ) }}"
   debug: msg="{{ cfg | from_yaml }}"
