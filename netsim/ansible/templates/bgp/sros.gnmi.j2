@@ -23,9 +23,15 @@ updates:
       next-hop-self: {{ bgp.next_hop_self|default(false)|lower }}
 {%    if bgp.community[c]|default([]) %}
       send-communities:
-       standard: {{ 'True' if ('standard' in bgp.community[c] or 'both' in bgp.community[c]) else 'False' }}
-       extended: {{ 'True' if ('extended' in bgp.community[c] or 'both' in bgp.community[c]) else 'False' }}
-       large: {{ 'True' if ('large' in bgp.community[c]) else 'False' }}
+{%     if not ('standard' in bgp.community[c] or 'both' in bgp.community[c]) %}
+       standard: False
+{%     endif %}
+{%     if not ('extended' in bgp.community[c] or 'both' in bgp.community[c]) %}
+       extended: False
+{%     endif %}
+{%     if not ('large' in bgp.community[c]) %}
+       large: False
+{%     endif %}
 {%    endif %}
 {%    if c=='ibgp' and bgp.rr|default('')|bool %}
       cluster:
@@ -39,7 +45,7 @@ updates:
     - ip-address: "{{ n[af] }}"
       description: "{{ n.name }}"
       peer-as: {{ n.as }}
-      peer-group: "{{ n.type }}"
+      group: "{{ n.type }}"
 {%    if n.type=='ibgp' %}
       local-address: "{{ loopback[af]|ipaddr('address') }}"
 {%    endif %}
