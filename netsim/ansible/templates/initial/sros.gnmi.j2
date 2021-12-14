@@ -1,63 +1,38 @@
 {% macro ip_addr(v,ip) %}
 {% set _ip = ip|ipaddr('address') %}
 {% set _pre = ip|ipaddr('prefix') %}
-ipv{{v}}:
-           addresses:
-            address:
-            - ip: "{{_ip}}"
-              config:
-               ip: "{{_ip}}"
-               prefix-length: {{ _pre }}
+   ipv{{v}}:
+    # TODO: unnumbered
+    primary:
+     address: "{{_ip}}"
+     prefix-length: {{ _pre }}
 {% endmacro %}
 
-{% macro interface(name,type,desc,ip_v4,ip_v6) -%}
-- path: "openconfig-interfaces:interfaces/interface[name={{name}}]"
+{% macro interface(name,desc,ip_v4,ip_v6,port) -%}
+- path: "configure/router[router-name=Base]/interface[interface-name={{name}}]"
   val:
-    name: "{{name}}"
-    config:
-      name: "{{name}}"
-      enabled: true
-      type: "{{type}}"
-      description: "{{desc}}"
-    subinterfaces:
-      subinterface:
-      - index: 0
-        config:
-          index: 0
-          enabled: true
+   admin-state: enable
+   description: "{{desc}}"
+{% if port %}
+   port: "{{port}}"
+{% endif %}
 {% if ip_v4|ipv4 %}
-        {{ ip_addr('4',ip_v4) }}
+{{ ip_addr('4',ip_v4) }}
 {% endif %}
 {% if ip_v6|ipv6 %}
-        {{ ip_addr('6',ip_v6) }}
+{{ ip_addr('6',ip_v6) }}
 {% endif %}
-{%- endmacro -%}
-
-{% macro if_in_base(name,ip_v4,ip_v6) -%}
-       id: "{{name}}.0"
-       config:
-{% set af_v4 = ["IPV4"] if ip_v4|ipv4 else [] %}
-{% set af_v6 = ["IPV6"] if ip_v6|ipv6 else [] %}
-        id: "{{name}}.0"
-        associated-address-families: {{ (af_v4+af_v6) | to_yaml }}
-        interface: "{{ name }}"
-        subinterface: 0
 {%- endmacro -%}
 
 updates:
-- path: openconfig-network-instance:network-instances/network-instance[name=Base]
-  val:
-    name: "Base"
-    config:
-      name: "Base"
-      type: "DEFAULT_INSTANCE"
 {% if 'ipv4' in loopback or 'ipv6' in loopback %}
 {% set v4 = loopback.ipv4|default('') %}
 {% set v6 = loopback.ipv6|default('') %}
-    interfaces:
-     interface:
-     - {{ if_in_base("system",v4,v6) }}
-{{ interface("system","softwareLoopback","loopback interface",v4,v6) }}
+#- path: configure/router[router-name=Base]
+#  val:
+#   interface:
+#   - system
+{{ interface("system","loopback interface",v4,v6,'') }}
 {% endif %}
 {% for l in links|default([]) %}
 {% set v4 = l.ipv4|default('') %}
@@ -69,12 +44,11 @@ updates:
 {% endif %}
 - path: configure/port[port-id={{l.ifname}}]
   val: { connector: { "breakout": "c1-100g" } }
-{{ interface(l.ifname+"/1","ethernetCsmacd",desc,v4,v6) }}
+{{ interface('i'+l.ifname,desc,v4,v6,l.ifname+'/1') }}
 
 {# Add interface to the Base routing instance (default VRF) #}
-- path: openconfig-network-instance:network-instances/network-instance[name=Base]
-  val:
-    interfaces:
-     interface:
-     - {{ if_in_base(l.ifname+"/1",v4,v6) }}
+#- path: configure/router[router-name=Base]
+#  val:
+#   interface:
+#   - {{ 'i'+l.ifname }}
 {% endfor %}

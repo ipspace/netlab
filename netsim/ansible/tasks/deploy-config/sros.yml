@@ -22,12 +22,16 @@
   set_fact:
     sros_provisioning_model: "sros.gnmi"
 
+- name: Select provisioning template
+  set_fact:
+    template_to_use: "{{ config_template|replace('sros.j2',sros_provisioning_model+'.j2') }}"
+
 - local_action:
     module: template
-    src: "{{ config_template|replace('sros.j2',sros_provisioning_model+'.j2') }}"
+    src: "{{ template_to_use }}"
     dest: "{{ tempfile_1.path }}"
 
-- name: Check that prepared config from {{config_template}} in {{tempfile_1.path}} is valid YAML
+- name: Check that prepared config from {{template_to_use}} in {{tempfile_1.path}} is valid YAML
   vars:
     cfg: "{{ lookup('file', tempfile_1.path ) }}"
   debug: msg="{{ cfg | from_yaml }}"
@@ -56,7 +60,7 @@
 - debug: var=enable_open_config
 # - debug: var=hostvars
 
-- name: Update node configuration (using gNMI SET based on YAML template {{sros_provisioning_model}})
+- name: Update node configuration (using gNMI SET based on YAML template {{template_to_use}})
   when: d!=[] or u!=[] or r!=[]
   vars:
     cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
