@@ -1,5 +1,6 @@
-{% macro community(list) -%}
-{{ "both" if list|length >= 2 else list[0] }}
+{% macro communities(ip,list) -%}
+  neighbor {{ ip }} send-community standard {{ 'true' if 'standard' in list or 'both' in list else 'false' }}
+  neighbor {{ ip }} send-community large {{ 'true' if 'large' in list else 'false' }}
 {%- endmacro %}
 {#
    Global BGP neighbor definition
@@ -20,14 +21,14 @@
 {% if n.type == 'ibgp' %}
   neighbor {{ ip }} transport local-address {{ local_loopback }}
 {%   if bgp.community.ibgp|default([]) %}
-  # neighbor {{ ip }} send-community {{ community(bgp.community.ibgp) }} true
+{{ communities(ip,bgp.community.ibgp) }}
 {%   endif %}
 {%   if bgp.rr|default('') and not n.rr|default('') %}
   neighbor {{ ip }} route-reflector client true
 {%   endif %}
 {% else %}{# EBGP IPv4 neighbor #}
 {%   if bgp.community.ebgp|default([]) %}
-  # neighbor {{ ip }} send-community {{ community(bgp.community.ebgp) }} true
+{{ communities(ip,bgp.community.ebgp) }}
 {%   endif %}
 {% endif %}
 {%- endmacro %}
