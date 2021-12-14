@@ -9,7 +9,7 @@
 {% endmacro %}
 
 {% macro interface(name,desc,ip_v4,ip_v6,port) -%}
-- path: "configure/router[router-name=Base]/interface[interface-name={{name}}]"
+- path: configure/router[router-name=Base]/interface[interface-name={{name}}]
   val:
    admin-state: enable
    description: "{{desc}}"
@@ -25,13 +25,13 @@
 {%- endmacro -%}
 
 updates:
+{# Enable ECMP=64 by default #}
+- path: configure/router[router-name=Base]
+  val:
+   ecmp: 64
 {% if 'ipv4' in loopback or 'ipv6' in loopback %}
 {% set v4 = loopback.ipv4|default('') %}
 {% set v6 = loopback.ipv6|default('') %}
-#- path: configure/router[router-name=Base]
-#  val:
-#   interface:
-#   - system
 {{ interface("system","loopback interface",v4,v6,'') }}
 {% endif %}
 {% for l in links|default([]) %}
@@ -45,10 +45,4 @@ updates:
 - path: configure/port[port-id={{l.ifname}}]
   val: { connector: { "breakout": "c1-100g" } }
 {{ interface('i'+l.ifname,desc,v4,v6,l.ifname+'/1') }}
-
-{# Add interface to the Base routing instance (default VRF) #}
-#- path: configure/router[router-name=Base]
-#  val:
-#   interface:
-#   - {{ 'i'+l.ifname }}
 {% endfor %}
