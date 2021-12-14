@@ -16,7 +16,7 @@ The following virtual network devices are supported by *netsim-tools*:
 | Juniper vSRX 3.0                          | vsrx               |
 | Mikrotik CHR RouterOS                     | routeros           |
 | Nokia SR Linux                            | srlinux            |
-| Nokia SR OS                               | sros               |
+| Nokia SR OS [❗](caveats.html#nokia-sr-os) | sros               |
 | VyOS                                      | vyos               |
 
 **Notes:**
