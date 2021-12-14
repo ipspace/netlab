@@ -16,6 +16,7 @@ The following virtual network devices are supported by *netsim-tools*:
 | Juniper vSRX 3.0                          | vsrx               |
 | Mikrotik CHR RouterOS                     | routeros           |
 | Nokia SR Linux                            | srlinux            |
+| Nokia SR OS                               | sros               |
 | VyOS                                      | vyos               |
 
 **Notes:**
@@ -67,6 +68,7 @@ You cannot use all supported network devices with all virtualization providers:
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
 | Mikrotik CHR RouterOS                              |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
+| Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
 | VyOS                                               |          ✅           |              ❌               |            ❌             |
 
 ## Configuration Deployments
@@ -85,7 +87,8 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Generic Linux         |          ✅           |           ❌           |
 | Juniper vSRX 3.0      |          ✅           |           ✅           |
 | Mikrotik CHR RouterOS |          ✅           |           ✅           |
-| Nokia SR Linux        |          ❌           |           ❌           |
+| Nokia SR Linux        |          ✅           |           ❌           |
+| Nokia SR OS           |          ✅           |           ❌           |
 | VyOS                  |          ✅           |           ✅           |
 
 ## Initial Device Configurations
@@ -103,7 +106,8 @@ The following system-wide features are configured on supported network operating
 | FRR 7.5.0             |    ✅     |     ❌      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
 | Juniper vSRX 3.0      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Nokia SR Linux        |    ❌     |     ❌      |             ❌             |             ❌              |             ❌              |
+| Nokia SR Linux        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Nokia SR OS           |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Mikrotik CHR RouterOS |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-chr-routeros) |             ✅              |             ✅              |
 
@@ -121,7 +125,11 @@ The following interface parameters are configured on supported network operating
 | Generic Linux         |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
 | Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
 | Mikrotik CHR RouterOS |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             |
-| VyOS                  |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             |
+| Nokia SR Linux        |          ✅          |          ✅          |             ❌              |             ✅              |            ❌            |
+|
+| Nokia SR OS           |          ✅          |          ✅          |             ❌              |             ✅              |            ❌            |
+|
+| VyOS                  |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             
 
 ## Supported Configuration Modules
 
@@ -140,7 +148,8 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Generic Linux         |            ❌             |   ❌   |   ❌   |   ❌   |    ❌    |
 | Juniper vSRX 3.0      |            ✅             |   ✅   |   ❌   |   ✅   |    ❌    |
 | Mikrotik CHR RouterOS |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
-| Nokia SR Linux        |            ❌             |   ❌   |   ❌   |   ❌   |    ❌    |
+| Nokia SR Linux        |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
+| Nokia SR OS           |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
 | VyOS                  |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
 
 ## IPv6 Support
@@ -160,4 +169,6 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
 | VyOS                  |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
