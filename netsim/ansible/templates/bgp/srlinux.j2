@@ -23,9 +23,6 @@
 {%   if bgp.community.ibgp|default([]) %}
 {{ communities(ip,bgp.community.ibgp) }}
 {%   endif %}
-{%   if bgp.rr|default('') and not n.rr|default('') %}
-  neighbor {{ ip }} route-reflector client true
-{%   endif %}
 {% else %}{# EBGP IPv4 neighbor #}
 {%   if bgp.community.ebgp|default([]) %}
 {{ communities(ip,bgp.community.ebgp) }}
@@ -56,6 +53,20 @@ group ibgp admin-state enable peer-as {{ bgp.as }} next-hop-self {{ bgp.next_hop
 group ibgp timers connect-retry 1 minimum-advertisement-interval 1
 group ebgp admin-state enable next-hop-self {{ bgp.next_hop_self|default(false)|lower }}
 group ebgp timers connect-retry 1 minimum-advertisement-interval 1
+
+{#
+    Configure iBGP Route Reflection
+#}
+{% if bgp.rr|default(0)|bool %}
+group ibgp {
+ route-reflector {
+  cluster-id {{ loopback['ipv4']|ipaddr('address') }}
+  client true
+ }
+ next-hop-self false
+}
+{% endif %}
+
 
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
