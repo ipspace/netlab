@@ -1,12 +1,16 @@
-{% macro ip_addr(v,ip) %}
+{% macro ip_addr(v,ip,ifname) %}
+{% set _ip = ip|ipaddr('address') %}
+{% set _pre = ip|ipaddr('prefix') %}
    ipv{{v}}:
     # TODO: unnumbered
 {% if v=='4' %}
     primary:
-     address: "{{ ip|ipaddr('address') }}"
-     prefix-length: {{ ip|ipaddr('prefix') }}
+     address: "{{ _ip }}"
+     prefix-length: {{ _pre }}
 {% else %}
-    address: {{ ip }}
+    address:
+    - ipv6-address: "{{ _ip }}"
+      prefix-length: {{ 128 if ifname=='system' else _pre }}
 {% endif %}
 {% endmacro %}
 
@@ -19,10 +23,10 @@
    port: "{{port}}"
 {% endif %}
 {% if ip_v4|ipv4 %}
-{{ ip_addr('4',ip_v4) }}
+{{ ip_addr('4',ip_v4,name) }}
 {% endif %}
 {% if ip_v6|ipv6 %}
-{{ ip_addr('6',ip_v6) }}
+{{ ip_addr('6',ip_v6,name) }}
 {% endif %}
 {%- endmacro -%}
 

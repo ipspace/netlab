@@ -38,3 +38,5 @@ def run(cli_args: typing.List[str]) -> None:
         for template in gdata.config:
           external_commands.custom_configs(template,gname,step)
           step = step + 1
+
+  # JvB: Could also add 'config' at individual node level
