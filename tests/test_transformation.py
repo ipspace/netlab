@@ -60,22 +60,20 @@ def test_verbose_cases(tmpdir):
   common.set_verbose()
   test_transformation_cases(tmpdir)
 
-@pytest.mark.filterwarnings("ignore")
+@pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 def test_error_cases():
   print("Starting error test cases")
-  common.RAISE_ON_ERROR = True
-  common.DISPLAY_WARNINGS = False
+  common.set_flag(raise_error = True)
   for test_case in list(glob.glob('errors/*yml')):
     print("Test case: %s" % test_case)
     common.err_count = 0
     with pytest.raises(common.ErrorAbort):
       topo = run_test(test_case)
 
-@pytest.mark.filterwarnings("ignore")
+@pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 def test_minimal_cases():
   print("Starting minimal (no-default) test cases")
-  common.RAISE_ON_ERROR = True
-  common.DISPLAY_WARNINGS = False
+  common.set_flag(raise_error = True)
   for test_case in list(glob.glob('minimal_errors/*yml')):
     print("Test case: %s" % test_case)
     common.err_count = 0
