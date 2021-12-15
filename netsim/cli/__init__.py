@@ -17,6 +17,8 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
                   help='Report only major errors')
   parser.add_argument('-v','--verbose', dest='verbose', action='store_true',
                   help='Verbose logging')
+  parser.add_argument('--warning', dest='warning', action='store_true',help=argparse.SUPPRESS)
+  parser.add_argument('--raise_on_error', dest='raise_on_error', action='store_true',help=argparse.SUPPRESS)
   if debugging:
     parser.add_argument('--debug', dest='debug', action='store_true',
                     help='Debugging (might not execute external commands)')
