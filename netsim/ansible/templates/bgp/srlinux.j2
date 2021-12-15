@@ -14,31 +14,6 @@
 {% endif %}
   exit
 {%- endmacro %}
-{#
-   Address family BGP neighbor definition
-#}
-{% macro neighbor_af(n,ip,local_loopback) %}
-{% if n.type == 'ibgp' %}
-  neighbor {{ ip }} transport local-address {{ local_loopback }}
-{%   if bgp.community.ibgp|default([]) %}
-{{ communities(ip,bgp.community.ibgp) }}
-{%   endif %}
-{% else %}{# EBGP IPv4 neighbor #}
-{%   if bgp.community.ebgp|default([]) %}
-{{ communities(ip,bgp.community.ebgp) }}
-{%   endif %}
-{% endif %}
-{%- endmacro %}
-{#
-   BGP network statement
-#}
-{% macro bgp_network(af,pfx) %}
-{%   if af == 'ipv4' %}
-  network {{ pfx|ipaddr('network') }} mask {{ pfx|ipaddr('netmask') }}
-{%   else %}
-  network {{ pfx|ipaddr('0') }}
-{%   endif %}
-{%- endmacro %}
 
 /network-instance default protocols bgp
 autonomous-system {{ bgp.as }}
@@ -47,27 +22,38 @@ ipv4-unicast admin-state disable
 ebgp-default-policy export-reject-all false
 ebgp-default-policy import-reject-all false
 {#
-    Configure IPv4 and IPv6 BGP neighbors
+    Configure BGP Groups
 #}
-group ibgp admin-state enable peer-as {{ bgp.as }} next-hop-self {{ bgp.next_hop_self|default(false)|lower }}
-group ibgp timers connect-retry 1 minimum-advertisement-interval 1
-group ebgp admin-state enable next-hop-self {{ bgp.next_hop_self|default(false)|lower }}
-group ebgp timers connect-retry 1 minimum-advertisement-interval 1
+{% for g in ['ibgp','ebgp'] %}
+group {{g}} {
+ admin-state enable
+ peer-as {{ bgp.as }}
+ next-hop-self {{ bgp.next_hop_self|default(false)|lower }}
+ timers {
+  connect-retry 1
+  minimum-advertisement-interval 1
+ }
+
+{% if bgp.community[g]|default([]) %}
+ {{ communities(ip,bgp.community[g]) }}
+{% endif %}
 
 {#
     Configure iBGP Route Reflection
 #}
-{% if bgp.rr|default(0)|bool %}
-group ibgp {
+{% if g=='ibgp' and bgp.rr|default(0)|bool %}
  route-reflector {
   cluster-id {{ loopback['ipv4']|ipaddr('address') }}
   client true
  }
  next-hop-self false
-}
 {% endif %}
+}
+{% endfor %}
 
-
+{#
+    Configure IPv4 and IPv6 BGP neighbors
+#}
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {{     neighbor_global(n,n[af]) }}
@@ -83,16 +69,18 @@ group ibgp {
 {# {{     bgp_network(af,loopback[af]) }} #}
 {%   endif %}
 
-{%   for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+{% for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
 {# {{     bgp_network(af,l[af]) }} #}
 {%   endfor %}
 {%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
 {# {{     bgp_network(af,pfx) }} #}
 {%   endfor %}
 
-{%   for n in bgp.neighbors if n[af] is defined %}
-{{     neighbor_af(n,n[af],loopback[af]|default('')|ipaddr('address')) }}
-{%   endfor %}
+{% for n in bgp.neighbors if n[af] is defined %}
+{% if n.type == 'ibgp' %}
+  neighbor {{ n[af] }} transport local-address {{ loopback[af]|default('')|ipaddr('address') }}
+{% endif %}
+{% endfor %}
 {% endfor %}
 
 {#
