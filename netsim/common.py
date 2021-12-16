@@ -9,13 +9,15 @@ import argparse
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 from box import Box
 
-LOGGING=False
-VERBOSE=False
-DEBUG=False
-QUIET=False
+LOGGING : bool = False
+VERBOSE : int = 0
+DEBUG : bool = False
+QUIET : bool = False
 
-RAISE_ON_ERROR=False
-err_count = 0
+RAISE_ON_ERROR : bool = False
+WARNING : bool = False
+
+err_count : int = 0
 
 class MissingValue(Warning):
   pass
@@ -32,17 +34,22 @@ class ErrorAbort(Exception):
 def fatal(text: str, module: str = 'netsim-tools') -> None:
   global err_count
   err_count = err_count + 1
-  warnings.warn_explicit(text,FatalError,filename=module,lineno=err_count)
   if RAISE_ON_ERROR:
     raise ErrorAbort(text)
   else:
+    if WARNING:
+      warnings.warn_explicit(text,FatalError,filename=module,lineno=err_count)
+    else:
+      print(f'Fatal error in {module}: {text}',file=sys.stderr)
     sys.exit(1)
 
 def error(text: str, category: typing.Type[Warning] = UserWarning, module: str = 'topology') -> None:
   global err_count
   err_count = err_count + 1
-  warnings.warn_explicit(text,category,filename=module,lineno=err_count)
-#  print(text,file=sys.stderr)
+  if WARNING:
+    warnings.warn_explicit(text,category,filename=module,lineno=err_count)
+  else:
+    print(f'{category.__name__} in {module}: {text}',file=sys.stderr)
 
 def exit_on_error() -> None:
   global err_count
@@ -66,19 +73,24 @@ def template(j2: str , data: typing.Dict, path: str) -> str:
   template = ENV.get_template(j2)
   return template.render(**data)
 
-def set_verbose() -> None:
+def set_verbose(value: typing.Optional[int] = 1) -> None:
   global VERBOSE
-  VERBOSE=True
+  VERBOSE = 0 if value is None else value
 
 def print_verbose(t: typing.Any) -> None:
   if VERBOSE:
     print(t)
 
+#
+# Sets common flags based on parsed arguments.
+#
+# Internal debugging flags (RAISE_ON_ERROR, WARNING) cannot be set with this function
+#
 def set_logging_flags(args: argparse.Namespace) -> None:
-  global VERBOSE, LOGGING, DEBUG, QUIET
+  global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR
   
   if args.verbose:
-    VERBOSE = True
+    VERBOSE = args.verbose
 
   if args.logging:
     LOGGING = True
@@ -88,6 +100,42 @@ def set_logging_flags(args: argparse.Namespace) -> None:
 
   if 'quiet' in args and args.quiet:
     QUIET = True
+
+  if 'warning' in args and args.warning:
+    WARNING = True
+
+  if 'raise_on_error' in args and args.raise_on_error:
+    RAISE_ON_ERROR = True
+
+#
+# Sets zero or more common flags and returns current settings.
+#
+# There must be a better way of doing it, but this is simple and it works
+#
+def set_flag(
+      debug: typing.Optional[bool] = None,
+      quiet: typing.Optional[bool] = None,
+      verbose: typing.Optional[int] = None,
+      logging: typing.Optional[bool] = None,
+      warning: typing.Optional[bool] = None,
+      raise_error: typing.Optional[bool] = None) -> dict:
+  global DEBUG, VERBOSE, LOGGING, QUIET, RAISE_ON_ERROR, WARNING
+
+  DEBUG = debug if debug is not None else DEBUG
+  QUIET = quiet if quiet is not None else QUIET
+  VERBOSE = verbose if verbose is not None else VERBOSE
+  LOGGING = logging if logging is not None else LOGGING
+  WARNING = warning if warning is not None else WARNING
+  RAISE_ON_ERROR = raise_error  if raise_error is not None else RAISE_ON_ERROR
+
+  return {
+    'debug': DEBUG,
+    'quiet': QUIET,
+    'verbose': VERBOSE,
+    'logging': LOGGING,
+    'raise_on_error': RAISE_ON_ERROR,
+    'warning': WARNING
+  }
 
 #
 # Change all NULL values in a nested dictionary structure to empty strings
