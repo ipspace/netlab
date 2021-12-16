@@ -46,18 +46,23 @@
     timeout: 100
     sleep: 10 # Wait 10s between attempts
 
-- name: Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)
-  when: enable_open_config is not defined
-  tags: [ initial ]
-  nokia.grpc.gnmi_config:
-    prefix: configure
-    update:
-    - path: system/management-interface/yang-modules/openconfig-modules
-      val: True # {{ sros_provisioning_model == "sros.openconfig" }}
-  register: enable_open_config
-  retries: 4
-  delay: 15
-  until: enable_open_config is success
+- block:
+  - name: Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)
+    when: enable_open_config is not defined
+    tags: [ initial ]
+    nokia.grpc.gnmi_config:
+      prefix: configure
+      update:
+      - path: system/management-interface/yang-modules/openconfig-modules
+        val: True # {{ sros_provisioning_model == "sros.openconfig" }}
+    register: enable_open_config
+    retries: 4
+    delay: 15
+    until: enable_open_config is success
+
+  rescue:
+  - name: reset the gNMI connection, then try one more time
+    meta: reset_connection
 
 - debug: var=enable_open_config
 # - debug: var=hostvars
