@@ -61,11 +61,9 @@ def copy_topology(args: argparse.Namespace) -> None:
     print("... done, moving on\n")
 
 def create_configs() -> None:
-  external_commands.print_step(1,"creating configuration files")
-  try:
-    subprocess.run(["netlab","create"],check=True)
-  except:
-    common.fatal("netlab create failed, aborting...","test")
+  external_commands.print_step(2,"creating configuration files")
+  if not external_commands.run_command(["netlab","create"],True):
+    common.fatal("netlab create failed, aborting...","netlab test")
 
 def cleanup_working_directory(args: argparse.Namespace) -> None:
   if args.verbose:
@@ -101,10 +99,10 @@ def run(cli_args: typing.List[str]) -> None:
 
   if args.verbose:
     common.set_verbose(args.verbose)
-  external_commands.run_probes(settings,args.provider)
+  external_commands.run_probes(settings,args.provider,1)
   copy_topology(args)
   create_configs()
-  external_commands.start_lab(settings,args.provider,2)
-  external_commands.deploy_configs(3)
-  external_commands.stop_lab(settings,args.provider,4)
+  external_commands.start_lab(settings,args.provider,3)
+  external_commands.deploy_configs(4)
+  external_commands.stop_lab(settings,args.provider,5)
   cleanup_working_directory(args)
