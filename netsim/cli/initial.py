@@ -38,7 +38,7 @@ def run(cli_args: typing.List[str]) -> None:
   (args,rest) = initial_config_parse(cli_args)
 
   if args.verbose:
-    rest = ['-v'] + rest
+    rest = ['-' + 'v' * args.verbose] + rest
 
   if args.initial:
     rest = ['-t','initial'] + rest

@@ -43,7 +43,7 @@ def test_probe(p : str) -> bool:
 
 def set_ansible_flags(cmd : list) -> list:
   if common.VERBOSE:
-    cmd.append("-v")
+    cmd.append("-" + "v" * common.VERBOSE)
 
   if common.QUIET:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "dense"
@@ -69,7 +69,7 @@ def deploy_configs(step : int = 3) -> None:
   print_step(step,"deploying initial device configurations")
   cmd = ["netlab","initial"]
   if common.VERBOSE:
-    cmd.append("-v")
+    cmd.append("-" + "v" * common.VERBOSE)
 
   if not run_command(set_ansible_flags(cmd)):
     common.fatal("netlab initial failed, aborting...","test")
