@@ -1,16 +1,20 @@
 {#
    Global BGP neighbor definition
 #}
-{% macro neighbor_global(n,ip) %}
-     neighbor:
-      peer-address: {{ ip }}
-      description: {{ n.name }}
-      peer-group: {{ n.type }}
-{%    if n.type != 'ibgp' %}
-      peer-as: {{ n.as }}
-{%    endif %}
+{% macro neighbor_global(n,af) %}
+   neighbor:
+    peer-address: {{ n[af] }}
+    description: {{ n.name }}
+    peer-group: {{ n.type }}
+{%  if n.type != 'ibgp' %}
+    peer-as: {{ n.as }}
+{% else %}
+    transport:
+     local-address: {{ loopback[af]|default('')|ipaddr('address') }}
+{%  endif %}
 {%- endmacro %}
 
+updates:
 - path: network-instance[name=default]/protocols/bgp
   val:
    autonomous-system: {{ bgp.as }}
@@ -57,19 +61,19 @@
     Configure IPv4 and IPv6 BGP neighbors
 #}
 {% for n in bgp.neighbors %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-{{    neighbor_global(n,n[af]) }}
-{%   endfor %}
+{%  for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{  neighbor_global(n,af) }}
+{%  endfor %}
 {% endfor %}
 
 {# Configure BGP address families #}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
  # address-family {{ af }}
-      {{ af }}-unicast:
-       admin-state: enable
-       multipath:
-        max-paths-level-1: 64
-        max-paths-level-2: 64 # indirect nexthops
+   {{ af }}-unicast:
+    admin-state: enable
+    multipath:
+     max-paths-level-1: 64
+     max-paths-level-2: 64 # indirect nexthops
 {%   if loopback[af] is defined and bgp.advertise_loopback %}
 {# {{     bgp_network(af,loopback[af]) }} #}
 {%   endif %}
@@ -81,14 +85,6 @@
 {# {{     bgp_network(af,pfx) }} #}
 {%   endfor %}
 
-   neighbor:
-{% for n in bgp.neighbors if n[af] is defined %}
-{% if n.type == 'ibgp' %}
-   - peer-address: {{ n[af] }}
-     transport:
-      local-address: {{ loopback[af]|default('')|ipaddr('address') }}
-{% endif %}
-{% endfor %}
 {% endfor %}
 
 {#
@@ -96,15 +92,17 @@
 #}
 - path: routing-policy/policy[name=accept_all]
   val:
-   default-action: accept
+   name: accept_all
+   default-action:
+    accept: {}
 
 {#
   Add extra IPv4 prefixes using static blackhole routes, add to export
 #}
-- path: network-instance[name=default]/next-hop-groups[name=blackhole]
+- path: network-instance[name=default]/next-hop-groups/group[name=blackhole]
   val:
-   blackhole: True
-   generate-icmp: True
+   blackhole:
+     generate-icmp: True
 
 {% for pfx in bgp.originate|default([]) %}
 - path: network-instance[name=default]/static-routes[prefix={{pfx}}]
