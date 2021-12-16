@@ -35,7 +35,9 @@ def run_command(cmd : typing.Union[str,list], check_result : bool = False) -> bo
     if not check_result:
       return True
     return result.stdout != ""
-  except:
+  except Exception as ex:
+    if not common.QUIET:
+      print( f"Error: {ex}" )
     return False
 
 def test_probe(p : str) -> bool:
@@ -79,7 +81,7 @@ def custom_configs(config : str, group: str, step : int = 4) -> None:
   cmd = ["netlab","config",config,"--limit",group]
 
   if not run_command(set_ansible_flags(cmd)):
-    common.fatal("netlab initial failed, aborting...","test")
+    common.fatal("netlab config failed, aborting...","test")
 
 def stop_lab(settings: Box, provider: str, step: int = 4) -> None:
   print_step(step,"stopping the lab",True)
