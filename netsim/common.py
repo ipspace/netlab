@@ -9,15 +9,15 @@ import argparse
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 from box import Box
 
-LOGGING=False
-VERBOSE=False
-DEBUG=False
-QUIET=False
+LOGGING : bool = False
+VERBOSE : int = 0
+DEBUG : bool = False
+QUIET : bool = False
 
-RAISE_ON_ERROR=False
-WARNING=False
+RAISE_ON_ERROR : bool = False
+WARNING : bool = False
 
-err_count = 0
+err_count : int = 0
 
 class MissingValue(Warning):
   pass
@@ -73,9 +73,9 @@ def template(j2: str , data: typing.Dict, path: str) -> str:
   template = ENV.get_template(j2)
   return template.render(**data)
 
-def set_verbose() -> None:
+def set_verbose(value: typing.Optional[int] = 1) -> None:
   global VERBOSE
-  VERBOSE=True
+  VERBOSE = 0 if value is None else value
 
 def print_verbose(t: typing.Any) -> None:
   if VERBOSE:
@@ -90,7 +90,7 @@ def set_logging_flags(args: argparse.Namespace) -> None:
   global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR
   
   if args.verbose:
-    VERBOSE = True
+    VERBOSE = args.verbose
 
   if args.logging:
     LOGGING = True
@@ -115,7 +115,7 @@ def set_logging_flags(args: argparse.Namespace) -> None:
 def set_flag(
       debug: typing.Optional[bool] = None,
       quiet: typing.Optional[bool] = None,
-      verbose: typing.Optional[bool] = None,
+      verbose: typing.Optional[int] = None,
       logging: typing.Optional[bool] = None,
       warning: typing.Optional[bool] = None,
       raise_error: typing.Optional[bool] = None) -> dict:

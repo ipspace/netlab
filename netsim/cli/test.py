@@ -34,7 +34,8 @@ def test_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   parser.add_argument(
     '-v','--verbose',
     dest='verbose',
-    action='store_true',
+    action='count',
+    default=0,
     help='Verbose logging')
   parser.add_argument(
     dest='provider',
@@ -98,6 +99,8 @@ def run(cli_args: typing.List[str]) -> None:
   if os.path.exists(args.workdir):
     common.fatal("Directory %s already exists, aborting" % args.workdir,"test")
 
+  if args.verbose:
+    common.set_verbose(args.verbose)
   external_commands.run_probes(settings,args.provider)
   copy_topology(args)
   create_configs()
