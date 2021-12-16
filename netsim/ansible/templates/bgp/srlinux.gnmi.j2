@@ -1,0 +1,116 @@
+{#
+   Global BGP neighbor definition
+#}
+{% macro neighbor_global(n,ip) %}
+     neighbor:
+      peer-address: {{ ip }}
+      description: {{ n.name }}
+      peer-group: {{ n.type }}
+{%    if n.type != 'ibgp' %}
+      peer-as: {{ n.as }}
+{%    endif %}
+{%- endmacro %}
+
+- path: network-instance[name=default]/protocols/bgp
+  val:
+   autonomous-system: {{ bgp.as }}
+   router-id: {{ loopback['ipv4']|ipaddr('address') }}
+   ipv4-unicast:
+    admin-state: disable
+   ebgp-default-policy:
+    export-reject-all: False
+    import-reject-all: False
+{#
+    Configure BGP Groups
+#}
+   group:
+{% for g in ['ibgp','ebgp'] %}
+{% set ibgp_rr = (g=='ibgp' and bgp.rr|default(0)) %}
+   - group-name: {{g}}
+     admin-state: enable
+     import-policy: accept_all
+     export-policy: accept_all
+     peer-as: {{ bgp.as }}
+     next-hop-self: {{ 'True' if bgp.next_hop_self|default(0) and not ibgp_rr else 'False' }}
+     timers:
+      connect-retry: 1
+      minimum-advertisement-interval: 1
+
+{%   if bgp.community[g]|default([]) %}
+{%   set list = bgp.community[g] %}
+     send-community:
+      standard: {{ 'True' if 'standard' in list or 'both' in list else 'False' }}
+      large: {{ 'True' if 'large' in list else 'False' }}
+{%   endif %}
+
+{#
+    Configure iBGP Route Reflection
+#}
+{%   if ibgp_rr %}
+     route-reflector:
+      cluster-id: {{ loopback['ipv4']|ipaddr('address') }}
+      client: True
+{%   endif %}
+{% endfor %}
+
+{#
+    Configure IPv4 and IPv6 BGP neighbors
+#}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{    neighbor_global(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+
+{# Configure BGP address families #}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ # address-family {{ af }}
+      {{ af }}-unicast:
+       admin-state: enable
+       multipath:
+        max-paths-level-1: 64
+        max-paths-level-2: 64 # indirect nexthops
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+{# {{     bgp_network(af,loopback[af]) }} #}
+{%   endif %}
+
+{% for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+{# {{     bgp_network(af,l[af]) }} #}
+{%   endfor %}
+{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{# {{     bgp_network(af,pfx) }} #}
+{%   endfor %}
+
+   neighbor:
+{% for n in bgp.neighbors if n[af] is defined %}
+{% if n.type == 'ibgp' %}
+   - peer-address: {{ n[af] }}
+     transport:
+      local-address: {{ loopback[af]|default('')|ipaddr('address') }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+{#
+  Define default import/export policies for iBGP and eBGP: accept all
+#}
+- path: routing-policy/policy[name=accept_all]
+  val:
+   default-action: accept
+
+{#
+  Add extra IPv4 prefixes using static blackhole routes, add to export
+#}
+- path: network-instance[name=default]/next-hop-groups[name=blackhole]
+  val:
+   blackhole: True
+   generate-icmp: True
+
+{% for pfx in bgp.originate|default([]) %}
+- path: network-instance[name=default]/static-routes[prefix={{pfx}}]
+  val:
+   next-hop-group: blackhole
+- path: routing-policy/prefix-set[name=external_routes]/prefix[prefix={{pfx}}]
+  val:
+   mask-length-range: exact
+{% endfor %}
