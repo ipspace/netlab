@@ -85,4 +85,5 @@ Getting Started
    :hidden:
 
    dev/guidelines.md
+   dev/transform.md
 ..
