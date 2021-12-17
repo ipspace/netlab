@@ -38,13 +38,13 @@ After adding the device parameters into `netsim/topology-defaults.yml`, you'll b
 
 ## Using Your Device with Ansible Playbooks
 
-If you want to configure your device with **[netlab initial](netlab/initial.md)** or **[netlab config](netlab/config.md)**, or connect to your device with **[netlab connect](netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory into the **group_vars** part of your device settings.
+If you want to configure your device with **[netlab initial](../netlab/initial.md)** or **[netlab config](../netlab/config.md)**, or connect to your device with **[netlab connect](../netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory into the **group_vars** part of your device settings.
 
 The Ansible variables should include:
 
 * `ansible_connection` -- use **paramiko** for SSH access; you wouldn't want to be bothered with invalid SSH keys in a lab setup, and recent versions of Ansible became somewhat inconsistent in that regard.
 
-* `ansible_network_os` -- must be specified even if your device does not use **network_cli** connection. The value of this variable is used to select the configuration templates in the **initial-config.ansible** playbook used by **[netlab initial](netlab/initial.md)** command.
+* `ansible_network_os` -- must be specified even if your device does not use **network_cli** connection. The value of this variable is used to select the configuration templates in the **initial-config.ansible** playbook used by **[netlab initial](../netlab/initial.md)** command.
 
 * `ansible_user` and `ansible_ssh_pass` must often be set to the default values included in the network device image.
 
@@ -59,7 +59,7 @@ There are two ways to configure a devices:
 * **Configuration templates**: you'll have to create a single Ansible *configuration deployment task list* that will deploy configuration templates. The configuration deployment task list has to be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`.
 * **Ansible modules** (or REST API): you'll have to create an Ansible task list for initial configuration and any other configuration module supported by the device. The task list has to be in the device-specific subdirectory of `netsim/ansible/templates/` directory; the subdirectory name must match the `ansible_network_os` setting from `netsim/topology-defaults.yml`. The task list name has to be `initial.yml` for initial configuration deployment or `module.yml` for individual configuration modules (replace *module* with the module name).
 
-You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
+You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](../netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
 
 ## Initial Device Configuration
 
@@ -71,11 +71,11 @@ Jinja2 templates that will generate IP addressing and LLDP configuration have to
 
 Jinja2 templates for individual configuration modules have to be in a subdirectory of the `netsim/ansible/templates` directory. The subdirectory name has to match the module name and the name of the template must match the `ansible_network_os` value from `netsim/topology-defaults.yml`.
 
-Use existing configuration templates and *[initial device configurations](platforms.md#initial-device-configurations)* part of *[supported platforms](platforms.md)* document to figure out what settings your templates should support.
+Use existing configuration templates and *[initial device configurations](../platforms.md#initial-device-configurations)* part of *[supported platforms](../platforms.md)* document to figure out what settings your templates should support.
 
 ## Configuration Modules
 
-Similar to the initial device configuration, create templates supporting [individual configuration modules](module-reference.md) in module-specific subdirectories of the `templates` directory.
+Similar to the initial device configuration, create templates supporting [individual configuration modules](../module-reference.md) in module-specific subdirectories of the `templates` directory.
 
 Use existing configuration templates and module description to figure out which settings your templates should support.
 
@@ -95,7 +95,7 @@ To add a device that is already supported by *netsim-tools* to a new virtualizat
 
 ## Test Your Changes
 
-* Create a simple topology using your new device type in the `tests/integration` directory
+* Create a simple topology using your new device type in the `tests/integration` directory.
 * Create Ansible inventory and Vagrantfile with `netlab create`
 * Start your virtual lab
 * Perform initial device configuration with `netlab initial`
@@ -103,5 +103,6 @@ To add a device that is already supported by *netsim-tools* to a new virtualizat
 
 ## Final Steps
 
-* Fix the documentation (at least **install.md** and **platforms.md** documents)
-* Submit a pull request against the latest development (**dev_xxx**) branch.
+* Fix the documentation (at least **install.md** and **platforms.md** documents).
+* Make sure you created at least one test topology in `tests/integration` directory.
+* Submit a pull request against the **dev** branch.

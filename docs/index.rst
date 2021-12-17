@@ -77,5 +77,12 @@ Getting Started
 
    release.rst
    caveats.md
-   contribute.md
+..
+
+.. toctree::
+   :caption: Developers
+   :maxdepth: 2
+   :hidden:
+
+   dev/guidelines.md
 ..
