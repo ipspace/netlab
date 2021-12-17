@@ -39,8 +39,9 @@ def inventory(name: str) -> typing.Optional[dict]:
   except:
     try:
       subprocess.run(['ansible-inventory','-h'],capture_output=True,check=True)
-    except:
-      common.fatal('Cannot execute ansible-inventory','inventory')
+    except Exception as ex:
+      common.fatal(f'Cannot execute ansible-inventory command\n  {ex}','inventory')
+
     common.fatal('Cannot get Ansible inventory data for %s with ansible-inventory. Is the host name correct?' % name,'inventory')
 
   return None
@@ -59,5 +60,5 @@ def playbook(name: str, args: typing.List[str]) -> None:
 
   try:
     subprocess.check_call(cmd)
-  except:
-    common.fatal("Ansible playbook failed")
+  except Exception as ex:
+    common.fatal(f"Executing Ansible playbook {pbname} failed:\n  {ex}")
