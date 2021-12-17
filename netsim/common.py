@@ -157,6 +157,8 @@ def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
     return
   if not k_list[0] in b:
     b[k_list[0]] = {}
+  elif b[k_list[0]] is None:
+    b[k_list[0]] = {}
   set_dots(b[k_list[0]],k_list[1:],v)
 
 #
