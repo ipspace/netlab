@@ -84,5 +84,8 @@ class _Provider(Callback):
     else:
       output.write("\n")
 
-  def start_lab(self, topology: Box) -> None:
+  def post_start_lab(self, topology: Box) -> None:
+    pass
+
+  def pre_start_lab(self, topology: Box) -> None:
     pass
