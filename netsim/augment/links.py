@@ -11,8 +11,24 @@ from box import Box
 from .. import common
 from .. import addressing
 
-link_attr_base = [ 'bridge','type','linkindex','role','name','bandwidth' ] # Attributes that are copied from links to interfaces
-link_attr_full = [ 'prefix' ]                                              # Extra link attributes that are not copied
+def get_link_full_attributes(defaults: Box) -> set:
+  attributes = defaults.get('attributes',{})
+  user = attributes.get('link',[])
+  internal = attributes.get('link_internal',[])
+
+  set_attributes = set(user).union(set(internal))
+  if 'module' in defaults:
+    set_attributes = set_attributes.union(set(defaults.module))
+
+  if 'link_attr' in defaults:
+    set_attributes = set_attributes.union(set(defaults.link_attr))
+
+  return set_attributes
+
+def get_link_base_attributes(defaults: Box) -> set:
+  attributes = defaults.get('attributes',{})
+  no_propagate = attributes.get('link_no_propagate')
+  return get_link_full_attributes(defaults) - set(no_propagate)
 
 def adjust_link_list(links: typing.Optional[typing.List[typing.Any]]) -> typing.Optional[typing.List[typing.Dict]]:
   link_list = []
@@ -49,11 +65,13 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> int:
 
 # Add common interface data to node ifaddr structure
 #
-def interface_data(link: Box, link_attr: typing.List[str], ifdata: Box) -> Box:
+def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
   for k in link_attr:
     if k in link:
-      ifdata[k] = link[k]
-
+      if not k in ifdata:
+        ifdata[k] = link[k]
+      elif isinstance(link[k],dict) and isinstance(ifdata[k],dict):
+        ifdata[k] = link[k] + ifdata[k]
   return ifdata
 
 #
@@ -68,9 +86,8 @@ def ifaddr_add_module(ifaddr: Box, link: Box, module: Box) -> None:
       if m in link:
         ifaddr[m] = link[m]
 
-def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.Optional[Box] = None) -> None:
-  if not defaults:
-    defaults = Box({})
+def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
+  link_attr_base = get_link_base_attributes(defaults)
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
   else:
@@ -85,6 +102,9 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
       if value is None:
         value = Box({},default_box=True)
 
+      if not isinstance(value,dict):
+        common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
+        continue
       for af,pfx in pfx_list.items():
         if not value[af]:
           ip = netaddr.IPNetwork(pfx[ndict[node].id])
@@ -92,7 +112,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
           try:
             ip = netaddr.IPNetwork(value[af])
           except:
-            common.error('Invalid %s link address for node %s: %s' % (af,node,value[af]))
+            common.error('Invalid %s link address for node %s: %s' % (af,node,value[af]),common.IncorrectValue,'links')
             continue
 
         if ip.first == ip.last:
@@ -102,8 +122,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
 
       link[node] = value
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
-      if isinstance(value,Box):
-        ifaddr = ifaddr + value
+      ifaddr = ifaddr + value
 
       if link.type != "stub":
         n_list = filter(lambda n: n in ndict and n != node,link.keys())
@@ -124,7 +143,8 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
     ifindex = len(ndict[node].links) - 1
     ndict[node].links[ifindex] = interfaces[node]
 
-def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.Optional[Box] = None) -> typing.Optional[Box]:
+def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
+  link_attr_base = get_link_base_attributes(defaults)
   if not defaults:
     defaults = Box({})
   if 'prefix' in link:
@@ -132,7 +152,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
   else:
     pool = addressing.get_pool(addr_pools,[link.get('role'),'p2p','lan'])
     if pool is None:
-      common.error("Cannot get addressing pool for P2P link: %s" % str(link))
+      common.error("Cannot get addressing pool for P2P link: %s" % str(link),common.MissingValue,'links')
       return None
 
     pfx_list = addressing.get_pool_prefix(addr_pools,pool)
@@ -153,6 +173,10 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
       if value is None:
         value = Box({},default_box=True)
 
+      if not isinstance(value,dict):
+        common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
+        continue
+
       for af,pfx in pfx_list.items():
         ip = netaddr.IPNetwork(pfx[ecount+1])
         ip.prefixlen = pfx.prefixlen
@@ -160,13 +184,12 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
         ifaddr[af] = value[af]
 
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
-      if isinstance(value,Box):
-        ifaddr = ifaddr + value
+      ifaddr = ifaddr + value
       link[node] = value
       nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
   if len(nodes) > len(end_names):
-    print("Too many nodes specified on a P2P link")
+    common.error("Too many nodes specified on a P2P link",common.IncorrectValue,'links')
     return None
 
   for i in range(0,len(nodes)):
@@ -203,13 +226,12 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: typing.O
 
   return link
 
-def check_link_attributes(data: Box, nodes: typing.Optional[dict] = None, valid: typing.Optional[typing.List] = None) -> bool:
+def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
   nodes = nodes or {}
-  valid = valid or []
   ok = True
   for k in data.keys():
     if k not in nodes and k not in valid:
-      common.error("Invalid link attributes '%s' in %s" % (k,data))
+      common.error("Invalid link attributes '%s' in %s" % (k,data),common.IncorrectValue,'links')
       ok = False
 
   return ok
@@ -239,23 +261,23 @@ def check_link_type(data: Box, nodes: dict) -> bool:
   link_type = data.get('type')
 
   if not link_type:
-    common.fatal('Link type still undefined in check_link_type: %s' % data)
+    common.fatal('Link type still undefined in check_link_type: %s' % data,'links')
     return False
 
   if node_cnt == 0:
-    common.error('No valid nodes on link %s' % data)
+    common.error('No valid nodes on link %s' % data,common.MissingValue,'links')
     return False
 
   if link_type == 'stub' and node_cnt > 1:
-    common.error('More than one node connected to a stub link: %s' % data)
+    common.error('More than one node connected to a stub link: %s' % data,common.IncorrectValue,'links')
     return False
 
   if link_type == 'p2p' and node_cnt != 2:
-    common.error('Point-to-point link needs exactly two nodes: %s' % data)
+    common.error('Point-to-point link needs exactly two nodes: %s' % data,common.IncorrectValue,'links')
     return False
 
   if not link_type in [ 'stub','p2p','lan']:
-    common.error('Invalid link type %s: %s' % (link_type,data))
+    common.error('Invalid link type %s: %s' % (link_type,data),common.IncorrectValue,'links')
     return False
   return True
 
@@ -263,11 +285,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, ndict: dict, pools
   if not link_list:
     return None
 
-  link_attr_base.extend(defaults.get('link_attr',[]))
-  link_attr_full.extend(link_attr_base)
-  if 'module' in defaults:
-    link_attr_full.extend(defaults.module)
-
+  link_attr_full = get_link_full_attributes(defaults)
   linkindex = defaults.get('link_index',1)
 
   for link in link_list:

@@ -149,6 +149,24 @@ def null_to_string(d: typing.Dict) -> None:
       d[k] = ""
 
 #
+# must_be_list: make sure an attribute is a list. Convert scalar values to list if
+#   needed, report an error otherwise
+#
+def must_be_list(parent: Box, key: str, path: str) -> None:
+  if not key in parent:
+    parent[key] = []
+    return
+
+  if isinstance(parent[key],list):
+    return
+
+  if isinstance(parent[key],(str,int,float,bool)):
+    parent[key] = [ parent[key] ]
+    return
+
+  error(f'attribute {path} must be a scalar or a list, found {type(parent[key])}',IncorrectValue)
+
+#
 # Set a dictionary value specified by a list of keys
 #
 def set_dots(b : dict,k_list : list,v : typing.Any) -> None:

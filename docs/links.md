@@ -45,7 +45,7 @@ A dictionary describing an individual link contains *node names* as well as *add
 
 [^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
 
-Links could contain [additional attributes](#custom-attributes-in-node-and-link-data) like *delay* and [module-specific attributes](modules.md#module-specific-node-and-link-attributes). Additional (custom) attributes have to be defined in **defaults.link_attr** list to differentiate them from misspelled node names. 
+Links could contain [additional attributes](#custom-attributes-in-link-and-interface-data) like *delay* (see [custom attributes](extend-attributes.md) for more details). Links could also contain [module-specific attributes](modules.md#module-specific-node-and-link-attributes); for details read the documentation of individual configuration modules.
 
 ### Example
 
@@ -443,7 +443,7 @@ E2 node data contains the following interface data:
   name: e2
 ```
 
-## Custom Attributes in Node and Link Data
+## Custom Attributes in Link and Interface Data
 
 Custom attributes specified in link data are retained in the link data and copied directly into node interface data.
 

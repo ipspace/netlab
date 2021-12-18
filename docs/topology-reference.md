@@ -35,4 +35,5 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    modules.md
    plugins.md
    defaults.md
+   extend-attributes.md
 ```

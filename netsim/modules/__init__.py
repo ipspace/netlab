@@ -15,7 +15,7 @@ from ..augment.nodes import rebuild_nodes_map
 
 # List of attributes we don't want propagated from defaults to global/node
 #
-no_propagate_list = ["attributes","requires","supported_on","no_propagate"]
+no_propagate_list = ["attributes","extra_attributes","requires","supported_on","no_propagate"]
 
 class _Module(Callback):
 

@@ -13,8 +13,11 @@ from .. import modules
 def transform_setup(topology: Box) -> None:
   augment.plugin.init(topology)
   augment.plugin.execute('init',topology)
+  augment.topology.extend_attribute_list(topology.defaults)
+  augment.topology.extend_module_attribute_list(topology)
   augment.topology.check_required_elements(topology)
   augment.topology.adjust_global_parameters(topology)
+  augment.topology.check_global_elements(topology)
   topology.Provider = _Provider.load(topology.provider,topology.defaults.providers[topology.provider])
   common.exit_on_error()
 

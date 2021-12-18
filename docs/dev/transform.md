@@ -14,12 +14,14 @@ The data transformation has three major steps:
 * Read customer and system [default settings](../defaults.md) (`topology-defaults.yml`) and [merge them](../defaults.md#deep-merging) with the topology file (`netsim.read_topology.load`)
 * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
 * Execute plugin **init** hook (`netsim.augment.plugin.execute`)
-* Check for presence of required top-level topology elements and validate top-level elements (`netsim.augment.topology.check_required_elements`)
+* Extend **default.attributes** with **default.extra_attributes** (`netsim.augment.topology.extend_attribute_list`)
+* Check for presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 * Adjust global parameters (`netsim.augment.topology.adjust_global_parameters`):
 
   * Set `provider` top-level element
   * Merge provider-specific device and addressing defaults with global defaults
 
+* Validate top-level topology elements (`netsim.augment.topology.check_global_elements`)
 * Load provider plugin (`netsim.providers._Provider.load`)
 * Adjust the list of nodes -- transform [list of strings](nodes.md#list-of-strings) or [dictionary of nodes](nodes.md#dictionary-of-nodes) into list of node objects (dictionaries) (`netsim.augment.nodes.adjust_node_list`)
 * Adjust the list of links -- transform [strings or lists of nodes](links.md#link-formats-example) into link dictionaries (`netsim.augment.links.adjust_link_list`)
