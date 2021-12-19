@@ -149,8 +149,19 @@ def null_to_string(d: typing.Dict) -> None:
       d[k] = ""
 
 #
-# must_be_list: make sure an attribute is a list. Convert scalar values to list if
-#   needed, report an error otherwise
+# must_be_list: make sure a dictionary value is a list. Convert scalar values
+#   to list if needed, report an error otherwise.
+#
+# Input arguments:
+#   parent - the parent dictionary of the attribute we want to listify
+#            (a pointer to the element would be even better, but Python)
+#   key    - the parent dictionary key
+#   path   - path of the parent dictionary that would help the user identify
+#            where the problem is
+#
+# Sample use: make sure the 'config' attribute of a node is list
+#
+#    must_be_list(node,'config',f'nodes.{node.name}')
 #
 def must_be_list(parent: Box, key: str, path: str) -> typing.Optional[list]:
   if not key in parent:
