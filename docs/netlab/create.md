@@ -97,3 +97,28 @@ $ netlab create -d iosv -p libvirt -s ospf.area=123
 ```
 
 ... you'll get a Vagrant file using *vagrant-libvirt* plugin that will create a lab with three Cisco IOS routers. OSPF configuration of those routers will use area 123.
+
+### Setting Node Parameters
+
+The `--set` CLI parameter can set a scalar value (number, string, True/False) anywhere within the topology file dictionary hierarchy but cannot set parameters within lists. If you want to set parameters for individual nodes you have to use the [dictionary format](../nodes.md#dictionary-of-nodes) of the **nodes** top-level element.
+
+Example: Assume you want to test OSPF interoperability between Cumulus Linux and other device types. Create a topology file as above, but specify nodes as a dictionary:
+
+```
+defaults:
+  device: cumulus
+
+module: [ ospf ]
+
+nodes:
+  s1:
+  s2:
+  s3:
+links: [ s1-s2, s2-s3 ]
+```
+
+Now you can use the `--set nodes.sx.device` CLI parameter to change the device type of any node in the lab. To change S1 to Cisco IOS, use:
+
+```
+$ netlab up -s nodes.s1.device=iosv
+```

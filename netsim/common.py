@@ -9,15 +9,15 @@ import argparse
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 from box import Box
 
-LOGGING=False
-VERBOSE=False
-DEBUG=False
-QUIET=False
+LOGGING : bool = False
+VERBOSE : int = 0
+DEBUG : bool = False
+QUIET : bool = False
 
-RAISE_ON_ERROR=False
-WARNING=False
+RAISE_ON_ERROR : bool = False
+WARNING : bool = False
 
-err_count = 0
+err_count : int = 0
 
 class MissingValue(Warning):
   pass
@@ -73,9 +73,9 @@ def template(j2: str , data: typing.Dict, path: str) -> str:
   template = ENV.get_template(j2)
   return template.render(**data)
 
-def set_verbose() -> None:
+def set_verbose(value: typing.Optional[int] = 1) -> None:
   global VERBOSE
-  VERBOSE=True
+  VERBOSE = 0 if value is None else value
 
 def print_verbose(t: typing.Any) -> None:
   if VERBOSE:
@@ -90,7 +90,7 @@ def set_logging_flags(args: argparse.Namespace) -> None:
   global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR
   
   if args.verbose:
-    VERBOSE = True
+    VERBOSE = args.verbose
 
   if args.logging:
     LOGGING = True
@@ -115,7 +115,7 @@ def set_logging_flags(args: argparse.Namespace) -> None:
 def set_flag(
       debug: typing.Optional[bool] = None,
       quiet: typing.Optional[bool] = None,
-      verbose: typing.Optional[bool] = None,
+      verbose: typing.Optional[int] = None,
       logging: typing.Optional[bool] = None,
       warning: typing.Optional[bool] = None,
       raise_error: typing.Optional[bool] = None) -> dict:
@@ -149,6 +149,24 @@ def null_to_string(d: typing.Dict) -> None:
       d[k] = ""
 
 #
+# must_be_list: make sure an attribute is a list. Convert scalar values to list if
+#   needed, report an error otherwise
+#
+def must_be_list(parent: Box, key: str, path: str) -> None:
+  if not key in parent:
+    parent[key] = []
+    return
+
+  if isinstance(parent[key],list):
+    return
+
+  if isinstance(parent[key],(str,int,float,bool)):
+    parent[key] = [ parent[key] ]
+    return
+
+  error(f'attribute {path} must be a scalar or a list, found {type(parent[key])}',IncorrectValue)
+
+#
 # Set a dictionary value specified by a list of keys
 #
 def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
@@ -156,6 +174,8 @@ def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
     b[k_list[0]] = v
     return
   if not k_list[0] in b:
+    b[k_list[0]] = {}
+  elif b[k_list[0]] is None:
     b[k_list[0]] = {}
   set_dots(b[k_list[0]],k_list[1:],v)
 

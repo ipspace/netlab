@@ -1,5 +1,5 @@
 #
-# Create Ansible inventory
+# Create YAML or JSON output
 #
 import typing
 
