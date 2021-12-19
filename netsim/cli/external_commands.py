@@ -66,7 +66,7 @@ def start_lab(settings: Box, provider: str, step: int = 2) -> None:
     common.fatal("%s failed, aborting..." % cmd,"test")
 
 def deploy_configs(step : int = 3) -> None:
-  print_step(step,f"deploying initial device configurations common.VERBOSE={common.VERBOSE}")
+  print_step(step,"deploying initial device configurations")
   cmd = ["netlab","initial"]
   if common.VERBOSE:
     cmd.append("-" + "v" * common.VERBOSE)

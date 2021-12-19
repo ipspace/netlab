@@ -59,5 +59,5 @@ def playbook(name: str, args: typing.List[str]) -> None:
 
   try:
     subprocess.check_call(cmd)
-  except Exception as ex:
-    common.fatal(f"Ansible playbook failed: {ex}")
+  except:
+    common.fatal("Ansible playbook failed")
