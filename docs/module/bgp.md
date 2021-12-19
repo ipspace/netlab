@@ -1,6 +1,6 @@
 # BGP Configuration Module
 
-This configuration module configures BGP routing process and BGP neighbors on Cisco IOS, Cisco Nexus-OS, Nokia SR OS and SR Linux, Arista EOS and Junos.
+This configuration module configures BGP routing process and BGP neighbors on Cisco IOS, Cisco Nexus-OS, Arista EOS and Junos.
 
 Supported features:
 
@@ -39,7 +39,7 @@ bgp:
       members: [ e1 ]
     65002:
       members: [ e2 ]
-```
+``` 
 
 When you're building a network with a single BGP autonomous system, it might be simpler to specify the default value of BGP AS number in **bgp.as** parameter instead of listing all nodes within that autonomous system. When using this approach, specify the list of route reflectors in **bgp.rr_list** parameter.
 
@@ -109,7 +109,7 @@ links:
   pe2:
   bgp:
     advertise: true
-```
+``` 
 
 * If you set **bgp.advertise** parameter within a node connected to a link, only that node advertises the link prefix. In the following example, only PE1 advertises the link prefix:
 
@@ -120,7 +120,7 @@ links:
     bgp:
       advertise: true
   pe2:
-```
+``` 
 
 * You can change the default prefix advertisement rules with the  **defaults.bgp.advertise_roles** list. The system default value of that variable is **[ stub ]**. For example, to advertise LAN (multi-access) and stub prefixes, use the following setting:
 
@@ -128,7 +128,7 @@ links:
 defaults:
   bgp:
     advertise_roles: [ lan, stub ]
-```
+``` 
 
 
 ## BGP Sessions
@@ -218,7 +218,7 @@ nodes:
 
 ```
 bgp:
-  community:
+  community: 
     ibgp: [standard, extended]
     ebgp: [standard]
 ```
