@@ -21,7 +21,6 @@ The data transformation has three major steps:
   * Set `provider` top-level element
   * Merge provider-specific device and addressing defaults with global defaults
 
-* Validate top-level topology elements (`netsim.augment.topology.check_global_elements`)
 * Load provider plugin (`netsim.providers._Provider.load`)
 * Adjust the list of nodes -- transform [list of strings](nodes.md#list-of-strings) or [dictionary of nodes](nodes.md#dictionary-of-nodes) into list of node objects (dictionaries) (`netsim.augment.nodes.adjust_node_list`)
 * Adjust the list of links -- transform [strings or lists of nodes](links.md#link-formats-example) into link dictionaries (`netsim.augment.links.adjust_link_list`)
@@ -37,6 +36,10 @@ The data transformation has three major steps:
 	* Validate group data structures
 	* Use node-level **group** parameter to adjust group members
 	* Copy group-level **node_data** settings into all member nodes
+
+* Validate top-level topology elements[^VTE] (`netsim.augment.topology.check_global_elements`)
+
+[^VTE]: Top-level elements have to be validated after the configuration modules have been initialized. See Issue#61 for details.
 
 ## Node Data Transformation
 

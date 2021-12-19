@@ -17,7 +17,6 @@ def transform_setup(topology: Box) -> None:
   augment.topology.extend_module_attribute_list(topology)
   augment.topology.check_required_elements(topology)
   augment.topology.adjust_global_parameters(topology)
-  augment.topology.check_global_elements(topology)
   topology.Provider = _Provider.load(topology.provider,topology.defaults.providers[topology.provider])
   common.exit_on_error()
 
@@ -33,6 +32,7 @@ def transform_data(topology: Box) -> None:
   modules.pre_transform(topology)
 
   augment.groups.adjust_groups(topology)
+  augment.topology.check_global_elements(topology)
 
   augment.plugin.execute('pre_node_transform',topology)
   ndict = augment.nodes.transform(topology,topology.defaults,topology.pools)
