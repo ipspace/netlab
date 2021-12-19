@@ -102,7 +102,11 @@ def run(cli_args: typing.List[str]) -> None:
   external_commands.run_probes(settings,args.provider,1)
   copy_topology(args)
   create_configs()
-  external_commands.start_lab(settings,args.provider,3)
-  external_commands.deploy_configs(4)
-  external_commands.stop_lab(settings,args.provider,5)
+  if not external_commands.run_command('netlab up'):
+    common.fatal('netlab up failed, aborting','test')
+  elif not external_commands.run_command('netlab down'):
+    common.fatal('netlab down failed','test')
+#  external_commands.start_lab(settings,args.provider,3)
+#  external_commands.deploy_configs(4)
+#  external_commands.stop_lab(settings,args.provider,5)
   cleanup_working_directory(args)
