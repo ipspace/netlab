@@ -152,19 +152,20 @@ def null_to_string(d: typing.Dict) -> None:
 # must_be_list: make sure an attribute is a list. Convert scalar values to list if
 #   needed, report an error otherwise
 #
-def must_be_list(parent: Box, key: str, path: str) -> None:
+def must_be_list(parent: Box, key: str, path: str) -> typing.Optional[list]:
   if not key in parent:
     parent[key] = []
-    return
+    return parent[key]
 
   if isinstance(parent[key],list):
-    return
+    return parent[key]
 
   if isinstance(parent[key],(str,int,float,bool)):
     parent[key] = [ parent[key] ]
-    return
+    return parent[key]
 
-  error(f'attribute {path} must be a scalar or a list, found {type(parent[key])}',IncorrectValue)
+  error(f'attribute {path}.{key} must be a scalar or a list, found {type(parent[key])}',IncorrectValue)
+  return None
 
 #
 # Set a dictionary value specified by a list of keys

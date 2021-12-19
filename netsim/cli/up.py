@@ -40,6 +40,14 @@ def run(cli_args: typing.List[str]) -> None:
   if 'groups' in topology:
     for gname,gdata in topology.groups.items():
       if 'config' in gdata:
-        for template in gdata.config:
-          external_commands.custom_configs(template,gname,step,"netlab up")
+        if common.must_be_list(gdata,'config',f'groups.{gname}'):
+          for template in gdata.config:
+            external_commands.custom_configs(template,gname,step,"netlab up")
+            step = step + 1
+
+  for n in topology.nodes:
+    if 'config' in n:
+      if common.must_be_list(n,'config',f'nodes.{n.name}'):
+        for template in n.config:
+          external_commands.custom_configs(template,n.name,step,"netlab up")
           step = step + 1
