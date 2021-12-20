@@ -1,0 +1,39 @@
+{% set pid = ospf.process|default(0) %}
+{% set area = ospf.area|default("0.0.0.0") %}
+/configure router router-id {{ loopback['ipv4']|ipaddr('address') }}
+/configure router ospf {{ pid }}
+
+version ospf-v2
+admin-state enable
+max-ecmp-paths 64
+
+{% if ospf.reference_bandwidth is defined %}
+# auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+
+area {{ area }}
+interface lo0.0 passive true
+exit
+
+{% for l in links|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+area {{ l.ospf.area|default(area) }}
+ interface {{ l.ifname }}.0 passive true
+exit
+{% endfor %}
+
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+# OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+area {{ l.ospf.area|default(area) }}
+interface {{ l.ifname }}.0
+{%     if l.type|default("") == "p2p" %}
+interface-type point-to-point
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+ # ip ospf cost {{ l.ospf.cost }}
+{%     endif %}
+exit
+exit
+{%   endif %}
+{% endfor %}

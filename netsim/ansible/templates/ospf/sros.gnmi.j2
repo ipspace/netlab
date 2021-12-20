@@ -1,0 +1,45 @@
+{% set pid = ospf.process|default(0) %}
+{% set area = ospf.area|default("0.0.0.0") %}
+
+{% macro if_name(n) -%}
+{{- ('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s')|format(n.ifname) -}}
+{%- endmacro %}
+
+updates:
+- path: configure/router[router-name=Base]
+  val:
+   router-id: "{{ loopback['ipv4']|ipaddr('address') }}"
+   ospf:
+   - ospf-instance: {{ pid }}
+{% if ospf.reference_bandwidth is defined %}
+     reference-bandwidth: {{ ospf.reference_bandwidth }}
+{% endif %}
+     admin-state: enable
+     area:
+     - area-id: "{{ area }}"
+       interface:
+       - interface-name: "Loopback0"
+         passive: True
+{% for l in links|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+     - area-id: "{{ l.ospf.area|default(area) }}"
+       interface:
+       - interface-name: "{{ if_name(l) }}"
+         passive: True
+{% endfor %}
+{# Add link interfaces #}
+{% for l in links|default([]) %}
+{%   if "external" in l.role|default("") %}
+# OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+     - area-id: "{{ l.ospf.area|default(area) }}"
+       interface:
+       - interface-name: "{{ if_name(l) }}"
+         mtu: 1500 # SRL defaults to 1500
+{%       if l.type|default("") == "p2p" %}
+         interface-type: point-to-point
+{%       endif %}
+{%       if l.ospf.cost is defined %}
+         metric: {{ l.ospf.cost }}
+{%       endif %}
+{%   endif %}
+{% endfor %}

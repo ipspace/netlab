@@ -1,0 +1,77 @@
+{% macro community(list) -%}
+{{ "BOTH" if list|length >= 2 else ("NONE" if list|length==0 else list[0]|upper) }}
+{%- endmacro %}
+
+updates:
+- path: openconfig-network-instance:network-instances/network-instance[name=Base]/protocols
+  val:
+   protocol:
+   - identifier: "BGP"
+     name: "0"
+     config:
+      identifier: "BGP"
+      name: "0"
+      enabled: True
+     bgp:
+      global:
+       use-multiple-paths:
+        ebgp:
+         config:
+          maximum-paths: 64
+        ibgp:
+         config:
+          maximum-paths: 64
+       config:
+        as: {{ bgp.as }}
+      peer-groups:
+       peer-group:
+{%     for c in ['ebgp','ibgp'] %}
+       - peer-group-name: "{{c}}"
+         apply-policy:
+          config:
+           import-policy: [ "accept_all" ]
+           export-policy: [ "accept_all" ]
+{%       if bgp.community[c]|default([]) %}
+         config:
+          peer-group-name: "{{c}}"
+          send-community: "{{ community(bgp.community[c]) }}"
+{%       endif %}
+{%       if bgp.rr|default(0)|bool and c=='ibgp' %}
+         route-reflector:
+          config:
+           route-reflector-cluster-id: "{{ loopback.ipv4|ipaddr('address') }}"
+{%       endif %}
+{%     endfor %}
+
+      neighbors:
+       neighbor:
+{%     for n in bgp.neighbors %}
+{%      for af in ['ipv4','ipv6'] if n[af] is defined %}
+       - neighbor-address: "{{ n[af] }}"
+         config:
+           neighbor-address: "{{ n[af] }}"
+           description: "{{ n.name }}"
+           peer-as: {{ n.as }}
+           peer-group: "{{ n.type }}"
+{%       if n.type=='ibgp' %}
+         transport:
+          config:
+            local-address: "{{ loopback[af]|ipaddr('address') }}"
+{%       endif %}
+{%      endfor %}
+{%     endfor %}
+
+- path: openconfig-routing-policy:routing-policy/policy-definitions
+  val:
+   policy-definition:
+   - name: accept_all
+     config:
+      name: accept_all
+     statements:
+      statement:
+      - name: "10"
+        config:
+         name: "10"
+        actions:
+         config:
+          policy-result: ACCEPT_ROUTE

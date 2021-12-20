@@ -1,0 +1,100 @@
+{# This logic is not used, just for completeness #}
+
+{#
+   Global BGP neighbor definition
+#}
+{% macro neighbor_global(n,ip) %}
+  neighbor {{ ip }}
+   description {{ n.name }}
+   peer-group {{ n.type }}
+{% if n.type != 'ibgp' %}
+   peer-as {{ n.as }}
+{% endif %}
+  exit
+{%- endmacro %}
+
+/network-instance default protocols bgp
+autonomous-system {{ bgp.as }}
+router-id {{ loopback['ipv4']|ipaddr('address') }}
+ipv4-unicast admin-state disable
+ebgp-default-policy export-reject-all false
+ebgp-default-policy import-reject-all false
+{#
+    Configure BGP Groups
+#}
+{% for g in ['ibgp','ebgp'] %}
+group {{g}} {
+ admin-state enable
+ peer-as {{ bgp.as }}
+ next-hop-self {{ bgp.next_hop_self|default(false)|lower }}
+ timers {
+  connect-retry 1
+  minimum-advertisement-interval 1
+ }
+
+{% if bgp.community[g]|default([]) %}
+{% set list = bgp.community[g] %}
+send-community standard {{ 'true' if 'standard' in list or 'both' in list else 'false' }}
+send-community large {{ 'true' if 'large' in list else 'false' }}
+{% endif %}
+
+{#
+    Configure iBGP Route Reflection
+#}
+{% if g=='ibgp' and bgp.rr|default(0)|bool %}
+ route-reflector {
+  cluster-id {{ loopback['ipv4']|ipaddr('address') }}
+  client true
+ }
+ next-hop-self false
+{% endif %}
+}
+{% endfor %}
+
+{#
+    Configure IPv4 and IPv6 BGP neighbors
+#}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     neighbor_global(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+
+{# Configure BGP address families #}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ # address-family {{ af }}
+ {{ af }}-unicast admin-state enable multipath max-paths-level-1 64 max-paths-level-2 64
+
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+{# {{     bgp_network(af,loopback[af]) }} #}
+{%   endif %}
+
+{% for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+{# {{     bgp_network(af,l[af]) }} #}
+{%   endfor %}
+{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{# {{     bgp_network(af,pfx) }} #}
+{%   endfor %}
+
+{% for n in bgp.neighbors if n[af] is defined %}
+{% if n.type == 'ibgp' %}
+  neighbor {{ n[af] }} transport local-address {{ loopback[af]|default('')|ipaddr('address') }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+{#
+  Define default import/export policies for iBGP and eBGP: accept all
+#}
+/routing-policy policy accept-all default-action accept
+/network-instance default protocols bgp group ebgp import-policy accept-all export-policy accept-all
+/network-instance default protocols bgp group ibgp import-policy accept-all export-policy accept-all
+
+{#
+  Add extra IPv4 prefixes using static blackhole routes, add to export
+#}
+/network-instance default next-hop-groups group blackhole blackhole set generate-icmp true
+{% for pfx in bgp.originate|default([]) %}
+/network-instance default static-routes route {{ pfx }} next-hop-group blackhole
+/routing-policy prefix-set external_routes prefix {{ pfx }} mask-length-range exact
+{% endfor %}
