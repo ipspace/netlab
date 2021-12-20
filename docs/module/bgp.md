@@ -109,7 +109,7 @@ links:
   pe2:
   bgp:
     advertise: true
-``` 
+```
 
 * If you set **bgp.advertise** parameter within a node connected to a link, only that node advertises the link prefix. In the following example, only PE1 advertises the link prefix:
 
@@ -120,7 +120,7 @@ links:
     bgp:
       advertise: true
   pe2:
-``` 
+```
 
 * You can change the default prefix advertisement rules with the  **defaults.bgp.advertise_roles** list. The system default value of that variable is **[ stub ]**. For example, to advertise LAN (multi-access) and stub prefixes, use the following setting:
 
@@ -128,8 +128,21 @@ links:
 defaults:
   bgp:
     advertise_roles: [ lan, stub ]
-``` 
+```
 
+### Using bgp.originate Node Attribute
+
+If you set **bgp.originate** parameter on a node, the node will advertise the prefix in to BGP via a network statement, and create a static route for the prefix with a nexthop set to *Null0*.
+
+```
+nodes:
+...
+  pe1:
+    module: [bgp]
+    bgp:
+      originate:
+        - "172.16.0.0/19"
+```
 
 ## BGP Sessions
 

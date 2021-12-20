@@ -49,6 +49,27 @@ groups:
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
 
+The **config** parameter can also be specified on individual nodes, for example:
+
+```
+defaults:
+  device: cumulus
+
+module: [ ospf ]
+
+nodes:
+  s1:
+  s2:
+  s3:
+    config: [ something-special.j2 ]
+
+links: [ s1-s2, s2-s3 ]
+```
+
+```{tip}
+A **netlab config** command is executed by **netlab up** process for every template in every **config** parameter, regardless of whether it's specified on a group or a node. Excessive use of **config** parameters might thus result in slower lab deployment.
+```
+
 ## Group Variables
 
 Group definition could include group variables in the **vars** element. Group variables are a dictionary of name/value pairs:

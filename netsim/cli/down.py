@@ -44,5 +44,5 @@ def run(cli_args: typing.List[str]) -> None:
   common.exit_on_error()
 
   settings = topology.defaults
-  external_commands.run_probes(settings,topology.provider)
-  external_commands.stop_lab(settings,topology.provider,1)
+  external_commands.run_probes(settings,topology.provider,1)
+  external_commands.stop_lab(settings,topology.provider,2,"netlab down")

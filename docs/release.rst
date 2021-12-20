@@ -1,6 +1,16 @@
 Release notes
 =============
 
+2021-12-19 (release 1.0.5)
+  * Custom deployment templates for individual nodes
+  * Support for vagrant-libvirt 0.7.0
+  * Support for more than 10 lab devices under libvirt
+  * Extendable topology-, link- and module parameters
+  * Automatic creation of vagrant-libvirt management network
+  * Bug fixes
+
+  :doc:`More details <release/1.0>`
+
 2021-12-11 (release 1.0.4)
   * Fortinet configuration (IPv4, IPv6, OSPF)
   * Links without IP addressing

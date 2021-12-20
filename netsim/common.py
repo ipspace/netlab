@@ -149,6 +149,36 @@ def null_to_string(d: typing.Dict) -> None:
       d[k] = ""
 
 #
+# must_be_list: make sure a dictionary value is a list. Convert scalar values
+#   to list if needed, report an error otherwise.
+#
+# Input arguments:
+#   parent - the parent dictionary of the attribute we want to listify
+#            (a pointer to the element would be even better, but Python)
+#   key    - the parent dictionary key
+#   path   - path of the parent dictionary that would help the user identify
+#            where the problem is
+#
+# Sample use: make sure the 'config' attribute of a node is list
+#
+#    must_be_list(node,'config',f'nodes.{node.name}')
+#
+def must_be_list(parent: Box, key: str, path: str) -> typing.Optional[list]:
+  if not key in parent:
+    parent[key] = []
+    return parent[key]
+
+  if isinstance(parent[key],list):
+    return parent[key]
+
+  if isinstance(parent[key],(str,int,float,bool)):
+    parent[key] = [ parent[key] ]
+    return parent[key]
+
+  error(f'attribute {path}.{key} must be a scalar or a list, found {type(parent[key])}',IncorrectValue)
+  return None
+
+#
 # Set a dictionary value specified by a list of keys
 #
 def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
@@ -156,6 +186,8 @@ def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
     b[k_list[0]] = v
     return
   if not k_list[0] in b:
+    b[k_list[0]] = {}
+  elif b[k_list[0]] is None:
     b[k_list[0]] = {}
   set_dots(b[k_list[0]],k_list[1:],v)
 

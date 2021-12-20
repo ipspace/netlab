@@ -39,25 +39,38 @@ Vagrant *libvirt* provider connects management interfaces of managed VMs to *vag
 The static DHCP bindings must map MAC addresses `08:4F:A9:00:00:xx` into IP addresses `192.168.121.1xx`. The easiest way to create the virtual network and static DHCP mappings is to use the `netsim/templates/provider/libvirt/vagrant-libvirt.xml` file supplied with *netsim-tools*:
 
 * If needed, delete the existing *vagrant-libvirt* network with **virsh net-destroy vagrant-libvirt** and **virsh net-undefine vagrant-libvirt**
-* Create the management network with **virsh net-create _path_/vagrant-libvirt.xml**
+* Create the management network with **virsh net-create _path_/vagrant-libvirt.xml**. The management network is also created (if needed) every time you run **netlab up**.
 
 You could also use **virsh net-edit _vagrant-libvirt_** to edit the XML definition of your existing *vagrant-libvirt* network -- replace the exiting **ip** element with this XML snippet:
 
 ```
 <ip address='192.168.121.1' netmask='255.255.255.0'>
 	<dhcp>
-	  <range start='192.168.121.2' end='192.168.121.99'/>
-	  <host mac='08:4F:A9:00:00:01' ip='192.168.121.101'/>
-	  <host mac='08:4F:A9:00:00:02' ip='192.168.121.102'/>
-	  <host mac='08:4F:A9:00:00:03' ip='192.168.121.103'/>
-	  <host mac='08:4F:A9:00:00:04' ip='192.168.121.104'/>
-	  <host mac='08:4F:A9:00:00:05' ip='192.168.121.105'/>
-	  <host mac='08:4F:A9:00:00:06' ip='192.168.121.106'/>
-	  <host mac='08:4F:A9:00:00:07' ip='192.168.121.107'/>
-	  <host mac='08:4F:A9:00:00:08' ip='192.168.121.108'/>
-	  <host mac='08:4F:A9:00:00:09' ip='192.168.121.109'/>
-	  <host mac='08:4F:A9:00:00:10' ip='192.168.121.110'/>
-	  <host mac='08:4F:A9:00:00:11' ip='192.168.121.111'/>
+	    <range start='192.168.121.2' end='192.168.121.99'/>
+      <host mac='08:4F:A9:00:00:01' ip='192.168.121.101'/>
+      <host mac='08:4F:A9:00:00:02' ip='192.168.121.102'/>
+      <host mac='08:4F:A9:00:00:03' ip='192.168.121.103'/>
+      <host mac='08:4F:A9:00:00:04' ip='192.168.121.104'/>
+      <host mac='08:4F:A9:00:00:05' ip='192.168.121.105'/>
+      <host mac='08:4F:A9:00:00:06' ip='192.168.121.106'/>
+      <host mac='08:4F:A9:00:00:07' ip='192.168.121.107'/>
+      <host mac='08:4F:A9:00:00:08' ip='192.168.121.108'/>
+      <host mac='08:4F:A9:00:00:09' ip='192.168.121.109'/>
+      <host mac='08:4F:A9:00:00:0A' ip='192.168.121.110'/>
+      <host mac='08:4F:A9:00:00:0B' ip='192.168.121.111'/>
+      <host mac='08:4F:A9:00:00:0C' ip='192.168.121.112'/>
+      <host mac='08:4F:A9:00:00:0D' ip='192.168.121.113'/>
+      <host mac='08:4F:A9:00:00:0E' ip='192.168.121.114'/>
+      <host mac='08:4F:A9:00:00:0F' ip='192.168.121.115'/>
+      <host mac='08:4F:A9:00:00:10' ip='192.168.121.116'/>
+      <host mac='08:4F:A9:00:00:11' ip='192.168.121.117'/>
+      <host mac='08:4F:A9:00:00:12' ip='192.168.121.118'/>
+      <host mac='08:4F:A9:00:00:13' ip='192.168.121.119'/>
+      <host mac='08:4F:A9:00:00:14' ip='192.168.121.120'/>
+      <host mac='08:4F:A9:00:00:15' ip='192.168.121.121'/>
+      <host mac='08:4F:A9:00:00:16' ip='192.168.121.122'/>
+      <host mac='08:4F:A9:00:00:17' ip='192.168.121.123'/>
+      <host mac='08:4F:A9:00:00:18' ip='192.168.121.124'/>	  <host mac='08:4F:A9:00:00:01' ip='192.168.121.101'/>
 	</dhcp>
 </ip>
 ```
