@@ -13,7 +13,7 @@ from pathlib import Path
 from .. import common
 
 #
-# CLI parser for 'netlab config' command
+# CLI parser for 'netlab install' command
 #
 def install_parse(args: typing.List[str]) -> argparse.Namespace:
   moddir = Path(__file__).resolve().parent.parent

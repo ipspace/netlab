@@ -1,0 +1,50 @@
+{% macro ip_addresses(intf,ipv6_ra) %}
+{% if 'ipv4' in intf %}
+    ipv4:
+     address:
+     - ip-prefix: "{{ intf.ipv4 }}"
+       primary: [null]
+{% endif %}
+{% if 'ipv6' in intf %}
+    ipv6:
+     address:
+     - ip-prefix: "{{ intf.ipv6 }}"
+{% if ipv6_ra %}
+     router-advertisement:
+      router-role:
+       admin-state: enable            # no ipv6 nd suppress-ra
+       max-advertisement-interval: 5  # ipv6 nd ra-interval 5
+{% endif %}}
+{% endif %}
+{% endmacro %}
+
+updates:
+- path: interface[name=lo0]/subinterface[index=0]
+  val:
+{{  ip_addresses(loopback,False)  }}
+
+{% for l in links|default([]) %}
+- path: interface[name={{l.ifname}}]
+  val:
+{% if l.name is defined %}
+   description: "{{ l.name|replace('->','~') }}{{ " ("+l.role+")" if l.role is defined else '' }}"
+{% elif l.type|default("") == "stub" %}
+   description: "Stub interface"
+{% endif %}
+   subinterface:
+    index: 0
+{{  ip_addresses(l,True) }}
+{% if l.bandwidth is defined %}
+ # bandwidth {{ l.bandwidth  }}
+{% endif %}
+{% endfor %}
+
+{# Make sure the default VRF is called 'default' #}
+- path: network-instance[name=default]
+  val:
+   type: default
+   interface:
+   - name: lo0.0
+{% for l in links|default([]) %}
+   - name: {{ l.ifname }}.0
+{% endfor %}

@@ -2,15 +2,33 @@ name: {{ name }}
 
 topology:
   nodes:
-{% for n in nodes %}
+{% for n in nodes|default([]) %}
     {{ n.name }}:
       kind: {{ n.kind | default(n.device) }}
-      image: {{ n.box }}
-{%   if 'runtime' in n %}
-      runtime: {{ n.runtime }}
-{%   endif %}
-{% endfor %}
+      image: {{ n.clab['image'] if 'image' in n.clab|default({}) else n.box }}
+{% if groups is defined %}
+      group: {% for g in groups if n.name in groups[g].members %}{{'' if loop.first else ','}}{{g}}{% endfor %}
+{% endif %}
+{% if 'srl-agents' in n.clab %}
 
+      extras:
+        srl-agents: {{ n.clab['srl-agents'] }}
+{% endif %}
+
+{% if n.binds %}
+      binds:
+{% for b in n.binds %}
+      - {{ b }}
+{% endfor %}
+{% endif %}
+{% if 'runtime' in n %}
+      runtime: {{ n.runtime }}
+{% endif %}
+{% if 'license' in n %}
+      license: {{ n.license }}
+{% endif %}
+{% endfor %}
+{% if links %}
   links:
 {% for l in links %}
   - endpoints:
@@ -20,3 +38,4 @@ topology:
 {%      endfor %}
 {%    endfor %}
 {% endfor %}
+{% endif %}

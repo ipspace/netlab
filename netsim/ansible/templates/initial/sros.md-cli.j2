@@ -1,0 +1,34 @@
+{# Configure P-to-P interfaces #}
+# /configure global
+
+{% for l in links|default([]) %}
+{% set lname = l.name|replace(' -> ','-') %}
+/ configure port {{ l.ifname }} connector breakout c1-100g
+/ configure port {{ l.ifname }} admin-state enable
+/ configure port {{ l.ifname }}/1 admin-state enable
+/ configure router interface "{{ lname }}" port {{ l.ifname }}/1
+{% if l.ipv4 is defined %}
+/ configure router interface "{{ lname }}" ipv4 primary address {{ l.ipv4 }}
+{% endif %}
+{% if l.ipv6 is defined %}
+/ configure router interface "{{ lname }}" ipv6 primary address {{ l.ipv6 }}
+{% endif %}
+{% endfor %}
+
+{# Configure system interface #}
+{% if 'ipv4' in loopback %}
+/ configure router interface system ipv4 primary address {{ loopback.ipv4 }}
+
+{# policy to allow system ips - including those from neighbors #}
+/ configure policy-options prefix-list system_ip prefix {{ loopback.ipv4 }} type exact
+/ configure policy-options prefix-list system_ip prefix 0.0.0.0/0 type range start-length 32 end-length 32
+/ configure policy-options policy-statement system_ip entry 10 from prefix-list system_ip
+/ configure policy-options policy-statement system_ip entry 10 action action-type accept
+/ configure policy-options policy-statement system_ip default-action action-type reject
+
+{% endif %}
+{% if 'ipv6' in loopback %}
+/ configure router interface system ipv4 primary address {{ loopback.ipv6 }} prefix-length 128
+{% endif %}
+
+commit

@@ -1,0 +1,75 @@
+---
+- local_action:
+    module: tempfile
+    state: file
+    suffix: temp
+    prefix: ansible.srl.{{ inventory_hostname }}.
+  register: tempfile_1
+
+# Default to only gNMI based provisioning
+# - name: Set default provisioning model to use gNMI (srlinux_use_gnmi={{_use_gnmi}})
+#   vars:
+#     _use_gnmi: "{{ srlinux_use_gnmi|default(true)|bool }}"
+#   set_fact:
+#     srlinux_provisioning_model: "srlinux.{{ 'gnmi' if _use_gnmi else 'cli' }}"
+
+- local_action:
+    module: template
+    src: "{{ config_template }}"
+    dest: "{{ tempfile_1.path }}"
+
+- name: Generated gNMI config based on {{ config_template }}
+  debug:
+   msg: "SRL config: {{ lookup('file', tempfile_1.path ) }}"
+
+# - block:
+#   - name: Copy CLI configuration to SRL node {{ ansible_host }} using SCP
+#     local_action:
+#       module: command
+#       cmd: "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ tempfile_1.path }} linuxadmin@{{ ansible_host }}:{{ cfg_file }}"
+#
+#   # Uses 'docker' connection plugin to insert CLI config
+#   - name: Apply CLI configuration from {{ tempfile_1.path }}
+#     shell: "sr_cli -ed --post 'commit save' < {{ cfg_file }}"
+#
+#   when: "srlinux_provisioning_model == 'srlinux.cli'"
+#   vars:
+#     cfg_file: "/home/linuxadmin/{{ template_to_use|regex_replace('[\\./]','_') }}.cli"
+
+  # - name: Wait up to 30s for gNMI(TCP {{ansible_port}}) to be ready on {{ ansible_host }}
+  #   # vars:
+  #   #  ansible_connect_timeout: 60 # Increase from default 30
+  #   wait_for:
+  #     port: "{{ ansible_port }}"
+  #     host: "{{ ansible_host }}"
+  #     connect_timeout: 30
+  #     timeout: 30
+  #     sleep: 5 # Wait 5s between attempts
+  # - debug: var=hostvars
+- name: Update SRL node configuration (gNMI SET template={{config_template}},CA={{ansible_root_certificates_file}})
+  when: d!=[] or u!=[] or r!=[]
+  vars:
+    cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
+    d: "{{ cfg.delete | default([]) }}"
+    u: "{{ cfg.updates | default([]) }}"
+    r: "{{ cfg.replace | default([]) }}"
+    clab_base: "{{ hostname|replace('-'+inventory_hostname,'') }}"
+    clab_ca_dir: "{{ inventory_dir }}/{{ clab_base }}/ca"
+    # ansible_private_key_file: '{{ clab_ca_dir }}/{{ inventory_hostname }}/{{ inventory_hostname }}-key.pem'
+    ansible_root_certificates_file: '{{ clab_ca_dir }}/root/root-ca.pem'
+    ansible_certificate_chain_file: ''
+    # ansible_grpc_channel_options:
+    #  ssl_target_name_override: ""
+  nokia.grpc.gnmi_config:
+    delete: "{{ d }}"
+    replace: "{{ r }}"
+    update: "{{ u }}"
+  register: gnmi_set_result
+
+- debug: var=gnmi_set_result
+
+- local_action:
+    module: file
+    path: "{{ tempfile_1.path }}"
+    state: absent
+  when: tempfile_1.path is defined

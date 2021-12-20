@@ -1,0 +1,89 @@
+{% macro ip_addr(v,ip) %}
+{% set _ip = ip|ipaddr('address') %}
+{% set _pre = ip|ipaddr('prefix') %}
+ipv{{v}}:
+           addresses:
+            address:
+            - ip: "{{_ip}}"
+              config:
+               ip: "{{_ip}}"
+               prefix-length: {{ _pre }}
+{% endmacro %}
+
+{% macro interface(name,type,desc,ip_v4,ip_v6) -%}
+- path: "openconfig-interfaces:interfaces/interface[name={{name}}]"
+  val:
+    name: "{{name}}"
+    config:
+      name: "{{name}}"
+      enabled: true
+      type: "{{type}}"
+      description: "{{desc}}"
+    subinterfaces:
+      subinterface:
+      - index: 0
+        config:
+          index: 0
+          enabled: true
+{% if ip_v4|ipv4 %}
+        {{ ip_addr('4',ip_v4) }}
+{% endif %}
+{% if ip_v6|ipv6 %}
+        {{ ip_addr('6',ip_v6) }}
+{% endif %}
+{%- endmacro -%}
+
+{% macro if_in_base(name,ip_v4,ip_v6) -%}
+       id: "{{name}}.0"
+       config:
+{% set af_v4 = ["IPV4"] if ip_v4|ipv4 else [] %}
+{% set af_v6 = ["IPV6"] if ip_v6|ipv6 else [] %}
+        id: "{{name}}.0"
+        associated-address-families: {{ (af_v4+af_v6) | to_yaml }}
+        interface: "{{ name }}"
+        subinterface: 0
+{%- endmacro -%}
+
+updates:
+- path: openconfig-network-instance:network-instances/network-instance[name=Base]
+  val:
+    name: "Base"
+    config:
+      name: "Base"
+      type: "DEFAULT_INSTANCE"
+      ecmp: 64
+{% if 'ipv4' in loopback or 'ipv6' in loopback %}
+{% set v4 = loopback.ipv4|default('') %}
+{% set v6 = loopback.ipv6|default('') %}
+    interfaces:
+     interface:
+     - {{ if_in_base("Loopback0",v4,v6) }}
+{{ interface("Loopback0","softwareLoopback","loopback interface",v4,v6) }}
+{% endif %}
+{% for l in links|default([]) %}
+{% set v4 = l.ipv4|default('') %}
+{% set v6 = l.ipv6|default('') %}
+{% set ifname = l.ifname+"/1" %}
+{% if l.name is defined %}
+{% set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
+{% elif l.type|default("") == "stub" %}
+{% set desc = "Stub interface" %}
+{% endif %}
+- path: configure/port[port-id={{l.ifname}}]
+  val: { connector: { "breakout": "c1-100g" } }
+{{ interface(ifname,"ethernetCsmacd",desc,v4,v6) }}
+
+{# Add interface to the Base routing instance (default VRF) #}
+- path: openconfig-network-instance:network-instances/network-instance[name=Base]
+  val:
+    interfaces:
+     interface:
+     - {{ if_in_base(ifname,v4,v6) }}
+
+{# Enable LLDP, in the CLI this shows up under /configure port X/Y/Z ethernet lldp #}
+- path: openconfig-lldp:interfaces/interface[name={{ifname}}]
+  val:
+    config:
+     name: {{ ifname }}
+     enabled: True
+{% endfor %}

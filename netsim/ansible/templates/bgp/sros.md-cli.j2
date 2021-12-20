@@ -1,0 +1,93 @@
+{% macro community(list) -%}
+{{ "both" if list|length >= 2 else list[0] }}
+{%- endmacro %}
+{#
+   Global BGP neighbor definition
+#}
+{% macro neighbor_global(n,ip) %}
+/ configure router bgp neighbor {{ ip }}
+   description {{ n.name }}
+   peer-group {{ n.type }}
+{% if n.type != 'ibgp' %}
+   peer-as {{ n.as }}
+{% endif %}
+exit
+{%- endmacro %}
+{#
+   Address family BGP neighbor definition
+#}
+{% macro neighbor_af(n,ip) %}
+# neighbor {{ ip }} activate
+{% if n.type == 'ibgp' %}
+{%   if bgp.community.ibgp|default([]) %}
+  # neighbor {{ ip }} send-community {{ community(bgp.community.ibgp) }} true
+{%   endif %}
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+  / configure router bgp neighbor {{ ip }} next-hop-self true
+{%   endif %}
+{%   if bgp.rr|default('') and not n.rr|default('') %}
+  / configure router bgp neighbor {{ ip }} route-reflector client true
+{%   endif %}
+{% else %}{# EBGP IPv4 neighbor #}
+{%   if bgp.community.ebgp|default([]) %}
+  # neighbor {{ ip }} send-community {{ community(bgp.community.ebgp) }} true
+{%   endif %}
+{% endif %}
+{%- endmacro %}
+{#
+   BGP network statement
+#}
+{% macro bgp_network(af,pfx) %}
+{%   if af == 'ipv4' %}
+  network {{ pfx|ipaddr('network') }} mask {{ pfx|ipaddr('netmask') }}
+{%   else %}
+  network {{ pfx|ipaddr('0') }}
+{%   endif %}
+{%- endmacro %}
+
+/ configure router autonomous-system {{ bgp.as }}
+/ configure router bgp ebgp-default-reject-policy import false
+/ configure router bgp ebgp-default-reject-policy export false
+/ configure router bgp min-route-advertisement 1 connect-retry 5
+/ configure router router-id {{ loopback['ipv4']|ipaddr('address') }}
+
+{#
+    Configure IPv4 and IPv6 BGP neighbors
+#}
+group ibgp admin-state enable
+group ebgp admin-state enable
+
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     neighbor_global(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+
+{# Configure BGP address families #}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ # address-family {{ af }}
+ {{ af }}-unicast admin-state enable multipath max-paths-level-1 64 max-paths-level-2 64
+
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+{# {{     bgp_network(af,loopback[af]) }} #}
+{%   endif %}
+
+{%   for l in links|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+{# {{     bgp_network(af,l[af]) }} #}
+{%   endfor %}
+{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{# {{     bgp_network(af,pfx) }} #}
+{%   endfor %}
+
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     neighbor_af(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+
+{#
+  Add extra IPv4 prefixes using static blackhole routes
+#}
+/network-instance default next-hop-groups group blackhole blackhole set generate-icmp true
+{% for pfx in bgp.originate|default([]) %}
+/network-instance default static-routes route {{ pfx }} next-hop-group blackhole
+{% endfor %}

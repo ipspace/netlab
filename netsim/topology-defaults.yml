@@ -28,7 +28,7 @@ attributes:
 # Built-in module defaults
 #
 bgp:
-  supported_on: [ cumulus, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros ]
+  supported_on: [ cumulus, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros ]
   ebgp_role: external
   advertise_roles: [ stub ]
   advertise_loopback: True
@@ -52,7 +52,7 @@ isis:
     link: [ metric, cost, type ]
 
 ospf:
-  supported_on: [ arcos, cumulus, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros ]
+  supported_on: [ arcos, cumulus, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros ]
   attributes:
     global: [ area, process, reference_bandwidth ]
     node: [ area, process, id, reference_bandwidth ]
@@ -96,8 +96,9 @@ providers:
   clab:
     config: clab.yml
     template: clab.j2
-    start: sudo containerlab deploy -t clab.yml
-    stop: sudo containerlab destroy --cleanup -t clab.yml
+    # Preserve env to allow user to configure PATH
+    start: sudo -E containerlab deploy -t clab.yml
+    stop: sudo -E containerlab destroy --cleanup -t clab.yml
     probe: [ containerlab version ]
     devices:
       eos:
@@ -131,12 +132,30 @@ providers:
 
       srlinux:
         provider_kind: srl
+        provider_interface_name: e1-%d
+        image:
+          clab: ghcr.io/nokia/srlinux:latest
+
+      sros:
+        provider_kind: vr-sros
+        provider_interface_name: eth%d
+        image:
+          clab: vrnetlab/vr-sros:latest
+        group_vars:
+          ansible_connection: nokia.grpc.gnmi
+          ansible_network_os: sros # Used internally in netsim-tools only
+          ansible_gnmi_encoding: JSON
+          ansible_port: 57400
+          # ansible_user: admin
+          # ansible_ssh_pass: admin
+          sros_use_openconfig: False # Depends on pending PR for nokia.grpc.gnmi
 
 ports:
   ssh: 22
   http: 80
   https: 443
   netconf: 830
+  gnmi: 57400
 
 #
 # Device defaults
@@ -283,14 +302,27 @@ devices:
 
   srlinux:
     mgmt_if: mgmt0
-    interface_name: e1-%d
+    interface_name: ethernet-1/%d
     image:
       clab: ghcr.io/nokia/srlinux
+    group_vars:
+      ansible_network_os: srlinux
+      ansible_port: 57400 # Uses gNMI over TLS to this port
+      ansible_connection: nokia.grpc.gnmi
+      ansible_user: admin
+      ansible_password: admin
+      ansible_gnmi_encoding: JSON_IETF
+
+  sros:
+    mgmt_if: A/1
+    interface_name: 1/1/c%d
+    image:
+      clab: vrnetlab/vr-sros
     group_vars:
       ansible_user: admin
       ansible_ssh_pass: admin
       ansible_network_os: sros
-      ansible_connection: paramiko
+      ansible_connection: paramiko_ssh
 
   vyos:
     interface_name: eth%d
