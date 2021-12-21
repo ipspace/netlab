@@ -1,0 +1,40 @@
+{# Note: SR-MPLS only supported on 7250 IXR #}
+{% if type not in ['ixr6','ixr10'] %}
+{{ type_ixr | mandatory('SR-MPLS only supported on 7250 IXR; use type "ixr6"') }}
+{% else %}
+delete:
+- network-instance[name=default]/interface[name=lo0.0]
+
+updates:
+- path: system/mpls/label-ranges
+  val:
+   static:
+   - name: global-static
+     start-label: 16
+     end-label: 31
+   dynamic:
+   - name: global-dynamic
+     start-label: 32
+     end-label: 63
+
+- path: network-instance[name=default]
+  val:
+   interface:
+   - name: system0.0
+   segment-routing:
+    mpls:
+     global-block:
+      label-range: global-static
+
+- path: network-instance[name=default]/protocols/isis
+  val:
+   dynamic-label-block: global-dynamic
+   instance:
+   - name: Gandalf
+     interface:
+     - interface-name: system0.0
+       segment-routing:
+        mpls:
+         ipv4-node-sid:
+          index: 1
+{% endif %}
