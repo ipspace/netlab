@@ -1,9 +1,11 @@
-{% macro ip_addresses(intf,ipv6_ra) %}
+{% macro ip_addresses(intf,ipv6_ra,is_system) %}
 {% if 'ipv4' in intf %}
     ipv4:
      address:
      - ip-prefix: "{{ intf.ipv4 }}"
+{% if not is_system %}
        primary: [null]
+{% endif %}
 {% endif %}
 {% if 'ipv6' in intf %}
     ipv6:
@@ -21,7 +23,10 @@
 updates:
 - path: interface[name=lo0]/subinterface[index=0]
   val:
-{{  ip_addresses(loopback,False)  }}
+{{  ip_addresses(loopback,False,False)  }}
+- path: interface[name=system0]/subinterface[index=0]
+  val:
+{{  ip_addresses(loopback,False,True)  }}
 
 {% for l in links|default([]) %}
 - path: interface[name={{l.ifname}}]
@@ -33,7 +38,7 @@ updates:
 {% endif %}
    subinterface:
     index: 0
-{{  ip_addresses(l,True) }}
+{{  ip_addresses(l,True,False) }}
 {% if l.bandwidth is defined %}
  # bandwidth {{ l.bandwidth  }}
 {% endif %}
