@@ -50,6 +50,7 @@ def create(nodes: typing.List[Box], groups: Box, defaults: Box, addressing: typi
   inventory = Box({},default_box=True,box_dots=True)
 
   inventory.all.vars.netlab_provider = defaults.provider
+  node_names = { n.name for n in nodes }
 
   if addressing:
     inventory.all.vars.pools = addressing
@@ -79,9 +80,12 @@ def create(nodes: typing.List[Box], groups: Box, defaults: Box, addressing: typi
       inventory[gname].vars = inventory[gname].get('vars',{}) + gdata.vars
 
     if 'members' in gdata:
-      for node in gdata.members:
-        if not node in inventory[gname].hosts:
-          inventory[gname].hosts[node] = {}
+      for m in gdata.members:
+        if m in node_names:
+          if not m in inventory[gname].hosts:
+            inventory[gname].hosts[m] = {}
+        elif m in groups:
+          inventory[gname].children[m] = {}
 
   return inventory
 

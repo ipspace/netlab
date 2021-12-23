@@ -47,6 +47,7 @@ def transform_data(topology: Box) -> None:
 
   modules.post_transform(topology)
   augment.plugin.execute('post_transform',topology)
+  augment.groups.node_config_templates(topology)
   common.exit_on_error()
 
   topology.pop('Plugin',None)

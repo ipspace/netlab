@@ -239,3 +239,155 @@ groups:
     members:
     - e
 ```
+
+## Hierarchical Groups
+
+*netsim-tools* release 1.0.6 introduced _hierarchical groups_ -- groups could be members of other groups, for example:
+
+```
+nodes: [ a,b,c,d,e,f ]
+
+groups:
+  g1:
+    members: [ a,b ]
+  g2:
+    members: [ d,g1,g3 ]
+  g3:
+    members: [ e ]
+```
+
+The hierarchical groups specified in a lab topology file are directly translated into Ansible inventory groups. The above example will generate the following data structure for group **g2** in Ansible inventory file:
+
+```
+g2:
+  children:
+    g1: {}
+    g3: {}
+  hosts:
+    d: {}
+```
+
+### Node Data in Hierarchical Groups
+
+When faced with a group hierarchy, **node_data** processing takes great care to use the node values specified in the most-specific group. Continuing the previous example, now with **node_data**:
+
+```
+groups:
+  g1: 
+    members: [ a,b ]
+  g2:
+    members: [ d,g1,g3 ]
+    node_data:
+      foo: bar
+  g3:
+    members: [ e ]
+    node_data:
+      foo: baz
+```
+
+* Nodes **a**, **b** and **d** (direct and indirect members of group **g2**) will have the node attribute **foo** set to **bar**.
+* Node **e** (member of group **g3**) will have the node attribute **foo** set to **baz** -- **g3** overwrites the **foo** value set by the parent group **g2**.
+
+**‌node_data** processing performs [deep dictionary merge](defaults.md#deep-merging) when an attribute specified in the group **‌node_data** and the current value of node attribute are both dictionaries, allowing you to specify various parts of the same dictionary in different groups, for example:
+
+```
+nodes:
+  a:
+    bgp:
+      rr: true
+  b:
+  c:
+  d:
+  e:
+    config: [ e ]
+  f:
+
+groups:
+  g1: [ a,b ]
+  g2:
+    members: [ d,g1,g3 ]
+    node_data:
+      bgp:
+        as: 65000
+  g3:
+    members: [ e ]
+    node_data:
+      bgp:
+        as: 65001
+```
+
+* Node **a** has **bgp.rr** set to *True* (direct node data) and **bgp.as** set to 65000 (attribute merged from **g2** node data).
+* Nodes **b** and **d** have **bgp.as** set to 65000.
+* Node **e** has **bgp.as** set to 65001 (deep merge results in value from **g2** being overwritten by value from **g3**).
+* Nodes **c** and **f** do not have any BGP-related attributes
+
+### Custom Configuration Templates in Hierarchical Groups
+
+Custom configuration templates for individual nodes are built from configuration templates of all parent groups (starting with the least-specific parent group) plus node configuration templates. When using the following topology file...
+
+```
+nodes:
+  a:
+    config: [ a ]
+  b:
+  c:
+  d:
+  e:
+    config: [ e ]
+  f:
+
+groups:
+  g1: [ a,b ]
+  g2:
+    members: [ d,g1,g3 ]
+    config: [ g2a, g2b ]
+  g3:
+    members: [ e ]
+    config: [ g3 ]
+```
+
+... individual nodes get the following configuration templates:
+
+| node | template                                |
+|------|-----------------------------------------|
+| a    | g2a, g2b (from g2 via g1), a (from a)   |
+| b    | g2a, g2b (from g2 via g1)               |
+| c    | none (it's not a member of any group)   |
+| d    | g2a, g2b (from g2)                      |
+| e    | g2a, g2b (from g2 via g3), g3 (from g3) |
+| f    | none (it's not a member of any group)   |
+
+If you want to remove one or more templates specified by parent groups from a node or a group, use **-_x_** to remove a specific parent template from the list or `-` to remove all parent templates, for example:
+
+```
+nodes:
+  a:
+    config: [ -g2b, a ]
+  b:
+    config: [ -, b ]
+  c:
+  d:
+  e:
+    config: [ -g1, e ]
+  f:
+
+groups:
+  g1: [ a,b ]
+  g2:
+    members: [ d,g1,g3 ]
+    config: [ g2a, g2b ]
+  g3:
+    members: [ e ]
+    config: [ g3 ]
+```
+
+The following configuration templates would be applied to individual nodes in the above lab topology:
+
+| node | template                                        |
+|------|-------------------------------------------------|
+| a    | g2a (from g2 via g1, g2b removed), a (from a)   |
+| b    | all parent templates removed, b (from b).       |
+| c    | none (it's not a member of any group)           |
+| d    | g2a, g2b (from g2)                              |
+| e    | g2a, g2b (from g2 via g3), g3 (from g3), -g1 is ignored, e (from e) |
+| f    | none (it's not a member of any group)           |
