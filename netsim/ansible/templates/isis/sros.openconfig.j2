@@ -1,0 +1,52 @@
+updates:
+- path: openconfig-network-instance:network-instances/network-instance[name=Base]/protocols
+  val:
+   protocol:
+   - identifier: "ISIS"
+     name: "0"
+     config:
+      identifier: "ISIS"
+      name: "0"
+      enabled: True
+     isis:
+      global:
+       config:
+        net: [ "{{ isis.net | default( "%s.0000.0000.%04d.00" % (isis.area,id) ) }}" ]
+      interfaces:
+       interface:
+{%     for l in links|default([]) %}
+{%     if "external" in l.role|default("") %}
+       # IS-IS not configured on external interface {{ l.ifname }}
+{%     else %}
+       - interface-id: {{ l.ifname }}/1.0
+         config:
+          interface-id: {{ l.ifname }}/1.0
+          circuit-type: {{ 'POINT_TO_POINT' if l.type|default("") == "p2p" else 'BROADCAST' }}
+         levels:
+          level:
+          - level-number: 1
+            config:
+             level-number: 1
+             passive: {{ l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] }}
+{%           if l.isis.metric is defined or l.isis.cost is defined %}
+             afi-safi:
+              af:
+              - afi-name: "IPV4"
+                safi-name: "UNICAST"
+                config:
+                 metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%           endif %}
+          - level-number: 2
+            config:
+             level-number: 2
+             passive: {{ l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] }}
+{%           if l.isis.metric is defined or l.isis.cost is defined %}
+             afi-safi:
+              af:
+              - afi-name: "IPV4"
+                safi-name: "UNICAST"
+                config:
+                 metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%           endif %}
+{%     endif %}
+{%   endfor %}

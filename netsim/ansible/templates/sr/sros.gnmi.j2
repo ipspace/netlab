@@ -1,0 +1,35 @@
+# delete:
+# - configure/router[router-name=Base]/interface[interface-name=Loopback0]
+
+updates:
+- path: configure/router[router-name=Base]/mpls-labels
+  val:
+   #
+   # EOS default ranges: https://www.arista.com/en/um-eos/eos-is-is
+   # Dynamic Global Range--(100000) (262144)
+   # IS-IS SR Global Range -- (900000) (65536)
+   # Static Global Range -- (16) (99984)
+   #
+   # IOS-XR: https://packetpushers.net/yet-another-blog-about-segment-routing-part-1/
+   # default SRGB range is from 16000-23999 and Dynamic label range is 24000-1048575
+   #
+   static-label-range: 18400 # default, lower bound of dynamic label range
+   sr-labels: # SRGB, required for SR-ISIS
+    start: {{ sr.srgb_range_start }} # Minimum value: static-label-range+32
+    end: {{ sr.srgb_range_start + sr.srgb_range_size }}
+
+- path: configure/router[router-name=Base]/isis[isis-instance=0]
+  val:
+   advertise-router-capability: area
+   segment-routing:
+    admin-state: enable
+    prefix-sid-range:
+     global: [null]
+    # srlb: reference mpls-labels reserved-label-block
+    tunnel-table-pref: 8 # default 11
+   interface:
+   - interface-name: system
+     ipv4-node-sid:
+      index: "{{ id }}"
+     ipv6-node-sid:
+      index: "{{ id+sr.ipv6_sid_offset }}"

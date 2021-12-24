@@ -5,12 +5,14 @@ topology:
 {% for n in nodes|default([]) %}
     {{ n.name }}:
       kind: {{ n.kind | default(n.device) }}
+{%    if 'type' in n %}
+      type: {{ n.type }}
+{%    endif %}
       image: {{ n.clab['image'] if 'image' in n.clab|default({}) else n.box }}
-{% if groups is defined %}
+{%    if groups is defined %}
       group: {% for g in groups if n.name in groups[g].members %}{{'' if loop.first else ','}}{{g}}{% endfor %}
-{% endif %}
+{%    endif %}
 {% if 'srl-agents' in n.clab %}
-
       extras:
         srl-agents: {{ n.clab['srl-agents'] }}
 {% endif %}
@@ -30,7 +32,7 @@ topology:
 {% endfor %}
 {% if links %}
   links:
-{% for l in links %}
+{% for l in links if l.type|default("") != "stub" %}
   - endpoints:
 {%   for n in nodes %}
 {%     for nl in n.links if nl.linkindex == l.linkindex %}

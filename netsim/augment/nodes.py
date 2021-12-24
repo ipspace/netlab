@@ -82,7 +82,7 @@ def augment_node_provider_data(topology: Box) -> None:
     if not isinstance(devices[devtype],dict):
       common.fatal("Device data for device %s must be a dictionary" % devtype)
 
-    for k,v in topology.defaults.devices[devtype].items():
+    for k,v in devices[devtype].items():
       if "provider_" in k:
         n[k.replace("provider_","")] = v
 

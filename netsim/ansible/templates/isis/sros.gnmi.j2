@@ -1,0 +1,27 @@
+updates:
+- path: configure/router[router-name=Base]
+  val:
+   isis:
+   - isis-instance: 0
+     admin-state: enable
+     area-address: ["{{ isis.net | default( "%s.0000.0000.%04d.00" % (isis.area,id) ) }}"]
+     level-capability: "{{ '2' if isis.type=='level-2' else ('1' if isis.type=='level-1' else '1/2') }}"
+     interface:
+     - interface-name: "{{ "system" if 'sr' in module else "Loopback0" }}"
+       passive: True
+{%   for l in links|default([]) %}
+{%    if "external" in l.role|default("") %}
+     # IS-IS not configured on external interface {{ l.ifname }}
+{%    else %}
+     - interface-name: i{{ l.ifname }}
+       interface-type: {{ 'point-to-point' if l.type|default("") == "p2p" else 'broadcast' }}
+       passive: {{ l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] }}
+{%     if l.isis.metric is defined or l.isis.cost is defined %}
+       level:
+       - level-number: 1
+         metric: {{ l.isis.metric|default(l.isis.cost) }}
+       - level-number: 2
+         metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%     endif %}
+{%    endif %}
+{%   endfor %}

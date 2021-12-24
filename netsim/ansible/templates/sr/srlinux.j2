@@ -1,0 +1,67 @@
+{# Note: SR-MPLS only supported on 7250 IXR #}
+{% if type not in ['ixr6','ixr10'] %}
+{{ type_ixr | mandatory('SR-MPLS only supported on 7250 IXR; use type "ixr6" instead of '+type) }}
+{% else %}
+delete:
+- network-instance[name=default]/interface[name=lo0.0]
+
+updates:
+- path: system/mpls/label-ranges
+  val:
+   #
+   # EOS default ranges: https://www.arista.com/en/um-eos/eos-is-is
+   # Dynamic Global Range--(100000) (262144)
+   # IS-IS SR Global Range -- (900000) (65536)
+   # Static Global Range -- (16) (99984)
+   #
+   # IOS-XR: https://packetpushers.net/yet-another-blog-about-segment-routing-part-1/
+   # default SRGB range is from 16000-23999 and Dynamic label range is 24000-1048575
+   #
+   static:
+   - name: global-static
+     start-label: {{ sr.srgb_range_start }}
+     end-label: {{ sr.srgb_range_start + sr.srgb_range_size }}
+   - name: eos-isis-sr-static
+     start-label: 900000
+     end-label: 965536
+   - name: ios-xr-static
+     start-label: 16000
+     end-label: 23999
+   dynamic:
+   - name: global-dynamic
+     start-label: 100000
+     end-label: 362144
+   # - name: ios-xr-dynamic
+   #   start-label: 24000
+   #   end-label: 1048575
+
+- path: network-instance[name=default]
+  val:
+   interface:
+   - name: system0.0
+   segment-routing:
+    mpls:
+     global-block:
+      label-range: global-static # Pick vendor interop range if needed
+      _annotate_label-range: "Can be adjusted for vendor interop"
+   protocols:
+    isis:
+     dynamic-label-block: global-dynamic # Required but not currently used
+     instance:
+     - name: Gandalf
+       max-ecmp-paths: 1 # Currently (21.11.1) limited to 1
+       _annotate_max-ecmp-paths: "SR-ISIS does not support ECMP in a production environment. The ISIS
+configuration of max-ecmp-path must be 1. [398533]"
+       segment-routing:
+        mpls: {}
+       interface:
+       - interface-name: system0.0
+         admin-state: enable
+         passive: True
+         segment-routing:
+          mpls:
+           ipv4-node-sid:
+            index: {{ id }}  # This uses a label in the global static range
+            _annotate_index: "References a label from the global-block static range"
+
+{% endif %}
