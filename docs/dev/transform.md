@@ -72,6 +72,7 @@ The data transformation has three major steps:
   * Check whether the lab devices support modules configured on them (`netsim.modules.check_supported_node_devices`)
   * Execute **post_transform** [node-level module hook](#node-level-module-hooks)
   * Execute **post_transform** [link-level module hook](#link-level-module-hooks)
+  * Sort node module lists in order of module dependencies -- a module dependent on another module will be configured after it (`netsim.modules.reorder_node_modules`)
 
 * Execute **post_transform** plugin hooks
 * Merge group-level and node-level [custom deployment templates](../groups.md#custom-configuration-templates) (`netsim.augment.groups.node_config_template`)

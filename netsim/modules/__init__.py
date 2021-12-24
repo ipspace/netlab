@@ -65,6 +65,7 @@ def post_transform(topology: Box) -> None:
   check_supported_node_devices(topology)       # A bit late, but we can do this check only after node data has been adjusted
   node_transform("post_transform",topology)
   link_transform("post_transform",topology)
+  reorder_node_modules(topology)               # Make sure modules are configured in dependency order (#86)
 
 # Set default list of modules for nodes without specific module list
 #
@@ -269,6 +270,37 @@ def check_module_dependencies(topology:  Box) -> None:
         for rqm in topology.defaults[m].requires:   # Loop over prerequisites
           if not rqm in topology.module:            # Now we can be explicit - we know topology.modules exists
             common.error("Module %s requires module %s which is not enabled in your topology" % (m,rqm))
+
+"""
+reorder_node_modules:
+
+For every node with at least two modules: sort the list of modules based on their dependencies preserving
+the original order as much as possible.
+"""
+
+def reorder_node_modules(topology: Box) -> None:
+  for n in topology.nodes:
+    if 'module' in n:
+      n.module = sort_module_list(n.module,topology.defaults)
+
+def sort_module_list(mods: list, mod_params: Box) -> list:
+  if (len(mods) < 2):
+    return mods
+
+  output: typing.List[str] = []
+  while len(mods):
+    skipped: typing.List[str] = []
+    for m in mods:
+      if m in mod_params:
+        requires = mod_params[m].get('requires',[])
+        if [ r for r in requires if r in mods ]:
+          skipped = skipped + [ m ]
+        else:
+          output = output + [ m ]
+
+    mods = skipped
+
+  return output
 
 """
 Callback transformation routines
