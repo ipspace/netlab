@@ -1,0 +1,40 @@
+#
+# Deploy module-specific configuration (specified in "item") to a device
+#
+- set_fact:
+    config_template: "{{ lookup('first_found',params,errors='ignore') }}"
+  tags: [ always ]
+  vars:
+    params:
+      paths:
+      - "{{ lookup('env','PWD') }}"
+      - "../../extra"
+      files:
+      - "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
+      - "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
+      - "{{ custom_config }}"
+      - "{{ custom_config + '.j2' }}"
+
+- fail: msg="Cannot find configuration template {{ custom_config }} for device {{ inventory_hostname }}"
+  when: config_template == ''
+  tags: [ always ]
+
+- debug:
+    msg: |
+      {{ config_template }} configuration for {{ inventory_hostname }}
+      =========================================
+      {{ lookup('template',config_template) }}
+    verbosity: 1
+  tags: [ test,custom ]
+
+- include_tasks: "{{ item }}"
+  tags: [ custom ]
+  with_first_found:
+  - "../../extra/{{ custom_config }}/deploy.{{ ansible_network_os }}.yml"
+  - "deploy-config/{{ansible_network_os}}.yml"
+  - "../missing.yml"
+  args:
+    apply:
+      vars:
+        netsim_action: "{{ custom_config }}"
+      tags: [ always ]

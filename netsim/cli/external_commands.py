@@ -80,6 +80,9 @@ def deploy_configs(step : int = 3, command: str = "test") -> None:
   if common.VERBOSE:
     cmd.append("-" + "v" * common.VERBOSE)
 
+  if os.environ.get('NETSIM_FAST_CONFIG',None):
+    cmd.append("--fast")
+
   if not run_command(set_ansible_flags(cmd)):
     common.fatal("netlab initial failed, aborting...",command)
 

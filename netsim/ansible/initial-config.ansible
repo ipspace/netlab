@@ -2,10 +2,11 @@
 ---
 - name: Deploy device configuration
   hosts: all
-  strategy: free
+  strategy: "{{ netsim_strategy|default('linear') }}"
   gather_facts: false
   tasks:
-  - debug:
+  - name: Find initial configuration template
+    debug:
       msg: |
         Config for {{ inventory_hostname }} (NOS {{ ansible_network_os }})
         ===================================
@@ -39,3 +40,11 @@
     loop_control:
       loop_var: config_module
     when: module is defined and (not(modlist is defined) or item in modlist)
+
+  - name: Deploy custom deployment templates
+    include_tasks: "tasks/deploy-custom-config.yml"
+    tags: [ custom,test ]
+    loop: "{{ config | default([]) }}"
+    loop_control:
+      loop_var: custom_config
+    when: config is defined

@@ -28,6 +28,6 @@ setup(
     "console_scripts": ["netlab=netsim.cli:lab_commands"]
   },
   package_data = {
-    "netsim": ["templates/*", "../ansible/*"]
+    "netsim": ["templates/*", "ansible/*", "extra/*"]
   }
 )

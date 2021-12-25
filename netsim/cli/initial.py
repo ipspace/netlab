@@ -29,6 +29,14 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     dest='module', action='store',nargs='?',const='*',
     help='Deploy module-specific configuration (optionally including a list of modules separated by commas)')
   parser.add_argument(
+    '-c','--custom',
+    dest='custom', action='store_true',
+    help='Deploy custom configuration templates (specified in "config" group or node attribute)')
+  parser.add_argument(
+    '--fast',
+    dest='fast', action='store_true',
+    help='Use "free" strategy in Ansible playbook for faster configuration deployment')
+  parser.add_argument(
     '-o','--output',
     dest='output', action='store',nargs='?',const='config',
     help='Create a directory with initial configurations instead of deploying them (default output directory: config)')
@@ -48,8 +56,14 @@ def run(cli_args: typing.List[str]) -> None:
       rest = ['-e','modlist='+args.module] + rest
     rest = ['-t','module'] + rest
   
+  if args.custom:
+    rest = ['-t','custom'] + rest
+
   if args.output:
     rest = ['-e','config='+os.path.abspath(args.output) ]
+
+  if args.fast or os.environ.get('NETSIM_FAST_CONFIG',None):
+    rest = ['-e','netsim_strategy=free']
 
   if args.logging or args.verbose:
     print("Ansible playbook args: %s" % rest)

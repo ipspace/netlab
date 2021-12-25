@@ -4,11 +4,13 @@
 
 The Ansible playbook invoked by **netlab initial** command deploys device configurations in two steps:
 
-* Initial device configurations[^1]
-* Module-specific device configurations[^2]
+* Initial device configurations[^itag]
+* Module-specific device configurations[^mtag]
+* Custom configuration templates[^ctag]
 
-[^1]: Controlled by `-i` flag or **initial** Ansible tag
-[^2]: Controlled by `-m` flag or **module** Ansible tag
+[^itag]: Controlled by `-i` flag or **initial** Ansible tag
+[^mtag]: Controlled by `-m` flag or **module** Ansible tag
+[^ctag]: Controlled by `-c` flag or **custom** Ansible tag
 
 When run with **-v** parameter, the command displays device configurations before deploying them.
 
@@ -19,7 +21,7 @@ When run with **-v** parameter, the command displays device configurations befor
 ## Usage
 
 ```text
-usage: netlab initial [-h] [--log] [-q] [-v] [-i] [-m [MODULE]] [-o [OUTPUT]]
+usage: netlab initial [--log] [-q] [-v] [-i] [-m [MODULE]] [-c] [--fast] [-o [OUTPUT]]
 
 Initial device configurations
 
@@ -32,6 +34,10 @@ optional arguments:
   -m [MODULE], --module [MODULE]
                         Deploy module-specific configuration (optionally including a 
                         list of modules separated by commas)
+  -c, --custom          Deploy custom configuration templates (specified in "config" 
+                        group or node attribute)
+  --fast                Use "free" strategy in Ansible playbook for faster
+                        configuration deployment
   -o [OUTPUT], --output [OUTPUT]
                         Create a directory with initial configurations instead of
                         deploying them
@@ -60,6 +66,17 @@ Default passwords and other default configuration parameters are supposed to be 
 
 Module-specific device configurations are created from templates in `netsim/ansible/templates/_module_` directory. Device-specific configuration template is selected using `ansible_network_os` value. See the [module descriptions](../module-reference.md) for list of supported model parameters.
 
+## Custom Deployment Templates
+
+[Custom deployment templates](../groups.md#custom-configuration-templates) are specified in **config** group- or node parameter. `initial-config.ansible` playbook uses the following file search list to find the target configuration template:
+
+* _template_/_ansible_network_os_.j2 (device-specific templates within _template_ directory)
+* _template_._ansible_network_os_.j2 (device-specific templates within the current directory)
+* _template_ (try the template name verbatim regardless of device type)
+* _template_.j2 (try appending j2 suffix to template name).
+
+The configuration templates could be stored either in current directory or in `netsim.extra` package directory.
+
 ## Limiting the Scope of Configuration Deployments
 
 Without specifying `-i` or `-m` flag, the command deploys all initial configurations. To control the deployment of initial configurations:
@@ -67,13 +84,14 @@ Without specifying `-i` or `-m` flag, the command deploys all initial configurat
 * use the `-i` flag to deploy initial device configurations. 
 * use the `-m` flag to deploy module-specific configurations. 
 * use the `-m` flag followed by a module name (example: `-m ospf -m bgp`) to deploy device configuration for specific modules. You can use the `-m` flag multiple times.
+* use the `-c` flag to deploy custom configuration templates. 
 
 All unrecognized parameters are passed to internal `initial-config.ansible` Ansible playbook. You can use **ansible-playbook** CLI parameters to modify the configuration deployment, for example:
 
 * `-l` parameter to deploy device configurations on a subset of devices.
-* `-C` parameter to run the Ansible playbook in dry-run mode. Combine it with `-v` parameter to see the configuration changes that would be deployed[^3]
+* `-C` parameter to run the Ansible playbook in dry-run mode. Combine it with `-v` parameter to see the configuration changes that would be deployed[^vx]
 
-[^3]: The Ansible playbook uses **vtysh** on Cumulus VX to deploy the FRR-related configuration changes from a file. The dry run will not display the configuration changes.
+[^vx]: The Ansible playbook uses **vtysh** on Cumulus VX to deploy the FRR-related configuration changes from a file. The dry run will not display the configuration changes.
 
 ## Debugging Initial Configurations
 
