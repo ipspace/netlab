@@ -212,6 +212,7 @@ def node_config_templates(topology: Box) -> None:
   End result: config templates sorted from less specific through more specific groups, ending
   with node templates.
   '''
+
   for group_name in reverse_topsort(topology):
     if not 'config' in topology.groups[group_name]:
       continue
@@ -219,7 +220,7 @@ def node_config_templates(topology: Box) -> None:
     common.must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
     g_members = group_members(topology,group_name)
     for ndata in topology.nodes:
-      if ndata.name in g_members:
+      if ndata.name in g_members or group_name == 'all':
         common.must_be_list(ndata,'config',f'nodes.{ndata.name}')
         ndata.config = topology.groups[group_name].config + ndata.config
 
