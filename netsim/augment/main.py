@@ -21,6 +21,7 @@ def transform_setup(topology: Box) -> None:
   common.exit_on_error()
 
   topology.nodes = augment.nodes.adjust_node_list(topology.nodes)
+  augment.nodes.augment_node_provider_data(topology)
   common.exit_on_error()
   if 'links' in topology:
     topology.links = augment.links.adjust_link_list(topology.links)

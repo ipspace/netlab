@@ -134,8 +134,6 @@ Main node transformation code
 * set management IP and MAC addresses
 '''
 def transform(topology: Box, defaults: Box, pools: Box) -> dict:
-  augment_node_provider_data(topology)
-
   id = 0
   ndict = {}
   id_list = []

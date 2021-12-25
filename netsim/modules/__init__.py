@@ -100,21 +100,34 @@ def check_supported_node_devices(topology: Box) -> None:
 # Remove "no_propagate" values (default: "attributes")
 # before merging the global settings
 #
+
 def merge_node_module_params(topology: Box) -> None:
   global no_propagate_list
+  devices = topology.defaults.devices
 
   for n in topology.nodes:
     if 'module' in n:
       for m in n.module:
         if m in topology:
-          global_copy = Box(topology[m])
-          no_propagate = list(no_propagate_list)              # Make sure we're using a fresh copy of the list
-          if "no_propagate" in topology.defaults.get(m,{}):
-            no_propagate.extend(topology.defaults[m].no_propagate)
-          for remove_key in no_propagate:
-            global_copy.pop(remove_key,None)
-          if len(global_copy):
-            n[m] = global_copy + n[m]
+          n[m] = get_propagated_global_module_params(m,topology,topology.defaults[m]) + n[m]
+
+        dev_settings = devices.get(n.device,{})
+        if m in dev_settings:
+          n[m] = get_propagated_global_module_params(m,dev_settings,topology.defaults[m]) + n[m]
+
+# Get propagated global parameters from settings (top-level or device-level)
+#
+# settings - dictionary with module settings
+# mod_settings - default module settings
+#
+def get_propagated_global_module_params(module: str, settings: Box,mod_settings: Box) -> Box:
+  global_copy = Box(settings[module])
+  no_propagate = list(no_propagate_list)              # Make sure we're using a fresh copy of the list
+  if "no_propagate" in mod_settings:
+    no_propagate.extend(mod_settings.no_propagate)
+  for remove_key in no_propagate:
+    global_copy.pop(remove_key,None)
+  return global_copy
 
 '''
 adjust_global_modules: last phase of global module adjustments

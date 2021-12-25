@@ -23,6 +23,7 @@ The data transformation has three major steps:
 
 * Load provider plugin (`netsim.providers._Provider.load`)
 * Adjust the list of nodes -- transform [list of strings](nodes.md#list-of-strings) or [dictionary of nodes](nodes.md#dictionary-of-nodes) into list of node objects (dictionaries) (`netsim.augment.nodes.adjust_node_list`)
+* Augment node provider data: set node device type, select VM/container image, copy provider-specific node data into node dictionary (`netsim.augment.nodes.augment_node_provider_data`)
 * Adjust the list of links -- transform [strings or lists of nodes](links.md#link-formats-example) into link dictionaries (`netsim.augment.links.adjust_link_list`)
 * Setup [addressing pools](../addressing.md) (`netsim.addressing.setup`)
 
@@ -44,7 +45,6 @@ The data transformation has three major steps:
 ## Node Data Transformation
 
 * Execute **pre_node_transform** plugin hooks (`netsim.augment.plugin.execute`)
-* Augment node provider data: set node device type, select VM/container image, copy provider-specific node data into node dictionary (`netsim.augment.nodes.augment_node_provider_data`)
 * Set unique ID for every node
 * Get loopback IP addresses, management MAC address, and management IP addresses (`netsim.augment.nodes.augment_mgmt_if`) from *loopback* and *mgmt* address pools
 * Execute **augment_node_data** provider hook (example: set **hostname** for *containerlab* nodes)

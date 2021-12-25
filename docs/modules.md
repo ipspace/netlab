@@ -105,7 +105,7 @@ For more information, see [list of configuration modules](module-reference.md)
 
 ## Merging Default Values
 
-Module parameters are always a dictionary of values stored under the *module-name* key in defaults, topology, node or link. Link module parameters are not changed during the topology expansion, node module parameters are adjusted based on topology parameters and defaults:
+Module parameters are always a dictionary of values stored under the *module-name* key in defaults, topology, node or link. Link module parameters are not changed during the topology expansion, node module parameters are adjusted based on topology parameters and defaults ([more details](dev/module-attributes.md)):
 
 * Global and topology defaults are merged with the **defaults** setting in topology file (see [*topology defaults*](defaults.md) and *[merging defaults](addressing.md#merging-defaults)*)
 * For every module used in network topology, the default module parameters are merged with topology-level settings.
@@ -178,4 +178,3 @@ nodes:
 * OSPF process ID was not specified for R1. It's copied from the global OSPF parameters.
 * OSPF router ID was specified for R1, but not in global parameters. It's not changed.
 * R2 had no BGP parameters. BGP parameters were copied from global BGP parameters.
-
