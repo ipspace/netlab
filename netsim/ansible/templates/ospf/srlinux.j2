@@ -11,26 +11,25 @@ updates:
        version: ospf-v2
        admin-state: enable
        max-ecmp-paths: 64
+{%     if ospf.reference_bandwidth is defined %}
+       reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
+{%     endif %}
        area:
        - area-id: {{ area }}
-{%       if ospf.reference_bandwidth is defined %}
-         # auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
-{%       endif %}
-
          interface:
          - interface-name: lo0.0
            passive: True
-{% for l in links|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{%     for l in links|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
        - area-id: {{ l.ospf.area|default(area) }}
          interface:
           interface-name: {{ l.ifname }}.0
           passive: True
-{% endfor %}
+{%     endfor %}
 
-{% for l in links|default([]) %}
-{%   if "external" in l.role|default("") %}
+{%     for l in links|default([]) %}
+{%     if "external" in l.role|default("") %}
        # OSPF not configured on external interface {{ l.ifname }}
-{%   else %}
+{%     else %}
        - area-id: {{ l.ospf.area|default(area) }}
          interface:
          - interface-name: {{ l.ifname }}.0
@@ -38,7 +37,7 @@ updates:
            interface-type: point-to-point
 {%         endif %}
 {%         if l.ospf.cost is defined %}
-           # ip ospf cost {{ l.ospf.cost }}
+           metric: {{ l.ospf.cost }}
 {%         endif %}
-{%   endif %}
-{% endfor %}
+{%     endif %}
+{%     endfor %}
