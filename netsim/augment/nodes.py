@@ -84,7 +84,9 @@ def augment_node_provider_data(topology: Box) -> None:
 
     for k,v in devices[devtype].items():
       if "provider_" in k:
-        n[k.replace("provider_","")] = v
+        p_key = k.replace("provider_","")
+        if not p_key in n:
+          n[p_key] = v
 
     if n.box:
       continue
