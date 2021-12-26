@@ -253,11 +253,11 @@ def get_link_type(data: Box, nodes: dict, pools: Box) -> str:
     if pool and pool.get('type'):
       return pool.get('type')
 
-  node_cnt = link_node_count(data,nodes)
+  node_cnt = data.get('node_count') # link_node_count(data,nodes)
   return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
 
 def check_link_type(data: Box, nodes: dict) -> bool:
-  node_cnt = link_node_count(data,nodes)
+  node_cnt = data.get('node_count') # link_node_count(data,nodes)
   link_type = data.get('type')
 
   if not link_type:
@@ -292,6 +292,9 @@ def transform(link_list: typing.Optional[Box], defaults: Box, ndict: dict, pools
     if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
       continue
 
+    # JvB include node_count in link attributes
+    link['node_count'] = link_node_count(link,ndict)
+
     link['type'] = get_link_type(data=link,nodes=ndict,pools=pools)
     if not check_link_type(data=link,nodes=ndict):
       continue
@@ -300,7 +303,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, ndict: dict, pools
     if link.type == 'p2p':
       augment_p2p_link(link,pools,ndict,defaults=defaults)
     else:
-      if not 'bridge' in link:
+      if not 'bridge' in link: # JvB only for 'lan' type interfaces?
         link['bridge'] = "%s_%d" % (defaults.name,linkindex)
       augment_lan_link(link,pools,ndict,defaults=defaults)
 
