@@ -3,26 +3,27 @@
 *netsim-tools* support dynamically loadable plugins allowing you to implement custom data model transformations without adding nerd knobs to the core topology transformation.
 
 ```{warning}
-This is an experimental feature. There is no well-defined API; performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *‌netsim-tools* GitHub repository](https://github.com/ipspace/netsim-tools/discussions) before proceeding.
+This is an experimental feature. A few commonly-used functions are defined in `netsim.api`; performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *netsim-tools* GitHub repository](https://github.com/ipspace/netsim-tools/discussions) before proceeding.
 ```
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:
 
 ```
-plugin: [ bgp-anycast-no-ibgp ]
+plugin: [ bgp-anycast ]
 
 module: [ ospf, bgp ]
 ...
 ```
 
-Plugins are Python files loaded from the current directory. They define well-known functions that are invoked during the topology transformation process which includes these steps:
+Plugins are either Python files or directories containing Python code plus configuration templates. They are loaded from the current directory or `netsim/extra` directory.
+
+For simple plugins, the plugin name specifies the file name (without the `.py` extension). For plugin packages, the plugin name specifies the directory with `plugin.py` Python module and one or more Jinja2 templates (one per supported **ansible_network_os** type).
+
+Plugins can define well-known functions that are invoked during the [topology transformation process](dev/transform.md) which includes these steps:
 
 * execute plugin **init** function
 * check topology top-level elements
-* adjust global parameters (defaults)
-* adjust node list (turning dictionary into list if needed)
-* adjust link list (turning shorthand notation into full-blown dictionary)
-* setup address pools
+* adjust global parameters (defaults), node list, link list, and address pools
 * execute plugin **pre_transform** function
 * execute module **pre_transform** function
 * adjust groups (including setting node data from **node_data**)
@@ -35,7 +36,9 @@ Plugins are Python files loaded from the current directory. They define well-kno
 * execute module **post_transform** function
 * execute plugin **post_transform** function
 
-Every plugin function is called with a single *topology* argument: the current topology data structure.
+Every plugin function is called with a single *topology* argument: the current topology data structure. The node- or link-manipulation functions must iterate over `topology.nodes` or `topology.links` lists.
+
+Plugins extending [configuration modules](modules.md) might have to define additional module attributes. The [module attribute lists](dev/module-attributes.md) have to be extended in the **init** function before any module validation code is executed.
 
 ## Example
 
@@ -44,7 +47,7 @@ All anycast servers in a BGP anycast topology should have the same AS number, bu
 This is the topology file used in BGP anycast example. It uses [**node_data** attribute](groups.md#setting-node-data-in-groups) on a [BGP AS group](groups.md#automatic-bgp-groups) to set **bgp.anycast** node attribute on any node in AS 65101
 
 ```yaml
-plugin: [ bgp-anycast-no-ibgp ]
+plugin: [ bgp-anycast ]
 
 module: [ ospf, bgp ]
 
@@ -70,18 +73,27 @@ nodes:
 links: [ s1-l1, s1-l2, s1-l3, l2-a1, l2-a2, l3-a3 ]
 ```
 
-The plugin imports **common** netsim module to create error messages.
+The plugin imports **common** netsim module to create error messages, and **api** module to get common utility functions.
 
 ```python
 import sys
 from box import Box
 from netsim import common
+from netsim import api
+```
+
+The initialization function adds **anycast** attribute to **bgp** node attributes:
+
+```python
+def init(topo: Box) -> None:
+  topo.defaults.bgp.attributes.node.append('anycast')
 ```
 
 The custom transformation is executed as the last step of the topology transformation -- the **post_transform** function removes IBGP neighbors from all nodes with **bgp.anycast** attribute.
 
 ```
 def post_transform(topo: Box) -> None:
+...
   for node in topo.nodes:
     if 'bgp' in node:
       if 'anycast' in node.bgp:
@@ -89,4 +101,26 @@ def post_transform(topo: Box) -> None:
         node.bgp.neighbors = [
           n for n in node.bgp.neighbors
             if n.type != 'ibgp' ]
+...
 ```
+
+The **post_transform** function should also set the **config** node parameter to deploy [custom configuration template](groups.md#custom-configuration-templates) that creates additional loopback interface with the anycast IP address.
+
+```
+def post_transform(topo: Box) -> None:
+  config_name = api.get_config_name(globals())
+  for node in topo.nodes:
+    if 'bgp' in node:
+      if 'anycast' in node.bgp:
+...
+        api.node_config(node,config_name)
+```
+
+Notes:
+
+* `api.get_config_name` gets the `config_name` plugin attribute (set to the plugin directory during the plugin initialization process) and reports an error if the plugin calling it isn't a part of a plugin package.
+* `api.node_config` appends the specified custom configuration template to the list of node configuration templates. While equivalent to...\
+  \
+  `node.config = node.get('config',[]).append(template)`\
+  \
+  ... the utility function handles edge cases like missing **config** attribute or duplicate configuration templates.

@@ -5,6 +5,7 @@ import sys
 import typing
 import warnings
 import argparse
+import os
 
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 from box import Box
@@ -18,6 +19,7 @@ RAISE_ON_ERROR : bool = False
 WARNING : bool = False
 
 err_count : int = 0
+netsim_package_path = os.path.abspath(os.path.dirname(__file__))
 
 class MissingValue(Warning):
   pass
