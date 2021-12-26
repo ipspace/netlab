@@ -43,6 +43,7 @@ def test_transformation_cases(tmpdir):
     exp_test_case = "topology/expected/"+os.path.basename(test_case)
     expected = pathlib.Path(exp_test_case).read_text()
     if result != expected:
+      print("Test case: %s FAILED" % test_case)
       sys.stdout.writelines(
         difflib.context_diff(
           expected.splitlines(keepends=True),
