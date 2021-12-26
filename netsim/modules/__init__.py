@@ -42,7 +42,6 @@ class _Module(Callback):
           model_data[af] = True      # Found it - we need it the module
           continue
 
-
 """
 pre_transform: executed just before the main data model transformation is started
 
@@ -52,7 +51,11 @@ pre_transform: executed just before the main data model transformation is starte
 """
 def pre_transform(topology: Box) -> None:
   adjust_modules(topology)
+  common.exit_on_error()
+
   check_module_parameters(topology)
+  common.exit_on_error()
+
   node_transform("pre_transform",topology)
   link_transform("pre_transform",topology)
 
@@ -222,7 +225,10 @@ def check_module_parameters(topology: Box) -> None:
         if topology.get(m,{}):                             # Now we can start: are there global module parameters in topology?
           for k in topology[m].keys():                     # Got them - iterate over them
             if not k in mod_attr[m]["global"]:             # Did we get a parameter that is not in global attributes? Jeez... barf
-              common.error("Invalid global %s attribute %s" % (m,k),common.IncorrectValue)
+              common.error(
+                "Invalid global %s attribute %s" % (m,k),
+                common.IncorrectValue,
+                'module')
 
   for n in topology.nodes:               # Inspect all nodes
     for m in n.get("module",[]):         # Iterate over all node modules
@@ -231,7 +237,21 @@ def check_module_parameters(topology: Box) -> None:
         for k in n[m].keys():            # Iterate over node-level module-specific attributes
           if not k in mod_attr[m].node:  # If the name of an attribute is not in the list of allowed
                                          # ...node-level attributes report error
-            common.error("Node %s: invalid attribute %s for module %s" % (n.name,k,m),common.IncorrectValue)
+            common.error(
+              "Node %s: invalid attribute %s for module %s" % (n.name,k,m),
+              common.IncorrectValue,
+              'module')
+
+  for g in topology.get('groups',{}):                    # Inspect node_data in groups
+    if 'node_data' in topology.groups[g]:
+      for m in topology.get('module',[]):                # Iterate over global modules
+        if m in topology.groups[g].node_data:            # Does the group node_data contain module attributes?
+          for k in topology.groups[g].node_data[m]:      # Iterate over module-specific attributes in node_data
+            if not k in mod_attr[m].node:                # Is the attribute a valid node attribute for the module?
+              common.error(
+                f"node_data in group {g} contains invalid attribute {k} for module {m}",
+                common.IncorrectValue,
+                'groups')
 
   rebuild_nodes_map(topology)
   for l in topology.get("links",[]):        # Inspect all links - use get to avoid instantiating links key
@@ -255,18 +275,18 @@ def check_module_parameters(topology: Box) -> None:
                                                   # ... link-level node attributes report error
                 common.error("Node %s has invalid attribute %s for module %s on link %s" % (n,k,m,l),common.IncorrectValue)
 
-def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> typing.Union[typing.Dict, Box]:
+def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> Box:
   if isinstance(a,dict):
     attr = Box(a,default_box=True,box_dots=True)
     attr.link_node = attr.get("link_node",attr.link)
     attr.node = attr.get("node",attr["global"])
   else:
-    attr = {
+    attr = Box({
       "global": a,
       "node": a,
       "link": a,
       "link_node": a
-    }
+    },default_box=True,box_dots=True)
   return attr
 
 """

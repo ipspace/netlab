@@ -27,6 +27,9 @@ def transform_setup(topology: Box) -> None:
     topology.links = augment.links.adjust_link_list(topology.links)
   common.exit_on_error()
 
+  augment.groups.check_group_data_structure(topology)
+  common.exit_on_error()
+
 def transform_data(topology: Box) -> None:
   addressing.setup(topology,topology.defaults)
   augment.plugin.execute('pre_transform',topology)

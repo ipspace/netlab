@@ -134,7 +134,7 @@ class BGP(_Module):
   def build_bgp_groups(self, topology: Box) -> None:
     for gname,gdata in topology.groups.items():
       if re.match('as\\d+$',gname):
-        if 'members' in gdata:
+        if gdata.get('members',None):
           common.error('BGP AS groups should not have static members %s' % gname)
 
     for node in topology.nodes:
