@@ -17,29 +17,31 @@ updates:
     # family: cannot disable this
     # ipv4: False # Enabled by default, disable globally and set per group
     group:
-{%  for c in ['ebgp','ibgp'] %}
+{%  for c in ['ebgp','ibgp-ipv4','ibgp-ipv6'] %}
+{%  set bgp_type=c[:4] %}
     - group-name: "{{c}}"
       admin-state: enable
       family:
-       ipv4: {{ 'True' if bgp['ipv4'] is defined else 'False' }}
-       ipv6: {{ 'True' if bgp['ipv6'] is defined else 'False' }}
+       ipv4: {{ 'True' if bgp['ipv4'] is defined and c!='ibgp-ipv6' else 'False' }}
+       ipv6: {{ 'True' if bgp['ipv6'] is defined and c!='ibgp-ipv4' else 'False' }}
       import:
        policy: ["accept_all"]
       export:
        policy: ["accept_all"]
-{%    if bgp.community[c]|default([]) %}
+{%    if bgp.community[ bgp_type ]|default([]) %}
       send-communities:
-{%     if not ('standard' in bgp.community[c] or 'both' in bgp.community[c]) %}
+{%     if not ('standard' in bgp.community[ bgp_type ] or 'both' in bgp.community[ bgp_type ]) %}
        standard: False
 {%     endif %}
-{%     if not ('extended' in bgp.community[c] or 'both' in bgp.community[c]) %}
+{%     if not ('extended' in bgp.community[ bgp_type ] or 'both' in bgp.community[ bgp_type ]) %}
        extended: False
 {%     endif %}
-{%     if not ('large' in bgp.community[c]) %}
+{%     if not ('large' in bgp.community[ bgp_type ]) %}
        large: False
 {%     endif %}
 {%    endif %}
-{%    if c=='ibgp' %}
+{%    if c!='ebgp' %}
+      local-address: "{{ loopback[ c[5:] ]|ipaddr('address') }}"
 {%    if bgp.rr|default('')|bool %}
       cluster:
         cluster-id: "{{ loopback['ipv4']|ipaddr('address') }}"
@@ -55,10 +57,7 @@ updates:
     - ip-address: "{{ n[af] }}"
       description: "{{ n.name }}"
       peer-as: {{ n.as }}
-      group: "{{ n.type }}"
-{%    if n.type=='ibgp' %}
-      local-address: "{{ loopback[af]|ipaddr('address') }}"
-{%    endif %}
+      group: "{{ 'ebgp' if n.type=='ebgp' else (n.type+'-'+af) }}"
 {%  endfor %}
 {%  endfor %}
 

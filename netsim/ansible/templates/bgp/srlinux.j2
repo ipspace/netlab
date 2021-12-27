@@ -4,12 +4,9 @@
 {% macro neighbor_global(n,af) %}
    - peer-address: {{ n[af] }}
      description: {{ n.name }}
-     peer-group: {{ n.type }}
+     peer-group: {{ 'ebgp' if n.type=='ebgp' else ('ibgp-'+af) }}
 {%  if n.type != 'ibgp' %}
      peer-as: {{ n.as }}
-{% else %}
-     transport:
-      local-address: {{ loopback[af]|default('')|ipaddr('address') }}
 {%  endif %}
 {%- endmacro %}
 
@@ -27,8 +24,8 @@ updates:
     Configure BGP Groups
 #}
    group:
-{% for g in ['ibgp','ebgp'] %}
-{% set ibgp_rr = (g=='ibgp' and bgp.rr|default(0)) %}
+{% for g in ['ibgp-ipv4','ibgp-ipv6','ebgp'] %}
+{% set ibgp_rr = (g!='ebgp' and bgp.rr|default(0)) %}
    - group-name: {{g}}
      admin-state: enable
      import-policy: accept_all
@@ -39,12 +36,17 @@ updates:
       connect-retry: 1
       minimum-advertisement-interval: 1
 
-{%   if bgp.community[g]|default([]) %}
-{%   set list = bgp.community[g] %}
+{%   if bgp.community[ g[:4] ]|default([]) %}
+{%   set list = bgp.community[ g[:4] ] %}
      send-community:
       standard: {{ 'True' if 'standard' in list or 'both' in list else 'False' }}
       large: {{ 'True' if 'large' in list else 'False' }}
 {%   endif %}
+
+{%   if g!='ebgp' %}
+     transport:
+      local-address: {{ loopback[ g[5:] ]|default('')|ipaddr('address') }}
+{% endif %}
 
 {#
     Configure iBGP Route Reflection
@@ -68,7 +70,6 @@ updates:
 
 {# Configure BGP address families #}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
- # address-family {{ af }}
    {{ af }}-unicast:
     admin-state: enable
     multipath:
