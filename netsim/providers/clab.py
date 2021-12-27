@@ -26,3 +26,16 @@ class Containerlab(_Provider):
           print(ex)
           common.error("Error creating bridge '%s': %s" % (brname,ex), module='clab')
           continue
+
+  def post_stop_lab(self, topology: Box) -> None:
+    common.print_verbose('post-stop hook for Containerlab, cleaning up any bridges')
+    for l in topology.links:
+      brname = l.get('bridge',None)
+      if brname:
+        try:
+          result = subprocess.run(['sudo','ip','link','del','dev',brname],capture_output=True,check=True,text=True)
+          common.print_verbose( f"Delete Linux bridge '{brname}': {result}" )
+        except Exception as ex:
+          print(ex)
+          common.error("Error deleting bridge '%s': %s" % (brname,ex), module='clab')
+          continue
