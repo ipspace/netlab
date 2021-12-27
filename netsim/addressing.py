@@ -149,7 +149,7 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
             common.error( \
               "IPv4 subnet prefix length in '%s' addressing pool is not between 1 and 32" % pool, \
               category=common.IncorrectValue,module='addressing')
-          if pfx.prefix <= pfx.ipv4_pfx.prefixlen:
+          if pfx.prefix < pfx.ipv4_pfx.prefixlen:
             common.error( \
               "IPv4 subnet prefix length in '%s' addressing pool is not longer than pool prefix" % pool, \
               category=common.IncorrectValue,module='addressing')
