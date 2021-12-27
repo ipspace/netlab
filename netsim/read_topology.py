@@ -95,6 +95,22 @@ def add_cli_args(topo: Box, args: argparse.Namespace) -> None:
         common.error("Invalid CLI setting %s, should be in format key=value" % s)
       (k,v) = s.split("=")
       if '.' in k:
-        common.set_dots(topo,k.split('.'),v)
+        try:
+          common.set_dots(topo,k.split('.'),v)
+        except TypeError as ex:
+          if 'nodes.' in k:
+            common.error(
+              f'Cannot set {k}:\n... nodes element must be a dictionary if you want to set values via CLI arguments',
+              common.IncorrectValue,
+              'cli')
+          elif 'links.' in k:
+            common.error(
+              f'Cannot set link value {k} through CLI arguments',
+              common.IncorrectValue,
+              'cli')
+          else:
+            common.fatal(f"Cannot set topology value {k}\n... {ex}")
+        except Exception as ex:
+          common.fatal(f"Cannot set topology value {k}\n... {ex}")
       else:
         topo[k] = v
