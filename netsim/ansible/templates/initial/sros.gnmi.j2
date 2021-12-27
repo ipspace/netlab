@@ -14,7 +14,7 @@
 {% endif %}
 {% endmacro %}
 
-{% macro interface(name,desc,ip_v4,ip_v6,port) -%}
+{% macro interface(name,desc,ip_v4,ip_v6,port,l) -%}
 - path: configure/router[router-name=Base]/interface[interface-name={{name}}]
   val:
    admin-state: enable
@@ -24,11 +24,18 @@
 {% elif name!='system' %}
    loopback: [null]
 {% endif %}
+{% if ip_v4|ipv4 or ip_v6|ipv6 %}
 {% if ip_v4|ipv4 %}
 {{ ip_addr('4',ip_v4,name) }}
 {% endif %}
 {% if ip_v6|ipv6 %}
 {{ ip_addr('6',ip_v6,name) }}
+{% endif %}
+{% elif l.unnumbered is defined %}
+   ipv4:
+    unnumbered:
+     system: [null]
+   ipv6: { }
 {% endif %}
 {%- endmacro -%}
 
@@ -41,7 +48,7 @@ updates:
 {% set v4 = loopback.ipv4|default('') %}
 {% set v6 = loopback.ipv6|default('') %}
 {# The interface name 'system' is special, use generic loopback here instead #}
-{{ interface("system" if 'sr' in module else "Loopback0","loopback interface",v4,v6,'') }}
+{{ interface("system" if 'sr' in module else "Loopback0","loopback interface",v4,v6,'',loopback) }}
 {% endif %}
 {% for l in links|default([]) %}
 {% set v4 = l.ipv4|default('') %}
@@ -53,5 +60,5 @@ updates:
 {% endif %}
 - path: configure/port[port-id={{l.ifname}}]
   val: { connector: { "breakout": "c1-100g" } }
-{{ interface('i'+l.ifname,desc,v4,v6,l.ifname+'/1') }}
+{{ interface('i'+l.ifname,desc,v4,v6,l.ifname+'/1',l) }}
 {% endfor %}
