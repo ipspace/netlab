@@ -107,10 +107,17 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         continue
       for af,pfx in pfx_list.items():
         if not value[af]:
-          ip = netaddr.IPNetwork(pfx[ndict[node].id])
+          # Allow user to specify ipv4: False to not assign any IP to a link
+          if af in value:
+            value[af] = False
+            ifaddr[af] = None
+            continue
+          else:
+            ip = netaddr.IPNetwork(pfx[ndict[node].id])
         else:
           try:
-            ip = netaddr.IPNetwork(value[af])
+            # Allow user to specify a relative index in a prefix, as 'int'
+            ip = netaddr.IPNetwork( pfx[ value[af] ] if isinstance(value[af],int) else value[af] )
           except:
             common.error('Invalid %s link address for node %s: %s' % (af,node,value[af]),common.IncorrectValue,'links')
             continue
