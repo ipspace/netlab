@@ -29,7 +29,7 @@ updates:
 {{  ip_addresses(loopback,False,True)  }}
 
 {% for l in links|default([]) %}
-- path: interface[name={{ 'lo0' if l.type=='stub' else l.ifname }}]
+- path: interface[name={{ 'lo0' if l.node_count==1 else l.ifname }}]
   val:
 {% if l.name is defined %}
    description: "{{ l.name|replace('->','~') }}{{ " ("+l.role+")" if l.role is defined else '' }}"
@@ -37,7 +37,7 @@ updates:
    description: "Stub interface"
 {% endif %}
    subinterface:
-    index: {{ l.ifindex if l.type=='stub' else 0 }}
+    index: {{ l.ifindex if l.node_count==1 else 0 }}
 {{  ip_addresses(l,True,False) }}
 {% if l.bandwidth is defined %}
  # bandwidth {{ l.bandwidth  }}
@@ -49,7 +49,7 @@ updates:
   val:
    type: default
    interface:
-   - name: lo0.0
+   - name: {{ 'system0.0' if 'sr' in module else 'lo0.0' }}
 {% for l in links|default([]) %}
-   - name: {{ 'lo0.%d'|format(l.ifindex) if l.type=='stub' else (l.ifname+'.0') }}
+   - name: {{ 'lo0.%d'|format(l.ifindex) if l.node_count==1 else (l.ifname+'.0') }}
 {% endfor %}
