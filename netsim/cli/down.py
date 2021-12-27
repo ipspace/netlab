@@ -12,6 +12,7 @@ from box import Box
 from . import common_parse_args
 from . import external_commands
 from .. import read_topology,augment,common
+from .. import providers
 
 #
 # CLI parser for create-topology script
@@ -45,4 +46,13 @@ def run(cli_args: typing.List[str]) -> None:
 
   settings = topology.defaults
   external_commands.run_probes(settings,topology.provider,1)
+
+  provider = providers._Provider.load(topology.provider,topology.defaults.providers[topology.provider])
+
+  if hasattr(provider,'pre_stop_lab') and callable(provider.pre_stop_lab):
+    provider.pre_stop_lab(topology)
+
   external_commands.stop_lab(settings,topology.provider,2,"netlab down")
+
+  if hasattr(provider,'post_stop_lab') and callable(provider.post_stop_lab):
+    provider.post_stop_lab(topology)

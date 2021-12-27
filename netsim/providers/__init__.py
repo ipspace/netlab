@@ -1,6 +1,6 @@
 #
 # Dynamic virtualization provider framework
-# 
+#
 # Individual virtualization providers are defined in modules within this directory inheriting
 # Provider class and replacing or augmenting its methods (most commonly, transform)
 #
@@ -43,7 +43,7 @@ class _Provider(Callback):
       return fname
 
     return "Vagrantfile"
-  
+
   _default_template_name = "Vagrantfile.j2"
 
   def get_root_template(self) -> str:
@@ -88,4 +88,10 @@ class _Provider(Callback):
     pass
 
   def pre_start_lab(self, topology: Box) -> None:
+    pass
+
+  def pre_stop_lab(self, topology: Box) -> None:
+    pass
+
+  def post_stop_lab(self, topology: Box) -> None:
     pass

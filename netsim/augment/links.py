@@ -253,11 +253,11 @@ def get_link_type(data: Box, nodes: dict, pools: Box) -> str:
     if pool and pool.get('type'):
       return pool.get('type')
 
-  node_cnt = link_node_count(data,nodes)
+  node_cnt = data.get('node_count') # link_node_count(data,nodes)
   return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
 
 def check_link_type(data: Box, nodes: dict) -> bool:
-  node_cnt = link_node_count(data,nodes)
+  node_cnt = data.get('node_count') # link_node_count(data,nodes)
   link_type = data.get('type')
 
   if not link_type:
@@ -291,6 +291,9 @@ def transform(link_list: typing.Optional[Box], defaults: Box, ndict: dict, pools
   for link in link_list:
     if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
       continue
+
+    # JvB include node_count in link attributes
+    link['node_count'] = link_node_count(link,ndict)
 
     link['type'] = get_link_type(data=link,nodes=ndict,pools=pools)
     if not check_link_type(data=link,nodes=ndict):

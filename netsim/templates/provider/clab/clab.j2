@@ -30,14 +30,31 @@ topology:
       license: {{ n.license }}
 {% endif %}
 {% endfor %}
+
 {% if links %}
+{# Define bridges for links with more than 2 nodes #}
+{% for l in links if l.node_count > 2 %}
+    {{ l.bridge }}: # {{ l.name if l.name else '<unnamed>' }}
+      kind: bridge
+{% endfor %}
+
   links:
-{% for l in links if l.type|default("") != "stub" %}
+{% for l in links if l.node_count >= 2 %}
+{% if l.node_count == 2 %}
   - endpoints:
 {%   for n in nodes %}
 {%     for nl in n.links if nl.linkindex == l.linkindex %}
     - "{{ n.name }}:{{ nl.provider_ifname if 'provider_ifname' in nl else nl.ifname }}"
-{%      endfor %}
-{%    endfor %}
+{%     endfor %}
+{%   endfor %}
+{% elif l.node_count > 2 %}
+{%   for n in nodes %}
+{%     for nl in n.links if nl.linkindex == l.linkindex %}
+  - endpoints:
+    - "{{ n.name }}:{{ nl.provider_ifname if 'provider_ifname' in nl else nl.ifname }}"
+    - "{{ l.bridge }}:{{ n.name }}_{{ nl.provider_ifname if 'provider_ifname' in nl else nl.ifname }}"
+{%     endfor %}
+{%   endfor %}
+{% endif %}
 {% endfor %}
 {% endif %}
