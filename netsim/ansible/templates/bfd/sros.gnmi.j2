@@ -1,0 +1,19 @@
+updates:
+- path: configure/router[router-name=Base]
+  val:
+   interface:
+{% set isis_bfd_v4 = isis.bfd.ipv4 if 'bfd' in isis else False %}
+{% set isis_bfd_v6 = isis.bfd.ipv6 if 'bfd' in isis else False %}
+{# Loopback could be modeled as yet another link... #}
+{% if (loopback.ipv4|default('')|ipv4 and isis_bfd_v4) or (loopback.ipv6|default('')|ipv6 and isis_bfd_v6) %}
+   - interface-name: {{ 'system' if 'sr' in module else 'Loopback0' }}
+     bfd:
+      admin-state: enable
+{% endif %}
+{% for l in links|default([]) %}
+{% if (l.ipv4|default('')|ipv4 and isis_bfd_v4) or (l.ipv6|default('')|ipv6 and isis_bfd_v6) %}
+   - interface-name: i{{ l.ifname }}
+     bfd:
+      admin-state: enable
+{% endif %}
+{% endfor %}
