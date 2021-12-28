@@ -1,6 +1,16 @@
 Release notes
 =============
 
+2021-12-28 (release 1.0.6)
+  * Full SR Linux and SR OS support
+  * Plugin packages and module extensions
+  * Hierarchical device groups
+  * Custom deployment templates moved to 'netlab initial'
+  * Device-specific module attributes
+  * Support for multi-access links in containerlab
+
+  :doc:`More details <release/1.0>`
+
 2021-12-19 (release 1.0.5)
   * Custom deployment templates for individual nodes
   * Support for vagrant-libvirt 0.7.0

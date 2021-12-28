@@ -22,7 +22,7 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release_1.0.5](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0.5).
+The latest release is [release_1.0.6](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0.6).
 
 The last release containing the old (obsolete) CLI commands is [release_0.9.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.3).
 
