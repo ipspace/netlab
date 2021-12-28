@@ -50,7 +50,7 @@ class _Provider(Callback):
     return self._default_template_name
 
   def node_image_version(self, topology: Box) -> None:
-    for n in topology.nodes:
+    for name,n in topology.nodes.items():
       if '.' in n.box:
         image_spec = n.box.split(':')
         n.box = image_spec[0]

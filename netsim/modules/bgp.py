@@ -37,7 +37,7 @@ def check_bgp_parameters(node: Box) -> None:
 
 def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
   rrlist = []
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     if not "bgp" in n:
       continue
     if n.bgp["as"] == bgp_as and n.bgp.get("rr",None):
@@ -97,7 +97,7 @@ class BGP(_Module):
         continue
 
       for n in data.members:
-        if not n in topology.nodes_map:
+        if not n in topology.nodes:
           common.error(
             "Invalid node name %s in member list of BGP AS %s" % (n,asn),
             common.IncorrectValue)
@@ -105,7 +105,7 @@ class BGP(_Module):
         node_data[n]["as"] = asn
 
       for n in data.get('rr',{}):
-        if not n in topology.nodes_map:
+        if not n in topology.nodes:
           common.error(
             "Invalid node name %s in route reflector list of BGP AS %s" % (n,asn),
             common.IncorrectValue)
@@ -117,16 +117,16 @@ class BGP(_Module):
           continue
         node_data[n].rr = True
 
-    for node in topology.nodes:
-      if node.name in node_data:
+    for name,node in topology.nodes.items():
+      if name in node_data:
         node_as = node.bgp.get("as",None)
-        if node_as and node_as != node_data[node.name]["as"]:
+        if node_as and node_as != node_data[name]["as"]:
           common.error(
             "Node %s has AS %s but is also in member list of AS %s" % (node.name,node_as,node_data[node.name]["as"]),
             common.IncorrectValue)
           continue
 
-        node.bgp = node_data[node.name] + node.bgp
+        node.bgp = node_data[name] + node.bgp
 
   '''
   bgp_build_group: create automatic groups based on BGP AS numbers
@@ -137,7 +137,7 @@ class BGP(_Module):
         if gdata.get('members',None):
           common.error('BGP AS groups should not have static members %s' % gname)
 
-    for node in topology.nodes:
+    for name,node in topology.nodes.items():
       if 'bgp' in node and 'as' in node.bgp:
         grpname = "as%s" % node.bgp["as"]
         if not grpname in topology.groups:
@@ -146,7 +146,7 @@ class BGP(_Module):
         if not 'members' in topology.groups[grpname]:
           topology.groups[grpname].members = []
 
-        topology.groups[grpname].members.append(node.name)
+        topology.groups[grpname].members.append(name)
 
   """
   Module pre-default:
@@ -181,9 +181,9 @@ class BGP(_Module):
 
     as_set = {}
     for n in link.keys():
-      if n in topology.nodes_map:
-        if "bgp" in topology.nodes_map[n]:
-          node_as = topology.nodes_map[n].bgp.get("as")
+      if n in topology.nodes:
+        if "bgp" in topology.nodes[n]:
+          node_as = topology.nodes[n].bgp.get("as")
           if node_as:
             as_set[node_as] = True
 
@@ -205,7 +205,7 @@ class BGP(_Module):
     # If we don't have route reflectors, or if the current node is a route
     # reflector, we need BGP sessions to all other nodes in the same AS
     if not(rrlist) or node.bgp.get("rr",None):
-      for n in topology.nodes:
+      for name,n in topology.nodes.items():
         if "bgp" in n:
           if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
             node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
@@ -222,7 +222,7 @@ class BGP(_Module):
     # in different AS numbers, and create BGP neighbors
     for l in node.get("links",[]):
       for ngb_name,ngb_ifdata in l.get("neighbors",{}).items():
-        neighbor = topology.nodes_map[ngb_name]
+        neighbor = topology.nodes[ngb_name]
         if not "bgp" in neighbor:
           continue
         if neighbor.bgp.get("as") and neighbor.bgp.get("as") != node.bgp.get("as"):

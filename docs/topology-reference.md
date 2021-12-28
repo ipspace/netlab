@@ -2,9 +2,9 @@
 
 The lab topology is described in a YAML file using a dictionary format. The three major components that should be present in every topology file are:
 
-* **nodes** -- [list of nodes](nodes.md)
-* **links** -- [list of links](links.md)
-* **defaults** -- describing topology-wide defaults like default device type
+* **nodes** -- [lab devices (nodes)](nodes.md)
+* **links** -- [links between the lab devices](links.md)
+* **defaults** -- topology-wide defaults like default device type
 
 Other topology elements include:
 

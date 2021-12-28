@@ -11,7 +11,6 @@ from box import Box
 # Related modules
 from .. import common
 from ..callback import Callback
-from ..augment.nodes import rebuild_nodes_map
 
 # List of attributes we don't want propagated from defaults to global/node
 #
@@ -77,7 +76,7 @@ def augment_node_module(topology: Box) -> None:
     return
 
   module = topology['module']
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     if not 'module' in n:
       n.module = module
 
@@ -85,17 +84,21 @@ def augment_node_module(topology: Box) -> None:
 # and supported
 #
 def check_supported_node_devices(topology: Box) -> None:
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     for m in n.get("module",[]):                                # Iterate across all modules used by a node
       if not m in topology.defaults:                            # Do we know about the module?
-        common.error("Unknown module %s used by node %s" %
-                     (m,n.name),common.IncorrectValue)
+        common.error(
+          f"Unknown module {m} used by node {name}",
+          common.IncorrectValue,
+          'modules')
         continue
       mod_def = topology.defaults[m]                            # Get module defaults
       if mod_def and "supported_on" in mod_def :                # Are they sane and do they include supported device list?
         if not n.device in topology.defaults[m].supported_on:   # ... and is the device on the list?
-          common.error("Device type %s used by node %s is not supported by module %s" %
-                       (n.device,n.name,m),common.IncorrectValue)
+          common.error(
+            f"Device type {n.device} used by node {name} is not supported by module {m}",
+            common.IncorrectValue,
+            'modules')
           continue
 
 # Merge global module parameters with per-node module parameters
@@ -108,7 +111,7 @@ def merge_node_module_params(topology: Box) -> None:
   global no_propagate_list
   devices = topology.defaults.devices
 
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     if 'module' in n:
       for m in n.module:
         if m in topology:
@@ -142,7 +145,7 @@ adjust_global_modules: last phase of global module adjustments
 '''
 def adjust_global_modules(topology: Box) -> None:
   mod_dict = { m : None for m in topology.get('module',[]) }
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     for m in n.get('module',[]):
       mod_dict[m] = None
 
@@ -230,7 +233,7 @@ def check_module_parameters(topology: Box) -> None:
                 common.IncorrectValue,
                 'module')
 
-  for n in topology.nodes:               # Inspect all nodes
+  for name,n in topology.nodes.items():  # Inspect all nodes
     for m in n.get("module",[]):         # Iterate over all node modules
       if mod_attr[m] and m in n:         # Does the current module have a list of attributes?
                                          # ...Does node have module attribute?
@@ -238,7 +241,7 @@ def check_module_parameters(topology: Box) -> None:
           if not k in mod_attr[m].node:  # If the name of an attribute is not in the list of allowed
                                          # ...node-level attributes report error
             common.error(
-              "Node %s: invalid attribute %s for module %s" % (n.name,k,m),
+              f"Node {name}: invalid attribute {k} for module {m}",
               common.IncorrectValue,
               'module')
 
@@ -253,7 +256,6 @@ def check_module_parameters(topology: Box) -> None:
                 common.IncorrectValue,
                 'groups')
 
-  rebuild_nodes_map(topology)
   for l in topology.get("links",[]):        # Inspect all links - use get to avoid instantiating links key
     for m in topology.get("module",[]):     # Iterate over all known modules - get avoids instantiating module key
       if m in l and mod_attr[m]:            # ... focusing on modules that have attributes specified on this link
@@ -261,11 +263,14 @@ def check_module_parameters(topology: Box) -> None:
         for k in l[m].keys():               # Iterate over link-level module attributes
           if not k in mod_attr[m].link:     # If the name of an attribute is not in the list of allowed
                                             # ... link-level attributes, report an error
-            common.error("Invalid attribute %s for module %s on link %s" % (k,m,l),common.IncorrectValue)
+            common.error(
+              f"Invalid attribute {k} for module {m} on link {l}",
+              common.IncorrectValue,
+              'modules')
 
     for n in l.keys():                            # Iterate over all link attributes,
-      if n in topology.nodes_map:                 # ... select those attributes that represent nodes
-        node = topology.nodes_map[n]              # Get the node data structure (so the expressions don't get too crazy)
+      if n in topology.nodes:                     # ... select those attributes that represent nodes
+        node = topology.nodes[n]                  # Get the node data structure (so the expressions don't get too crazy)
         for m in node.get("module",[]):           # Iterate over all node modules
           if mod_attr[m] and m in (l[n] or {}):   # Does the current module have a list of attributes?
                                                   # ... Does node have link-level module attributes?
@@ -273,7 +278,10 @@ def check_module_parameters(topology: Box) -> None:
             for k in l[n][m].keys():              # Iterate over node link-level module-specific attributes
               if not k in mod_attr[m].link_node:  # If the name of an attribute is not in the list of allowed
                                                   # ... link-level node attributes report error
-                common.error("Node %s has invalid attribute %s for module %s on link %s" % (n,k,m,l),common.IncorrectValue)
+                common.error(
+                  f"Node {n} has invalid attribute {k} for module {m} on link {l}",
+                  common.IncorrectValue,
+                  'modules')
 
 def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> Box:
   if isinstance(a,dict):
@@ -312,7 +320,7 @@ the original order as much as possible.
 """
 
 def reorder_node_modules(topology: Box) -> None:
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     if 'module' in n:
       n.module = sort_module_list(n.module,topology.defaults)
 
@@ -357,9 +365,7 @@ def module_transform(method: str, topology: Box) -> None:
 def node_transform(method: str , topology: Box) -> None:
   global mod_load
 
-  rebuild_nodes_map(topology)
-
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     for m in n.get('module',[]):
       if not mod_load.get(m):
         mod_load[m] = _Module.load(m,topology.get(m))
@@ -368,13 +374,12 @@ def node_transform(method: str , topology: Box) -> None:
 def link_transform(method: str, topology: Box) -> None:
   global mod_load
 
-  rebuild_nodes_map(topology)
   for l in topology.get("links",[]):
     mod_list: typing.Dict = {}
     for n in l.keys():
-      if not n in topology.nodes_map:
+      if not n in topology.nodes:
         continue
-      mod_list.update({ m: None for m in topology.nodes_map[n].get("module",[]) })
+      mod_list.update({ m: None for m in topology.nodes[n].get("module",[]) })
     for m in mod_list.keys():
       if not mod_load.get(m):
         mod_load[m] = _Module.load(m,topology.get(m))

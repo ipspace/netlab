@@ -12,24 +12,45 @@ from box import Box
 from .. import common
 from .. import addressing
 
-def adjust_node_list(nodes: typing.Union[typing.Dict, typing.List]) -> typing.List[Box]:
-  node_list = []
-  if isinstance(nodes, dict):
-    for k,v in sorted(nodes.items()):
-      if v is None:
-        v = Box({},default_box=True)
-      elif not isinstance(v,dict):
-        common.error('Node data for node %s must be a dictionary' % k)
-        v = Box({ 'extra': v })
-      v.name = k
-      node_list.append(v)
+#
+# Starting with release 1.1, the nodes data structure is a dictionary. Convert
+# lists of dictionaries or lists of strings into a unified dictionary structure
+#
+def create_node_dict(nodes: Box) -> Box:
+  if isinstance(nodes,dict):
+    node_dict = nodes
   else:
+    node_dict = Box({},default_box=True,box_dots=True)
+    node_id = 0
     for n in nodes:
       if isinstance(n,dict):
         if not 'name' in n:
-          common.error('Node is missing a "name" attribute: %s' % n)
-      node_list.append(n if isinstance(n,dict) else { 'name': n })
-  return node_list
+          common.error(f'Node is missing a "name" attribute: {n}',common.IncorrectValue,'nodes')
+      elif isinstance(n,str):
+        n = Box({ 'name': n },default_box=True,box_dots=True)
+      node_id = node_id + 1
+      n.id = node_id
+      node_dict[n.name] = n
+
+  for name in list(node_dict.keys()):
+    ndata = node_dict[name]
+    if ndata is None:
+      ndata = Box({'name': name},default_box=True)
+    elif not isinstance(ndata,dict):
+      common.error(f'Node data for node {name} must be a dictionary')
+      ndata[name] = { 'name': name, 'extra': ndata }
+    else:
+      ndata['name'] = name
+    node_dict[name] = ndata
+
+  common.exit_on_error()
+  return node_dict
+
+#
+# Convert node dictionary back into the old list format (needed to support pre-1.1 legacy code)
+#
+def nodes_into_list(topology: Box) -> None:
+  topology.nodes = [ node_data + { 'name': name} for name,node_data in topology.nodes.items() ]
 
 def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:
@@ -37,7 +58,7 @@ def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) ->
     if not mgmt_if:
       ifname_format = device_data.interface_name
       if not ifname_format:
-        common.fatal("Missing interface name template for device type %s" % node['device'])
+        common.fatal("Missing interface name template for device type %s" % node.device)
 
       ifindex_offset = device_data.get('ifindex_offset',1)
       mgmt_if = ifname_format % (ifindex_offset - 1)
@@ -50,11 +71,11 @@ def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) ->
         if not 'start' in addrs:
           common.fatal("Start offset missing in management address pool for AF %s" % af)
         if not af in node.mgmt:
-          node.mgmt[af] = str(addrs[pfx][node['id']+addrs['start']])
+          node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
 
     if addrs.mac_eui and not 'mac' in node.mgmt:
-      addrs.mac_eui[5] = node['id']
-      node.mgmt.mac = str(addrs['mac_eui'])
+      addrs.mac_eui[5] = node.id
+      node.mgmt.mac = str(addrs.mac_eui)
 
 #
 # Add device (box) images from defaults
@@ -65,22 +86,25 @@ def augment_node_provider_data(topology: Box) -> None:
   if not devices:
     common.fatal('Device defaults (defaults.devices) are missing')
 
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     if not n.device:
       n.device = topology.defaults.device
 
     if not n.device:
-      common.error('No device type specified for node %s and there is no default device type' % n.name)
+      common.error(
+        f'No device type specified for node {name} and there is no default device type',
+        common.MissingValue,
+        'nodes')
       continue
 
     devtype = n.device
 
     if not devtype in devices:
-      common.error('Unknown device %s in node %s' % (devtype,n.name))
+      common.error(f'Unknown device {devtype} in node {name}',common.IncorrectValue,'nodes')
       continue
 
     if not isinstance(devices[devtype],dict):
-      common.fatal("Device data for device %s must be a dictionary" % devtype)
+      common.fatal(f"Device data for device {devtype} must be a dictionary")
 
     for k,v in devices[devtype].items():
       if "provider_" in k:
@@ -96,24 +120,25 @@ def augment_node_provider_data(topology: Box) -> None:
       continue
 
     if not 'image' in devices[devtype]:
-      common.error("No image data for device type %s used by node %s" % (devtype,n['name']))
+      common.error(f"No image data for device type {devtype} used by node {name}",common.MissingValue,'nodes')
       continue
 
     if not isinstance(devices[devtype].image,dict):
-      common.error("Image data for device type %s used by node %s should be a dictionary" % (devtype,n['name']))
+      common.error(
+        f"Image data for device type {devtype} used by node {name} should be a dictionary",
+        common.IncorrectValue,
+        'nodes')
       continue
 
     box = devices[devtype].image[provider]
     if not box:
-      common.error('No image specified for device %s (provider %s) used by node %s' % (devtype,provider,n['name']))
+      common.error(
+        f'No image specified for device {devtype} (provider {provider}) used by node {name}',
+        common.MissingValue,
+        'nodes')
       continue
 
     n.box = box
-
-# Rebuild nodes-by-name dict
-#
-def rebuild_nodes_map(topology: Box) -> None:
-  topology.nodes_map = { n.name : n for n in topology.get('nodes',[]) }
 
 '''
 get_next_id: given a list of static IDs and the last ID, get the next device ID
@@ -135,12 +160,11 @@ Main node transformation code
 * copy device data from defaults
 * set management IP and MAC addresses
 '''
-def transform(topology: Box, defaults: Box, pools: Box) -> dict:
+def transform(topology: Box, defaults: Box, pools: Box) -> None:
   id = 0
-  ndict = {}
   id_list = []
 
-  for n in topology['nodes']:
+  for name,n in topology.nodes.items():
     if 'id' in n:
       if isinstance(n.id,int) and n.id > 0 and n.id <= 250:
         id_list.append(n.id)
@@ -149,13 +173,13 @@ def transform(topology: Box, defaults: Box, pools: Box) -> dict:
 
   common.exit_on_error()
 
-  for n in topology['nodes']:
+  for name,n in topology.nodes.items():
     if not 'id' in n:
       id = get_next_id(id_list,id)
       n.id = id
 
     if not n.name:
-      common.error("ERROR: node does not have a name %s" % str(n))
+      common.error(f"Internal error: node does not have a name {n}",common.IncorrectValue,'nodes')
       continue
 
     if pools.loopback:
@@ -168,13 +192,9 @@ def transform(topology: Box, defaults: Box, pools: Box) -> dict:
 
     device_data = defaults.devices[n.device]
     if not device_data:
-      common.error("ERROR: Unsupported device type %s: %s" % (n.device,n))
+      common.error(f"Unsupported device type {n.device} used by node {name}",common.IncorrectValue,'nodes')
       continue
 
     augment_mgmt_if(n,device_data,topology.addressing.mgmt)
 
-    ndict[n.name] = n
     topology.Provider.call("augment_node_data",n,topology)
-
-  topology.nodes_map = ndict
-  return ndict

@@ -58,7 +58,7 @@ def check_required_elements(topology: Box) -> None:
   invalid_topo = False
   for rq in ['nodes']:
     if not rq in topology:
-      common.error("Missing '%s' element" % rq,category=common.MissingValue,module="topology")
+      common.error(f"Lab topology is missing mandatory {rq} element",category=common.MissingValue,module="topology")
       invalid_topo = True
 
   if invalid_topo:
@@ -115,7 +115,6 @@ def adjust_global_parameters(topology: Box) -> None:
 
 def cleanup_topology(topology: Box) -> Box:
   topo_copy = Box(topology)
-  topo_copy.pop("nodes_map")
 
   # Remove PFX generators from addressing section
   #

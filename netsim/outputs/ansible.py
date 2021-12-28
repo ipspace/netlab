@@ -46,11 +46,10 @@ def ansible_inventory_host(node: Box, defaults: Box) -> Box:
   provider_inventory_settings(host,defaults)
   return host
 
-def create(nodes: typing.List[Box], groups: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
+def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
   inventory.all.vars.netlab_provider = defaults.provider
-  node_names = { n.name for n in nodes }
 
   if addressing:
     inventory.all.vars.pools = addressing
@@ -59,11 +58,11 @@ def create(nodes: typing.List[Box], groups: Box, defaults: Box, addressing: typi
         if ('_pfx' in k) or ('_eui' in k):
           del pool[k]
 
-  for node in nodes:
+  for name,node in nodes.items():
     group = node.get('device','all')
     if not group in inventory:
       inventory[group] = { 'hosts': {} }
-    inventory[group]['hosts'][node['name']] = ansible_inventory_host(node,defaults)
+    inventory[group]['hosts'][name] = ansible_inventory_host(node,defaults)
 
   if 'devices' in defaults:
     for group in inventory.keys():
@@ -81,7 +80,7 @@ def create(nodes: typing.List[Box], groups: Box, defaults: Box, addressing: typi
 
     if 'members' in gdata:
       for m in gdata.members:
-        if m in node_names:
+        if m in nodes:
           if not m in inventory[gname].hosts:
             inventory[gname].hosts[m] = {}
         elif m in groups:

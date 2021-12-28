@@ -161,12 +161,12 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       link.unnumbered = True
 
   end_names = ['left','right']
-  nodes: typing.List[Box] = []
+  link_nodes: typing.List[Box] = []
   interfaces = []
 
   for (node,value) in sorted(link.items()):
     if node in ndict:
-      ecount = len(nodes)
+      ecount = len(link_nodes)
       ifaddr = Box({},default_box=True)
       if link.get('unnumbered',None):
         ifaddr.unnumbered = True
@@ -186,32 +186,32 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
       ifaddr = ifaddr + value
       link[node] = value
-      nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
+      link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
-  if len(nodes) > len(end_names):
+  if len(link_nodes) > len(end_names):
     common.error("Too many nodes specified on a P2P link",common.IncorrectValue,'links')
     return None
 
-  for i in range(0,len(nodes)):
-    node = nodes[i].name
-    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=nodes[i].ifaddr)
-    ifdata.name = link.get("name") or (nodes[i].name + " -> " + nodes[1-i].name)
+  for i in range(0,len(link_nodes)):
+    node = link_nodes[i].name
+    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=link_nodes[i].ifaddr)
+    ifdata.name = link.get("name") or (link_nodes[i].name + " -> " + link_nodes[1-i].name)
     add_node_interface(ndict[node],ifdata,defaults)
     interfaces.append(ifdata)
 
   if not 'name' in link:
-    link.name = nodes[0].name + " - " + nodes[1].name
+    link.name = link_nodes[0].name + " - " + link_nodes[1].name
 
   for i in range(0,2):
     if 'bridge' in link:
       interfaces[i].bridge = link.bridge
     else:
-      interfaces[i].remote_id = ndict[nodes[1-i].name].id
+      interfaces[i].remote_id = ndict[link_nodes[1-i].name].id
       interfaces[i].remote_ifindex = interfaces[1-i].ifindex
 
-    link[end_names[i]] = { 'node': nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
+    link[end_names[i]] = { 'node': link_nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
 
-    remote = nodes[1-i].name
+    remote = link_nodes[1-i].name
     interfaces[i]['neighbors'] = { remote : { \
       'ifname' : interfaces[1-i]['ifname'] }}
     for af in ('ipv4','ipv6'):
@@ -220,14 +220,13 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       if af in interfaces[i]:
         link[end_names[i]][af] = interfaces[i][af]
 
-    node = nodes[i].name
+    node = link_nodes[i].name
     ifindex = len(ndict[node].links) - 1
     ndict[node].links[ifindex] = interfaces[i]
 
   return link
 
 def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
-  nodes = nodes or {}
   ok = True
   for k in data.keys():
     if k not in nodes and k not in valid:
@@ -243,7 +242,7 @@ def link_node_count(data: Box, nodes: dict) -> int:
       node_cnt = node_cnt + 1
   return node_cnt
 
-def get_link_type(data: Box, nodes: dict, pools: Box) -> str:
+def get_link_type(data: Box, pools: Box) -> str:
   if data.get('type'):
     return data['type']
 
@@ -256,7 +255,7 @@ def get_link_type(data: Box, nodes: dict, pools: Box) -> str:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
   return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
 
-def check_link_type(data: Box, nodes: dict) -> bool:
+def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
   link_type = data.get('type')
 
@@ -281,7 +280,7 @@ def check_link_type(data: Box, nodes: dict) -> bool:
     return False
   return True
 
-def transform(link_list: typing.Optional[Box], defaults: Box, ndict: dict, pools: Box) -> typing.Optional[Box]:
+def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
   if not link_list:
     return None
 
@@ -289,23 +288,23 @@ def transform(link_list: typing.Optional[Box], defaults: Box, ndict: dict, pools
   linkindex = defaults.get('link_index',1)
 
   for link in link_list:
-    if not check_link_attributes(data=link,nodes=ndict,valid=link_attr_full):
+    if not check_link_attributes(data=link,nodes=nodes,valid=link_attr_full):
       continue
 
     # JvB include node_count in link attributes
-    link['node_count'] = link_node_count(link,ndict)
+    link['node_count'] = link_node_count(link,nodes)
 
-    link['type'] = get_link_type(data=link,nodes=ndict,pools=pools)
-    if not check_link_type(data=link,nodes=ndict):
+    link['type'] = get_link_type(data=link,pools=pools)
+    if not check_link_type(data=link):
       continue
 
     link.linkindex = linkindex
     if link.type == 'p2p':
-      augment_p2p_link(link,pools,ndict,defaults=defaults)
+      augment_p2p_link(link,pools,nodes,defaults=defaults)
     else:
       if not 'bridge' in link:
         link['bridge'] = "%s_%d" % (defaults.name,linkindex)
-      augment_lan_link(link,pools,ndict,defaults=defaults)
+      augment_lan_link(link,pools,nodes,defaults=defaults)
 
     linkindex = linkindex + 1
   return link_list

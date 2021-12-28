@@ -67,11 +67,11 @@ def graph_bgp_clusters(f : typing.TextIO, bgp: Box, settings: Box) -> None:
 
 def build_maps(topology: Box) -> Box:
   maps = Box({},default_box=True,box_dots=True)
-  for n in topology.nodes:
-    maps.nodes[n.name] = n
+  for name,n in topology.nodes.items():
+    maps.nodes[name] = n
 
   if 'module' in topology and 'bgp' in topology.module:
-    for n in topology.nodes:
+    for name,n in topology.nodes.items():
       if 'bgp' in n and 'as' in n.bgp:
         maps.bgp[n.bgp['as']].nodes[n.name] = n
 
@@ -91,7 +91,7 @@ def graph_topology(topology: Box, fname: str, settings: Box) -> bool:
   if 'bgp' in maps and settings.as_clusters:
     graph_bgp_clusters(f,maps.bgp,settings)
   else:
-    for n in topology.nodes:
+    for name,n in topology.nodes.items():
       node_with_label(f,n,settings)
 
   for l in topology.links:
@@ -131,7 +131,7 @@ def graph_bgp(topology: Box, fname: str, settings: Box) -> bool:
   maps = build_maps(topology)
   graph_bgp_clusters(f,maps.bgp,settings)
 
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     if 'bgp' in n:
       for neighbor in n.bgp.get('neighbors',[]):
         if neighbor.name > n.name:

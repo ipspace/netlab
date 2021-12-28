@@ -12,7 +12,7 @@ from .. import common
 from . import _TopologyOutput
 from .common import adjust_inventory_host
 
-def create(nodes: typing.List[Box], defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
+def create(nodes: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
   if addressing:
@@ -22,12 +22,12 @@ def create(nodes: typing.List[Box], defaults: Box, addressing: typing.Optional[B
         if ('_pfx' in k) or ('_eui' in k):
           del pool[k]
 
-  for node in nodes:
-    inventory[node.name] = adjust_inventory_host(
-                             node = node,
-                             defaults = defaults,
-                             ignore = ['name'],
-                             group_vars = True)
+  for name,node in nodes:
+    inventory[name] = adjust_inventory_host(
+                        node = node,
+                        defaults = defaults,
+                        ignore = ['name'],
+                        group_vars = True)
 
   return inventory
 
@@ -50,7 +50,7 @@ def write_devices(data: Box, fname: str, fmt: typing.Optional[str]) -> None:
   fmt = fmt or 'standard'
   addressing = data.get('addressing',{}) if 'pools' in fmt else None
 
-  inventory = create(data['nodes'],data.get('defaults',{}),addressing)
+  inventory = create(data.nodes,data.get('defaults',{}),addressing)
 
   header = "# Netsim Devices inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
 

@@ -12,9 +12,13 @@ def transformation_results_yaml(topology,ignore=('addressing','defaults','nodes_
   * Create YAML text out of the remaining dictionary
   """
   for k in ignore:
-    del topology[k]
+    topology.pop(k,None)
 
-
+  """
+  Temporary: replace node dict with node list
+  """
+  topology.nodes = [ node_data + { 'name': name} for name,node_data in topology.nodes.items() ]
+  
   """
   If we're using a dictionary extension that has to_yaml method use that,
   otherwise use pyyaml (hoping it won't generate extraneous attributes)

@@ -26,7 +26,7 @@ def group_members(topology: Box, group: str, count: int = 0) -> list:
     common.fatal('Recursive group definition, aborting','groups')
 
   for m in topology.groups[group].members:
-    if m in topology.nodes_map:
+    if m in topology.nodes:
       members = members + [ m ]
     if m in topology.groups:
       members = members + group_members(topology,m,count + 1)
@@ -37,8 +37,6 @@ def group_members(topology: Box, group: str, count: int = 0) -> list:
 Check validity of 'groups' data structure
 '''
 def check_group_data_structure(topology: Box) -> None:
-  nodes.rebuild_nodes_map(topology)
-
   if not 'groups' in topology:
     topology.groups = Box({},default_box=True,box_dots=True)
 
@@ -52,7 +50,7 @@ def check_group_data_structure(topology: Box) -> None:
   for grp in topology.groups.keys():
     if isinstance(topology.groups[grp],list):
       topology.groups[grp] = { 'members': topology.groups[grp] }
-    if grp in topology.nodes_map:
+    if grp in topology.nodes:
       common.error(
         f"group {grp} is also a node name. I can't deal with that level of confusion",
         common.IncorrectValue,
@@ -92,7 +90,7 @@ def check_group_data_structure(topology: Box) -> None:
       continue
 
     for n in gdata.members:
-      if not n in topology.nodes_map and not n in topology.groups:
+      if not n in topology.nodes and not n in topology.groups:
         common.error('Member %s of group %s is not a valid node or group name' % (n,grp))
 
 
@@ -100,7 +98,7 @@ def check_group_data_structure(topology: Box) -> None:
 Add node-level group settings to global groups
 '''
 def add_node_level_groups(topology: Box) -> None:
-  for n in topology.nodes:
+  for name,n in topology.nodes.items():
     if not 'group' in n:
       continue
 
@@ -111,8 +109,8 @@ def add_node_level_groups(topology: Box) -> None:
       if not grpname in topology.groups:
         topology.groups[grpname] = { 'members': [] }      # Create an empty new group if needed
 
-      if not n.name in topology.groups[grpname].members:  # Node not yet in the target group
-        topology.groups[grpname].members.append(n.name)   # Add node to the end of the member list
+      if not name in topology.groups[grpname].members:  # Node not yet in the target group
+        topology.groups[grpname].members.append(name)   # Add node to the end of the member list
 
 '''
 Check recursive group definitions
@@ -162,8 +160,8 @@ def copy_group_node_data(topology: Box) -> None:
     gdata = topology.groups[grp]
     g_members = group_members(topology,grp)
     if 'node_data' in gdata:
-      for ndata in topology.nodes:              # Have to iterate over original node data (nodes_map contains a copy)
-        if ndata.name in g_members:
+      for name,ndata in topology.nodes.items():
+        if name in g_members:
           for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
             if not k in ndata:
               ndata[k] = v
@@ -219,9 +217,9 @@ def node_config_templates(topology: Box) -> None:
 
     common.must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
     g_members = group_members(topology,group_name)
-    for ndata in topology.nodes:
-      if ndata.name in g_members or group_name == 'all':
-        common.must_be_list(ndata,'config',f'nodes.{ndata.name}')
+    for name,ndata in topology.nodes.items():
+      if name in g_members or group_name == 'all':
+        common.must_be_list(ndata,'config',f'nodes.{name}')
         ndata.config = topology.groups[group_name].config + ndata.config
 
 
@@ -235,7 +233,7 @@ def node_config_templates(topology: Box) -> None:
   for group_name in topology.groups:
     topology.groups[group_name].pop('config',None)
 
-  for node in topology.nodes:
+  for name,node in topology.nodes.items():
     if not 'config' in node:
       continue
 

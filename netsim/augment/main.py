@@ -11,6 +11,7 @@ from ..providers import _Provider
 from .. import modules
 
 def transform_setup(topology: Box) -> None:
+  topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   augment.plugin.init(topology)
   augment.plugin.execute('init',topology)
   augment.topology.extend_attribute_list(topology.defaults)
@@ -20,7 +21,6 @@ def transform_setup(topology: Box) -> None:
   topology.Provider = _Provider.load(topology.provider,topology.defaults.providers[topology.provider])
   common.exit_on_error()
 
-  topology.nodes = augment.nodes.adjust_node_list(topology.nodes)
   augment.nodes.augment_node_provider_data(topology)
   common.exit_on_error()
   if 'links' in topology:
@@ -39,13 +39,13 @@ def transform_data(topology: Box) -> None:
   augment.topology.check_global_elements(topology)
 
   augment.plugin.execute('pre_node_transform',topology)
-  ndict = augment.nodes.transform(topology,topology.defaults,topology.pools)
+  augment.nodes.transform(topology,topology.defaults,topology.pools)
   common.exit_on_error()
   augment.plugin.execute('post_node_transform',topology)
 
   if 'links' in topology:
     augment.plugin.execute('pre_link_transform',topology)
-    augment.links.transform(topology.links,topology.defaults,ndict,topology.pools)
+    augment.links.transform(topology.links,topology.defaults,topology.nodes,topology.pools)
     common.exit_on_error()
     augment.plugin.execute('post_link_transform',topology)
 
