@@ -1,3 +1,11 @@
+{% macro bfd_params() %}
+     admin-state: enable
+     desired-minimum-transmit-interval: {{ bfd.DesiredMinTxInterval_us }}
+     required-minimum-receive: {{ bfd.RequiredMinRxInterval_us }}
+     detection-multiplier: {{ bfd.DetectMult }} # range 1..20
+     minimum-echo-receive-interval: {{ bfd.RequiredMinEchoRxInterval_us|default(0) }}
+{% endmacro %}
+
 updates:
 - path: bfd
   val:
@@ -8,12 +16,12 @@ updates:
 {# Loopback could be modeled as yet another link... #}
 {% if (loopback.ipv4|default('')|ipv4 and isis_bfd_v4) or (loopback.ipv6|default('')|ipv6 and isis_bfd_v6) %}
    - id: {{ 'system0' if 'sr' in module else 'lo0' }}.0
-     admin-state: enable
+{{   bfd_params() }}
 {% endif %}
 
 {% for l in links|default([]) %}
 {% if (l.ipv4|default('')|ipv4 and isis_bfd_v4) or (l.ipv6|default('')|ipv6 and isis_bfd_v6) %}
    - id: {{ l.ifname }}.0
-     admin-state: enable
+{{   bfd_params() }}
 {% endif %}
 {% endfor %}
