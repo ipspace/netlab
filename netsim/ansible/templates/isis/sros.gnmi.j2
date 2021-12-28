@@ -17,7 +17,7 @@ updates:
      interface:
      - interface-name: "{{ "system" if 'sr' in module else "Loopback0" }}"
        passive: True
-{%   for l in links|default([]) %}
+{%   for l in links|default([]) if l.ipv4|default(0)|ipv4 or l.ipv6|default(0)|ipv6 or l.unnumbered|default(False) %}
 {%    if "external" in l.role|default("") %}
      # IS-IS not configured on external interface {{ l.ifname }}
 {%    else %}
@@ -29,10 +29,12 @@ updates:
 {%     if (l.ipv4|default('')|ipv4 and isis_bfd_v4) or (l.ipv6|default('')|ipv6 and isis_bfd_v6) %}
        bfd-liveness:
 {%     if (l.ipv4|default('')|ipv4 and isis_bfd_v4) %}
-        ipv4: { }
+        ipv4:
+         include-bfd-tlv: True
 {%     endif %}
 {%     if (l.ipv6|default('')|ipv6 and isis_bfd_v6) %}
-        ipv6: { }
+        ipv6:
+         include-bfd-tlv: True
 {%     endif %}
 {%     endif %}
 {%     if l.isis.metric is defined or l.isis.cost is defined %}
