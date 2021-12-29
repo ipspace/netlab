@@ -108,7 +108,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       for af,pfx in pfx_list.items():
         if not value[af]:
           # Allow user to specify ipv4: False to not assign any IP to a link
-          if af in value:
+          if af in value and isinstance(value[af],bool):
             value[af] = False
             ifaddr[af] = None
             continue
