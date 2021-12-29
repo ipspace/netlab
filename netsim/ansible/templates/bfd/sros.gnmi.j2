@@ -1,25 +1,26 @@
-{% macro bfd_params(enable) %}
-   admin-state: {{ 'enable' if enable else 'disable' }}
-{% if enable %}
+{% macro bfd_params() %}
+   admin-state: enable
    receive: {{ (bfd.RequiredMinRxInterval_us / 1000)|int }}
    transmit-interval: {{ (bfd.DesiredMinTxInterval_us / 1000)|int }}
    multiplier: {{ bfd.DetectMult }} # range 1..20
 {% if bfd.RequiredMinEchoRxInterval_us != 0 %}
    echo-receive: {{ bfd.RequiredMinEchoRxInterval_us }}
 {% endif %}
-{% endif %}
 {% endmacro %}
 
 {% macro bfd_decl(ifname,l) %}
 {% set isis_bfd_v4 = isis.bfd.ipv4 if 'bfd' in isis else False %}
 {% set isis_bfd_v6 = isis.bfd.ipv6 if 'bfd' in isis else False %}
+{% if l.ipv4|default('')|ipv4 and isis_bfd_v4 %}
 - path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv4/bfd
   val:
-{{ bfd_params( l.ipv4|default('')|ipv4 and isis_bfd_v4 ) }}
-
+{{ bfd_params() }}
+{% endif %}
+{% if (l.ipv6|default('')|ipv6 or l.unnumbered|default(0)) and isis_bfd_v6 %}
 - path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv6/bfd
   val:
-{{ bfd_params( (l.ipv6|default('')|ipv6 or l.unnumbered|default(0)) and isis_bfd_v6 ) }}
+{{ bfd_params() }}
+{% endif %}
 {% endmacro %}
 
 replace:
