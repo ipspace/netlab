@@ -70,16 +70,20 @@ updates:
 {% elif l.type|default("") == "stub" %}
 {% set desc = "Stub interface" %}
 {% endif %}
+{% if 'c' in l.ifname %}
 - path: configure/port[port-id={{l.ifname}}]
   val: { connector: { "breakout": "c1-100g" } }
+{% endif %}
 {{ interface(ifname,"ethernetCsmacd",desc,v4,v6) }}
 
 {# Add interface to the Base routing instance (default VRF) #}
+{% if v4|ipv4 or v6|ipv6 %}
 - path: openconfig-network-instance:network-instances/network-instance[name=Base]
   val:
     interfaces:
      interface:
      - {{ if_in_base(ifname,v4,v6) }}
+{% endif %}
 
 {# Enable LLDP, in the CLI this shows up under /configure port X/Y/Z ethernet lldp #}
 - path: openconfig-lldp:interfaces/interface[name={{ifname}}]
