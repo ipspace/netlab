@@ -31,10 +31,10 @@ def get_link_base_attributes(defaults: Box) -> set:
   return get_link_full_attributes(defaults) - set(no_propagate)
 
 def adjust_link_list(links: typing.Optional[typing.List[typing.Any]]) -> typing.Optional[typing.List[typing.Dict]]:
-  link_list = []
+  link_list: list = []
 
   if not(links):
-    return None                  # pragma: no cover (this is a sanity-check safeguard)
+    return link_list
   for l in links:
     if isinstance(l,dict):
       link_list.append(l)
@@ -145,13 +145,13 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
 def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
   link_attr_base = get_link_base_attributes(defaults)
-  if not defaults:
+  if not defaults:      # pragma: no cover (almost impossible to get there)
     defaults = Box({})
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
   else:
     pool = addressing.get_pool(addr_pools,[link.get('role'),'p2p','lan'])
-    if pool is None:
+    if pool is None:    # pragma: no cover (almost impossible to get there due to built-in default pools)
       common.error("Cannot get addressing pool for P2P link: %s" % str(link),common.MissingValue,'links')
       return None
 
@@ -175,11 +175,16 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
       if not isinstance(value,dict):
         common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
-        continue
+        return None
 
       for af,pfx in pfx_list.items():
         ip = netaddr.IPNetwork(pfx[ecount+1])
         ip.prefixlen = pfx.prefixlen
+        if af in value:
+          common.error(
+            f'{af} address specified for node {node} on P2P link {link} is ignored',
+            common.IncorrectValue,
+            'links')
         value[af] = str(ip)
         ifaddr[af] = value[af]
 
@@ -188,8 +193,8 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       link[node] = value
       link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
-  if len(link_nodes) > len(end_names):
-    common.error("Too many nodes specified on a P2P link",common.IncorrectValue,'links')
+  if len(link_nodes) > len(end_names): # pragma: no cover (this error is reported earlier)
+    common.fatal(f"Internal error: Too many nodes specified on a P2P link {link}",'links')
     return None
 
   for i in range(0,len(link_nodes)):
@@ -249,7 +254,7 @@ def get_link_type(data: Box, pools: Box) -> str:
   role = data.get('role',None)
   if role:
     pool = pools.get(role,None)
-    if pool and pool.get('type'):
+    if pool and pool.get('type'):   # pragma: no cover (not implemented yet, would need attribute propagation in addressing)
       return pool.get('type')
 
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
@@ -259,8 +264,8 @@ def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
   link_type = data.get('type')
 
-  if not link_type:
-    common.fatal('Link type still undefined in check_link_type: %s' % data,'links')
+  if not link_type: # pragma: no cover (shouldn't get here)
+    common.fatal('Internal error: link type still undefined in check_link_type: %s' % data,'links')
     return False
 
   if node_cnt == 0:

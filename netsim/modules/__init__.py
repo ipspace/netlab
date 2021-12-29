@@ -367,7 +367,7 @@ def node_transform(method: str , topology: Box) -> None:
 
   for name,n in topology.nodes.items():
     for m in n.get('module',[]):
-      if not mod_load.get(m):
+      if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
         mod_load[m] = _Module.load(m,topology.get(m))
       mod_load[m].call("node_"+method,n,topology)
 
@@ -381,6 +381,6 @@ def link_transform(method: str, topology: Box) -> None:
         continue
       mod_list.update({ m: None for m in topology.nodes[n].get("module",[]) })
     for m in mod_list.keys():
-      if not mod_load.get(m):
+      if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
         mod_load[m] = _Module.load(m,topology.get(m))
       mod_load[m].call("link_"+method,l,topology)

@@ -10,13 +10,14 @@ import glob
 import pathlib
 import pytest
 import difflib
+from box import Box
 
 import utils
 
 from netsim import common
 from netsim import read_topology
 from netsim import augment
-from netsim.outputs import ansible
+from netsim.outputs import _TopologyOutput,ansible
 
 def run_test(fname,local_defaults="topology-defaults.yml",sys_defaults="package:topology-defaults.yml"):
   topology = read_topology.load(fname,local_defaults,sys_defaults)
@@ -38,6 +39,14 @@ def test_transformation_cases(tmpdir):
       ansible.ansible_config(tmpdir+"/ansible.cfg",tmpdir+"/hosts.yml")
       if topology.defaults.inventory == "dump":
         ansible.dump(topology)
+
+    if topology.defaults.get("Output"):
+      for output_format in topology.defaults.get("Output"):
+        output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format])
+        if output_module:
+          output_module.write(Box(topology))
+        else:
+          common.error('Unknown output format %s' % output_format,common.IncorrectValue,'create')
 
     result = utils.transformation_results_yaml(topology)
     exp_test_case = "topology/expected/"+os.path.basename(test_case)

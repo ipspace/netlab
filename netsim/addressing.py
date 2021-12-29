@@ -182,10 +182,11 @@ def get_pool(pools: Box, pool_list: typing.List[str]) -> typing.Optional[str]:
     if p in pools:
       return p
 
-  common.error( \
-    'Cannot get addressing for any of these pools: %s' % str(pool_list), \
-    category=common.MissingValue,module='addressing')
-  return None
+  common.error(
+    f'Cannot get addressing for any of these pools: {pool_list}',
+    category=common.MissingValue,
+    module='addressing')                       # pragma: no cover (impossible to get here due to built-in default pools)
+  return None                                  # pragma: no cover
 
 def get_nth_subnet(n: int, subnet: netaddr.IPNetwork.subnet, cache_list: list) -> netaddr.IPNetwork:
   while len(cache_list) < n:
@@ -210,12 +211,12 @@ def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) 
 
 def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typing.Optional[int] = None) -> typing.Dict:
   if not pool_list:
-    pool_list = ['lan']
+    pool_list = ['lan']                   # pragma: no cover
   p = get_pool(pools,pool_list)
   if p:
     return get_pool_prefix(pools,p,n)
   else:
-    return {}
+    return {}                             # pragma: no cover -- can't figure out how to get here
 
 def setup(topo: Box, defaults: Box) -> None:
   common.null_to_string(topo.addressing)

@@ -50,7 +50,7 @@ def extend_module_attribute_list(topology: Box) -> None:
   for k in topology.defaults.keys():
     if isinstance(topology.defaults[k],dict):
       if 'extra_attributes' in topology.defaults[k]:
-        if not 'attributes' in topology.defaults[k]:
+        if not 'attributes' in topology.defaults[k]:   # pragma: no cover (things would break way before this point)
           topology.defaults[k].attributes = {}
         extend_attribute_list(topology.defaults[k],f'topology.defaults.{k}',['global','node','link'])
 
@@ -60,6 +60,9 @@ def check_required_elements(topology: Box) -> None:
     if not rq in topology:
       common.error(f"Lab topology is missing mandatory {rq} element",category=common.MissingValue,module="topology")
       invalid_topo = True
+    elif not topology.get(rq):
+      common.error(f"Required topology element {rq} is empty",category=common.MissingValue,module="topology")
+      invalid_topo = True
 
   if invalid_topo:
     common.fatal("Fatal topology errors, aborting")
@@ -68,9 +71,8 @@ def check_required_elements(topology: Box) -> None:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))
     topology.name = topo_name
 
-  if topology.get('module'):
-    if isinstance(topology.module,str):
-      topology.module = [ topology.module ]
+  if 'module' in topology:
+    common.must_be_list(topology,'module','')
     topology.defaults.module = topology.module
 
   topology.defaults.name = topology.name
@@ -124,14 +126,3 @@ def cleanup_topology(topology: Box) -> Box:
         v.pop(p,None)
 
   return topo_copy
-
-#
-# Write expanded topology file in YAML format
-#
-def create_topology_file(topology: Box, fname: str) -> None:
-  topo_copy = cleanup_topology(topology)
-  with open(fname,"w") as output:
-    output.write("# Expanded topology created from %s\n" % topology.get('input','<unknown>'))
-    output.write(topo_copy.to_yaml())
-    output.close()
-    print("Created expanded topology file: %s" % fname)

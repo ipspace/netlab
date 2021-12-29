@@ -11,12 +11,12 @@ from ..providers import _Provider
 from .. import modules
 
 def transform_setup(topology: Box) -> None:
+  augment.topology.check_required_elements(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   augment.plugin.init(topology)
   augment.plugin.execute('init',topology)
   augment.topology.extend_attribute_list(topology.defaults)
   augment.topology.extend_module_attribute_list(topology)
-  augment.topology.check_required_elements(topology)
   augment.topology.adjust_global_parameters(topology)
   topology.Provider = _Provider.load(topology.provider,topology.defaults.providers[topology.provider])
   common.exit_on_error()

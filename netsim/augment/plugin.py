@@ -43,7 +43,7 @@ def load_plugin_from_path(path: str, plugin: str) -> object:
 
 def init(topology: Box) -> None:
   if not 'plugin' in topology:
-  	return
+    return
 
   topology.Plugin = []
   for pname in topology.plugin:
@@ -58,7 +58,7 @@ def init(topology: Box) -> None:
 
 def execute(action: str, topology: Box) -> None:
   if not 'Plugin' in topology:
-  	return
+    return
 
   for plugin in topology.Plugin:
   	if hasattr(plugin,action):

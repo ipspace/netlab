@@ -18,12 +18,17 @@ Return members of the specified group. Recurse through child groups if needed
 '''
 def group_members(topology: Box, group: str, count: int = 0) -> list:
   members: typing.List[str] = []
-  if not group in topology.groups:
-    common.error(f'Internal error: unknown group {group}',common.IncorrectValue,'groups')
-    return []
+  if not group in topology.groups:  # pragma: no cover (just-in case catch, impossible to get here)
+    common.error(
+      f'Internal error: unknown group {group}',
+      common.IncorrectValue,
+      'groups')                    
+    return []                      
 
-  if count > 99:
-    common.fatal('Recursive group definition, aborting','groups')
+  if count > 99:                    # pragma: no cover (impossible to get here, recursive groups are checked elsewhere)
+    common.fatal(
+      'Recursive group definition, aborting',
+      'groups')                    
 
   for m in topology.groups[group].members:
     if m in topology.nodes:
@@ -75,11 +80,7 @@ def check_group_data_structure(topology: Box) -> None:
         common.error('Group variables must be a dictionary: %s' % grp)
 
     if 'config' in gdata:
-      if not isinstance(gdata.config,list):
-        if not isinstance(gdata.config,str):
-          common.error('Config group attribute should be a string or a list: %s' % grp)
-        else:
-          gdata.config = [ gdata.config ]
+      common.must_be_list(gdata,'config',f'groups.{grp}')
 
     for k in gdata.keys():
       if not k in group_attr:
@@ -117,8 +118,10 @@ Check recursive group definitions
 '''
 
 def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Optional[list]:
-  if not group in topology.groups:
-    return None
+  if not group in topology.groups: # pragma: no cover (if we ever get here we're seriously messed up)
+    common.fatal(
+      'Internal error: unknown group in check_recursive_chain') 
+    return None  
 
   chain = chain + [ group ]
   for m in topology.groups[group].members:
@@ -174,13 +177,25 @@ def copy_group_node_data(topology: Box) -> None:
                   common.IncorrectValue,
                   'groups')
 
+#
+# adjust_group:
+#
+# * Check and adjust group data structures
+# * Check recursive groups
+# * Add nodes to groups based on node 'group' attribute
+# * Copy group node_data into nodes
+#
+# Please note that check_group_data_structure creates 'groups' element if needed
+# and 'adjust_groups' deletes it if there are no groups in the topology.
+#
+# We cannot move the "create groups if needed" code into adjust_groups because
+# augment.main calls 'check_group_data_structure' early in the transformation process.
+# The reason we call it again here are BGP auto groups.
+#
 def adjust_groups(topology: Box) -> None:
   check_group_data_structure(topology)
   add_node_level_groups(topology)
   common.exit_on_error()
-
-  if not 'groups' in topology:
-    return
 
   check_recursive_groups(topology)
   common.exit_on_error()
@@ -219,9 +234,8 @@ def node_config_templates(topology: Box) -> None:
     g_members = group_members(topology,group_name)
     for name,ndata in topology.nodes.items():
       if name in g_members or group_name == 'all':
-        common.must_be_list(ndata,'config',f'nodes.{name}')
-        ndata.config = topology.groups[group_name].config + ndata.config
-
+        if not common.must_be_list(ndata,'config',f'nodes.{name}') is None:
+          ndata.config = topology.groups[group_name].config + ndata.config
 
   '''
   Phase 2 - cleanup

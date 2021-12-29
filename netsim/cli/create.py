@@ -65,7 +65,7 @@ def run(cli_args: typing.List[str],
   common.set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
 
-  if 'settings' in args:
+  if args.settings:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)
     read_topology.add_cli_args(topology,args)
 

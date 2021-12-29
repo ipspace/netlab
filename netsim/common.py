@@ -27,6 +27,9 @@ class MissingValue(Warning):
 class IncorrectValue(Warning):
   pass
 
+class IncorrectType(Warning):
+  pass
+
 class FatalError(Warning):
   pass
 
@@ -177,7 +180,8 @@ def must_be_list(parent: Box, key: str, path: str) -> typing.Optional[list]:
     parent[key] = [ parent[key] ]
     return parent[key]
 
-  error(f'attribute {path}.{key} must be a scalar or a list, found {type(parent[key])}',IncorrectValue)
+  wrong_type = "dictionary" if isinstance(parent[key],dict) else str(type(parent[key]))
+  error(f'attribute {path}.{key} must be a scalar or a list, found {wrong_type}',IncorrectType)
   return None
 
 #

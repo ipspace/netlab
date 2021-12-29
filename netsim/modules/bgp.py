@@ -11,7 +11,7 @@ from . import _Module
 from .. import common
 
 def check_bgp_parameters(node: Box) -> None:
-  if not "bgp" in node:
+  if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
   if not "as" in node.bgp:
     common.error("Node %s has BGP enabled but no AS number specified" % node.name)
@@ -96,6 +96,7 @@ class BGP(_Module):
           common.IncorrectValue)
         continue
 
+      common.must_be_list(data,'members',f'bgp.as_list.{asn}')
       for n in data.members:
         if not n in topology.nodes:
           common.error(
@@ -143,7 +144,7 @@ class BGP(_Module):
         if not grpname in topology.groups:
           topology.groups[grpname] = { 'members': [] }
 
-        if not 'members' in topology.groups[grpname]:
+        if not 'members' in topology.groups[grpname]:   # pragma: no cover (members list is created in group processing)
           topology.groups[grpname].members = []
 
         topology.groups[grpname].members.append(name)
@@ -258,8 +259,9 @@ class BGP(_Module):
           l.bgp.advertise = True
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    if not "bgp" in node:
-      common.error("Node %s has BGP module enabled but no BGP parameters" % node.name)
+    if not "bgp" in node:   # pragma: no cover (this should have been caught in check_bgp_parameters)
+      common.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
+      return
     check_bgp_parameters(node)
     self.build_bgp_sessions(node,topology)
     self.bgp_set_advertise(node,topology)

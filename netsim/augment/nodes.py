@@ -22,10 +22,11 @@ def create_node_dict(nodes: Box) -> Box:
   else:
     node_dict = Box({},default_box=True,box_dots=True)
     node_id = 0
-    for n in nodes:
+    for n in nodes or []:
       if isinstance(n,dict):
         if not 'name' in n:
           common.error(f'Node is missing a "name" attribute: {n}',common.IncorrectValue,'nodes')
+          continue
       elif isinstance(n,str):
         n = Box({ 'name': n },default_box=True,box_dots=True)
       node_id = node_id + 1
@@ -38,19 +39,13 @@ def create_node_dict(nodes: Box) -> Box:
       ndata = Box({'name': name},default_box=True)
     elif not isinstance(ndata,dict):
       common.error(f'Node data for node {name} must be a dictionary')
-      ndata[name] = { 'name': name, 'extra': ndata }
+      node_dict[name] = { 'name': name, 'extra': ndata }
     else:
       ndata['name'] = name
     node_dict[name] = ndata
 
   common.exit_on_error()
   return node_dict
-
-#
-# Convert node dictionary back into the old list format (needed to support pre-1.1 legacy code)
-#
-def nodes_into_list(topology: Box) -> None:
-  topology.nodes = [ node_data + { 'name': name} for name,node_data in topology.nodes.items() ]
 
 def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:
@@ -68,7 +63,7 @@ def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) ->
     for af in 'ipv4','ipv6':
       pfx = af + '_pfx'
       if pfx in addrs:
-        if not 'start' in addrs:
+        if not addrs.get('start'):
           common.fatal("Start offset missing in management address pool for AF %s" % af)
         if not af in node.mgmt:
           node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
@@ -149,8 +144,9 @@ def get_next_id(id_list: list, id: int) -> int:
     if not id in id_list:
       return id
 
-  common.fatal('Cannot get the next device ID. The lab topology is probably too big')
-  return -1  # should never get there, but this makes mypy happy
+  common.fatal(
+    'Cannot get the next device ID. The lab topology is probably too big')  # pragma: no cover (I'm not going to write a test case for this one)
+  return -1                                                                 # pragma: no cover (making mypy happy)
 
 '''
 Main node transformation code
@@ -178,9 +174,9 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
       id = get_next_id(id_list,id)
       n.id = id
 
-    if not n.name:
-      common.error(f"Internal error: node does not have a name {n}",common.IncorrectValue,'nodes')
-      continue
+    if not n.name: # pragma: no cover (name should have been checked way before)
+      common.fatal(f"Internal error: node does not have a name {n}",'nodes')
+      return
 
     if pools.loopback:
       prefix_list = addressing.get(pools,['loopback'],n.id)
@@ -191,8 +187,8 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
           n.loopback[af] = str(prefix_list[af])
 
     device_data = defaults.devices[n.device]
-    if not device_data:
-      common.error(f"Unsupported device type {n.device} used by node {name}",common.IncorrectValue,'nodes')
+    if not device_data: # pragma: no cover (should never get this far -- this should have been caught earlier on)
+      common.fatal(f"Missing device data for device type {n.device} used by node {name}",'nodes')
       continue
 
     augment_mgmt_if(n,device_data,topology.addressing.mgmt)
