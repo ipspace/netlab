@@ -12,7 +12,7 @@ The following parameters can be set globally or per node/link:
 * min_tx_interval_us: The desired minimal interval for sending BFD packets, in us (default: 100000 us == 100 ms)
 * min_rx_interval_us: The required minimal interval for receiving BFD packets, in us (default: 100000 us == 100 ms)
 * min_echo_rx_interval_us: Echo function, in us (default: 0 = disabled)
-* detection_multiplier: Number of missed packets before the session is considered down (default: 3)
+* detection_multiplier: Number of missed packets before the session is considered down (default: 3, range 1..20)
 
 **Note** all parameters use microsecond(us) resolution; platforms vary in the
 supported resolution, but typically values in milliseconds range are used.
