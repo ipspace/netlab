@@ -1,0 +1,30 @@
+{% macro bfd_params() %}
+   admin-state: enable
+   receive: {{ (bfd.min_rx_interval_us / 1000)|int }}
+   transmit-interval: {{ (bfd.min_tx_interval_us / 1000)|int }}
+   multiplier: {{ bfd.detection_multiplier }} # range 1..20
+{% if bfd.min_echo_rx_interval_us != 0 %}
+   echo-receive: {{ bfd.min_echo_rx_interval_us }}
+{% endif %}
+{% endmacro %}
+
+{% macro bfd_decl(ifname,l) %}
+{% set isis_bfd_v4 = isis.bfd.ipv4 if 'bfd' in isis else False %}
+{% set isis_bfd_v6 = isis.bfd.ipv6 if 'bfd' in isis else False %}
+{% if l.ipv4|default('')|ipv4 and isis_bfd_v4 %}
+- path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv4/bfd
+  val:
+{{ bfd_params() }}
+{% endif %}
+{% if (l.ipv6|default('')|ipv6 or l.unnumbered|default(0)) and isis_bfd_v6 %}
+- path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv6/bfd
+  val:
+{{ bfd_params() }}
+{% endif %}
+{% endmacro %}
+
+replace:
+{# { bfd_decl('system' if 'sr' in module else 'Loopback0',loopback) } #}
+{% for l in links|default([]) %}
+{{ bfd_decl('i'+l.ifname,l) }}
+{% endfor %}
