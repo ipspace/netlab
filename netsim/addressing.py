@@ -56,6 +56,17 @@ from box import Box
 # Related modules
 from . import common
 
+def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
+  if not pfx:
+    return Box({},default_box=True,box_dots=True)
+  if not isinstance(pfx,dict):
+    return Box({ 'ipv4': str(pfx)},default_box=True,box_dots=True)
+  for af in 'ipv4','ipv6':
+    if af in pfx and not pfx[af]:
+      del pfx[af]
+
+  return pfx
+
 def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
   addrs = addr_pools or Box({},default_box=True)
   defaults = defaults or Box({},default_box=True)
@@ -77,12 +88,11 @@ def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Option
   addrs = legacy + addrs
 
   # Replace string pool definitions with data structures
-  for pool,pfx in addrs.items():
-    if not isinstance(pfx,dict):
-      addrs[pool] = { 'ipv4': pfx, 'prefix': 32 if 'loopback' in pool else 24 }
-    for af in 'ipv4','ipv6':
-      if af in addrs[pool] and not addrs[pool][af]:
-        del addrs[pool][af]
+  for pool in list(addrs):
+    clean_pfx = normalize_prefix(addrs[pool])
+    if 'ipv4' in clean_pfx and not 'prefix' in clean_pfx:
+      clean_pfx.prefix = 32 if 'loopback' in pool else 24
+    addrs[pool] = clean_pfx
 
   return addrs
 
