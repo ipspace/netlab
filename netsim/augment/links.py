@@ -200,7 +200,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
   elif 'unnumbered' in link:
-    pfx_list = { unnumbered: True }
+    pfx_list = Box({ 'unnumbered': True })
   else:
     pool = addressing.get_pool(addr_pools,[link.get('role'),'p2p','lan'])
     if pool is None:    # pragma: no cover (almost impossible to get there due to built-in default pools)
