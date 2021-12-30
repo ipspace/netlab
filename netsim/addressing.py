@@ -62,8 +62,9 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
   if not isinstance(pfx,dict):
     return Box({ 'ipv4': str(pfx)},default_box=True,box_dots=True)
   for af in 'ipv4','ipv6':
-    if af in pfx and not pfx[af]:
-      del pfx[af]
+    if af in pfx:
+      if not pfx[af] or 'unnumbered' in pfx:
+        del pfx[af]
 
   return pfx
 
@@ -111,6 +112,13 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
       addrs.mgmt['prefix'] = 24
 
   for pool,pfx in addrs.items():
+    if 'unnumbered' in pfx:
+      if 'ipv4' in pfx or 'ipv6' in pfx:
+        common.error(
+          f'Pool {pool} is an unnumbered pool and cannot have IPv4 or IPv6 prefixes {pfx}',
+          category=common.IncorrectValue,
+          module='addressing')
+        continue
     for k in ('ipv4','ipv6'):
       if k in pfx:
         if not isinstance(pfx[k],bool):
@@ -123,15 +131,6 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
               category=common.IncorrectValue,
               module='addressing')
             continue
-        else:
-          p_type = pfx.get('type',None)
-          if p_type and p_type != 'p2p':
-            common.error(
-              "Unnumbered pools are by definition P2P links: %s" % pool,
-              category=common.IncorrectValue,
-              module='addressing')
-          else:
-            pfx['type'] = 'p2p'
 
     if 'mac' in pfx:
       try:
@@ -186,8 +185,8 @@ def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
   gen: typing.Dict = {}
   for pool,pfx in addrs.items():
     gen[pool] = {}
-    if 'unnumbered' in pfx:
-      gen[pool]['unnumbered'] = True
+#    if 'unnumbered' in pfx:
+#      gen[pool]['unnumbered'] = True
     for key,data in pfx.items():
       if "_pfx" in key:
         af   = key.replace('_pfx','')
@@ -195,6 +194,8 @@ def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
         gen[pool][af] = data.subnet(plen)
         if (af == 'ipv4' and plen == 32) or (pool == 'loopback'):
           next(gen[pool][af])
+      elif isinstance(data,bool):
+        gen[pool][key] = data
   return gen
 
 def get_pool(pools: Box, pool_list: typing.List[str]) -> typing.Optional[str]:
@@ -216,10 +217,12 @@ def get_nth_subnet(n: int, subnet: netaddr.IPNetwork.subnet, cache_list: list) -
 def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) -> typing.Dict:
   prefixes: typing.Dict = {}
   if pools[p].get('unnumbered'):
-    return prefixes
+    return { 'unnumbered': True }
   for af in list(pools[p]):
     if not 'cache' in af:
-      if n:
+      if isinstance(pools[p][af],bool):
+        prefixes[af] = pools[p][af]
+      elif n:
         subnet_cache = 'cache_%s' % af
         if not subnet_cache in pools[p]:
           pools[p][subnet_cache] = []
@@ -250,6 +253,9 @@ def setup(topo: Box, defaults: Box) -> None:
 
   topo.pools = create_pool_generators(addrs)
   topo.addressing = addrs
+  common.print_verbose("Pools\n=================")
+  common.print_verbose(str(topo.pools))
+
   common.exit_on_error()
 
 def normalize_af(af: str) -> str:

@@ -13,7 +13,14 @@ class OSPF(_Module):
     if not 'links' in node:
       return
 
-    for l in node.links:             # Scan all links
-      if 'unnumbered' in l:          # Do we have an unnumbered link?
-        node.ospf.unnumbered = True  # Found it - set a flag for Arista EOS hack
-        break                        # No need to go any further
+    # We need to set ospf.unnumbered if we happen to have OSPF running over an unnumbered
+    # link -- Arista EOS needs an extra nerd knob to make it work
+    #
+    for l in node.links:                                         # Scan all links 
+      if 'unnumbered' in l:                                      # ... old style unnumbered link
+        node.ospf.unnumbered = True
+        break                                                    # No need to go any further
+      elif 'ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4:   # New-style unnumbered link: ipv4 set to True
+        node.ospf.unnumbered = True
+        break
+      

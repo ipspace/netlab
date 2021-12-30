@@ -54,7 +54,7 @@ def test_transformation_cases(tmpdir):
     if result != expected:
       print("Test case: %s FAILED" % test_case)
       sys.stdout.writelines(
-        difflib.context_diff(
+        difflib.unified_diff(
           expected.splitlines(keepends=True),
           result.splitlines(keepends=True),
           fromfile='expected',tofile='result'))

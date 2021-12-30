@@ -60,6 +60,10 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> int:
   if "provider_interface_name" in defaults.devices[node.device]:
     ifdata.provider_ifname = defaults.devices[node.device].provider_interface_name % ifindex
 
+  for af in ('ipv4','ipv6'):
+    if af in ifdata and not ifdata[af]:
+      del ifdata[af]
+
   node.links.append(ifdata)
   return len(node.links)
 
@@ -143,6 +147,52 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     ifindex = len(ndict[node].links) - 1
     ndict[node].links[ifindex] = interfaces[node]
 
+#
+# get_node_link_address: calculate on-link address for the specified node
+#
+# node: node data collected so far
+# ifaddr: interface data collected so far
+# node_link_data: existing node-on-link data
+# prefix: link prefix (ipv4, ipv6, unnumbered)
+# node_id: desired address within the subnet
+#
+
+def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: dict, node_id: int) -> typing.Optional[str]:
+  if 'unnumbered' in prefix:          # Special case: old-style unnumbered link
+    for af in ('ipv4','ipv6'):        # Set AF to True for all address families
+      if af in node.loopback:         # ... present on node loopback interface
+        ifdata[af] = True
+      if af in node_link_data:
+        return('{af} address ignored for node {node.name} on an unnumbered link')
+    return None
+
+  for af in ('ipv4','ipv6'):
+    node_addr = None
+    if af in node_link_data:                  # static IP address or host index
+      if isinstance(node_link_data[af],int):  # host portion of IP address specified as an integer
+        if af in prefix:
+          node_addr = netaddr.IPNetwork(prefix[af][node_link_data[af]])
+        else:
+          return(f'Node {node.name} is using host index {node_link_data[af]} for {af} on a link that does not have {af} prefix')
+      else:                                  # static IP address
+        try:
+          node_addr = netaddr.IPNetwork(node_link_data[af])
+        except:
+          return(f'Invalid {af} link address {node_link_data[af]} for node {node.name}')
+    elif af in prefix: 
+      if isinstance(prefix[af],bool):        # New-style unnumbered link
+        if prefix[af]:                       # Copy only True value into interface data
+          ifdata[af] = prefix[af]            # ... to ensure AF presence in ifdata indicates protocol-on-interface
+      else:
+        node_addr = netaddr.IPNetwork(prefix[af][node_id])
+        node_addr.prefixlen = prefix[af].prefixlen
+
+    if node_addr:
+      node_link_data[af] = str(node_addr)
+      ifdata[af] = node_link_data[af]
+
+  return None
+
 def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
   link_attr_base = get_link_base_attributes(defaults)
   if not defaults:      # pragma: no cover (almost impossible to get there)
@@ -156,8 +206,13 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       return None
 
     pfx_list = addressing.get_pool_prefix(addr_pools,pool)
-    link.prefix = { af: str(pfx_list[af]) for af in pfx_list }
-    if pool and addr_pools[pool].get('unnumbered',None):
+    link.prefix = {
+        af: pfx_list[af] if isinstance(pfx_list[af],bool) else str(pfx_list[af])
+              for af in ('ipv4','ipv6') if af in pfx_list
+      }
+    if not link.prefix:
+      link.pop('prefix',None)
+    if pfx_list.get('unnumbered',None):
       link.unnumbered = True
 
   end_names = ['left','right']
@@ -177,18 +232,16 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
         return None
 
-      for af,pfx in pfx_list.items():
-        ip = netaddr.IPNetwork(pfx[ecount+1])
-        ip.prefixlen = pfx.prefixlen
-        if af in value:
-          common.error(
-            f'{af} address specified for node {node} on P2P link {link} is ignored',
-            common.IncorrectValue,
-            'links')
-        value[af] = str(ip)
-        ifaddr[af] = value[af]
-
+      errmsg = get_node_link_address(
+        node=ndict[node],
+        ifdata=ifaddr,
+        node_link_data=value,
+        prefix=pfx_list,
+        node_id=ecount+1)
+      if errmsg:
+        common.error(f'{errmsg}\n... link data: {link}',common.IncorrectValue,'links')
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
+
       ifaddr = ifaddr + value
       link[node] = value
       link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
