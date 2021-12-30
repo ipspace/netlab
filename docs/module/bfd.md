@@ -17,6 +17,8 @@ The following parameters can be set globally or per node/link:
 ## Example
 To enable BFD for all IS-IS interfaces:
 ```
+module: [ isis, bfd ]
+
 isis:
  bfd:
   ipv4: True
