@@ -128,14 +128,15 @@ links:
 
 ## Static Link Addressing
 
-You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)). To create a link without any IP addressing, set **prefix** to *false*.
+You can use the **prefix** attribute to specify IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
 
 The **prefix** attribute could be either an IPv4 CIDR prefix or a dictionary with **ipv4** and/or **ipv6** elements.
 
 You can use the shorthand (string) syntax if you're building an IPv4-only network, for example:
 
 ```
-- e2:
+- name: Link with static IPv4 prefix
+	e2:
   pe1:
   type: lan
   prefix: 192.168.22.0/24
@@ -144,20 +145,34 @@ You can use the shorthand (string) syntax if you're building an IPv4-only networ
 In dual-stack or IPv6-only environments you have to use the prefix dictionary syntax:
 
 ```
-- e1:
+- name: IPv6-only link
+	e1:
   pe1:
   prefix:
     ipv6: 2001:db8:cafe:1::/64
-- e1:
+- name: Dual-stack link
+	e1:
   e2:
   prefix:
     ipv4: 192.168.23.0/24
     ipv6: 2001:db8:cafe:2::/64
 ```
 
-### Static Interface Addressing
+### Other Link Types
 
-You can specify static interface address with the **ipv4** and/or **ipv6** attributes within the link-specific node data. The following example uses static interface addresses for two out of three nodes connected to a LAN link:
+* To create a layer-2-only link, set **prefix** to *False*.
+* To create unnumbered link, set **unnumbered** link attribute to *True*
+* To enable IPv4 or IPv6 processing on interfaces attached to the link without assigning IP addresses to those interfaces, set **ipv4** or **ipv6** prefix attribute to **True**.
+
+## Static Interface Addressing
+
+You can specify static interface address with the **ipv4** and/or **ipv6** attributes within the link-specific node data. You can also set **ipv4** or **ipv6** attribute of link-specific node data to these special values:
+
+* *True*: enable IPv4 or IPv6 on the interface without assigning it an IP address (unnumbered/LLA-only interface)
+* *False*: disable IPv4 or IPv6 on the interface, allowing you to have layer-2-only nodes attached to an IPv4/IPv6 subnet (needed to implement stretched subnets).
+* *an integer value*: the interface is assigned N-th IPv4/IPv6 address from the link prefix.
+
+The following example uses static interface addresses for two out of three nodes connected to a LAN link:
 
 ```
 - e2:
@@ -176,7 +191,6 @@ These interface address are assigned to the three nodes during the topology tran
 
 **Caveats**
 
-* Static interface addressing does not work on P2P links. Nodes attached to a P2P link always get the first and the second IP address from the link prefix. To use static interface addressing, set the link **type** to **lan**.
 * An interface address could use a subnet mask that does not match the link subnet mask[^smm]. If you don't specify a subnet mask in an interface address, it's copied from the link prefix.
 * You could specify an IPv6 interface address on an IPv4-only link (or vice versa). An interface address belonging to an address family that is not specified in the link prefix (static or derived from an address pool) is not checked.
 
@@ -207,6 +221,10 @@ links:
 
 * The name used in **role** attribute does not have to correspond to an IP address pool. In that case, the address pool is selected based on link type.
 * Link **role** could be used in [configuration modules](modules.md) to influence interface configuration. For example, *core* links could belong to OSPF area 0.
+
+```{tip}
+You can also use **‌unnumbered** link attribute to get a single unnumbered link. Using an unnumbered pool is recommended when you want to test network-wide addressing changes.
+```
 
 ## Bridge Names
 
@@ -445,7 +463,7 @@ E2 node data contains the following interface data:
 
 ## Custom Attributes in Link and Interface Data
 
-Custom attributes specified in link data are retained in the link data and copied directly into node interface data.
+[Custom attributes](extend-attributes.md) specified in link data are retained in the link data and copied directly into node interface data.
 
 Example: Bandwidth is specified on a link between E1 and E2:
 

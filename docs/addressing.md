@@ -1,37 +1,41 @@
 # Topology Address Pools
 
+Lab topology transformation code assigns IPv4 and IPv6 subnets (prefixes) to individual links and loopback interfaces from *address pools*. Node addresses are then assigned from the prefixes assigned to individual links.
+
 ```{tip}
-The initial release of *‌netsim-tools* used simple address configuration described at the bottom of this document. Release 0.2 introduced structured address pools described in the rest of this document.
+You can assign a static prefix to a link with **‌prefix** link attribute and static IP address to an interface with an **‌ipv4** or **‌ipv6** attribute of node-on-link data. For more details, see [static link addressing](links.md#static-link-addressing).
 ```
 
-Lab topology transformation code uses multiple address pools to create automatic address plans for the desired lab topology:
+*netsim-tools* use multiple predefined address pools:
 
 * **mgmt** pool: Management IPv4 and MAC addresses. IPv6 addresses are assigned if specified, but not used at the moment.
 * **loopback** pool: Loopback IPv4 and IPv6 addresses.
-* **lan** pool: IPv4 and IPv6 addresses used on multi-access segments (connecting more than two nodes or having **type** set to *lan*)
-* **p2p** pool (optional): IPv4 and IPv6 addresses used on point-to-point links
-* **stub** pool (optional): IPv4 and IPv6 addresses used on stub links (links connected to a single network device). This pool is not used for stub networks in release 0.4; to use it specify **role: stub** link attribute.
+* **lan** pool: IPv4 and IPv6 addresses used all links apart from P2P links (links with more or less than two nodes attached to them), or links with **type** set to *lan*.
+* **p2p** pool: IPv4 and IPv6 addresses used on point-to-point links
 
-You can specify additional address pools, and use them with the **role** link attribute.
+You can specify additional address pools, and [use them with the **role** link attribute](links.md#selecting-custom-address-pools).
+
+Default IPv4 address pools are defined in system settings:
+
+```
+addressing:
+  loopback:
+    ipv4: 10.0.0.0/24
+  lan:
+    ipv4: 172.16.0.0/16
+  p2p:
+    ipv4: 10.1.0.0/16
+  mgmt:
+    ipv4: 192.168.121.0/24
+    start: 100
+    mac: 08-4F-A9-00-00-00
+```
+
+You can override or augment them in topology **addressing** element. You can also override individual **defaults.addressing** components.
 
 ## Dual-Stack Support
 
 Every address pool could have an IPv4 and an IPv6 prefix, supporting IPv4-only, dual-stack or IPv6-only deployments. Pool address space is specified in **ipv4** or **ipv6** CIDR prefix. Size of individual IPv4 address allocations is specified with the **prefix** parameter, IPv6 prefixes are currently fixed  (/64).
-
-## Unnumbered Interface Support
-
-Release 0.4 added support for *unnumbered interfaces* based on *loopback* address. To use unnumbered interfaces:
-
-* Create a custom address pool with **unnumbered** attribute set to **true**
-* Use **role** attribute on a P2P link to select the unnumbered address pool
-
-**Notes:**
-
-* Don't use change one of the built-in pools into an unnumbered pool... or at least don't complain if it doesn't work.
-* Unnumbered address pools can only be used on P2P links. When used on LAN or stub links you'll get no IPv4/IPv6 addresses on the link.
-* Implementation details of unnumbered interfaces are device-specific. Whenever possible, the unnumbered interfaces use loopback IPv4 address and link-local IPv6 address.
-
-For more details, see *[Unnumbered Interface Example](#unnumbered-interface-example)* below.
 
 ## Specifying Address Pools
 
@@ -47,12 +51,11 @@ Address pools could be specified:
 
 Each address pool specification is a dictionary of address pools. Individual address pools are specified with these parameters:
 
-* **ipv4** - IPv4 CIDR prefix
-* **ipv6** - IPv6 CIDR prefix
-* **prefix** - IPv4 subnet allocation size (IPv6 subnets use /64 prefixes)
-* **start** - first subnet or first IP address offset. Used primarily with **loopback** pool to ensure the first devices gets x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address).
-
-Alternatively, an address pool could be *[unnumbered](#unnumbered-interface-support)*. An unnumbered pool must have **unnumbered** attribute set to **true** and should not have any other attributes (not enforced in release 0.4).
+* **ipv4** -- IPv4 CIDR prefix or **true** for unnumbered IPv4 links
+* **ipv6** -- IPv6 CIDR prefix or **true** for LLA-only IPv6 links.
+* **unnumbered** -- unnumbered address pool. Interfaces attached to nodes based on this address pool will have IPv4 and/or IPv6 enabled based on the protocols enabled on node's loopback interface.
+* **prefix** - IPv4 subnet allocation size. IPv6 subnets use /64 prefixes that cannot be changed.
+* **start** - first subnet or first IP address offset. Used primarily with **loopback** pool to ensure the first devices gets x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address.
 
 **Notes:**
 
@@ -60,7 +63,7 @@ Alternatively, an address pool could be *[unnumbered](#unnumbered-interface-supp
 * IPv4 loopback pool starts at .1 (**start** parameter is assumed to be 1)
 * IPv6 loopback pool starts at the second subnet to make loopback IPv6 address similar to its IPv4 counterpart.
 
-### Example
+### Address Pool Configuration Example
 
 This is the default addressing configuration from global `topology-defaults.yml`:
 
@@ -84,6 +87,38 @@ addressing:
 * P2P IP addresses are /30 subnets from 10.1.0.0/16 CIDR block.
 * Management IP addresses are assigned from 192.168.121.0/24 CIDR block. The first IP address is 192.168.121.101 (*start* offset plus node ID)
 * MAC addresses of management interfaces start with 08-4F-A9. The last byte of the MAC address is the node ID.
+
+## Unnumbered Interface Support
+
+*netsim-tools* supports unnumbered IPv4 and IPv6 interfaces: 
+
+* Unnumbered IPv4 interfaces are not supported on all platforms and use *loopback* address as the proxy address of the unnumbered interface.
+* Unnumbered IPv6 interfaces use only LLA IPv6 address -- IPv6 is enabled on an interface, but no static IPv6 address is assigned to it.
+
+You can create unnumbered interfaces in two ways:
+
+* Create a custom pool with no **ipv4** or **ipv6** attribute and set **unnumbered** attribute **true**. Interfaces using this address pool will get IPv4 and/or IPv6 enabled based on protocols enabled on the loopback interface.
+* Use **ipv4: true** or **ipv6: true** instead of specifying an IPv4 or IPv6 prefix for the address pool. See *[Specifying Address Pools](#specifying-address-pools)* section for details.
+
+For more details, see *[Unnumbered Interface Example](#unnumbered-interface-example)* below.
+
+## Layer-2-only Pools
+
+An address pool with no attributes is a layer-2-only pool. Links using such a pool have no IPv4/IPv6 prefix, and interfaces attached to such links get no IPv4/IPv6 address assigned from the on-link prefix.
+
+*netsim-tools* has predefined **l2only** pool that you can use to create layer-2-only links, for example: 
+
+```
+# CLNS lab
+#
+nodes: [ r1, r2, r3 ]
+
+links:
+- r1:
+  r2:
+  r3:
+  role: l2only
+```
 
 ## Merging Defaults
 
@@ -146,7 +181,7 @@ nodes:
 - r2
 
 links:
-- name: P2P link between R1 and R2
+- name: Unnumbered link between R1 and R2
   r1:
   r2:
   role: core
@@ -157,7 +192,7 @@ links:
   type: lan
 ```
 
-The topology results in the following Ansible inventory data for R1 (please note **unnumbered** attribute and lack of IPv4/IPv6 addresses on the first link).
+The topology results in the following Ansible inventory data for R1 (please note **ipv4: true** attribute and lack of IPv4/IPv6 addresses on the first link).
 
 ```
 ---
@@ -165,17 +200,19 @@ box: cisco/csr1000v
 links:
 - ifindex: 2
   ifname: GigabitEthernet2
+  ipv4: true
   linkindex: 1
-  name: r1 -> r2
+  name: Unnumbered link between R1 and R2
   neighbors:
     r2:
       ifname: GigabitEthernet2
+      ipv4: true
   remote_id: 2
   remote_ifindex: 2
   role: core
   type: p2p
   unnumbered: true
-- bridge: y_2
+- bridge: X_2
   ifindex: 3
   ifname: GigabitEthernet3
   ipv4: 172.16.0.1/24
@@ -193,17 +230,3 @@ mgmt:
   ipv4: 192.168.121.101
   mac: 08-4F-A9-00-00-01
 ```
-
-## Legacy Addressing Configuration (Release 0.1)
-
-Release 0.1 used individual parameters in **defaults** section (specified in topology file, local defaults, or global defaults) to specify address pools:
-
-* **lan**: IPv4 CIDR prefix for multi-access links
-* **lan_subnet**: Prefix size for subnets in *lan* pool
-* **loopback**: Python format string that results in IPv4 CIDR prefix used on loopback interfaces
-* **mgmt_ip**: Python format string that results in IPv4 addresses used on management interfaces
-* **mgmt_mac**: Python format string that results in MAC addresses used on management interfaces
-* **p2p**: IPv4 CIDR prefix for P2P links
-* **p2p_subnet**: Prefix size for subnets in *p2p* pool
-
-These parameters SHOULD NOT be used in release 0.2 or above. When they're present in **defaults** section or a defaults file they're merged with the corresponding **addressing** parameters.
