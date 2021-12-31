@@ -4,7 +4,9 @@ lldp run
 ip routing
 !
 {% for k,v in hostvars.items() if v.loopback.ipv4 is defined %}
-ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if l.ipv4 is defined %} {{ l.ipv4|ipaddr('address') }}{%- endfor %}
+ip host {{ k|replace('_','') }} {{ v.loopback.ipv4|ipaddr('address') }}
+{%- for l in v.links|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %} {{ l.ipv4|ipaddr('address') }}
+{%- endfor %}
 
 {% endfor %}
 !
@@ -29,15 +31,29 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
+{#
+    IPv4 addresses
+#}
 {% if 'ipv4' in l %}
- ip address {{ l.ipv4 }}
-{% endif %}
-{% if 'ipv6' in l %}
- ipv6 address {{ l.ipv6 }}
-{% endif %}
-{% if l.unnumbered is defined %}
+{%   if l.ipv4 == True %}
  ip address unnumbered Loopback 0
+{%   elif l.ipv4|ipv4 %}
+ ip address {{ l.ipv4 }}
+{%   else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%   endif %}
+{% endif %}
+{#
+    IPv6 addresses
+#}
+{% if 'ipv6' in l %}
+{%   if l.ipv6 == True %}
  ipv6 enable
+{%   elif l.ipv6|ipv6 %}
+ ipv6 address {{ l.ipv6 }}
+{%   else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%   endif %}
 {% endif %}
  mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
 !
