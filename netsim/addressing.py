@@ -261,7 +261,9 @@ def setup(topo: Box, defaults: Box) -> None:
 def normalize_af(af: str) -> str:
   return 'ipv4' if af == 'ip' else af
 
-def parse_prefix(prefix: str) -> typing.Dict:
+def parse_prefix(prefix: typing.Union[str,dict]) -> typing.Dict:
+  if common.DEBUG:
+    print(f"parse prefix: {prefix}")
   if not prefix:
     return {}
   supported_af = ['ip','ipv4','ipv6']
@@ -273,7 +275,10 @@ def parse_prefix(prefix: str) -> typing.Dict:
           'Unknown address family %s in prefix %s' % (af,prefix), \
           category=common.IncorrectValue,module='addressing')
       else:
-        prefix_list[af] = netaddr.IPNetwork(pfx)
+        if isinstance(pfx,bool):
+          prefix_list[af] = pfx
+        else:
+          prefix_list[af] = netaddr.IPNetwork(pfx)
     return prefix_list
   else:
     return { 'ipv4' : netaddr.IPNetwork(prefix) }

@@ -30,7 +30,7 @@ def create_topology_parse(args: typing.List[str], cmd: str, description: str) ->
       For a complete list of output formats please consult the documentation
     ''')
   parser = argparse.ArgumentParser(
-    parents=[ common_parse_args(cmd != 'create'), topology_parse_args() ],
+    parents=[ common_parse_args(True), topology_parse_args() ],
     formatter_class=argparse.RawDescriptionHelpFormatter,
     prog="netlab %s" % cmd,
     description=description,

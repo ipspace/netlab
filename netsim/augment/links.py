@@ -158,6 +158,12 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 #
 
 def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: dict, node_id: int) -> typing.Optional[str]:
+  if common.DEBUG:
+    print(f"get_node_link_address for {node.name}:\n"+
+          f".. ifdata: {ifdata}\n"+
+          f".. node_link_data: {node_link_data}\n"+
+          f".. prefix: {prefix}\n"+
+          f".. node_id: {node_id}")
   if 'unnumbered' in prefix:          # Special case: old-style unnumbered link
     for af in ('ipv4','ipv6'):        # Set AF to True for all address families
       if af in node.loopback:         # ... present on node loopback interface
@@ -169,9 +175,18 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
   for af in ('ipv4','ipv6'):
     node_addr = None
     if af in node_link_data:                  # static IP address or host index
+      if isinstance(node_link_data[af],bool): # unnumbered node, leave it alone
+        continue
       if isinstance(node_link_data[af],int):  # host portion of IP address specified as an integer
         if af in prefix:
-          node_addr = netaddr.IPNetwork(prefix[af][node_link_data[af]])
+          if isinstance(prefix[af],bool):
+            return(f'Node {node.name} is using host index for {af} on an unnumbered link')
+          try:
+            node_addr = netaddr.IPNetwork(prefix[af][node_link_data[af]])
+          except Exception as ex:
+            return(
+              f'Cannot assign host index {node_link_data[af]} in {af} from prefix {prefix[af]} to node {node.name}\n'+
+              f'... {ex}')
         else:
           return(f'Node {node.name} is using host index {node_link_data[af]} for {af} on a link that does not have {af} prefix')
       else:                                  # static IP address
@@ -183,6 +198,7 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
       if isinstance(prefix[af],bool):        # New-style unnumbered link
         if prefix[af]:                       # Copy only True value into interface data
           ifdata[af] = prefix[af]            # ... to ensure AF presence in ifdata indicates protocol-on-interface
+          node_link_data[af] = prefix[af]
       else:
         node_addr = netaddr.IPNetwork(prefix[af][node_id])
         node_addr.prefixlen = prefix[af].prefixlen
@@ -191,6 +207,11 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
       node_link_data[af] = str(node_addr)
       ifdata[af] = node_link_data[af]
 
+  if common.DEBUG:
+    print(f"get_node_link_address for {node.name} completed:\n"+
+          f".. ifdata: {ifdata}\n"+
+          f".. node_link_data: {node_link_data}")
+    print
   return None
 
 def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
@@ -241,7 +262,9 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         prefix=pfx_list,
         node_id=ecount+1)
       if errmsg:
-        common.error(f'{errmsg}\n... link data: {link}',common.IncorrectValue,'links')
+        common.error(
+          f'{errmsg}\n'+
+          common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
 
       ifaddr = ifaddr + value
