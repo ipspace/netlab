@@ -32,19 +32,33 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if 'ipv4' in l %}
- ip address {{ l.ipv4 }}
-{% endif %}
-{% if 'ipv6' in l %}
- ipv6 address {{ l.ipv6 }}
-{% endif %}
-{% if l.unnumbered is defined %}
- medium p2p
- ip unnumbered loopback0
- ipv6 address use-link-local-only
-{% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
+{% endif %}
+{#
+    IPv4 addresses
+#}
+{% if 'ipv4' in l %}
+{%   if l.ipv4 == True %}
+ medium p2p
+ ip unnumbered loopback0
+{%   elif l.ipv4|ipv4 %}
+ ip address {{ l.ipv4 }}
+{%   else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%   endif %}
+{% endif %}
+{#
+    IPv6 addresses
+#}
+{% if 'ipv6' in l %}
+{%   if l.ipv6 == True %}
+ ipv6 address use-link-local-only
+{%   elif l.ipv6|ipv6 %}
+ ipv6 address {{ l.ipv6 }}
+{%   else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%   endif %}
 {% endif %}
 !
 {% endfor %}

@@ -6,6 +6,7 @@ import typing
 import warnings
 import argparse
 import os
+import textwrap
 
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 from box import Box
@@ -60,6 +61,11 @@ def exit_on_error() -> None:
   global err_count
   if err_count > 0:
     fatal('Cannot proceed beyond this point due to errors, exiting')
+
+def extra_data_printout(s : str) -> str:
+  return textwrap.TextWrapper(
+    initial_indent="... ",
+    subsequent_indent="      ").fill(s)
 
 def open_output_file(fname: str) -> typing.TextIO:
   if fname == '-':

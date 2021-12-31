@@ -1,6 +1,13 @@
 Release notes
 =============
 
+TBD (release 1.1)
+  * New IPAM functionality: layer-2-only links and interfaces, per-protocol unnumbered interfaces
+  * IPAM code refactoring
+  * Reorganized nodes list into a dictionary
+
+  :doc:`More details <release/1.1>`
+
 2021-12-28 (release 1.0.6)
   * Full SR Linux and SR OS support
   * Plugin packages and module extensions
@@ -153,6 +160,7 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.1.md
    release/1.0.md
    release/0.9.md
    release/0.8.md

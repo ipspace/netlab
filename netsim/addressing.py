@@ -56,6 +56,18 @@ from box import Box
 # Related modules
 from . import common
 
+def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
+  if not pfx:
+    return Box({},default_box=True,box_dots=True)
+  if not isinstance(pfx,dict):
+    return Box({ 'ipv4': str(pfx)},default_box=True,box_dots=True)
+  for af in 'ipv4','ipv6':
+    if af in pfx:
+      if not pfx[af] or 'unnumbered' in pfx:
+        del pfx[af]
+
+  return pfx
+
 def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
   addrs = addr_pools or Box({},default_box=True)
   defaults = defaults or Box({},default_box=True)
@@ -77,12 +89,11 @@ def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Option
   addrs = legacy + addrs
 
   # Replace string pool definitions with data structures
-  for pool,pfx in addrs.items():
-    if not isinstance(pfx,dict):
-      addrs[pool] = { 'ipv4': pfx, 'prefix': 32 if 'loopback' in pool else 24 }
-    for af in 'ipv4','ipv6':
-      if af in addrs[pool] and not addrs[pool][af]:
-        del addrs[pool][af]
+  for pool in list(addrs):
+    clean_pfx = normalize_prefix(addrs[pool])
+    if 'ipv4' in clean_pfx and not 'prefix' in clean_pfx:
+      clean_pfx.prefix = 32 if 'loopback' in pool else 24
+    addrs[pool] = clean_pfx
 
   return addrs
 
@@ -91,74 +102,82 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
     addrs = Box({})
   for k in ('lan','loopback'):
     if not k in addrs:
-      common.error( \
-        "'%s' addressing pool is missing" % k, \
-        category=common.MissingValue,module='addressing')
+      common.error(
+        "'%s' addressing pool is missing" % k,
+        category=common.MissingValue,
+        module='addressing')
 
   if isinstance(addrs.mgmt,dict):
     if not 'prefix' in addrs.mgmt:
       addrs.mgmt['prefix'] = 24
 
   for pool,pfx in addrs.items():
+    if 'unnumbered' in pfx:
+      if 'ipv4' in pfx or 'ipv6' in pfx:
+        common.error(
+          f'Pool {pool} is an unnumbered pool and cannot have IPv4 or IPv6 prefixes {pfx}',
+          category=common.IncorrectValue,
+          module='addressing')
+        continue
     for k in ('ipv4','ipv6'):
       if k in pfx:
-        try:
-          network = netaddr.IPNetwork(pfx[k])
-          addrs[pool][k+'_pfx'] = network
-        except:
-          common.error( \
-            "%s prefix %s in addressing pool '%s' is invalid (%s)" % (k,pfx[k],pool,sys.exc_info()[1]), \
-            category=common.IncorrectValue,module='addressing')
-          continue
+        if not isinstance(pfx[k],bool):
+          try:
+            network = netaddr.IPNetwork(pfx[k])
+            addrs[pool][k+'_pfx'] = network
+          except:
+            common.error(
+              "%s prefix %s in addressing pool '%s' is invalid (%s)" % (k,pfx[k],pool,sys.exc_info()[1]),
+              category=common.IncorrectValue,
+              module='addressing')
+            continue
 
     if 'mac' in pfx:
       try:
         addrs[pool].mac_eui = netaddr.EUI(pfx.mac)
       except:
-        common.error( \
-          "MAC prefix %s in addressing pool '%s' is invalid (%s)" % (pfx.mac,pool,sys.exc_info()[1]), \
-          category=common.IncorrectValue,module='addressing')
+        common.error(
+          "MAC prefix %s in addressing pool '%s' is invalid (%s)" % (pfx.mac,pool,sys.exc_info()[1]),
+          category=common.IncorrectValue,
+          module='addressing')
         continue
 
-    if 'unnumbered' in pfx:
-      p_type = pfx.get('type',None)
-      if p_type and p_type != 'p2p':
-        common.error( \
-          "Unnumbered pools are by definition P2P links: %s" % pool, \
-          category=common.IncorrectValue,module='addressing')
-      else:
-        pfx['type'] = 'p2p'
-    else:
-      if not 'ipv4' in pfx and not 'ipv6' in pfx:
-        common.error( \
-          "Addressing pool '%s' has no IPv4 or IPv6 address prefix" % pool, \
-          category=common.MissingValue,module='addressing')
-
-    if 'ipv4' in pfx and pool != 'mgmt':
+    if 'ipv4' in pfx and 'ipv4_pfx' in pfx and pool != 'mgmt':
       if not 'prefix' in pfx:
-        common.error( \
+        common.error(
           "IPv4 prefix length is missing in '%s' addressing pool" % pool,
-          category=common.MissingValue,module='addressing')
+          category=common.MissingValue,
+          module='addressing')
       else:
         if not isinstance(pfx['prefix'],int):
-          common.error( \
-            "IPv4 prefix length in '%s' addressing pool is not an integer" % pool, \
-            category=common.IncorrectValue,module='addressing')
+          common.error(
+            "IPv4 prefix length in '%s' addressing pool is not an integer" % pool,
+            category=common.IncorrectValue,
+            module='addressing')
         else:
           if pfx.prefix > 32 or pfx.prefix < 1:
-            common.error( \
-              "IPv4 subnet prefix length in '%s' addressing pool is not between 1 and 32" % pool, \
-              category=common.IncorrectValue,module='addressing')
-          if pfx.prefix <= pfx.ipv4_pfx.prefixlen:
-            common.error( \
-              "IPv4 subnet prefix length in '%s' addressing pool is not longer than pool prefix" % pool, \
-              category=common.IncorrectValue,module='addressing')
+            common.error(
+              "IPv4 subnet prefix length in '%s' addressing pool is not between 1 and 32" % pool,
+              category=common.IncorrectValue,
+              module='addressing')
+          if pfx.prefix < pfx.ipv4_pfx.prefixlen:
+            common.error(
+              "IPv4 subnet prefix length in '%s' addressing pool is not longer than pool prefix" % pool,
+              category=common.IncorrectValue,
+              module='addressing')
 
     if 'ipv6' in pfx and 'ipv6_pfx' in pfx:
       if pfx.ipv6_pfx.prefixlen > 56:
-        common.error( \
-          "Error in '%s' addressing pool: IPv6 pool prefix cannot be longer than /56" % pool, \
-          category=common.IncorrectValue,module='addressing')
+        common.error(
+          "Error in '%s' addressing pool: IPv6 pool prefix cannot be longer than /56" % pool,
+          category=common.IncorrectValue,
+          module='addressing')
+
+  if not 'ipv4' in addrs.loopback and not 'ipv6' in addrs.loopback:
+    common.error(
+      "Loopback addressing pool has no IPv4 or IPv6 address prefix",
+      category=common.MissingValue,
+      module='addressing')
 
 def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
   if not addrs:
@@ -166,8 +185,8 @@ def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
   gen: typing.Dict = {}
   for pool,pfx in addrs.items():
     gen[pool] = {}
-    if 'unnumbered' in pfx:
-      gen[pool]['unnumbered'] = True
+#    if 'unnumbered' in pfx:
+#      gen[pool]['unnumbered'] = True
     for key,data in pfx.items():
       if "_pfx" in key:
         af   = key.replace('_pfx','')
@@ -175,6 +194,8 @@ def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
         gen[pool][af] = data.subnet(plen)
         if (af == 'ipv4' and plen == 32) or (pool == 'loopback'):
           next(gen[pool][af])
+      elif isinstance(data,bool):
+        gen[pool][key] = data
   return gen
 
 def get_pool(pools: Box, pool_list: typing.List[str]) -> typing.Optional[str]:
@@ -196,10 +217,12 @@ def get_nth_subnet(n: int, subnet: netaddr.IPNetwork.subnet, cache_list: list) -
 def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) -> typing.Dict:
   prefixes: typing.Dict = {}
   if pools[p].get('unnumbered'):
-    return prefixes
+    return { 'unnumbered': True }
   for af in list(pools[p]):
     if not 'cache' in af:
-      if n:
+      if isinstance(pools[p][af],bool):
+        prefixes[af] = pools[p][af]
+      elif n:
         subnet_cache = 'cache_%s' % af
         if not subnet_cache in pools[p]:
           pools[p][subnet_cache] = []
@@ -230,12 +253,17 @@ def setup(topo: Box, defaults: Box) -> None:
 
   topo.pools = create_pool_generators(addrs)
   topo.addressing = addrs
+  common.print_verbose("Pools\n=================")
+  common.print_verbose(str(topo.pools))
+
   common.exit_on_error()
 
 def normalize_af(af: str) -> str:
   return 'ipv4' if af == 'ip' else af
 
-def parse_prefix(prefix: str) -> typing.Dict:
+def parse_prefix(prefix: typing.Union[str,dict]) -> typing.Dict:
+  if common.DEBUG:
+    print(f"parse prefix: {prefix}")
   if not prefix:
     return {}
   supported_af = ['ip','ipv4','ipv6']
@@ -247,7 +275,16 @@ def parse_prefix(prefix: str) -> typing.Dict:
           'Unknown address family %s in prefix %s' % (af,prefix), \
           category=common.IncorrectValue,module='addressing')
       else:
-        prefix_list[af] = netaddr.IPNetwork(pfx)
+        if isinstance(pfx,bool):
+          prefix_list[af] = pfx
+        else:
+          try:
+            prefix_list[af] = netaddr.IPNetwork(pfx)
+          except Exception as ex:
+            common.error(f'Cannot parse {af} prefix: {prefix}\n... {ex}',common.IncorrectValue,'addressing')
+            return {}
+          if str(prefix_list[af]) != str(prefix_list[af].cidr):
+            common.error(f'{af} prefix contains host bits: {prefix}',common.IncorrectValue,'addressing')
     return prefix_list
   else:
     return { 'ipv4' : netaddr.IPNetwork(prefix) }

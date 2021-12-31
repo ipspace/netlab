@@ -5,7 +5,9 @@ no ip domain lookup
 lldp run
 !
 {% for k,v in hostvars.items() if v.loopback.ipv4 is defined %}
-ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}{%- for l in v.links|default([]) if l.ipv4 is defined %} {{ l.ipv4|ipaddr('address') }}{%- endfor %}
+ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}
+{%- for l in v.links|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %} {{ l.ipv4|ipaddr('address') }}
+{%- endfor %}
 
 {% endfor %}
 !
@@ -33,18 +35,32 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if l.ipv4 is defined %}
- ip address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
-{% endif %}
-{% if l.ipv6 is defined %}
- ipv6 address {{ l.ipv6|upper }}
-{% endif %}
-{% if l.unnumbered is defined %}
- ip unnumbered Loopback0 poll
- ipv6 enable
-{% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
+{% endif %}
+{#
+    IPv4 addresses
+#}
+{% if 'ipv4' in l %}
+{%   if l.ipv4 == True %}
+ ip unnumbered Loopback0 poll
+{%   elif l.ipv4|ipv4 %}
+ ip address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
+{%   else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%   endif %}
+{% endif %}
+{#
+    IPv6 addresses
+#}
+{% if 'ipv6' in l %}
+{%   if l.ipv6 == True %}
+ ipv6 enable
+{%   elif l.ipv6|ipv6 %}
+ ipv6 address {{ l.ipv6|upper }}
+{%   else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%   endif %}
 {% endif %}
 !
 {% endfor %}
