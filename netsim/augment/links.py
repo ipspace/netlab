@@ -137,6 +137,8 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
           node_addr = netaddr.IPNetwork(node_link_data[af])
         except:
           return(f'Invalid {af} link address {node_link_data[af]} for node {node.name}')
+        if '/' not in node_link_data[af] and af in prefix:
+          node_addr.prefixlen = prefix[af].prefixlen
         if str(node_addr) == str(node_addr.cidr):        # Check whether the node address includes a host portion
           lb = not(':' in str(node_addr)) \
                  and node_addr.prefixlen == 32           # Exception#1: IPv4/32
@@ -197,24 +199,22 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       if not isinstance(value,dict):
         common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
         continue
-      for af,pfx in pfx_list.items():
-        if not value[af]:
-          ip = netaddr.IPNetwork(pfx[ndict[node].id])
-        else:
-          try:
-            ip = netaddr.IPNetwork(value[af])
-          except:
-            common.error('Invalid %s link address for node %s: %s' % (af,node,value[af]),common.IncorrectValue,'links')
-            continue
 
-        if ip.first == ip.last:
-          ip.prefixlen = pfx.prefixlen
-        value[af] = str(ip)
-        ifaddr[af] = value[af]
+      errmsg = get_node_link_address(
+        node=ndict[node],
+        ifdata=ifaddr,
+        node_link_data=value,
+        prefix=pfx_list,
+        node_id=ndict[node].id)
+      if errmsg:
+        common.error(
+          f'{errmsg}\n'+
+          common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
 
-      link[node] = value
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
+
       ifaddr = ifaddr + value
+      link[node] = value
 
       if link.type != "stub":
         n_list = filter(lambda n: n in ndict and n != node,link.keys())
@@ -268,6 +268,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         common.error(
           f'{errmsg}\n'+
           common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
+
       ifaddr_add_module(ifaddr,link,defaults.get('module'))
 
       ifaddr = ifaddr + value
