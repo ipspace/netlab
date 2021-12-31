@@ -278,7 +278,13 @@ def parse_prefix(prefix: typing.Union[str,dict]) -> typing.Dict:
         if isinstance(pfx,bool):
           prefix_list[af] = pfx
         else:
-          prefix_list[af] = netaddr.IPNetwork(pfx)
+          try:
+            prefix_list[af] = netaddr.IPNetwork(pfx)
+          except Exception as ex:
+            common.error(f'Cannot parse {af} prefix: {prefix}\n... {ex}',common.IncorrectValue,'addressing')
+            return {}
+          if str(prefix_list[af]) != str(prefix_list[af].cidr):
+            common.error(f'{af} prefix contains host bits: {prefix}',common.IncorrectValue,'addressing')
     return prefix_list
   else:
     return { 'ipv4' : netaddr.IPNetwork(prefix) }

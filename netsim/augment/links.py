@@ -108,11 +108,14 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
           f".. prefix: {prefix}\n"+
           f".. node_id: {node_id}")
   if 'unnumbered' in prefix:          # Special case: old-style unnumbered link
+    if common.DEBUG:
+      print(f"... node loopback: {node.loopback}")
     for af in ('ipv4','ipv6'):        # Set AF to True for all address families
-      if af in node.loopback:         # ... present on node loopback interface
-        ifdata[af] = True
       if af in node_link_data:
         return(f'{af} address ignored for node {node.name} on a fully-unnumbered link')
+      if af in node.loopback:         # ... present on node loopback interface
+        ifdata[af] = True
+        node_link_data[af] = True
     return None
 
   for af in ('ipv4','ipv6'):
@@ -126,6 +129,7 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
             return(f'Node {node.name} is using host index for {af} on an unnumbered link')
           try:
             node_addr = netaddr.IPNetwork(prefix[af][node_link_data[af]])
+            node_addr.prefixlen = prefix[af].prefixlen
           except Exception as ex:
             return(
               f'Cannot assign host index {node_link_data[af]} in {af} from prefix {prefix[af]} to node {node.name}\n'+
@@ -151,7 +155,12 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
           ifdata[af] = prefix[af]            # ... to ensure AF presence in ifdata indicates protocol-on-interface
           node_link_data[af] = prefix[af]
       else:
-        node_addr = netaddr.IPNetwork(prefix[af][node_id])
+        try:
+          node_addr = netaddr.IPNetwork(prefix[af][node_id])
+        except Exception as ex:
+          return(
+            f'Cannot assign {af} address from prefix {prefix[af]} to node {node.name} with ID {node.id}\n'+
+            f'... {ex}')
         node_addr.prefixlen = prefix[af].prefixlen
 
     if node_addr:
@@ -190,6 +199,8 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   pfx_list = augment_link_prefix(link,['lan'],addr_pools)
   interfaces = {}
 
+  if common.DEBUG:
+    print(f'Process LAN link {link}\n... pfx_list {pfx_list}')
   for (node,value) in link.items():
     if node in ndict:
       ifaddr = Box({},default_box=True)
