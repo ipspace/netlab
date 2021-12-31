@@ -163,7 +163,7 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
     print
   return None
 
-def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> Box:
+def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> dict:
   if 'role' in link:
     pools = [ link.get('role') ] + pools
   if 'prefix' in link:
@@ -239,25 +239,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   link_attr_base = get_link_base_attributes(defaults)
   if not defaults:      # pragma: no cover (almost impossible to get there)
     defaults = Box({})
-  if 'prefix' in link:
-    pfx_list = addressing.parse_prefix(link.prefix)
-  elif 'unnumbered' in link:
-    pfx_list = Box({ 'unnumbered': True })
-  else:
-    pool = addressing.get_pool(addr_pools,[link.get('role'),'p2p','lan'])
-    if pool is None:    # pragma: no cover (almost impossible to get there due to built-in default pools)
-      common.error("Cannot get addressing pool for P2P link: %s" % str(link),common.MissingValue,'links')
-      return None
-
-    pfx_list = addressing.get_pool_prefix(addr_pools,pool)
-    link.prefix = {
-        af: pfx_list[af] if isinstance(pfx_list[af],bool) else str(pfx_list[af])
-              for af in ('ipv4','ipv6') if af in pfx_list
-      }
-    if not link.prefix:
-      link.pop('prefix',None)
-    if pfx_list.get('unnumbered',None):
-      link.unnumbered = True
+  pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools)
 
   end_names = ['left','right']
   link_nodes: typing.List[Box] = []
