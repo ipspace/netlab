@@ -65,17 +65,17 @@ def multiprotocol_bfd_link_state(node: Box,proto: str) -> None:
 
     if not 'bfd' in l[proto]:              # No BFD protocol-specific parameters?
       l[proto].bfd = node[proto].bfd       # ... copy from node value and move on
-      continue
 
-    if not isinstance(l[proto].bfd,bool):  # Interface protocol-specific BFD dictionary?
-      continue                             # ... the user knows what he's doing, let's move on
-
-    p = l[proto]
+    p = l[proto]                           # Check whether BFD is disabled
     disable_bfd = False
-    disable_bfd = disable_bfd or ('bfd' in l and not l.bfd)     # BFD is disabled on the interface
-    disable_bfd = disable_bfd or ('bfd' in p and not p.bfd)
-    if disable_bfd:
-      l[proto].pop('bfd',None)
+    disable_bfd = disable_bfd or ('bfd' in l and not l.bfd)  # either on the interface
+    disable_bfd = disable_bfd or ('bfd' in p and not p.bfd)  # ... or in protocol setting
 
-    if not l[proto]:
-      l.pop(proto,None)
+    if disable_bfd:                        # If BFD is disabled
+      l[proto].pop('bfd',None)             # ... remove all BFD protocol parameters
+    else:
+      if isinstance(l[proto].bfd,bool):    # Otherwise if we had 'bfd: True'
+        l[proto].bfd = node[proto].bfd     # ... then copy node data into interface data
+
+    if not l[proto]:                       # Last check: if we didn't get any useful protocol data
+      l.pop(proto,None)                    # ... remove protocol data from the interface
