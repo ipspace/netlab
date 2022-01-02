@@ -16,7 +16,7 @@ class Containerlab(_Provider):
     common.print_verbose('pre-start hook for Containerlab')
     for l in topology.links:
       brname = l.get('bridge',None)
-      if brname:
+      if brname and l.node_count != 2:
         try:
           result = subprocess.run(['sudo','ip','link','add','name',brname,'type','bridge'],capture_output=True,check=True,text=True)
           common.print_verbose( f"Create Linux bridge '{brname}': {result}" )
@@ -31,7 +31,7 @@ class Containerlab(_Provider):
     common.print_verbose('post-stop hook for Containerlab, cleaning up any bridges')
     for l in topology.links:
       brname = l.get('bridge',None)
-      if brname:
+      if brname and l.node_count != 2:
         try:
           result = subprocess.run(['sudo','ip','link','del','dev',brname],capture_output=True,check=True,text=True)
           common.print_verbose( f"Delete Linux bridge '{brname}': {result}" )
