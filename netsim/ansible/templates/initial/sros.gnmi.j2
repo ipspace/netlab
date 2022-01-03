@@ -30,11 +30,15 @@
 {% if ip_v6|ipv6 %}
 {{ ip_addr('6',ip_v6,name) }}
 {% endif %}
-{% elif l.unnumbered is defined %}
+{% elif l.unnumbered|default(0)|bool or ip_v4 == True or ip_v6 == True %}
+{% if l.unnumbered|default(0)|bool or ip_v4 == True %}
    ipv4:
     unnumbered:
      system: [null]
+{% endif %}
+{% if l.unnumbered|default(0)|bool or ip_v6 == True %}
    ipv6: { }
+{% endif %}
 {% endif %}
 {%- endmacro -%}
 
@@ -66,7 +70,7 @@ updates:
 {% else %}
 {% set portname = l.ifname %}
 {% endif %}
-{% if v4|ipv4 or v6|ipv6 or l.unnumbered|default(0) %}
+{% if v4|ipv4 or v6|ipv6 or l.unnumbered|default(0) or v4==True or v6==True %}
 {{ interface('i'+l.ifname,desc,v4,v6,portname) }}
 {% else %}
 - path: configure/port[port-id={{ portname }}]
