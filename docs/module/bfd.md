@@ -7,6 +7,7 @@ BFD configuration is supported on Arista EOS, Cisco IOS, Cisco IOS XE, Cisco NXO
 The following routing protocols support BFD:
 
 * [IS-IS](isis.md)
+* [OSPF](ospf.md)
 
 For routing protocol platform support please check the routing protocol configuration modules.
 

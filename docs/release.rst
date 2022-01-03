@@ -5,6 +5,8 @@ TBD (release 1.1)
   * New IPAM functionality: layer-2-only links and interfaces, per-protocol unnumbered interfaces
   * IPAM code refactoring
   * Reorganized nodes list into a dictionary
+  * BFD configuration module
+  * BFD with IS-IS and OSPF
 
   :doc:`More details <release/1.1>`
 

@@ -9,6 +9,27 @@ Supported features:
 * Reference bandwidth
 * Unnumbered point-to-point interfaces
 * Passive interfaces
+* BFD
+
+The following table describes per-platform support of individual OSPF features:
+
+| Operating system      | Areas | Costs | Reference<br/>bandwidth| Unnumbered<br />interfaces | Passive<br />interfaces | BFD |
+| --------------------- |:-:|:-:|:-:|:-:|:-:|:-:|
+| Arista EOS            |✅ |✅ |✅ |✅ |✅ |✅ |
+| Cisco IOS             |✅ |✅ |✅ |✅ |✅ |✅ |
+| Cisco IOS XE          |✅ |✅ |✅ |✅ |✅ |✅ |
+| Cisco Nexus OS        |✅ |✅ |✅ |✅ |✅ |✅ |
+| Cumulus Linux         |✅ |✅ |✅ | ❌ |✅ | ❌ |
+| Fortinet FortiOS      |❗ |✅ |✅ | ❌ |✅ | ❌ |
+| FRR 7.5.0             |✅ |✅ |✅ | ❌ |✅ | ❌ |
+| Juniper vSRX 3.0      |✅ |✅ |✅ |✅ |✅ | ❌ |
+| Mikrotik CHR RouterOS |✅ |✅ | ❌ | ❌ |✅ | ❌ |
+| Nokia SR Linux        |✅ |✅ |✅ | ❌ |✅ | ❌ |
+| Nokia SR OS           |✅ |✅ |✅ |✅ |✅ | ❌ |
+| VyOS                  |✅ |✅ |✅ | ❌ |✅ | ❌ |
+
+**Notes:**
+* Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
 
 ## Global Parameters
 
@@ -19,6 +40,7 @@ Supported features:
 * **ospf.process** -- process ID (default: 1)
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area, and on loopback interface.
 * **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
+* **ospf.bfd** -- enable BFD for OSPF (default: False)
 
 You can specify node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 
@@ -26,6 +48,7 @@ You can specify node parameters as global values (top-level topology elements) o
 
 * **ospf.cost** -- OSPF cost
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
+* **ospf.bfd** -- enable or disable BFD for OSPF on an individual link or interface (boolean value, overrides node **ospf.bfd** setting)
 
 **Note:** the same parameters can be specified for individual link nodes.
 
