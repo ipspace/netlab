@@ -199,6 +199,8 @@ def adjust_modules(topology: Box) -> None:
   node_transform("pre_default",topology)
   link_transform("pre_default",topology)
   merge_node_module_params(topology)
+  if 'module' in topology:
+    topology.defaults.module = topology.module
 
 """
 check_module_parameters:
@@ -258,7 +260,7 @@ def check_module_parameters(topology: Box) -> None:
 
   for l in topology.get("links",[]):        # Inspect all links - use get to avoid instantiating links key
     for m in topology.get("module",[]):     # Iterate over all known modules - get avoids instantiating module key
-      if m in l and mod_attr[m]:            # ... focusing on modules that have attributes specified on this link
+      if m in l and mod_attr[m] and l[m]:   # ... focusing on modules that have attributes specified on this link
                                             # ... and want to have their attributes checked
         for k in l[m].keys():               # Iterate over link-level module attributes
           if not k in mod_attr[m].link:     # If the name of an attribute is not in the list of allowed

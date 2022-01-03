@@ -1,0 +1,83 @@
+addressing:
+  loopback:
+    ipv4: 172.18.1.0/24
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv4: 172.19.0.0/16
+    ipv6: 2001:db8:1::/48
+  core:
+    unnumbered: true
+
+module: [ isis ]
+
+isis.bfd: True
+
+nodes:
+- name: c_nxos
+  module: [ bfd, isis ]
+  device: nxos
+- name: c_csr
+  module: [ bfd, isis ]
+  device: csr
+- name: a_eos
+  module: [ bfd, isis ]
+  device: eos
+- name: j_vsrx
+  device: vsrx
+
+links:
+- c_nxos:
+  a_eos:
+  j_vsrx:
+  c_csr:
+  name: Common link
+  isis:
+    cost: 10
+
+- c_nxos:
+  a_eos:
+  role: core
+  isis:
+    cost: 3
+  bfd: False
+
+- c_nxos:
+  c_csr:
+  role: core
+  isis:
+    cost: 3
+    bfd: False
+
+- c_csr:
+  c_nxos:
+  role: core
+
+- c_nxos:
+  j_vsrx:
+  role: core
+  isis:
+    cost: 3
+
+- a_eos:
+  j_vsrx:
+  role: core
+  isis:
+    cost: 3
+
+- a_eos:
+  c_csr:
+  role: core
+  isis:
+    cost: 3
+
+- c_csr:
+  j_vsrx:
+  role: core
+  bfd: False
+
+- c_nxos:
+  role: edge
+  bfd: False
+
+- a_eos:
+  role: edge

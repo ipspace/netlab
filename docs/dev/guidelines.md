@@ -22,3 +22,11 @@ The easiest way to get started is to [add support for a new platform for an exis
    devices.md
 ```
 
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+   :caption: Implementation Notes
+
+   bfd.md
+```
+

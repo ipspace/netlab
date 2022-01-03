@@ -1,0 +1,84 @@
+addressing:
+  loopback:
+    ipv4: 172.18.1.0/24
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv4: 172.19.0.0/16
+    ipv6: 2001:db8:1::/48
+  core:
+    unnumbered: true
+
+module: [ ospf ]
+
+ospf.bfd: True
+
+nodes:
+- name: c_nxos
+  module: [ bfd, ospf ]
+  device: nxos
+- name: c_csr
+  module: [ bfd, ospf ]
+  device: csr
+- name: a_eos
+  module: [ bfd, ospf ]
+  device: eos
+- name: j_vsrx
+  device: vsrx
+- name: vx
+  device: cumulus
+
+links:
+- c_nxos:
+  a_eos:
+  j_vsrx:
+  c_csr:
+  vx:
+  name: Common link
+  ospf:
+    cost: 10
+
+- c_nxos:
+  a_eos:
+  role: core
+  ospf:
+    cost: 3
+  bfd: False
+
+- c_nxos:
+  c_csr:
+  role: core
+  ospf:
+    cost: 3
+    bfd: False
+
+- c_nxos:
+  j_vsrx:
+  role: core
+  ospf:
+    cost: 3
+
+- a_eos:
+  j_vsrx:
+  role: core
+  ospf:
+    cost: 3
+
+- a_eos:
+  c_csr:
+  role: core
+  ospf:
+    cost: 3
+
+- c_csr:
+  j_vsrx:
+  role: core
+  ospf:
+    cost: 3
+  bfd: False
+
+- c_nxos:
+  role: edge
+  bfd: False
+
+- a_eos:
+  role: edge

@@ -10,6 +10,18 @@ Supported IS-IS features:
 * Wide metrics (enabled by default, cannot be disabled)
 * Unnumbered point-to-point interfaces
 * Passive interfaces
+* BFD
+
+The following table describes per-platform support of individual IS-IS features:
+
+| Operating system      | IS type | IPv6 AF | Multi<br>topology | Unnumbered<br />interfaces | IPv4<br />BFD | IPv6<br />BFD |
+| ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Cisco IOS          | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Cisco IOS XE       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
@@ -18,6 +30,15 @@ Supported IS-IS features:
 
 * **isis.area** -- CLNS area prefix. Router address (NET) is computed from area prefix, 6-byte system ID (using **id** node attribute) and NSAP selector (.00)
 * **isis.type** -- IS-IS router type (default: **level-2**)
+* **isis.bfd** -- enable BFD for IS-IS. This parameter could be a boolean value (*True*/*False*) or a dictionary of address families, for example:
+
+```
+isis:
+  area: 49.0002
+  bfd:
+    ipv4: True
+    ipv6: True
+```
 
 ## Node Parameters
 
@@ -30,6 +51,17 @@ You can specify node parameters as global values (top-level topology elements) o
 
 * **isis.type** -- Link type (L1/L2/L1-2). Recognized as a valid attribute but not implemented. Please feel free to fix the configuration templates and submit a pull request.
 * **isis.metric** or **isis.cost** -- Interface cost. Both parameters are recognized to make IS-IS configuration similar to OSPF (*metric* takes precedence over *cost*)
+* **isis.bfd** -- enable or disable BFD on individual interfaces. Like with the node-level **isis.bfd** parameter, this parameter could be a boolean value (*True* to enable BFD for all address families, *False* to disable IS-IS BFD on the interface) or a dictionary of address families, for example:
+
+```
+links:
+- name: Link with IPv4-only BFD
+  sros_r1:
+  srlinux_r2:
+  isis.bfd:
+    ipv4: True
+    ipv6: False
+```
 
 ## Other Parameters
 

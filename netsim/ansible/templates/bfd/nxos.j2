@@ -1,0 +1,28 @@
+feature bfd
+!
+bfd interval {{ bfd.min_tx|default(500) }} min_rx {{ bfd.min_rx|default(500) }} multiplier {{ bfd.multiplier|default(3) }}
+!
+{% if bfd.min_echo_rx|default(0) %}
+bfd slow-timers {{ bfd.min_echo_rx }} 
+bfd echo-interface loopback0
+{% endif %}
+!
+{% for l in links|default([]) if bfd|default(False) or l.bfd|default(False) %}
+interface {{ l.ifname }}
+{%   set disable_bfd = l.bfd is defined and not l.bfd %}
+{%   if not disable_bfd %}
+{%     set link_bfd = l.bfd|default({}) %}
+ no ip redirects
+ no ipv6 redirects
+{%     if link_bfd %}
+ bfd interval {{ 
+   link_bfd.min_tx|default(bfd.min_tx)|default(500) }} min_rx {{ 
+   link_bfd.min_rx|default(bfd.min_rx)|default(500) }} multiplier {{
+   link_bfd.multiplier|default(bfd.multiplier)|default(3)
+   }}
+{%     endif %}
+{%   else %}
+ no bfd
+{%   endif %}
+!
+{% endfor %}

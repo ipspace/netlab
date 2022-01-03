@@ -6,10 +6,12 @@ import typing
 from box import Box
 
 from . import _Module
+from . import bfd
 
 class OSPF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
+    bfd.bfd_link_state(node,'ospf')
     if not 'links' in node:
       return
 
