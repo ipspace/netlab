@@ -199,7 +199,8 @@ def adjust_modules(topology: Box) -> None:
   node_transform("pre_default",topology)
   link_transform("pre_default",topology)
   merge_node_module_params(topology)
-  topology.defaults.module = topology.module
+  if 'module' in topology:
+    topology.defaults.module = topology.module
 
 """
 check_module_parameters:
