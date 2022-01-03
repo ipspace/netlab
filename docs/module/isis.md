@@ -12,6 +12,18 @@ Supported IS-IS features:
 * Passive interfaces
 * BFD
 
+The following table describes per-platform support of individual IS-IS features:
+
+| Operating system      | IS type | IPv6 AF | Multi<br>topology | Unnumbered<br />interfaces | IPv4 BFD | IPv6 BFD |
+| ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Cisco IOS          | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Cisco IOS XE       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| VyOS                  |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
 

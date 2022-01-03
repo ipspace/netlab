@@ -77,5 +77,12 @@ def multiprotocol_bfd_link_state(node: Box,proto: str) -> None:
       if isinstance(l[proto].bfd,bool):    # Otherwise if we had 'bfd: True'
         l[proto].bfd = node[proto].bfd     # ... then copy node data into interface data
 
+    if 'bfd' in l[proto]:                  # AF cleanup
+      for af in ('ipv4','ipv6'):
+        if not af in l:                    # Remove AF from proto.bfd if it's not enabled on the interface
+          l[proto].bfd.pop(af,'None')
+      if not l[proto].bfd:                 # If there's nothing left...
+        l[proto].pop('bfd',None)           # ... remove proto.bfd dictionary
+
     if not l[proto]:                       # Last check: if we didn't get any useful protocol data
       l.pop(proto,None)                    # ... remove protocol data from the interface
