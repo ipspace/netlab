@@ -8,7 +8,7 @@ Supported IS-IS features:
 * IS type (L1 and/or L2)
 * Multi-topology IPv6 (enabled by default as soon as the node has at least one IPv6 address, cannot be disabled)
 * Wide metrics (enabled by default, cannot be disabled)
-* Unnumbered point-to-point interfaces
+* Unnumbered IPv4 interfaces
 * Passive interfaces
 * BFD
 
@@ -65,13 +65,9 @@ links:
 
 ## Other Parameters
 
-Link type is used to set IS-IS network type:
+The number of neighbors on an interface is used to set IS-IS network type. Interfaces with exactly one neighbor (point-to-point links) have IS-IS network type set to **point-to-point** network. 
 
-* *P2P link* ⇒ **point-to-point** network
-* Any other link type ⇒ **broadcast** network
-* *Stub link* ⇒ passive interface
-
-Stub links must have exactly one device attached to them. To create multi-router stub links, use **role: stub** link attribute (see below).
+Stub links (links with exactly one device attached to them) or links with **role: stub** or **role: passive** are configured as passive interfaces.
 
 ## Using Link Roles
 

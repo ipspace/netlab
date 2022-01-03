@@ -3,16 +3,18 @@ protocols {
 }
 protocols {
   isis {
+{% if 'ipv6' in isis %}
     topologies {
       ipv6-unicast;
     }
+{% endif %}
     interface lo0.0;
 {% for l in links|default([]) %}
 {%   if "external" in l.role|default("") %}
    # IS-IS not configured on external interface {{ l.ifname }}
 {%   else %}
     interface {{ l.ifname }} {
-{%     if l.type|default("") == "p2p" %}
+{%     if l.neighbors|default([])|length == 1 %}
       point-to-point;
 {%     endif %}
 {%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
@@ -21,6 +23,8 @@ protocols {
 {%     if l.isis.metric is defined or l.isis.cost is defined %}
       level 1 metric {{ l.isis.metric|default(l.isis.cost) }};
       level 2 metric {{ l.isis.metric|default(l.isis.cost) }};
+      level 1 ipv6-unicast-metric {{ l.isis.metric|default(l.isis.cost) }};
+      level 2 ipv6-unicast-metric {{ l.isis.metric|default(l.isis.cost) }};
 {%     endif %}
     }
 {%   endif %}
