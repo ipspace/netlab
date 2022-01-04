@@ -2,6 +2,8 @@
 # Build full-blown topology data structures (nodes, links, global parameter) from high-level topology
 #
 
+import sys
+
 from box import Box
 
 from .. import common
@@ -13,6 +15,10 @@ from .. import modules
 def transform_setup(topology: Box) -> None:
   augment.topology.check_required_elements(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
+  if 'links' in topology:
+    topology.links = augment.links.adjust_link_list(topology.links,topology.nodes)
+  common.exit_on_error()
+
   augment.plugin.init(topology)
   augment.plugin.execute('init',topology)
   augment.topology.extend_attribute_list(topology.defaults)
@@ -22,9 +28,6 @@ def transform_setup(topology: Box) -> None:
   common.exit_on_error()
 
   augment.nodes.augment_node_provider_data(topology)
-  common.exit_on_error()
-  if 'links' in topology:
-    topology.links = augment.links.adjust_link_list(topology.links)
   common.exit_on_error()
 
   augment.groups.check_group_data_structure(topology)

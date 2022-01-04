@@ -9,6 +9,7 @@ import netaddr
 
 from . import _Module
 from .. import common
+from ..augment.links import IFATTR
 
 def check_bgp_parameters(node: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
@@ -181,12 +182,12 @@ class BGP(_Module):
       return
 
     as_set = {}
-    for n in link.keys():
-      if n in topology.nodes:
-        if "bgp" in topology.nodes[n]:
-          node_as = topology.nodes[n].bgp.get("as")
-          if node_as:
-            as_set[node_as] = True
+    for ifdata in link.get(IFATTR,[]):
+      n = ifdata.node
+      if "bgp" in topology.nodes[n]:
+        node_as = topology.nodes[n].bgp.get("as")
+        if node_as:
+          as_set[node_as] = True
 
     if len(as_set) > 1 and not link.get("role"):
       link.role = ebgp_role

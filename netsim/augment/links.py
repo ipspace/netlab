@@ -11,6 +11,82 @@ from box import Box
 from .. import common
 from .. import addressing
 
+IFATTR: str = 'interfaces'          # Just in case we decide to call it something else not 'interfaces'
+
+def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
+  link_intf = []
+  for n in iflist:                      # Sanity check of interface data
+    if isinstance(n,str):               # Another shortcut: node name as string
+      n = Box({ 'node': n },default_box=True,box_dots=True)
+    if not isinstance(n,dict):          # Still facing non-dict data type?
+      common.error(                     # ... report an error
+        f'Interface description {n} on link {link} must be a dictionary',
+        common.IncorrectValue,
+        'links')
+    if not 'node' in n:                 # Do we have node name in interface data?
+      common.error(                     # ... no? Too bad, throw an error
+        f'Interface data {n} on link {link} is missing a "node" attribute',
+        common.MissingValue,
+        'links')
+    elif not n.node in nodes:           # Is the node name valid?
+      common.error(                     # ... it's not, get lost
+        f'Interface data {n} on link {link} refers to an unknown node {n.node}',
+        common.IncorrectValue,
+        'links')
+    link_intf.append(n)                 # Interface data is OK, append it to interface list
+
+  return link_intf
+
+def adjust_link_list(links: list, nodes: Box) -> list:
+  global IFATTR
+  link_list: list = []
+
+  if not(links):
+    return link_list
+
+  link_cnt = 0
+  for l in links:
+    if isinstance(l,dict) and IFATTR in l:               # a dictionary with 'interfaces' element
+      l = Box(l,default_box=True,box_dots=True)
+      common.must_be_list(l,IFATTR,f'link[{link_cnt}]')  # ... check it's a list and move on
+      l[IFATTR] = adjust_interface_list(l[IFATTR],l,nodes)
+      link_list.append(l)
+    elif isinstance(l,dict):                             # a dictionary without 'interfaces' element
+      link_data = {}                                     # ... split it into link attributes
+      link_intf = []                                     # ... and a list of nodes
+      for (k,v) in l.items():
+        if k in nodes:                                   # Node name -> interface list
+          if not v:
+            v = Box({},default_box=True,box_dots=True)
+          if not isinstance(v,dict):                     # Interface data must be a dictionary
+            common.error(
+              f'Interface data {v} for node {k} on link {l} must be a dictionary',
+              common.IncorrectValue,
+              'links')
+            continue
+          v['node'] = k                                  # ... add 'node' to the interface so we know what node it belongs to
+          link_intf.append(v)
+        else:
+          link_data[k] = v                  # ... otherwise copy key/value pair to link data
+      link_data[IFATTR] = link_intf         # Add revised interface data to link data
+      link_list.append(link_data)           # ... and move on
+    elif isinstance(l,list):
+      link_list.append(Box({ IFATTR: adjust_interface_list(l,l,nodes) },default_box=True,box_dots=True))
+    else:                                   # Assuming the link value is a string, split
+      link_intf = []
+      for n in l.split('-'):                # ... split it into a list of nodes
+        if n in nodes:                      # If the node name is valid
+          link_intf.append({ 'node': n })   # ... append it to the list of interfaces
+        else:
+          common.error(
+            f'Link string {l} refers to an unknown node {n}',
+            common.IncorrectValue,
+            'links')
+      link_list.append({ IFATTR: link_intf })
+    link_cnt = link_cnt + 1
+
+  return link_list
+
 def get_link_full_attributes(defaults: Box) -> set:
   attributes = defaults.get('attributes',{})
   user = attributes.get('link',[])
@@ -29,20 +105,6 @@ def get_link_base_attributes(defaults: Box) -> set:
   attributes = defaults.get('attributes',{})
   no_propagate = attributes.get('link_no_propagate')
   return get_link_full_attributes(defaults) - set(no_propagate)
-
-def adjust_link_list(links: typing.Optional[typing.List[typing.Any]]) -> typing.Optional[typing.List[typing.Dict]]:
-  link_list: list = []
-
-  if not(links):
-    return link_list
-  for l in links:
-    if isinstance(l,dict):
-      link_list.append(l)
-    elif isinstance(l,list):
-      link_list.append({ key: None for key in l })
-    else:
-      link_list.append({ key: None for key in l.split('-') })
-  return link_list
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> int:
   if not 'links' in node:
@@ -204,38 +266,34 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   if common.DEBUG:
     print(f'... on-link prefixes: {pfx_list}')
 
-  for (node,value) in link.items():
-    if node in ndict:
-      ifaddr = Box({},default_box=True)
-      if value is None:
-        value = Box({},default_box=True)
+  link_cnt = 0
+  for value in link[IFATTR]:
+    node = value.node
+    ifaddr = Box({},default_box=True)
+    errmsg = get_node_link_address(
+      node=ndict[node],
+      ifdata=ifaddr,
+      node_link_data=value,
+      prefix=pfx_list,
+      node_id=ndict[node].id)
+    if errmsg:
+      common.error(
+        f'{errmsg}\n'+
+        common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
 
-      if not isinstance(value,dict):
-        common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
-        continue
+    ifaddr_add_module(ifaddr,link,defaults.get('module'))
 
-      errmsg = get_node_link_address(
-        node=ndict[node],
-        ifdata=ifaddr,
-        node_link_data=value,
-        prefix=pfx_list,
-        node_id=ndict[node].id)
-      if errmsg:
-        common.error(
-          f'{errmsg}\n'+
-          common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
+    ifaddr = ifaddr + value
+    ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
+    link[IFATTR][link_cnt] = value
+    link_cnt = link_cnt + 1
 
-      ifaddr_add_module(ifaddr,link,defaults.get('module'))
+    if link.type != "stub":
+      n_list = [ n.node for n in link[IFATTR] if n.node != node ]
+      ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
 
-      ifaddr = ifaddr + value
-      link[node] = value
-
-      if link.type != "stub":
-        n_list = filter(lambda n: n in ndict and n != node,link.keys())
-        ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
-
-      interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
-      add_node_interface(ndict[node],interfaces[node],defaults)
+    interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
+    add_node_interface(ndict[node],interfaces[node],defaults)
 
   for node in interfaces.keys():
     interfaces[node].neighbors = {}
@@ -249,6 +307,9 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     ifindex = len(ndict[node].links) - 1
     ndict[node].links[ifindex] = interfaces[node]
 
+  if common.DEBUG:
+    print(f'Final LAN link data: {link}\n')
+
 def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
   link_attr_base = get_link_base_attributes(defaults)
   if not defaults:      # pragma: no cover (almost impossible to get there)
@@ -259,35 +320,36 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   link_nodes: typing.List[Box] = []
   interfaces = []
 
-  for (node,value) in sorted(link.items()):
-    if node in ndict:
-      ecount = len(link_nodes)
-      ifaddr = Box({},default_box=True)
-      if link.get('unnumbered',None):
-        ifaddr.unnumbered = True
-      if value is None:
-        value = Box({},default_box=True)
+  intf_cnt = 0
+  for value in sorted(link[IFATTR],key=lambda v: v.node):
+    node = value.node
+    ecount = len(link_nodes)
+    ifaddr = Box({},default_box=True)
+    if link.get('unnumbered',None):
+      ifaddr.unnumbered = True
 
-      if not isinstance(value,dict):
-        common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
-        return None
+    if not isinstance(value,dict):
+      common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
+      return None
 
-      errmsg = get_node_link_address(
-        node=ndict[node],
-        ifdata=ifaddr,
-        node_link_data=value,
-        prefix=pfx_list,
-        node_id=ecount+1)
-      if errmsg:
-        common.error(
-          f'{errmsg}\n'+
-          common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
+    errmsg = get_node_link_address(
+      node=ndict[node],
+      ifdata=ifaddr,
+      node_link_data=value,
+      prefix=pfx_list,
+      node_id=ecount+1)
+    if errmsg:
+      common.error(
+        f'{errmsg}\n'+
+        common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
 
-      ifaddr_add_module(ifaddr,link,defaults.get('module'))
+    ifaddr_add_module(ifaddr,link,defaults.get('module'))
 
-      ifaddr = ifaddr + value
-      link[node] = value
-      link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
+    ifaddr = ifaddr + value
+    ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
+    link[IFATTR][intf_cnt] = value
+    intf_cnt = intf_cnt + 1
+    link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
   if len(link_nodes) > len(end_names): # pragma: no cover (this error is reported earlier)
     common.fatal(f"Internal error: Too many nodes specified on a P2P link {link}",'links')
@@ -335,13 +397,6 @@ def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
       ok = False
 
   return ok
-
-def link_node_count(data: Box, nodes: dict) -> int:
-  node_cnt = 0
-  for k in data.keys():
-    if k in nodes:
-      node_cnt = node_cnt + 1
-  return node_cnt
 
 def get_link_type(data: Box, pools: Box) -> str:
   if data.get('type'):
@@ -393,7 +448,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       continue
 
     # JvB include node_count in link attributes
-    link['node_count'] = link_node_count(link,nodes)
+    link['node_count'] = len(link[IFATTR])
 
     link['type'] = get_link_type(data=link,pools=pools)
     if not check_link_type(data=link):
