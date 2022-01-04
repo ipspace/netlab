@@ -368,7 +368,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   if not 'name' in link:
     link.name = link_nodes[0].name + " - " + link_nodes[1].name
 
-  print( f"PRE: {interfaces}" )
+  # print( f"PRE: {interfaces}" )
   for i in range(0,2):
     if 'bridge' in link:
       interfaces[i].bridge = link.bridge
