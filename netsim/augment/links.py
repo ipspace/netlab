@@ -196,11 +196,14 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> di
 
 def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
   link_attr_base = get_link_base_attributes(defaults)
+  if common.DEBUG:
+    print(f'\nProcess LAN link {link}')
+
   pfx_list = augment_link_prefix(link,['lan'],addr_pools)
   interfaces = {}
-
   if common.DEBUG:
-    print(f'Process LAN link {link}\n... pfx_list {pfx_list}')
+    print(f'... on-link prefixes: {pfx_list}')
+
   for (node,value) in link.items():
     if node in ndict:
       ifaddr = Box({},default_box=True)

@@ -228,7 +228,14 @@ def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) 
           pools[p][subnet_cache] = []
         prefixes[af] = get_nth_subnet(n,pools[p][af],pools[p][subnet_cache])
       else:
-        prefixes[af] = next(pools[p][af])
+        try:
+          prefixes[af] = next(pools[p][af])
+        except StopIteration:
+          common.error(
+            f'Ran out of {af} prefixes in {p} pool' +
+            (' (use --debug flag to get more details)' if not common.DEBUG else ''),
+            common.MissingValue,
+            'addressing')
 
   return prefixes
 
