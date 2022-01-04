@@ -2,10 +2,14 @@
 # Containerlab provider module
 #
 import subprocess
+import typing
 from box import Box
 
 from . import _Provider
 from .. import common
+
+def list_bridges( topology: Box ) -> typing.Set[str]:
+    return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 }
 
 class Containerlab(_Provider):
 
@@ -14,9 +18,7 @@ class Containerlab(_Provider):
 
   def pre_start_lab(self, topology: Box) -> None:
     common.print_verbose('pre-start hook for Containerlab')
-    for l in topology.links:
-      brname = l.get('bridge',None)
-      if brname and l.node_count != 2:
+    for brname in list_bridges(topology):
         try:
           result = subprocess.run(['sudo','ip','link','add','name',brname,'type','bridge'],capture_output=True,check=True,text=True)
           common.print_verbose( f"Create Linux bridge '{brname}': {result}" )
@@ -29,9 +31,7 @@ class Containerlab(_Provider):
 
   def post_stop_lab(self, topology: Box) -> None:
     common.print_verbose('post-stop hook for Containerlab, cleaning up any bridges')
-    for l in topology.links:
-      brname = l.get('bridge',None)
-      if brname and l.node_count != 2:
+    for brname in list_bridges(topology):
         try:
           result = subprocess.run(['sudo','ip','link','del','dev',brname],capture_output=True,check=True,text=True)
           common.print_verbose( f"Delete Linux bridge '{brname}': {result}" )
