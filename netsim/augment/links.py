@@ -295,8 +295,8 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       n_list = [ n.node for n in link[IFATTR] if n.node != node ]
       ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
 
-    interfaces[node] = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
-    add_node_interface(ndict[node],interfaces[node],defaults)
+    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
+    interfaces[node] = add_node_interface(ndict[node],ifdata,defaults)
 
   for node in interfaces.keys():
     interfaces[node].neighbors = {}
@@ -307,8 +307,8 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         for af in ('ipv4','ipv6'):
           if af in interfaces[remote]:
             interfaces[node].neighbors[remote][af] = interfaces[remote][af]
-    ifindex = len(ndict[node].links) - 1
-    ndict[node].links[ifindex] = interfaces[node]
+    # ifindex = len(ndict[node].links) - 1
+    # ndict[node].links[ifindex] = interfaces[node]
 
   if common.DEBUG:
     print(f'Final LAN link data: {link}\n')
