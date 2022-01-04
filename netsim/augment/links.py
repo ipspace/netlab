@@ -106,7 +106,7 @@ def get_link_base_attributes(defaults: Box) -> set:
   no_propagate = attributes.get('link_no_propagate')
   return get_link_full_attributes(defaults) - set(no_propagate)
 
-def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> int:
+def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if not 'links' in node:
     node.links = []
 
@@ -127,7 +127,10 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> int:
       del ifdata[af]
 
   node.links.append(ifdata)
-  return len(node.links)
+
+  # Box modifies the dict in place, return a reference to be updated
+  # return len(node.links)
+  return node.links[ len(node.links) - 1 ]
 
 # Add common interface data to node ifaddr structure
 #
@@ -211,7 +214,7 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
           lb = lb or node_addr.prefixlen == 128          # Exception#2: IPv6/128
           if not lb:
             return(f'Static node address {node_link_data[af]} for node {node.name} does not include a host portion')
-    elif af in prefix: 
+    elif af in prefix:
       if isinstance(prefix[af],bool):        # New-style unnumbered link
         if prefix[af]:                       # Copy only True value into interface data
           ifdata[af] = prefix[af]            # ... to ensure AF presence in ifdata indicates protocol-on-interface
@@ -318,7 +321,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
   end_names = ['left','right']
   link_nodes: typing.List[Box] = []
-  interfaces = []
+  interfaces: typing.List[Box] = []
 
   intf_cnt = 0
   for value in sorted(link[IFATTR],key=lambda v: v.node):
@@ -359,12 +362,13 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     node = link_nodes[i].name
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=link_nodes[i].ifaddr)
     ifdata.name = link.get("name") or (link_nodes[i].name + " -> " + link_nodes[1-i].name)
-    add_node_interface(ndict[node],ifdata,defaults)
-    interfaces.append(ifdata)
+    dict_2_update = add_node_interface(ndict[node],ifdata,defaults)
+    interfaces.append(dict_2_update)
 
   if not 'name' in link:
     link.name = link_nodes[0].name + " - " + link_nodes[1].name
 
+  print( f"PRE: {interfaces}" )
   for i in range(0,2):
     if 'bridge' in link:
       interfaces[i].bridge = link.bridge
@@ -383,10 +387,12 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       if af in interfaces[i]:
         link[end_names[i]][af] = interfaces[i][af]
 
-    node = link_nodes[i].name
-    ifindex = len(ndict[node].links) - 1
-    ndict[node].links[ifindex] = interfaces[i]
-
+    # No longer needed: dict updated in-place
+    # node = link_nodes[i].name
+    # ifindex = interfaces[i].ifindex - 1 # len(ndict[node].links) - 1 #
+    # print( f"JvB: adding node={node} ifindex={ifindex} interfaces[{i}]={interfaces[i]}" )
+    # ndict[node].links[ifindex] = interfaces[i]
+  # print( f"POST: {interfaces}" )
   return link
 
 def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
