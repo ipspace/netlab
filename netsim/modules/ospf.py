@@ -29,7 +29,7 @@ class OSPF(_Module):
     for l in node.interfaces:
       is_unnumbered = \
         'unnumbered' in l or \
-        'ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4
+        ('ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4)
       if is_unnumbered:
         node.ospf.unnumbered = True
         if len(l.get('neighbors',[])) != 1:
