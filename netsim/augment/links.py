@@ -438,6 +438,33 @@ def check_link_type(data: Box) -> bool:
     return False
   return True
 
+#
+# Interface Feature Check -- validate that the selected addressing works on target lab devices
+#
+
+def interface_feature_check(nodes: Box, defaults: Box) -> None:
+  devices = defaults.devices
+
+  for node,ndata in nodes.items():
+    devtype = ndata.device
+    for ifdata in ndata.get('interfaces',[]):
+      if 'ipv4' in ifdata:
+        if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \
+            not devices[devtype].features.initial.ipv4.unnumbered:
+          common.error(
+            f'Device {devtype} does not support unnumbered IPv4 interfaces used on\n'+
+            f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
+            common.IncorrectValue,
+            'interfaces')
+      if 'ipv6' in ifdata:
+        if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
+            not devices[devtype].features.initial.ipv6.lla:
+          common.error(
+            f'Device {devtype} does not support LLA-only IPv6 interfaces used on\n'+
+            f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
+            common.IncorrectValue,
+            'interfaces')
+
 def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
   if not link_list:
     return None
@@ -465,4 +492,6 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       augment_lan_link(link,pools,nodes,defaults=defaults)
 
     linkindex = linkindex + 1
+
+  interface_feature_check(nodes,defaults)
   return link_list
