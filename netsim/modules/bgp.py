@@ -222,7 +222,7 @@ class BGP(_Module):
     #
     # EBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create BGP neighbors
-    for l in node.get("links",[]):
+    for l in node.get("interfaces",[]):
       for ngb_ifdata in l.get("neighbors",[]):
         ngb_name = ngb_ifdata.node
         neighbor = topology.nodes[ngb_name]
@@ -251,7 +251,7 @@ class BGP(_Module):
     if 'advertise_roles' in topology.bgp:
       stub_roles = topology.bgp.get("advertise_roles",None)
     if stub_roles:
-      for l in node.get("links",[]):
+      for l in node.get("interfaces",[]):
         if "bgp" in l:
           if "advertise" in l.bgp:
             continue

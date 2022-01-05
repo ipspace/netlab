@@ -107,11 +107,11 @@ def get_link_base_attributes(defaults: Box) -> set:
   return get_link_full_attributes(defaults) - set(no_propagate)
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
-  if not 'links' in node:
-    node.links = []
+  if not 'interfaces' in node:
+    node.interfaces = []
 
   ifindex_offset = defaults.devices[node.device].get('ifindex_offset',1)
-  ifindex = len(node.links) + ifindex_offset
+  ifindex = len(node.interfaces) + ifindex_offset
 
   ifname_format = defaults.devices[node.device].interface_name
 
@@ -126,11 +126,11 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     if af in ifdata and not ifdata[af]:
       del ifdata[af]
 
-  node.links.append(ifdata)
+  node.interfaces.append(ifdata)
 
   # Box modifies the dict in place, return a reference to be updated
   # return len(node.links)
-  return node.links[ len(node.links) - 1 ]
+  return node.interfaces[-1]
 
 # Add common interface data to node ifaddr structure
 #
@@ -389,12 +389,6 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       if af in interfaces[i]:
         link[end_names[i]][af] = interfaces[i][af]
 
-    # No longer needed: dict updated in-place
-    # node = link_nodes[i].name
-    # ifindex = interfaces[i].ifindex - 1 # len(ndict[node].links) - 1 #
-    # print( f"JvB: adding node={node} ifindex={ifindex} interfaces[{i}]={interfaces[i]}" )
-    # ndict[node].links[ifindex] = interfaces[i]
-  # print( f"POST: {interfaces}" )
   return link
 
 def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:

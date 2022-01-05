@@ -37,9 +37,9 @@ class _Module(Callback):
         model_data[af] = True        # ... we need it in the module
         continue
 
-      for l in node.get('links',[]): # Scan all links
-        if af in l:                  # Do we have AF enabled on any of them?
-          model_data[af] = True      # Found it - we need it the module
+      for l in node.get('interfaces',[]): # Scan all interfaces
+        if af in l:                       # Do we have AF enabled on any of them?
+          model_data[af] = True           # Found it - we need it the module
           continue
 
 """

@@ -26,16 +26,11 @@ def transformation_results_yaml(topology,ignore=('addressing','defaults','nodes_
   """
 
   """
-  Temporary: replace neighbor list with neighbor dict
+  Temporary: rename node interfaces to links
   for n in topology.nodes.values():
-    if 'links' in n:
-      for l in n.links:
-        if 'neighbors' in l:
-          n_dict = {}
-          for ngh in l.neighbors:
-            n_dict[ngh.node] = ngh
-            n_dict[ngh.node].pop('node',None)
-          l.neighbors = n_dict
+    if 'interfaces' in n:
+      n.links = n.interfaces
+      n.pop('interfaces',None)
   """
 
   """
