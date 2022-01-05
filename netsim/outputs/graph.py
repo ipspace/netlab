@@ -17,8 +17,8 @@ def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Opt
   f.write('%s  ]\n' % indent)
 
 def network_with_label(f : typing.TextIO, n: Box, settings: Box) -> None:
-  f.write("  %s [" % n.bridge)
-  f.write(" style=filled fillcolor=%s fontsize=11" % settings.colors.get("stub","#d1bfab"))
+  f.write('  %s [' % n.bridge)
+  f.write(' style=filled fillcolor="%s" fontsize=11' % settings.colors.get("stub","#d1bfab"))
   f.write(' label="%s"' % (n.prefix.ipv4 or n.prefix.ipv6 or n.bridge))
   f.write(" ]\n")
 
@@ -102,9 +102,9 @@ def graph_topology(topology: Box, fname: str, settings: Box) -> bool:
         common.error('Found a lan/stub link without a bridge name, skipping',common.IncorrectValue,'graph')
         next
       network_with_label(f,l,settings)
-      for k in l.keys():
-        if k in maps.nodes:
-          edge_node_net(f,l,k,settings.interface_labels)
+      for ifdata in l.interfaces:
+        if ifdata.node in maps.nodes:
+          edge_node_net(f,l,ifdata.node,settings.interface_labels)
 
   f.write("}\n")
   f.close()
