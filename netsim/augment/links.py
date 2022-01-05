@@ -265,7 +265,8 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     print(f'\nProcess LAN link {link}')
 
   pfx_list = augment_link_prefix(link,['lan'],addr_pools)
-  interfaces = {}
+  interfaces = []
+
   if common.DEBUG:
     print(f'... on-link prefixes: {pfx_list}')
 
@@ -289,26 +290,25 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     ifaddr = ifaddr + value
     ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
     link[IFATTR][link_cnt] = value
-    link_cnt = link_cnt + 1
 
     if link.type != "stub":
-      n_list = [ n.node for n in link[IFATTR] if n.node != node ]
+      n_list = [ link[IFATTR][i].node for i in range(0,len(link[IFATTR])) if i != link_cnt ]
       ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
 
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
-    interfaces[node] = add_node_interface(ndict[node],ifdata,defaults)
+    interfaces.append({ 'node': node, 'data': add_node_interface(ndict[node],ifdata,defaults) })
 
-  for node in interfaces.keys():
-    interfaces[node].neighbors = {}
-    for remote in interfaces.keys():
-      if remote != node:
-        interfaces[node].neighbors[remote] = { \
-          'ifname': interfaces[remote]['ifname'] }
+    link_cnt = link_cnt + 1
+
+  for node_if in interfaces:
+    node_if['data'].neighbors = []
+    for remote_if in interfaces:
+      if remote_if['node'] != node_if['node'] or remote_if['data'].ifindex != node_if['data'].ifindex:
+        ngh_data = { 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] }
         for af in ('ipv4','ipv6'):
-          if af in interfaces[remote]:
-            interfaces[node].neighbors[remote][af] = interfaces[remote][af]
-    # ifindex = len(ndict[node].links) - 1
-    # ndict[node].links[ifindex] = interfaces[node]
+          if af in remote_if['data']:
+            ngh_data[af] = remote_if['data'][af]
+        node_if['data'].neighbors.append(ngh_data)
 
   if common.DEBUG:
     print(f'Final LAN link data: {link}\n')
@@ -379,11 +379,13 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     link[end_names[i]] = { 'node': link_nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
 
     remote = link_nodes[1-i].name
-    interfaces[i]['neighbors'] = { remote : { \
-      'ifname' : interfaces[1-i]['ifname'] }}
+    interfaces[i]['neighbors'] = [{
+        'node': remote,
+        'ifname': interfaces[1-i]['ifname']
+      }]
     for af in ('ipv4','ipv6'):
       if af in interfaces[1-i]:
-        interfaces[i]['neighbors'][remote][af] = interfaces[1-i][af]
+        interfaces[i]['neighbors'][0][af] = interfaces[1-i][af]
       if af in interfaces[i]:
         link[end_names[i]][af] = interfaces[i][af]
 

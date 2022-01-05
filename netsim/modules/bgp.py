@@ -223,7 +223,8 @@ class BGP(_Module):
     # EBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create BGP neighbors
     for l in node.get("links",[]):
-      for ngb_name,ngb_ifdata in l.get("neighbors",{}).items():
+      for ngb_ifdata in l.get("neighbors",[]):
+        ngb_name = ngb_ifdata.node
         neighbor = topology.nodes[ngb_name]
         if not "bgp" in neighbor:
           continue

@@ -26,6 +26,19 @@ def transformation_results_yaml(topology,ignore=('addressing','defaults','nodes_
       l.pop('interfaces',None)
 
   """
+  Temporary: replace neighbor list with neighbor dict
+  """
+  for n in topology.nodes.values():
+    if 'links' in n:
+      for l in n.links:
+        if 'neighbors' in l:
+          n_dict = {}
+          for ngh in l.neighbors:
+            n_dict[ngh.node] = ngh
+            n_dict[ngh.node].pop('node',None)
+          l.neighbors = n_dict
+
+  """
   If we're using a dictionary extension that has to_yaml method use that,
   otherwise use pyyaml (hoping it won't generate extraneous attributes)
   """
