@@ -17,12 +17,12 @@ def bfd_link_state(node: Box,proto: str) -> None:
     return
   if not 'bfd' in node[proto]:
     return
-  if not 'links' in node:
+  if not 'interfaces' in node:
     return
 
   node[proto].bfd = True if node[proto].bfd else False   # Convert protocol-level BFD setting into Boolean
 
-  for l in node.links:
+  for l in node.interfaces:
     if not proto in l:                     # No protocol-specific link parameters?
       l[proto] = {}                        # ... start with an empty dictionary
 
@@ -56,10 +56,10 @@ def multiprotocol_bfd_link_state(node: Box,proto: str) -> None:
     else:
       node[proto].bfd = {}
 
-  if not 'links' in node:
+  if not 'interfaces' in node:
     return
 
-  for l in node.links:
+  for l in node.interfaces:
     if not proto in l:                     # No protocol-specific link parameters?
       l[proto] = {}                        # ... start with an empty dictionary
 

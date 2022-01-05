@@ -92,5 +92,5 @@ def test_minimal_cases():
 
 if __name__ == "__main__":
   test_transformation_cases("/tmp")
-  test_error_cases()
-  test_minimal_cases()
+#  test_error_cases()
+#  test_minimal_cases()

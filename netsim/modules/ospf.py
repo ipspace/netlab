@@ -13,7 +13,7 @@ class OSPF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     bfd.bfd_link_state(node,'ospf')
-    if not 'links' in node:
+    if not 'interfaces' in node:
       return
 
     # We need to set ospf.unnumbered if we happen to have OSPF running over an unnumbered
@@ -22,7 +22,11 @@ class OSPF(_Module):
     # An interface can be unnumbered if it has the 'unnumbered' flag set or if it
     # has IPv4 enabled but no IPv4 address (ipv4: true)
     #
-    for l in node.links:                                         # Scan all links 
+    # While doing that, we also check for the number of neighbors on unnumbered interfaces
+    # and report an error if there are none (in which case the interface should not be unnumbered)
+    # or more than one (in which case OSPF won't work)
+    #
+    for l in node.interfaces:
       is_unnumbered = \
         'unnumbered' in l or \
         'ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4

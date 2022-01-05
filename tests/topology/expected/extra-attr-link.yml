@@ -2,10 +2,11 @@ input:
 - topology/input/extra-attr-link.yml
 - package:topology-defaults.yml
 links:
-- e1:
-    ipv4: 10.1.0.1/30
-  e2:
-    ipv4: 10.1.0.2/30
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    node: e1
+  - ipv4: 10.1.0.2/30
+    node: e2
   left:
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.1/30
@@ -20,8 +21,11 @@ links:
     ipv4: 10.1.0.2/30
     node: e2
   type: p2p
-- e1:
-    ipv6: 2001:db8:cafe:1::1/64
+- interfaces:
+  - ipv6: 2001:db8:cafe:1::1/64
+    node: e1
+  - ipv6: 2001:db8:cafe:1::2/64
+    node: pe1
   left:
     ifname: GigabitEthernet0/2
     ipv6: 2001:db8:cafe:1::1/64
@@ -29,8 +33,6 @@ links:
   linkindex: 2
   name: e1 - pe1
   node_count: 2
-  pe1:
-    ipv6: 2001:db8:cafe:1::2/64
   prefix:
     ipv6: 2001:db8:cafe:1::/64
   right:
@@ -39,21 +41,23 @@ links:
     node: pe1
   type: p2p
 - bridge: input_3
-  e2:
-    ipv4: 192.168.22.2/24
+  interfaces:
+  - ipv4: 192.168.22.2/24
+    node: e2
+  - ipv4: 192.168.22.3/24
+    node: pe1
   linkindex: 3
   node_count: 2
-  pe1:
-    ipv4: 192.168.22.3/24
   prefix: 192.168.22.0/24
   type: lan
 - dmz: 100000
-  e1:
-    ipv4: 192.168.23.1/24
+  interfaces:
+  - ipv4: 192.168.23.1/24
     ipv6: 2001:db8:cafe:2::1/64
-  e2:
-    ipv4: 192.168.23.2/24
+    node: e1
+  - ipv4: 192.168.23.2/24
     ipv6: 2001:db8:cafe:2::2/64
+    node: e2
   left:
     ifname: GigabitEthernet0/3
     ipv4: 192.168.23.1/24
@@ -80,16 +84,16 @@ nodes:
     id: 1
     igp:
     - ospf
-    links:
+    interfaces:
     - ifindex: 1
       ifname: GigabitEthernet0/1
       ipv4: 10.1.0.1/30
       linkindex: 1
       name: e1 -> e2
       neighbors:
-        e2:
-          ifname: GigabitEthernet0/1
-          ipv4: 10.1.0.2/30
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.2/30
+        node: e2
       remote_id: 2
       remote_ifindex: 1
       type: p2p
@@ -99,9 +103,9 @@ nodes:
       linkindex: 2
       name: e1 -> pe1
       neighbors:
-        pe1:
-          ifname: GigabitEthernet2
-          ipv6: 2001:db8:cafe:1::2/64
+      - ifname: GigabitEthernet2
+        ipv6: 2001:db8:cafe:1::2/64
+        node: pe1
       remote_id: 3
       remote_ifindex: 2
       type: p2p
@@ -113,10 +117,10 @@ nodes:
       linkindex: 4
       name: e1 -> e2
       neighbors:
-        e2:
-          ifname: GigabitEthernet0/3
-          ipv4: 192.168.23.2/24
-          ipv6: 2001:db8:cafe:2::2/64
+      - ifname: GigabitEthernet0/3
+        ipv4: 192.168.23.2/24
+        ipv6: 2001:db8:cafe:2::2/64
+        node: e2
       remote_id: 2
       remote_ifindex: 3
       type: p2p
@@ -131,16 +135,16 @@ nodes:
     box: cisco/iosv
     device: iosv
     id: 2
-    links:
+    interfaces:
     - ifindex: 1
       ifname: GigabitEthernet0/1
       ipv4: 10.1.0.2/30
       linkindex: 1
       name: e2 -> e1
       neighbors:
-        e1:
-          ifname: GigabitEthernet0/1
-          ipv4: 10.1.0.1/30
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.1/30
+        node: e1
       remote_id: 1
       remote_ifindex: 1
       type: p2p
@@ -151,9 +155,9 @@ nodes:
       linkindex: 3
       name: e2 -> [pe1]
       neighbors:
-        pe1:
-          ifname: GigabitEthernet3
-          ipv4: 192.168.22.3/24
+      - ifname: GigabitEthernet3
+        ipv4: 192.168.22.3/24
+        node: pe1
       type: lan
     - dmz: 100000
       ifindex: 3
@@ -163,10 +167,10 @@ nodes:
       linkindex: 4
       name: e2 -> e1
       neighbors:
-        e1:
-          ifname: GigabitEthernet0/3
-          ipv4: 192.168.23.1/24
-          ipv6: 2001:db8:cafe:2::1/64
+      - ifname: GigabitEthernet0/3
+        ipv4: 192.168.23.1/24
+        ipv6: 2001:db8:cafe:2::1/64
+        node: e1
       remote_id: 1
       remote_ifindex: 3
       type: p2p
@@ -183,16 +187,16 @@ nodes:
     id: 3
     igp:
     - ospf
-    links:
+    interfaces:
     - ifindex: 2
       ifname: GigabitEthernet2
       ipv6: 2001:db8:cafe:1::2/64
       linkindex: 2
       name: pe1 -> e1
       neighbors:
-        e1:
-          ifname: GigabitEthernet0/2
-          ipv6: 2001:db8:cafe:1::1/64
+      - ifname: GigabitEthernet0/2
+        ipv6: 2001:db8:cafe:1::1/64
+        node: e1
       remote_id: 1
       remote_ifindex: 2
       type: p2p
@@ -203,9 +207,9 @@ nodes:
       linkindex: 3
       name: pe1 -> [e2]
       neighbors:
-        e2:
-          ifname: GigabitEthernet0/2
-          ipv4: 192.168.22.2/24
+      - ifname: GigabitEthernet0/2
+        ipv4: 192.168.22.2/24
+        node: e2
       type: lan
     loopback:
       ipv4: 10.0.0.3/32

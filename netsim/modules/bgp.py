@@ -9,6 +9,7 @@ import netaddr
 
 from . import _Module
 from .. import common
+from ..augment.links import IFATTR
 
 def check_bgp_parameters(node: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
@@ -181,12 +182,12 @@ class BGP(_Module):
       return
 
     as_set = {}
-    for n in link.keys():
-      if n in topology.nodes:
-        if "bgp" in topology.nodes[n]:
-          node_as = topology.nodes[n].bgp.get("as")
-          if node_as:
-            as_set[node_as] = True
+    for ifdata in link.get(IFATTR,[]):
+      n = ifdata.node
+      if "bgp" in topology.nodes[n]:
+        node_as = topology.nodes[n].bgp.get("as")
+        if node_as:
+          as_set[node_as] = True
 
     if len(as_set) > 1 and not link.get("role"):
       link.role = ebgp_role
@@ -221,8 +222,9 @@ class BGP(_Module):
     #
     # EBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create BGP neighbors
-    for l in node.get("links",[]):
-      for ngb_name,ngb_ifdata in l.get("neighbors",{}).items():
+    for l in node.get("interfaces",[]):
+      for ngb_ifdata in l.get("neighbors",[]):
+        ngb_name = ngb_ifdata.node
         neighbor = topology.nodes[ngb_name]
         if not "bgp" in neighbor:
           continue
@@ -249,7 +251,7 @@ class BGP(_Module):
     if 'advertise_roles' in topology.bgp:
       stub_roles = topology.bgp.get("advertise_roles",None)
     if stub_roles:
-      for l in node.get("links",[]):
+      for l in node.get("interfaces",[]):
         if "bgp" in l:
           if "advertise" in l.bgp:
             continue

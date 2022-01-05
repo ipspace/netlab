@@ -11,6 +11,7 @@ from box import Box
 # Related modules
 from .. import common
 from ..callback import Callback
+from ..augment.links import IFATTR
 
 # List of attributes we don't want propagated from defaults to global/node
 #
@@ -36,9 +37,9 @@ class _Module(Callback):
         model_data[af] = True        # ... we need it in the module
         continue
 
-      for l in node.get('links',[]): # Scan all links
-        if af in l:                  # Do we have AF enabled on any of them?
-          model_data[af] = True      # Found it - we need it the module
+      for l in node.get('interfaces',[]): # Scan all interfaces
+        if af in l:                       # Do we have AF enabled on any of them?
+          model_data[af] = True           # Found it - we need it the module
           continue
 
 """
@@ -378,10 +379,8 @@ def link_transform(method: str, topology: Box) -> None:
 
   for l in topology.get("links",[]):
     mod_list: typing.Dict = {}
-    for n in l.keys():
-      if not n in topology.nodes:
-        continue
-      mod_list.update({ m: None for m in topology.nodes[n].get("module",[]) })
+    for node_data in l.get(IFATTR,[]):
+      mod_list.update({ m: None for m in topology.nodes[node_data.node].get("module",[]) })
     for m in mod_list.keys():
       if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
         mod_load[m] = _Module.load(m,topology.get(m))

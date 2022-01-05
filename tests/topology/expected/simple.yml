@@ -2,26 +2,28 @@ input:
 - topology/input/simple.yml
 - package:topology-defaults.yml
 links:
-- a_eos:
-    ipv4: 172.16.0.4/24
-  bridge: input_1
-  c_csr:
-    ipv4: 172.16.0.2/24
-  c_ios:
-    ipv4: 172.16.0.1/24
-  c_nxos:
-    ipv4: 172.16.0.3/24
-  j_vsrx:
-    ipv4: 172.16.0.5/24
+- bridge: input_1
+  interfaces:
+  - ipv4: 172.16.0.1/24
+    node: c_ios
+  - ipv4: 172.16.0.2/24
+    node: c_csr
+  - ipv4: 172.16.0.3/24
+    node: c_nxos
+  - ipv4: 172.16.0.4/24
+    node: a_eos
+  - ipv4: 172.16.0.5/24
+    node: j_vsrx
   linkindex: 1
   node_count: 5
   prefix:
     ipv4: 172.16.0.0/24
   type: lan
-- c_csr:
-    ipv4: 10.1.0.1/30
-  c_ios:
-    ipv4: 10.1.0.2/30
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    node: c_csr
+  - ipv4: 10.1.0.2/30
+    node: c_ios
   left:
     ifname: GigabitEthernet3
     ipv4: 10.1.0.1/30
@@ -36,11 +38,12 @@ links:
     ipv4: 10.1.0.2/30
     node: c_ios
   type: p2p
-- a_eos:
-    ipv4: 172.16.1.4/24
-  bridge: c-to-a
-  c_nxos:
-    ipv4: 172.16.1.3/24
+- bridge: c-to-a
+  interfaces:
+  - ipv4: 172.16.1.4/24
+    node: a_eos
+  - ipv4: 172.16.1.3/24
+    node: c_nxos
   linkindex: 3
   node_count: 2
   prefix:
@@ -52,7 +55,7 @@ nodes:
     box: arista/veos
     device: eos
     id: 4
-    links:
+    interfaces:
     - bridge: input_1
       ifindex: 1
       ifname: Ethernet1
@@ -60,18 +63,18 @@ nodes:
       linkindex: 1
       name: a_eos -> [c_ios,c_csr,c_nxos,j_vsrx]
       neighbors:
-        c_csr:
-          ifname: GigabitEthernet2
-          ipv4: 172.16.0.2/24
-        c_ios:
-          ifname: GigabitEthernet0/1
-          ipv4: 172.16.0.1/24
-        c_nxos:
-          ifname: Ethernet1/1
-          ipv4: 172.16.0.3/24
-        j_vsrx:
-          ifname: ge-0/0/0
-          ipv4: 172.16.0.5/24
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: c_ios
+      - ifname: GigabitEthernet2
+        ipv4: 172.16.0.2/24
+        node: c_csr
+      - ifname: Ethernet1/1
+        ipv4: 172.16.0.3/24
+        node: c_nxos
+      - ifname: ge-0/0/0
+        ipv4: 172.16.0.5/24
+        node: j_vsrx
       type: lan
     - bridge: c-to-a
       ifindex: 2
@@ -80,9 +83,9 @@ nodes:
       linkindex: 3
       name: a_eos -> [c_nxos]
       neighbors:
-        c_nxos:
-          ifname: Ethernet1/2
-          ipv4: 172.16.1.3/24
+      - ifname: Ethernet1/2
+        ipv4: 172.16.1.3/24
+        node: c_nxos
       type: lan
     loopback:
       ipv4: 10.0.0.4/32
@@ -95,7 +98,7 @@ nodes:
     box: cisco/csr1000v
     device: csr
     id: 2
-    links:
+    interfaces:
     - bridge: input_1
       ifindex: 2
       ifname: GigabitEthernet2
@@ -103,18 +106,18 @@ nodes:
       linkindex: 1
       name: c_csr -> [c_ios,c_nxos,a_eos,j_vsrx]
       neighbors:
-        a_eos:
-          ifname: Ethernet1
-          ipv4: 172.16.0.4/24
-        c_ios:
-          ifname: GigabitEthernet0/1
-          ipv4: 172.16.0.1/24
-        c_nxos:
-          ifname: Ethernet1/1
-          ipv4: 172.16.0.3/24
-        j_vsrx:
-          ifname: ge-0/0/0
-          ipv4: 172.16.0.5/24
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: c_ios
+      - ifname: Ethernet1/1
+        ipv4: 172.16.0.3/24
+        node: c_nxos
+      - ifname: Ethernet1
+        ipv4: 172.16.0.4/24
+        node: a_eos
+      - ifname: ge-0/0/0
+        ipv4: 172.16.0.5/24
+        node: j_vsrx
       type: lan
     - ifindex: 3
       ifname: GigabitEthernet3
@@ -122,9 +125,9 @@ nodes:
       linkindex: 2
       name: c_csr -> c_ios
       neighbors:
-        c_ios:
-          ifname: GigabitEthernet0/2
-          ipv4: 10.1.0.2/30
+      - ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.2/30
+        node: c_ios
       remote_id: 1
       remote_ifindex: 2
       type: p2p
@@ -139,7 +142,7 @@ nodes:
     box: cisco/iosv
     device: iosv
     id: 1
-    links:
+    interfaces:
     - bridge: input_1
       ifindex: 1
       ifname: GigabitEthernet0/1
@@ -147,18 +150,18 @@ nodes:
       linkindex: 1
       name: c_ios -> [c_csr,c_nxos,a_eos,j_vsrx]
       neighbors:
-        a_eos:
-          ifname: Ethernet1
-          ipv4: 172.16.0.4/24
-        c_csr:
-          ifname: GigabitEthernet2
-          ipv4: 172.16.0.2/24
-        c_nxos:
-          ifname: Ethernet1/1
-          ipv4: 172.16.0.3/24
-        j_vsrx:
-          ifname: ge-0/0/0
-          ipv4: 172.16.0.5/24
+      - ifname: GigabitEthernet2
+        ipv4: 172.16.0.2/24
+        node: c_csr
+      - ifname: Ethernet1/1
+        ipv4: 172.16.0.3/24
+        node: c_nxos
+      - ifname: Ethernet1
+        ipv4: 172.16.0.4/24
+        node: a_eos
+      - ifname: ge-0/0/0
+        ipv4: 172.16.0.5/24
+        node: j_vsrx
       type: lan
     - ifindex: 2
       ifname: GigabitEthernet0/2
@@ -166,9 +169,9 @@ nodes:
       linkindex: 2
       name: c_ios -> c_csr
       neighbors:
-        c_csr:
-          ifname: GigabitEthernet3
-          ipv4: 10.1.0.1/30
+      - ifname: GigabitEthernet3
+        ipv4: 10.1.0.1/30
+        node: c_csr
       remote_id: 2
       remote_ifindex: 3
       type: p2p
@@ -183,7 +186,7 @@ nodes:
     box: cisco/nexus9300v
     device: nxos
     id: 3
-    links:
+    interfaces:
     - bridge: input_1
       ifindex: 1
       ifname: Ethernet1/1
@@ -191,18 +194,18 @@ nodes:
       linkindex: 1
       name: c_nxos -> [c_ios,c_csr,a_eos,j_vsrx]
       neighbors:
-        a_eos:
-          ifname: Ethernet1
-          ipv4: 172.16.0.4/24
-        c_csr:
-          ifname: GigabitEthernet2
-          ipv4: 172.16.0.2/24
-        c_ios:
-          ifname: GigabitEthernet0/1
-          ipv4: 172.16.0.1/24
-        j_vsrx:
-          ifname: ge-0/0/0
-          ipv4: 172.16.0.5/24
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: c_ios
+      - ifname: GigabitEthernet2
+        ipv4: 172.16.0.2/24
+        node: c_csr
+      - ifname: Ethernet1
+        ipv4: 172.16.0.4/24
+        node: a_eos
+      - ifname: ge-0/0/0
+        ipv4: 172.16.0.5/24
+        node: j_vsrx
       type: lan
     - bridge: c-to-a
       ifindex: 2
@@ -211,9 +214,9 @@ nodes:
       linkindex: 3
       name: c_nxos -> [a_eos]
       neighbors:
-        a_eos:
-          ifname: Ethernet2
-          ipv4: 172.16.1.4/24
+      - ifname: Ethernet2
+        ipv4: 172.16.1.4/24
+        node: a_eos
       type: lan
     loopback:
       ipv4: 10.0.0.3/32
@@ -226,7 +229,7 @@ nodes:
     box: juniper/vsrx3
     device: vsrx
     id: 5
-    links:
+    interfaces:
     - bridge: input_1
       ifindex: 0
       ifname: ge-0/0/0
@@ -234,18 +237,18 @@ nodes:
       linkindex: 1
       name: j_vsrx -> [c_ios,c_csr,c_nxos,a_eos]
       neighbors:
-        a_eos:
-          ifname: Ethernet1
-          ipv4: 172.16.0.4/24
-        c_csr:
-          ifname: GigabitEthernet2
-          ipv4: 172.16.0.2/24
-        c_ios:
-          ifname: GigabitEthernet0/1
-          ipv4: 172.16.0.1/24
-        c_nxos:
-          ifname: Ethernet1/1
-          ipv4: 172.16.0.3/24
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: c_ios
+      - ifname: GigabitEthernet2
+        ipv4: 172.16.0.2/24
+        node: c_csr
+      - ifname: Ethernet1/1
+        ipv4: 172.16.0.3/24
+        node: c_nxos
+      - ifname: Ethernet1
+        ipv4: 172.16.0.4/24
+        node: a_eos
       type: lan
     loopback:
       ipv4: 10.0.0.5/32

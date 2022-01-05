@@ -15,6 +15,25 @@ def transformation_results_yaml(topology,ignore=('addressing','defaults','nodes_
     topology.pop(k,None)
 
   """
+  Temporary: replace interfaces list within links with dictionary of node interfaces
+  if 'links' in topology:
+    for l in topology.links:
+      for n in l.get('interfaces',[]):
+        node = n.node
+        n.pop('node',None)
+        l[node] = n
+      l.pop('interfaces',None)
+  """
+
+  """
+  Temporary: rename node interfaces to links
+  for n in topology.nodes.values():
+    if 'interfaces' in n:
+      n.links = n.interfaces
+      n.pop('interfaces',None)
+  """
+
+  """
   If we're using a dictionary extension that has to_yaml method use that,
   otherwise use pyyaml (hoping it won't generate extraneous attributes)
   """
