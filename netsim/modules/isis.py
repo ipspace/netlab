@@ -38,8 +38,8 @@ class ISIS(_Module):
           f'.. unnumbered multi-access interfaces (link {l.name})',
           common.IncorrectValue,
           'interfaces')
-
-      # Determine the IS-IS network type for each interface, based on number of neighbors
-      # and whether the interface is passive
-      l.isis.network_type_p2p = len(l.get('neighbors',[])) == 1
-      l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]
+      else:
+        # Determine the IS-IS network type for each interface, based on number of neighbors
+        # and whether the interface is passive
+        l.isis.network_type_p2p = len(l.get('neighbors',[])) == 1
+        l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]
