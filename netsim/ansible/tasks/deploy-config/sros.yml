@@ -40,50 +40,56 @@
   # vars:
   #  ansible_connect_timeout: 60 # Increase from default 30
   wait_for:
-    port: "{{ ansible_port }}"
+    port: "{{ sros_grpc_port }}"
     host: "{{ ansible_host }}"
     connect_timeout: 60
     timeout: 120
     sleep: 10 # Wait 10s between attempts
 
 - block:
-  - name: Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)
-    when: enable_open_config is not defined
-    tags: [ initial ]
+  - block:
+    - name: Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)
+      when: enable_open_config is not defined
+      tags: [ initial ]
+      nokia.grpc.gnmi_config:
+        prefix: configure
+        update:
+        - path: system/management-interface/yang-modules/openconfig-modules
+          val: True # {{ sros_provisioning_model == "sros.openconfig" }}
+      register: enable_open_config
+      retries: 4
+      delay: 15
+      until: enable_open_config is success
+
+    rescue:
+    - name: reset the gNMI connection, then try one more time
+      meta: reset_connection
+
+  - debug: var=enable_open_config
+  # - debug: var=hostvars
+
+  - name: Update node configuration (using gNMI SET based on YAML template {{template_to_use}})
+    when: d or u or r
+    vars:
+      cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
+      d: "{{ cfg.delete if 'delete' in cfg and cfg.delete is not string else [] }}"
+      u: "{{ cfg.updates if 'updates' in cfg and cfg.updates is not string else [] }}"
+      r: "{{ cfg.replace if 'replace' in cfg and cfg.replace is not string else [] }}"
     nokia.grpc.gnmi_config:
-      prefix: configure
-      update:
-      - path: system/management-interface/yang-modules/openconfig-modules
-        val: True # {{ sros_provisioning_model == "sros.openconfig" }}
-    register: enable_open_config
-    retries: 4
-    delay: 15
-    until: enable_open_config is success
+      # prefix: configure
+      delete: "{{ d }}"
+      replace: "{{ r }}"
+      update: "{{ u }}"
+    register: gnmi_set_result
+    retries: 2
+    until: gnmi_set_result is success
 
-  rescue:
-  - name: reset the gNMI connection, then try one more time
-    meta: reset_connection
+  - debug: var=gnmi_set_result
 
-- debug: var=enable_open_config
-# - debug: var=hostvars
-
-- name: Update node configuration (using gNMI SET based on YAML template {{template_to_use}})
-  when: d or u or r
   vars:
-    cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
-    d: "{{ cfg.delete if 'delete' in cfg and cfg.delete is not string else [] }}"
-    u: "{{ cfg.updates if 'updates' in cfg and cfg.updates is not string else [] }}"
-    r: "{{ cfg.replace if 'replace' in cfg and cfg.replace is not string else [] }}"
-  nokia.grpc.gnmi_config:
-    # prefix: configure
-    delete: "{{ d }}"
-    replace: "{{ r }}"
-    update: "{{ u }}"
-  register: gnmi_set_result
-  retries: 2
-  until: gnmi_set_result is success
-
-- debug: var=gnmi_set_result
+    ansible_connection: nokia.grpc.gnmi
+    ansible_gnmi_encoding: JSON
+    ansible_port: "{{ sros_grpc_port }}"
 
 # Alternative: ansible.netcommon.cli_command
 # Uses network_cli connection
