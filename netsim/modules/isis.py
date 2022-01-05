@@ -38,9 +38,11 @@ class ISIS(_Module):
           f'.. unnumbered multi-access interfaces (link {l.name})',
           common.IncorrectValue,
           'interfaces')
-      else:
+      elif l.get('role',"") != "external":
         # Determine the IS-IS network type for each interface, based on number of neighbors
         # and whether the interface is passive
         if len(l.get('neighbors',[])) == 1:
           l.isis.network_type = "point-to-point" # else leave unset
         l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]
+      elif 'isis' in l:
+        del l.isis # Don't run IS-IS on external interfaces
