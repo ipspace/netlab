@@ -18,4 +18,4 @@ class ISIS(_Module):
     for l in node.interfaces:
         if 'isis' in l:
             l.isis.network_type_p2p = len(l.get('neighbors',[])) == 1
-            l.isis.passive = l.type == "stub" or l.role in ["stub","passive"]
+            l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]
