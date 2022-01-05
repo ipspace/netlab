@@ -37,3 +37,10 @@ class OSPF(_Module):
             f'OSPF does not work over multi-access unnumbered IPv4 interfaces: node {node.name} link {l.name}',
             common.IncorrectValue,
             'ospf')
+
+    if 'ospf' in node and 'unnumbered' in node.ospf:
+      if not topology.defaults.devices[node.device].features.ospf.unnumbered:
+        common.error(
+          f'Device {node.device} used on node {node.name} cannot run OSPF over unnumbered interface',
+          common.IncorrectValue,
+          'interfaces')
