@@ -15,7 +15,7 @@ class ISIS(_Module):
 
     # Determine the IS-IS network type for each interface, based on number of neighbors
     # and whether the interface is passive
-    for l in node.interfaces:
+    for l in node.get('interfaces',[]):
         if 'isis' in l:
             l.isis.network_type_p2p = len(l.get('neighbors',[])) == 1
             l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]
