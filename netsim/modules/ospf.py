@@ -44,7 +44,7 @@ class OSPF(_Module):
             f'OSPF does not work over multi-access unnumbered IPv4 interfaces: node {node.name} link {l.name}',
             common.IncorrectValue,
             'ospf')
-        elif 'neighbors' not in l:
+        elif not len(l.get('neighbors',[])):
           common.error(
             f'Configuring OSPF on an unnumbered stub interface makes no sense: node {node.name} link {l.name}',
             common.IncorrectValue,
