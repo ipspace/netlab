@@ -1,5 +1,6 @@
-{% macro bfd_params() %}
-   admin-state: enable
+{% macro bfd_params(enable) %}
+   admin-state: "{{ 'enable' if enable else 'disable' }}"
+{% if enable %}
    receive: {{ bfd.min_rx }}
    transmit-interval: {{ bfd.min_tx }}
    multiplier: {{ bfd.multiplier }} # range 1..20
@@ -8,15 +9,17 @@
 {% else %}
    # TODO delete this setting, default is 100ms
 {% endif %}
+{% endif %}
 {% endmacro %}
 
 {% macro bfd_decl(ifname,l) %}
-{% set bfd_v4 = isis.bfd.ipv4 if 'bfd' in isis|default({}) else (ospf.bfd if 'bfd' in ospf|default({}) else False) %}
-{% set isis_bfd_v6 = isis.bfd.ipv6 if 'bfd' in isis|default({}) else False %}
+{% set bfd_v4 = l.isis.bfd.ipv4 if 'isis' in l and 'bfd' in l.isis else
+               (l.ospf.bfd if 'ospf' in l and 'bfd' in l.ospf else False) %}
+{% set isis_bfd_v6 = l.isis.bfd.ipv6 if 'isis' in l and 'bfd' in l.isis else False %}
 {% if l.ipv4|default('')|ipv4 and bfd_v4 %}
 - path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv4/bfd
   val:
-{{ bfd_params() }}
+{{ bfd_params( 'bfd' not in l or l.bfd ) }}
 {% endif %}
 {% if (l.ipv6|default('')|ipv6 or l.unnumbered|default(0)) and isis_bfd_v6 %}
 - path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv6/bfd
@@ -27,8 +30,6 @@
 
 replace:
 {# { bfd_decl('system',loopback) } #}
-{% for l in interfaces|default([]) if bfd|default(False) or l.bfd|default(False) %}
-{% if l.bfd|default(False) %}
+{% for l in interfaces|default([]) if bfd is defined or l.bfd|default(False) %}
 {{ bfd_decl('i'+l.ifname,l) }}
-{% endif %}
 {% endfor %}
