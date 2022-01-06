@@ -2,15 +2,14 @@ updates:
 - path: bfd
   val:
    subinterface:
-{% set isis_bfd_v4 = isis.bfd.ipv4 if 'bfd' in isis else False %}
-{% set isis_bfd_v6 = isis.bfd.ipv6 if 'bfd' in isis else False %}
 
 {# Excluding loopback here... #}
 
-{% for l in interfaces|default([]) %}
-{% if (l.ipv4|default('')|ipv4 and isis_bfd_v4) or (l.ipv6|default('')|ipv6 and isis_bfd_v6) %}
+{% for l in interfaces|default([]) if bfd is defined or l.bfd|default(False) %}
+{% set disable_bfd = 'bfd' in l and not l.bfd %}
    - id: {{ l.ifname }}.0
-     admin-state: enable
+     admin-state: "{{ 'enable' if not disable_bfd else 'disable' }}"
+{% if not disable_bfd %}
      desired-minimum-transmit-interval: {{ bfd.min_tx * 1000 }}
      required-minimum-receive: {{ bfd.min_rx * 1000 }}
      detection-multiplier: {{ bfd.multiplier }} # range 1..20
