@@ -1,5 +1,4 @@
 {% set pid = ospf.process|default(0) %}
-{% set area = ospf.area|default("0.0.0.0") %}
 
 {% macro if_name(n) -%}
 {{- ('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s')|format(n.ifname) -}}
@@ -16,30 +15,21 @@ updates:
 {% endif %}
      admin-state: enable
      area:
-     - area-id: "{{ area }}"
+     - area-id: "{{ ospf.area }}"
        interface:
        - interface-name: "system"
          passive: True
-{% for l in interfaces|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
-     - area-id: "{{ l.ospf.area|default(area) }}"
+{% for l in interfaces|default([]) if 'ospf' in l %}
+     - area-id: "{{ l.ospf.area }}"
        interface:
        - interface-name: "{{ if_name(l) }}"
-         passive: True
-{% endfor %}
-{# Add link interfaces #}
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-# OSPF not configured on external interface {{ l.ifname }}
-{%   else %}
-     - area-id: "{{ l.ospf.area|default(area) }}"
-       interface:
-       - interface-name: "{{ if_name(l) }}"
+         passive: {{ l.ospf.passive }}
          mtu: 1500 # SRL defaults to 1500
-{%       if l.type|default("") == "p2p" %}
-         interface-type: point-to-point
+{# TODO: Add support for multi-area adjacencies and 'secondary' interface-type #}
+{%       if l.ospf.network_type|default("") in ["broadcast","non-broadcast","point-to-point"] %}
+         interface-type: "{{ l.ospf.network_type }}"
 {%       endif %}
 {%       if l.ospf.cost is defined %}
          metric: {{ l.ospf.cost }}
 {%       endif %}
-{%   endif %}
 {% endfor %}
