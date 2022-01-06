@@ -13,11 +13,11 @@ class BFD(_Module):
   pass
 
 def bfd_link_state(node: Box,proto: str) -> None:
-  if not proto in node:
+  if not proto in node:           # pragma: no cover (impossible to be called from an IGP module if that module is not enabled)
     return
   if not 'bfd' in node[proto]:
     return
-  if not 'interfaces' in node:
+  if not 'interfaces' in node:    # pragma: no cover (pretty hard to get here ;)
     return
 
   node[proto].bfd = True if node[proto].bfd else False   # Convert protocol-level BFD setting into Boolean
@@ -40,7 +40,7 @@ def bfd_link_state(node: Box,proto: str) -> None:
       l.pop(proto,None)
 
 def multiprotocol_bfd_link_state(node: Box,proto: str) -> None:
-  if not proto in node:
+  if not proto in node:           # pragma: no cover (impossible to be called from an IGP module if that module is not enabled)
     return
   if not 'bfd' in node[proto]:
     return

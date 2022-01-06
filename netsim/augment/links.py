@@ -23,17 +23,18 @@ def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
         f'Interface description {n} on link {link} must be a dictionary',
         common.IncorrectValue,
         'links')
-    if not 'node' in n:                 # Do we have node name in interface data?
+    elif not 'node' in n:               # Do we have node name in interface data?
       common.error(                     # ... no? Too bad, throw an error
         f'Interface data {n} on link {link} is missing a "node" attribute',
         common.MissingValue,
         'links')
-    elif not n.node in nodes:           # Is the node name valid?
+    elif not n['node'] in nodes:        # Is the node name valid?
       common.error(                     # ... it's not, get lost
-        f'Interface data {n} on link {link} refers to an unknown node {n.node}',
+        f'Interface data {n} on link {link} refers to an unknown node {n["node"]}',
         common.IncorrectValue,
         'links')
-    link_intf.append(n)                 # Interface data is OK, append it to interface list
+    else:
+      link_intf.append(n)               # Interface data is OK, append it to interface list
 
   return link_intf
 
@@ -166,14 +167,14 @@ def ifaddr_add_module(ifaddr: Box, link: Box, module: Box) -> None:
 #
 
 def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: dict, node_id: int) -> typing.Optional[str]:
-  if common.DEBUG:
+  if common.DEBUG:     # pragma: no cover (debugging)
     print(f"get_node_link_address for {node.name}:\n"+
           f".. ifdata: {ifdata}\n"+
           f".. node_link_data: {node_link_data}\n"+
           f".. prefix: {prefix}\n"+
           f".. node_id: {node_id}")
   if 'unnumbered' in prefix:          # Special case: old-style unnumbered link
-    if common.DEBUG:
+    if common.DEBUG:     # pragma: no cover (debugging)
       print(f"... node loopback: {node.loopback}")
     for af in ('ipv4','ipv6'):        # Set AF to True for all address families
       if af in node_link_data:
@@ -232,7 +233,7 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
       node_link_data[af] = str(node_addr)
       ifdata[af] = node_link_data[af]
 
-  if common.DEBUG:
+  if common.DEBUG:     # pragma: no cover (debugging)
     print(f"get_node_link_address for {node.name} completed:\n"+
           f".. ifdata: {ifdata}\n"+
           f".. node_link_data: {node_link_data}")
@@ -261,13 +262,13 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> di
 
 def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
   link_attr_base = get_link_base_attributes(defaults)
-  if common.DEBUG:
+  if common.DEBUG:     # pragma: no cover (debugging)
     print(f'\nProcess LAN link {link}')
 
   pfx_list = augment_link_prefix(link,['lan'],addr_pools)
   interfaces = []
 
-  if common.DEBUG:
+  if common.DEBUG:     # pragma: no cover (debugging)
     print(f'... on-link prefixes: {pfx_list}')
 
   link_cnt = 0
@@ -310,7 +311,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
             ngh_data[af] = remote_if['data'][af]
         node_if['data'].neighbors.append(ngh_data)
 
-  if common.DEBUG:
+  if common.DEBUG:     # pragma: no cover (debugging)
     print(f'Final LAN link data: {link}\n')
 
 def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
@@ -331,7 +332,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     if link.get('unnumbered',None):
       ifaddr.unnumbered = True
 
-    if not isinstance(value,dict):
+    if not isinstance(value,dict):        # pragma: no cover -- caught earlier in adjust_interface_list
       common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
       return None
 
@@ -368,7 +369,6 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   if not 'name' in link:
     link.name = link_nodes[0].name + " - " + link_nodes[1].name
 
-  # print( f"PRE: {interfaces}" )
   for i in range(0,2):
     if 'bridge' in link:
       interfaces[i].bridge = link.bridge
