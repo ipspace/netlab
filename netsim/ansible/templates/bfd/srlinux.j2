@@ -2,18 +2,20 @@ updates:
 - path: bfd
   val:
    subinterface:
-{% set isis_bfd_v4 = isis.bfd.ipv4 if 'bfd' in isis else False %}
-{% set isis_bfd_v6 = isis.bfd.ipv6 if 'bfd' in isis else False %}
+{% set bfd_v4 = isis.bfd.ipv4 if 'bfd' in isis|default({}) else (ospf.bfd if 'bfd' in ospf|default({}) else False) %}
+{% set isis_bfd_v6 = isis.bfd.ipv6 if 'bfd' in isis|default({}) else False %}
 
 {# Excluding loopback here... #}
 
-{% for l in interfaces|default([]) %}
-{% if (l.ipv4|default('')|ipv4 and isis_bfd_v4) or (l.ipv6|default('')|ipv6 and isis_bfd_v6) %}
+{% for l in interfaces|default([]) if bfd|default(False) or l.bfd|default(False) %}
+{% if l.bfd|default(False) %}
+{% if (l.ipv4|default('')|ipv4 and bfd_v4) or (l.ipv6|default('')|ipv6 and isis_bfd_v6) %}
    - id: {{ l.ifname }}.0
      admin-state: enable
      desired-minimum-transmit-interval: {{ bfd.min_tx * 1000 }}
      required-minimum-receive: {{ bfd.min_rx * 1000 }}
      detection-multiplier: {{ bfd.multiplier }} # range 1..20
      minimum-echo-receive-interval: {{ bfd.min_echo_rx|default(0) * 1000 }}
+{% endif %}
 {% endif %}
 {% endfor %}
