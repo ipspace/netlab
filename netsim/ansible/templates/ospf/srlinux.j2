@@ -1,5 +1,4 @@
 {% set pid = ospf.process|default(0) %}
-{% set area = ospf.area|default("0.0.0.0") %}
 updates:
 - path: network-instance[name=default]
   val:
@@ -15,31 +14,24 @@ updates:
        reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
 {%     endif %}
        area:
-       - area-id: {{ area }}
+       - area-id: {{ ospf.area }}
          interface:
-         - interface-name: lo0.0
+         - interface-name: {{ 'system0.0' if 'sr' in module|default([]) else 'lo0.0' }}
            passive: True
-{%     for l in interfaces|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
-       - area-id: {{ l.ospf.area|default(area) }}
-         interface:
-          interface-name: {{ l.ifname }}.0
-          passive: True
-{%     endfor %}
-
 {%     for l in interfaces|default([]) %}
-{%     if "external" in l.role|default("") %}
+{%     if 'ospf' not in l %}
        # OSPF not configured on external interface {{ l.ifname }}
-       - area-id: {{ l.ospf.area|default(area) }}
+       - area-id: {{ ospf.area }}
          interface:
          - interface-name: {{ l.ifname }}.0
            admin-state: disable
-           _annotate_admin-state: "Disabled due to external interface"
+           _annotate_admin-state: "Disabled: external interface"
 {%     else %}
-       - area-id: {{ l.ospf.area|default(area) }}
+       - area-id: {{ l.ospf.area }}
          interface:
          - interface-name: {{ l.ifname }}.0
-{%         if l.type|default("") == "p2p" %}
-           interface-type: point-to-point
+{%         if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
+           interface-type: "{{ l.ospf.network_type }}"
 {%         endif %}
 {%         if l.ospf.cost is defined %}
            metric: {{ l.ospf.cost }}
