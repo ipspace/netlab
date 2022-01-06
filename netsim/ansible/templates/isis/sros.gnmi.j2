@@ -11,7 +11,7 @@ updates:
       ipv6-unicast: True
 {%   endif %}
      interface:
-     - interface-name: "system"
+     - interface-name: system
        passive: True
 {%   for l in interfaces|default([]) if 'isis' in l %}
      - interface-name: i{{ l.ifname }}
@@ -28,13 +28,14 @@ updates:
          include-bfd-tlv: True
 {%     endif %}
 {%     endif %}
-{%     if l.isis.metric is defined or l.isis.cost is defined %}
+{%     if (l.isis.metric is defined or l.isis.cost is defined) %}
        level:
-       - level-number: 1
-         wide-metrics-only: True
+{%     for level in ['1','2'] %}
+       - level-number: "{{ level }}"
          metric: {{ l.isis.metric|default(l.isis.cost) }}
-       - level-number: 2
-         wide-metrics-only: True
-         metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%       if 'ipv6' in isis and 'ipv6' in l %}
+         ipv6-unicast-metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%       endif %}
+{%     endfor %}
 {%     endif %}
 {%   endfor %}
