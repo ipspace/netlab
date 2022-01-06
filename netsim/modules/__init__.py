@@ -271,20 +271,19 @@ def check_module_parameters(topology: Box) -> None:
               common.IncorrectValue,
               'modules')
 
-    for n in l.keys():                            # Iterate over all link attributes,
-      if n in topology.nodes:                     # ... select those attributes that represent nodes
-        node = topology.nodes[n]                  # Get the node data structure (so the expressions don't get too crazy)
-        for m in node.get("module",[]):           # Iterate over all node modules
-          if mod_attr[m] and m in (l[n] or {}):   # Does the current module have a list of attributes?
-                                                  # ... Does node have link-level module attributes?
-                                                  # ... Caveat: l(n) could be None (thus the need for "or")
-            for k in l[n][m].keys():              # Iterate over node link-level module-specific attributes
-              if not k in mod_attr[m].link_node:  # If the name of an attribute is not in the list of allowed
-                                                  # ... link-level node attributes report error
-                common.error(
-                  f"Node {n} has invalid attribute {k} for module {m} on link {l}",
-                  common.IncorrectValue,
-                  'modules')
+    for intf in l.interfaces:                   # Iterate over all interfaces attached to the link
+      n = intf.node                             # ... get node name
+      node = topology.nodes[n]                  # ... and node data structure (so the expressions don't get too crazy)
+      for m in node.get("module",[]):           # Iterate over all node modules
+        if mod_attr[m] and m in intf:           # Does the current module have a list of attributes?
+                                                # ... and interface contains module attributes?
+          for k in intf[m].keys():              # Iterate over node link-level module-specific attributes
+            if not k in mod_attr[m].link_node:  # If the name of an attribute is not in the list of allowed
+                                                # ... link-level node attributes report error
+              common.error(
+                f"Node {n} has invalid attribute {k} for module {m} on link {l}",
+                common.IncorrectValue,
+                'modules')
 
 def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> Box:
   if isinstance(a,dict):
@@ -403,7 +402,7 @@ def igp_network_type(
       intf.proto.pop('network_type')
     else:
       if intf[proto].network_type not in allowed:   # ... did she specify a valid value?
-        return("Invalid {proto} network type {intf[proto].network_type}")
+        return(f"Invalid {proto} network type {intf[proto].network_type}")
   elif len(intf.get('neighbors',[])) == 1:
     intf[proto].network_type = p2p                  # Network type not specified, set it for P2P links
 

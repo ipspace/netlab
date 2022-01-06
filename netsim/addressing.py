@@ -78,13 +78,6 @@ def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Option
     legacy['lan']['start'] = 1
   legacy.loopback = { 'ipv4': (defaults.get('loopback','10.0.0.%d') % 0) + '/24', 'prefix': 32 }
   legacy.p2p = { 'ipv4': defaults.get('p2p','10.2.0.0/16'), 'prefix': defaults.get('p2p_subnet',30) }
-  legacy.mgmt = Box({},default_box=True)
-
-  if 'mgmt_ip' in defaults:
-    legacy.mgmt.ipv4 = defaults.get('mgmt_ip') % 0
-    legacy.mgmt.prefix = 24
-  if 'mgmt_mac' in defaults:
-    legacy.mgmt.mac = defaults.get('mgmt_mac') % 0
 
   addrs = legacy + addrs
 
@@ -98,10 +91,10 @@ def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Option
   return addrs
 
 def validate_pools(addrs: typing.Optional[Box] = None) -> None:
-  if not addrs:
+  if not addrs:       # pragma: no cover (pretty hard not to have address pools)
     addrs = Box({})
   for k in ('lan','loopback'):
-    if not k in addrs:
+    if not k in addrs:          # pragma: no cover (lan and loopback pools are always created in setup_pools)
       common.error(
         "'%s' addressing pool is missing" % k,
         category=common.MissingValue,
@@ -113,7 +106,7 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
 
   for pool,pfx in addrs.items():
     if 'unnumbered' in pfx:
-      if 'ipv4' in pfx or 'ipv6' in pfx:
+      if 'ipv4' in pfx or 'ipv6' in pfx:    # pragma: no cover -- ipv4/ipv6 prefixes have already been removed from unnumbered pools
         common.error(
           f'Pool {pool} is an unnumbered pool and cannot have IPv4 or IPv6 prefixes {pfx}',
           category=common.IncorrectValue,
@@ -143,7 +136,7 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
         continue
 
     if 'ipv4' in pfx and 'ipv4_pfx' in pfx and pool != 'mgmt':
-      if not 'prefix' in pfx:
+      if not 'prefix' in pfx:   # pragma: no cover -- default prefix was already set to /24
         common.error(
           "IPv4 prefix length is missing in '%s' addressing pool" % pool,
           category=common.MissingValue,
@@ -180,13 +173,11 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
       module='addressing')
 
 def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
-  if not addrs:
+  if not addrs:       # pragma: no cover (pretty hard not to have address pools)
     addrs = Box({})
   gen: typing.Dict = {}
   for pool,pfx in addrs.items():
     gen[pool] = {}
-#    if 'unnumbered' in pfx:
-#      gen[pool]['unnumbered'] = True
     for key,data in pfx.items():
       if "_pfx" in key:
         af   = key.replace('_pfx','')
@@ -265,11 +256,8 @@ def setup(topo: Box, defaults: Box) -> None:
 
   common.exit_on_error()
 
-def normalize_af(af: str) -> str:
-  return 'ipv4' if af == 'ip' else af
-
 def parse_prefix(prefix: typing.Union[str,dict]) -> typing.Dict:
-  if common.DEBUG:
+  if common.DEBUG:                     # pragma: no cover (debugging printout)
     print(f"parse prefix: {prefix}")
   if not prefix:
     return {}

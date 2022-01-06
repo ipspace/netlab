@@ -1,0 +1,290 @@
+bfd:
+  min_echo_rx: 0
+  multiplier: 3
+input:
+- topology/input/ospf-bfd-test.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:1::1/64
+    node: srlinux_r2
+  - ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:1::2/64
+    node: sros_r1
+  left:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:1::1/64
+    node: srlinux_r2
+  linkindex: 1
+  name: Regular link, BFD enabled
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+    ipv6: 2001:db8:1::/64
+  right:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:1::2/64
+    node: sros_r1
+  type: p2p
+- bfd: false
+  interfaces:
+  - ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:1:1::1/64
+    node: srlinux_r2
+  - ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:1:1::2/64
+    node: sros_r1
+  left:
+    ifname: GigabitEthernet0/2
+    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:1:1::1/64
+    node: srlinux_r2
+  linkindex: 2
+  name: Link with BFD disabled
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+    ipv6: 2001:db8:1:1::/64
+  right:
+    ifname: GigabitEthernet0/2
+    ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:1:1::2/64
+    node: sros_r1
+  type: p2p
+- interfaces:
+  - ipv4: 10.1.0.9/30
+    ipv6: 2001:db8:1:2::1/64
+    node: srlinux_r2
+  - ipv4: 10.1.0.10/30
+    ipv6: 2001:db8:1:2::2/64
+    node: sros_r1
+  left:
+    ifname: GigabitEthernet0/3
+    ipv4: 10.1.0.9/30
+    ipv6: 2001:db8:1:2::1/64
+    node: srlinux_r2
+  linkindex: 3
+  name: Link with OSPF BFD disabled
+  node_count: 2
+  ospf:
+    bfd: false
+  prefix:
+    ipv4: 10.1.0.8/30
+    ipv6: 2001:db8:1:2::/64
+  right:
+    ifname: GigabitEthernet0/3
+    ipv4: 10.1.0.10/30
+    ipv6: 2001:db8:1:2::2/64
+    node: sros_r1
+  type: p2p
+module:
+- ospf
+- bfd
+name: input
+nodes:
+  n3:
+    box: cisco/iosv
+    device: iosv
+    id: 3
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module: []
+    name: n3
+  n4:
+    box: cisco/iosv
+    device: iosv
+    id: 4
+    loopback:
+      ipv4: 10.0.0.4/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.104
+      mac: 08-4F-A9-00-00-04
+    module:
+    - ospf
+    name: n4
+    ospf:
+      area: 0.0.0.0
+  n5:
+    bfd:
+      min_echo_rx: 0
+      multiplier: 3
+    box: cisco/iosv
+    device: iosv
+    id: 5
+    loopback:
+      ipv4: 10.0.0.5/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.105
+      mac: 08-4F-A9-00-00-05
+    module:
+    - ospf
+    - bfd
+    name: n5
+    ospf:
+      area: 0.0.0.0
+  srlinux_r2:
+    bfd:
+      min_echo_rx: 0
+      multiplier: 3
+    box: cisco/iosv
+    device: iosv
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.1/30
+      ipv6: 2001:db8:1::1/64
+      linkindex: 1
+      name: Regular link, BFD enabled
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.2/30
+        ipv6: 2001:db8:1::2/64
+        node: sros_r1
+      ospf:
+        area: 0.0.0.0
+        bfd: true
+        network_type: point-to-point
+        passive: false
+      remote_id: 1
+      remote_ifindex: 1
+      type: p2p
+    - bfd: false
+      ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:1:1::1/64
+      linkindex: 2
+      name: Link with BFD disabled
+      neighbors:
+      - ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.6/30
+        ipv6: 2001:db8:1:1::2/64
+        node: sros_r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      remote_id: 1
+      remote_ifindex: 2
+      type: p2p
+    - ifindex: 3
+      ifname: GigabitEthernet0/3
+      ipv4: 10.1.0.9/30
+      ipv6: 2001:db8:1:2::1/64
+      linkindex: 3
+      name: Link with OSPF BFD disabled
+      neighbors:
+      - ifname: GigabitEthernet0/3
+        ipv4: 10.1.0.10/30
+        ipv6: 2001:db8:1:2::2/64
+        node: sros_r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      remote_id: 1
+      remote_ifindex: 3
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - ospf
+    - bfd
+    name: srlinux_r2
+    ospf:
+      area: 0.0.0.0
+      bfd: true
+  sros_r1:
+    bfd:
+      min_echo_rx: 0
+      multiplier: 3
+    box: cisco/iosv
+    device: iosv
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.2/30
+      ipv6: 2001:db8:1::2/64
+      linkindex: 1
+      name: Regular link, BFD enabled
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.1/30
+        ipv6: 2001:db8:1::1/64
+        node: srlinux_r2
+      ospf:
+        area: 0.0.0.0
+        bfd: true
+        network_type: point-to-point
+        passive: false
+      remote_id: 2
+      remote_ifindex: 1
+      type: p2p
+    - bfd: false
+      ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv4: 10.1.0.6/30
+      ipv6: 2001:db8:1:1::2/64
+      linkindex: 2
+      name: Link with BFD disabled
+      neighbors:
+      - ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:1:1::1/64
+        node: srlinux_r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      remote_id: 2
+      remote_ifindex: 2
+      type: p2p
+    - ifindex: 3
+      ifname: GigabitEthernet0/3
+      ipv4: 10.1.0.10/30
+      ipv6: 2001:db8:1:2::2/64
+      linkindex: 3
+      name: Link with OSPF BFD disabled
+      neighbors:
+      - ifname: GigabitEthernet0/3
+        ipv4: 10.1.0.9/30
+        ipv6: 2001:db8:1:2::1/64
+        node: srlinux_r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      remote_id: 2
+      remote_ifindex: 3
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - ospf
+    - bfd
+    name: sros_r1
+    ospf:
+      area: 0.0.0.0
+      bfd: true
+ospf:
+  area: 0.0.0.0
+provider: libvirt
