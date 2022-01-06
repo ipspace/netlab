@@ -21,15 +21,15 @@ updates:
         admin-state: {{ 'enable' if loopback.ipv6|default('')|ipv6 else 'disable' }}
 
 {%   for l in interfaces|default([]) %}
-{%    if "external" in l.role|default("") %}
+{%    if "isis" not in l %}
      # IS-IS not configured on external interface {{ l.ifname }}
      - interface-name: {{ l.ifname }}.0
        admin-state: disable
        _annotate_admin-state: "Disabled on external interface"
 {%    else %}
      - interface-name: {{ l.ifname }}.0
-       circuit-type: {{ 'point-to-point' if l.type|default("") == "p2p" else 'broadcast' }}
-       passive: {{ l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] }}
+       circuit-type: {{ l.isis.network_type|default("broadcast") }}
+       passive: {{ l.isis.passive }}
 {%     if 'ipv4' in l %}
        ipv4-unicast:
         admin-state: enable

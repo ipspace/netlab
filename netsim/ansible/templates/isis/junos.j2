@@ -9,25 +9,21 @@ protocols {
     }
 {% endif %}
     interface lo0.0;
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-   # IS-IS not configured on external interface {{ l.ifname }}
-{%   else %}
+{% for l in interfaces|default([]) if 'isis' in l %}
     interface {{ l.ifname }} {
-{%     if l.neighbors|default([])|length == 1 %}
-      point-to-point;
-{%     endif %}
-{%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{%   if l.isis.network_type is defined %}
+      {{ l.isis.network_type }};
+{%   endif %}
+{%   if l.isis.passive %}
       passive;
-{%     endif %}
-{%     if l.isis.metric is defined or l.isis.cost is defined %}
+{%   endif %}
+{%   if l.isis.metric is defined or l.isis.cost is defined %}
       level 1 metric {{ l.isis.metric|default(l.isis.cost) }};
       level 2 metric {{ l.isis.metric|default(l.isis.cost) }};
       level 1 ipv6-unicast-metric {{ l.isis.metric|default(l.isis.cost) }};
       level 2 ipv6-unicast-metric {{ l.isis.metric|default(l.isis.cost) }};
-{%     endif %}
-    }
 {%   endif %}
+    }
 {% endfor %}
   }
 }
@@ -53,7 +49,7 @@ interfaces {
       }
     }
   }
-{% for l in interfaces|default([]) if not "external" in l.role|default("") %}
+{% for l in interfaces|default([]) if 'isis' in l %}
   {{ l.ifname }} {
     unit 0 {
       family iso;

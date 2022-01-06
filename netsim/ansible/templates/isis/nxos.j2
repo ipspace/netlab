@@ -20,7 +20,7 @@ router isis Gandalf
     multi-topology
 {% endif %}
 !
-interface Loopback0
+interface loopback0
 {% if 'ipv4' in loopback %}
   ip router isis Gandalf
 {% endif %}
@@ -28,37 +28,34 @@ interface Loopback0
   ipv6 router isis Gandalf
 {% endif %}
 !
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-! IS-IS not configured on external interface {{ l.ifname }}
-{%   else %}
+{% for l in interfaces|default([]) if 'isis' in l %}
 interface {{ l.ifname }}
-{%     if 'ipv4' in l %}
+! {{ l.name|default("") }}
+{%   if 'ipv4' in l %}
   ip router isis Gandalf
-{%     endif %}
-{%     if 'ipv6' in l %}
+{%   endif %}
+{%   if 'ipv6' in l %}
   ipv6 router isis Gandalf
-{%     endif %}
-{%     if l.neighbors|default([])|length == 1 %}
-  isis network point-to-point
-{%     endif %}
-{%     if l.isis.cost is defined or l.isis.metric is defined %}
+{%   endif %}
+{%   if l.isis.network_type is defined %}
+  isis network {{ l.isis.network_type }}
+{%   endif %}
+{%   if l.isis.cost is defined or l.isis.metric is defined %}
   isis metric {{ l.isis.metric|default(l.isis.cost) }} level-1
   isis metric {{ l.isis.metric|default(l.isis.cost) }} level-2
-{%       if 'ipv6' in isis and 'ipv6' in l %}
+{%     if 'ipv6' in isis and 'ipv6' in l %}
   isis ipv6 metric {{ l.isis.metric|default(l.isis.cost) }} level-1
   isis ipv6 metric {{ l.isis.metric|default(l.isis.cost) }} level-2
-{%       endif %}
-{%     endif %}
-{%     if l.isis.bfd.ipv4|default(False) %}
-  isis bfd
-{%     endif %}
-{%     if l.isis.bfd.ipv6|default(False) %}
-! BFD is not supported for IPv6 ISIS
 {%     endif %}
 {%   endif %}
-{% if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{%   if l.isis.bfd.ipv4|default(False) %}
+  isis bfd
+{%   endif %}
+{%   if l.isis.bfd.ipv6|default(False) %}
+! BFD is not supported for IPv6 ISIS
+{%   endif %}
+{%   if l.isis.passive %}
   isis passive-interface level-1-2
-{% endif %}
+{%   endif %}
 !
 {% endfor %}

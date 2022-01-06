@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from . import _Module
+from . import _Module,igp_network_type
 from . import bfd
 from .. import common
 
@@ -16,10 +16,10 @@ class ISIS(_Module):
 
     for af in ('ipv4','ipv6'):
       is_unnumbered = False
-      for l in node.interfaces:
+      for l in node.get('interfaces',[]):
         is_unnumbered = is_unnumbered or \
           'unnumbered' in l or \
-          af in l and isinstance(l[af],bool) and l[af]
+          (af in l and isinstance(l[af],bool) and l[af])
 
       if is_unnumbered and not topology.defaults.devices[node.device].features.isis.unnumbered[af]:
         common.error(
@@ -27,7 +27,7 @@ class ISIS(_Module):
           common.IncorrectValue,
           'interfaces')
 
-    for l in node.interfaces:
+    for l in node.get('interfaces',[]):
       unnum_v4 = 'unnumbered' in l or ('ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4)
       if unnum_v4 and \
           len(l.neighbors) > 1 and \
@@ -38,3 +38,10 @@ class ISIS(_Module):
           f'.. unnumbered multi-access interfaces (link {l.name})',
           common.IncorrectValue,
           'interfaces')
+      elif l.get('role',"") == "external":
+        l.pop('isis',None) # Don't run IS-IS on external interfaces
+      else:
+        l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]   # passive interfaces: stub or role stub/passive 
+        err = igp_network_type(l,'isis',['point-to-point'])
+        if err:
+          common.error(f'{err}\n... node {node.name} link {l}')

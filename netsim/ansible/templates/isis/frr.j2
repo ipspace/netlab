@@ -24,26 +24,23 @@ interface lo0
   ipv6 router isis Gandalf
 {% endif %}
 !
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-! IS-IS not configured on external interface {{ l.ifname }}
-{%   else %}
+{% for l in interfaces|default([]) if 'isis' in l %}
 interface {{ l.ifname }}
-{%     if 'ipv4' in l %}
+! {{ l.name|default("") }}
+{%   if 'ipv4' in l %}
   ip router isis Gandalf
-{%     endif %}
-{%     if 'ipv6' in l %}
+{%   endif %}
+{%   if 'ipv6' in l %}
   ipv6 router isis Gandalf
-{%     endif %}
-{%     if 'unnumbered' in l or 'p2p' in l.type %}
-  isis network point-to-point
-{%     endif %}
-{%     if l.isis.cost is defined or l.isis.metric is defined %}
+{%   endif %}
+{%   if l.isis.network_type is defined %}
+  isis network {{ l.isis.network_type }}
+{%   endif %}
+{%   if l.isis.cost is defined or l.isis.metric is defined %}
   isis metric {{ l.isis.metric|default(l.isis.cost) }}
-{%     endif %}
-{%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{%   endif %}
+{%   if l.isis.passive %}
   isis passive
-{%     endif %}
 {%   endif %}
 !
 {% endfor %}

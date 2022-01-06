@@ -385,3 +385,25 @@ def link_transform(method: str, topology: Box) -> None:
       if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
         mod_load[m] = _Module.load(m,topology.get(m))
       mod_load[m].call("link_"+method,l,topology)
+
+"""
+Utility functions:
+
+* igp_network_type: set IGP network type on a link. Used by OSPF and IS-IS
+"""
+
+def igp_network_type(
+      intf: Box,
+      proto: str,
+      allowed: typing.List[str] = ['point-to-point'],
+      p2p: str = 'point-to-point') -> typing.Optional[str]:
+  if 'network_type' in intf[proto]:                 # Did the user specify network type? 
+    if not intf[proto].network_type:                # ... she did and she wants it gone
+      intf.proto.pop('network_type')
+    else:
+      if intf[proto].network_type not in allowed:   # ... did she specify a valid value?
+        return("Invalid {proto} network type {intf[proto].network_type}")
+  elif len(intf.get('neighbors',[])) == 1:
+    intf[proto].network_type = p2p                  # Network type not specified, set it for P2P links
+
+  return None

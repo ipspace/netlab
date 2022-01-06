@@ -25,31 +25,28 @@ interface Loopback0
 {% endif %}
   isis enable Gandalf
 !
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-! ISIS not configured on external interface {{ l.ifname }}
-{%   else %}
+{% for l in interfaces|default([]) if 'isis' in l %}
 interface {{ l.ifname }}
-{%     if 'ipv6' in isis and not 'ipv6' in l %}
+! {{ l.name|default("") }}
+{%   if 'ipv6' in isis and not 'ipv6' in l %}
   ipv6 enable
-{%     endif %}
+{%   endif %}
   isis enable Gandalf
-{%     if l.neighbors|default([])|length == 1 %}
-  isis network point-to-point
-{%     endif %}
-{%     if l.isis.cost is defined or l.isis.metric is defined %}
+{%   if l.isis.network_type is defined %}
+  isis network {{ l.isis.network_type }}
+{%   endif %}
+{%   if l.isis.cost is defined or l.isis.metric is defined %}
   isis metric {{ l.isis.metric|default(l.isis.cost) }}
   isis ipv6 metric {{ l.isis.metric|default(l.isis.cost) }}
-{%     endif %}
-{%     if l.isis.bfd.ipv4|default(False) %}
-  isis bfd
-{%     endif %}
-{%     if l.isis.bfd.ipv6|default(False) %}
-! BFD is not supported for IPv6 ISIS
-{%     endif %}
 {%   endif %}
-{% if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{%   if l.isis.bfd.ipv4|default(False) %}
+  isis bfd
+{%   endif %}
+{%   if l.isis.bfd.ipv6|default(False) %}
+! BFD is not supported for IPv6 ISIS
+{%   endif %}
+{%   if l.isis.passive %}
   isis passive
-{% endif %}
+{%   endif %}
 !
 {% endfor %}

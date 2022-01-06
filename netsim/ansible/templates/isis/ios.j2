@@ -12,11 +12,11 @@ router isis Gandalf
 {% elif isis.area is defined %}
   net {{ "%s.0000.0000.%04d.00" % (isis.area,id) }}
 {% endif %}
-{% for l in interfaces|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{% for l in interfaces|default([]) if 'isis' in l and l.isis.passive %}
   passive-interface {{ l.ifname }}
 {% endfor %}
 {% if isis.ipv6 is defined %}
-  address-family ipv6 unicast
+  address-family ipv6
     multi-topology
 {% endif %}
 !
@@ -28,32 +28,29 @@ interface Loopback0
   ipv6 router isis Gandalf
 {% endif %}
 !
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-! IS-IS not configured on external interface {{ l.ifname }}
-{%   else %}
+{% for l in interfaces|default([]) if 'isis' in l %}
 interface {{ l.ifname }}
-{%     if 'ipv4' in l %}
+! {{ l.name|default("") }}
+{%   if 'ipv4' in l %}
   ip router isis Gandalf
-{%     endif %}
-{%     if 'ipv6' in l %}
+{%   endif %}
+{%   if 'ipv6' in l %}
   ipv6 router isis Gandalf
-{%     endif %}
-{%     if l.neighbors|default([])|length == 1 %}
-  isis network point-to-point
-{%     endif %}
-{%     if l.isis.cost is defined or l.isis.metric is defined %}
+{%   endif %}
+{%   if l.isis.network_type is defined %}
+  isis network {{ l.isis.network_type }}
+{%   endif %}
+{%   if l.isis.cost is defined or l.isis.metric is defined %}
   isis metric {{ l.isis.metric|default(l.isis.cost) }}
-{%       if 'ipv6' in isis and 'ipv6' in l %}
+{%     if 'ipv6' in isis and 'ipv6' in l %}
   isis ipv6 metric {{ l.isis.metric|default(l.isis.cost) }}
-{%       endif %}
 {%     endif %}
-{%     if l.isis.bfd.ipv4|default(False) %}
- isis bfd
-{%     endif %}
-{%     if l.isis.bfd.ipv6|default(False) %}
- isis ipv6 bfd
-{%     endif %}
+{%   endif %}
+{%   if l.isis.bfd.ipv4|default(False) %}
+  isis bfd
+{%   endif %}
+{%   if l.isis.bfd.ipv6|default(False) %}
+  isis ipv6 bfd
 {%   endif %}
 !
 {% endfor %}
