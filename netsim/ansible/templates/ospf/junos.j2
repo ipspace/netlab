@@ -1,5 +1,5 @@
+{% set KW_NETWORK_TYPE = {'point-to-point': 'p2p','point-to-multipoint': 'p2mp', 'non-broadcast': 'nbma' } %}
 {% set pid = ospf.process|default(1) %}
-{% set area = ospf.area|default("0.0.0.0") %}
 protocols {
   delete: ospf;
 }
@@ -8,27 +8,23 @@ protocols {
 {% if ospf.reference_bandwidth is defined %}
     reference-bandwidth {{ ospf.reference_bandwidth * 1000000 }};
 {% endif %}
-    area {{ area }} {
+    area {{ ospf.area }} {
       interface lo0;
     }
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-   # OSPF not configured on external interface {{ l.ifname }}
-{%   else %}
-    area {{ l.ospf.area|default(area) }} {
+{% for l in interfaces|default([]) if 'ospf' in l %}
+    area {{ l.ospf.area }} {
       interface {{ l.ifname }} {
-{%     if l.type|default("") == "p2p" %}
-        interface-type p2p;
-{%     endif %}
-{%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{%   if l.ospf.network_type is defined and l.ospf.network_type != 'broadcast' %}
+        interface-type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
+{%   endif %}
+{%   if l.ospf.passive|default(False) %}
         passive;
-{%     endif %}
-{%     if l.ospf.cost is defined %}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
         metric {{ l.ospf.cost }};
-{%     endif %}
+{%   endif %}
       }
     }
-{%   endif %}
 {% endfor %}
   }
 }

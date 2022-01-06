@@ -390,6 +390,7 @@ def link_transform(method: str, topology: Box) -> None:
 Utility functions:
 
 * igp_network_type: set IGP network type on a link. Used by OSPF and IS-IS
+* igp_external: return True is an interface is an external interface, and removes IGP-related parameters from the interface
 """
 
 def igp_network_type(
@@ -407,3 +408,17 @@ def igp_network_type(
     intf[proto].network_type = p2p                  # Network type not specified, set it for P2P links
 
   return None
+
+def igp_external(intf: Box, proto: str) -> bool:
+  if intf.get('role','') == "external":
+    intf.pop(proto,None)
+    return True
+
+  return False
+
+# IGP passive interfaces: stub link type or stub/passive role
+#
+def igp_set_passive(intf: Box, proto: str) -> bool:
+  intf[proto].passive = intf.type == "stub" or intf.get('role',"") in ["stub","passive"]
+  return intf[proto].passive
+

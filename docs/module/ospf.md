@@ -6,6 +6,7 @@ Supported features:
 
 * Multi-area deployment
 * Per-link cost and asymmetric costs
+* OSPF network type
 * Reference bandwidth
 * Unnumbered point-to-point interfaces
 * Passive interfaces
@@ -13,23 +14,25 @@ Supported features:
 
 The following table describes per-platform support of individual OSPF features:
 
-| Operating system      | Areas | Costs | Reference<br/>bandwidth| Unnumbered<br />interfaces | Passive<br />interfaces | BFD |
-| --------------------- |:-:|:-:|:-:|:-:|:-:|:-:|
-| Arista EOS            |✅ |✅ |✅ |✅ |✅ |✅ |
-| Cisco IOS             |✅ |✅ |✅ |✅ |✅ |✅ |
-| Cisco IOS XE          |✅ |✅ |✅ |✅ |✅ |✅ |
-| Cisco Nexus OS        |✅ |✅ |✅ |✅ |✅ |✅ |
-| Cumulus Linux         |✅ |✅ |✅ | ❌ |✅ | ❌ |
-| Fortinet FortiOS      |❗ |✅ |✅ | ❌ |✅ | ❌ |
-| FRR 7.5.0             |✅ |✅ |✅ | ❌ |✅ | ❌ |
-| Juniper vSRX 3.0      |✅ |✅ |✅ |✅ |✅ | ❌ |
-| Mikrotik CHR RouterOS |✅ |✅ | ❌ | ❌ |✅ | ❌ |
-| Nokia SR Linux        |✅ |✅ |✅ | ❌ |✅ | ❌ |
-| Nokia SR OS           |✅ |✅ |✅ |✅ |✅ | ❌ |
-| VyOS                  |✅ |✅ |✅ | ❌ |✅ | ❌ |
+| Operating system      | Areas | Costs | Reference<br/>bandwidth| Network<br />type| Unnumbered<br />interfaces | Passive<br />interfaces | BFD |
+| --------------------- |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Arista EOS            |✅ |✅ |✅ |❗ | ✅ |✅ |✅ |
+| Cisco IOS             |✅ |✅ |✅ |✅ |✅ |✅ |✅ |
+| Cisco IOS XE          |✅ |✅ |✅ |✅ |✅ |✅ |✅ |
+| Cisco Nexus OS        |✅ |✅ |✅ |❗ |✅ |✅ |✅ |
+| Cumulus Linux         |✅ |✅ |✅ |✅ | ❌ |✅ | ❌ |
+| Fortinet FortiOS      |❗ |✅ |✅ |❗ |✅ | ❌ | ❌ |
+| FRR 7.5.0             |✅ |✅ |✅ |✅ | ❌ |✅ | ❌ |
+| Juniper vSRX 3.0      |✅ |✅ |✅ |✅ |✅ |✅ | ❌ |
+| Mikrotik CHR RouterOS |✅ |✅ | ❌ |❗ | ❌ |✅ | ❌ |
+| Nokia SR Linux        |✅ |✅ |✅ |❗ | ❌ |✅ | ❌ |
+| Nokia SR OS           |✅ |✅ |✅ |❗ |✅ |✅ | ❌ |
+| VyOS                  |✅ |✅ |✅ |❗ | ❌ |✅ | ❌ |
 
 **Notes:**
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
+* Arista EOS and Cisco Nexus OS do not support point-to-multipoint or NBMA OSPF network types. These restrictions are not checked -- using unsupported network type on these devices will result in errors during configuration deployment.
+* Fortinet, Mikrotik, Nokia and VyOS configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
 
 ## Global Parameters
 
@@ -48,19 +51,19 @@ You can specify node parameters as global values (top-level topology elements) o
 
 * **ospf.cost** -- OSPF cost
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
+* **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.bfd** -- enable or disable BFD for OSPF on an individual link or interface (boolean value, overrides node **ospf.bfd** setting)
 
 **Note:** the same parameters can be specified for individual link nodes.
 
-## Other Parameters
+## Default Link Parameters
 
-Link type is used to set OSPF network type:
+Default OSPF network type (unless specified with **ospf-network_type** link/interface attribute) is set based on the number of nodes attached to the link:
 
-* *P2P link* ⇒ **point-to-point** network
+* Two nodes (*P2P* link) ⇒ **point-to-point** network
 * Any other link type ⇒ **broadcast** network
-* *Stub link* ⇒ passive interface
 
-Stub links must have exactly one device attached to them. To create multi-router stub links, use **role: stub** link attribute (see below).
+Stub links (links with exactly one device attached to them) are configured as passive OSPF interfaces. See also Using Link Roles (next section).
 
 ## Using Link Roles
 
@@ -144,7 +147,7 @@ links:
 **Interesting details**: 
 
 * The default value for interface OSPF area is the node OSPF area (specified in configuration template).
-* The default value for node OSPF area is the global OSPF area.
+* The default value for node OSPF area is the global OSPF area (default value: 0.0.0.0).
 * Due to the propagation of default values, the OSPF area for R2-R3 link would be area 0 on R2 and area 1 on R3. The OSPF area thus needs to be specified within link definition, or within an individual node connected to a link.
 
 ### Resulting Device Configurations

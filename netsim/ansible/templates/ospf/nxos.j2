@@ -1,5 +1,4 @@
 {% set pid = ospf.process|default(1) %}
-{% set area = ospf.area|default("0.0.0.0") %}
 feature ospf
 {% if ospf.bfd|default(False) %}
 feature bfd
@@ -11,26 +10,23 @@ router ospf {{ pid }}
 {% endif %}
 !
 interface loopback0
- ip router ospf {{ pid }} area {{ area }}
+ ip router ospf {{ pid }} area {{ ospf.area }}
 !
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-! OSPF not configured on external interface {{ l.ifname }}
-{%   else %}
+{% for l in interfaces|default([]) if 'ospf' in l%}
 interface {{ l.ifname }}
- ip router ospf {{ pid }} area {{ l.ospf.area|default(area) }}
-{%     if l.type|default("") == "p2p" %}
- ip ospf network point-to-point
-{%     endif %}
-{%     if l.ospf.cost is defined %}
+! {{ l.name|default("") }}
+ ip router ospf {{ pid }} area {{ l.ospf.area }}
+{%   if l.ospf.network_type is defined %}
+ ip ospf network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
  ip ospf cost {{ l.ospf.cost }}
-{%     endif %}
-{%     if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{%   endif %}
+{%   if l.ospf.passive|default(False) %}
  ip ospf passive-interface
-{%     endif %}
-{%     if l.ospf.bfd|default(False) %}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
  ip ospf bfd
-{%     endif %}
 {%   endif %}
 !
 {% endfor %}

@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from . import _Module,igp_network_type
+from . import _Module,igp_network_type,igp_external,igp_set_passive
 from . import bfd
 from .. import common
 
