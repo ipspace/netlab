@@ -9,7 +9,7 @@ import os
 import textwrap
 
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
-from box import Box
+from box import Box,BoxList
 
 LOGGING : bool = False
 VERBOSE : int = 0
@@ -76,6 +76,14 @@ def open_output_file(fname: str) -> typing.TextIO:
 def close_output_file(f: typing.TextIO) -> None:
   if f.name != '<stdout>':
     f.close()
+
+def print_yaml(x : typing.Any) -> str:
+  if isinstance(x,dict):
+    return Box(x).to_yaml()
+  elif isinstance(x,list):
+    return BoxList(x).to_yaml()
+  else:
+    return str(x)
 
 def template(j2: str , data: typing.Dict, path: str) -> str:
   ENV = Environment(loader=PackageLoader('netsim',path), \

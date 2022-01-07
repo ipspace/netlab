@@ -86,6 +86,11 @@ def adjust_link_list(links: list, nodes: Box) -> list:
       link_list.append({ IFATTR: link_intf })
     link_cnt = link_cnt + 1
 
+  if common.DEBUG:
+    print("Adjusted link list")
+    print("=" * 60)
+    print(common.print_yaml(link_list))
+
   return link_list
 
 def get_link_full_attributes(defaults: Box) -> set:
