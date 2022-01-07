@@ -12,27 +12,39 @@ Supported features:
 * Passive interfaces
 * BFD
 
+Missing features:
+
+* Stub and NSSA areas
+* Virtual links
+* Opaque LSA
+* Multi-area adjacencies
+* Demand circuits
+* A gazillion nerd knobs and IETF quirks
+
+Need one of those? Create a plugin and contribute it.
+
 The following table describes per-platform support of individual OSPF features:
 
 | Operating system      | Areas | Costs | Reference<br/>bandwidth| Network<br />type| Unnumbered<br />interfaces | Passive<br />interfaces | BFD |
 | --------------------- |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| Arista EOS            |✅ |✅ |✅ |❗ | ✅ |✅ |✅ |
+| Arista EOS            |✅ |✅ |✅ |✅ | ✅ |✅ |✅ |
 | Cisco IOS             |✅ |✅ |✅ |✅ |✅ |✅ |✅ |
 | Cisco IOS XE          |✅ |✅ |✅ |✅ |✅ |✅ |✅ |
-| Cisco Nexus OS        |✅ |✅ |✅ |❗ |✅ |✅ |✅ |
+| Cisco Nexus OS        |✅ |✅ |✅ |✅ |✅ |✅ |✅ |
 | Cumulus Linux         |✅ |✅ |✅ |✅ | ❌ |✅ | ❌ |
 | Fortinet FortiOS      |❗ |✅ |✅ |❗ |✅ | ❌ | ❌ |
 | FRR 7.5.0             |✅ |✅ |✅ |✅ | ❌ |✅ | ❌ |
-| Juniper vSRX 3.0      |✅ |✅ |✅ |✅ |✅ |✅ | ❌ |
-| Mikrotik CHR RouterOS |✅ |✅ | ❌ |✅ | ❌ |✅ | ✅ |
-| Nokia SR Linux        |✅ |✅ |✅ |❗ | ❌ |✅ | ❌ |
-| Nokia SR OS           |✅ |✅ |✅ |❗ |✅ |✅ | ❌ |
+| Juniper vSRX 3.0      |✅ |✅ |✅ |✅ |✅ |✅ |✅ |
+| Mikrotik CHR RouterOS |✅ |✅ | ❌ |✅ | ❌ |✅ |✅ |
+| Nokia SR Linux        |✅ |✅ |✅ |✅ | ❌ |✅ |✅ |
+| Nokia SR OS           |✅ |✅ |✅ |✅ |✅ |✅ |✅ |
 | VyOS                  |✅ |✅ |✅ |✅ | ❌ |✅ | ✅ |
 
 **Notes:**
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
-* Arista EOS and Cisco Nexus OS do not support point-to-multipoint or NBMA OSPF network types. These restrictions are not checked -- using unsupported network type on these devices will result in errors during configuration deployment.
-* Fortinet and Nokia configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
+* Arista EOS, Cisco Nexus OS, and SR Linux support point-to-point and broadcast network types. Other network types will not be configured.
+* SR OS supports point-to-point, broadcast and non-broadcast network types. Point-to-multipoint network type will not be configured.
+* Fortinet configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
 
 ## Global Parameters
