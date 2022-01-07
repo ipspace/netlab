@@ -5,12 +5,19 @@ Links between virtual lab devices are specified in **links** element of the topo
 * A dictionary of node names and other link attributes. Use this format when you want to have a tight control over interface attributes like IP addresses, or when you have to specify additional link attributes like OSPF cost.
 * A list of node names. Use this format for multi-access interface when you're OK with default IP addressing and don't need to specify any additional link attributes.
 * A string in *node*-*node* format. Use this format for a point-to-point link.
+* A dictionary of link attributes and a list of node interfaces.
 
-You can use all three link formats in the same topology file -- they are always converted into a dictionary format first, and then augmented with addressing details.
+You can use all four link formats in the same topology file -- they are always converted into a dictionary+list of interfaces format, and augmented with addressing details during the [topology transformation process](dev/transform.md).
 
-## Link Formats Example
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 1
+   :local:
+```
 
-The following link definition contains all variants of specifying nodes connected to a link:
+## Sample Link Formats
+
+The following simple topology file contains typical variants of specifying nodes connected to a link. For more details, read the extensive [link definition examples](example/link-definition.md)
 
 ```
 ---
@@ -54,18 +61,15 @@ The *[IGP metric used in BGP route selection](https://github.com/ipspace/netsim-
 ```
 defaults:
   device: iosv
-  link_attr: [ bandwidth ]
 
 nodes:
 - name: e1
-  igp: [ isis,ospf ]
-  edge: true
+  module: [ isis,ospf ]
 - name: e2
-  igp: [ isis ]
-  edge: true
+  module: [ isis ]
 - name: pe1
   device: nxos
-  igp: [ isis,ospf ]
+  module: [ isis,ospf ]
 
 links:
 - pe1:
@@ -250,36 +254,38 @@ Link data and corresponding node data are heavily augmented by the *netsim-tools
 Point-to-point link data from topology file:
 
 ```
-- e1-e2
+- r1-r2
 ```
 
 Final link data:
 
 ```
-- e1:
-    ipv4: 10.1.0.1/30
-  e2:
-    ipv4: 10.1.0.2/30
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    node: r1
+  - ipv4: 10.1.0.2/30
+    node: r2
   left:
-    ifname: GigabitEthernet2
+    ifname: GigabitEthernet0/1
     ipv4: 10.1.0.1/30
-    node: e1
+    node: r1
   linkindex: 1
-  name: e1 - e2
+  name: r1 - r2
+  node_count: 2
   prefix:
     ipv4: 10.1.0.0/30
   right:
-    ifname: GigabitEthernet2
+    ifname: GigabitEthernet0/1
     ipv4: 10.1.0.2/30
-    node: e2
+    node: r2
   type: p2p
 ```
 
 IPv6-only point-to-point link:
 
 ```
-- e1:
-  pe1:
+- r1:
+  r2:
   prefix:
     ipv6: 2001:db8:cafe:1::/64
 ```
@@ -287,72 +293,54 @@ IPv6-only point-to-point link:
 Final link data:
 
 ```
-- e1:
-    ipv6: 2001:db8:cafe:1::1/64
+- interfaces:
+  - ipv6: 2001:db8:cafe:1::1/64
+    node: r1
+  - ipv6: 2001:db8:cafe:1::2/64
+    node: r2
   left:
-    ifname: GigabitEthernet3
+    ifname: GigabitEthernet0/2
     ipv6: 2001:db8:cafe:1::1/64
-    node: e1
+    node: r1
   linkindex: 2
-  name: e1 - pe1
-  pe1:
-    ipv6: 2001:db8:cafe:1::2/64
+  name: r1 - r2
+  node_count: 2
   prefix:
     ipv6: 2001:db8:cafe:1::/64
   right:
-    ifname: GigabitEthernet2
+    ifname: GigabitEthernet0/2
     ipv6: 2001:db8:cafe:1::2/64
-    node: pe1
+    node: r2
   type: p2p
 ```
 
 LAN link with two nodes attached to it:
 
 ```
-- e2: 
-  pe1: 
+- r1: 
+  r2: 
   type: lan
 ```
 
 Final link data:
 
 ```
-- bridge: tests_3
-  e2:
-    ipv4: 172.16.0.2/24
+- bridge: X_3
+  interfaces:
+  - ipv4: 172.16.0.1/24
+    node: r1
+  - ipv4: 172.16.0.2/24
+    node: r2
   linkindex: 3
-  pe1:
-    ipv4: 172.16.0.3/24
+  node_count: 2
   prefix:
     ipv4: 172.16.0.0/24
   type: lan
 ```
 
-Complete topology used to generate the example printouts:
-
-```
-defaults:
-  device: iosv
-
-nodes:
-- e1
-- e2
-- pe1
-
-links:
-- e1-e2
-- e1:
-  pe1:
-  prefix:
-    ipv6: 2001:db8:cafe:1::/64
-- e2:
-  pe1:
-  type: lan
-```
-
 ## Augmenting Node Data
 
-Link processing code adds link (interface) data to all nodes connected to links. The link data is created as **links** dictionary within the node data and includes:
+Link processing code adds link (interface) data to all nodes connected to links. The link data is created as **interfaces** dictionary within the node data and includes:
 
 * Interface index
 * Interface name (derived from device data)
@@ -362,32 +350,39 @@ Link processing code adds link (interface) data to all nodes connected to links.
 
 ### Examples
 
-E1 is connected to two point-to-point links:
+A simple 3-router lab with a triangle of links can be described with this topology file:
 
 ```
-- e1-e2
-- e1:
-  pe1:
+nodes: [ r1, r2, r3 ]
+
+links:
+- r1-r2
+- r1:
+  r3:
   prefix:
     ipv6: 2001:db8:cafe:1::/64
+- r2:
+  r3:
+  type: lan
 ```
 
-The **links** dictionary in E1 node data describes E1 interfaces (other node attributes are explained in [network nodes](nodes.md) document):
+R1 is connected to two point-to-point links, and the **interfaces** dictionary in R1 describes two P2P interfaces (other node attributes are explained in [network nodes](nodes.md) document):
 
 ```
-- box: cisco/iosv
+r1:
+  box: cisco/iosv
   device: iosv
   id: 1
-  links:
+  interfaces:
   - ifindex: 1
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.1/30
     linkindex: 1
-    name: e1 -> e2
+    name: r1 -> r2
     neighbors:
-      e2:
-        ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.2/30
+    - ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.2/30
+      node: r2
     remote_id: 2
     remote_ifindex: 1
     type: p2p
@@ -395,11 +390,11 @@ The **links** dictionary in E1 node data describes E1 interfaces (other node att
     ifname: GigabitEthernet0/2
     ipv6: 2001:db8:cafe:1::1/64
     linkindex: 2
-    name: e1 -> pe1
+    name: r1 -> r3
     neighbors:
-      pe1:
-        ifname: GigabitEthernet0/1
-        ipv6: 2001:db8:cafe:1::2/64
+    - ifname: GigabitEthernet0/1
+      ipv6: 2001:db8:cafe:1::2/64
+      node: r3
     remote_id: 3
     remote_ifindex: 1
     type: p2p
@@ -409,48 +404,39 @@ The **links** dictionary in E1 node data describes E1 interfaces (other node att
     ifname: GigabitEthernet0/0
     ipv4: 192.168.121.101
     mac: 08-4F-A9-00-00-01
-  name: e1
+  name: r1
 ```
 
-E2 is connected to a P2P link and a LAN link:
+R2 is connected to a P2P link (with R1) and a LAN link (forced with **type: lan** attribute). R2 node data contains the following interface data:
 
 ```
-links:
-- e1-e2
-- e2:
-  pe1:
-  type: lan
-```
-
-E2 node data contains the following interface data:
-
-```
-- box: cisco/iosv
+r2:
+  box: cisco/iosv
   device: iosv
   id: 2
-  links:
+  interfaces:
   - ifindex: 1
     ifname: GigabitEthernet0/1
     ipv4: 10.1.0.2/30
     linkindex: 1
-    name: e2 -> e1
+    name: r2 -> r1
     neighbors:
-      e1:
-        ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.1/30
+    - ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.1/30
+      node: r1
     remote_id: 1
     remote_ifindex: 1
     type: p2p
-  - bridge: y_3
+  - bridge: X_3
     ifindex: 2
     ifname: GigabitEthernet0/2
     ipv4: 172.16.0.2/24
     linkindex: 3
-    name: e2 -> [pe1]
+    name: r2 -> [r3]
     neighbors:
-      pe1:
-        ifname: GigabitEthernet0/2
-        ipv4: 172.16.0.3/24
+    - ifname: GigabitEthernet0/2
+      ipv4: 172.16.0.3/24
+      node: r3
     type: lan
   loopback:
     ipv4: 10.0.0.2/32
@@ -458,18 +444,25 @@ E2 node data contains the following interface data:
     ifname: GigabitEthernet0/0
     ipv4: 192.168.121.102
     mac: 08-4F-A9-00-00-02
-  name: e2
+  name: r2
 ```
+
+Note the differences between P2P and LAN links:
+
+* Different auto-generated link link **name**
+* IPv4 subnet mask: when using default settings, P2P links use /30 prefixes, LAN links use /24 prefixes
+* **bridge** name is present in LAN links
 
 ## Custom Attributes in Link and Interface Data
 
-[Custom attributes](extend-attributes.md) specified in link data are retained in the link data and copied directly into node interface data.
-
-Example: Bandwidth is specified on a link between E1 and E2:
+[Custom attributes](extend-attributes.md) specified in link data are copied directly into node interface data. For example, in this simple topology, we specified **bandwidth** on a link between R1 and R2:
 
 ```
-- e1:
-  e2:
+nodes: [ r1, r2 ]
+
+links:
+- r1:
+  r2:
   prefix:
     ipv4: 192.168.23.0/24
     ipv6: 2001:db8:cafe:2::/64
@@ -480,49 +473,62 @@ Bandwidth parameter is retained in link data:
 
 ```
 - bandwidth: 100000
-  e1:
-    ipv4: 192.168.23.1/24
+  interfaces:
+  - ipv4: 192.168.23.1/24
     ipv6: 2001:db8:cafe:2::1/64
-  e2:
-    ipv4: 192.168.23.2/24
+    node: r1
+  - ipv4: 192.168.23.2/24
     ipv6: 2001:db8:cafe:2::2/64
-  index: 4
+    node: r2
   left:
-    ifname: GigabitEthernet0/3
+    ifname: GigabitEthernet0/1
     ipv4: 192.168.23.1/24
     ipv6: 2001:db8:cafe:2::1/64
-    node: e1
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
   prefix:
     ipv4: 192.168.23.0/24
     ipv6: 2001:db8:cafe:2::/64
   right:
-    ifname: GigabitEthernet0/3
+    ifname: GigabitEthernet0/1
     ipv4: 192.168.23.2/24
     ipv6: 2001:db8:cafe:2::2/64
-    node: e2
+    node: r2
   type: p2p
 ```
 
-The same parameter is also copied in interface data on E1 and E2:
+The same parameter is also copied into interface data on R1 and R2:
 
 ```
-- device: iosv
-  name: e1
+r1:
+  box: cisco/iosv
+  device: iosv
   id: 1
-  links:
-...
+  interfaces:
   - bandwidth: 100000
-    ifindex: 3
-    ifname: GigabitEthernet0/3
+    ifindex: 1
+    ifname: GigabitEthernet0/1
     ipv4: 192.168.23.1/24
     ipv6: 2001:db8:cafe:2::1/64
+    linkindex: 1
+    name: r1 -> r2
     neighbors:
-      e2:
-        ifname: GigabitEthernet0/3
-        ipv4: 192.168.23.2/24
-        ipv6: 2001:db8:cafe:2::2/64
+    - ifname: GigabitEthernet0/1
+      ipv4: 192.168.23.2/24
+      ipv6: 2001:db8:cafe:2::2/64
+      node: r2
     remote_id: 2
-    remote_ifindex: 3
+    remote_ifindex: 1
     type: p2p
 ...
+```
+
+```eval_rst
+.. toctree::
+   :caption: Detailed Examples
+   :maxdepth: 1
+
+   example/link-definition.md
 ```
