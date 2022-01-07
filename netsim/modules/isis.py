@@ -29,8 +29,6 @@ class ISIS(_Module):
 
     for l in node.get('interfaces',[]):
       unnum_v4 = 'unnumbered' in l or ('ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4)
-      has_ipv4 = unnum_v4 or ('ipv4' in l and (not isinstance(l.ipv4,bool) or l.ipv4))
-      has_ipv6 = ('ipv6' in l and (not isinstance(l.ipv6,bool) or l.ipv6))
       if unnum_v4 and \
           len(l.neighbors) > 1 and \
           topology.defaults.devices[node.device].features.isis.unnumbered.ipv4 and \
@@ -40,7 +38,7 @@ class ISIS(_Module):
           f'.. unnumbered multi-access interfaces (link {l.name})',
           common.IncorrectValue,
           'interfaces')
-      elif l.get('role',"") == "external" or not (has_ipv4 or has_ipv6):
+      elif l.get('role',"") == "external" or not (l.get('ipv4',False) or l.get('ipv6',False)):
         l.pop('isis',None) # Don't run IS-IS on external interfaces, or l2-only
       else:
         l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]   # passive interfaces: stub or role stub/passive
