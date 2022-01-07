@@ -9,32 +9,30 @@ fi
 
 configure
 
-{% set area = ospf.area|default("0.0.0.0") %}
-
 {% if ospf.reference_bandwidth is defined %}
 set protocols ospf auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
 {% endif %}
 
-{% for l in interfaces|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{% for l in interfaces|default([]) if l.ospf.passive|default(False) %}
 set protocols ospf passive-interface {{ l.ifname }}
 {% endfor %}
 
 set protocols ospf passive-interface dum0
-set protocols ospf interface dum0 area {{ area }}
+set protocols ospf interface dum0 area {{ ospf.area }}
 
 
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-## OSPF not configured on external interface {{ l.ifname }}
-{%   else %}
-set protocols ospf interface {{ l.ifname }} area {{ l.ospf.area|default(area) }}
+{% for l in interfaces|default([]) if 'ospf' in l %}
 
-{%     if l.type|default("") == "p2p" %}
-set protocols ospf interface {{ l.ifname }} network point-to-point
-{%     endif %}
-{%     if l.ospf.cost is defined %}
+set protocols ospf interface {{ l.ifname }} area {{ l.ospf.area }}
+
+{%   if l.ospf.network_type is defined %}
+set protocols ospf interface {{ l.ifname }} network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
 set protocols ospf interface {{ l.ifname }} cost {{ l.ospf.cost }}
-{%     endif %}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+set protocols ospf interface {{ l.ifname }} bfd
 {%   endif %}
 
 {% endfor %}

@@ -1,4 +1,4 @@
-
+{% set KW_NETWORK_TYPE = {'point-to-point': 'point-to-point','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma','broadcast': 'broadcast' } %}
 {% set area = ospf.area|default("0.0.0.0") %}
 
 {#
@@ -24,7 +24,7 @@
 /routing ospf area add name={{ a_def }} area-id={{ a_def }}
 {% endfor %}
 
-{% for l in interfaces|default([]) if l.type|default("") == "stub" or l.role|default("NONE") in ["stub","passive"] %}
+{% for l in interfaces|default([]) if l.ospf.passive|default(False) %}
 /routing ospf interface add interface={{ l.ifname }} passive=yes
 {% endfor %}
 
@@ -42,11 +42,16 @@
 
 {% set ospf_intf_params=[] %}
 
-{%     if l.type|default("") == "p2p" %}
-{{ ospf_intf_params.append('network-type=point-to-point') }}
+{%     if l.ospf.network_type is defined %}
+{{ ospf_intf_params.append('network-type='+KW_NETWORK_TYPE[l.ospf.network_type]) }}
 {%     endif %}
+
 {%     if l.ospf.cost is defined %}
 {{ ospf_intf_params.append('cost='+l.ospfcost) }}
+{%     endif %}
+
+{%     if l.ospf.bfd|default(False) %}
+{{ ospf_intf_params.append('use-bfd=yes') }}
 {%     endif %}
 
 {%     if ospf_intf_params|length > 0 %}
