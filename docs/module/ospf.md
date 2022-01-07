@@ -24,15 +24,16 @@ The following table describes per-platform support of individual OSPF features:
 | Fortinet FortiOS      |❗ |✅ |✅ |❗ |✅ | ❌ | ❌ |
 | FRR 7.5.0             |✅ |✅ |✅ |✅ | ❌ |✅ | ❌ |
 | Juniper vSRX 3.0      |✅ |✅ |✅ |✅ |✅ |✅ | ❌ |
-| Mikrotik CHR RouterOS |✅ |✅ | ❌ |❗ | ❌ |✅ | ❌ |
+| Mikrotik CHR RouterOS |✅ |✅ | ❌ |✅ | ❌ |✅ | ✅ |
 | Nokia SR Linux        |✅ |✅ |✅ |❗ | ❌ |✅ | ❌ |
 | Nokia SR OS           |✅ |✅ |✅ |❗ |✅ |✅ | ❌ |
-| VyOS                  |✅ |✅ |✅ |❗ | ❌ |✅ | ❌ |
+| VyOS                  |✅ |✅ |✅ |✅ | ❌ |✅ | ✅ |
 
 **Notes:**
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
 * Arista EOS and Cisco Nexus OS do not support point-to-multipoint or NBMA OSPF network types. These restrictions are not checked -- using unsupported network type on these devices will result in errors during configuration deployment.
-* Fortinet, Mikrotik, Nokia and VyOS configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
+* Fortinet and Nokia configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
+* Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
 
 ## Global Parameters
 
