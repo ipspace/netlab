@@ -38,10 +38,10 @@ class ISIS(_Module):
           f'.. unnumbered multi-access interfaces (link {l.name})',
           common.IncorrectValue,
           'interfaces')
-      elif l.get('role',"") == "external":
-        l.pop('isis',None) # Don't run IS-IS on external interfaces
+      elif l.get('role',"") == "external" or not (l.get('ipv4',False) or l.get('ipv6',False)):
+        l.pop('isis',None) # Don't run IS-IS on external interfaces, or l2-only
       else:
-        l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]   # passive interfaces: stub or role stub/passive 
+        l.isis.passive = l.type == "stub" or l.get('role',"") in ["stub","passive"]   # passive interfaces: stub or role stub/passive
         err = igp_network_type(l,'isis',['point-to-point'])
         if err:
           common.error(f'{err}\n... node {node.name} link {l}')
