@@ -35,3 +35,5 @@ Don't get scared by the plethora of options -- getting started with built-in add
 ```
 ```{include} addr-ipv6.txt
 ```
+```{include} addr-complex.txt
+```

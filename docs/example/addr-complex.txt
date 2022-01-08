@@ -1,0 +1,90 @@
+## Complex Addressing Scenarios
+
+In the [IPv6 section](#ipv6-support) we described how to [enable IPv6 on an interface](#link-local-addresses) without assigning a static address to it. *netsim-tools* provides similar functionality for IPv4 -- when setting **ipv4** attribute to *True*, the device configuration modules try to configure unnumbered IPv4 Ethernet interfaces[^UNNUM].
+
+Now that you've seen that you can set **ipv4** or **ipv6** attribute to *True* you might wonder what happens if you set it to *False*. Should you do that, the affected interface (or link) gets no IPv4/IPv6 address.
+
+Now let's see how you can use these features in real-life scenarios.
+
+### Unnumbered Links
+
+To create an unnumbered IPv4 link, set the **ipv4** attribute of a link **prefix** to *True*. For example:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  prefix:
+    ipv4: True
+```
+
+Unnumbered point-to-point links (when supported) usually work reasonably well with OSPF and IS-IS. Some devices go a step further: you can use multi-access unnumbered links with IS-IS, for example:
+
+```
+module: [ isis ]
+nodes: [ r1, r2, r3 ]
+links:
+- r1:
+  r2:
+  r3:
+  prefix:
+    ipv4: True
+    ipv6: True
+```
+
+```{tip}
+You can use a somewhat-deprecated **‌unnumbered** link attribute to create an unnumbered link. That attribute is converted into **‌ipv4: True** and/or **‌ipv6: True** depending on the address families configured on the loopback interface.
+```
+
+You also can define unnumbered address pools -- the above topology could be rewritten into this one:
+
+```
+addressing:
+  core:
+    ipv4: True
+    ipv6: True
+    
+module: [ isis ]
+nodes: [ r1, r2, r3 ]
+links:
+- r1:
+  r2:
+  r3:
+  role: core
+```
+
+```{tip}
+It makes more sense to use link **prefix** when you're testing device behavior over a single link. Unnumbered address pool makes your life easier in large-scale scenarios; it also allows you to quickly evaluate a migration from numbered to unnumbered links (or vice versa).
+```
+
+### Devices Without IP Addresses
+
+Several ways of building layer-2 only networks have been described in this document ([address pools](#layer-2-only-links-using-l2only-address-pool), [static prefixes](#static-link-prefixes)), but what if you want to connect a segment of IP hosts to a bridge (with no IP address)? Remove the IP addresses from the bridge interface with **ipv4: False** and/or **ipv6: False**.
+
+Imagine a network with four hosts and a bridge connecting two parts of the same subnet. You could describe the network with the following lab topology:
+
+```
+nodes: [ h1, h2, h3, h4, b ]
+
+links:
+- prefix: 10.42.42.0/24
+  h1:
+  h2:
+  b:
+    ipv4: False
+- prefix: 10.42.42.0/24
+  h3:
+  h4:
+  b:
+    ipv4: False
+```
+
+**Notes:**
+* The bridge B connects two parts of the same subnet. Such a topology is not yet supported by *netsim-tools* IP address pools; you have to use the same static **prefix** on both links.
+* Hosts will get IP addresses assigned from the link prefix based on their node ID (h1: 10.42.42.1/24 through h4: 10.42.42.4/24)
+* Bridge B would get the same IP address (10.42.42.5/24) assigned to both interface. Most network operating systems wouldn't agree with such an approach.
+* To make the topology work, remove the IPv4 address from bridge interfaces with **ipv4: False** interface attribute.
+* *netsim-tools* doesn't support bridging or VLANs yet -- you'd have to configure bridging functionality on B with a custom configuration template.
+
+[^UNNUM]: Some network operating systems do not support unnumbered IPv4 Ethernet interfaces. In some other cases, device configuration templates don't provide that functionality. *netsim-tools* tries to warn you about those exceptions.
