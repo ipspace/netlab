@@ -1,0 +1,161 @@
+## IPv6 Support
+
+*netsim-tools* tries to be an equal-opportunity transformation tool: IPv4 and IPv6 are treated in exactly the same way[^MGMTv4]... it's just that the system defaults are IPv4-only, but even that's easy to fix.
+
+[^MGMTv4]: OK, there's a single exception: management network uses IPv4 addresses. You can fix that if you wish; I prefer long hikes over solving imaginary problems.
+
+### Adding IPv6 Prefixes to Default Pools
+
+Want to build a dual-stack lab? All you have to do is to add IPv6 prefixes to default address pools, for example:
+
+```
+addressing:
+  loopback:
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv6: 2001:db8:1::/48
+  p2p:
+    ipv6: 2001:db8:2::/48
+
+nodes: [ r1 ]
+```
+
+The final address pools are a combination of system defaults (IPv4 prefixes) and IPv6 prefixes you specified in the topology file.
+
+```
+addressing:
+  l2only: {}
+  lan:
+    ipv4: 172.16.0.0/16
+    ipv6: 2001:db8:1::/48
+    prefix: 24
+  loopback:
+    ipv4: 10.0.0.0/24
+    ipv6: 2001:db8:0::/48
+    prefix: 32
+  mgmt:
+    ipv4: 192.168.121.0/24
+    mac: 08-4F-A9-00-00-00
+    prefix: 24
+    start: 100
+  p2p:
+    ipv4: 10.1.0.0/16
+    ipv6: 2001:db8:2::/48
+    prefix: 30
+```
+
+Every single address allocation feature described so far works as expected. For example, the loopback interface on R1 gets an IPv4 and an IPv6 address:
+
+```
+nodes:
+  r1:
+    box: none
+    device: none
+    id: 1
+    loopback:
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:0:1::1/64
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+```
+
+```{tip}
+The IPAM logic creates /64 IPv6 prefixes from address pools. You cannot specify target IPv6 prefix size like you could with IPv4. To build a network with non-/64 IPv6 prefixes you'll have to use [static link prefixes](#static-link-prefixes).
+```
+
+### IPv6-Only Networks
+
+If you want to build an IPv6-only network, you have to *remove* IPv4 prefixes from the default pools -- use **ipv4:** key without a value, for example:
+
+```
+addressing:
+  loopback:
+    ipv4:
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv4:
+    ipv6: 2001:db8:1::/48
+  p2p:
+    ipv4:
+    ipv6: 2001:db8:2::/48
+
+nodes: [ r1 ]
+```
+
+The resulting address pools have no IPv4 prefixes (don't worry about the **prefix** attribute, it's not used without the **ipv4** attribute):
+
+```
+addressing:
+  l2only: {}
+  lan:
+    ipv6: 2001:db8:1::/48
+    prefix: 24
+  loopback:
+    ipv6: 2001:db8:0::/48
+    prefix: 32
+  mgmt:
+    ipv4: 192.168.121.0/24
+    mac: 08-4F-A9-00-00-00
+    prefix: 24
+    start: 100
+  p2p:
+    ipv6: 2001:db8:2::/48
+    prefix: 30
+```
+
+### Static Link and Node Addresses
+
+You can use **ipv6** attribute in link **prefix** to configure a static IPv6 prefix on a link, for example:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  prefix:
+    ipv6: 2001:db8:0:42:0:1::/96
+```
+
+```{tip}
+You cannot specify a subnet for one address family in the link **‌prefix** attribute and hope to have the other address family prefix allocated from an address pool. Link **‌prefix** is an all-or-nothing attribute.
+```
+
+Likewise, you can use **ipv6** attribute in node interface data to assign a static IPv6 address to an interface.
+
+### Link-Local Addresses
+
+Use **ipv6: True** instead of **ipv6: _prefix_** to use link-local-only addressing on a link or in an address pool.
+
+Example: you might want to use LLA-only addressing on point-to-point links in your network because you're running IS-IS as your IGP and it doesn't need GUA IPv6 addresses. Add **ipv6: True** to **p2p** pool and you're good to go:
+
+```
+addressing:
+  loopback:
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv6: 2001:db8:1::/48
+  p2p:
+    ipv6: True
+
+nodes: [ r1 ]
+```
+
+You can use the same approach on link- or even interface addresses. For example, to enable IPv6 LLA on a single link in your lab while allocating IPv4 prefixes from the standard address pools, use **ipv6: True** on individual interfaces:
+
+```
+nodes: [ r1, r2, r3 ]
+
+links:
+- name: IPv4-only link
+  r1:
+  r2:
+- name: IPv4 + IPv6 LLA
+  r1:
+    ipv6: True
+  r2:
+    ipv6: True
+```
+
+For more examples, check out the addressing [test cases](https://github.com/ipspace/netsim-tools/tree/master/tests/topology/input).

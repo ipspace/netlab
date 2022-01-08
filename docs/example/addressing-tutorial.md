@@ -33,3 +33,5 @@ Don't get scared by the plethora of options -- getting started with built-in add
 ```
 ```{include} addr-static.txt
 ```
+```{include} addr-ipv6.txt
+```
