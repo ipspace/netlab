@@ -31,11 +31,8 @@ class YAML(_TopologyOutput):
         cleantopo.pop('defaults')
       elif fmt == 'noaddr':
         cleantopo.pop('addressing')
-      elif fmt == 'nodes':
-        cleantopo = cleantopo.nodes
-        break
-      elif fmt == 'links':
-        cleantopo = cleantopo.links
+      elif fmt in cleantopo:
+        cleantopo = cleantopo[fmt]
         break
       else:
         common.error('Invalid format modifier %s' % fmt,common.IncorrectValue,modname)

@@ -531,4 +531,5 @@ r1:
    :maxdepth: 1
 
    example/link-definition.md
+   example/addressing-tutorial.md
 ```

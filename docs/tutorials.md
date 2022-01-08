@@ -1,4 +1,4 @@
-# Tutorials
+# Getting Started
 
 In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netsim-tools*](install.md), all the software needed to run your labs on *[libvirt](labs/libvirt.md)* or *[Virtualbox](labs/virtualbox.md)*, and Ansible[^NEED_ANS]
 
@@ -208,7 +208,17 @@ $ vagrant destroy -f
 
 ## More Tutorials
 
+Lab topology tutorials:
+
+* [Link definitions](example/link-definition.md)
+* [Addressing](example/addressing-tutorial.md)
+
+Using the tools:
+
 * [Network Topology Graphs](https://blog.ipspace.net/2021/09/netsim-tools-graphs.html)
+
+Practical examples:
+
 * [Creating BGP Multipath Lab with netsim-tools](https://blog.ipspace.net/2021/11/bgp-multipath-netsim-tools.html) (lab topology using BGP and OSPF)
 * [Use Katacoda to test netsim-tools with Containerlab and FRRouting](https://blog.ipspace.net/2021/04/katacoda-netsim-containerlab-frr.html) (using Containerlab)
 * [Building Unnumbered Ethernet Lab with netsim-tools](https://blog.ipspace.net/2021/04/build-unnumbered-lab-netsim-tools.html) (using unnumbered interfaces)

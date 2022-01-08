@@ -1,0 +1,326 @@
+## Using Built-In Address Pools
+
+*netsim-tools* ships with five built-in address pools:
+
+```
+l2only: {}
+lan:
+  ipv4: 172.16.0.0/16
+  prefix: 24
+loopback:
+  ipv4: 10.0.0.0/24
+  prefix: 32
+mgmt:
+  ipv4: 192.168.121.0/24
+  mac: 08-4F-A9-00-00-00
+  prefix: 24
+  start: 100
+p2p:
+  ipv4: 10.1.0.0/16
+  prefix: 30
+```
+
+* **loopback** pool generates IP address for loopback interfaces
+* **lan** pool is used to assign prefixes to stub links[^STUB] and multi-access links[^LAN].
+* **p2p** pool is used to assign prefixes to point-to-point links[^P2P]
+* **mgmt** pool contains management network addresses. It's the only pool that uses **mac** addresses at the moment. Changing its definition is probably a bad idea.
+* **l2only** pool contains no addresses. You can use it on layer-2-only links -- add **role: l2only** attribute to the link.
+
+### Loopback Addresses
+
+Let's start with the simplest possible process: assigning IP addresses to loopback interfaces. We'll use the following lab topology to make it a bit more interesting:
+
+```
+nodes: [ r1, r2, r3, r4 ]
+
+links:
+- r1
+- r1-r2
+- r1-r3-r4
+- r3:
+  r4:
+  type: lan
+```
+
+One of the first things *netsim-tools* topology transformation code does is assign node identifiers to lab devices:
+
+```
+nodes:
+  r1:
+    id: 1
+  r2:
+    id: 2
+  r3:
+    id: 3
+  r4:
+    id: 4
+```
+
+The node identifiers are then used to generate loopback addresses from the **loopback** pool:
+
+```
+nodes:
+  r1:
+    id: 1
+    loopback:
+      ipv4: 10.0.0.1/32
+  r2:
+    id: 2
+    loopback:
+      ipv4: 10.0.0.2/32
+  r3:
+    id: 3
+    loopback:
+      ipv4: 10.0.0.3/32
+  r4:
+    id: 4
+    loopback:
+      ipv4: 10.0.0.4/32
+```
+
+Don't like the automatic assignment of node identifiers? No problem, use **id** node attribute. 
+
+Imagine you want R1 to have ID 42. All you have to do is to specify the lab devices in the dictionary format (because you want to set node attributes) and set **id** on R1:
+
+```
+nodes:
+  r1:
+    id: 42
+  r2:
+  r3:
+  r4:
+
+links:
+- r1
+- r1-r2
+- r1-r3-r4
+- r3:
+  r4:
+  type: lan
+```
+
+The loopback interfaces immediate reflect the new node IDs. Please note that the auto-assigned IDs still start at one; as we don't need an ID for R1 (it already has it), **r2.id** becomes 1.
+
+```{warning}
+Don't count on this behavior, it might change in the future -- we might try to set node IDs based on their position in the nodes dictionary, or start at two instead of one or...
+```
+
+```
+nodes:
+  r1:
+    id: 42
+    loopback:
+      ipv4: 10.0.0.42/32
+  r2:
+    id: 1
+    loopback:
+      ipv4: 10.0.0.1/32
+  r3:
+    id: 2
+    loopback:
+      ipv4: 10.0.0.2/32
+  r4:
+    id: 3
+    loopback:
+      ipv4: 10.0.0.3/32
+```
+
+### Stub Links
+
+Stub links[^STUB] get their IP prefixes from the **lan** address pool[^POOL]. To get an IP address for a node on a stub link, *netsim-tools* combines link prefix with node ID.
+
+Imagine the simplest possible lab topology: one device and one link:
+
+```
+nodes:
+  r1:
+
+links:
+- r1
+```
+
+The resulting link data structure contains **prefix** assigned from the **lan** pool and a list of **interfaces** attached to the link. Each **interface** has a node name and IPv4/IPv6 addresses:
+
+```
+- bridge: X_1
+  interfaces:
+  - ipv4: 172.16.0.1/24
+    node: r1
+  linkindex: 1
+  node_count: 1
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: stub
+```
+
+The interface data structure is copied into node data (we need it there to generate device configuration):
+
+```
+nodes:
+  r1:
+    id: 1
+    interfaces:
+      - bridge: X_1
+        ifindex: 1
+        ifname: eth1
+        ipv4: 172.16.0.1/24
+        linkindex: 1
+        neighbors: []
+        type: stub
+```
+
+Remember how we changed the node ID to change its loopback interface address? We can use the same trick here:
+
+```
+nodes:
+  r1:
+    id: 42
+links:
+- r1
+```
+
+Not surprisingly, the IP address assigned to R1 on the stub link changes to .42:
+
+```
+nodes:
+  r1:
+    id: 42
+    interfaces:
+      - bridge: X_1
+        ifindex: 1
+        ifname: eth1
+        ipv4: 172.16.0.42/24
+        linkindex: 1
+        neighbors: []
+        type: stub
+```
+
+You could argue that a network device should always have a .1 IP address on a stub link. You might be right, but this approach makes our life easier, and you can always use static interface-level node IDs (more about that later).
+
+### Point-to-Point Links
+
+Point to point links get their prefixes from the **p2p** pool -- unless you changed default settings, you'll get /30 IPv4 prefix from 10.1.0.0/16 address space on every P2P link.
+
+IP address assignment on a point-to-point link does not use node identifiers. Nodes attached to a P2P link are sorted alphabetically, then the .1 address is assigned to the first node and .2 address to the second node. The same process is used for IPv6 addresses even though you get a /64 prefix assigned to every P2P link. You know the reason: it was easier to do consistent address allocation across address families.
+
+How about a quick example: two nodes, one link:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1-r2
+```
+
+Here's the resulting link data structure. It contains the **interfaces** (as expected), but also **left** and **right** nodes in case you want to look at the link from that perspective:
+
+```
+links:
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    node: r1
+  - ipv4: 10.1.0.2/30
+    node: r2
+  left:
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  type: p2p
+```
+
+The interface data structure in individual nodes has more attributes: it contains a list of **neighbors**, as well as the remote node ID and interface index (that might come useful in configuration templates).
+
+```
+nodes:
+  r1:
+    box: none
+    device: none
+    id: 1
+    interfaces:
+      - ifindex: 1
+        ifname: eth1
+        ipv4: 10.1.0.1/30
+        linkindex: 1
+        name: r1 -> r2
+        neighbors:
+          - ifname: eth1
+            ipv4: 10.1.0.2/30
+            node: r2
+        remote_id: 2
+        remote_ifindex: 1
+        type: p2p
+```
+
+### LAN Links
+
+Multi-access (LAN) links are exactly like [stub links](#stub-links), but they have more nodes attached to them. Prefixes are allocated from the **lan** pool; node IP addresses are calculated from link prefix and node ID.
+
+The simplest possible lab topology to illustrate how LAN links work contains three nodes and a single link:
+
+```
+nodes: [ r1, r2,r3 ]
+links:
+- r1-r2-r3
+```
+
+Here's the resulting link data structure...
+
+```
+links:
+- bridge: X_1
+  interfaces:
+  - ipv4: 172.16.0.1/24
+    node: r1
+  - ipv4: 172.16.0.2/24
+    node: r2
+  - ipv4: 172.16.0.3/24
+    node: r3
+  linkindex: 1
+  node_count: 3
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+```
+
+... and here's the interface data structure on R1:
+
+```
+nodes:
+  r1:
+    box: none
+    device: none
+    id: 1
+    interfaces:
+      - bridge: X_1
+        ifindex: 1
+        ifname: eth1
+        ipv4: 172.16.0.1/24
+        linkindex: 1
+        name: r1 -> [r2,r3]
+        neighbors:
+          - ifname: eth1
+            ipv4: 172.16.0.2/24
+            node: r2
+          - ifname: eth1
+            ipv4: 172.16.0.3/24
+            node: r3
+        type: lan
+```
+
+If you read the [loopback interfaces](#loopback-addresses) and [stub links](#stub-links) sections, you know you can change node IDs. If you skipped those sections, you might want to read them now.
+
+[^STUB]: Links with a single node attached to them or links that have **type: stub** attribute.
+
+[^LAN]: Links with more than two nodes attached to them or links that have **type: lan** attribute.
+
+[^P2P]: Links with exactly two nodes attached to them
+
+[^POOL]: You can also specify the pool to use with **role** link attribute; we'll cover that a bit later.

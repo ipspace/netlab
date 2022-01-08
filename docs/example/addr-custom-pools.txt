@@ -1,0 +1,184 @@
+## Customize Address Pools
+
+Don't like the built-in addressing rules? It's extremely easy to:
+
+* Change built-in address pools
+* Define your own pools
+* Use user-defined pools on individual links
+
+### Change Built-In Address Pools
+
+All *netsim-tools* [address pools](../addressing.md) are defined in the **addressing** section of lab topology file. The default value of that section (taken from system defaults) is:
+
+```
+addressing:
+  l2only: {}
+  lan:
+    ipv4: 172.16.0.0/16
+    prefix: 24
+  loopback:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+  mgmt:
+    ipv4: 192.168.121.0/24
+    mac: 08-4F-A9-00-00-00
+    prefix: 24
+    start: 100
+  p2p:
+    ipv4: 10.1.0.0/16
+    prefix: 30
+```
+
+```{tip}
+To display address pools used by your lab topology, use `netlab create -o yaml:addressing` command.
+```
+
+To change the system defaults, specify **addressing** section in your lab topology. [System defaults are always deep-merged with topology file settings](../defaults.md), allowing you to specify just the changes you want to make.
+
+For example, to use default AWS CIDR block for LAN segments, specify **addressing.lan.ipv4** parameter:
+
+```
+addressing.lan.ipv4: 172.31.0.0/16
+```
+
+Obviously you could use the more traditional dictionary hierarchy if you prefer longer YAML files:
+
+```
+addressing:
+  lan:
+    ipv4: 172.31.0.0/16
+```
+
+Likewise, it takes a single line to change the default IPv4 prefix size of point-to-point address pools to /28:
+
+```
+addressing.p2p.prefix: 28
+```
+
+### Select an Address Pool for a Link
+
+**role** link attribute is all you need to override the default pool selection logic. The **role** attribute can be used as a generic tag to help you write custom configuration templates. For example, you could write a custom template that would set OSPF area to 0.0.0.0 on all links with **role: core**.
+
+However, if the link **role** happens to match an address pool name, that pool will be used to allocate a prefix to the link. To create a point-to-point link that uses a prefix from the LAN pool, use the following link definition:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  role: lan
+```
+
+The resulting link data structure is interesting:
+
+* It contains all attributes one would expect to see on a point-to-point link
+* The nodes connected to the link get the first and the second IP address from the link prefix (due to point-to-point address allocation rules)
+* The IP prefix and the subnet size belong to the LAN pool (due to **role** attribute).
+
+```
+links:
+- interfaces:
+  - ipv4: 172.16.0.1/24
+    node: r1
+  - ipv4: 172.16.0.2/24
+    node: r2
+  left:
+    ifname: eth1
+    ipv4: 172.16.0.1/24
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  right:
+    ifname: eth1
+    ipv4: 172.16.0.2/24
+    node: r2
+  role: lan
+  type: p2p
+```
+
+### Layer-2-Only Links Using l2only Address Pool
+
+A more interesting case of selecting built-in address pools with **role** attribute is layer-2-only links -- when a link **role** is set to **l2only**, the link gets no IP prefix and the interfaces attached to the link have no IP addresses.
+
+You could build a simple bridged network with this lab topology:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  role: l2only
+```
+
+The resulting link data structure contains no IP addresses:
+
+```
+links:
+  - interfaces:
+      - node: r1
+      - node: r2
+    left:
+      ifname: eth1
+      node: r1
+    linkindex: 1
+    name: r1 - r2
+    node_count: 2
+    right:
+      ifname: eth1
+      node: r2
+    role: l2only
+    type: p2p
+```
+
+Similarly, the node data for R1 (what you'd find in Ansible inventory **host_vars** for R1) has no IP addresses apart from loopback and management ones:
+
+```
+box: none
+device: none
+id: 1
+interfaces:
+  - ifindex: 1
+    ifname: eth1
+    linkindex: 1
+    name: r1 -> r2
+    neighbors:
+      - ifname: eth1
+        node: r2
+    remote_id: 2
+    remote_ifindex: 1
+    role: l2only
+    type: p2p
+loopback:
+  ipv4: 10.0.0.1/32
+mgmt:
+  ifname: eth0
+  ipv4: 192.168.121.101
+  mac: 08-4F-A9-00-00-01
+name: r1
+```
+
+### Custom Address Pools
+
+To specify custom address pools, add keys to **addressing** dictionary, for example:
+
+```
+addressing:
+  core:
+    ipv4: 10.2.0.0/16
+    prefix: 28
+```
+
+To use the **core** address pool, set link **role** to **core**, for example:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  role: core
+```
+
+You'll find more details in [Topology Address Pools](../addressing.md) document.
