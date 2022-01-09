@@ -1,12 +1,16 @@
 Release notes
 =============
 
-TBD (release 1.1)
+2022-01-09 (release 1.1)
   * New IPAM functionality: layer-2-only links and interfaces, per-protocol unnumbered interfaces
   * IPAM code refactoring
-  * Reorganized nodes list into a dictionary
   * BFD configuration module
   * BFD with IS-IS and OSPF
+  * Device capability checks: unnumbered interfaces, OSPF and IS-IS over unnumbered links
+  * Linux bridges are used to implement multi-access links in *containerlab*
+  * Simplified IS-IS and OSPF configuration templates
+  * Reorganized nodes list into a dictionary
+  * Reorganized link interfaces into a list
 
   :doc:`More details <release/1.1>`
 
