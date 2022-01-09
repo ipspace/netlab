@@ -1,0 +1,133 @@
+## Static Addresses
+
+Don't like the built-in IPAM rules? Take the matters in your hands and use static IP addresses. We're also assuming you're ready to dive deeper into the bowels of *netsim-tools* and will use commands like `netlab create -o yaml:links` or `netlab create -o yaml:nodes` (or explore Ansible inventory created with `netlab create`) to inspect the results of your experiments.
+
+### Static Link Prefixes
+
+In the *[Basics](#basics)* part of this document I mentioned you can assign a static **prefix** to a link:
+
+* Add **prefix** link attribute
+* Its value could be a string (IPv4 prefix) or a dictionary that can have **ipv4** and **ipv6** keys.
+
+Example: Use 10.42.42.0/24 as the link prefix:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  prefix: 10.42.42.0/24
+```
+
+Another example: Assign a static IPv4 and IPv6 prefix to the link:
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  prefix:
+    ipv4: 10.42.42.0/24
+    ipv6: 2001:db8:0:42:0:1::/96
+```
+
+```{tip}
+Static link **prefix‌** is the only way to create IPv6 subnets with non-/64 subnet mask. We're a bit opinionated about the right way of running IPv6.
+```
+
+Finally, you can set the link **prefix** to *False* to create a link without IP addresses (you could also use **role: l2only**, but we're talking about static prefixes here):
+
+```
+nodes: [ r1, r2 ]
+links:
+- r1:
+  r2:
+  prefix: False
+```
+
+### Static Node Addressing
+
+Sometimes you want to have even more control over interface IP addresses. Sure, why not: use **ipv4** and/or **ipv6** interface attributes to set the IP addresses of individual interfaces.
+
+We'll give you as much rope as you need (to make your troubleshooting miserable): you can specify IP addresses outside of link prefix, use different subnet masks, have IPv4 addresses on some nodes and IPv6 addresses on other nodes connected to the same link...
+
+Let's say you want to experiment with Proxy ARP, so you need different subnet masks on end hosts than on intermediate routers. No big deal:
+
+```
+nodes: [ h1, h2, r ]
+links:
+- h1:
+    ipv4: 10.0.1.3/24
+  r:
+    ipv4: 10.0.1.1/28
+- h2:
+    ipv4: 10.0.1.67/24
+  r:
+    ipv4: 10.0.1.65/28
+```
+
+You could make the example a bit more convoluted by combining host IP addresses (with too-large subnet masks) with link prefixes:
+
+```
+nodes:
+  r:
+    id: 1    # Just to make sure it gets .1 address in every subnet
+  h1:
+  h2:
+links:
+- h1:
+    ipv4: 10.0.1.3/24
+  r:
+  prefix:
+    ipv4: 10.0.1.0/28
+- h2:
+    ipv4: 10.0.1.67/24
+  r:
+  prefix:
+    ipv4: 10.0.1.64/28
+```
+
+### Static ID-Based Interface Addresses
+
+Looking for something less drastic like setting the router's IP address to be the first IP address in the link subnet? We got you covered: use a number (instead of an IPv4/IPv6 address) in **ipv4** or **ipv6** interface attribute.
+
+Remember the [stub link example](#stub-links) where I mentioned the router might not get the first IP address on the link? Let's fix that:
+
+```
+nodes:
+  r1:
+    id: 42
+
+links:
+- r1:
+    ipv4: 1
+```
+
+Regardless of what prefix gets assigned to the link, R1 will always get the first IP address in that prefix, even though its device ID is 42. Here's what you get as a result of the above topology file:
+
+```
+links:
+  - bridge: X_1
+    interfaces:
+      - ipv4: 172.16.0.1/24
+        node: r1
+    linkindex: 1
+    node_count: 1
+    prefix:
+      ipv4: 172.16.0.0/24
+    type: stub
+nodes:
+  r1:
+    id: 42
+    interfaces:
+    - bridge: X_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      neighbors: []
+      type: stub
+    loopback:
+      ipv4: 10.0.0.42/32
+```
+

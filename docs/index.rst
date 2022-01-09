@@ -55,6 +55,7 @@ Getting Started
    tutorials.md
    topology-overview.md
    cli-overview.md
+   example/addressing-tutorial.md
 ..
 
 .. toctree::
