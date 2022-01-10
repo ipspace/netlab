@@ -28,7 +28,7 @@ def create_linux_bridge( brname: str ) -> bool:
       common.error("Error creating bridge '%s': %s" % (brname,ex), module='clab')
       return False
 
-def destroy_linux_bridge( brname: str ):
+def destroy_linux_bridge( brname: str ) -> bool:
     try:
       result = subprocess.run(['sudo','ip','link','del','dev',brname],capture_output=True,check=True,text=True)
       common.print_verbose( f"Delete Linux bridge '{brname}': {result}" )
