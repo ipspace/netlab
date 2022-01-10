@@ -28,3 +28,8 @@ To install the Nokia SR OS container image:
 
 * See vrnetlab instructions [here](https://containerlab.srlinux.dev/manual/vrnetlab/)
 * Requires a license
+
+## LAN bridges
+For multi-access network topologies, the tool automatically creates bridges.
+By default a standard Linux bridge is created; for some use cases Openvswitch bridges may work better (e.g. more transparent).
+Configure ```bridge_type: ovs-bridge``` in the topology defaults to use OVS.
