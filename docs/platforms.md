@@ -133,22 +133,22 @@ The following interface parameters are configured on supported network operating
 
 Individual **netsim-tools** [configuration modules](module-reference.md) are supported on these devices:
 
-| Operating system      |           OSPF           | IS-IS | EIGRP |  BGP  | SR-MPLS |
-| --------------------- | :----------------------: | :---: | :---: | :---: | :-----: |
-| Arista EOS            |            ✅             |   ✅   |   ❌   |   ✅   |    ✅    |
-| Arrcus ArcOS          |            ✅             |   ❌   |   ❌   |   ❌   |    ❌    |
-| Cisco IOS             |            ✅             |   ✅   |   ✅   |   ✅   |    ❌    |
-| Cisco IOS XE          |            ✅             |   ✅   |   ✅   |   ✅   |    ✅    |
-| Cisco Nexus OS        |            ✅             |   ✅   |   ✅   |   ✅   |    ❌    |
-| Cumulus Linux         |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
-| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |    ❌    |
-| FRR 7.5.0             |            ✅             |   ✅   |   ❌   |   ✅   |    ❌    |
-| Generic Linux         |            ❌             |   ❌   |   ❌   |   ❌   |    ❌    |
-| Juniper vSRX 3.0      |            ✅             |   ✅   |   ❌   |   ✅   |    ❌    |
-| Mikrotik CHR RouterOS |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
-| Nokia SR Linux        |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
-| Nokia SR OS           |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
-| VyOS                  |            ✅             |   ❌   |   ❌   |   ✅   |    ❌    |
+| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | SR-MPLS |
+| --------------------- | :--: | :---: | :---: | :-: | :-: | :-----: |
+| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅ |    ✅   |
+| Arrcus ArcOS          | ✅   |   ❌   |   ❌   |  ❌  |  ❌  |    ❌    |
+| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ❌    |
+| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ✅   |
+| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ❌    |
+| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  |    ❌    |
+| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |    ❌    |
+| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  |    ❌    |
+| Generic Linux         |  ❌   |   ❌   |   ❌   |   ❌  |  ❌  |    ❌    |
+| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ❌    |
+| Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
+| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
+| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
+| VyOS                  | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
 
 ## IPv6 Support
 
@@ -167,6 +167,6 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
-| Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
-| Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
+| Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | VyOS                  |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |

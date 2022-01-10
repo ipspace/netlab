@@ -1,15 +1,23 @@
 # Bidirectional Forwarding Detection (BFD) Configuration Module
 
-This configuration module configures the basic BFD ([RFC5880](https://datatracker.ietf.org/doc/html/rfc5880)) parameters. Routing protocol modules configure fast failover using BFD.
+This configuration module configures the basic BFD ([RFC5880](https://datatracker.ietf.org/doc/html/rfc5880)) parameters. To configure fast failover with BFD, use the routing protocol [configuration modules](../module-reference.md). At the moment you can use BFD with  [IS-IS](isis.md) and [OSPF](ospf.md).
 
-BFD configuration is supported on Arista EOS, Cisco IOS, Cisco IOS XE, Cisco NXOS, Nokia SR Linux and Nokia SROS.
+BFD is supported on these platforms:
 
-The following routing protocols support BFD:
+| Operating system      | Configurable<br>timers | OSPF | IS-IS |
+| --------------------- | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  |
+| Cisco IOS             | ✅  | ✅  | ✅  |
+| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cisco Nexus OS        | ✅  | ✅  | ✅  |
+| Juniper vSRX 3.0      | ❗  | ✅  | ✅  |
+| Mikrotik CHR RouterOS |  ❌  | ✅  | ✅  |
+| Nokia SR Linux        | ✅  | ✅  | ✅  |
+| Nokia SR OS           | ✅  | ✅  | ✅  |
+| VyOS                  |  ❌  | ✅  | ✅  |
 
-* [IS-IS](isis.md)
-* [OSPF](ospf.md)
-
-For routing protocol platform support please check the routing protocol configuration modules.
+**Notes:**
+* Junos configuration template configures BFD timers within routing protocol configuration, not in individual interfaces
 
 ## Parameters
 
