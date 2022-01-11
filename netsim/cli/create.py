@@ -9,7 +9,7 @@ import typing
 import textwrap
 from box import Box
 
-from . import common_parse_args, topology_parse_args
+from . import common_parse_args, topology_parse_args, load_topology
 from .. import read_topology,augment,common
 from ..outputs import _TopologyOutput
 
@@ -62,15 +62,7 @@ def run(cli_args: typing.List[str],
   elif args.devices:
     common.error('--output and --devices flags are mutually exclusive',common.IncorrectValue,'create')
 
-  common.set_logging_flags(args)
-  topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
-
-  if args.settings or args.device or args.provider:
-    topology.nodes = augment.nodes.create_node_dict(topology.nodes)
-    read_topology.add_cli_args(topology,args)
-
-  common.exit_on_error()
-
+  topology = load_topology(args)
   augment.main.transform(topology)
   common.exit_on_error()
 

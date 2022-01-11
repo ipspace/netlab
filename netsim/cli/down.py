@@ -9,8 +9,7 @@ import typing
 import textwrap
 from box import Box
 
-from . import common_parse_args
-from . import external_commands
+from . import common_parse_args, topology_parse_args, load_topology, external_commands
 from .. import read_topology,augment,common
 from .. import providers
 
@@ -19,14 +18,10 @@ from .. import providers
 #
 def down_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
-    parents=[ common_parse_args(True) ],
+    parents=[ common_parse_args(True),topology_parse_args() ],
     prog="netlab down",
     description='Destroy the virtual lab')
 
-  parser.add_argument(
-    '--defaults', dest='defaults', action='store',
-    default='topology-defaults.yml',
-    help='Local topology defaults file')
   parser.add_argument(
     dest='topology', action='store', nargs='?',
     type=argparse.FileType('r'),
@@ -37,9 +32,7 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
 
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
-  common.set_logging_flags(args)
-  topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
-  common.exit_on_error()
+  topology = load_topology(args)
 
   augment.main.transform(topology)
   common.exit_on_error()

@@ -6,8 +6,10 @@
 import sys
 import importlib
 import argparse
+from box import Box
 
 from . import usage
+from .. import augment, common, read_topology
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
@@ -33,6 +35,19 @@ def topology_parse_args() -> argparse.ArgumentParser:
   parser.add_argument('-p','--provider', dest='provider', action='store',help='Override virtualization provider')
   parser.add_argument('-s','--set',dest='settings', action='append',help='Additional parameters added to topology file')
   return parser
+
+# Common topology loader (used by create and down)
+
+def load_topology(args: argparse.Namespace) -> Box:
+  common.set_logging_flags(args)
+  topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
+
+  if args.settings or args.device or args.provider:
+    topology.nodes = augment.nodes.create_node_dict(topology.nodes)
+    read_topology.add_cli_args(topology,args)
+
+  common.exit_on_error()
+  return topology
 
 #
 # Main command dispatcher
