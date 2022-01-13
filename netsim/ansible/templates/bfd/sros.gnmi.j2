@@ -13,9 +13,9 @@
 {% endmacro %}
 
 {% macro bfd_decl(ifname,l) %}
-{% set bfd_v4 = l.isis.bfd.ipv4 if 'isis' in l and 'bfd' in l.isis else
+{% set bfd_v4 = l.isis.bfd.ipv4|default(False) if 'isis' in l and 'bfd' in l.isis else
                (l.ospf.bfd if 'ospf' in l and 'bfd' in l.ospf else False) %}
-{% set isis_bfd_v6 = l.isis.bfd.ipv6 if 'isis' in l and 'bfd' in l.isis else False %}
+{% set isis_bfd_v6 = l.isis.bfd.ipv6|default(False) if 'isis' in l and 'bfd' in l.isis else False %}
 {% if l.ipv4|default('')|ipv4 and bfd_v4 %}
 - path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv4/bfd
   val:
@@ -24,7 +24,7 @@
 {% if (l.ipv6|default('')|ipv6 or l.unnumbered|default(0)) and isis_bfd_v6 %}
 - path: configure/router[router-name=Base]/interface[interface-name={{ifname}}]/ipv6/bfd
   val:
-{{ bfd_params() }}
+{{ bfd_params( 'bfd' not in l or l.bfd ) }}
 {% endif %}
 {% endmacro %}
 
