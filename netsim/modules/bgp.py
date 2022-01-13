@@ -14,7 +14,7 @@ from ..augment.links import IFATTR
 def check_bgp_parameters(node: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
-  if not "as" in node.bgp:
+  if not "as" in node.bgp or not isinstance(node.bgp.get('as',{}),int):
     common.error("Node %s has BGP enabled but no AS number specified" % node.name)
 
   if "community" in node.bgp:
