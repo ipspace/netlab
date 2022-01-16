@@ -117,7 +117,7 @@ The following interface parameters are configured on supported network operating
 | --------------------- | :-----------------: | :-----------------: | :------------------------: | :------------------------: | :----------------------: |
 | Arista EOS            |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
 | Arrcus ArcOS          |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
-| Cisco IOS/IOS XE      |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)              |             ✅              |            ✅             |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
 | Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |

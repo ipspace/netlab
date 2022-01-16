@@ -1,5 +1,9 @@
 # Platform Caveats
 
+## Cisco IOS
+
+* Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+
 ## Cumulus Linux in ContainerLab
 
 * *containerlab* could run Cumulus Linux as a container or as a micro-VM with *firecracker* (default, requires KVM). To run Cumulus VX as a pure container, add **runtime: docker** parameter to node data.
