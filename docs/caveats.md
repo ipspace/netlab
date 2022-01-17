@@ -13,18 +13,6 @@
 
 * *FortiOS* VM images by default have a 15 day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
 * Ansible automation of FortiOS requires the installation of the [FortiOS Ansible Collection 2.1.3 or greater](https://galaxy.ansible.com/fortinet/fortios) and a FortiOS version > 6.0.
-* Ansible configuration of OSPF is currently broken due to a [suspected bug](https://github.com/fortinet-ansible-dev/ansible-galaxy-fortios-collection/issues/150) in the FortiOS Ansible Collection. To work around this issue, you must manually configure a OSPF network statement by logging in to the device after initial provisioning. For example:
-
-```bash
-vagrant ssh fw
-config router ospf
-config network
-edit 1
-set area 0.0.0.1
-set prefix 0.0.0.0/0
-end
-end
-```
 
 ## FRR
 
