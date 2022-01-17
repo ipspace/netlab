@@ -13,8 +13,11 @@ links:
   - ipv4: 172.19.0.3/24
     ipv6: 2001:db8:1::3/64
     node: j_vsrx
+  - ipv4: 172.19.0.4/24
+    ipv6: 2001:db8:1::4/64
+    node: n_cumulus
   linkindex: 1
-  node_count: 3
+  node_count: 4
   prefix:
     ipv4: 172.19.0.0/24
     ipv6: 2001:db8:1::/64
@@ -42,6 +45,52 @@ links:
   role: core
   type: p2p
   unnumbered: true
+- interfaces:
+  - ipv4: true
+    ipv6: true
+    node: a_eos
+  - ipv4: true
+    ipv6: true
+    node: n_cumulus
+  left:
+    ifname: Ethernet3
+    ipv4: true
+    ipv6: true
+    node: a_eos
+  linkindex: 3
+  name: a_eos - n_cumulus
+  node_count: 2
+  right:
+    ifname: swp2
+    ipv4: true
+    ipv6: true
+    node: n_cumulus
+  role: core
+  type: p2p
+  unnumbered: true
+- interfaces:
+  - ipv4: true
+    ipv6: true
+    node: c_nxos
+  - ipv4: true
+    ipv6: true
+    node: j_vsrx
+  left:
+    ifname: Ethernet1/3
+    ipv4: true
+    ipv6: true
+    node: c_nxos
+  linkindex: 4
+  name: c_nxos - j_vsrx
+  node_count: 2
+  right:
+    ifname: ge-0/0/1
+    ipv4: true
+    ipv6: true
+    node: j_vsrx
+  role: core
+  type: p2p
+  unnumbered: true
 name: input
 nodes:
   a_eos:
@@ -55,7 +104,7 @@ nodes:
       ipv4: 172.19.0.2/24
       ipv6: 2001:db8:1::2/64
       linkindex: 1
-      name: a_eos -> [c_nxos,j_vsrx]
+      name: a_eos -> [c_nxos,j_vsrx,n_cumulus]
       neighbors:
       - ifname: Ethernet1/1
         ipv4: 172.19.0.1/24
@@ -65,6 +114,10 @@ nodes:
         ipv4: 172.19.0.3/24
         ipv6: 2001:db8:1::3/64
         node: j_vsrx
+      - ifname: swp1
+        ipv4: 172.19.0.4/24
+        ipv6: 2001:db8:1::4/64
+        node: n_cumulus
       type: lan
     - ifindex: 2
       ifname: Ethernet2
@@ -78,6 +131,22 @@ nodes:
         ipv6: true
         node: c_nxos
       remote_id: 1
+      remote_ifindex: 2
+      role: core
+      type: p2p
+      unnumbered: true
+    - ifindex: 3
+      ifname: Ethernet3
+      ipv4: true
+      ipv6: true
+      linkindex: 3
+      name: a_eos -> n_cumulus
+      neighbors:
+      - ifname: swp2
+        ipv4: true
+        ipv6: true
+        node: n_cumulus
+      remote_id: 4
       remote_ifindex: 2
       role: core
       type: p2p
@@ -101,7 +170,7 @@ nodes:
       ipv4: 172.19.0.1/24
       ipv6: 2001:db8:1::1/64
       linkindex: 1
-      name: c_nxos -> [a_eos,j_vsrx]
+      name: c_nxos -> [a_eos,j_vsrx,n_cumulus]
       neighbors:
       - ifname: Ethernet1
         ipv4: 172.19.0.2/24
@@ -111,6 +180,10 @@ nodes:
         ipv4: 172.19.0.3/24
         ipv6: 2001:db8:1::3/64
         node: j_vsrx
+      - ifname: swp1
+        ipv4: 172.19.0.4/24
+        ipv6: 2001:db8:1::4/64
+        node: n_cumulus
       type: lan
     - ifindex: 2
       ifname: Ethernet1/2
@@ -125,6 +198,22 @@ nodes:
         node: a_eos
       remote_id: 2
       remote_ifindex: 2
+      role: core
+      type: p2p
+      unnumbered: true
+    - ifindex: 3
+      ifname: Ethernet1/3
+      ipv4: true
+      ipv6: true
+      linkindex: 4
+      name: c_nxos -> j_vsrx
+      neighbors:
+      - ifname: ge-0/0/1
+        ipv4: true
+        ipv6: true
+        node: j_vsrx
+      remote_id: 3
+      remote_ifindex: 1
       role: core
       type: p2p
       unnumbered: true
@@ -147,7 +236,7 @@ nodes:
       ipv4: 172.19.0.3/24
       ipv6: 2001:db8:1::3/64
       linkindex: 1
-      name: j_vsrx -> [c_nxos,a_eos]
+      name: j_vsrx -> [c_nxos,a_eos,n_cumulus]
       neighbors:
       - ifname: Ethernet1/1
         ipv4: 172.19.0.1/24
@@ -157,7 +246,27 @@ nodes:
         ipv4: 172.19.0.2/24
         ipv6: 2001:db8:1::2/64
         node: a_eos
+      - ifname: swp1
+        ipv4: 172.19.0.4/24
+        ipv6: 2001:db8:1::4/64
+        node: n_cumulus
       type: lan
+    - ifindex: 1
+      ifname: ge-0/0/1
+      ipv4: true
+      ipv6: true
+      linkindex: 4
+      name: j_vsrx -> c_nxos
+      neighbors:
+      - ifname: Ethernet1/3
+        ipv4: true
+        ipv6: true
+        node: c_nxos
+      remote_id: 1
+      remote_ifindex: 3
+      role: core
+      type: p2p
+      unnumbered: true
     loopback:
       ipv4: 172.18.1.3/32
       ipv6: 2001:db8:0:3::1/64
@@ -166,4 +275,54 @@ nodes:
       ipv4: 192.168.121.103
       mac: 08-4F-A9-00-00-03
     name: j_vsrx
+  n_cumulus:
+    box: CumulusCommunity/cumulus-vx
+    device: cumulus
+    id: 4
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: swp1
+      ipv4: 172.19.0.4/24
+      ipv6: 2001:db8:1::4/64
+      linkindex: 1
+      name: n_cumulus -> [c_nxos,a_eos,j_vsrx]
+      neighbors:
+      - ifname: Ethernet1/1
+        ipv4: 172.19.0.1/24
+        ipv6: 2001:db8:1::1/64
+        node: c_nxos
+      - ifname: Ethernet1
+        ipv4: 172.19.0.2/24
+        ipv6: 2001:db8:1::2/64
+        node: a_eos
+      - ifname: ge-0/0/0
+        ipv4: 172.19.0.3/24
+        ipv6: 2001:db8:1::3/64
+        node: j_vsrx
+      type: lan
+    - ifindex: 2
+      ifname: swp2
+      ipv4: true
+      ipv6: true
+      linkindex: 3
+      name: n_cumulus -> a_eos
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: true
+        ipv6: true
+        node: a_eos
+      remote_id: 2
+      remote_ifindex: 3
+      role: core
+      type: p2p
+      unnumbered: true
+    loopback:
+      ipv4: 172.18.1.4/32
+      ipv6: 2001:db8:0:4::1/64
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: 08-4F-A9-00-00-04
+    name: n_cumulus
 provider: libvirt
