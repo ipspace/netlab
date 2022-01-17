@@ -97,13 +97,13 @@ def run(cli_args: typing.List[str]) -> None:
 
   host_data = Box(host_inventory,box_dots=True,default_box=True)
   host_data.host = args.host
-  connection = host_data.ansible_connection
+  connection = host_data.netsim_console_connection or host_data.ansible_connection
 
   if connection == 'docker':
     docker_connect(host_data,rest,args.verbose)
-  elif connection in ['paramiko','ssh','network_cli','netconf'] or not connection:
-    if connection == 'netconf':
-      print("Using SSH to connect to a device configured with NETCONF connection")
+  elif connection in ['paramiko','ssh','network_cli','netconf','httpapi',] or not connection:
+    if connection in ['netconf','httpapi']:
+      print(f"Using SSH to connect to a device configured with {connection} connection")
     ssh_connect(host_data,rest,args.verbose)
   else:
     common.fatal('Unknown connection method %s for host %s' % (connection,args.host),'connect')
