@@ -88,4 +88,5 @@ Getting Started
    dev/guidelines.md
    dev/transform.md
    dev/module-attributes.md
+   dev/tests.md
 ..
