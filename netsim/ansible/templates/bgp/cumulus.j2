@@ -8,15 +8,27 @@ router bgp {{ bgp.as }}
   bgp default show-hostname
   bgp default show-nexthop-hostname
 !
-{% for af in ['ipv4','ipv6'] %}
-{%   for n in bgp.neighbors if n[af] is defined %}
+{% for n in bgp.neighbors %}
+{%   if n.unnumbered is defined and n.unnumbered is sameas true %}
+{%     if loop.first %}
+  neighbor external peer-group
+  neighbor external remote-as external
+{%     endif %}
+  neighbor {{ n.interface }} interface peer-group external
+  neighbor {{ n.interface }} description {{ n.name }}
+{%   else %}
+{%     for af in ['ipv4','ipv6'] %}
+{%       if n[af] is defined %}
   neighbor {{ n[af] }} remote-as {{ n.as }}
   neighbor {{ n[af] }} description {{ n.name }}
+{%       endif %}
+{%     endfor %}
 {%     if n.type == 'ibgp' %}
   neighbor {{ n[af] }} update-source lo
 {%     endif %}
-!
-{%   endfor %}
+  !
+{%   endif %}
+  !
 {% endfor %}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
  address-family {{ af }} unicast
@@ -33,8 +45,13 @@ router bgp {{ bgp.as }}
   network {{ pfx|ipaddr('0') }}
 {%   endfor %}
 !
-{%   for n in bgp.neighbors if n[af] is defined %}
+{# {%   for n in bgp.neighbors if n[af] is defined %} #}
+{%   for n in bgp.neighbors %}
+{%     if n.unnumbered is defined and n.unnumbered is sameas true %}
+  neighbor {{ n.interface }} activate
+{%     else %}
   neighbor {{ n[af] }} activate
+{%     endif %}
 {%     if n.type == 'ibgp' %}
 {%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
   neighbor {{ n[af] }} next-hop-self
@@ -47,7 +64,11 @@ router bgp {{ bgp.as }}
 {%       endif %}
 {%     else %}
 {%       if bgp.community.ebgp|default([]) %}
+{%         if n.unnumbered is defined and n.unnumbered is sameas true %}
+  neighbor {{ n.interface }} send-community {{ community(bgp.community.ebgp) }}
+{%         else %}
   neighbor {{ n[af] }} send-community {{ community(bgp.community.ebgp) }}
+{%         endif %}
 {%       endif %}
 {%     endif %}
 !
