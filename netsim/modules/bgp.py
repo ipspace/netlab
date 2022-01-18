@@ -55,9 +55,8 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict
   ngb["type"] = ctype
   for af in ["ipv4", "ipv6"]:
     if af in intf:
-      if extra_data.unnumbered == True:
+      if ngb.unnumbered == True:
         ngb[af] = True
-        ngb["interface"] = extra_data.local_if
       else:
         ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
   return ngb
