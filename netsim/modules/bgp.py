@@ -212,8 +212,7 @@ class BGP(_Module):
         neighbor = bgp_neighbor(n,intf,ctype,extra_data)
         for af in ['ipv4','ipv6']:
           if node.bgp.peering[ctype][af]:
-            if ((af in neighbor and neighbor[af]!=False) or
-                ('unnumbered' in neighbor and neighbor['unnumbered']!=False)):
+            if af in neighbor and neighbor[af] != False:
               node.bgp.neighbors.append(neighbor)
               return
 
