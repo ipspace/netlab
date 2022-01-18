@@ -207,20 +207,30 @@ class BGP(_Module):
     rrlist = find_bgp_rr(node.bgp.get("as"),topology)
     node.bgp.neighbors = []
 
+    # Check if peering is enabled and possible for given neighbor, if so add it
+    def add_if_peering( n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict] = None ) -> None:
+        neighbor = bgp_neighbor(n,intf,ctype,extra_data)
+        for af in ['ipv4','ipv6']:
+          if node.bgp.peering[ctype][af]:
+            if ((af in neighbor and neighbor[af]!=False) or
+                ('unnumbered' in neighbor and neighbor['unnumbered']!=False)):
+              node.bgp.neighbors.append(neighbor)
+              return
+
     # If we don't have route reflectors, or if the current node is a route
     # reflector, we need BGP sessions to all other nodes in the same AS
     if not(rrlist) or node.bgp.get("rr",None):
       for name,n in topology.nodes.items():
         if "bgp" in n:
           if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-            node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+            add_if_peering(n,n.loopback,'ibgp',get_neighbor_rr(n))
     #
     # The node is not a route reflector, and we have a non-empty RR list
     # We need BGP sessions with the route reflectors
     else:
       for n in rrlist:
         if n.name != node.name:
-          node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+          add_if_peering(n,n.loopback,'ibgp',get_neighbor_rr(n))
 
     #
     # EBGP sessions - iterate over all links, find adjacent nodes
@@ -229,7 +239,7 @@ class BGP(_Module):
       for ngb_ifdata in l.get("neighbors",[]):
         ngb_name = ngb_ifdata.node
         neighbor = topology.nodes[ngb_name]
-        if not "bgp" in neighbor:
+        if not "bgp" in neighbor or not peering_enabled('ebgp',neighbor):
           continue
         if neighbor.bgp.get("as") and neighbor.bgp.get("as") != node.bgp.get("as"):
           extra_data = Box({})
@@ -237,7 +247,7 @@ class BGP(_Module):
           if "unnumbered" in l:
             extra_data.unnumbered = True
             extra_data.local_if = l.ifname
-          node.bgp.neighbors.append(bgp_neighbor(neighbor,ngb_ifdata,'ebgp',extra_data))
+          add_if_peering(neighbor,ngb_ifdata,'ebgp',extra_data)
 
     # Calculate BGP address families
     for af in ['ipv4','ipv6']:
