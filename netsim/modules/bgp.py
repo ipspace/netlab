@@ -50,9 +50,12 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict
   ngb.name = n.name
   ngb["as"] = n.bgp.get("as")
   ngb["type"] = ctype
-  for af in ['ipv4','ipv6']:
+  for af in ["ipv4","ipv6"]:
     if af in intf:
-      ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
+      if "unnumbered" in ngb and ngb.unnumbered == True:
+        ngb[af] = True
+      else:
+        ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
   return ngb
 
 def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
@@ -233,6 +236,7 @@ class BGP(_Module):
           extra_data.ifindex = l.ifindex
           if "unnumbered" in l:
             extra_data.unnumbered = True
+            extra_data.local_if = l.ifname
           node.bgp.neighbors.append(bgp_neighbor(neighbor,ngb_ifdata,'ebgp',extra_data))
 
     # Calculate BGP address families
