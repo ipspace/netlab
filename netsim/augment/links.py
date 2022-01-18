@@ -493,7 +493,13 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       augment_p2p_link(link,pools,nodes,defaults=defaults)
     else:
       if not 'bridge' in link:
-        link['bridge'] = "%s_%d" % (defaults.name,linkindex)
+        br = defaults.name if len(defaults.name)<12 and linkindex<100 else 'netsim-br'
+        link['bridge'] = "%s_%d" % (br,linkindex) # max 15 chars on Linux
+      elif len(link['bridge'])>15:
+        common.error(
+            f'Bridge name {link["bridge"]} has more than 15 characters',
+            common.IncorrectValue,
+            'interfaces')
       augment_lan_link(link,pools,nodes,defaults=defaults)
 
     linkindex = linkindex + 1
