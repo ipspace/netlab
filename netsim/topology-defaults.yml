@@ -33,30 +33,23 @@ bgp:
   ebgp_role: external
   advertise_roles: [ stub ]
   advertise_loopback: True
-  address_families:
-    ibgp: [ ipv4, ipv6 ]
-    ebgp: [ ipv4, ipv6 ]
   community:
     ibgp: [ standard, extended ]
     ebgp: [ standard ]
-  peering:
-    ibgp: { 'ipv4': True, 'ipv6': True }
-    ebgp: { 'ipv4': True, 'ipv6': True }
   no_propagate: [ ebgp_role, advertise_roles, rr_list, as_list ]
   next_hop_self: true
   attributes:
-    global: [ as, next_hop_self, rr_list, ebgp_role, as_list, advertise_loopback, advertise_roles, community, peering, address_families ]
-    node: [ as, next_hop_self, rr, originate, advertise_loopback, community, peering, address_families ]
+    global: [ as, next_hop_self, rr_list, ebgp_role, as_list, advertise_loopback, advertise_roles, community ]
+    node: [ as, next_hop_self, rr, originate, advertise_loopback, community ]
     link: [ advertise ]
 
 isis:
   supported_on: [ eos, frr, csr, iosv, nxos, vsrx, srlinux, sros, none ]
   area: 49.0001
   type: level-2
-  default_metric: 10
   attributes:
-    global: [ area, type, bfd, default_metric ]
-    node: [ area, net, type, bfd, default_metric ]
+    global: [ area, type, bfd ]
+    node: [ area, net, type, bfd ]
     link: [ metric, cost, type, bfd, network_type, passive ]
 
 ospf:
@@ -90,18 +83,6 @@ sr:
     global: [ srgb_range_start, srgb_range_size, ipv6_sid_offset ]
     node: [ srgb_range_start, srgb_range_size, ipv6_sid_offset ]
 
-srv6:
-  requires: [ isis ]
-  supported_on: [ sros ]
-  locator: 2001:db8:aaaa # 2001:db8::/32 see RFC 6890 – Documentation Set
-  address_families: [ ipv4, ipv6 ]
-  # protocols: [ isis ] # Could model like this too
-  bgp: False
-  isis: True
-  attributes:
-    global: [ locator, address_families, bgp, isis ]
-    node: [ locator, address_families, bgp, isis, fpe ]
-
 #
 # Provider defaults
 #
@@ -133,7 +114,7 @@ providers:
     start: sudo -E containerlab deploy -t clab.yml
     stop: sudo -E containerlab destroy --cleanup -t clab.yml
     probe: [ "containerlab version" ]
-    bridge_type: ovs-bridge # Use 'ovs-bridge' to create Openvswitch bridges
+    bridge_type: bridge # Use 'ovs-bridge' to create Openvswitch bridges
     devices:
       eos:
         provider_interface_name: eth%d
@@ -333,6 +314,7 @@ devices:
       ansible_httpapi_use_ssl: no
       ansible_httpapi_validate_certs: no
       ansible_httpapi_port: 80
+      netsim_console_connection: ssh
 
   frr:
     interface_name: eth%d
@@ -369,6 +351,7 @@ devices:
       ansible_ssh_pass: Vagrant
       ansible_network_os: junos
       ansible_connection: netconf
+      netsim_console_connection: ssh
     features:
       initial:
         ipv4:
@@ -379,6 +362,7 @@ devices:
         unnumbered: True
       isis:
         unnumbered:
+          ipv4: True
           ipv6: True
 
   arcos:
@@ -402,6 +386,14 @@ devices:
       ansible_ssh_pass: vagrant
       ansible_network_os: cumulus
       ansible_connection: paramiko
+    features:
+      initial:
+        ipv4:
+          unnumbered: True
+        ipv6:
+          lla: True
+      ospf:
+        unnumbered: True
 
   srlinux:
     mgmt_if: mgmt0
@@ -413,6 +405,7 @@ devices:
       ansible_ssh_pass: admin
       ansible_network_os: srlinux
       ansible_connection: paramiko
+      netsim_console_connection: ssh
     sr:
       srgb_range_start: 500000
       srgb_range_size: 1000
@@ -431,6 +424,7 @@ devices:
       ansible_ssh_pass: admin
       ansible_network_os: sros
       ansible_connection: paramiko_ssh
+      netsim_console_connection: ssh
       sros_use_openconfig: False # Depends on pending PR for nokia.grpc.gnmi
     sr:
       srgb_range_start: 500000
@@ -451,7 +445,7 @@ devices:
         unnumbered:
           ipv4: True
           ipv6: True
-          network: True
+          network: False # SROS treats the interfaces as point-to-point and forms at most 1 adjacency
 
   vyos:
     interface_name: eth%d
