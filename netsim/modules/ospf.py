@@ -5,7 +5,7 @@ import typing
 
 from box import Box
 
-from . import _Module,igp_network_type,igp_external,igp_set_passive
+from . import _Module,_routing
 from . import bfd
 from .. import common
 
@@ -14,12 +14,13 @@ class OSPF(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     bfd.bfd_link_state(node,'ospf')
 
+    _routing.router_id(node,'ospf',topology.pools)
     for intf in node.get('interfaces',[]):
-      if not igp_external(intf,'ospf'):
-        igp_set_passive(intf,'ospf')
+      if not _routing.external(intf,'ospf'):
+        _routing.passive(intf,'ospf')
         if not 'area' in intf.ospf:
           intf.ospf.area = node.ospf.area
-        err = igp_network_type(intf,'ospf',['point-to-point','point-to-multipoint','broadcast','non-broadcast'])
+        err = _routing.network_type(intf,'ospf',['point-to-point','point-to-multipoint','broadcast','non-broadcast'])
         if err:
           common.error(f'{err}\n... node {node.name} link {intf}')
 
