@@ -240,10 +240,10 @@ class BGP(_Module):
           node.bgp.neighbors.append(bgp_neighbor(neighbor,ngb_ifdata,'ebgp',extra_data))
 
     # Calculate BGP address families
-    #
     for af in ['ipv4','ipv6']:
       for n in node.bgp.neighbors:
-        if af in n:
+        enabled_afs = node.bgp.address_families[ n.type ]
+        if af in n and af in enabled_afs:
           node.bgp[af] = True
           break
 
