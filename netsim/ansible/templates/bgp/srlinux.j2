@@ -25,6 +25,7 @@ updates:
 #}
    group:
 {% for g in ['ibgp-ipv4','ibgp-ipv6','ebgp'] %}
+{% set bgp_type = g[:4] %}
 {% set ibgp_rr = (g!='ebgp' and bgp.rr|default(0)) %}
    - group-name: {{g}}
      admin-state: enable
@@ -35,6 +36,11 @@ updates:
      timers:
       connect-retry: 1
       minimum-advertisement-interval: 1
+
+{%   for af in ['ipv4','ipv6']  %}
+     {{ af }}-unicast:
+      admin-state: {{ 'enable' if bgp[af] is defined and af in bgp.address_families[bgp_type] else 'disable' }}
+{% endfor %}
 
 {%   if bgp.community[ g[:4] ]|default([]) %}
 {%   set list = bgp.community[ g[:4] ] %}
