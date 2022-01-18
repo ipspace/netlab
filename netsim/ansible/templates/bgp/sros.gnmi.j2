@@ -22,8 +22,8 @@ updates:
     - group-name: "{{c}}"
       admin-state: enable
       family:
-       ipv4: {{ 'ipv4' in bgp }}
-       ipv6: {{ 'ipv6' in bgp }}
+       ipv4: {{ 'ipv4' in bgp and 'ipv4' in bgp.address_families[bgp_type] }}
+       ipv6: {{ 'ipv6' in bgp and 'ipv6' in bgp.address_families[bgp_type] }}
       import:
        policy: ["accept_all"]
       export:
@@ -53,7 +53,7 @@ updates:
 {%  endfor %}
     neighbor:
 {%  for n in bgp.neighbors %}
-{%  for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%  for af in ['ipv4','ipv6'] if n[af] is defined and bgp.peering[n.type][af] %}
     - ip-address: "{{ n[af] }}"
       description: "{{ n.name }}"
       peer-as: {{ n.as }}
@@ -65,16 +65,3 @@ updates:
   val:
    default-action:
     action-type: accept
-
-{% if 'sr' in module|default([]) %}
-{# Configure BGP shortcuts via SR-ISIS #}
-- path: configure/router[router-name=Base]/bgp
-  val:
-   next-hop-resolution:
-    shortcut-tunnel:
-     family:
-     - family-type: "ipv4"
-       resolution: "filter"
-       resolution-filter:
-        sr-isis: True
-{% endif %}
