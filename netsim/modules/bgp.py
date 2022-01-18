@@ -238,7 +238,7 @@ class BGP(_Module):
       for ngb_ifdata in l.get("neighbors",[]):
         ngb_name = ngb_ifdata.node
         neighbor = topology.nodes[ngb_name]
-        if not "bgp" in neighbor or not peering_enabled('ebgp',neighbor):
+        if not "bgp" in neighbor:
           continue
         if neighbor.bgp.get("as") and neighbor.bgp.get("as") != node.bgp.get("as"):
           extra_data = Box({})
