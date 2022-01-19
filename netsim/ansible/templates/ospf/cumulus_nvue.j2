@@ -1,0 +1,36 @@
+- set:
+    router:
+      ospf:
+        enable: on
+    vrf:
+      default:
+        router:
+          ospf:
+            enable: on
+{% if ospf.reference_bandwidth is defined %}
+            reference-bandwidth: {{ ospf.reference_bandwidth }}
+{% endif %}
+{% if 'ipv4' in loopback %}
+            router-id: {{ loopback.ipv4 | ansible.netcommon.ipaddr('address') }}
+{% endif %}
+    interface:
+      lo:
+        router:
+          ospf:
+            area: {{ ospf.area }}
+{% for l in interfaces|default([]) if 'ospf' in l %}
+      {{ l.ifname }}:
+        router:
+          ospf:
+            enable: on
+            area: {{ l.ospf.area }}
+{%   if l.ospf.cost is defined %}
+            cost: {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.network_type is defined %}
+            network-type: {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.passive | default(False) %}
+            passive: on
+{%   endif %}
+{% endfor %}

@@ -1,0 +1,82 @@
+{% macro community(list) -%}
+{{ "both" if list|length >= 2 else list[0] }}
+{%- endmacro %}
+- set:
+    router:
+      bgp:
+        enable: on
+    vrf:
+      default:
+        router:
+          bgp:
+            autonomous-system: {{ bgp.as }}
+{% if 'ipv4' in loopback %}
+            router-id: {{ loopback.ipv4 | ansible.netcommon.ipaddr('address') }}
+{% endif %}
+            neighbor:
+{% for n in bgp.neighbors %}
+{%   if n.unnumbered is defined and n.unnumbered is sameas true %}
+              {{ n.local_if }}
+                type: unnumbered
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+                    community-advertise:
+                      extended: on
+                  ipv6-unicast:
+                    enable: on
+                    community-advertise:
+                      extended: on
+{%   else %}
+              {{ n.ip }}
+                enable: on
+                remote-as: {{ n.as }}
+{%     for af in ['ipv4','ipv6'] %}
+{%       if n[af] is defined %}
+                address-family:
+                  {{af}}-unicast:
+                    enable: on
+{%         if n.type == 'ibgp' %}
+                    nexthop-setting: self
+{%           if bgp.rr|default('') and not n.rr|default('') %}
+                    route-reflector-client: on
+{%           endif %}
+{%           if bgp.community.ibgp|default([]) %}
+                    community-advertise:
+                      {{ community(bgp.community.ibgp) }}: on
+{%           endif %}
+{%         else %}
+{%           if bgp.community.ebgp|default([]) %}
+                    community-advertise:
+                      {{ community(bgp.community.ebgp) }}: on
+{%           endif %}
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{% endfor %}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+            address-family:
+              {{ af }}:
+                enable: on
+                network:
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+                  {{ loopback[af]|ipaddr(0) }}: {}
+{%   endif %}
+{%   for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+                  {{ l[af]|ipaddr(0) }}: {}
+{%   endfor %}
+{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+                  {{ pfx|ipaddr('0') }}: {}
+{%   endfor %}
+{% endfor %}
+{% if bgp.originate is defined %}
+          static:
+{%   for pfx in bgp.originate|default([]) %}
+            {{ pfx|ipaddr('0') }}:
+              address-family: ipv4-unicast
+              via:
+                blackhole:
+                  type: blackhole
+{%   endfor %}
+{% endif %}

@@ -1,0 +1,51 @@
+
+- set:
+    system:
+      hostname: {{ inventory_hostname }}
+    interface:
+      eth0:
+        ip:
+          vrf: mgmt
+          address:
+            dhcp: {}
+        type: eth
+      lo:
+        ip:
+          address:
+{% if 'ipv4' in loopback %}
+            {{ loopback.ipv4 }}: {}
+{% else %}
+            127.0.0.1: {}
+{% endif %}
+{% if 'ipv6' in loopback %}
+            {{ loopback.ipv6 }}: {}
+{% endif %}
+        type: loopback
+{% for l in interfaces|default([]) %}
+      {{ l.ifname }}:
+        link:
+          state:
+            up: {}
+        type: swp
+{%   if l.name is defined %}
+        description: {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{%   elif l.type|default("") == "stub" %}
+        description:  Stub interface
+{%   endif %}
+{%   if l.ipv4 is defined or l.ipv6 is defined %}
+        ip:
+          address:
+{%     if l.ipv4 is defined %}
+{%      if l.ipv4 == True %}
+{%       else %}
+            {{ l.ipv4 }}: {}
+{%       endif %}
+{%     endif %}
+{%     if l.ipv6 is defined %}
+{%       if l.ipv6 == True %}
+{%       else %}
+            {{ l.ipv6 }}: {}
+{%       endif %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
