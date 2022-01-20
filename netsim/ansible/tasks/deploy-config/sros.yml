@@ -1,4 +1,11 @@
 ---
+
+- name: Check that required plugin exists, use 'ansible-galaxy collection install nokia.grpc' to install it
+  vars:
+    ansible_connection: nokia.grpc.gnmi
+  nokia.grpc.gnmi_config:
+    prefix: test-plugin
+
 - local_action:
     module: tempfile
     state: file
@@ -36,19 +43,19 @@
     cfg: "{{ lookup('file', tempfile_1.path ) }}"
   debug: msg="{{ cfg | from_yaml }}"
 
-- name: Wait up to 120s for gNMI(TCP {{sros_grpc_port}}) to be ready on {{ ansible_host }}
+- name: Wait up to 150s for gNMI(TCP {{sros_grpc_port}}) to be ready on {{ ansible_host }}
   local_action:
     module: wait_for
     port: "{{ sros_grpc_port }}"
     host: "{{ ansible_host }}"
     connect_timeout: 60
-    timeout: 120
+    timeout: 150
     sleep: 10 # Wait 10s between attempts
 
 - block:
   - block:
     - name: Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)
-      when: enable_open_config is not defined
+      when: enable_open_config is not defined and 'ixr-ec' != type
       tags: [ initial ]
       nokia.grpc.gnmi_config:
         prefix: configure
