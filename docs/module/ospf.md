@@ -10,6 +10,7 @@ Supported features:
 * Reference bandwidth
 * Unnumbered point-to-point interfaces
 * Passive interfaces
+* Static router ID
 * BFD
 
 Missing features:
@@ -57,8 +58,9 @@ The following table describes per-platform support of individual OSPF features:
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area, and on loopback interface.
 * **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
+* **ospf.router_id** -- set static router ID. Default **router_id** is taken from the IPv4 address of the loopback interface or from the **router_id** address pool if there's no usable IPv4 address on the loopback interface.
 
-You can specify node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
+You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 
 ## Link Parameters
 

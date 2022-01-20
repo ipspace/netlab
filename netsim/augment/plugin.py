@@ -4,13 +4,16 @@ plugin - implement custom topology transformation plugins
 
 import os
 import sys
+import typing
+
 from box import Box
 from importlib import import_module
 from .. import common
 
-def load_plugin_from_path(path: str, plugin: str) -> object:
+def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
   module_path = path+'/'+plugin
   module_name = module_path
+  module: typing.Optional[object] = None
   is_package = os.path.isdir(module_path)
   config_name = None
 
