@@ -1,6 +1,3 @@
-{% macro community(list) -%}
-{{ "both" if list|length >= 2 else list[0] }}
-{%- endmacro %}
 - set:
     router:
       bgp:
@@ -9,10 +6,22 @@
       default:
         router:
           bgp:
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+            address-family:
+              {{ af }}-unicast:
+                enable: on
+                network:
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+                  {{ loopback[af]|ipaddr(0) }}: {}
+{%   endif %}
+{%   for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+                  {{ l[af]|ipaddr(0) }}: {}
+{%   endfor %}
+{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+                  {{ pfx|ipaddr('0') }}: {}
+{%   endfor %}
+{% endfor %}
             autonomous-system: {{ bgp.as }}
-{% if 'ipv4' in loopback %}
-            router-id: {{ loopback.ipv4 | ansible.netcommon.ipaddr('address') }}
-{% endif %}
             neighbor:
 {% for n in bgp.neighbors %}
 {%   if n.unnumbered is defined and n.unnumbered is sameas true %}
@@ -28,13 +37,12 @@
                     community-advertise:
                       extended: on
 {%   else %}
-              {{ n.ip }}
-                enable: on
+              {{ n.ipv4 }}:
                 remote-as: {{ n.as }}
 {%     for af in ['ipv4','ipv6'] %}
 {%       if n[af] is defined %}
                 address-family:
-                  {{af}}-unicast:
+                  {{ af }}-unicast:
                     enable: on
 {%         if n.type == 'ibgp' %}
                     nexthop-setting: self
@@ -43,33 +51,25 @@
 {%           endif %}
 {%           if bgp.community.ibgp|default([]) %}
                     community-advertise:
-                      {{ community(bgp.community.ibgp) }}: on
+{%             for ibgp_community in bgp.community.ibgp %}
+                      {{ ibgp_community.replace("standard","regular") }}: on
+{%             endfor %}
 {%           endif %}
 {%         else %}
 {%           if bgp.community.ebgp|default([]) %}
                     community-advertise:
-                      {{ community(bgp.community.ebgp) }}: on
+{%             for ebgp_community in bgp.community.ebgp %}
+                      {{ ebgp_community.replace("standard","regular") }}: on
+{%             endfor %}
 {%           endif %}
 {%         endif %}
 {%       endif %}
 {%     endfor %}
 {%   endif %}
 {% endfor %}
-{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
-            address-family:
-              {{ af }}:
-                enable: on
-                network:
-{%   if loopback[af] is defined and bgp.advertise_loopback %}
-                  {{ loopback[af]|ipaddr(0) }}: {}
-{%   endif %}
-{%   for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
-                  {{ l[af]|ipaddr(0) }}: {}
-{%   endfor %}
-{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-                  {{ pfx|ipaddr('0') }}: {}
-{%   endfor %}
-{% endfor %}
+{% if 'ipv4' in loopback %}
+            router-id: {{ loopback.ipv4 | ansible.netcommon.ipaddr('address') }}
+{% endif %}
 {% if bgp.originate is defined %}
           static:
 {%   for pfx in bgp.originate|default([]) %}
