@@ -6,6 +6,7 @@ from box import Box
 from . import _Module,_routing
 from . import bfd
 from .. import common
+from ..augment import devices
 
 class ISIS(_Module):
 
@@ -13,6 +14,7 @@ class ISIS(_Module):
     self.set_af_flag(node,node.isis)
 
     bfd.multiprotocol_bfd_link_state(node,'isis')
+    features = devices.get_device_features(node,topology.defaults)
 
     for af in ('ipv4','ipv6'):
       is_unnumbered = False
@@ -21,7 +23,7 @@ class ISIS(_Module):
           'unnumbered' in l or \
           (af in l and isinstance(l[af],bool) and l[af])
 
-      if is_unnumbered and not topology.defaults.devices[node.device].features.isis.unnumbered[af]:
+      if is_unnumbered and not features.isis.unnumbered[af]:
         common.error(
           f'Device {node.device} used on node {node.name} cannot run IS-IS over {"unnumbered" if af == "ipv4" else "LLA"} {af} interfaces',
           common.IncorrectValue,
@@ -31,8 +33,8 @@ class ISIS(_Module):
       unnum_v4 = 'unnumbered' in l or ('ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4)
       if unnum_v4 and \
           len(l.neighbors) > 1 and \
-          topology.defaults.devices[node.device].features.isis.unnumbered.ipv4 and \
-          not topology.defaults.devices[node.device].features.isis.unnumbered.network:
+          features.isis.unnumbered.ipv4 and \
+          not features.isis.unnumbered.network:
         common.error(
           f'Device {node.device} used on node {node.name} cannot run IS-IS over\n'+
           f'.. unnumbered multi-access interfaces (link {l.name})',

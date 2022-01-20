@@ -12,6 +12,7 @@ from box import Box
 from .. import common
 from ..callback import Callback
 from ..augment.links import IFATTR
+from ..augment import devices
 
 # List of attributes we don't want propagated from defaults to global/node
 #
@@ -109,17 +110,14 @@ def check_supported_node_devices(topology: Box) -> None:
 #
 
 def merge_node_module_params(topology: Box) -> None:
-  global no_propagate_list
-  devices = topology.defaults.devices
-
   for name,n in topology.nodes.items():
     if 'module' in n:
       for m in n.module:
         if m in topology:
-          n[m] = get_propagated_global_module_params(m,topology,topology.defaults[m]) + n[m]
+          n[m] = get_propagated_global_module_params(m,topology.get(m,{}),topology.defaults[m]) + n[m]
 
-        dev_settings = devices.get(n.device,{})
-        if m in dev_settings:
+        dev_settings = devices.get_device_data(n,m,topology.defaults)
+        if dev_settings:
           n[m] = get_propagated_global_module_params(m,dev_settings,topology.defaults[m]) + n[m]
 
 # Get propagated global parameters from settings (top-level or device-level)
@@ -128,8 +126,10 @@ def merge_node_module_params(topology: Box) -> None:
 # mod_settings - default module settings
 #
 def get_propagated_global_module_params(module: str, settings: Box,mod_settings: Box) -> Box:
-  global_copy = Box(settings[module])
-  no_propagate = list(no_propagate_list)              # Make sure we're using a fresh copy of the list
+  global no_propagate_list
+
+  global_copy = Box(settings)                  # Make a fresh copy of the settings
+  no_propagate = list(no_propagate_list)       # ... and global no_propagate list
   if "no_propagate" in mod_settings:
     no_propagate.extend(mod_settings.no_propagate)
   for remove_key in no_propagate:

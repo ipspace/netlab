@@ -459,9 +459,7 @@ def check_link_type(data: Box) -> bool:
 
 def interface_feature_check(nodes: Box, defaults: Box) -> None:
   for node,ndata in nodes.items():
-    features = devices.get_device_data(ndata,'features',defaults)
-    if not isinstance(features,Box):
-      features = Box({},default_box=True,box_dots=True)
+    features = devices.get_device_features(ndata,defaults)
     for ifdata in ndata.get('interfaces',[]):
       if 'ipv4' in ifdata:
         if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \

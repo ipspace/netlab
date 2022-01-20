@@ -186,11 +186,6 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
         else:
           n.loopback[af] = str(prefix_list[af])
 
-    device_data = defaults.devices[n.device]
-    if not device_data: # pragma: no cover (should never get this far -- this should have been caught earlier on)
-      common.fatal(f"Missing device data for device type {n.device} used by node {name}",'nodes')
-      continue
-
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
 
     topology.Provider.call("augment_node_data",n,topology)

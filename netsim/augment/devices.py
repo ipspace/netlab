@@ -8,6 +8,17 @@ from box import Box
 
 from .. import common
 
+"""
+Get generic device data:
+
+* Use node.device to find device used by the current node
+* Use defaults.provider (future: node data) to find the provider
+* Fetch required data using the following inheritance rules:
+
+  * If the provider data is not a dictionary, return that (no merge)
+  * If the provider data is a dictionary, but the device data is not, return provider data (override)
+  * Return a merge of both dictionaries
+"""
 def get_device_data(node: Box, attr: str, defaults: Box) -> typing.Optional[typing.Any]:
   devtype  = node.device
   provider = defaults.provider
@@ -33,6 +44,20 @@ def get_device_data(node: Box, attr: str, defaults: Box) -> typing.Optional[typi
     return pvalue                        # Provider-specific dictionary overriding non-dictionary device value
 
   return value                           # Return whatever the device value is
+
+"""
+Get device feature flags -- uses get_device_data but returns a Box to keep mypy happy
+"""
+def get_device_features(node: Box, defaults: Box) -> Box:
+  features = get_device_data(node,'features',defaults)
+  if not features:
+    return Box({},default_box=True,box_dots=True)
+
+  if not isinstance(features,Box):
+    common.fatal('Device features for device type {node.device} should be a dictionary')
+    return Box({})
+
+  return features
 
 def get_provider_data(node: Box, defaults: Box) -> Box:
   devtype  = node.device
