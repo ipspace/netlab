@@ -66,8 +66,9 @@ def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[B
 
   if 'devices' in defaults:
     for group in inventory.keys():
-      if group in defaults['devices']:
-        group_vars = defaults['devices'][group].get('group_vars')
+      if group in defaults.devices:
+        devdata = defaults.devices[group]
+        group_vars = devdata.group_vars + devdata[defaults.provider].group_vars
         if group_vars:
           inventory[group]['vars'] = group_vars
 

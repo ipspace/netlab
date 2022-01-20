@@ -107,7 +107,7 @@ def adjust_global_parameters(topology: Box) -> None:
 
   # Adjust defaults with provider-specific defaults
   #
-  for k in ['devices','addressing']:
+  for k in ['addressing']:
     if k in topology.defaults.providers[topology.provider]:
       topology.defaults[k] = topology.defaults[k] + topology.defaults.providers[topology.provider][k]
 

@@ -17,6 +17,7 @@ def transform_setup(topology: Box) -> None:
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   if 'links' in topology:
     topology.links = augment.links.adjust_link_list(topology.links,topology.nodes)
+  augment.devices.augment_device_settings(topology)
   common.exit_on_error()
 
   augment.plugin.init(topology)
