@@ -4,4 +4,4 @@
 # topology file
 #
 
-__version__ = "1.1.1-dev"
+__version__ = "1.1.1"

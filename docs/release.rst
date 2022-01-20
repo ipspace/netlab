@@ -1,6 +1,13 @@
 Release notes
 =============
 
+2022-01-20 (release 1.1.1)
+  * Cumulus VX: unnumbered interfaces and support for EBGP sessions over unnumbered IPv4 interfaces
+  * OVS bridge support in containerlab provider
+  * Bug fixes
+
+  :doc:`More details <release/1.1>`
+
 2022-01-09 (release 1.1)
   * New IPAM functionality: layer-2-only links and interfaces, per-protocol unnumbered interfaces
   * IPAM code refactoring
