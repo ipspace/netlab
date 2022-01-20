@@ -22,9 +22,11 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-[Release 1.1](https://github.com/ipspace/netsim-tools/releases/tag/release_1.1) includes major code- and internal data structure changes and might not be rock solid (please open an issue if you encounter unexpected behavior). There are no changes in topology file format, but you'll have to fix most custom device configuration templates (see [breaking changes](https://netsim-tools.readthedocs.io/en/latest/release/1.1.html#breaking-changes)).
+The latest release is [release 1.1.1](https://github.com/ipspace/netsim-tools/releases/tag/release_1.1.1). It's mostly a bug fix release, and we believe it's pretty stable.
 
-The latest stable release is [release_1.0.6](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0.6).
+[Release 1.1](https://github.com/ipspace/netsim-tools/releases/tag/release_1.1) included major code- and internal data structure changes. There are no changes in topology file format, but you'll have to fix most custom device configuration templates (see [breaking changes](https://netsim-tools.readthedocs.io/en/latest/release/1.1.html#breaking-changes)).
+
+The latest release using old data structures is [release_1.0.6](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0.6).
 
 The last release containing the old (obsolete) CLI commands is [release_0.9.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.3).
 

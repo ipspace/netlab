@@ -2,7 +2,7 @@
 
 *netsim-tools* is available as a Python3 package that runs on most systems supporting Python3. It's been tested with Python 3.9, but should run on older Python3 versions. 
 
-The lab control functionality uses Ansible playbooks, and thus works only on systems supported by Ansible. It's recommended to use Ansible 2.9 or higher.
+The lab control functionality uses Ansible playbooks, and thus works only on systems supported by Ansible. It's recommended to use Ansible 2.9.1 or higher.
 
 ## Installing a Python Package
 
