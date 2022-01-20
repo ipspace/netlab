@@ -43,10 +43,19 @@ Generic Linux device is an IP host that does not support IP forwarding or IP rou
 
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 
+## Nokia SR Linux
+* Only supported on top of *Containerlab*
+* Requires the Ansible Galaxy collection 'nokia.grpc' to be installed:
+```
+ansible-galaxy collection install nokia.grpc
+python3 -m pip install grpcio protobuf
+```
+
 ## Nokia SR OS
 * Only supported on top of *Containerlab*, using VRNetlab (VM running inside container)
 * Requires the Ansible Galaxy collection 'nokia.grpc' to be installed:
 ```
 ansible-galaxy collection install nokia.grpc
+python3 -m pip install grpcio protobuf
 ```
 * OpenConfig support depends on a [pending PR](https://github.com/nokia/ansible-networking-collections/pull/21)
