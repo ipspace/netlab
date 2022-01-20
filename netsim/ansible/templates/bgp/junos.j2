@@ -1,5 +1,8 @@
 routing-options {
   autonomous-system {{ bgp.as }};
+{% if bgp.router_id|ipv4 %}
+  router-id {{ bgp.router_id }}
+{% endif %}
 {% if bgp.originate is defined %}
   static {
 {% for pfx in bgp.originate|default([]) %}
@@ -66,7 +69,7 @@ protocols {
       advertise-inactive;
       local-address {{ loopback[af]|ipaddr('address') }};
 {%   if bgp.rr is defined %}
-      cluster {{ loopback.ipv4|ipaddr('address') }};
+      cluster {{ bgp.router_id|ipaddr('address') }};
 {%   endif %}
 {%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' %}
       neighbor {{ n[af] }} {
