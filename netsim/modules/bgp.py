@@ -7,7 +7,7 @@ import re
 from box import Box
 import netaddr
 
-from . import _Module
+from . import _Module,_routing
 from .. import common
 from ..augment.links import IFATTR
 
@@ -269,5 +269,6 @@ class BGP(_Module):
       common.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
       return
     check_bgp_parameters(node)
+    _routing.router_id(node,'bgp',topology.pools)
     self.build_bgp_sessions(node,topology)
     self.bgp_set_advertise(node,topology)

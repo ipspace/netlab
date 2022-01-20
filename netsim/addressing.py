@@ -217,7 +217,13 @@ def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) 
         subnet_cache = 'cache_%s' % af
         if not subnet_cache in pools[p]:
           pools[p][subnet_cache] = []
-        prefixes[af] = get_nth_subnet(n,pools[p][af],pools[p][subnet_cache])
+        try:
+          prefixes[af] = get_nth_subnet(n,pools[p][af],pools[p][subnet_cache])
+        except StopIteration:
+          common.error(
+            f'Cannot allocate {n}-th {af} element from {p} pool',
+            common.IncorrectValue,
+            'addressing')
       else:
         try:
           prefixes[af] = next(pools[p][af])

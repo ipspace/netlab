@@ -9,6 +9,8 @@ Routing Protocol utility functions:
 
 from box import Box
 import typing
+import netaddr
+
 from .. import common
 from .. import addressing
 
@@ -52,7 +54,7 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
     return
 
   if 'ipv4' in node.get('loopback',{}):       # Do we have IPv4 address on the loopback? If so, use it as router ID
-    node[proto].router_id = node.loopback.ipv4
+    node[proto].router_id = str(netaddr.IPNetwork(node.loopback.ipv4).ip)
     return
 
   if not pools.router_id:
@@ -70,12 +72,12 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
       proto)
     return
 
-  if not pfx.ipv4:
+  if not pfx.get('ipv4',None):
     common.error(
       f'router_id pool did not return a usable IPv4 address to use as router ID for protocol {proto} on node {node.name}',
       common.IncorrectValue,
       proto)
     return
 
-  node.router_id = pfx.ipv4
-  node[proto].router_id = pfx.ipv4
+  node.router_id = str(netaddr.IPNetwork(pfx['ipv4']).ip)
+  node[proto].router_id = node.router_id
