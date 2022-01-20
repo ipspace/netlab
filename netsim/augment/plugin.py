@@ -51,13 +51,14 @@ def init(topology: Box) -> None:
   topology.Plugin = []
   for pname in topology.plugin:
     plugin = None
-    for path in ('.',common.netsim_package_path,pname):
+    search_path = ('.',common.netsim_package_path+'/extra',pname)
+    for path in search_path:
       if not plugin:
         plugin = load_plugin_from_path(path,pname)
     if plugin:
       topology.Plugin.append(plugin)
     else:
-      common.error(f"Cannot find plugin {pname}",common.IncorrectValue,'plugin')
+      common.error(f"Cannot find plugin {pname} in {search_path}",common.IncorrectValue,'plugin')
 
 def execute(action: str, topology: Box) -> None:
   if not 'Plugin' in topology:
