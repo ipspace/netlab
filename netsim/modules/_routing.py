@@ -47,10 +47,24 @@ def passive(intf: Box, proto: str) -> bool:
 #
 def router_id(node: Box, proto: str, pools: Box) -> None:
   if 'router_id' in node.get(proto,{}):       # User-configured per-protocol router ID, get out of here
+    try:
+      node[proto].router_id = str(netaddr.IPAddress(node[proto].router_id).ipv4())
+    except Exception as ex:
+      common.error(
+        f'{proto} router_id "{node[proto].router_id}" specified on node {node.name} is not an IPv4 address',
+        common.IncorrectValue,
+        proto)
     return
 
   if 'router_id' in node:                     # Node as configured router ID, copy it and get out
-    node[proto].router_id = node.router_id
+    try:
+      node.router_id = str(netaddr.IPAddress(node.router_id).ipv4())
+      node[proto].router_id = node.router_id
+    except Exception as ex:
+      common.error(
+        f'router_id "{node.router_id}" specified on node {node.name} is not an IPv4 address',
+        common.IncorrectValue,
+        proto)
     return
 
   if 'ipv4' in node.get('loopback',{}):       # Do we have IPv4 address on the loopback? If so, use it as router ID
