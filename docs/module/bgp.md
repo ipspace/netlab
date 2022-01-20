@@ -13,6 +13,7 @@ Supported features:
 * IPv4 and IPv6 address families
 * Configurable link prefix advertisement
 * Additional (dummy) prefix advertisement
+* Static **router-id**
 * Interaction with OSPF or IS-IS (IGP is disabled on external links)
 
 You could use *global* or *per-node* parameters to configure BGP autonomous systems and route reflectors (you expected tons of nerd knobs in a BGP implementation, didn't you?):
@@ -67,6 +68,7 @@ Instead of using a global list of autonomous systems, you could specify a BGP au
 * **bgp.as**: AS number -- specified on a node, or as default global value (propagated to all nodes without a specified AS number)
 * **bgp.rr** -- the node is BGP route reflector within its autonomous system.
 * **bgp.next_hop_self** -- use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; system default is **true**.
+* **bgp.router_id** -- set static router ID. Default **router_id** is taken from the IPv4 address of the loopback interface or from the **router_id** address pool if there's no usable IPv4 address on the loopback interface.
 
 Specifying a BGP autonomous system on individual nodes makes sense when each node uses a different BGP AS. See [EBGP leaf-and-spine fabric example](bgp_example/ebgp.md) for details.
 
@@ -153,17 +155,19 @@ The BGP transformation module builds a list of BGP neighbors for ever node. That
 * Router reflectors have IBGP sessions to all other nodes in the same AS. When the remote node is not a router reflector, *route-reflector-client* is configured on the IBGP session.
 * Route reflector clients have IBGP sessions with route reflectors (nodes within the same AS with **bgp.rr** set).
 * IBGP sessions are established between loopback interfaces. You should combine IGBP deployment with an IGP configuration module like [OSPF](ospf.md).
+* Parallel IBGP sessions are established for all IP address families configured on loopback interfaces. See also [IPv6 support](#ipv6-support).
 
 See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 
 **EBGP sessions**
 * Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them.
+* Parallel EBGP sessions are established for all IP address families configured on the link. See also [IPv6 support](#ipv6-support).
 
 See the [Simple BGP Example](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) example for more details.
 
 ### Notes on Unnumbered EBGP Sessions
 
-Unnumbered EBGP sessions are supported by the data model, but not by configuration templates. The transformed data model includes **unnumbered** and **ifindex** elements on EBGP neighbors reachable over unnumbered interfaces -- compare a regular EBGP neighbor (L2) with an unnumbered EBGP neighbor (L1):
+Unnumbered EBGP sessions are currently supported only on Cumulus VX. The transformed data model includes **unnumbered** and **ifindex** elements on EBGP neighbors reachable over unnumbered interfaces -- compare a regular EBGP neighbor (L2) with an unnumbered EBGP neighbor (L1):
 
 ```
 - bgp:
@@ -179,8 +183,6 @@ Unnumbered EBGP sessions are supported by the data model, but not by configurati
       name: l2
       type: ebgp
 ```
-
-The transformed data model gives you enough information to create Cumulus-style BGP neighbor statements.
 
 ## IPv6 Support
 
