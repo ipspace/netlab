@@ -1,0 +1,38 @@
+- set:
+    router:
+      ospf:
+        enable: on
+    vrf:
+      default:
+        router:
+          ospf:
+            enable: on
+{% if ospf.reference_bandwidth is defined %}
+            reference-bandwidth: {{ ospf.reference_bandwidth }}
+{% endif %}
+{% if 'ipv4' in loopback %}
+            router-id: {{ router_id }}
+            area:
+              '{{ ospf.area }}':
+                network:
+                  {{ router_id }}: {}
+{% endif %}
+{% for l in interfaces|default([]) if 'ospf' in l %}
+{%   if loop.first %}
+    interface:
+{%   endif %}
+      {{ l.ifname }}:
+        router:
+          ospf:
+            enable: on
+            area: {{ l.ospf.area }}
+{%   if l.ospf.cost is defined %}
+            cost: {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.network_type is defined %}
+            network-type: {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.passive | default(False) %}
+            passive: on
+{%   endif %}
+{% endfor %}

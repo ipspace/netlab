@@ -10,6 +10,7 @@ The following virtual network devices are supported by *netsim-tools*:
 | Cisco CSR 1000v                           | csr                |
 | Cisco Nexus 9300v                         | nxos               |
 | Cumulus Linux                             | cumulus            |
+| Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue            |
 | Fortinet FortiOS [❗](caveats.html#fortinet-fortios) | fortios            |
 | FRR 7.5.0                                 | frr                |
 | Generic Linux host                        | linux              |
@@ -102,6 +103,7 @@ The following system-wide features are configured on supported network operating
 | Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Cumulus Linux 5.0 (NVUE)         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | FRR 7.5.0             |    ✅     |     ❌      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
@@ -120,6 +122,7 @@ The following interface parameters are configured on supported network operating
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)              |             ✅              |            ✅             |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
+| Cumulus Linux 5.0 (NVUE)        |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
 | Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
 | FRR 7.5.0             |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
 | Generic Linux         |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
@@ -141,6 +144,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ✅   |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ❌    |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  |    ❌    |
+| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |    ❌    |
 | Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |    ❌    |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  |    ❌    |
 | Generic Linux         |  ❌   |   ❌   |   ❌   |   ❌  |  ❌  |    ❌    |
@@ -162,6 +166,7 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Cisco IOS XE          |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | FRR 7.5.0             |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
