@@ -11,6 +11,7 @@ from box import Box
 
 from .. import common
 from .. import addressing
+from . import devices
 
 #
 # Starting with release 1.1, the nodes data structure is a dictionary. Convert
@@ -47,15 +48,18 @@ def create_node_dict(nodes: Box) -> Box:
   common.exit_on_error()
   return node_dict
 
-def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) -> None:
+def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:
-    mgmt_if = device_data.mgmt_if
+    mgmt_if = devices.get_device_attribute(node,'mgmt_if',defaults)
     if not mgmt_if:
-      ifname_format = device_data.interface_name
-      if not ifname_format:
+      ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
+      if not isinstance(ifname_format,str):
         common.fatal("Missing interface name template for device type %s" % node.device)
+        return
 
-      ifindex_offset = device_data.get('ifindex_offset',1)
+      ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
+      if ifindex_offset is None:
+        ifindex_offset = 1
       mgmt_if = ifname_format % (ifindex_offset - 1)
     node.mgmt.ifname = mgmt_if
 
@@ -76,9 +80,7 @@ def augment_mgmt_if(node: Box, device_data: Box, addrs: typing.Optional[Box]) ->
 # Add device (box) images from defaults
 #
 def augment_node_provider_data(topology: Box) -> None:
-  provider = topology.provider
-  devices = topology.defaults.devices
-  if not devices:
+  if not topology.defaults.devices:
     common.fatal('Device defaults (defaults.devices) are missing')
 
   for name,n in topology.nodes.items():
@@ -94,18 +96,20 @@ def augment_node_provider_data(topology: Box) -> None:
 
     devtype = n.device
 
-    if not devtype in devices:
+    if not devtype in topology.defaults.devices:
       common.error(f'Unknown device {devtype} in node {name}',common.IncorrectValue,'nodes')
       continue
 
-    if not isinstance(devices[devtype],dict):
+    if not isinstance(topology.defaults.devices[devtype],dict):
       common.fatal(f"Device data for device {devtype} must be a dictionary")
 
-    for k,v in devices[devtype].items():
-      if "provider_" in k:
-        p_key = k.replace("provider_","")
-        if not p_key in n:
-          n[p_key] = v
+    provider = devices.get_provider(n,topology.defaults)
+    pdata = devices.get_provider_data(n,topology.defaults)
+    if 'node' in pdata:
+      if not isinstance(pdata.node,Box):    # pragma: no cover
+        common.fatal(f"Node data for device {devtype} provider {provider} must be a dictionary")
+        return
+      n[provider] = pdata.node
 
     if n.box:
       continue
@@ -114,18 +118,14 @@ def augment_node_provider_data(topology: Box) -> None:
       del n['image']
       continue
 
-    if not 'image' in devices[devtype]:
+    if not 'image' in topology.defaults.devices[devtype]:
       common.error(f"No image data for device type {devtype} used by node {name}",common.MissingValue,'nodes')
       continue
 
-    if not isinstance(devices[devtype].image,dict):
-      common.error(
-        f"Image data for device type {devtype} used by node {name} should be a dictionary",
-        common.IncorrectValue,
-        'nodes')
-      continue
+    box = devices.get_device_attribute(n,'image',topology.defaults)
+    if isinstance(box,dict):
+      box = box.get(provider,None)
 
-    box = devices[devtype].image[provider]
     if not box:
       common.error(
         f'No image specified for device {devtype} (provider {provider}) used by node {name}',
@@ -187,11 +187,6 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
           else:
             n.loopback[af] = str(prefix_list[af])
 
-    device_data = defaults.devices[n.device]
-    if not device_data: # pragma: no cover (should never get this far -- this should have been caught earlier on)
-      common.fatal(f"Missing device data for device type {n.device} used by node {name}",'nodes')
-      continue
-
-    augment_mgmt_if(n,device_data,topology.addressing.mgmt)
+    augment_mgmt_if(n,defaults,topology.addressing.mgmt)
 
     topology.Provider.call("augment_node_data",n,topology)

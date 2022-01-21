@@ -10,6 +10,7 @@ from box import Box
 # Related modules
 from .. import common
 from .. import addressing
+from . import devices
 
 IFATTR: str = 'interfaces'          # Just in case we decide to call it something else not 'interfaces'
 
@@ -116,17 +117,26 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if not 'interfaces' in node:
     node.interfaces = []
 
-  ifindex_offset = defaults.devices[node.device].get('ifindex_offset',1)
+  ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
+  if ifindex_offset is None:
+    ifindex_offset = 1
+
   ifindex = len(node.interfaces) + ifindex_offset
 
-  ifname_format = defaults.devices[node.device].interface_name
+  ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
   ifdata.ifindex = ifindex
   if ifname_format:
     ifdata.ifname = ifname_format % ifindex
 
-  if "provider_interface_name" in defaults.devices[node.device]:
-    ifdata.provider_ifname = defaults.devices[node.device].provider_interface_name % ifindex
+  pdata = devices.get_provider_data(node,defaults).get('interface',{})
+  pdata = Box(pdata,box_dots=True,default_box=True)                       # Create a copy of the interface data
+  if 'name' in pdata:
+    pdata.name = pdata.name % ifindex
+
+  if pdata:
+    provider = devices.get_provider(node,defaults)
+    ifdata[provider] = pdata
 
   for af in ('ipv4','ipv6'):
     if af in ifdata and not ifdata[af]:
@@ -448,24 +458,22 @@ def check_link_type(data: Box) -> bool:
 #
 
 def interface_feature_check(nodes: Box, defaults: Box) -> None:
-  devices = defaults.devices
-
   for node,ndata in nodes.items():
-    devtype = ndata.device
+    features = devices.get_device_features(ndata,defaults)
     for ifdata in ndata.get('interfaces',[]):
       if 'ipv4' in ifdata:
         if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \
-            not devices[devtype].features.initial.ipv4.unnumbered:
+            not features.initial.ipv4.unnumbered:
           common.error(
-            f'Device {devtype} does not support unnumbered IPv4 interfaces used on\n'+
+            f'Device {ndata.device} does not support unnumbered IPv4 interfaces used on\n'+
             f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
             common.IncorrectValue,
             'interfaces')
       if 'ipv6' in ifdata:
         if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
-            not devices[devtype].features.initial.ipv6.lla:
+            not features.initial.ipv6.lla:
           common.error(
-            f'Device {devtype} does not support LLA-only IPv6 interfaces used on\n'+
+            f'Device {ndata.device} does not support LLA-only IPv6 interfaces used on\n'+
             f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
             common.IncorrectValue,
             'interfaces')

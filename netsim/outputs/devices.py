@@ -22,7 +22,7 @@ def create(nodes: Box, defaults: Box, addressing: typing.Optional[Box] = None) -
         if ('_pfx' in k) or ('_eui' in k):
           del pool[k]
 
-  for name,node in nodes:
+  for name,node in nodes.items():
     inventory[name] = adjust_inventory_host(
                         node = node,
                         defaults = defaults,

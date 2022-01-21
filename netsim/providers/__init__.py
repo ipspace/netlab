@@ -77,7 +77,7 @@ class _Provider(Callback):
     self.transform(topology)
     fname = self.get_output_name(fname,topology)
     output = common.open_output_file(fname)
-    output.write(common.template(self.get_root_template(),topology,self.get_template_path()))
+    output.write(common.template(self.get_root_template(),topology.to_dict(),self.get_template_path()))
     if fname != '-':
       common.close_output_file(output)
       print("Created provider configuration file: %s" % fname)

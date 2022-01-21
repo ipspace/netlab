@@ -4,6 +4,7 @@
 
 import typing
 from box import Box
+from ..augment import devices
 
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
@@ -24,24 +25,13 @@ def provider_inventory_settings(node: Box, defaults: Box) -> None:
 
 def add_group_vars(
       host: Box,
-      device: str,
+      node: Box,
       defaults: Box) -> None:
 
-  if not device in defaults.get('devices',{}):   # Device type not in the list of known devices
-    return                                       # Not good, but someone else should deal with that
-
-  if 'group_vars' in defaults.devices[device]:   # Copy default group_vars into host data
-    for (k,v) in defaults.devices[device].group_vars.items():
+  group_vars = devices.get_device_attribute(node,'group_vars',defaults)
+  if isinstance(group_vars,dict):
+    for (k,v) in group_vars.items():
       host[k] = v
-
-  provider = defaults.get('provider',None)
-  if not provider:                               # Really bad not to have a provider
-    return                                       # Yet again, someone else should have noticed that
-
-  pdata = defaults.providers.get(provider,{})    # Get provider data into a variable to avoid overly long names
-  if device in pdata.get('devices',{}):
-    for (k,v) in pdata.devices[device].get('group_vars',{}).items():
-      host[k] = v                                # Copy provider-specific device group_vars into host data
 
 def adjust_inventory_host(
       node: Box,
@@ -55,7 +45,7 @@ def adjust_inventory_host(
   ignore = ignore or topo_to_host_skip
 
   if group_vars:
-    add_group_vars(host,node.get('device'),defaults)
+    add_group_vars(host,node,defaults)
 
   for (node_key,inv_key) in translate.items():
     if "." in node_key:

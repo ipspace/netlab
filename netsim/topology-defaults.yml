@@ -118,50 +118,6 @@ providers:
     stop: sudo -E containerlab destroy --cleanup -t clab.yml
     probe: [ "containerlab version" ]
     bridge_type: bridge # Use 'ovs-bridge' to create Openvswitch bridges
-    devices:
-      eos:
-        provider_interface_name: eth%d
-        mgmt_if: Management0
-        provider_kind: ceos
-        image:
-          clab: ceos:4.25.1F
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin
-          ansible_become: yes
-          ansible_become_method: enable
-
-      frr:
-        provider_kind: linux
-
-      linux:
-        provider_kind: linux
-        group_vars:
-          ansible_connection: docker
-          ansible_user: root
-
-      cumulus:
-        provider_kind: cvx
-        image:
-          clab: networkop/cx:4.3.0
-        group_vars:
-          ansible_connection: docker
-          ansible_user: root
-
-      srlinux:
-        provider_kind: srl
-        provider_interface_name: e1-%d
-        provider_type: ixrd2
-        group_vars:
-          srlinux_grpc_port: 57400
-
-      sros:
-        provider_kind: vr-sros
-        provider_interface_name: eth%d
-        provider_type: sr-1 # By default emulate SR-1
-        provider_license: /Projects/SR_OS_VSR-SIM_license.txt
-        group_vars:
-          sros_grpc_port: 57400
 
 ports:
   ssh: 22
@@ -299,6 +255,18 @@ devices:
           ipv4: True
           ipv6: True
           network: True
+    clab:
+      interface:
+        name: eth%d
+      node:
+        kind: ceos
+      mgmt_if: Management0
+      image: ceos:4.25.1F
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: admin
+        ansible_become: yes
+        ansible_become_method: enable
 
   fortios:
     interface_name: port%d
@@ -327,6 +295,9 @@ devices:
     group_vars:
       ansible_connection: docker
       ansible_network_os: frr
+    clab:
+      node:
+        kind: linux
 
   linux:
     interface_name: eth%d
@@ -341,6 +312,12 @@ devices:
       ansible_user: vagrant
       ansible_ssh_pass: vagrant
       docker_shell: sh
+    clab:
+      node:
+        kind: linux
+      group_vars:
+        ansible_connection: docker
+        ansible_user: root
 
   vsrx:
     interface_name: ge-0/0/%d
@@ -397,6 +374,13 @@ devices:
           lla: True
       ospf:
         unnumbered: True
+    clab:
+      node:
+        kind: cvx
+      image: networkop/cx:4.3.0
+      group_vars:
+        ansible_connection: docker
+        ansible_user: root
 
   cumulus_nvue:
     interface_name: swp%d
@@ -436,6 +420,14 @@ devices:
     bfd:           # SR Linux supports lower BFD timers than the global default
       min_tx: 100
       min_rx: 100
+    clab:
+      node:
+        kind: srl
+        type: ixrd2
+      interface:
+        name: e1-%d
+      group_vars:
+        srlinux_grpc_port: 57400
 
   sros:
     mgmt_if: A/1
@@ -469,6 +461,15 @@ devices:
           ipv4: True
           ipv6: True
           network: False # SROS treats the interfaces as point-to-point and forms at most 1 adjacency
+    clab:
+      node:
+        kind: vr-sros
+        type: sr-1 # By default emulate SR-1
+        license: /Projects/SR_OS_VSR-SIM_license.txt
+      interface:
+        name: eth%d
+      group_vars:
+        sros_grpc_port: 57400
 
   vyos:
     interface_name: eth%d

@@ -3,21 +3,22 @@ name: {{ name }}
 topology:
   nodes:
 {% for name,n in nodes.items() %}
+{%   set clab = n.clab|default({}) %}
     {{ name }}:
-      kind: {{ n.kind | default(n.device) }}
-{%    if 'type' in n %}
-      type: {{ n.type }}
+      kind: {{ clab.kind | default(n.device) }}
+{%    if clab.type is defined %}
+      type: {{ clab.type }}
 {%    endif %}
-      image: {{ n.clab['image'] if 'image' in n.clab|default({}) else n.box }}
+      image: {{ clab.image|default(n.box) }}
 {%    if groups is defined %}
       group: {% for g in groups if n.name in groups[g].members %}{{'' if loop.first else ','}}{{g}}{% endfor %}
 {%    endif %}
-{% if 'srl-agents' in n.clab %}
+{% if 'srl-agents' in clab %}
       extras:
-        srl-agents: {{ n.clab['srl-agents'] }}
+        srl-agents: {{ clab['srl-agents'] }}
 {% endif %}
 
-{% if n.binds %}
+{% if n.binds is defined %}
       binds:
 {% for b in n.binds %}
       - {{ b }}
@@ -26,8 +27,8 @@ topology:
 {% if 'runtime' in n %}
       runtime: {{ n.runtime }}
 {% endif %}
-{% if 'license' in n %}
-      license: {{ n.license }}
+{% if clab.license is defined %}
+      license: {{ clab.license }}
 {% endif %}
 {% endfor %}
 
@@ -41,19 +42,21 @@ topology:
 
   links:
 {% for l in links %}
-{% if not l.bridge or l.node_count==2 %}
+{% if (l.bridge is not defined) or l.node_count==2 %}
   - endpoints:
 {%   for n in nodes.values() %}
 {%     for nl in n.interfaces if nl.linkindex == l.linkindex %}
-    - "{{ n.name }}:{{ nl.provider_ifname if 'provider_ifname' in nl else nl.ifname }}"
+{%       set clab = nl.clab|default({}) %}
+    - "{{ n.name }}:{{ clab.name|default(nl.ifname) }}"
 {%     endfor %}
 {%   endfor %}
 {% else %}
 {%   for n in nodes.values() %}
 {%     for nl in n.interfaces if nl.linkindex == l.linkindex %}
+{%       set clab = nl.clab|default({}) %}
   - endpoints:
-    - "{{ n.name }}:{{ nl.provider_ifname if 'provider_ifname' in nl else nl.ifname }}"
-    - "{{ l.bridge }}:{{ n.name }}_{{ nl.provider_ifname if 'provider_ifname' in nl else nl.ifname }}"
+    - "{{ n.name }}:{{ clab.name|default(nl.ifname) }}"
+    - "{{ l.bridge }}:{{ n.name }}_{{ clab.name|default(nl.ifname) }}"
 {%     endfor %}
 {%   endfor %}
 {% endif %}
