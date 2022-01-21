@@ -23,9 +23,5 @@ class SRV6(_Module):
 
       node.srv6.locator = str( locator )
 
-      # if node.srv6.get('fpe',False):
-      #    if_format = topology.defaults.devices[node.device].interface_name
-      #    node.srv6.fpe_port = if_format % (1+len(node.get('interfaces',[])))
-
       # TODO process per-interface srv6 parameters?
       # for l in node.get('interfaces',[]):
