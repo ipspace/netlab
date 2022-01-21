@@ -119,7 +119,8 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 
 | Virtual network device | Vagrant box name   |
 |------------------------|--------------------|
-| Cumulus VX             | CumulusCommunity/cumulus-vx |
+| Cumulus VX             | CumulusCommunity/cumulus-vx:4.4.0 |
+| Cumulus VX 5.0 (NVUE)            | CumulusCommunity/cumulus-vx:5.0.1 |
 | Generic Linux          | generic/ubuntu2004 |
 
 ### Mutating Virtualbox Boxes
