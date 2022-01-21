@@ -117,13 +117,13 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if not 'interfaces' in node:
     node.interfaces = []
 
-  ifindex_offset = devices.get_device_data(node,'ifindex_offset',defaults)
+  ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
   if ifindex_offset is None:
     ifindex_offset = 1
 
   ifindex = len(node.interfaces) + ifindex_offset
 
-  ifname_format = devices.get_device_data(node,'interface_name',defaults)
+  ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
   ifdata.ifindex = ifindex
   if ifname_format:

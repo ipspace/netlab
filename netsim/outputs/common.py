@@ -28,7 +28,7 @@ def add_group_vars(
       node: Box,
       defaults: Box) -> None:
 
-  group_vars = devices.get_device_data(node,'group_vars',defaults)
+  group_vars = devices.get_device_attribute(node,'group_vars',defaults)
   if isinstance(group_vars,dict):
     for (k,v) in group_vars.items():
       host[k] = v

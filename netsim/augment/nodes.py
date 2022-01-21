@@ -50,14 +50,14 @@ def create_node_dict(nodes: Box) -> Box:
 
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:
-    mgmt_if = devices.get_device_data(node,'mgmt_if',defaults)
+    mgmt_if = devices.get_device_attribute(node,'mgmt_if',defaults)
     if not mgmt_if:
-      ifname_format = devices.get_device_data(node,'interface_name',defaults)
+      ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
       if not isinstance(ifname_format,str):
         common.fatal("Missing interface name template for device type %s" % node.device)
         return
 
-      ifindex_offset = devices.get_device_data(node,'ifindex_offset',defaults)
+      ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
       if ifindex_offset is None:
         ifindex_offset = 1
       mgmt_if = ifname_format % (ifindex_offset - 1)
@@ -122,7 +122,7 @@ def augment_node_provider_data(topology: Box) -> None:
       common.error(f"No image data for device type {devtype} used by node {name}",common.MissingValue,'nodes')
       continue
 
-    box = devices.get_device_data(n,'image',topology.defaults)
+    box = devices.get_device_attribute(n,'image',topology.defaults)
     if isinstance(box,dict):
       box = box.get(provider,None)
 

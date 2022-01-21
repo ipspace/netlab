@@ -116,7 +116,7 @@ def merge_node_module_params(topology: Box) -> None:
         if m in topology:
           n[m] = get_propagated_global_module_params(m,topology.get(m,{}),topology.defaults[m]) + n[m]
 
-        dev_settings = devices.get_device_data(n,m,topology.defaults)
+        dev_settings = devices.get_device_attribute(n,m,topology.defaults)
         if dev_settings:
           n[m] = get_propagated_global_module_params(m,dev_settings,topology.defaults[m]) + n[m]
 
