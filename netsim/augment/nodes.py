@@ -181,10 +181,11 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
     if pools.loopback:
       prefix_list = addressing.get(pools,['loopback'],n.id)
       for af in prefix_list:
-        if af == 'ipv6':
-          n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
-        else:
-          n.loopback[af] = str(prefix_list[af])
+        if not n.loopback[af]:
+          if af == 'ipv6':
+            n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
+          else:
+            n.loopback[af] = str(prefix_list[af])
 
     device_data = defaults.devices[n.device]
     if not device_data: # pragma: no cover (should never get this far -- this should have been caught earlier on)

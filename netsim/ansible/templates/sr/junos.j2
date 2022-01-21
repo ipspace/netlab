@@ -1,0 +1,46 @@
+interfaces {
+{% for l in interfaces | default([]) %}
+{%   if not (l.role is defined and l.role == "external") %}
+    {{ l.ifname }} {
+        mtu 9192;
+        unit 0 {
+            family mpls;
+        }
+    }
+{%   endif %}
+{% endfor %}
+}
+protocols {
+    isis {
+{% for l in interfaces | default([]) %}
+{%   if not (l.role is defined and l.role == "external") %}
+        interface {{ l.ifname }} {
+            level 2 {
+                post-convergence-lfa {
+                    node-protection cost 16777214;
+                }
+            }
+        }
+{%   endif %}
+{% endfor %}
+        source-packet-routing {
+            node-segment {
+                ipv4-index {{ 400 + id }};
+                ipv6-index {{ 600 + id }};
+            }
+        }
+        level 1 disable;
+        level 2 wide-metrics-only;
+        backup-spf-options {
+            use-post-convergence-lfa maximum-backup-paths 2;
+            use-source-packet-routing;
+            }
+    }
+    mpls {
+{% for l in interfaces | default([]) %}
+{%   if not (l.role is defined and l.role == "external") %}
+        interface {{ l.ifname }}.0;
+{%   endif %}
+{% endfor %}
+    }
+}

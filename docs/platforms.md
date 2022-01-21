@@ -148,7 +148,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |    ❌    |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  |    ❌    |
 | Generic Linux         |  ❌   |   ❌   |   ❌   |   ❌  |  ❌  |    ❌    |
-| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ❌    |
+| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅    |
 | Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
 | Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
 | Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
