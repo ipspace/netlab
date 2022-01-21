@@ -5,7 +5,7 @@ from box import Box
 
 from . import _Module
 from .. import addressing, common
-import ipaddr
+import ipaddr # type: ignore
 
 class SRV6(_Module):
 
