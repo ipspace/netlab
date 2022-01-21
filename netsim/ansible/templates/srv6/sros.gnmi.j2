@@ -15,7 +15,7 @@ updates:
      block-length: 48 # Part of locator that is shared between nodes in domain
      static-function:
       max-entries: {{ 1 + srv6_interfaces|length }} # 1 for node, 1 per interface
-{%   if srv6.fpe|default(False) %}
+{%   if not srv6.transit_only|default(False) %}
      termination-fpe: [2]
 {%   endif %}
 
@@ -32,7 +32,7 @@ updates:
          protection: protected
          interface-name: {{ 'i' + i.ifname }}
 {%     endfor %}
-{%     if 'bgp' in module and srv6.bgp|default(False) and srv6.fpe|default(False) %}
+{%     if 'bgp' in module and srv6.bgp|default(False) and not srv6.transit_only|default(False) %}
 {%     if 'ipv4' in srv6.address_families %}
        end-dt4: { }
 {%     endif %}
@@ -41,7 +41,7 @@ updates:
 {%     endif %}
 {%     endif %}
    source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
-{% if srv6.fpe|default(False) %}
+{% if not srv6.transit_only|default(False) %}
    origination-fpe: [1]
 {% endif %}
 
@@ -97,7 +97,7 @@ updates:
 {% endif %}
 
 {# Provision SRv6 FPE resources at edges of SRv6 domain #}
-{% if srv6.fpe|default(False) %}
+{% if not srv6.transit_only|default(False) %}
 {# MAC chip loopbacks #}
 - path: configure/card[slot-number=1]/mda[mda-slot=1]/xconnect
   val:
