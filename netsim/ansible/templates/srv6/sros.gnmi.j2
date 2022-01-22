@@ -1,0 +1,143 @@
+{% if 'ixr' in clab.type %}
+{{ raise_error | mandatory( 'SRv6 not supported on IXR platform' ) }}
+{% endif %}
+
+{% set locator_name = "JvB" %}
+{% set srv6_interfaces = interfaces|selectattr('isis','defined')|list %}
+updates:
+- path: configure/router[router-name=Base]/segment-routing/segment-routing-v6
+  val:
+   locator:
+   - locator-name: {{ locator_name }}
+     admin-state: enable
+     prefix:
+      ip-prefix: {{ srv6.locator }}
+     block-length: 48 # Part of locator that is shared between nodes in domain
+     static-function:
+      max-entries: {{ 1 + srv6_interfaces|length }} # 1 for node, 1 per interface
+{%   if not srv6.transit_only|default(False) %}
+     termination-fpe: [2]
+{%   endif %}
+
+   base-routing-instance:
+    locator:
+    - locator-name: {{ locator_name }}
+      function:
+       end:
+       - value: 1      # Static node end SID
+         srh-mode: usp # Ultimate Segment Pop
+       end-x:
+{%     for i in srv6_interfaces %}
+       - value: {{ 1 + loop.index }}
+         protection: protected
+         interface-name: {{ 'i' + i.ifname }}
+{%     endfor %}
+{%     if 'bgp' in module and srv6.bgp|default(False) and not srv6.transit_only|default(False) %}
+{%     if 'ipv4' in srv6.address_families %}
+       end-dt4: { }
+{%     endif %}
+{%     if 'ipv6' in srv6.address_families %}
+       end-dt6: { }
+{%     endif %}
+{%     endif %}
+   source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
+{% if not srv6.transit_only|default(False) %}
+   origination-fpe: [1]
+{% endif %}
+
+{% if 'isis' in module and srv6.isis|default(False) %}
+- path: configure/router[router-name=Base]/isis[isis-instance=0]
+  val:
+   advertise-router-capability: area
+   ipv6-routing: native # Enables IS-IS IPv6 TLVs for IPv6 routing and enables support for native IPv6 TLVs.
+   loopfree-alternate: # Required for 'protected' auto-generated end.x SIDs
+    # remote-lfa:
+    #  node-protect: { }
+    ti-lfa:
+     node-protect: { }
+   segment-routing-v6:
+    admin-state: enable
+    locator:
+    - locator-name: {{ locator_name }}
+      level-capability: "{{ '2' if isis.type=='level-2' else ('1' if isis.type=='level-1' else '1/2') }}"
+{%    if 'isis' in srv6 and (srv6.isis.metric is defined or srv6.isis.cost is defined) %}
+      level:
+{%    for level in ['1','2'] %}
+      - level-number: "{{ level }}"
+        metric: {{ srv6.isis.metric|default(srv6.isis.cost) }}
+{%    endfor %}
+{%    endif %}
+
+{% endif %}
+
+{# Enable BGP SRv6 and/or extended NH encoding #}
+{% if 'bgp' in module %}
+{% if srv6.bgp|default(False) %}
+- path: configure/router[router-name=Base]/bgp
+  val:
+   segment-routing-v6:
+    source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
+    family:
+{%  for af in srv6.address_families %}
+    - family-type: {{ af }}
+      ignore-received-srv6-tlvs: False # default: True
+      add-srv6-tlvs:
+       locator-name: {{ locator_name }}
+{%  endfor %}
+{% endif %}
+
+{% if 'ipv4' in srv6.address_families and (srv6.bgp|default(False) or bgp.rr|default(False)) %}
+- path: configure/router[router-name=Base]/bgp
+  val:
+   extended-nh-encoding:
+    ipv4: True
+   advertise-ipv6-next-hops:
+    ipv4: True
+{% endif %}
+{% endif %}
+
+{# Provision SRv6 FPE resources at edges of SRv6 domain #}
+{% if not srv6.transit_only|default(False) %}
+{# MAC chip loopbacks #}
+- path: configure/card[slot-number=1]/mda[mda-slot=1]/xconnect
+  val:
+   mac:
+   - mac-id: 1
+     loopback:
+     - loopback-id: 1
+     - loopback-id: 2
+
+- path: configure/port-xc
+  val:
+   pxc:
+   - pxc-id: 1
+     port-id: 1/1/m1/1
+     admin-state: enable
+     description: "SRv6 origination"
+   - pxc-id: 2
+     port-id: 1/1/m1/2
+     admin-state: enable
+     description: "SRv6 termination"
+
+{% for id in ['pxc-1.a','pxc-1.b','pxc-2.a','pxc-2.b','1/1/m1/1','1/1/m1/2'] %}
+- path: configure/port[port-id={{id}}]
+  val:
+   admin-state: enable
+{% endfor %}
+
+- path: configure/fwd-path-ext
+  val:
+   fpe:
+   - fpe-id: 1
+     path:
+      pxc: 1
+     application:
+      srv6:
+       type: origination # One per system
+   - fpe-id: 2
+     path:
+      pxc: 2
+     application:
+      srv6:
+       type: termination
+{% endif %}

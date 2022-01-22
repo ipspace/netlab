@@ -36,14 +36,17 @@ bgp:
   ebgp_role: external
   advertise_roles: [ stub ]
   advertise_loopback: True
+  address_families:
+    ibgp: [ ipv4, ipv6 ]
+    ebgp: [ ipv4, ipv6 ]
   community:
     ibgp: [ standard, extended ]
     ebgp: [ standard ]
   no_propagate: [ ebgp_role, advertise_roles, rr_list, as_list ]
   next_hop_self: true
   attributes:
-    global: [ as, next_hop_self, rr_list, ebgp_role, as_list, advertise_loopback, advertise_roles, community ]
-    node: [ as, next_hop_self, rr, originate, advertise_loopback, community, router_id ]
+    global: [ as, next_hop_self, rr_list, ebgp_role, as_list, advertise_loopback, advertise_roles, community, address_families ]
+    node: [ as, next_hop_self, rr, originate, advertise_loopback, community, router_id, address_families ]
     link: [ advertise ]
 
 isis:
@@ -85,6 +88,18 @@ sr:
   attributes:
     global: [ srgb_range_start, srgb_range_size, ipv6_sid_offset ]
     node: [ srgb_range_start, srgb_range_size, ipv6_sid_offset ]
+
+srv6:
+  requires: [ isis ]
+  supported_on: [ sros ]
+  locator: 2001:db8:aaaa # 2001:db8::/32 see RFC 6890 – Documentation Set
+  address_families: [ ipv4, ipv6 ]
+  # protocols: [ isis ] # Could model like this too
+  bgp: False
+  isis: True
+  attributes:
+    global: [ locator, address_families, bgp, isis ]
+    node: [ locator, address_families, bgp, isis, transit_only ]
 
 #
 # Provider defaults
@@ -381,6 +396,26 @@ devices:
       group_vars:
         ansible_connection: docker
         ansible_user: root
+
+  cumulus_nvue:
+    interface_name: swp%d
+    mgmt_if: eth0
+    image:
+      libvirt: CumulusCommunity/cumulus-vx:5.0.1
+      virtualbox: CumulusCommunity/cumulus-vx:5.0.1
+    group_vars:
+      ansible_user: cumulus
+      ansible_ssh_pass: cumulus
+      ansible_network_os: cumulus_nvue
+      ansible_connection: paramiko
+    features:
+      initial:
+        ipv4:
+          unnumbered: True
+        ipv6:
+          lla: True
+      ospf:
+        unnumbered: True
 
   cumulus_nvue:
     interface_name: swp%d
