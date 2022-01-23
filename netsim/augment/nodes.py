@@ -148,6 +148,18 @@ def get_next_id(id_list: list, id: int) -> int:
     'Cannot get the next device ID. The lab topology is probably too big')  # pragma: no cover (I'm not going to write a test case for this one)
   return -1                                                                 # pragma: no cover (making mypy happy)
 
+"""
+augment_node_device_data: copy attributes that happen to be node attributes from device defaults into node data
+"""
+
+def augment_node_device_data(n: Box, defaults: Box) -> None:
+  node_attr = defaults.attributes.get('node',[])
+  dev_data  = devices.get_consolidated_device_data(n,defaults)
+
+  for attr in node_attr:
+    if attr in dev_data and not attr in n:
+      n[attr] = dev_data[attr]
+
 '''
 Main node transformation code
 
@@ -169,6 +181,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
   common.exit_on_error()
 
+
   for name,n in topology.nodes.items():
     if not 'id' in n:
       id = get_next_id(id_list,id)
@@ -187,6 +200,6 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
           else:
             n.loopback[af] = str(prefix_list[af])
 
+    augment_node_device_data(n,defaults)
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
-
     topology.Provider.call("augment_node_data",n,topology)
