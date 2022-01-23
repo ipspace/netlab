@@ -103,7 +103,7 @@ The following system-wide features are configured on supported network operating
 | Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Cumulus Linux 5.0 (NVUE)         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | FRR 7.5.0             |    ✅     |     ❌      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
@@ -115,22 +115,42 @@ The following system-wide features are configured on supported network operating
 
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
-| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | Interface<br />description | Interface<br />bandwidth |
-| --------------------- | :-----------------: | :-----------------: | :------------------------: | :------------------------: | :----------------------: |
-| Arista EOS            |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
-| Arrcus ArcOS          |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
-| Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)              |             ✅              |            ✅             |
-| Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
-| Cumulus Linux         |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
-| Cumulus Linux 5.0 (NVUE)        |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
-| Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
-| FRR 7.5.0             |          ✅          |          ✅          |             ❌              |             ✅              |            ✅             |
-| Generic Linux         |          ✅          |          ✅          |             ❌              |             ❌              |            ❌             |
-| Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |             ✅              |            ✅             |
-| Mikrotik CHR RouterOS |          ✅          |          ✅          |             ❌              |             ✅              |            ❌             |
-| Nokia SR Linux        |          ✅          |          ✅          |             ❌              |             ✅              |            ❌            |
-| Nokia SR OS           |          ✅          |          ✅          |             ❌              |             ✅              |            ❌            |
-| VyOS                  |          ✅          |          ✅          |             ❌              |             ✅              |            ❌            |
+| Operating system      | Interface<br />description | Interface<br />bandwidth | MTU |
+| --------------------- | :------------------------: | :----------------------: | :-: |
+| Arista EOS            |            ✅              |            ✅            | ✅ |
+| Arrcus ArcOS          |            ❌              |            ❌            | ❌ |
+| Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.md#cisco-ios) |
+| Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
+| Cumulus Linux         |            ✅              |            ✅            | ✅ |
+| Cumulus Linux 5.0 (NVUE)           ✅              |            ✅            | ❌ |
+| Fortinet FortiOS      |            ✅              |            ✅            | ❌ |
+| FRR 7.5.0             |            ✅              |            ✅            | ✅ |
+| Generic Linux         |            ❌              |            ❌            | ✅ |
+| Juniper vSRX 3.0      |            ✅              |            ✅            | ✅ |
+| Mikrotik CHR RouterOS |            ✅              |            ❌            | ❌ |
+| Nokia SR Linux        |            ✅              |            ❌            | ❌ |
+| Nokia SR OS           |            ✅              |            ❌            | ❌ |
+| VyOS                  |            ✅              |            ❌            | ❌ |
+
+
+The following interface addresses are supported on various platforms:
+
+| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | 
+| --------------------- | :-----------------: | :-----------------: | :------------------------: | 
+| Arista EOS            |          ✅          |          ✅          |             ✅              |
+| Arrcus ArcOS          |          ✅          |          ✅          |             ❌              |
+| Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
+| Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
+| Cumulus Linux         |          ✅          |          ✅          |             ✅              |
+| Cumulus Linux 5.0 (NVUE)        |          ✅          |          ✅          |             ✅              |
+| Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |
+| FRR 7.5.0             |          ✅          |          ✅          |             ❌              |
+| Generic Linux         |          ✅          |          ✅          |             ❌              |
+| Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |
+| Mikrotik CHR RouterOS |          ✅          |          ✅          |             ❌              |
+| Nokia SR Linux        |          ✅          |          ✅          |             ❌              |
+| Nokia SR OS           |          ✅          |          ✅          |             ✅              |
+| VyOS                  |          ✅          |          ✅          |             ❌              |
 
 ## Supported Configuration Modules
 

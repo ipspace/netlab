@@ -156,9 +156,14 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
   node_attr = defaults.attributes.get('node',[])
   dev_data  = devices.get_consolidated_device_data(n,defaults)
 
-  for attr in node_attr:
+  for attr in node_attr:                      # Copy known node attributes from device+provider data into node data
     if attr in dev_data and not attr in n:
       n[attr] = dev_data[attr]
+
+  if 'node' in defaults.devices[n.device]:    # Copy everything within device (but not provider) node dictionary into node data
+    for k in defaults.devices[n.device].node.keys():
+      if not k in n:
+        n[k] = defaults.devices[n.device].node[k]
 
 '''
 Main node transformation code

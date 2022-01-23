@@ -49,6 +49,7 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **name** -- link name (used for interface description)
 * **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
+* **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
 
 [^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
 
@@ -228,6 +229,70 @@ links:
 
 ```{tip}
 You can also use **‌unnumbered** link attribute to get a single unnumbered link. Using an unnumbered pool is recommended when you want to test network-wide addressing changes.
+```
+
+## Changing MTU
+
+All devices supported by *netsim-tools* are assumed to use ancient default layer-3 MTU value of 1500 bytes. Most VM-based network devices already use that default; container-based devices have their MTU set to 1500 through system settings.
+
+Please note that the **mtu** specified by *netsim-tools* is always the layer-3 (IPv4 or IPv6) MTU. The peculiarities of individual device configuration commands are transparently (to the end-user) handled in the device configuration templates.
+
+You can change the **mtu** on an individual interface (probably not a good idea), on a link, for a particular node or device type, or for the whole lab.
+
+### Interface MTU
+
+To change interface **mtu**, set the **mtu** parameter of a single node attached to a link. For example, if you want to prove that MTU changes break OSPF adjacency process, use this setup:
+
+```
+links:
+- r1:
+    mtu: 1504
+  r2:
+```
+
+### Link MTU
+
+**mtu** parameter applied to a link is copied into interface data of all interfaces attached to that link (ensuring OSPF still works):
+
+```
+links:
+- r1:
+  r2:
+  mtu: 1504
+```
+
+### Node MTU
+
+**mtu** parameter specified on a node is applied to all node interfaces that don't have their MTU set through a link or interface parameter. In the following example, r1 has **mtu** set to 1500 bytes on the inter-router link and to **8192** bytes on the stub link:
+
+```
+nodes:
+  r1:
+    mtu: 8192
+  r2:
+links:
+- r1:
+- r1:
+  r2:
+  mtu: 1500
+```
+
+### Device MTU
+
+**mtu** parameter specified within device defaults is copied into node data and applied to all interfaces without a specified MTU. To change the device default use **defaults.devices** setting, for example:
+
+```
+defaults.devices.cumulus.mtu: 1500
+```
+
+### Lab-wide MTU
+
+Lab-wide MTU is specified with **defaults.interfaces.mtu** setting and *overrides node or device defaults*. You can still specify different MTU on individual links or interfaces.
+
+For example, to build a lab using 8K jumbo frames, use:
+
+```
+defaults.interfaces.mtu: 8192
 ```
 
 ## Bridge Names

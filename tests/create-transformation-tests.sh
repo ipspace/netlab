@@ -6,6 +6,6 @@
 # exp-topology*yml files (expected results)
 #
 set -e
-for file in topology/input/*yml; do
+for file in topology/input/${1:-*}.yml; do
   PYTHONPATH="../" python3 create-transformation-test-case.py -t $file
 done

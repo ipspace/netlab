@@ -3,6 +3,7 @@
 ## Cisco IOS
 
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+* Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
 
 ## Cumulus Linux in ContainerLab
 

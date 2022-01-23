@@ -142,6 +142,16 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     if af in ifdata and not ifdata[af]:
       del ifdata[af]
 
+  if 'mtu' in defaults.get('interfaces',{}) and not 'mtu' in ifdata:    # Copy system MTU default into interface data
+    if not isinstance(defaults.interfaces.mtu,int):                     # pragma: no cover
+      common.error('defaults.interfaces.mtu setting should be an integer',common.IncorrectValue,'links')
+    ifdata.mtu = defaults.interfaces.mtu
+
+  if 'mtu' in node and not 'mtu' in ifdata:                             # Copy node default MTU into interface data
+    if not isinstance(node.mtu,int):                                    # pragma: no cover
+      common.error(f'nodes.{node.name}.mtu setting should be an integer',common.IncorrectValue,'links')
+    ifdata.mtu = node.mtu
+
   node.interfaces.append(ifdata)
 
   # Box modifies the dict in place, return a reference to be updated
@@ -432,6 +442,9 @@ def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
   link_type = data.get('type')
 
+  if 'mtu' in data and not isinstance(data.mtu,int): # pragma: no cover
+    common.error(f'MTU parameter should be an integer: {data}',common.IncorrectValue,'links')
+    
   if not link_type: # pragma: no cover (shouldn't get here)
     common.fatal('Internal error: link type still undefined in check_link_type: %s' % data,'links')
     return False
