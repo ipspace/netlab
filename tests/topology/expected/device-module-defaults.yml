@@ -1,4 +1,7 @@
 bgp:
+  address_families:
+    ibgp:
+    - ipv4
   advertise_loopback: true
   as: 65000
   community:
@@ -9,8 +12,11 @@ bgp:
     - extended
   next_hop_self: true
 input:
-- topology/input/bgp-anycast.yml
+- topology/input/device-module-defaults.yml
 - package:topology-defaults.yml
+isis:
+  area: 49.0001
+  type: level-2
 links:
 - interfaces:
   - ipv4: 10.1.0.1/30
@@ -18,7 +24,7 @@ links:
   - ipv4: 10.1.0.2/30
     node: l2
   left:
-    ifname: GigabitEthernet0/1
+    ifname: ethernet-1/1
     ipv4: 10.1.0.1/30
     node: l1
   linkindex: 1
@@ -27,17 +33,20 @@ links:
   prefix:
     ipv4: 10.1.0.0/30
   right:
-    ifname: GigabitEthernet0/1
+    ifname: 1/1/c1
     ipv4: 10.1.0.2/30
     node: l2
   type: p2p
 module:
-- ospf
 - bgp
+- isis
 name: input
 nodes:
   l1:
     bgp:
+      address_families:
+        ibgp:
+        - ipv4
       advertise_loopback: true
       as: 65000
       community:
@@ -54,43 +63,54 @@ nodes:
         type: ibgp
       next_hop_self: true
       router_id: 10.0.0.1
-    box: cisco/iosv
-    device: iosv
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    hostname: clab-input-l1
     id: 1
     interfaces:
-    - ifindex: 1
-      ifname: GigabitEthernet0/1
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
       ipv4: 10.1.0.1/30
+      isis:
+        network_type: point-to-point
+        passive: false
       linkindex: 1
       name: l1 -> l2
       neighbors:
-      - ifname: GigabitEthernet0/1
+      - ifname: 1/1/c1
         ipv4: 10.1.0.2/30
         node: l2
-      ospf:
-        area: 0.0.0.0
-        network_type: point-to-point
-        passive: false
       remote_id: 2
       remote_ifindex: 1
       type: p2p
+    isis:
+      area: 49.0001
+      ipv4: true
+      type: level-2
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
-      ifname: GigabitEthernet0/0
+      ifname: mgmt0
       ipv4: 192.168.121.101
       mac: 08-4F-A9-00-00-01
     module:
-    - ospf
     - bgp
+    - isis
     name: l1
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.1
   l2:
     bgp:
+      address_families:
+        ebgp:
+        - ipv4
+        - ipv6
+        ibgp:
+        - ipv4
       advertise_loopback: true
-      anycast: 10.42.42.42/32
       as: 65000
       community:
         ebgp:
@@ -106,39 +126,44 @@ nodes:
         type: ibgp
       next_hop_self: true
       router_id: 10.0.0.2
-    box: cisco/iosv
-    device: iosv
+    box: vrnetlab/vr-sros
+    clab:
+      kind: vr-sros
+      license: /Projects/SR_OS_VSR-SIM_license.txt
+      type: sr-1
+    device: sros
+    hostname: clab-input-l2
     id: 2
     interfaces:
-    - ifindex: 1
-      ifname: GigabitEthernet0/1
+    - clab:
+        name: eth1
+      ifindex: 1
+      ifname: 1/1/c1
       ipv4: 10.1.0.2/30
+      isis:
+        network_type: point-to-point
+        passive: false
       linkindex: 1
       name: l2 -> l1
       neighbors:
-      - ifname: GigabitEthernet0/1
+      - ifname: ethernet-1/1
         ipv4: 10.1.0.1/30
         node: l1
-      ospf:
-        area: 0.0.0.0
-        network_type: point-to-point
-        passive: false
       remote_id: 1
       remote_ifindex: 1
       type: p2p
+    isis:
+      area: 49.0001
+      ipv4: true
+      type: level-2
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
-      ifname: GigabitEthernet0/0
+      ifname: A/1
       ipv4: 192.168.121.102
       mac: 08-4F-A9-00-00-02
     module:
-    - ospf
     - bgp
+    - isis
     name: l2
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.2
-ospf:
-  area: 0.0.0.0
-provider: libvirt
+provider: clab
