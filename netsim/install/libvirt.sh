@@ -69,3 +69,5 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 set -e
 sudo virsh net-define "$SCRIPT_DIR/../templates/provider/libvirt/vagrant-libvirt.xml"
 echo ".. vagrant-libvirt network created"
+sudo virsh net-start vagrant-libvirt
+sudo virsh net-autostart vagrant-libvirt
