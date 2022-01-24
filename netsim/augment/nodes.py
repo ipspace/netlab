@@ -76,9 +76,13 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       addrs.mac_eui[5] = node.id
       node.mgmt.mac = str(addrs.mac_eui)
 
-#
-# Add device (box) images from defaults
-#
+"""
+Add provider data to nodes:
+
+* Check whether the node device exists
+* Copy device.provider.node into node.provider
+* Get device image
+"""
 def augment_node_provider_data(topology: Box) -> None:
   if not topology.defaults.devices:
     common.fatal('Device defaults (defaults.devices) are missing')
@@ -134,6 +138,27 @@ def augment_node_provider_data(topology: Box) -> None:
       continue
 
     n.box = box
+
+"""
+Add system data to devices -- hacks that are not yet covered in the settings structure
+"""
+def augment_node_system_data(topology: Box) -> None:
+  if 'mtu' in topology.defaults.get('interfaces',{}):
+    if not isinstance(topology.defaults.interfaces.mtu,int):            # pragma: no cover
+      common.error(
+        'defaults.interfaces.mtu setting should be an integer',
+        common.IncorrectValue,
+        'topology')
+    else:
+      for n in topology.nodes.values():
+        if not 'mtu' in n:
+          n.mtu = topology.defaults.interfaces.mtu
+        else:
+          if not isinstance(n.mtu,int):                                 # pragma: no cover
+            common.error(
+              f'nodes.{n.name}.mtu setting should be an integer',
+              common.IncorrectValue,
+              'nodes')
 
 '''
 get_next_id: given a list of static IDs and the last ID, get the next device ID

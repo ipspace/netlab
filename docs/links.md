@@ -277,9 +277,17 @@ links:
   mtu: 1500
 ```
 
-### Device MTU
+When the node **mtu** parameter is not specified, its default value is fetched from **defaults.interfaces.mtu** or **defaults.devices** setting.
 
-**mtu** parameter specified within device defaults is copied into node data and applied to all interfaces without a specified MTU. To change the device default use **defaults.devices** setting, for example:
+For example, to build a lab using 8K jumbo frames, use:
+
+```
+defaults.interfaces.mtu: 8192
+```
+
+All devices without explicit MTU setting will inherit the lab-wide default (8192) which will be further propagated to all interfaces without an explicit MTU value.
+
+**mtu** parameter can also be specified within device defaults. For example, to set default Cumulus Linux MTU to 1500 use:
 
 ```
 defaults.devices.cumulus.mtu: 1500
@@ -287,13 +295,8 @@ defaults.devices.cumulus.mtu: 1500
 
 ### Lab-wide MTU
 
-Lab-wide MTU is specified with **defaults.interfaces.mtu** setting and *overrides node or device defaults*. You can still specify different MTU on individual links or interfaces.
+Lab-wide MTU is specified with  setting and *overrides node or device defaults*. You can still specify different MTU on individual links or interfaces.
 
-For example, to build a lab using 8K jumbo frames, use:
-
-```
-defaults.interfaces.mtu: 8192
-```
 
 ## Bridge Names
 

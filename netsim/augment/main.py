@@ -29,6 +29,7 @@ def transform_setup(topology: Box) -> None:
   common.exit_on_error()
 
   augment.nodes.augment_node_provider_data(topology)
+  augment.nodes.augment_node_system_data(topology)
   common.exit_on_error()
 
   augment.groups.check_group_data_structure(topology)

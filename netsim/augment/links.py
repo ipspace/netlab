@@ -130,7 +130,7 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     ifdata.ifname = ifname_format % ifindex
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
-  pdata = Box(pdata,box_dots=True,default_box=True)                       # Create a copy of the interface data
+  pdata = Box(pdata,box_dots=True,default_box=True)                     # Create a copy of the provider interface data
   if 'name' in pdata:
     pdata.name = pdata.name % ifindex
 
@@ -142,15 +142,14 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     if af in ifdata and not ifdata[af]:
       del ifdata[af]
 
-  if 'mtu' in defaults.get('interfaces',{}) and not 'mtu' in ifdata:    # Copy system MTU default into interface data
-    if not isinstance(defaults.interfaces.mtu,int):                     # pragma: no cover
-      common.error('defaults.interfaces.mtu setting should be an integer',common.IncorrectValue,'links')
-    ifdata.mtu = defaults.interfaces.mtu
-
-  if 'mtu' in node and not 'mtu' in ifdata:                             # Copy node default MTU into interface data
-    if not isinstance(node.mtu,int):                                    # pragma: no cover
-      common.error(f'nodes.{node.name}.mtu setting should be an integer',common.IncorrectValue,'links')
-    ifdata.mtu = node.mtu
+  if 'mtu' in node:                             # Is node-level MTU defined (node setting, lab default or device default)
+    sys_mtu = devices.get_device_features(node,defaults).initial.get('system_mtu',False)
+    if 'mtu' in ifdata:                         # Is MTU defined on the interface?
+      if sys_mtu and node.mtu == ifdata.mtu:    # .. is it equal to node MTU?
+        ifdata.pop('mtu',None)                  # .... remove interface MTU on devices that support system MTU
+    else:                                       # Node MTU is defined, interface MTU is not
+      if not sys_mtu:                           # .. does the device support system MTU?
+        ifdata.mtu = node.mtu                   # .... no, copy node MTU to interface MTU
 
   node.interfaces.append(ifdata)
 
