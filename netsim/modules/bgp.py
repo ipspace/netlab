@@ -107,7 +107,7 @@ class BGP(_Module):
             "Invalid node name %s in member list of BGP AS %s" % (n,asn),
             common.IncorrectValue)
           continue
-        elif 'as' in node_data[n]:
+        elif 'as' in node_data[n] and 'ibgp-over-ebgp' not in topology.plugin:
           print( f"BGP module supports at most 1 AS per node; {n} membership of {node_data[n]['as']} is lost." +
                   "If you are trying to do iBGP over eBGP, you may need the 'ibgp-over-ebgp' plugin" )
         node_data[n]["as"] = asn
