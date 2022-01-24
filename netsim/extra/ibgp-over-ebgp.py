@@ -127,11 +127,13 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
           # print( f"ibgp-over-bgp: BGP not enabled for neighbor {ngb_name}" )
           continue
 
+        single_as_peer = single_as or len(neighbor.bgp.ibgp_over_ebgp['as']) == 1
+
         # Iterate over both sets of AS; support at most 1 eBGP peering
         # print( f"ibgp-over-ebgp: Checking eBGP peering between {node.name} and {ngb_name}: {list(neighbor.bgp.ibgp_over_ebgp['as'])}" )
         for asn in node.bgp.ibgp_over_ebgp['as']:
           for asn2 in neighbor.bgp.ibgp_over_ebgp['as']:
-            if (single_as or (asn!=ibgp_as and asn2!=ibgp_as)) and asn!=asn2:
+            if (single_as_peer or (asn!=ibgp_as and asn2!=ibgp_as)) and asn!=asn2:
               extra_data = Box({})
               extra_data.ifindex = l.ifindex
               extra_data.local_as = asn
