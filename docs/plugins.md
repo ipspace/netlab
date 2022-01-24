@@ -67,7 +67,7 @@ groups:
     node_data:
       bgp.anycast: 10.42.42.42/32
 
-nodes: 
+nodes:
   [ l1, l2, l3, s1, a1, a2, a3 ]
 
 links: [ s1-l1, s1-l2, s1-l3, l2-a1, l2-a2, l3-a3 ]
@@ -94,7 +94,7 @@ The custom transformation is executed as the last step of the topology transform
 ```
 def post_transform(topo: Box) -> None:
 ...
-  for node in topo.nodes:
+  for node in topo.nodes.values():
     if 'bgp' in node:
       if 'anycast' in node.bgp:
         node.bgp.advertise_loopback = False
@@ -109,7 +109,7 @@ The **post_transform** function should also set the **config** node parameter to
 ```
 def post_transform(topo: Box) -> None:
   config_name = api.get_config_name(globals())
-  for node in topo.nodes:
+  for node in topo.nodes.values():
     if 'bgp' in node:
       if 'anycast' in node.bgp:
 ...

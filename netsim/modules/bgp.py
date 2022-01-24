@@ -107,6 +107,11 @@ class BGP(_Module):
             "Invalid node name %s in member list of BGP AS %s" % (n,asn),
             common.IncorrectValue)
           continue
+        elif 'as' in node_data[n]:
+          common.error(
+            f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
+            common.IncorrectValue)
+          continue
         node_data[n]["as"] = asn
 
       for n in data.get('rr',{}):
