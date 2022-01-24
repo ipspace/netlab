@@ -31,7 +31,7 @@ def init(topology: Box) -> None:
 # recalculate our own configs under bgp.ibgp_over_ebgp
 def process_as_list(topology: Box) -> None:
     node_data = Box({},default_box=True,box_dots=True)
-    ibgp_as = 0
+    ibgp_as = topology.bgp.as
     for asn,data in topology.bgp.as_list.items():
       for n in data.members:
         node_data[n]["as"] += { asn: True } # Support multiple AS
