@@ -9,7 +9,6 @@
 # topologies
 #
 # Changes:
-# * as_list in topology file can have 'ibgp' flag to mark the iBGP AS
 # * bgp.neighbors of type 'ebgp' get a local_as attribute
 #
 import typing, netaddr
@@ -31,7 +30,7 @@ def init(topology: Box) -> None:
 # recalculate our own configs under bgp.ibgp_over_ebgp
 def process_as_list(topology: Box) -> None:
     node_data = Box({},default_box=True,box_dots=True)
-    ibgp_as = topology.bgp.as
+    ibgp_as = topology.bgp['as']
     for asn,data in topology.bgp.as_list.items():
       for n in data.members:
         node_data[n]["as"] += { asn: True } # Support multiple AS
@@ -118,7 +117,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
     #
     # eBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create BGP neighbors; set 'local_as'
-    evpn_ibgp_as = node.bgp.ibgp_over_ebgp.get('ibgp_as',0)
+    ibgp_as = topology.bgp['as']
     single_as = len(node.bgp.ibgp_over_ebgp['as']) == 1
     for l in node.get("interfaces",[]):
       for ngb_ifdata in l.get("neighbors",[]):
@@ -132,7 +131,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
         # print( f"ibgp-over-ebgp: Checking eBGP peering between {node.name} and {ngb_name}: {list(neighbor.bgp.ibgp_over_ebgp['as'])}" )
         for asn in node.bgp.ibgp_over_ebgp['as']:
           for asn2 in neighbor.bgp.ibgp_over_ebgp['as']:
-            if (single_as or (asn!=evpn_ibgp_as and asn2!=evpn_ibgp_as)) and asn!=asn2:
+            if (single_as or (asn!=ibgp_as and asn2!=ibgp_as)) and asn!=asn2:
               extra_data = Box({})
               extra_data.ifindex = l.ifindex
               extra_data.local_as = asn
@@ -153,8 +152,6 @@ def post_transform(topology: Box) -> None:
         # Undo bgp module neighbor calculations, then rebuild them
         node.bgp.neighbors = []
         build_bgp_sessions(node,topology)
-        if 'ibgp_as' in node.bgp.ibgp_over_ebgp:
-            node.bgp['as'] = node.bgp.ibgp_over_ebgp.ibgp_as
 
   # Cleanup
   for node in topology.nodes.values():
