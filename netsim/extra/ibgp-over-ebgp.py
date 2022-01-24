@@ -66,7 +66,8 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
         if node_as!=peer_as:
           extra_data = Box({})
           extra_data.ifindex = l.ifindex
-          extra_data.local_as = node_as
+          if node_as != ibgp_as:
+            extra_data.local_as = node_as
           if "unnumbered" in l:
             extra_data.unnumbered = True
             extra_data.local_if = l.ifname
