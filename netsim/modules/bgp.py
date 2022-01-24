@@ -108,7 +108,8 @@ class BGP(_Module):
             common.IncorrectValue)
           continue
         elif 'as' in node_data[n]:
-          print( f"BGP module supports at most 1 AS per node; {n} membership of {node_data[n]['as']} is lost" )
+          print( f"BGP module supports at most 1 AS per node; {n} membership of {node_data[n]['as']} is lost." +
+                  "If you are trying to do iBGP over eBGP, you may need the 'ibgp-over-ebgp' plugin" )
         node_data[n]["as"] = asn
 
       for n in data.get('rr',{}):
@@ -215,9 +216,7 @@ class BGP(_Module):
       for name,n in topology.nodes.items():
         if "bgp" in n:
           if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-            # Except between RR nodes
-            if not node.bgp.get("rr",None) or not n.bgp.get("rr",None):
-              node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+            node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
     #
     # The node is not a route reflector, and we have a non-empty RR list
     # We need BGP sessions with the route reflectors
