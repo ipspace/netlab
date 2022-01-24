@@ -79,7 +79,7 @@ def augment_node_module(topology: Box) -> None:
 
   module = topology['module']
   for name,n in topology.nodes.items():
-    if not 'module' in n:
+    if not 'module' in n and n.get('role') != 'host' and devices.get_device_attribute(n,'role',topology.defaults) != 'host':
       n.module = module
 
 # Check whether the modules defined on individual nodes are valid

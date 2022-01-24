@@ -50,6 +50,7 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 * **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
+* **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
 
 [^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
 
@@ -86,7 +87,7 @@ Lab topology could contain *stub*, *p2p* and *lan* links. The link type could be
 
 * Single node connected to a link ⇒ *stub*
 * Two nodes connected to a link ⇒ *p2p*
-* More than two nodes connected to a link ⇒ *lan*
+* More than two nodes connected to a link, or a [link with a host attached](#hosts-and-default-gateways) ⇒ *lan*
 
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
@@ -297,6 +298,18 @@ defaults.devices.cumulus.mtu: 1500
 
 Lab-wide MTU is specified with  setting and *overrides node or device defaults*. You can still specify different MTU on individual links or interfaces.
 
+## Hosts and Default Gateways
+
+A lab device could be a network device or a host[^HOST]. Links with attached hosts are treated slightly differently than the regular links:
+
+* Link **type** is set to **lan** regardless of the number of nodes attached to the link.
+* If the link **role** is not defined in the topology file, it's set to **stub**  to turn the attached router interfaces into *passive* interfaces[^NOPASS].
+* If the link **gateway** attribute is not defined, it's set to the IP address of the first attached non-host device. You can set the link **gateway** to any value you wish; the value is not checked.
+* The link **gateway** attribute is copied into the interface data of host nodes and is used to create static routes pointing to the default gateway during the initial device configuration.
+
+[^HOST]: Host devices are identified by **role: host** node attribute. **linux** is the only built-in host device available at the moment.
+
+[^NOPASS]: To turn a link with hosts attached into a transit link, set link **role** to **lan** (or any other role).
 
 ## Bridge Names
 

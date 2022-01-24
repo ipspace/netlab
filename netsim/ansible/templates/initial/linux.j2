@@ -13,20 +13,22 @@ SCRIPT
 # Build hosts file
 #
 hostname {{ inventory_hostname }}
-{% if ansible_connection != "docker" %}
 awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
 echo "127.0.0.1 {{ inventory_hostname }}" >>/tmp/hosts
-{% for k,v in hostvars.items() if v.loopback.ipv4 is defined and k != inventory_hostname %}
-echo "{{ v.loopback.ipv4|ipaddr('address') }}
-{%- for l in v.interfaces|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %} {{ l.ipv4|ipaddr('address') }}
-{%- endfor %} {{ k }}" >>/tmp/hosts
+{% for k,v in hostvars.items() if k != inventory_hostname %}
+echo "{%- if v.loopback.ipv4 is defined %}{{ v.loopback.ipv4|ipaddr('address') }} {% endif %}
+{%- for l in v.interfaces|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %}{{ l.ipv4|ipaddr('address') }} {% endfor %}{{ k }}" >>/tmp/hosts
 {% endfor %}
 cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
+{% if ansible_connection != "docker" %}
 mv /tmp/hosts-start /etc/hosts
+{% endif %}
 sort /tmp/hosts|uniq >>/etc/hosts
+{% if ansible_connection != "docker" %}
 #
 # Enable LLDP
 #
+apt-get update -qq
 apt-get install -qq lldpd net-tools
 cat <<CONFIG >/etc/lldpd.d/system.conf
 configure lldp tx-interval 30
@@ -40,21 +42,23 @@ service lldpd restart
 #
 sysctl -w net.ipv4.ip_forward=0
 sysctl -w net.ipv6.conf.all.forwarding=0
+{% if loopback is defined %}
 #
 # Loopback addressing
 #
-{% if 'ipv4' in loopback %}
+{%   if 'ipv4' in loopback %}
 set +e
 ip addr del {{ loopback.ipv4 }} dev lo 2>/dev/null
 set -e
 ip addr add {{ loopback.ipv4 }} dev lo
-{% endif %}
-{% if 'ipv6' in loopback %}
+{%   endif %}
+{%   if 'ipv6' in loopback %}
 sysctl -w net.ipv6.conf.lo.disable_ipv6=0
 set +e
 ip -6 addr del {{ loopback.ipv6 }} dev lo 2>/dev/null
 set -e
 ip -6 addr add {{ loopback.ipv6 }} dev lo
+{%   endif %}
 {% endif %}
 #
 # Interface addressing
@@ -74,26 +78,22 @@ ip -6 addr del {{ l.ipv6 }} dev {{ l.ifname }} 2>/dev/null
 set -e
 ip -6 addr add {{ l.ipv6 }} dev {{ l.ifname }}
 {% endif %}
+{% if l.mtu is defined %}
+ip link set {{ l.ifname }} mtu {{ l.mtu }}
+{% endif %}
 {% endfor %}
 #
 # Add routes to IPv4 address pools pointing to the first neighbor on the first link
 #
 # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
 #
-{% if interfaces|default([]) %}
-{%   set uplink = interfaces[0] %}
-{%   if uplink.neighbors|default([]) %}
-{%     set defrtr = uplink.neighbors[0] %}
-{%     if defrtr.ipv4 is defined %}
-{%       set nh = defrtr.ipv4 %}
-{%       for name,pool in pools.items()|default({}) %}
-{%         for af,pfx in pool.items() if af == 'ipv4' %}
+{% for ifdata in interfaces|default([]) if ifdata.gateway is defined %}
+{%   for name,pool in pools.items()|default({}) %}
+{%     for af,pfx in pool.items() if af == 'ipv4' %}
 set +e
 ip route del {{ pfx }} 2>/dev/null
 set -e
-ip route add {{ pfx }} via {{ nh|ipaddr('address') }}
-{%         endfor %}
-{%       endfor %}
-{%     endif %}
-{%   endif %}
-{% endif  %}
+ip route add {{ pfx }} via {{ ifdata.gateway.ipv4|ipaddr('address') }}
+{%     endfor %}
+{%   endfor %}
+{% endfor  %}

@@ -95,17 +95,29 @@ nodes:
   device: nxos
 ```
 
+## Node Attributes
+
+These node attributes are recognized and used by *netsim-tools*:
+
+* **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*.
+* **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU.
+* **id** -- static node identifier[^id] (see below)
+* **loopback** -- static loopback addresses. Must be a dictionary with **ipv4** and/or **ipv6** attributes.
+
 ## Augmenting Node Data
 
 After the initial cleanup, *netsim-tools* topology transformation code augments node data as follows (bold text indicates attribute names):
 
-* Unless the node data contain an **id** attribute[^id], the node **id** is set based on node's position in the **nodes** dictionary[^IDLIST] -- starting with 1 and skipping static **id** used by other nodes.
-* **loopback** addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.
+* Unless the node data contain an **id** attribute, the node **id** is set based on node's position in the **nodes** dictionary[^IDLIST] -- starting with 1 and skipping static **id** used by other nodes.
+* Unless the node is a *host*[^HOST], it's  **loopback*** addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.
 * **device** type is copied from **defaults.device** if not already set.
 * Vagrant **box** is set from device data if not specified in the node attributes
+* Device settings **role**, **mtu** and **runtime** are copied into the node data unless you set the corresponding attribute in the topology file.
 * Management interface parameters are saved in **mgmt** element. Management interface name (**ifname**) is computed from device data. **mac** address and **ipv4** and **ipv6** addresses are computed from corresponding parameters in *mgmt* pool. You can overwrite any of these parameters (at your own risk) by specifying them in **mgmt** dictionary within node data.
 
 [^id]: Node **id** must be an integer between 1 and 250. When using the standard management interface IP addressing (where management IPv4 addresses start with .100), the node **id** should not exceed 150.
+
+[^HOST]: Identified by **role: host** attribute
 
 [^IDLIST]: Python 3.7 and later retains the order of elements within a dictionary. Node IDs are thus assigned to devices in the order you used in YAML topology file. Node IDs might change sporadically if you use older Python versions; in that case, use  one of the list formats of the **nodes** element.
 

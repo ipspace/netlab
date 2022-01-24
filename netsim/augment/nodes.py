@@ -221,7 +221,9 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
       common.fatal(f"Internal error: node does not have a name {n}",'nodes')
       return
 
-    if pools.loopback:
+    augment_node_device_data(n,defaults)
+
+    if pools.loopback and n.get('role','') != 'host':
       prefix_list = addressing.get(pools,['loopback'],n.id)
       for af in prefix_list:
         if not n.loopback[af]:
@@ -230,6 +232,5 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
           else:
             n.loopback[af] = str(prefix_list[af])
 
-    augment_node_device_data(n,defaults)
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     topology.Provider.call("augment_node_data",n,topology)

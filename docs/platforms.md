@@ -105,9 +105,9 @@ The following system-wide features are configured on supported network operating
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| FRR 7.5.0             |    ✅     |     ❌      |             ❌             |             ✅              |             ✅              |
+| FRR 7.5.0             |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
-| Juniper vSRX 3.0      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Juniper vSRX 3.0      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Nokia SR Linux        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Nokia SR OS           |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |

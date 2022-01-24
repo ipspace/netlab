@@ -424,18 +424,26 @@ def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
 
   return ok
 
-def get_link_type(data: Box, pools: Box) -> str:
-  if data.get('type'):
-    return data['type']
+def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
+  node_cnt = len(link[IFATTR])      # Set the number of attached nodes (used in many places further on)
+  link['node_count'] = node_cnt
+  if 'type' in link:                # Link type already set, nothing to do
+    return
 
-  role = data.get('role',None)
-  if role:
-    pool = pools.get(role,None)
-    if pool and pool.get('type'):   # pragma: no cover (not implemented yet, would need attribute propagation in addressing)
-      return pool.get('type')
+  link.type = 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'     # Set link type based on number of attached nodes
 
-  node_cnt = data.get('node_count') # link_node_count(data,nodes)
-  return 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'
+  host_count = 0
+  for ifdata in link[IFATTR]:
+    if nodes[ifdata.node].get('role','') == 'host':
+      host_count = host_count + 1
+
+  if host_count > 0:
+    link.type = 'lan'
+    link.host_count = host_count
+    if not 'role' in link:
+      link.role = 'stub'
+
+  return 
 
 def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
@@ -490,6 +498,34 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
             common.IncorrectValue,
             'interfaces')
 
+def set_default_gateway(link: Box, nodes: Box) -> None:
+  if not 'host_count' in link:      # No hosts attached to the link, get out
+    return
+
+  link.pop('host_count',None)
+  if not 'gateway' in link:
+    gateway = None
+    for ifdata in link[IFATTR]:
+      if nodes[ifdata.node].get('role','') != 'host' and 'ipv4' in ifdata:
+        link.gateway.ipv4 = ifdata.ipv4
+        break
+  else:
+    if not isinstance(ifdata.gateway,dict) or not 'ipv4' in ifdata.gateway:  # pragma: no cover
+      common.error(
+        f'Gateway attribute specified on {link} is not a dictionary with ipv4 key',
+        common.IncorrectValue,
+        'links')
+
+  if not 'gateway' in link:         # Didn't find a usable gateway, exit
+    return
+
+  for ifdata in link[IFATTR]:                             # Copy link gateway to all hosts attached to the link
+    if nodes[ifdata.node].get('role','') == 'host':       # Set gateway only for hosts
+      for interface in nodes[ifdata.node].interfaces:     # Find the corresponding host interface
+        if link.linkindex == interface.linkindex:
+          if interface.ifindex == 1:                      # Set the default gateway only on the first host interface
+            interface.gateway = link.gateway
+
 def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
   if not link_list:
     return None
@@ -501,10 +537,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     if not check_link_attributes(data=link,nodes=nodes,valid=link_attr_full):
       continue
 
-    # JvB include node_count in link attributes
-    link['node_count'] = len(link[IFATTR])
-
-    link['type'] = get_link_type(data=link,pools=pools)
+    set_link_type_role(link=link,pools=pools,nodes=nodes)
     if not check_link_type(data=link):
       continue
 
@@ -523,6 +556,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       augment_lan_link(link,pools,nodes,defaults=defaults)
 
     linkindex = linkindex + 1
+    set_default_gateway(link,nodes)
 
   interface_feature_check(nodes,defaults)
   return link_list
