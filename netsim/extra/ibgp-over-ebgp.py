@@ -1,12 +1,16 @@
 #
 # BGP neighbors transformation module to support multiple AS per node
 #
-# WARNING: There be dragons here!
+# WARNING: There be dragons here...
 # The core bgp module only supports a single AS per node, as that is the more
 # common and simple way to operate BGP. Most vendors/devices can support
 # multiple AS, for example in a topology that uses iBGP for an EVPN overlay and
 # eBGP for the underlay. This module reorganizes bgp.neighbors to support such
 # topologies
+#
+# Changes:
+# * as_list in topology file can have 'ibgp' flag to mark the iBGP AS
+# * bgp.neighbors of type 'ebgp' get a local_as attribute
 #
 import typing, netaddr
 from box import Box
@@ -17,6 +21,7 @@ Similar to Module pre-default:
 * build BGP groups with multi-AS support
 """
 def init(topology: Box) -> None:
+    # Temporary attribute, removed at end
     topology.defaults.bgp.attributes.node.append('ibgp_over_ebgp')
 
     process_as_list(topology)
@@ -36,7 +41,7 @@ def process_as_list(topology: Box) -> None:
         ibgp_as = asn
 
     for name,node in topology.nodes.items():
-      if name in node_data and 'bgp' in node.module:
+      if name in node_data:
         if ibgp_as!=0:
           node.bgp.ibgp_over_ebgp.ibgp_as = ibgp_as
         node.bgp.ibgp_over_ebgp = node_data[name] + node.bgp.ibgp_over_ebgp
@@ -48,7 +53,7 @@ def build_bgp_groups(topology: Box) -> None:
     for name,node in topology.nodes.items():
       if 'bgp' in node and 'as' in node.bgp.ibgp_over_ebgp: # multi-AS
         for asn in node.bgp.ibgp_over_ebgp['as'].keys():
-          grpname = f"multi-as{asn}" # Dont create conflicts with bgp module
+          grpname = f"as{asn}" # Dont create conflicts with bgp module
           if not grpname in topology.groups:
             topology.groups[grpname] = { 'members': [] }
 
@@ -56,7 +61,7 @@ def build_bgp_groups(topology: Box) -> None:
             topology.groups[grpname].members = []
 
           if name not in topology.groups[grpname].members:
-            print( f"ibgp-over-ebgp: Correcting lack of multi-AS support for {name}: {asn}" )
+            print( f"ibgp-over-ebgp: Adding node {name} to AS group {grpname}" )
             topology.groups[grpname].members.append(name)
 
 def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
@@ -113,16 +118,18 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
     #
     # eBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create BGP neighbors; set 'local_as'
+    evpn_ibgp_as = node.bgp.ibgp_over_ebgp.get('ibgp_as',0)
+    single_as = len(node.bgp.ibgp_over_ebgp['as']) == 1
     for l in node.get("interfaces",[]):
       for ngb_ifdata in l.get("neighbors",[]):
         ngb_name = ngb_ifdata.node
         neighbor = topology.nodes[ngb_name]
         if not "bgp" in neighbor:
+          # print( f"ibgp-over-bgp: BGP not enabled for neighbor {ngb_name}" )
           continue
 
         # Iterate over both sets of AS; support at most 1 eBGP peering
-        evpn_ibgp_as = node.bgp.ibgp_over_ebgp.get('ibgp_as',0)
-        single_as = len(node.bgp.ibgp_over_ebgp['as']) == 1
+        # print( f"ibgp-over-ebgp: Checking eBGP peering between {node.name} and {ngb_name}: {list(neighbor.bgp.ibgp_over_ebgp['as'])}" )
         for asn in node.bgp.ibgp_over_ebgp['as']:
           for asn2 in neighbor.bgp.ibgp_over_ebgp['as']:
             if (single_as or (asn!=evpn_ibgp_as and asn2!=evpn_ibgp_as)) and asn!=asn2:
@@ -132,6 +139,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
               if "unnumbered" in l:
                 extra_data.unnumbered = True
                 extra_data.local_if = l.ifname
+              # print( f"ibgp-over-ebgp: Found eBGP peer {asn}-{asn2} to {ngb_name}" )
               node.bgp.neighbors.append( bgp_neighbor(neighbor,'ebgp',asn2,ngb_ifdata,extra_data) )
               break # Stop at first eBGP peering
           else:
@@ -139,6 +147,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
           break # Exit outer loop
 
 def post_transform(topology: Box) -> None:
+  build_bgp_groups( topology ) # Update groups created by regular bgp module
   for node in topology.nodes.values():
     if 'bgp' in node:
         # Undo bgp module neighbor calculations, then rebuild them
@@ -146,3 +155,8 @@ def post_transform(topology: Box) -> None:
         build_bgp_sessions(node,topology)
         if 'ibgp_as' in node.bgp.ibgp_over_ebgp:
             node.bgp['as'] = node.bgp.ibgp_over_ebgp.ibgp_as
+
+  # Cleanup
+  for node in topology.nodes.values():
+    if 'bgp' in node:
+        node.bgp.pop('ibgp_over_ebgp')
