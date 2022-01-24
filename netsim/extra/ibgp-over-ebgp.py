@@ -151,6 +151,7 @@ def post_transform(topology: Box) -> None:
     if 'bgp' in node:
         # Undo bgp module neighbor calculations, then rebuild them
         node.bgp.neighbors = []
+        node.bgp['as'] = node.bgp.ibgp_over_ebgp.ibgp_as # Assign iBGP AS
         build_bgp_sessions(node,topology)
 
   # Cleanup
