@@ -18,7 +18,7 @@ from .. import read_topology
 from . import external_commands
 
 def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
-  devs = [ k for k in settings.devices.keys() if settings.devices[k].libvirt.create ]
+  devs = [ k for k in settings.devices.keys() if settings.devices[k].libvirt.create or settings.devices[k].libvirt.create_template ]
   parser = argparse.ArgumentParser(
     prog='netlab libvirt package',
     description='Package a virtual machine into a libvirt Vagrant box')
@@ -59,9 +59,23 @@ def lp_create_vm_disk(args: argparse.Namespace) -> None:
     print(f"Creating a copy of {name}")
     abort_on_failure(f'cp {name} vm.qcow2')
 
+def get_template_data(devdata: Box) -> Box:
+  return devdata + { 'user' : { 'cwd' : os.getcwd() }}
+
+def vm_cleanup(name: str) -> None:
+  try:
+    subprocess.run(f"virsh destroy {name}".split(" "))
+  except Exception as ex:
+    print(f"Cannot destroy {name}: {ex}")
+
+  try:
+    subprocess.run(f"virsh undefine {name}".split(" "))
+  except Exception as ex:
+    print(f"Cannot undefine {name}: {ex}")
+
+
 def lp_create_vm(args: argparse.Namespace,settings: Box) -> None:
-  cmd = settings.devices[args.device].libvirt.create
-  cmd = cmd.replace("\n","")
+  devdata = settings.devices[args.device]
   print(f"""
 ====================
 Starting the VM
@@ -72,16 +86,17 @@ window and follow the instructions.
 ====================
 
 """)
-  abort_on_failure(cmd)
-  try:
-    subprocess.run("virsh destroy vm_box")
-  except:
-    pass
+  if devdata.libvirt.create:
+    cmd = devdata.libvirt.create.replace("\n","")
+    abort_on_failure(cmd)
+  elif devdata.libvirt.create_template:
+    data = get_template_data(devdata)
+    template = common.template(devdata.libvirt.create_template,data,"install/libvirt",)
+    pathlib.Path("template.xml").write_text(template)
+    abort_on_failure("virsh define template.xml")
+    abort_on_failure("virsh start --console vm_box")
 
-  try:
-    subprocess.run("virsh undefine vm_box")
-  except:
-    pass
+  vm_cleanup('vm_box')
 
 def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
   with open("metadata.json","w") as metadata:
@@ -100,6 +115,17 @@ def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
   boxname = devdata.libvirt.image or devdata.image.libvirt
 
+  print(f"""
+
+=========================
+Importing the Vagrant box
+=========================
+Your Vagrant box is ready to be imported. We just need a few
+bits of information to tag it properly so you can have multiple
+Vagrant boxes (different software versions) for the same network
+device.
+
+""")
   if not boxname:
     boxname = input('Enter box name: ')
 
@@ -138,6 +164,9 @@ Failed to add Vagrant box. Fix the error(s) and use "vagrant box add box.json" t
 """)
 
 def libvirt_package(cli_args: typing.List[str], settings: Box) -> None:
+  args = package_parse(cli_args,settings)
+  skip = args.skip
+
   print("""
 =================
      WARNING
@@ -153,9 +182,7 @@ best not to damage the original virtual disk).
   if input('Do you want to continue [Y/n]: ') != 'Y':
     common.fatal('Aborting...')
 
-  args = package_parse(cli_args,settings)
-  skip = args.skip
-
+  vm_cleanup('vm_box')
   if not 'disk' in skip:
     lp_create_vm_disk(args)
   if not 'vm' in skip:
@@ -164,7 +191,7 @@ best not to damage the original virtual disk).
     lp_create_box(args,settings)
 
 def config_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
-  moddir = pathlib.Path(__file__).resolve().parent.parent
+  moddir = common.get_moddir()
   devs = map(
     lambda x: pathlib.Path(x).stem,
     glob.glob(str(moddir / "install/libvirt/*txt")))
@@ -180,7 +207,7 @@ def config_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
 
 def libvirt_config(cli_args: typing.List[str], settings: Box) -> None:
   args = config_parse(cli_args,settings)
-  helpfile = pathlib.Path(__file__).resolve().parent.parent / "install/libvirt" / (args.device+".txt")
+  helpfile = common.get_moddir() / "install/libvirt" / (args.device+".txt")
   print(helpfile.read_text())
 
 def libvirt_usage() -> None:

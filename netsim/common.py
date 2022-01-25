@@ -7,6 +7,7 @@ import warnings
 import argparse
 import os
 import textwrap
+import pathlib
 
 from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
 from box import Box,BoxList
@@ -67,6 +68,10 @@ def extra_data_printout(s : str) -> str:
     initial_indent="... ",
     subsequent_indent="      ").fill(s)
 
+#
+# File functions
+#
+
 def open_output_file(fname: str) -> typing.TextIO:
   if fname == '-':
     return sys.stdout
@@ -85,12 +90,19 @@ def print_yaml(x : typing.Any) -> str:
   else:
     return str(x)
 
+def get_moddir() -> pathlib.Path:
+  return pathlib.Path(__file__).resolve().parent
+
 def template(j2: str , data: typing.Dict, path: str) -> str:
   ENV = Environment(loader=PackageLoader('netsim',path), \
           trim_blocks=True,lstrip_blocks=True, \
           undefined=make_logging_undefined(base=StrictUndefined))
   template = ENV.get_template(j2)
   return template.render(**data)
+
+#
+# Logging and debugging functions
+#
 
 def set_verbose(value: typing.Optional[int] = 1) -> None:
   global VERBOSE
