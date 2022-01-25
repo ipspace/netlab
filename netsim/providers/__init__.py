@@ -54,7 +54,8 @@ class _Provider(Callback):
       if '.' in n.box:
         image_spec = n.box.split(':')
         n.box = image_spec[0]
-        n.box_version = image_spec[1]
+        if len(image_spec) > 1:
+          n.box_version = image_spec[1]
 
   def transform_node_images(self, topology: Box) -> None:
     pass

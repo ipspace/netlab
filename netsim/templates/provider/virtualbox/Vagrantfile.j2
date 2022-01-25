@@ -2,13 +2,26 @@
 # VirtualBox vagrantfile template
 #
 Vagrant.configure("2") do |config|
-{% for name,nodes in nodes.items() %}
+{% for name,n in nodes.items() %}
 {%   set name = name.split('.')[0] %}
 {%   set box  = n.box %}
   config.vm.define "{{ name }}" do |{{name}}|
+    {{ name }}.vm.box = "{{ box }}"
+{% if 'box_version' in n  %}
+    {{ name }}.vm.box_version = "{{ n.box_version }}"
+{% endif %}
 {%  include n.device ~ "-domain.j2" %}
 
-{%   for l in n.interfaces %}
+    {{ name }}.vm.provider :virtualbox do |domain|
+{% if 'cpu' in n %}
+      domain.cpus = {{ n.cpu }}
+{% endif %}
+{% if 'memory' in n %}
+      domain.memory = {{ n.memory }}
+{% endif %}
+    end
+
+{%   for l in n.interfaces|default([]) %}
 {%     include "virtualbox-network.j2" %}
 {%   endfor %}
 {%   include "virtualbox-ports.j2" %}

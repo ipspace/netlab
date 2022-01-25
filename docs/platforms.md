@@ -53,7 +53,7 @@ See [lab topology overview](topology-overview.md) for more details.
 * [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
 * [Containerlab](https://containerlab.srlinux.dev/)
 
-You cannot use all supported network devices with all virtualization providers:
+You cannot use all supported network devices with all virtualization providers. These are the supported combinations:
 
 | Virtual network device                             | Vagrant<br />Libvirt |   Vagrant<br />Virtualbox    |       Containerlab       |
 | -------------------------------------------------- | :------------------: | :--------------------------: | :----------------------: |
@@ -71,6 +71,23 @@ You cannot use all supported network devices with all virtualization providers:
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
 | Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
 | VyOS                                               |          ✅           |              ❌               |            ❌             |
+
+Configuration files for Virtualbox and KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
+
+| Virtual network device     | netsim device type | CPUs | memory |
+| -------------------------- | ------------------ | ---: | -----: |
+| Arista vEOS                | eos                |    2 |   2048 |
+| Arrcus ArcOS               | arcos              |    2 |   4096 |
+| Cisco IOSv                 | iosv               |    1 |    512 |
+| Cisco CSR 1000v            | csr                |    2 |   4096 | 
+| Cisco Nexus 9300v          | nxos               |    2 |   6144 | 
+| Cumulus Linux              | cumulus            |    2 |   1024 |
+| Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 |
+| Fortinet FortiOS           | fortios            |    1 |   1024 |
+| Generic Linux host         | linux              |    1 |   1024 |
+| Juniper vSRX 3.0           | vsrx               |    2 |   4096 | 
+| Mikrotik CHR RouterOS      | routeros           |    1 |    256 |
+| VyOS                       | vyos               |    2 |   1024 |
 
 ## Configuration Deployments
 

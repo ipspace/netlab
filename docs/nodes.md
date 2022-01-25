@@ -103,6 +103,10 @@ These node attributes are recognized and used by *netsim-tools*:
 * **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU.
 * **id** -- static node identifier[^id] (see below)
 * **loopback** -- static loopback addresses. Must be a dictionary with **ipv4** and/or **ipv6** attributes.
+* **memory** -- memory allocated to the VM lab device. Not applicable for container-based devices.
+* **cpu** -- virtual CPU cores allocated to the VM lab device. Not applicable for container-based devices.
+
+[Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
 
 ## Augmenting Node Data
 
