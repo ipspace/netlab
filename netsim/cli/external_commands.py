@@ -33,7 +33,7 @@ def run_command(cmd : typing.Union[str,list], check_result : bool = False) -> bo
     print(".. executing: %s" % cmd)
 
   if isinstance(cmd,str):
-    cmd = cmd.split(" ")
+    cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
 
   try:
     result = subprocess.run(cmd,capture_output=check_result,check=True,text=True)
