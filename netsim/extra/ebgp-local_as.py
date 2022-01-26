@@ -63,6 +63,8 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
           extra_data.ifindex = l.ifindex
           if node_as != ibgp_as:
             extra_data.local_as = node_as
+          if "bgp" in l and "advertise_default_route" in l.bgp:
+            extra_data.advertise_default_route = True
           if "unnumbered" in l:
             extra_data.unnumbered = True
             extra_data.local_if = l.ifname
