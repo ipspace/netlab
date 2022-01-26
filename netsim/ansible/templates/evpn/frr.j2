@@ -1,0 +1,17 @@
+! Could put this in a separate vrf
+router bgp {{ bgp.as }}
+
+address-family l2vpn evpn
+ advertise-all-vni
+ advertise-svi-ip
+ {% for af in ['ipv4','ipv6'] if af in bgp %}
+ advertise {{ af }} unicast
+ {% endfor %}
+{% set target_peertype = 'ibgp' if evpn.use_ibgp else 'ebgp' %}
+{% for n in bgp.neighbors if n.type==target_peertype %}
+{% for af in ['ipv4','ipv6'] if af in n %}
+ neighbor {{ n[af] }} activate
+{% endfor %}
+{% endfor %}
+exit-address-family
+!
