@@ -7,11 +7,25 @@
      peer-group: {{ 'ebgp' if n.type=='ebgp' else ('ibgp-'+af) }}
 {%   if n.type != 'ibgp' %}
      peer-as: {{ n.as }}
-{%   endif %}
 {%   if n.local_as is defined %}
      local-as:
      - as-number: {{ n.local_as }}
+       prepend-global-as: False # Don't include iBGP AS in advertisements
+     # Note: allow-own-as: 1 does not work to allow peer to send global AS
 {%   endif %}
+{%   if n.advertise_default_route is defined %}
+     send-default-route:
+      {{ af }}-unicast: True
+{% endif %}
+{%   endif %}
+{%- endmacro %}
+
+{% macro export_prefix(p,range) %}
+- path: routing-policy/prefix-set[name=exports]
+  val:
+   prefix:
+   - ip-prefix: {{ p | ipaddr('subnet') }}
+     mask-length-range: "{{ range }}"
 {%- endmacro %}
 
 updates:
@@ -24,32 +38,42 @@ updates:
    ebgp-default-policy:
     export-reject-all: False
     import-reject-all: False
+   route-advertisement:
+    rapid-withdrawal: True
 {#
     Configure BGP Groups
 #}
    group:
 {% for g in ['ibgp-ipv4','ibgp-ipv6','ebgp'] %}
+{% set bgp_type = g[:4] %}
+{% set ip_ver = g[5:] %}
 {% set ibgp_rr = (g!='ebgp' and bgp.rr|default(0)) %}
    - group-name: {{g}}
      admin-state: enable
      import-policy: accept_all
-     export-policy: accept_all
+     export-policy: {{ 'export_ebgp' if g=='ebgp' and bgp.advertise_loopback else 'accept_all' }}
      peer-as: {{ bgp.as }}
      next-hop-self: {{ bgp.next_hop_self|default(0) and not ibgp_rr }}
      timers:
       connect-retry: 1
       minimum-advertisement-interval: 1
 
-{%   if bgp.community[ g[:4] ]|default([]) %}
-{%   set list = bgp.community[ g[:4] ] %}
+{%   if bgp.community[ bgp_type ]|default([]) %}
+{%   set list = bgp.community[ bgp_type ] %}
      send-community:
       standard: {{ 'standard' in list or 'both' in list }}
       large: {{ 'large' in list }}
 {%   endif %}
 
-{%   if g!='ebgp' %}
+     ipv4-unicast:
+      admin-state: {{ 'enable' if 'ipv4' in bgp else 'disable' }}
+      # advertise-ipv6-next-hops
+     ipv6-unicast:
+      admin-state: {{ 'enable' if 'ipv6' in bgp else 'disable' }}
+
+{%   if g!='ebgp' and ip_ver in loopback %}
      transport:
-      local-address: {{ loopback[ g[5:] ]|default('')|ipaddr('address') }}
+      local-address: {{ loopback[ ip_ver ]|ipaddr('address') }}
 {% endif %}
 
 {#
@@ -65,12 +89,14 @@ updates:
 {#
     Configure IPv4 and IPv6 BGP neighbors
 #}
+{% if bgp.neighbors %}
    neighbor:
 {% for n in bgp.neighbors %}
 {%  for af in ['ipv4','ipv6'] if n[af] is defined %}
 {{ neighbor_global(n,af) }}
 {%  endfor %}
 {% endfor %}
+{% endif %}
 
 {# Configure BGP address families #}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
@@ -79,16 +105,22 @@ updates:
     multipath:
      max-paths-level-1: 64
      max-paths-level-2: 64 # indirect nexthops
-{%   if loopback[af] is defined and bgp.advertise_loopback %}
-{# {{     bgp_network(af,loopback[af]) }} #}
-{%   endif %}
 
-{% for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
-{# {{     bgp_network(af,l[af]) }} #}
-{%   endfor %}
-{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-{# {{     bgp_network(af,pfx) }} #}
-{%   endfor %}
+{% if loopback[af] is defined and bgp.advertise_loopback %}
+{% if bgp.advertise_loopback=='all' %}
+{{ export_prefix('0.0.0.0/0','32..32') }}
+{% else %}
+{{ export_prefix(loopback[af],'exact') }}
+{% endif %}
+{% endif %}
+
+{% for l in interfaces|default([]) if l.bgp.advertise|default("") is sameas true and l[af] is defined %}
+{{ export_prefix(l[af],'exact') }}
+{% endfor %}
+
+{% for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{{ export_prefix(pfx,'exact') }}
+{% endfor %}
 
 {% endfor %}
 
@@ -97,9 +129,19 @@ updates:
 #}
 - path: routing-policy/policy[name=accept_all]
   val:
-   name: accept_all
    default-action:
     accept: {}
+
+- path: routing-policy/policy[name=export_ebgp]
+  val:
+   default-action:
+    reject: {}
+   statement:
+   - sequence-id: 10
+     match:
+      prefix-set: "exports"
+     action:
+      accept: { }
 
 {#
   Add extra IPv4 prefixes using static blackhole routes, add to export
@@ -113,20 +155,4 @@ updates:
 - path: network-instance[name=default]/static-routes/route[prefix={{pfx}}]
   val:
    next-hop-group: blackhole
-- path: routing-policy/prefix-set[name=external_routes]
-  val:
-   prefix:
-   - ip-prefix: {{ pfx }}
-     mask-length-range: exact
 {% endfor %}
-
-{% if 'sr' in module|default([]) %}
-{# Configure BGP shortcuts via SR-ISIS #}
-- path: network-instance[name=default]/protocols/bgp/ipv4-unicast/next-hop-resolution
-  val:
-   ipv4-next-hops:
-    tunnel-resolution:
-     mode: prefer
-     _annotate_mode: "tunnel-table lookup over FIB"
-     allowed-tunnel-types: [ sr-isis ]
-{% endif %}
