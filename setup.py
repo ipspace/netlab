@@ -23,6 +23,7 @@ setup(
   url="https://github.com/ipspace/netsim-tools",
   include_package_data=True,
   setup_requires=["wheel"],
+  python_requires='>=3.7',  # Due to e.g. 'capture_output' in subprocess.run
   install_requires=reqs,
   entry_points={
     "console_scripts": ["netlab=netsim.cli:lab_commands"]
