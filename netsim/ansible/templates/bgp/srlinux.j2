@@ -121,11 +121,10 @@ updates:
 {% for l in interfaces|default([]) if l.bgp.advertise|default("") is sameas true and l[af] is defined %}
 {{ export_prefix(l[af],'exact') }}
 {% endfor %}
-
-{% for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-{{ export_prefix(pfx,'exact') }}
 {% endfor %}
 
+{% for pfx in bgp.export|default([]) %}
+{{ export_prefix(pfx,'exact') }}
 {% endfor %}
 
 {#
@@ -148,7 +147,7 @@ updates:
       accept: { }
 
 {#
-  Add extra IPv4 prefixes using static blackhole routes, add to export
+  Process originated prefixes, create blackhole routes
 #}
 - path: network-instance[name=default]/next-hop-groups/group[name=blackhole]
   val:
@@ -156,6 +155,7 @@ updates:
      generate-icmp: True
 
 {% for pfx in bgp.originate|default([]) %}
+{{ export_prefix(pfx,'exact') }}
 - path: network-instance[name=default]/static-routes/route[prefix={{pfx}}]
   val:
    next-hop-group: blackhole

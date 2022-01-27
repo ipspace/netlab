@@ -40,7 +40,7 @@ bgp:
       members: [ e1 ]
     65002:
       members: [ e2 ]
-``` 
+```
 
 When you're building a network with a single BGP autonomous system, it might be simpler to specify the default value of BGP AS number in **bgp.as** parameter instead of listing all nodes within that autonomous system. When using this approach, specify the list of route reflectors in **bgp.rr_list** parameter.
 
@@ -76,6 +76,7 @@ Additional per-node BGP configuration parameters include:
 
 * **bgp.advertise_loopback** -- when set to `False`, the loopback IP prefix is not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
+* **bgp.export** -- a list of additional prefixes to export, like **bgp.originate** but without creating a blackhole
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[BGP Community Propagation](#bgp-communities-propagation)* for more details.
 
 **Notes:**
@@ -233,7 +234,7 @@ nodes:
 
 ```
 bgp:
-  community: 
+  community:
     ibgp: [standard, extended]
     ebgp: [standard]
 ```
