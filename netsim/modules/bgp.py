@@ -85,6 +85,7 @@ class BGP(_Module):
       return
 
     node_data = Box({},default_box=True,box_dots=True)
+    cluster_id_per_asn = {} # Lowest route reflector ID per AS, to use as cluster
     for asn,data in topology.bgp.as_list.items():
       if not isinstance(data,Box):
         common.error(
@@ -126,6 +127,9 @@ class BGP(_Module):
             common.IncorrectValue)
           continue
         node_data[n].rr = True
+        router_id = netaddr.IPAddress(topology.nodes[n].router_id)
+        if asn not in cluster_id_per_asn or cluster_id_per_asn[asn] > router_id:
+          cluster_id_per_asn[asn] = router_id
 
     for name,node in topology.nodes.items():
       if name in node_data:
@@ -137,6 +141,8 @@ class BGP(_Module):
           continue
 
         node.bgp = node_data[name] + node.bgp
+        if 'rr' in node.bgp and node_as in cluster_id_per_asn:
+          node.bgp.cluster_id = cluster_id_per_asn[node_as].ipv4()
 
   '''
   bgp_build_group: create automatic groups based on BGP AS numbers
