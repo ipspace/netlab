@@ -57,6 +57,7 @@ def pre_transform(topology: Box) -> None:
   check_module_parameters(topology)
   common.exit_on_error()
 
+  module_transform("pre_transform",topology)
   node_transform("pre_transform",topology)
   link_transform("pre_transform",topology)
 
@@ -67,6 +68,7 @@ post_transform:
 """
 def post_transform(topology: Box) -> None:
   check_supported_node_devices(topology)       # A bit late, but we can do this check only after node data has been adjusted
+  module_transform("post_transform",topology)
   node_transform("post_transform",topology)
   link_transform("post_transform",topology)
   reorder_node_modules(topology)               # Make sure modules are configured in dependency order (#86)

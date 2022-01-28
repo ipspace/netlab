@@ -1,19 +1,25 @@
 # BGP Configuration Module
 
-This configuration module configures BGP routing process and BGP neighbors on Cisco IOS, Cisco Nexus-OS, Arista EOS and Junos.
+This configuration module configures BGP routing process and BGP neighbors on most [supported platforms](../platforms.md). The configuration module sets up BGP sessions according to these simple design rules:
 
-Supported features:
+* EBGP sessions are established between directly-connected IP addresses on every link where the connected routers belong to different autonomous systems. Parallel sessions are established for all address families (IPv4, IPv6) configured on the link.
+* IBGP sessions are established between loopback interfaces of routers in the same autonomous system. Parallel sessions are established for all address families configured on the loopback interfaces.
+* IGBP sessions could form a full mesh (when no router reflectors are configured in the autonomous system) or a hubs-and-spokes topology with a single route reflector cluster and a full mesh of IBGP sessions between route reflectors.
+
+More interesting BGP topologies can be created with [custom plugins](../plugins.md).
+
+Supported BGP features:
 
 * Multiple autonomous systems
 * Direct (single-hop) EBGP sessions
 * IBGP sessions between loopback interfaces
-* BGP route reflectors (for caveats see [implementation details](#implementation-details))
+* BGP route reflectors
 * Next-hop-self control on IBGP sessions
 * BGP community propagation
 * IPv4 and IPv6 address families
 * Configurable link prefix advertisement
 * Additional (dummy) prefix advertisement
-* Static **router-id**
+* Static **router-id** and **cluster-id**
 * Interaction with OSPF or IS-IS (IGP is disabled on external links)
 
 You could use *global* or *per-node* parameters to configure BGP autonomous systems and route reflectors (you expected tons of nerd knobs in a BGP implementation, didn't you?):
@@ -69,6 +75,7 @@ Instead of using a global list of autonomous systems, you could specify a BGP au
 * **bgp.rr** -- the node is BGP route reflector within its autonomous system.
 * **bgp.next_hop_self** -- use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; system default is **true**.
 * **bgp.router_id** -- set static router ID. Default **router_id** is taken from the IPv4 address of the loopback interface or from the **router_id** address pool if there's no usable IPv4 address on the loopback interface.
+* **bgp.rr_cluster_id** -- set static route reflector cluster ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
 
 Specifying a BGP autonomous system on individual nodes makes sense when each node uses a different BGP AS. See [EBGP leaf-and-spine fabric example](bgp_example/ebgp.md) for details.
 
@@ -245,19 +252,6 @@ nodes:
   r1:
     bgp:
       community: []
-```
-
-## Implementation Details
-
-Arista EOS BGP implementation changes the BGP next hop on reflected routes when configured with **neighbor next-hop-self**. To make an Arista EOS node work as a typical BGP route reflector, set the **bgp.next_hop_self** node parameter to *false*.
-
-```
-nodes:
-  eos_rr:
-    device: eos
-    bgp:
-      rr: true
-      next_hop_self: false
 ```
 
 ## More Examples

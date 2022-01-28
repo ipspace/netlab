@@ -37,13 +37,9 @@ def check_bgp_parameters(node: Box) -> None:
           common.error("Invalid BGP community propagation setting for %s sessions in node %s: %s" % (k,node.name,v))
 
 def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
-  rrlist = []
-  for name,n in topology.nodes.items():
-    if not "bgp" in n:
-      continue
-    if n.bgp["as"] == bgp_as and n.bgp.get("rr",None):
-      rrlist.append(n)
-  return rrlist
+  return [ n 
+    for n in topology.nodes.values() 
+      if 'bgp' in n and n.bgp["as"] == bgp_as and n.bgp.get("rr",None) ]
 
 def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict] = None) -> Box:
   ngb = Box(extra_data or {},default_box=True,box_dots=True)
@@ -224,12 +220,7 @@ class BGP(_Module):
     # The node is not a route reflector, and we have a non-empty RR list
     # We need BGP sessions with the route reflectors
     else:
-
-      # To support multiple redundant route reflectors, pick a common cluster id
-      cluster_id = f"0.0.0.{ min( [ n.id for n in rrlist ] ) % 256 }"
-
       for n in rrlist:
-        n.bgp.rr_cluster_id = cluster_id
         if n.name != node.name:
           node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
 
@@ -275,11 +266,47 @@ class BGP(_Module):
             l.bgp = {}
           l.bgp.advertise = True
 
+  #
+  # Have to set BGP router IDs and cluster IDs before going into node_post_transform
+  #
+  def module_post_transform(self, topology: Box) -> None:
+    for n in topology.nodes.values():
+      if 'bgp' in n:
+        _routing.router_id(n,'bgp',topology.pools)
+
+    # Build a list of autonomous systems in the lab
+    as_list = set( n.bgp['as'] for n in topology.nodes.values() if 'bgp' in n and 'as' in n.bgp )
+
+    # Iterate over all ASNs in the lab, and for route reflectors that don't have rr_cluster_id
+    # defined, find an AS-wide cluster ID: the lowest BGP router ID of all route reflectors
+    # (members of rr_list) that don't have rr_cluster_id set (because those obviously want to be left alone)
+    #
+    for asn in as_list:
+      rrlist = find_bgp_rr(asn,topology)
+      if rrlist:
+        rr_cluster_candidates = [n.bgp.router_id for n in rrlist if not 'rr_cluster_id' in n.bgp]
+        rr_cluster_id = None
+        if rr_cluster_candidates:
+          rr_cluster_id = min(rr_cluster_candidates)
+        for n in rrlist:
+          if not 'rr_cluster_id' in n.bgp:
+            n.bgp.rr_cluster_id = rr_cluster_id or n.bgp.router_id
+          elif n.bgp.rr_cluster_id:
+            try:
+              n.bgp.rr_cluster_id = str(netaddr.IPAddress(n.bgp.rr_cluster_id).ipv4())
+            except Exception as ex:
+              common.error(
+                f'BGP cluster ID {n.bgp.rr_cluster_id} configured on node {n.name} cannot be converted into an IPv4 address',
+                common.IncorrectValue,
+                'bgp')
+
+  #
+  # Execute the rest of node post-transform code, including setting up the BGP session table
+  #
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if not "bgp" in node:   # pragma: no cover (this should have been caught in check_bgp_parameters)
       common.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
       return
     check_bgp_parameters(node)
-    _routing.router_id(node,'bgp',topology.pools)
     self.build_bgp_sessions(node,topology)
     self.bgp_set_advertise(node,topology)
