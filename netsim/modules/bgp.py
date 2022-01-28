@@ -219,11 +219,17 @@ class BGP(_Module):
         if "bgp" in n:
           if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
             node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+
     #
     # The node is not a route reflector, and we have a non-empty RR list
     # We need BGP sessions with the route reflectors
     else:
+
+      # To support multiple redundant route reflectors, pick a common cluster id
+      cluster_id = f"0.0.0.{ min( [ n.id for n in rrlist ] ) % 256 }"
+
       for n in rrlist:
+        n.bgp.rr_cluster_id = cluster_id
         if n.name != node.name:
           node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
 
