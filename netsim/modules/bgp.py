@@ -226,7 +226,7 @@ class BGP(_Module):
     else:
 
       # To support multiple redundant route reflectors, pick a common cluster id
-      cluster_id = min( [ netaddr.IPAddress(n.router_id) for n in rrlist ] ).ipv4()
+      cluster_id = min( [ netaddr.IPAddress(n.bgp.router_id) for n in rrlist ] ).ipv4()
 
       for n in rrlist:
         n.bgp.cluster_id = cluster_id
