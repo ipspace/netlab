@@ -101,12 +101,11 @@ links: [ s1-s2, s2-s3, s1-s2-s3 ]
 
 Vagrant relies on *boxes* (prepackaged VM images), and while it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
 
-You have to use the following box names when installing,  building, or mutating the Vagrant boxes:
+You have to use the following box names when installing, building, or mutating the Vagrant boxes (see [supported platforms](../platforms.md) for more details):
 
 | Virtual network device | Vagrant box name            |
 | ---------------------- | --------------------------- |
 | Arista vEOS            | arista/veos                 |
-| Arrcus ArcOS           | arcos/arcos4.1.1            |
 | Cisco IOSv             | cisco/iosv                  |
 | Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
@@ -123,80 +122,21 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 | Cumulus VX 5.0 (NVUE)            | CumulusCommunity/cumulus-vx:5.0.1 |
 | Generic Linux          | generic/ubuntu2004 |
 
-### Mutating Virtualbox Boxes
-
-Cisco Nexus 9300v and Arista vEOS are available as Virtualbox boxes. To use them with *vagrant-libvirt*:
-
-* Install Vagrant *mutate* plugin with **vagrant plugin install vagrant-mutate**
-* Download the box file from vendor web site
-* Install *virtualbox* version of the box file with **vagrant box add *filename* \-\-name _boxname_**
-* Transform *virtualbox* box into *libvirt* box with **vagrant mutate _boxname_ libvirt**
-* Remove the _virtualbox_ box with **vagrant box remove _boxname_ \-\-provider virtualbox** command.
-
 ### Building Your Own Boxes
 
-[Brad Searle](https://codingpackets.com) published box-building recipes for the following platforms:
-
-* [Cisco IOSv](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/)
-* [Cisco CSR](https://codingpackets.com/blog/cisco-csr-1000v-vagrant-libvirt-box-install/)
-* [Arista vEOS](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) [[notes](#notes-on-arista-eos-vagrant-libvirt-box)]
-* [Juniper vSRX 3.0](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/) [[notes](#notes-on-juniper-vsrx-vagrantfile-template)]
-
-Pete Crocker published a similar recipe for [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/)
-
-[Stefano Sasso](http://stefano.dscnet.org) published box-building recipes for the following platforms:
-
-* [VyOS](https://github.com/ssasso/packer-vyos-vagrant)
-* [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/)
+* [Arista vEOS](eos.md)
+* [Cisco IOSv](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/) by [Brad Searle](https://codingpackets.com)
+* [Cisco CSR](https://codingpackets.com/blog/cisco-csr-1000v-vagrant-libvirt-box-install/) by [Brad Searle](https://codingpackets.com)
+* [Cisco Nexus OS](nxos.md)
+* [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
+* [Juniper vSRX 3.0](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/) by [Brad Searle](https://codingpackets.com) [[notes](#notes-on-juniper-vsrx-vagrantfile-template)]
+* [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
+* [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org)
 
 **Notes:**
 
 * If you're experiencing high CPU utilization with Cisco CSR, [set halt_poll_ns to zero](https://codingpackets.com/blog/kvm-host-high-cpu-fix/).
 * For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
-
-### Notes on Arista EOS *vagrant-libvirt* Box
-
-You could use the *virtualbox* Arista EOS box and mutate it into a *libvirt* box, but the latest version of Arista vEOS available as Vagrant box for VirtualBox is 4.21.14M.
-
-I used the [recipe published by Brad Searle](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/) and modified it slightly to make it work flawlessly with EOS 4.25.0. After applying Brad's initial configuration (**do not** configure his event handlers), execute these commands to generate PKI key and certificate:
-
-```
-security pki key generate rsa 2048 default
-security pki certificate generate self-signed default key default ↩
-  param common-name Arista
-```
-
-After generating PKI certificate add these configuration commands to enable NETCONF and RESTCONF
-
-```
-management api http-commands
- no shutdown
-!
-management api netconf
- transport ssh default
-!
-management api restconf
- transport https default
-  ssl profile default
-  port 6040
-!
-management security
- ssl profile default
-  certificate default key default
-```
-
-Finally, remove custom shell from *vagrant* user with
-
-```
-no user vagrant shell
-```
-
-Vagrant will be totally confused when it sees something that looks like a Linux box but doesn't behave like one, so add these commands to Vagrantfile (already included in `eos-domain.j2` template):
-
-```
-config.ssh.shell = "bash"
-config.vm.guest = :freebsd
-```
 
 ### Notes on Juniper vSRX Vagrantfile template
 
@@ -207,6 +147,13 @@ The template has been tested with Vagrant version 2.2.14. Some earlier versions 
 * Remove _domain.default\_prefix_ parameter (default value should generate the expected VM name) or
 * Remove the whole CPU-limiting logic (trading CPU cycles for simplicity)
 
-### Notes on Arrcus ArcOS *vagrant-libvirt* Box and Ansible Collections
+```{eval-rst}
+.. toctree::
+   :caption: Box Building Recipes
+   :maxdepth: 1
+   :hidden:
 
-Please reach out to your Arrcus Customer Engineering Representative or [Contact Arrcus](https://www.arrcus.com/contact-us) for access to the Arrcus Vagrant Box file and ArcOS Ansible collections.
+   eos.md
+   nxos.md
+..
+```

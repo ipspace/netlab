@@ -5,6 +5,13 @@
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
 * Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
 
+## Cisco Nexus OS
+
+* Nexus OS release 9.3 runs in 6 GB of RAM (*netsim-tools* system default).
+* Nexus OS release 10.1 requires 8 GB of RAM and will fail with a cryptic message claiming it's running on unsupported hardware when it doesn't have enough memory.
+* Nexus OS release 10.2 requires at least 10 GB of RAM and crashes when ran as an 8 GB VM.
+* To change the default amount of memory used by a **nxos** device, set the **defaults.devices.nxos.memory** parameter (in MB)
+
 ## Cumulus Linux in ContainerLab
 
 * *containerlab* could run Cumulus Linux as a container or as a micro-VM with *firecracker* (default, requires KVM). To run Cumulus VX as a pure container, add **runtime: docker** parameter to node data.

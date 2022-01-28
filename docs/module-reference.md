@@ -12,5 +12,13 @@ The following configuration modules are included in **netsim-tools** distributio
    module/isis.md
    module/ospf.md
    module/sr-mpls.md
+```
+
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+   :caption: Experimental Modules
+
    module/srv6.md
+   module/evpn.md
 ```

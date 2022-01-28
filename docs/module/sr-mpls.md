@@ -1,6 +1,6 @@
 # Segment Routing (MPLS) Configuration Module
 
-This configuration module configures SR-MPLS within IS-IS routing process on Cisco IOS XE (CSR), Arista EOS and Juniper vSRX.
+This configuration module configures SR-MPLS within IS-IS routing process on Cisco IOS XE (CSR), Arista EOS, Juniper vSRX, Nokia SR Linux and Nokia SR OS.
 
 Supported Segment Routing features:
 

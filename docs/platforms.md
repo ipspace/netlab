@@ -80,7 +80,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Arrcus ArcOS               | arcos              |    2 |   4096 |
 | Cisco IOSv                 | iosv               |    1 |    512 |
 | Cisco CSR 1000v            | csr                |    2 |   4096 | 
-| Cisco Nexus 9300v          | nxos               |    2 |   6144 | 
+| Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| 
 | Cumulus Linux              | cumulus            |    2 |   1024 |
 | Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 |
 | Fortinet FortiOS           | fortios            |    1 |   1024 |
