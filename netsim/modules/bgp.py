@@ -85,7 +85,6 @@ class BGP(_Module):
       return
 
     node_data = Box({},default_box=True,box_dots=True)
-    cluster_id_per_asn = {} # Lowest route reflector ID per AS, to use as cluster
     for asn,data in topology.bgp.as_list.items():
       if not isinstance(data,Box):
         common.error(
@@ -127,9 +126,6 @@ class BGP(_Module):
             common.IncorrectValue)
           continue
         node_data[n].rr = True
-        router_id = netaddr.IPAddress(topology.nodes[n].router_id)
-        if asn not in cluster_id_per_asn or cluster_id_per_asn[asn] > router_id:
-          cluster_id_per_asn[asn] = router_id
 
     for name,node in topology.nodes.items():
       if name in node_data:
@@ -141,8 +137,6 @@ class BGP(_Module):
           continue
 
         node.bgp = node_data[name] + node.bgp
-        if 'rr' in node.bgp and node_as in cluster_id_per_asn:
-          node.bgp.cluster_id = cluster_id_per_asn[node_as].ipv4()
 
   '''
   bgp_build_group: create automatic groups based on BGP AS numbers
@@ -225,11 +219,17 @@ class BGP(_Module):
         if "bgp" in n:
           if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
             node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+
     #
     # The node is not a route reflector, and we have a non-empty RR list
     # We need BGP sessions with the route reflectors
     else:
+
+      # To support multiple redundant route reflectors, pick a common cluster id
+      cluster_id = min( [ netaddr.IPAddress(n.router_id) for n in rrlist ] ).ipv4()
+
       for n in rrlist:
+        n.bgp.cluster_id = cluster_id
         if n.name != node.name:
           node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
 
