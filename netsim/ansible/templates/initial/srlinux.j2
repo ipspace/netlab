@@ -21,6 +21,19 @@
 {% endmacro %}
 
 updates:
+{% if mtu is defined %}
+{% if (clab.type in ['ixr6','ixr10'] and (mtu+14)>9486)
+   or (clab.type in ['ixrd1','ixrd2','ixrd3','ixrh1','ixrh2'] and (mtu+14)>9398) %}
+{{ mtu_too_large | mandatory( 'IP MTU '+str(mtu)+' too large for given hardware platform: ' + clab.type ) }}
+{% else %}
+- path: system/mtu
+  val:
+   default-port-mtu: {{ [mtu + 14,1500]|max }}
+   default-l2-mtu: {{ [mtu + 14,1500]|max }}
+   default-ip-mtu: {{ mtu }}
+   _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
+{% endif %}
+{% endif %}
 - path: interface[name=system0]/subinterface[index=0]
   val:
 {{  ip_addresses(loopback,False,True)  }}
@@ -32,6 +45,9 @@ updates:
    description: "{{ l.name|replace('->','~')|regex_replace('[\\[\\]]','') }}{{ " ("+l.role+")" if l.role is defined else '' }}"
 {% elif l.type|default("") == "stub" %}
    description: "Stub interface"
+{% endif %}
+{% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+   mtu {{ [l.mtu + 14,1500]|max }} # TODO not supported on loopback interfaces
 {% endif %}
    subinterface:
     index: 0
