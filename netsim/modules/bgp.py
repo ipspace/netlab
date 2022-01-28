@@ -226,10 +226,10 @@ class BGP(_Module):
     else:
 
       # To support multiple redundant route reflectors, pick a common cluster id
-      cluster_id = min( [ netaddr.IPAddress(n.bgp.router_id) for n in rrlist ] ).ipv4()
+      cluster_id = f"0.0.0.{ min( [ n.id for n in rrlist ] ) % 256 }"
 
       for n in rrlist:
-        n.bgp.cluster_id = cluster_id
+        n.bgp.rr_cluster_id = cluster_id
         if n.name != node.name:
           node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
 
