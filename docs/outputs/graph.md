@@ -9,7 +9,7 @@ The *graph* output module is invoked by specifying `-o graph` parameter in **net
 A single formatting modifier can be used to specify the graph type:
 
 * **topology** (default) -- Include, physical links, and multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems.
-* **bgp** -- Include autonomous systems, nodes, and BGP sessions.
+* **bgp** -- Include autonomous systems, nodes, and BGP sessions. With the **rr** option (specified with `netlab create -o graph:bgp:rr`), RR-client sessions are drawn as directed arrows.
 
 ## Modifying Graph Attributes
 

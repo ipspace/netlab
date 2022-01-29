@@ -5,7 +5,6 @@ The following virtual network devices are supported by *netsim-tools*:
 | Virtual network device                    | netsim device type |
 | ----------------------------------------- | ------------------ |
 | Arista vEOS                               | eos                |
-| Arrcus ArcOS                              | arcos              |
 | Cisco IOSv                                | iosv               |
 | Cisco CSR 1000v                           | csr                |
 | Cisco Nexus 9300v                         | nxos               |
@@ -58,7 +57,6 @@ You cannot use all supported network devices with all virtualization providers. 
 | Virtual network device                             | Vagrant<br />Libvirt |   Vagrant<br />Virtualbox    |       Containerlab       |
 | -------------------------------------------------- | :------------------: | :--------------------------: | :----------------------: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
-| Arrcus ArcOS                                       |          ✅           |              ❌               |            ❌             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
@@ -77,7 +75,6 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Virtual network device     | netsim device type | CPUs | memory |
 | -------------------------- | ------------------ | ---: | -----: |
 | Arista vEOS                | eos                |    2 |   2048 |
-| Arrcus ArcOS               | arcos              |    2 |   4096 |
 | Cisco IOSv                 | iosv               |    1 |    512 |
 | Cisco CSR 1000v            | csr                |    2 |   4096 | 
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| 
@@ -96,7 +93,6 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Operating system      | Deploy configuration | Collect configuration |
 | --------------------- | :------------------: | :-------------------: |
 | Arista EOS            |          ✅           |           ✅           |
-| Arrcus ArcOS          |          ✅           |           ✅           |
 | Cisco IOS / IOS XE    |          ✅           |           ✅           |
 | Cisco Nexus OS        |          ✅           |           ✅           |
 | Cumulus Linux         |          ✅           |           ✅           |
@@ -116,7 +112,6 @@ The following system-wide features are configured on supported network operating
 | Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
 | Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Arrcus ArcOS          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
@@ -135,7 +130,6 @@ The following interface parameters are configured on supported network operating
 | Operating system      | Interface<br />description | Interface<br />bandwidth | MTU |
 | --------------------- | :------------------------: | :----------------------: | :-: |
 | Arista EOS            |            ✅              |            ✅            | ✅ |
-| Arrcus ArcOS          |            ❌              |            ❌            | ❌ |
 | Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.md#cisco-ios) |
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
@@ -155,7 +149,6 @@ The following interface addresses are supported on various platforms:
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | 
 | --------------------- | :-----------------: | :-----------------: | :------------------------: | 
 | Arista EOS            |          ✅          |          ✅          |             ✅              |
-| Arrcus ArcOS          |          ✅          |          ✅          |             ❌              |
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |
@@ -176,7 +169,6 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | SR-MPLS |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :-----: |
 | Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅ |    ✅   |
-| Arrcus ArcOS          | ✅   |   ❌   |   ❌   |  ❌  |  ❌  |    ❌    |
 | Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ❌    |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ✅   |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ❌    |
@@ -198,7 +190,6 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |
 | Arista EOS            |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ✅    |
-| Arrcus ArcOS          |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Cisco IOS             |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco IOS XE          |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |

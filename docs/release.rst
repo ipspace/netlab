@@ -1,6 +1,21 @@
 Release notes
 =============
 
+2022-01-29 (release 1.1.2)
+  * Containerlab installation script
+  * System and interface MTU
+  * Configurable VM memory and CPU settings
+  * Configurable BGP cluster ID
+  * Router ID calculations for IPv6-only devices and configurable router ID
+  * Hosts and default gateways
+  * Static loopback addresses
+  * Cumulus Linux 5.0 support (configuration via NVUE)
+  * BGP graphs can show RR-client sessions as directed arrows
+  * Building vEOS and Nexus 9300v libvirt boxes has been significantly simplified with **netlab libvirt package** command
+  * Proof-of-concept EVPN and SRv6 modules
+
+  :doc:`More details <release/1.1>`
+
 2022-01-20 (release 1.1.1)
   * Cumulus VX: unnumbered interfaces and support for EBGP sessions over unnumbered IPv4 interfaces
   * OVS bridge support in containerlab provider
