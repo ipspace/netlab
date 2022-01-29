@@ -82,7 +82,7 @@ def build_maps(topology: Box) -> Box:
 
   return maps
 
-def graph_topology(topology: Box, fname: str, settings: Box) -> bool:
+def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
   f = common.open_output_file(fname)
   graph_start(f)
 
@@ -110,23 +110,34 @@ def graph_topology(topology: Box, fname: str, settings: Box) -> bool:
   f.close()
   return True
 
-def bgp_session(f : typing.TextIO, node: Box, session: Box, settings: Box) -> None:
+def bgp_session(f : typing.TextIO, node: Box, session: Box, settings: Box, rr_session: bool) -> None:
+  arrow_dir = 'both'
+  if rr_session:
+    arrow_dir = 'none'
+    if session.type == 'ibgp':
+      if 'rr' in node.bgp and node.bgp.rr and not 'rr' in session:
+        arrow_dir = 'forward'
+      if not 'rr' in node.bgp and 'rr' in session:
+        arrow_dir = 'back'
+
   f.write("  %s -- %s" % (node.name,session.name))
   f.write('  [\n')
   if session.type == 'ibgp':
     f.write('    color="%s"\n' % settings.colors.get('ibgp','#613913'))
   else:
     f.write('    color="%s"\n' % settings.colors.get('ebgp','#b21a1a'))
-  f.write('    penwidth=2.5 arrowsize=0.7 dir=both\n')
+  f.write(f'    penwidth=2.5 arrowsize=0.7 dir={arrow_dir}\n')
   f.write('  ]\n')
 
-def graph_bgp(topology: Box, fname: str, settings: Box) -> bool:
+def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
   if not 'bgp' in topology.get('module',{}):
     common.error('BGP graph format can only be used to draw topologies using BGP')
     return False
 
   f = common.open_output_file(fname)
   graph_start(f)
+
+  rr_session = g_format is not None and len(g_format) > 1 and g_format[1] == 'rr'
 
   maps = build_maps(topology)
   graph_bgp_clusters(f,maps.bgp,settings)
@@ -135,7 +146,7 @@ def graph_bgp(topology: Box, fname: str, settings: Box) -> bool:
     if 'bgp' in n:
       for neighbor in n.bgp.get('neighbors',[]):
         if neighbor.name > n.name:
-          bgp_session(f,n,neighbor,settings)
+          bgp_session(f,n,neighbor,settings,rr_session)
 
   f.write("}\n")
   f.close()
@@ -161,7 +172,7 @@ class Graph(_TopologyOutput):
       output_format = self.format[0]
 
     if output_format in graph_dispatch:
-      if graph_dispatch[output_format](topology,graphfile,self.settings):
+      if graph_dispatch[output_format](topology,graphfile,self.settings,self.format):
         print("Created graph file %s in %s format" % (graphfile, output_format))
     else:
       formats = ', '.join(graph_dispatch.keys())
