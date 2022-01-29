@@ -49,9 +49,9 @@ fi
 echo ".. vagrant installed"
 echo
 set +e
-GROUPS="$(groups|grep libvirt)"
+G="$(groups|grep libvirt)"
 set -e
-if [[ -z "$GROUPS" ]]; then
+if [[ -z "$G" ]]; then
   echo "Add vagrant user to libvirt group"
   sudo usermod -a -G libvirt vagrant
   echo ".. You might need to log out and log in to start using netsim-tools with libvirt"
