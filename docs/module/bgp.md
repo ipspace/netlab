@@ -161,7 +161,7 @@ The BGP transformation module builds a list of BGP neighbors for ever node. That
 * If there are no route reflectors within an autonomous system (no device within the autonomous system has **bgp.rr** set to *true*), you'll get a full mesh of IBGP sessions.
 * Router reflectors have IBGP sessions to all other nodes in the same AS. When the remote node is not a router reflector, *route-reflector-client* is configured on the IBGP session.
 * Route reflector clients have IBGP sessions with route reflectors (nodes within the same AS with **bgp.rr** set).
-* IBGP sessions are established between loopback interfaces. You should combine IGBP deployment with an IGP configuration module like [OSPF](ospf.md).
+* IBGP sessions are established between loopback interfaces. You should combine IBGP deployment with an IGP configuration module like [OSPF](ospf.md).
 * Parallel IBGP sessions are established for all IP address families configured on loopback interfaces. See also [IPv6 support](#ipv6-support).
 
 See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
