@@ -62,15 +62,15 @@ protocols {
 }
 protocols {
   bgp {
-{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined and loopback[af] is defined %}
     group ibgp-peers-{{ af }} {
       type internal;
       export ibgp-export;
       advertise-inactive;
-      local-address {{ bgp.router_id }};
-{%   if bgp.rr is defined %}
-      cluster {{ bgp.rr_cluster_id }};
-{%   endif %}
+      local-address {{ loopback[af]|ipaddr('address') }};
+{% if bgp.rr|default(False) %}
+      cluster {{ bgp.rr_cluster_id|default(False) or bgp.router_id }};
+{% endif %}
 {%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' %}
       neighbor {{ n[af] }} {
         description {{ n.name }};
