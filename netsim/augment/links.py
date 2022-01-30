@@ -526,6 +526,21 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
           if interface.ifindex == 1:                      # Set the default gateway only on the first host interface
             interface.gateway = link.gateway
 
+"""
+Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured
+"""
+def set_node_af(nodes: Box) -> None:
+  for n in nodes.values():
+    for af in ['ipv4','ipv6']:
+      if af in n.get('loopback',{}):
+        n.af[af] = True
+        continue
+
+      for l in n.get('interfaces',[]):
+        if af in l:
+          n.af[af] = True
+          continue
+
 def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
   if not link_list:
     return None
@@ -559,4 +574,5 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     set_default_gateway(link,nodes)
 
   interface_feature_check(nodes,defaults)
+  set_node_af(nodes)
   return link_list
