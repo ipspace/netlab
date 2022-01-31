@@ -113,7 +113,7 @@ def augment_node_provider_data(topology: Box) -> None:
       if not isinstance(pdata.node,Box):    # pragma: no cover
         common.fatal(f"Node data for device {devtype} provider {provider} must be a dictionary")
         return
-      n[provider] = pdata.node
+      n[provider] = pdata.node + n.get(provider,{})
 
     if n.box:
       continue
