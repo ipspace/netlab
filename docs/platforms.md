@@ -138,10 +138,10 @@ The following interface parameters are configured on supported network operating
 | FRR 7.5.0             |            ✅              |            ✅            | ✅ |
 | Generic Linux         |            ❌              |            ❌            | ✅ |
 | Juniper vSRX 3.0      |            ✅              |            ✅            | ✅ |
-| Mikrotik CHR RouterOS |            ✅              |            ❌            | ❌ |
+| Mikrotik CHR RouterOS |            ✅              |            ❌            | ✅ |
 | Nokia SR Linux        |            ✅              |            ❌            | ❌ |
 | Nokia SR OS           |            ✅              |            ❌            | ❌ |
-| VyOS                  |            ✅              |            ❌            | ❌ |
+| VyOS                  |            ✅              |            ❌            | ✅ |
 
 
 The following interface addresses are supported on various platforms:
