@@ -23,6 +23,9 @@ def init(topology: Box) -> None:
     # Allow users to specify a different AS to use for underlay peering (eBGP)
     topology.defaults.bgp.attributes.node.append('underlay_as')
 
+    # Also allow the AS to be overriden on a per-link basis
+    topology.defaults.bgp.attributes.link.append('underlay_as')
+
 def ebgp_neighbor(n: Box, asn: int, intf: Box, extra_data: dict) -> Box:
   ngb = Box(extra_data,default_box=True,box_dots=True)
   ngb.name = n.name
@@ -48,15 +51,21 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
     # eBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create eBGP neighbors; set 'local_as'
     ibgp_as = topology.bgp['as']
-    node_as = node.bgp.underlay_as
     for l in node.get("interfaces",[]):
+      node_as = l.bgp.underlay_as if "bgp" in l and "underlay_as" in l.bgp else node.bgp.underlay_as
+
       for ngb_ifdata in l.get("neighbors",[]):
         ngb_name = ngb_ifdata.node
         neighbor = topology.nodes[ngb_name]
-        if not "bgp" in neighbor or not "underlay_as" in neighbor.bgp:
+        if not "bgp" in neighbor:
           continue
 
-        peer_as = neighbor.bgp.underlay_as
+        if "bgp" in ngb_ifdata and "underlay_as" in ngb_ifdata.bgp:
+          peer_as = ngb_ifdata.bgp.underlay_as
+        elif "underlay_as" in neighbor.bgp:
+          peer_as = neighbor.bgp.underlay_as
+        else:
+          continue # No underlay_as defined for this neighbor
 
         if node_as!=peer_as:
           extra_data = Box({})
@@ -70,5 +79,5 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
 
 def post_transform(topology: Box) -> None:
   for node in topology.nodes.values():
-    if 'bgp' in node and 'underlay_as' in node.bgp:
+    if "bgp" in node and "underlay_as" in node.bgp:
         build_ebgp_sessions(node,topology)
