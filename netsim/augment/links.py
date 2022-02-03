@@ -330,6 +330,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     for remote_if in interfaces:
       if remote_if['node'] != node_if['node'] or remote_if['data'].ifindex != node_if['data'].ifindex:
         ngh_data = { 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] }
+        ifaddr_add_module(ngh_data,ngh_data,defaults.get('module'))
         for af in ('ipv4','ipv6'):
           if af in remote_if['data']:
             ngh_data[af] = remote_if['data'][af]
@@ -384,6 +385,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     return None
 
   for i in range(0,len(link_nodes)):
+
     node = link_nodes[i].name
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=link_nodes[i].ifaddr)
     ifdata.name = link.get("name") or (link_nodes[i].name + " -> " + link_nodes[1-i].name)
@@ -403,15 +405,17 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     link[end_names[i]] = { 'node': link_nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
 
     remote = link_nodes[1-i].name
-    interfaces[i]['neighbors'] = [{
+    neighbor = {
         'node': remote,
         'ifname': interfaces[1-i]['ifname']
-      }]
+    }
+    ifaddr_add_module(neighbor,interfaces[1-i],defaults.get('module'))
     for af in ('ipv4','ipv6'):
       if af in interfaces[1-i]:
-        interfaces[i]['neighbors'][0][af] = interfaces[1-i][af]
+        neighbor[af] = interfaces[1-i][af]
       if af in interfaces[i]:
         link[end_names[i]][af] = interfaces[i][af]
+    interfaces[i]['neighbors'] = [ neighbor ]
 
   return link
 
@@ -443,7 +447,7 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
     if not 'role' in link:
       link.role = 'stub'
 
-  return 
+  return
 
 def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
@@ -451,7 +455,7 @@ def check_link_type(data: Box) -> bool:
 
   if 'mtu' in data and not isinstance(data.mtu,int): # pragma: no cover
     common.error(f'MTU parameter should be an integer: {data}',common.IncorrectValue,'links')
-    
+
   if not link_type: # pragma: no cover (shouldn't get here)
     common.fatal('Internal error: link type still undefined in check_link_type: %s' % data,'links')
     return False
