@@ -329,7 +329,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     node_if['data'].neighbors = []
     for remote_if in interfaces:
       if remote_if['node'] != node_if['node'] or remote_if['data'].ifindex != node_if['data'].ifindex:
-        ngh_data = { 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] }
+        ngh_data = Box({ 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] })
         ifaddr_add_module(ngh_data,ngh_data,defaults.get('module'))
         for af in ('ipv4','ipv6'):
           if af in remote_if['data']:
@@ -405,10 +405,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     link[end_names[i]] = { 'node': link_nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
 
     remote = link_nodes[1-i].name
-    neighbor = {
-        'node': remote,
-        'ifname': interfaces[1-i]['ifname']
-    }
+    neighbor = Box({ 'node': remote, 'ifname': interfaces[1-i]['ifname'] })
     ifaddr_add_module(neighbor,interfaces[1-i],defaults.get('module'))
     for af in ('ipv4','ipv6'):
       if af in interfaces[1-i]:
