@@ -20,8 +20,6 @@ class OSPF(_Module):
     for intf in node.get('interfaces',[]):
       if not _routing.external(intf,'ospf'):
         _routing.passive(intf,'ospf')
-        if not 'area' in intf.ospf:
-          intf.ospf.area = node.ospf.area
         err = _routing.network_type(intf,'ospf',['point-to-point','point-to-multipoint','broadcast','non-broadcast'])
         if err:
           common.error(f'{err}\n... node {node.name} link {intf}')

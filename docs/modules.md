@@ -15,8 +15,8 @@ Module-specific parameters can be added to:
 **Notes:**
 * Global module parameters will be merged with node-specific parameters (see *[merging default values](#merging-default-values)* for details).
 * Link-level module parameters will be merged with interface data.
-* Merging of node-level and interface-level parameters is performed in configuration templates.
-* No further processing is performed on module-specific data when expanding network topology.
+* Select node-level parameters (example: OSPF area) are merged into interface data.
+* Further processing of module-specific data is module-dependent.
 
 ## Specifying Configuration Modules
 
@@ -123,14 +123,16 @@ For more information, see [list of configuration modules](module-reference.md)
 
 ## Merging Default Values
 
-Module parameters are always a dictionary of values stored under the *module-name* key in defaults, topology, node, link, or interface. Node module parameters are adjusted based on topology parameters and defaults ([more details](dev/module-attributes.md)):
+Module parameters are dictionaries of values stored under the *module-name* key in defaults, topology, node, link, or interface. The only exception to this rule: you can disable a few protocols (example: [BFD](module/bfd.md)) on an interface, with **_module_: False** configuration setting.
+
+Node module parameters are adjusted based on topology parameters and defaults ([more details](dev/module-attributes.md)):
 
 * Global and topology defaults are merged with the **defaults** setting in topology file (see [*topology defaults*](defaults.md) and *[merging defaults](addressing.md#merging-defaults)*)
 * For every module used in network topology, the default module parameters are merged with topology-level settings.
 * For every node, the topology-level settings for modules used by that node are merged with the node-level settings.
 * Final node-level settings are saved into expanded topology file or Ansible inventory, and used by configuration templates.
 
-Link module parameters are not changed during the topology expansion. They are merged with interface data when individual interfaces are created during the topology transformation process.
+Link module parameters are not changed during the topology expansion. They are merged with interface data when individual interfaces are created during the topology transformation process, and later augmented with module-specific subset of node data (example: OSPF area).
 
 ### Example
 

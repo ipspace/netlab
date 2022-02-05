@@ -24,6 +24,7 @@ The list of valid module attributes is specified in the **defaults._module_.attr
 * **node** -- valid node-level attributes
 * **link** -- valid link attributes
 * **link_no_propagate** -- link module attributes that should not be propagated into interface data
+* **node_copy** -- node module attributes that should be copied into interface attributes
 * **interface** -- valid interface attributes
 
 You can [extend the list of valid module attributes](../extend-attributes.md) with **defaults._module_.extra_attributes** dictionary.
@@ -46,12 +47,25 @@ The deep merge process takes care of attribute specificity:
 
 Node interfaces (**links** list within a node dictionary) are created from the topology **links** definition ([details](../links.md)). During that process, the link-level attributes are deep-merged with interface attributes specified on individual nodes within a link dictionary (apart from *no_propagate* exceptions).
 
-Some modules support node attributes that can be used as a default value for interface attributes (example: OSPF area). The merging of node- and interface attributes have to be performed in the device configuration template, for example:
+Some modules support node attributes that can be used as a default value for interface attributes (example: OSPF area). These modules should list those attributes in **defaults._module_.attributes.node_copy** list to have them merged with the interface attributes that can then be easily used in configuration templates.
+
+Example: OSPF area can be specified for a whole node or for an interface. 
+
+Without the **node_copy** processing, the configuration templates would have to check for interface-level and node-level OSPF area:
 
 ```
 interface {{ l.ifname }}
  ip ospf {{ pid }} area {{ l.ospf.area|default(ospf.area) }}
 ```
+
+However, as **defaults.ospf.attributes.node_copy** is set to `[ area ]`, the node **ospf.area** setting is automatically copied into interface data unless the **ospf.area** was configured on an interface or its parent link. The configuration template can now be simplified into:
+
+```
+interface {{ l.ifname }}
+ ip ospf {{ pid }} area {{ l.ospf.area }}
+```
+
+**Note**: The system defaults file sets **ospf.area** to **0.0.0.0**. That value is copied to individual nodes that have no OSPF area specified, and further down into individual interfaces, making sure that `l.ospf.area` always has a usable value.
 
 ## no_propagate Attributes
 
