@@ -49,7 +49,7 @@ nodes:
 
 ## Module-Specific Node and Link Attributes
 
-Module names can be used as elements in **links** and **nodes** structures to set module-specific link- or node attributes. You also set module attributes on individual interfaces (node data within a link object)
+Module names can be used as elements in **links** and **nodes** structures to set module-specific link- or node attributes, or on individual interfaces (node data within a link object).
 
 You can also use module names to set global parameters (top-level topology elements).
 
@@ -60,7 +60,18 @@ You can also use module names to set global parameters (top-level topology eleme
 
 ### Examples
 
-All devices should use OSPF area 1: set it globally.
+We want to run OSPF in our lab, and we're perfectly OK with system default **ospf.area** setting (0.0.0.0):
+
+```
+module: [ospf]
+
+nodes:
+- r1
+- r2
+- r3
+```
+
+We want to run OSPF in area 1, and all devices should be in the same OSPF area, so it makes sense to set it as global parameter:
 
 ```
 module: [ospf]
@@ -98,7 +109,7 @@ The link between R2 and R3 should be in area 0. Set OSPF area with a link attrib
     cost: 3
 ```
 
-The link between R1, R2 and R3 should also be in area 0. The OSPF cost on R1 should be set to 10:
+The link between R1, R2 and R3 should be in area 1. The OSPF cost on R1 should be set to 10:
 
 ```
 - r1:
@@ -106,7 +117,7 @@ The link between R1, R2 and R3 should also be in area 0. The OSPF cost on R1 sho
   r2:
   r3:
   ospf:
-    area: 0
+    area: 1
     cost: 3
 ```
 
@@ -125,14 +136,15 @@ For more information, see [list of configuration modules](module-reference.md)
 
 Module parameters are dictionaries of values stored under the *module-name* key in defaults, topology, node, link, or interface. The only exception to this rule: you can disable a few protocols (example: [BFD](module/bfd.md)) on an interface, with **_module_: False** configuration setting.
 
-Node module parameters are adjusted based on topology parameters and defaults ([more details](dev/module-attributes.md)):
+Node module parameters are adjusted based on topology parameters and default settings ([more details](dev/module-attributes.md)):
 
-* Global and topology defaults are merged with the **defaults** setting in topology file (see [*topology defaults*](defaults.md) and *[merging defaults](addressing.md#merging-defaults)*)
-* For every module used in network topology, the default module parameters are merged with topology-level settings.
 * For every node, the topology-level settings for modules used by that node are merged with the node-level settings.
+* Node settings are further adjusted with device-specific settings and [global system defaults](defaults.md)
 * Final node-level settings are saved into expanded topology file or Ansible inventory, and used by configuration templates.
 
-Link module parameters are not changed during the topology expansion. They are merged with interface data when individual interfaces are created during the topology transformation process, and later augmented with module-specific subset of node data (example: OSPF area).
+Link module parameters are not changed during the topology expansion. They are merged with interface data when individual interfaces are created during the topology transformation process. Interface module settings are later augmented with module-specific subset of node data (example: OSPF area).
+
+Finally, for every module used in network topology, the system default module parameters are merged with topology-level settings (example: setting **ospf.area** to 0.0.0.0 if it wasn't defined in the lab topology).
 
 ### Example
 

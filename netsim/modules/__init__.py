@@ -117,11 +117,18 @@ def merge_node_module_params(topology: Box) -> None:
     if 'module' in n:
       for m in n.module:
         if m in topology:
-          n[m] = get_propagated_global_module_params(m,topology.get(m,{}),topology.defaults[m]) + n[m]
+          global_settings = get_propagated_global_module_params(m,topology.get(m,{}),topology.defaults[m])
+          if global_settings:
+            n[m] = global_settings + n[m]
 
         dev_settings = devices.get_device_attribute(n,m,topology.defaults)
         if dev_settings:
           n[m] = get_propagated_global_module_params(m,dev_settings,topology.defaults[m]) + n[m]
+
+        if isinstance(topology.defaults[m],dict):
+          default_settings = get_propagated_global_module_params(m,topology.defaults[m],topology.defaults[m])
+          if default_settings:
+            n[m] = default_settings + n[m]
 
 # Get propagated global parameters from settings (top-level or device-level)
 #
@@ -196,13 +203,13 @@ adjust_modules: somewhat intricate multi-step config module adjustments
 '''
 def adjust_modules(topology: Box) -> None:
   augment_node_module(topology)
+  merge_node_module_params(topology)
   adjust_global_modules(topology)
   check_module_parameters(topology)
   check_module_dependencies(topology)
   module_transform("pre_default",topology)
   node_transform("pre_default",topology)
   link_transform("pre_default",topology)
-  merge_node_module_params(topology)
   if 'module' in topology:
     topology.defaults.module = topology.module
 

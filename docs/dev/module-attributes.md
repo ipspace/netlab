@@ -31,25 +31,25 @@ You can [extend the list of valid module attributes](../extend-attributes.md) wi
 
 ## Propagating Module Attributes
 
-Node-level module attributes are calculated during the [pre-transform module processing](transform.md#adjust-global-module-parameters):
+Node-level module attributes are calculated during the [pre-transform module processing](transform.md#adjust-global-module-parameters). Default module attributes are [deep-merged](../defaults.md#deep-merging) with node attributes (apart from *no_propagate* exceptions) in the following order:
 
-* Default global attributes are [deep-merged](../defaults.md#deep-merging) with topology global attributes.
-* Global attributes are deep-merged with node attributes (apart from *no_propagate* exceptions).
-* Device-specific global attributes are deep-merged with node attributes.
+* Global module attributes from in the lab topology
+* Device-specific module attributes specified in **defaults.devices._device_._module_** setting
+* Default module attributes specified in **defaults._module_** setting
 
 The deep merge process takes care of attribute specificity:
 
 * Attributes specified on individual nodes are not overwritten with global- or device-specific settings.
-* Global attributes are not overwritten with device-specific attributes.
-* This process is applied recursively across nested dictionaries as long as the node value of a specific attribute is a dictionary.
+* Topology-level attributes are not overwritten with device-specific attributes.
+* Device-specific attributes are not overwritten with global system defaults.
 
 ## Propagating Link Attributes
 
-Node interfaces (**links** list within a node dictionary) are created from the topology **links** definition ([details](../links.md)). During that process, the link-level attributes are deep-merged with interface attributes specified on individual nodes within a link dictionary (apart from *no_propagate* exceptions).
+Node interfaces (**interfaces** list within a node dictionary) are created from the topology **links** definition ([details](../links.md)). During that process, the link-level attributes are deep-merged with interface attributes specified on individual nodes within a link dictionary (apart from *no_propagate* exceptions).
 
 Some modules support node attributes that can be used as a default value for interface attributes (example: OSPF area). These modules should list those attributes in **defaults._module_.attributes.node_copy** list to have them merged with the interface attributes that can then be easily used in configuration templates.
 
-Example: OSPF area can be specified for a whole node or for an interface. 
+**Example**: OSPF area can be specified for a whole node or for an interface. 
 
 Without the **node_copy** processing, the configuration templates would have to check for interface-level and node-level OSPF area:
 
@@ -65,7 +65,7 @@ interface {{ l.ifname }}
  ip ospf {{ pid }} area {{ l.ospf.area }}
 ```
 
-**Note**: The system defaults file sets **ospf.area** to **0.0.0.0**. That value is copied to individual nodes that have no OSPF area specified, and further down into individual interfaces, making sure that `l.ospf.area` always has a usable value.
+**Note**: The system defaults set **ospf.area** to **0.0.0.0**. That value is copied to individual nodes that have no OSPF area specified, and further down into individual interfaces, making sure that `l.ospf.area` always has a usable value.
 
 ## no_propagate Attributes
 
