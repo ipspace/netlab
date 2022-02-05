@@ -16,6 +16,18 @@ Configuration modules could have:
 * Link attributes specified on individual links, for example **ospf.area**
 * Interface attributes specified within node data on individual link, for example **r1.ospf.cost**.
 
+## Valid Module Attributes
+
+The list of valid module attributes is specified in the **defaults._module_.attributes** dictionary:
+
+* **global** -- valid global (topology-level) attributes
+* **node** -- valid node-level attributes
+* **link** -- valid link attributes
+* **link_no_propagate** -- link module attributes that should not be propagated into interface data
+* **interface** -- valid interface attributes
+
+You can [extend the list of valid module attributes](../extend-attributes.md) with **defaults._module_.extra_attributes** dictionary.
+
 ## Propagating Module Attributes
 
 Node-level module attributes are calculated during the [pre-transform module processing](transform.md#adjust-global-module-parameters):

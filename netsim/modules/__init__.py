@@ -280,24 +280,35 @@ def check_module_parameters(topology: Box) -> None:
         if mod_attr[m] and m in intf:           # Does the current module have a list of attributes?
                                                 # ... and interface contains module attributes?
           for k in intf[m].keys():              # Iterate over node link-level module-specific attributes
-            if not k in mod_attr[m].link_node:  # If the name of an attribute is not in the list of allowed
-                                                # ... link-level node attributes report error
+            if not k in mod_attr[m].interface:  # If the name of an attribute is not in the list of allowed
+                                                # ... interface attributes report error
               common.error(
                 f"Node {n} has invalid attribute {k} for module {m} on link {l}",
                 common.IncorrectValue,
                 'modules')
 
+"""
+Prepare module attribute dictionary
+
+* If the module attributes are a list, then global/node/link/interface attributes are the same
+
+Otherwise:
+
+* Add propagatable link attributes to interface attributes
+* Copy global attributes to node attributes if the node attributes are not specified
+"""
+
 def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> Box:
   if isinstance(a,dict):
     attr = Box(a,default_box=True,box_dots=True)
-    attr.link_node = attr.get("link_node",attr.link)
+    attr.interface = list(set(attr.link) - set(attr.link_no_propagate) | set(attr.interface))
     attr.node = attr.get("node",attr["global"])
   else:
     attr = Box({
       "global": a,
       "node": a,
       "link": a,
-      "link_node": a
+      "interface": a
     },default_box=True,box_dots=True)
   return attr
 

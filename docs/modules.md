@@ -4,13 +4,17 @@ Network topology could refer to additional *configuration modules* that can be u
 
 Module-specific parameters can be added to:
 
-* Node or link objects
-* Topology
+* Nodes, links or interfaces[^INTF]
+* Topology (global node settings)
 * **defaults** element in the topology, topology defaults, or global defaults.
+* Default **devices** settings[^BRAVE]
+
+[^INTF]: Node data within a link dictionary
+[^BRAVE]: For the brave souls only. Probably best left alone.
 
 **Notes:**
 * Global module parameters will be merged with node-specific parameters (see *[merging default values](#merging-default-values)* for details).
-* Link-level module parameters will be copied into interface data.
+* Link-level module parameters will be merged with interface data.
 * Merging of node-level and interface-level parameters is performed in configuration templates.
 * No further processing is performed on module-specific data when expanding network topology.
 
@@ -45,7 +49,9 @@ nodes:
 
 ## Module-Specific Node and Link Attributes
 
-Module names can be used as elements in **links** and **nodes** structures to set module-specific link- or node attributes. You can also use them to set global parameters (top-level topology elements).
+Module names can be used as elements in **links** and **nodes** structures to set module-specific link- or node attributes. You also set module attributes on individual interfaces (node data within a link object)
+
+You can also use module names to set global parameters (top-level topology elements).
 
 **Notes:**
 
@@ -92,6 +98,18 @@ The link between R2 and R3 should be in area 0. Set OSPF area with a link attrib
     cost: 3
 ```
 
+The link between R1, R2 and R3 should also be in area 0. The OSPF cost on R1 should be set to 10:
+
+```
+- r1:
+    ospf.cost: 10
+  r2:
+  r3:
+  ospf:
+    area: 0
+    cost: 3
+```
+
 ## Using Modules when Deploying Device Configurations
 
 During the initial device configuration, the **[netlab initial](../netlab/initial.md)** command generates and deploys configuration snippets for every module specified on individual network devices.
@@ -105,12 +123,14 @@ For more information, see [list of configuration modules](module-reference.md)
 
 ## Merging Default Values
 
-Module parameters are always a dictionary of values stored under the *module-name* key in defaults, topology, node or link. Link module parameters are not changed during the topology expansion, node module parameters are adjusted based on topology parameters and defaults ([more details](dev/module-attributes.md)):
+Module parameters are always a dictionary of values stored under the *module-name* key in defaults, topology, node, link, or interface. Node module parameters are adjusted based on topology parameters and defaults ([more details](dev/module-attributes.md)):
 
 * Global and topology defaults are merged with the **defaults** setting in topology file (see [*topology defaults*](defaults.md) and *[merging defaults](addressing.md#merging-defaults)*)
 * For every module used in network topology, the default module parameters are merged with topology-level settings.
 * For every node, the topology-level settings for modules used by that node are merged with the node-level settings.
 * Final node-level settings are saved into expanded topology file or Ansible inventory, and used by configuration templates.
+
+Link module parameters are not changed during the topology expansion. They are merged with interface data when individual interfaces are created during the topology transformation process.
 
 ### Example
 
@@ -132,16 +152,16 @@ ospf:
 nodes:
   r1:
     ospf:
-      id: 17
+      router_id: 10.0.0.17
       area: 0.0.0.1
   r2:
-    module: [ bgp,evpn ]
+    module: [ bgp,bfd ]
 ```
 
 Before the merge process starts, the global list of modules is augmented with node-specific modules, resulting in:
 
 ```
-module: [ ospf,bgp,evpn ]
+module: [ ospf,bgp,bfd ]
 ```
 
 For every module used in network topology, the default values are added to global parameter values, resulting in:
@@ -166,7 +186,7 @@ nodes:
   r1:
     ospf:
       area: 0.0.0.1
-      id: 17
+      router_id: 10.0.0.17
       process: 1
   r2:
     bgp:
