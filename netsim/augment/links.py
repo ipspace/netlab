@@ -246,7 +246,8 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
           node_link_data[af] = prefix[af]
       else:
         try:
-          node_addr = netaddr.IPNetwork(prefix[af][node_id])
+          index = node_id-1 if af == 'ipv4' and prefix[af].prefixlen==31 else node_id
+          node_addr = netaddr.IPNetwork(prefix[af][index])
         except Exception as ex:
           return(
             f'Cannot assign {af} address from prefix {prefix[af]} to node {node.name} with ID {node.id}\n'+
