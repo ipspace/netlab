@@ -28,13 +28,7 @@ When selecting the virtualization environment, consider the following:
 
 We are focusing the majority of our platform development efforts on Linux environments using KVM/libvirt with Vagrant or Docker with containerlab. We have selected Ubuntu as the distribution supported by **netlab install** command. The *libvirt* installation guide for Ubuntu is thus the most extensive one.
 
-## Installing *netsim-tools*
-
-Use `python3 -m pip install netsim-tools` to install the *netsim-tools* software onto your selected platform. The installation process will install all prerequisite Python packages and create the **netlab** command.
-
-If you want to get the latest development code or if you want to participate in *netsim-tools* development, [clone the GitHub repository](install/clone.md).
-
-## Creating a Lab Environment
+## Creating the Lab Environment
 
 You can set up your lab:
 
@@ -46,6 +40,12 @@ You can set up your lab:
 ```{tip}
 We highly recommend to use KVM+libvirt on Linux, and see no good reason to use VirtualBox when there are better alternatives.
 ```
+
+## Installing *netsim-tools* Package
+
+To install *netsim-tools* on a system that already has the low-level tools installed, use `python3 -m pip install netsim-tools`. The installation process will install all prerequisite Python packages and create the **netlab** command.
+
+If you want to get the latest development code or if you want to participate in *netsim-tools* development, [clone the GitHub repository](install/clone.md).
 
 ```eval_rst
 .. toctree::
