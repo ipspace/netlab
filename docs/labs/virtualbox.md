@@ -1,6 +1,14 @@
 # Virtualbox-Based Lab on Windows or MacOS
 
-Virtualbox-based Vagrant lab is extremely easy to set up on Windows or MacOS:
+Virtualbox-based Vagrant lab is the only option if you want to run *netsim-tools* directly on Windows or MacOS (you could also run them [within a Ubuntu VM](../install/ubuntu-vm.md)):
+
+* [netlab](../netlab/cli.md) commands will create Ansible inventory and Vagrant configuration
+* Vagrant will create virtual networks within VirtualBox environment and start network devices as virtual machines within VirtualBox
+* Ansible will connect to the network devices and configure them
+
+![VirtualBox-based architecture](../install/virtual-box-architecture.png)
+
+The environment is pretty easy to set up:
 
 * [Install Virtualbox](https://www.virtualbox.org/wiki/Downloads) (might require fiddling with BIOS setup on Ubuntu bare-metal installations)
 * [Install Vagrant](https://www.vagrantup.com/docs/installation)
@@ -8,6 +16,7 @@ Virtualbox-based Vagrant lab is extremely easy to set up on Windows or MacOS:
 * [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)[^1] and device-specific requirements.
 * Test the installation with **[netlab test virtualbox](../netlab/test.md)** command
 
+## Creating a New Lab
 To create a new lab:
 
 * Create [lab topology file](../topology-overview.md) in an empty directory. Use `provider: virtualbox` in lab topology to select the *virtualbox* virtualization provider.

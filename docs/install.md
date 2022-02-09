@@ -2,10 +2,16 @@
 
 *netsim-tools* is a Python3 package that runs on Python 3.7 or later on Windows, MacOS, or Linux. It's a high-level abstraction and orchestration tool that relies on other tools to provide the low-level functionality:
 
-* VM/container virtualization: VirtualBox, libvirt/KVM or Docker
+* VM/container virtualization: VirtualBox (Windows or MacOS), KVM (Linux) or Docker (Linux)
+* Virtualization API: libvirt (used with KVM on Linux)
 * VM/container orchestration: Vagrant or containerlab
 * Configuration deployment: Ansible 2.9.1 or later
 
+![High-level architecture](high-level-architecture.png)
+
+If you already have an environment that can be used with *netsim-tools*, please proceed directly to *[installing Python package](package)*. Otherwise, you'll have to [select the platform](platform) you want to use and [create your lab environment ](lab)(including *netsim-tools* installation).
+
+(platform)=
 ## Selecting the Platform and Low-Level Tools
 
 We have tested *netsim-tools* with:
@@ -22,25 +28,30 @@ When selecting the virtualization environment, consider the following:
 * No management network (Vagrant uses a weird port NAT to access virtual machines)
 * VirtualBox networking is hard to integrate with the external world
 
-**Vagrant provider for libvirt** supports parallel VM provisioning, resulting in much faster lab creation. Unfortunately, most vendors don't offer virtual devices packaged as libvirt Vagrant boxes, so you'll have to build your own boxes.
+**Vagrant provider for libvirt** supports parallel VM provisioning, resulting in much faster lab creation. An added bonus: if you decide to use Ubuntu, you can use **[netlab install](netlab/install.md)** command to install all the prerequisite software (KVM, libvirt, Vagrant, Docker, containerlab, Ansible).
+
+Unfortunately, most vendors don't offer virtual devices packaged as libvirt Vagrant boxes, so you'll have to build your own boxes.
 
 **Containers** provisioned with containerlab start much faster than virtual machines, but you can get only a few network devices in native container format (Arista cEOS, Nokia SR Linux, Cumulus VX).
 
-We are focusing the majority of our platform development efforts on Linux environments using KVM/libvirt with Vagrant or Docker with containerlab. We have selected Ubuntu as the distribution supported by **netlab install** command. The *libvirt* installation guide for Ubuntu is thus the most extensive one.
+We are focusing the majority of our platform development efforts on Linux environments using KVM/libvirt with Vagrant or Docker with containerlab. We have selected Ubuntu as the Linux distribution supported by **netlab install** command. The installation guide for Ubuntu is thus the most extensive one.
 
+(lab)=
 ## Creating the Lab Environment
 
 You can set up your lab:
 
 * On [Windows or MacOS using VirtualBox with Vagrant](labs/virtualbox.md). This setup won't be able to run network devices packaged as containers (Arista cEOS, Nokia SR Linux)
 * On a [Ubuntu virtual machine running on Windows or MacOS](install/ubuntu-vm.md).
-* On a [Ubuntu VM or bare-metal Ubuntu server](install/ubuntu.md)
+* On a [generic Ubuntu VM or bare-metal Ubuntu server](install/ubuntu.md)
 * On [other Linux distributions](install/linux.md)
 
 ```{tip}
-We highly recommend to use KVM+libvirt on Linux, and see no good reason to use VirtualBox when there are better alternatives.
+* If you decide to run the network labs within a Ubuntu VM on your MacOS/Windows computer, [create a new VM and use the automated software installation procedure](install/ubuntu-vm.md). It's much easier and safer than trying to install the necessary software on an existing VM.
+* Don't use VirtualBox on Linux. As you won't need a GUI to interact with the network devices we see no reason to do that when there are better alternatives (KVM+libvirt).
 ```
 
+(package)=
 ## Installing *netsim-tools* Package
 
 To install *netsim-tools* on a system that already has the low-level tools installed, use `python3 -m pip install netsim-tools`. The installation process will install all prerequisite Python packages and create the **netlab** command.

@@ -4,6 +4,12 @@ This page describes generic installation steps you have to follow to create a vi
 
 ## Prerequisite Software Installation
 
+*netsim-tools* is a Python package that uses KVM to run virtual machines and Docker to run containers. Virtual machines in KVM environment and the associated Linux bridges are created with Vagrant using libvirt API. Ansible is used to configure the network devices.
+
+![netsim-tools on Linux](linux-architecture.png)
+
+To build a Linux environment needed to run network devices as virtual machines or containers:
+
 * Install Python 3.7 or later
 * Install KVM and libvirt
 * Install Vagrant 2.2.14 or later
@@ -13,7 +19,7 @@ This page describes generic installation steps you have to follow to create a vi
 
 ## netsim-tools Installation
 
-Install *netsim-tools* package with `sudo python3 -m pip install netsim-tools` or whatever your preferred way of installing Python packages is.
+Install *netsim-tools* package with `sudo python3 -m pip install netsim-tools` or your preferred Python package installation procedure.
 
 ## Create *vagrant-libvirt* Virtual Network
 

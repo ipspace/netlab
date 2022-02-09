@@ -1,6 +1,8 @@
 # Ubuntu VM Installation
 
-If you have a Windows- or MacOS-based computer and would like to use *netsim-tools* with *libvirt*[^1] or run network devices as containers, create a Ubuntu virtual machine and run your networking lab within that virtual machine[^2].
+If you have a Windows- or MacOS-based computer and would like to use *netsim-tools* with *libvirt*[^1] or run network devices as containers, you'll have to run the whole toolchain needed to create networking labs (netsim-tools ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine. The easiest way to do that is to create a Ubuntu virtual machine and use **netlab install** command within that virtual machine to install the required software packages[^2].
+
+![Running Ubuntu VM on a desktop OS](ubuntu-on-desktop-os.png)
 
 [^1]: The *libvirt* Vagrant plugin starts all network devices in parallel, resulting in much faster lab setup than using Vagrant with Virtualbox.
 
@@ -9,6 +11,18 @@ If you have a Windows- or MacOS-based computer and would like to use *netsim-too
 ```{warning}
 Running *‌libvirt* within a Ubuntu VM requires *‌nested virtualization*. Nested virtualization was available in VMware Workstation/Fusion for years and was recently added to VirtualBox. While VMware products perform flawlessly, you might get unacceptable performance with VirtualBox nested virtualization on some Intel CPUs (example: MacBook Pro 2020, Intel Core i5 CPU).
 ```
+
+The easiest way to set up a Ubuntu VM is to [use Vagrant](vagrant). Vagrant will automatically:
+
+* Download the required virtual disk image
+* Start the virtual machine
+* Enable SSH access to the virtual machine
+* Provision the software on the virtual machine
+
+You can also [create the virtual machine yourself](manual) (using, for example, VirtualBox or VMware GUI)
+
+(vagrant)=
+## Creating Ubuntu VM with Vagrant
 
 Installation steps:
 
@@ -52,6 +66,22 @@ end
 
 * Execute **vagrant up** and wait for the installation to complete.
 * Log into the virtual machine with **vagrant ssh** and test the installation with **netlab test**
+
+(manual)=
+## Manual Virtual Machine Provisioning
+
+* Create a Ubuntu 20.04 virtual machine within your virtualization environment (you'll find plenty of tutorials on the Internet)
+* Log into the virtual machine
+* Execute these commands to download Python3 and install *netsim-tools*, Ansible, vagrant, libvirt, KVM, containerlab, and Docker.
+
+```
+sudo apt-get update
+sudo apt-get install -y python3-pip
+sudo pip3 install --ignore-installed netsim-tools
+sudo netlab install -y ubuntu ansible libvirt containerlab
+```
+
+* After completing the software installation, you might have to use **usermod** to add your user to *libvirt* and *docker* groups.
 
 ```eval_rst
 .. toctree::
