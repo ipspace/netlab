@@ -8,7 +8,7 @@ The simplest way to install *netsim-tools* and the whole low-level toolchain on 
 
 * If needed, install Python3 and **pip3** with `sudo apt-get update && sudo apt-get install -y python3-pip`
 * Install *netsim-tools* package with `sudo python3 -m pip install netsim-tools` or your preferred Python package installation procedure.
-* Install additional software with `sudo netlab install ubuntu ansible libvirt containerlab` command ([more details](../netlab/install.md)).
+* Install additional software with `netlab install ubuntu ansible libvirt containerlab` command ([more details](../netlab/install.md)).
 
 ```eval_rst
 .. toctree::

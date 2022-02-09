@@ -60,6 +60,7 @@ Vagrant.configure("2") do |config|
     pip3 install --ignore-installed netsim-tools
     netlab install -y ubuntu ansible libvirt containerlab
     usermod -aG libvirt vagrant
+    usermod -aG docker vagrant
   SHELL
 end
 ```
@@ -78,7 +79,7 @@ end
 sudo apt-get update
 sudo apt-get install -y python3-pip
 sudo pip3 install --ignore-installed netsim-tools
-sudo netlab install -y ubuntu ansible libvirt containerlab
+netlab install -y ubuntu ansible libvirt containerlab
 ```
 
 * After completing the software installation, you might have to use **usermod** to add your user to *libvirt* and *docker* groups.
