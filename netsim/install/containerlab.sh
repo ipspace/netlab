@@ -45,11 +45,11 @@ sudo apt-get install -y $FLAG_QUIET docker-ce docker-ce-cli containerd.io
 echo "Install containerlab"
 sudo bash -c "$(curl -sL https://get-clab.srlinux.dev)"
 set +e
-G="$(groups|grep docker)"
+G="$(groups $USER|grep docker)"
 set -e
 if [[ -z "$G" ]]; then
-  echo "Add vagrant user to docker group"
-  sudo usermod -a -G docker vagrant
+  echo "Add user $USER to docker group"
+  sudo usermod -a -G docker $USER
   echo ".. You might need to log out and log in if you want to use Docker commands"
   echo
 fi

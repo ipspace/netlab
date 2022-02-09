@@ -1,3 +1,3 @@
 #!/usr/bin/env python3
 
-__version__ = "1.1.2-post1"
+__version__ = "1.1.3-dev2"
