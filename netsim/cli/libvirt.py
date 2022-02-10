@@ -10,6 +10,7 @@ import string
 import pathlib
 import glob
 import subprocess
+import shutil
 
 from box import Box
 
@@ -73,6 +74,20 @@ def vm_cleanup(name: str) -> None:
   except Exception as ex:
     print(f"Cannot undefine {name}: {ex}")
 
+def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
+  devdata = settings.devices[args.device]
+  if not 'create_iso' in devdata.libvirt:
+    return
+  print("Creating bootstrap ISO image")
+
+  isodir = common.get_moddir() / "install/libvirt" / devdata.libvirt.create_iso
+  shutil.rmtree('iso',ignore_errors=True)
+  shutil.copytree(isodir,'iso')
+  if os.path.exists('bootstrap.iso'):
+    os.remove('bootstrap.iso')
+
+  abort_on_failure("mkisofs -l -o bootstrap.iso iso")
+  print("... done\n")
 
 def lp_create_vm(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
@@ -185,6 +200,8 @@ best not to damage the original virtual disk).
   vm_cleanup('vm_box')
   if not 'disk' in skip:
     lp_create_vm_disk(args)
+  if not 'iso' in skip:
+    lp_create_bootstrap_iso(args,settings)
   if not 'vm' in skip:
     lp_create_vm(args,settings)
   if not 'box' in skip:

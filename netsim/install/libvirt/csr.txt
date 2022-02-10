@@ -1,0 +1,50 @@
+Creating initial configuration for Cisco CSR 1000v
+==================================================
+
+* Answer 'no' to the 'Would you like to enter the initial configuration dialog' prompt
+* Answer 'yes' to the 'Would you like to terminate autoinstall' prompt
+* Press ENTER to start a CLI session
+* Go into enable mode, enter configuration mode
+* Copy-paste the following configuration
+
+=============================================
+hostname csr
+no ip domain lookup
+ip domain name lab.local
+!
+no service config
+!
+crypto key generate rsa modulus 2048
+ip ssh version 2
+!
+aaa new-model
+!
+aaa authentication login default local
+aaa authorization exec default local
+!
+username vagrant privilege 15 secret vagrant
+!
+ip ssh pubkey-chain
+ username vagrant
+  key-hash ssh-rsa DD3BB82E850406E9ABFFA80AC0046ED6
+!
+vrf definition MGMT
+ description Management interface
+ !
+ address-family ipv4
+ exit-address-family
+!
+interface GigabitEthernet1
+ vrf forwarding MGMT
+ description vagrant-management
+ ip address dhcp
+ no shutdown
+!
+line vty 0 4
+ transport input ssh
+!
+end
+=============================================
+
+* Save the configuration with 'wr mem'
+* Disconnect from console (ctrl-] usually works).
