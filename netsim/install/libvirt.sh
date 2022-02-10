@@ -37,6 +37,10 @@ sudo apt-get install -y $FLAG_QUIET libvirt-daemon-system libvirt-clients
 echo ".. libvirt packages installed"
 echo
 echo "Install vagrant"
+echo ".. setting up Vagrant repository"
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update
 sudo apt-get install -y $FLAG_QUIET ruby-dev ruby-libvirt vagrant
 set +e
 PLUGIN_VER=$(vagrant plugin list|grep vagrant-libvirt|grep 0.4.1)
