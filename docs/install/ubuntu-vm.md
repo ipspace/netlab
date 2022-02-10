@@ -54,18 +54,16 @@ Vagrant.configure("2") do |config|
     v.vmx["vhv.enable"] = "TRUE"
   end
 
-  config.vm.provision "shell", inline: <<-SHELL
-    apt-get update
-    apt-get install -y python3-pip
-    pip3 install --ignore-installed netsim-tools
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    sudo apt-get update
+    sudo apt-get install -y python3-pip
+    sudo pip3 install --ignore-installed netsim-tools
     netlab install -y ubuntu ansible libvirt containerlab
-    usermod -aG libvirt vagrant
-    usermod -aG docker vagrant
   SHELL
 end
 ```
 
-* Execute **vagrant up** and wait for the installation to complete.
+* Execute **vagrant up** and wait for the installation to complete. If you're using VMware Workstation or Fusion you MUST specify the **--provider** argument in **vagrant up** command when you're creating the VM (but not on subsequent starts).
 * Log into the virtual machine with **vagrant ssh** and test the installation with **netlab test**
 
 (manual)=
