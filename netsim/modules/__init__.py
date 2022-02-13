@@ -368,9 +368,9 @@ def copy_node_data_into_interfaces(topology: Box) -> None:
   for n in topology.nodes.values():
     for m in n.get('module',[]):                                 # Iterate over node modules
       if topology.defaults[m].attributes.node_copy:              # .. any copyable attributes for this module?
-        copy_attr = { k: v 
+        copy_attr = Box({ k: v 
           for k,v in n.get(m,{}).items() 
-            if k in topology.defaults[m].attributes.node_copy }  # Build a dictionary of node attributes that could be copied to interfaces
+            if k in topology.defaults[m].attributes.node_copy }) # Build a Box of node attributes that could be copied to interfaces
         if copy_attr:                                            # .. anything to copy?
           for intf in n.get('interfaces',[]):                    # .. if so, it would be nice to merge it with interface data
             if isinstance(intf.get(m,{}),dict):                  # .. but only if the interface data allows it
