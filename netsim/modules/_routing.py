@@ -3,6 +3,7 @@
 Routing Protocol utility functions:
 
 * network_type: set IGP network type on a link. Used by OSPF and IS-IS
+* routing_af: set routing protocol address families for a node
 * external: return True is an interface is an external interface, and removes IGP-related parameters from the interface
 * passive: set IGP 'passive' flag on an interface
 """
@@ -14,6 +15,46 @@ import netaddr
 from .. import common
 from .. import addressing
 
+# Build routing protocol address families
+#
+# * If the address families are not set, calculate them based on interface address families
+# * Otherwise parse and validate the AF attribute
+#
+def routing_af(node: Box, proto: str) -> None:
+  if 'af' in node[proto]:               # Is the AF attribute set for the routing protocol?
+    if isinstance(node[proto].af,list): # Turn a list of address families into a dictionary
+      node[proto].af = { af: True for af in node[proto].af }
+
+    if not isinstance(node[proto].af,dict):
+      common.error(
+        'af attribute for {proto} on node {node.name} has to be a list or a dictionary',
+        common.IncorrectValue,
+        proto)
+      return
+
+    for proto_af in node[proto].af.keys():
+      if not proto_af in ('ipv4','ipv6'):
+        common.error(
+          'Routing protocol address family has to be ipv4 and/or ipv6: {proto} on {node.name}',
+          common.IncorrectValue,
+          proto)
+  else:                                 # No configured AF attribute, calculate it
+    for af in ['ipv4','ipv6']:
+      if af in node.loopback:           # Address family enabled on loopback?
+        node[proto].af[af] = True       # ... we need it in the routing protocol
+        continue
+
+      for l in node.get('interfaces',[]): # Scan all interfaces
+        if af in l:                       # Do we have AF enabled on any of them?
+          node[proto].af[af] = True       # Found it - we need it the module
+          continue
+
+
+# Set network type for an interface:
+#
+# * If the network type is specified, validate it against a list of allowed network types
+# * Otherwise, set network type to P2P if the interface has two nodes attached to it
+#
 def network_type(
       intf: Box,
       proto: str,
@@ -30,6 +71,8 @@ def network_type(
 
   return None
 
+# Remove routing protocol data from an interface with "external" role
+#
 def external(intf: Box, proto: str) -> bool:
   if intf.get('role','') == "external":
     intf.pop(proto,None)

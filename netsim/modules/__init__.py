@@ -32,17 +32,6 @@ class _Module(Callback):
     else:
       return _Module(data)
 
-  def set_af_flag(self, node: Box, model_data: Box) -> None:
-    for af in ['ipv4','ipv6']:
-      if af in node.loopback:        # Address family enabled on loopback?
-        model_data[af] = True        # ... we need it in the module
-        continue
-
-      for l in node.get('interfaces',[]): # Scan all interfaces
-        if af in l:                       # Do we have AF enabled on any of them?
-          model_data[af] = True           # Found it - we need it the module
-          continue
-
 """
 pre_transform: executed just before the main data model transformation is started
 

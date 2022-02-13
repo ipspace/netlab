@@ -13,6 +13,7 @@ from ..augment import devices
 class OSPF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
+    _routing.routing_af(node,'ospf')
     bfd.bfd_link_state(node,'ospf')
     features = devices.get_device_features(node,topology.defaults)
 

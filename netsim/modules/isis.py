@@ -11,7 +11,7 @@ from ..augment import devices
 class ISIS(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    self.set_af_flag(node,node.isis)
+    _routing.routing_af(node,'isis')
 
     bfd.multiprotocol_bfd_link_state(node,'isis')
     features = devices.get_device_features(node,topology.defaults)

@@ -51,7 +51,7 @@ def multiprotocol_bfd_link_state(node: Box,proto: str) -> None:
     if node[proto].bfd:
       node[proto].bfd = {} 
       for af in ('ipv4','ipv6'):
-        if af in node[proto]:
+        if af in node[proto].af:
           node[proto].bfd[af] = True
     else:
       node[proto].bfd = {}
