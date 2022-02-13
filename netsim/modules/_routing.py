@@ -25,20 +25,24 @@ def routing_af(node: Box, proto: str) -> None:
     if isinstance(node[proto].af,list): # Turn a list of address families into a dictionary
       node[proto].af = { af: True for af in node[proto].af }
 
-    if not isinstance(node[proto].af,dict):
-      common.error(
-        'af attribute for {proto} on node {node.name} has to be a list or a dictionary',
-        common.IncorrectValue,
-        proto)
-      return
-
-    for proto_af in node[proto].af.keys():
-      if not proto_af in ('ipv4','ipv6'):
+    if node[proto].af is None:
+      node[proto].pop('af',None)
+    else:
+      if not isinstance(node[proto].af,dict):
         common.error(
-          'Routing protocol address family has to be ipv4 and/or ipv6: {proto} on {node.name}',
+          f'af attribute for {proto} on node {node.name} has to be a list or a dictionary',
           common.IncorrectValue,
           proto)
-  else:                                 # No configured AF attribute, calculate it
+        return
+
+      for proto_af in node[proto].af.keys():
+        if not proto_af in ('ipv4','ipv6'):
+          common.error(
+            f'Routing protocol address family has to be ipv4 and/or ipv6: {proto} on {node.name}',
+            common.IncorrectValue,
+            proto)
+  
+  if not 'af' in node[proto]:           # No configured AF attribute, calculate it
     for af in ['ipv4','ipv6']:
       if af in node.loopback:           # Address family enabled on loopback?
         node[proto].af[af] = True       # ... we need it in the routing protocol
@@ -86,7 +90,10 @@ def external(intf: Box, proto: str) -> bool:
 # IGP passive interfaces: stub link type or stub/passive role
 #
 def passive(intf: Box, proto: str) -> bool:
-  intf[proto].passive = intf.type == "stub" or intf.get('role',"") in ["stub","passive"]
+  if not 'passive' in intf[proto]:
+    intf[proto].passive = intf.type == "stub" or intf.get('role',"") in ["stub","passive"]
+  else:
+    intf[proto].passive = bool(intf[proto].passive)
   return intf[proto].passive
 
 # Create router ID if needed

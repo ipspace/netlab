@@ -22,3 +22,11 @@ The following configuration modules are included in **netsim-tools** distributio
    module/srv6.md
    module/evpn.md
 ```
+
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+   :caption: See Also
+
+   module/routing.md
+```

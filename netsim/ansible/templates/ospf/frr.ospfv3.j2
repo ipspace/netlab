@@ -1,0 +1,23 @@
+router ospf6
+ ospf6 router-id {{ ospf.router_id }}
+{% if ospf.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ interface lo0 area {{ ospf.area }}
+{% endif %}
+{% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
+ interface {{ l.ifname }} area {{ l.ospf.area }}
+{% endfor %}
+!
+{% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
+interface {{ l.ifname }}
+! {{ l.name|default("") }}
+{%   if l.ospf.network_type is defined %}
+ ipv6 ospf6 network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+ ipv6 ospf6 cost {{ l.ospf.cost }}
+{%   endif %}
+!
+{% endfor %}
