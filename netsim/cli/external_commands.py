@@ -74,13 +74,13 @@ def start_lab(settings: Box, provider: str, step: int = 2, command: str = "test"
   if not run_command(cmd):
     common.fatal("%s failed, aborting..." % cmd,command)
 
-def deploy_configs(step : int = 3, command: str = "test") -> None:
+def deploy_configs(step : int = 3, command: str = "test", fast: typing.Optional[bool] = False) -> None:
   print_step(step,"deploying initial device configurations",spacing = True)
   cmd = ["netlab","initial"]
   if common.VERBOSE:
     cmd.append("-" + "v" * common.VERBOSE)
 
-  if os.environ.get('NETSIM_FAST_CONFIG',None):
+  if os.environ.get('NETSIM_FAST_CONFIG',None) or fast:
     cmd.append("--fast")
 
   if not run_command(set_ansible_flags(cmd)):
