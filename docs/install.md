@@ -1,48 +1,74 @@
 # Installation
 
-*netsim-tools* is available as a Python3 package that runs on most systems supporting Python3. It's been tested with Python 3.9, but should run on older Python3 versions. 
+*netsim-tools* is a Python3 package that runs on Python 3.7 or later on Windows, MacOS, or Linux. It's a high-level abstraction and orchestration tool that relies on other tools to provide the low-level functionality:
 
-The lab control functionality uses Ansible playbooks, and thus works only on systems supported by Ansible. It's recommended to use Ansible 2.9.1 or higher.
+* VM/container virtualization: VirtualBox (Windows or MacOS), KVM (Linux) or Docker (Linux)
+* Virtualization API: libvirt (used with KVM on Linux)
+* VM/container orchestration: Vagrant or containerlab
+* Configuration deployment: Ansible 2.9.1 or later
 
-## Installing a Python Package
+![High-level architecture](high-level-architecture.png)
 
-Use `python3 -m pip install netsim-tools` to install the software. The installation process will install all prerequisite Python packages (but not Ansible) and create the **netlab** command.
+If you already have an environment that can be used with *netsim-tools*, please proceed directly to *[installing Python package](package)*. Otherwise, you'll have to [select the platform](platform) you want to use and [create your lab environment ](lab)(including *netsim-tools* installation).
 
-## Ubuntu VM Installation
+(platform)=
+## Selecting the Platform and Low-Level Tools
 
-If you'd like to use *netsim-tools* with *libvirt*[^1], and would like to create a Ubuntu VM from scratch, follow the [tutorial created by Leo Kirchner](https://blog.kirchne.red/netsim-tools-quickstart.html).
+We have tested *netsim-tools* with:
 
-[^1]: The *libvirt* Vagrant plugin starts all network devices in parallel, resulting in much faster lab setup than using Vagrant with Virtualbox.
+* VirtualBox and Vagrant on MacOS. The same combination should also work on Windows 10. Ansible works on MacOS; RedHat claims it works (but is not supported) within Windows Subsystem for Linux (WSL).
+* libvirt/KVM and Vagrant on Ubuntu and Fedora. This combination should work on other Linux distributions.
+* Docker and containerlab on Ubuntu. This combination should also work on other Linux distributions.
 
-```{warning}
-Running *‌libvirt* within a Ubuntu VM requires *‌nested virtualization*. Nested virtualization was available in VMware Workstation/Fusion for years and was recently added to VirtualBox. While VMware products perform flawlessly, you might get unacceptable performance with VirtualBox nested virtualization on some Intel CPUs (example: MacBook Pro 2020, Intel Core i5 CPU).
+When selecting the virtualization environment, consider the following:
+
+**VirtualBox** is commonly used together with Vagrant as a laptop virtualization solution, resulting in wider variety of prepackaged boxes (Arista vEOS, Cisco Nexus 9300v, Cumulus VX, Juniper vSRX). The downsides: 
+
+* Slow lab setup due to serial provisioning;
+* No management network (Vagrant uses a weird port NAT to access virtual machines)
+* VirtualBox networking is hard to integrate with the external world
+
+**Vagrant provider for libvirt** supports parallel VM provisioning, resulting in much faster lab creation. An added bonus: if you decide to use Ubuntu, you can use **[netlab install](netlab/install.md)** command to install all the prerequisite software (KVM, libvirt, Vagrant, Docker, containerlab, Ansible).
+
+Unfortunately, most vendors don't offer virtual devices packaged as libvirt Vagrant boxes, so you'll have to build your own boxes.
+
+**Containers** provisioned with containerlab start much faster than virtual machines, but you can get only a few network devices in native container format (Arista cEOS, Nokia SR Linux, Cumulus VX).
+
+We are focusing the majority of our platform development efforts on Linux environments using KVM/libvirt with Vagrant or Docker with containerlab. We have selected Ubuntu as the Linux distribution supported by **netlab install** command. The installation guide for Ubuntu is thus the most extensive one.
+
+(lab)=
+## Creating the Lab Environment
+
+You can set up your lab:
+
+* On [Windows or MacOS using VirtualBox with Vagrant](labs/virtualbox.md). This setup won't be able to run network devices packaged as containers (Arista cEOS, Nokia SR Linux)
+* On a [Ubuntu virtual machine running on Windows or MacOS](install/ubuntu-vm.md).
+* On a [generic Ubuntu VM or bare-metal Ubuntu server](install/ubuntu.md)
+* On [other Linux distributions](install/linux.md)
+
+```{tip}
+* If you decide to run the network labs within a Ubuntu VM on your MacOS/Windows computer, [create a new VM and use the automated software installation procedure](install/ubuntu-vm.md). It's much easier and safer than trying to install the necessary software on an existing VM.
+* Don't use VirtualBox on Linux. As you won't need a GUI to interact with the network devices we see no reason to do that when there are better alternatives (KVM+libvirt).
 ```
 
-## Complete Ubuntu VM/Server Installation
+(package)=
+## Installing *netsim-tools* Package
 
-If you want to install *netsim-tools* and all its dependencies on an existing Ubuntu server (bare-metal or VM):
+To install *netsim-tools* on a system that already has the low-level tools installed, use `python3 -m pip install netsim-tools`. The installation process will install all prerequisite Python packages and create the **netlab** command.
 
-* If needed, install **pip3** with `sudo apt-get update && sudo apt-get install -y python3-pip`
-* Install *netsim-tools* package[^2] with `sudo python3 -m pip install netsim-tools`
-* Install additional software with `netlab install ubuntu ansible libvirt` command ([more details](netlab/install.md))
-
-[^2]: Yes, I know one should install Python packages into a virtual environment, but hopefully we're either talking about a throwaway VM, or you know what you're doing.
-
-## Installing from GitHub
-
-* Clone the [netsim-tools Github repository](https://github.com/ipspace/netsim-tools).
-* If needed, select the desired release with **git checkout _release-tag_**. Use **git tag** to get the list of release tags.
-* Within the **netsim-tools** directory, install prerequisite Python packages with **python3 -m pip install -r requirements.txt**.
-* Optional: install Ansible or use [ipSpace network automation container image](https://hub.docker.com/r/ipspace/automation). 
-* Add **netsim-tools** directory to your PATH with **source setup.sh** command
-
-## Building the Lab Environment
+If you want to get the latest development code or if you want to participate in *netsim-tools* development, [clone the GitHub repository](install/clone.md).
 
 ```eval_rst
 .. toctree::
+   :caption: Next Steps
    :maxdepth: 1
+   :hidden:
 
-   labs/libvirt.md
    labs/virtualbox.md
+   install/ubuntu-vm.md
+   install/ubuntu.md
+   install/linux.md
+   labs/libvirt.md
    labs/clab.md
+   install/clone.md
 ```

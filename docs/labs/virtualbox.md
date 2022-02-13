@@ -1,13 +1,28 @@
-# Virtualbox-Based Lab on Windows, MacOS or Linux
+# Virtualbox-Based Lab on Windows or MacOS
 
-Virtualbox-based Vagrant lab is extremely easy to set up on Windows, MacOS, or Linux:
+Virtualbox-based Vagrant lab is the only option if you want to run *netsim-tools* directly on Windows or MacOS (you could also run them [within a Ubuntu VM](../install/ubuntu-vm.md)):
 
-* Install Virtualbox (might require fiddling with BIOS setup on Ubuntu bare-metal installations)
-* Install Vagrant
-* Create [lab topology file](../topology-overview.md). Use `provider: virtualbox` in lab topology to select the *virtualbox* virtualization provider.
+* [netlab](../netlab/cli.md) commands will create Ansible inventory and Vagrant configuration
+* Vagrant will create virtual networks within VirtualBox environment and start network devices as virtual machines within VirtualBox
+* Ansible will connect to the network devices and configure them
+
+![VirtualBox-based architecture](../install/virtual-box-architecture.png)
+
+The environment is pretty easy to set up:
+
+* [Install Virtualbox](https://www.virtualbox.org/wiki/Downloads) (might require fiddling with BIOS setup on Ubuntu bare-metal installations)
+* [Install Vagrant](https://www.vagrantup.com/docs/installation)
+* Install *netsim-tools* with `pip3 install netsim-tools`
+* [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)[^1] and device-specific requirements.
+* Test the installation with **[netlab test virtualbox](../netlab/test.md)** command
+
+## Creating a New Lab
+To create a new lab:
+
+* Create [lab topology file](../topology-overview.md) in an empty directory. Use `provider: virtualbox` in lab topology to select the *virtualbox* virtualization provider.
 * Execute **[netlab up](../netlab/up.md)**
 
-Alternatively, you could use **[netlab create](../netlab/create.md)** script to create *Vagrantfile* and Ansible inventory[^1], and **vagrant up** to start the lab.
+Alternatively, you could use **[netlab create](../netlab/create.md)** script to create *Vagrantfile* and Ansible inventory, and **vagrant up** to start the lab.
 
 [^1]: Running Ansible on Windows is not supported, but supposedly it runs just fine under WSL. 
 
@@ -55,6 +70,6 @@ You have to use the following box names when installing or building the Vagrant 
 
 **Notes**:
 
-* If you want to add other network devices, build your own Vagrant boxes and modify *topology-defaults.yml* file (search for **eos:** or **nxos:** keys to see how to set up devices that work with multiple virtualization providers). 
-* The latest version of Arista vEOS available as Vagrant box for VirtualBox is 4.21.14M. You'll have to build your own box if you want to have a more recent EOS version.
+* Arista rarely ships the latest software version as a Vagrant box. You'll usually have to build your own box if you want to have an up-to-date EOS version.
 * Vagrantfile created by **netlab create** or **netlab up** sets up port forwarding for SSH (22), HTTP (80) and NETCONF (830), but the corresponding Ansible inventory contains only **ansible_port** (SSH). You could edit the final inventory by hand, add extra file to `host_vars`, or fix *netsim-tools* code. Should you decide to do the latter, please contact us in advance to discuss the necessary data structures.
+* If you want to add other network devices, build your own Vagrant boxes and modify *topology-defaults.yml* file (see [_adding new virtualization provider for an existing device_](../dev/device-platform.md) for more details). 
