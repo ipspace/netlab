@@ -49,6 +49,9 @@ def routing_af(node: Box, proto: str) -> None:
           node[proto].af[af] = True       # Found it - we need it the module
           continue
 
+  for af in ['ipv4','ipv6']:              # Remove unused address families
+    if not node[proto].af.get(af,False):
+      node[proto].af.pop(af,False)
 
 # Set network type for an interface:
 #

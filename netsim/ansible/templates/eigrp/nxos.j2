@@ -1,38 +1,33 @@
 feature eigrp
 !
 router eigrp {{ eigrp.as }}
-{% if eigrp.ipv6 is defined %}
+{% if eigrp.router_id|ipv4 %}
+ router-id {{ eigrp.router_id }}
+{% endif %}
+{% if 'ipv6' in eigrp.af %}
  address-family ipv6 unicast
 {% endif %}
 !
 interface loopback0
-{% if 'ipv4' in loopback %}
+{% if 'ipv4' in loopback and 'ipv4' in eigrp.af %}
  ip router eigrp {{ eigrp.as }}
 {% endif %}
-{% if 'ipv6' in loopback %}
+{% if 'ipv6' in loopback and 'ipv6' in eigrp.af %}
  ipv6 router eigrp {{ eigrp.as }}
 {% endif %}
 !
-{% for l in interfaces|default([]) %}
-{%   if "external" in l.role|default("") %}
-! EIGRP not configured on external interface {{ l.ifname }}
-{%   else %}
+{% for l in interfaces|default([]) if 'eigrp' in l %}
 interface {{ l.ifname }}
-{%     if 'ipv4' in l %}
+{%   if 'ipv4' in l and 'ipv4' in eigrp.af %}
  ip router eigrp {{ eigrp.as }}
-{%     endif %}
-{%     if 'ipv6' in l %}
- ipv6 router eigrp {{ eigrp.as }}
-{%     endif %}
-{%     if l.type|default("") == "stub"
-          or l.role|default("NONE") in ["stub","passive"]
-          or l.eigrp.passive|default("") %}
-{%       if 'ipv4' in l %}
+{%     if l.eigrp.passive %}
  ip passive-interface eigrp {{ eigrp.as }}
-{%       endif %}
-{%       if 'ipv6' in l %}
+{%     endif %}
+{%   endif %}
+{%   if 'ipv6' in l and 'ipv6' in eigrp.af %}
+ ipv6 router eigrp {{ eigrp.as }}
+{%     if l.eigrp.passive %}
  ipv6 passive-interface eigrp {{ eigrp.as }}
-{%       endif %}
 {%     endif %}
 {%   endif %}
 !
