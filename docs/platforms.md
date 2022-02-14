@@ -52,7 +52,7 @@ See [lab topology overview](topology-overview.md) for more details.
 * [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
 * [Containerlab](https://containerlab.srlinux.dev/)
 
-You cannot use all supported network devices with all virtualization providers. These are the supported combinations:
+You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings).
 
 | Virtual network device                             | Vagrant<br />Libvirt |   Vagrant<br />Virtualbox    |       Containerlab       |
 | -------------------------------------------------- | :------------------: | :--------------------------: | :----------------------: |
@@ -133,7 +133,7 @@ The following interface parameters are configured on supported network operating
 | Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.md#cisco-ios) |
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
-| Cumulus Linux 5.0 (NVUE)           ✅              |            ✅            | ❌ |
+| Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
 | Fortinet FortiOS      |            ✅              |            ✅            | ❌ |
 | FRR 7.5.0             |            ✅              |            ✅            | ✅ |
 | Generic Linux         |            ❌              |            ❌            | ✅ |
@@ -152,7 +152,7 @@ The following interface addresses are supported on various platforms:
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |
-| Cumulus Linux 5.0 (NVUE)        |          ✅          |          ✅          |             ✅              |
+| Cumulus Linux 5.0 (NVUE) |       ✅          |          ✅          |             ✅              |
 | Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |
 | FRR 7.5.0             |          ✅          |          ✅          |             ❌              |
 | Generic Linux         |          ✅          |          ✅          |             ❌              |
@@ -164,7 +164,7 @@ The following interface addresses are supported on various platforms:
 
 ## Supported Configuration Modules
 
-Individual **netsim-tools** [configuration modules](module-reference.md) are supported on these devices:
+Individual **netsim-tools** [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings).
 
 | Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | SR-MPLS |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :-----: |
@@ -189,14 +189,14 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 
 | Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |
-| Arista EOS            |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ✅    |
-| Cisco IOS             |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
-| Cisco IOS XE          |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Arista EOS            |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ✅    |
+| Cisco IOS             |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco IOS XE          |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
-| FRR 7.5.0             |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| FRR 7.5.0             |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |

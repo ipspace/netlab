@@ -19,6 +19,7 @@ The **netlab** command is the CLI interface to *netsim-tools* functionality, inc
 
 * **[netlab install](install.md)** installs additional Ubuntu software, Ansible, and libvirt/vagrant.
 * **[netlab test](test.md)** tests virtual lab installation
+* **[netlab show](show)** displays system settings
 
 ## Individual netlab Commands
 <!-- commands come here -->
@@ -34,6 +35,7 @@ The **netlab** command is the CLI interface to *netsim-tools* functionality, inc
    netlab down <down.md>
    netlab initial <initial.md>
    netlab install <install.md>
+   netlab show <show.md>
    netlab test <test.md>
    netlab up <up.md>
 ```
