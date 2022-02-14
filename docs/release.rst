@@ -1,6 +1,18 @@
 Release notes
 =============
 
+2022-02-14 (release 1.1.3)
+  * Restructured installation documentation
+  * OSPFv3 support
+  * netlab show command displays system settings in tabular format
+  * EIGRP implementation of common routing protocol features
+  * Configurable address family support (IPv4 and/or IPv6) for IS-IS, OSPF, and EIGRP
+  * Libvirt box creating script for Cisco CSR 1000v and Juniper vSRX 3.0
+  * Support for /31 IPv4 P2P links
+  * Configurable MTU for VyOS and RouterOS
+
+  :doc:`More details <release/1.1>`
+
 2022-01-29 (release 1.1.2)
   * Containerlab installation script
   * System and interface MTU

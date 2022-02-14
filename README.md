@@ -13,8 +13,8 @@ This is development branch for release 0.9. Target functionality:
 * Create *Vagrantfile* configuration file for *virtualbox* or *libvirt* environment
 * Create *containerlab* configuration file
 * Create Ansible inventory and configuration file
-* Create IPv4 and IPv6 addressing plan and OSPF, EIGRP, IS-IS, and BGP routing design
-* Configure IPv4, IPv6, LLDP, BFD, OSPF, EIGRP, IS-IS, BGP, or SR-MPLS on your lab devices.
+* Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, and BGP routing design
+* Configure IPv4, IPv6, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, or SR-MPLS on your lab devices.
 
 Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
@@ -22,13 +22,11 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release 1.1.2](https://github.com/ipspace/netsim-tools/releases/tag/release_1.1.2), and we believe it's pretty stable.
+The latest release is [release 1.1.3](https://github.com/ipspace/netsim-tools/releases/tag/release_1.1.3), and we believe it's pretty stable.
 
 [Release 1.1](https://github.com/ipspace/netsim-tools/releases/tag/release_1.1) included major code- and internal data structure changes. There are no changes in topology file format, but you'll have to fix most custom device configuration templates (see [breaking changes](https://netsim-tools.readthedocs.io/en/latest/release/1.1.html#breaking-changes)).
 
 The latest release using old data structures is [release_1.0.6](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0.6).
-
-The last release containing the old (obsolete) CLI commands is [release_0.9.3](https://github.com/ipspace/netsim-tools/releases/tag/release_0.9.3).
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 
@@ -54,3 +52,6 @@ More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/re
 
 **netlab connect**
 : Use SSH or **docker exec** to connect to a lab device using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords from Ansible inventory. Ideal when you use centralized Vagrant environments and want to connect to the devices while being in playbook development directory.
+
+**netlab show**
+: Display system settings in tabular format. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/show.html)
