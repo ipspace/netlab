@@ -16,7 +16,7 @@ Here's what you have to do:
 ## Adding New Device Settings
 
 * Add a new key (device type) within **devices** dictionary
-* Define device box (or container) to use with **image** parameter. The **image** parameter is a dictionary with a key/value pair for every supported virtualization provider.
+* For every supported virtualization provider, define device box (or container) to use with **image** parameter within the **_provider_** dictionary (example **libvirt.image**).
 * Define interface names as used by the new device with **interface_name**, **mgmt_if** and optionally **ifindex_offset** ([more details](devices.md#system-settings))
 * Add **group_vars** dictionary with Ansible variables specific to the new device. Set at least the **ansible_connection** and **ansible_network_os** variables. **ansible_user** and **ansible_ssh_pass** are highly recommended unless you're using *docker* connection type. The group variables are required even if you don't plan to implement a configurable device; they are used by **netlab connect** command to figure out how to connect to a device.
 
@@ -28,8 +28,8 @@ devices:
     interface_name: ether%d
     mgmt_if: ether1
     ifindex_offset: 2
-    image:
-      libvirt: mikrotik/chr
+    libvirt:
+      image: mikrotik/chr
     group_vars:
       ansible_network_os: routeros
       ansible_connection: network_cli

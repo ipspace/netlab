@@ -122,22 +122,33 @@ def augment_node_provider_data(topology: Box) -> None:
       del n['image']
       continue
 
-    if not 'image' in topology.defaults.devices[devtype]:
-      common.error(f"No image data for device type {devtype} used by node {name}",common.MissingValue,'nodes')
-      continue
+    if 'image' in topology.defaults.devices[devtype]:
+      image = topology.defaults.devices[devtype].image
+      if isinstance(image,str):
+        n.box = image
+        continue
+      else:
+        common.error(
+          f"Image attribute of device {devtype} used by node {name} should be a string\n... found {image}",
+          common.IncorrectValue,
+          'nodes')
+        continue
 
-    box = devices.get_device_attribute(n,'image',topology.defaults)
-    if isinstance(box,dict):
-      box = box.get(provider,None)
+    if 'image' in pdata:
+      if isinstance(pdata.image,str):
+        n.box = pdata.image
+        continue
+      else:
+        common.error(
+          f"Image attribute specified for provider {provider} on device {devtype} should be a string\n... found {pdata.image}",
+          common.MissingValue,
+          'nodes')
+        continue
 
-    if not box:
-      common.error(
-        f'No image specified for device {devtype} (provider {provider}) used by node {name}',
-        common.MissingValue,
-        'nodes')
-      continue
-
-    n.box = box
+    common.error(
+      f'No image specified for device {devtype} (provider {provider}) used by node {name}',
+      common.MissingValue,
+      'nodes')
 
 """
 Add system data to devices -- hacks that are not yet covered in the settings structure

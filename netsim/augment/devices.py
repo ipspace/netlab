@@ -94,10 +94,4 @@ def get_provider(node: Box, defaults: Box) -> str:
   return defaults.provider
 
 def augment_device_settings(topology: Box) -> None:
-  plist = list(topology.defaults.providers.keys())
-
-  # Copy provider.image settings into image.provider dictionary
-  for devdata in topology.defaults.devices.values():
-    for p in plist:
-      if p in devdata and 'image' in devdata[p]:
-        devdata.image[p] = devdata[p].image
+  pass

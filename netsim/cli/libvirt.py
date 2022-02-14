@@ -128,7 +128,9 @@ def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
   abort_on_failure(f'bash create_box.sh vm.qcow2 {boxfile}')
 
   devdata = settings.devices[args.device]
-  boxname = devdata.libvirt.image or devdata.image.libvirt
+  boxname = devdata.libvirt.image
+  if not boxname:
+    common.fatal("Libvirt box name is not set for device {args.device}")
 
   print(f"""
 

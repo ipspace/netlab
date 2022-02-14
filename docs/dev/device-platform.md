@@ -14,7 +14,17 @@ Here's what you have to do:
 ## Adding a Box Name to Topology Defaults
 
 * Find your device settings within **devices** dictionary
-* Add a new key (provider name -- `libvirt`, `virtualbox` or `clab`) into **image** dictionary. Its value is the expected Vagrant box name or Docker container.
+* Add a new key *provider* key for the target device (valid keys are `libvirt`, `virtualbox` or `clab`). Add **image** parameter under the *provider* key. Its value is the expected Vagrant box name or Docker container.
+
+Example:
+
+```
+devices:
+  routeros:
+    interface_name: ether%d
+    virtualbox:
+      image: mikrotik/chr
+```
 
 Recommended:
 
@@ -27,18 +37,16 @@ You can change default device settings for a specific virtualization provider (e
 
 There are four types of settings you can change:
 
-**Default settings** (easy) -- ***provider*.devices** and ***provider*.addressing** settings are merged with the **devices** and **addressing** defaults. 
+**Default settings** (easy) -- **devices._type_._provider_** settings are merged with the **devices._type_** defaults. 
 
-Example: Change management interface name on Arista cEOS:
+**Example:** Change management interface name and container image on Arista cEOS:
 
 ```
-providers:
-  clab:
-    devices:
-      eos:
-        mgmt_if: Management0
-        image:
-          clab: ceos:4.25.1F
+devices:
+  eos:
+    clab:
+      mgmt_if: Management0
+      image: ceos:4.25.1F
 ```
 
 **Ansible group variables** (easy) -- values specified in **group_vars** section of device-and-provider-specific settings overwrite the device defaults. 
@@ -46,40 +54,69 @@ providers:
 Example: Change Ansible connection for a Cumulus VX container:
 
 ```
-providers:
-  clab:
-    devices:
-      cumulus:
-        group_vars:
-          ansible_connection: docker
-          ansible_user: root
+devices:
+  cumulus:
+    clab:
+      group_vars:
+        ansible_connection: docker
+        ansible_user: root
 ```
 
-**Node parameters** (manageable)-- provider-specific device settings starting with **provider_** are copied to node data.
+**Node parameters** (manageable)-- the **node** dictionary within provider-specific device settings is copied into node data under _provider_ key.
 
-Example: *containerlab* needs a *device kind* setting in its configuration file. The configuration file template uses **kind** value within node data to set that parameter, so we need a mechanism to set **kind** value for every node. 
+Example: *containerlab* needs a *device kind* setting in its configuration file. The configuration file template uses **clab.kind** value within node data to set that parameter, so we need a mechanism to set **clab.kind** value for every node. 
 
-Solution: use **provider_kind** parameter for every device supported on *containerlab*:
+Solution: use **node** dictionary within **devices._device_.clab** settings:
 
 ```
-providers:
-  clab:
-    devices:
-      eos:
-        mgmt_if: Management0
-        provider_kind: ceos
-        image:
-          clab: ceos:4.25.1F
+devices:
+  srlinux:
+    clab:
+      image: ghcr.io/nokia/srlinux
+      node:
+        kind: srl
+        type: ixrd2
 ```
 
 **Interface names** (mind-boggling). Interface names used by the network device might differ from the interface names used by virtualization provider (example: Arista cEOS on *containerlab*).
 
-Solution: use **provider_interface_name** in provider-specific device settings. Whenever those settings include **provider_interface_name**, the link data structure includes **provider_ifname** value for every node attached to that link. The **provider_ifname** value can then be used in configuration file templates.
+Solution: set **interface.name** in provider-specific device settings. Whenever those settings include **interface.name** value, the link interface data and node interfaces data includes **_provider_.name** value for every interface. That value can then be used in configuration templates.
+
+**Example:** Arista cEOS containerlab settings
 
 ```
-providers:
-  clab:
-    devices:
-      eos:
-        provider_interface_name: eth%d
+devices:
+  eos:
+    interface_name: Ethernet%d
+    mgmt_if: Management1
+    clab:
+      interface:
+        name: et%d
+      node:
+        kind: ceos
+        env:
+          INTFTYPE: et
+      mgmt_if: Management0
+      image: ceos:4.26.4M
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: admin
+        ansible_become: yes
+        ansible_become_method: enable
+```
+
+**Example**: Part of containerlab configuration template
+
+```
+...
+  links:
+{% for l in links %}
+  - endpoints:
+{%   for n in nodes.values() %}
+{%     for nl in n.interfaces if nl.linkindex == l.linkindex %}
+{%       set clab = nl.clab|default({}) %}
+    - "{{ n.name }}:{{ clab.name|default(nl.ifname) }}"
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
 ```

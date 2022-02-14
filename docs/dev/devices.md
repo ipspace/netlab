@@ -18,7 +18,9 @@ If you can create a Vagrant box for the network device you want to use, or get a
 
 In this step, you should have a repeatable *build my box* recipe. It's perfectly understandable that one might have to register at a vendor web site to download a container or a Vagrant box, or the images used to build a Vagrant box. Asking the potential users to "_contact the account team_" is not[^1].
 
-[^1]: ArcOS was a not-to-be-repeated one-off.
+Please publish the recipe (it's OK to add it to *netsim-tools* documentation under *install* directory) before proceeding. We want to have repeatable installation instructions ;)
+
+[^1]: That was one of the reasons ArcOS was taken off the list of supported platforms.
 
 ## System Settings
 
@@ -27,12 +29,12 @@ After building a Vagrant box or a container, you have to integrate it with *nets
 * A template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for details.
 * Device parameters within the **devices** section of `netsim/topology-defaults.yml`.
 
-The device parameters will have to include:
+The device parameters will have to include ([more details](device-box.md#adding-new-device-settings)):
 
 * Interface name template (**interface_name**), including `%d` to insert interface number.
 * The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.
-* Image name or box name for every supported virtualization provider (**image**).
+* [Image name or box name](device-box.md#adding-new-device-settings) for every supported virtualization provider.
 
 After adding the device parameters into `netsim/topology-defaults.yml`, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.
 
@@ -86,11 +88,12 @@ For every configuration module you add, update the module's `supported_on` list 
 To add a device that is already supported by *netsim-tools* to a new virtualization environment follow these steps:
 
 * Get or build a Vagrant box or container image.
+* Add the [image/box/container name](device-box.md#adding-new-device-settings) for the new virtualization provider to system settings.
 * Add device-specific virtualization provider configuration to provider-specific subdirectory of `netsim/templates/provider` directory. Use existing templates to figure out what exactly needs to be done.
-* You might need to add provider-specific device settings to system defaults (`netsim/topology-defaults.yml`). See **providers.clab.devices.eos** settings for details.
+* You might need to add provider-specific device settings to system defaults (`netsim/topology-defaults.yml`). See **devices.eos.clab** settings for details.
 
 **Notes**
-* Provider-specific device settings starting with **provider_** prefix are copied directly into node data (removing **provider_** prefix while doing that).
+* The **node** dictionary within provider-specific device settings is copied directly into node data under provider key (example: **devices.eos.clab.node**  system setting is copied into **nodes.s1.clab** assuming S1 is an EOS device and you're using *clab* provider).
 * Other provider-specific device settings overwrite global device settings.
 
 ## Test Your Changes

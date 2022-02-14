@@ -29,12 +29,17 @@ When augmenting default settings, *netsim-tools* use a deep dictionary merge, al
 
 ```
 ---
-defaults:
-  device: eos
-  devices:
-    eos:
-      image:
-        libvirt: arista/vEOS-lab-4.21.14M
+defaults.device: eos
+defaults.devices.eos.image: arista/vEOS-lab-4.21.14M
+```
+
+**Note:** If you want to run your topology on multiple virtualization provides, you can set different device image name for every virtualization provider:
+
+```
+---
+defaults.device: eos
+defaults.devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
+defaults.devices.eos.clab.image: cEOS:latest
 ```
 
 ## Deep Merging

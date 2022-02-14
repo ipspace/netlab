@@ -15,7 +15,8 @@
 ## Cumulus Linux in ContainerLab
 
 * *containerlab* could run Cumulus Linux as a container or as a micro-VM with *firecracker* (default, requires KVM). To run Cumulus VX as a pure container, add **runtime: docker** parameter to node data.
-* *netsim-tools* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.providers.clab.devices.cumulus.image.clab** parameter (or by editing the `topology-defaults.yml` file included with *netsim-tools*).
+* *netsim-tools* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.devices.cumulus.clab.image** parameter (or by editing the `topology-defaults.yml` file included with *netsim-tools*).
+* The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netsim-tools* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 
 ## Fortinet FortiOS
 
@@ -31,7 +32,7 @@
 
 *Generic Linux device* is a Linux VM running Ubuntu 20.04 or an Alpine/Python container. To use any other Linux distribution, add **image** attribute with the name of Vagrant box or Docker container to the node data[^1]; the only requirements are working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration.
 
-[^1]: You can also set the **defaults.devices.linux.image._provider_** attribute to change the Vagrant box for all Linux hosts in your lab.
+[^1]: You can also set the **defaults.devices.linux._provider_.image** attribute to change the Vagrant box for all Linux hosts in your lab.
 
 ### Host Routing
 
