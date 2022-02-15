@@ -2,13 +2,19 @@
 
 In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netsim-tools*](install.md), all the software needed to run your labs on *[libvirt](labs/libvirt.md)* or *[Virtualbox](labs/virtualbox.md)*, and Ansible[^NEED_ANS]
 
-[^NEED_ANS]: Ansible is used to configure network devices and to  parse inventory data for **netlab connect** command. You don't need Ansible if you plan to use *netsim-tools* solely to create Vagrantfile.
-
-For a step-by-step tutorial starting with *let's create a Linux virtual machine on our Windows/Mac laptop*, please read *[A Quick Introduction to Netsim-Tools](https://blog.kirchne.red/netsim-tools-quickstart.html)* by [Leo Kirchner](https://www.linkedin.com/in/leo-kirchner/).
-
-For more complex tutorials, check the *[More Tutorials](#more-tutorials)* section at the end of this document.
-
 ![](topo-tutorial.png)
+
+[^NEED_ANS]: Ansible is used to configure network devices and to parse inventory data for **netlab connect** command. You don't need Ansible if you plan to use *netsim-tools* solely to create Vagrantfile.
+
+## Other Options
+
+You might want to start somewhere else:
+
+* For a step-by-step tutorial starting with *let's create a Linux virtual machine on our Windows/Mac laptop*, please read *[A Quick Introduction to Netsim-Tools](https://blog.kirchne.red/netsim-tools-quickstart.html)* by [Leo Kirchner](https://www.linkedin.com/in/leo-kirchner/).
+* [JulioPDX](https://github.com/JulioPDX) wrote a [container-focused tutorial using Arista cEOS](https://juliopdx.com/2022/02/13/network-simulation-tools-and-containerlab/).
+* For more complex tutorials, check the *[More Tutorials](#more-tutorials)* section at the end of this document.
+
+Still here? Let's roll...
 
 ## Preparing the Network Device Images
 
