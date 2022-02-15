@@ -39,6 +39,6 @@ optional arguments:
 
 ## Provider-Specific Initialization
 
-When used with *libvirt* provider, **netlab up** changes the `group_fwd_mask` for all Vagrant-created Linux bridges to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
+When used with *libvirt* provider, **netlab up** creates the *vagrant-libvirt* management network before starting the virtual machines, and sets the `group_fwd_mask` for all Vagrant-created Linux bridges to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
 
-When used with *clab* provider, **netlab up** creates Linux bridges needed to implement multi-access networks.
+When used with *clab* provider, **netlab up** creates Open vSwitch bridges or standard Linux bridges needed to implement multi-access networks.
