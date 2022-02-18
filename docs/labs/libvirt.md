@@ -2,7 +2,7 @@
 
 Vagrant starts virtual machines from prepackaged VM images called *boxes*. While it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
 
-You have to use the following box names when installing or building the Vagrant boxes (see [supported platforms](../platforms.md) for more details):
+You have to use the following box names when installing or building the Vagrant boxes (see [supported platforms](../platforms.md) and **[netlab show images](../netlab/show.md)** for more details):
 
 | Virtual network device | Vagrant box name            |
 | ---------------------- | --------------------------- |
@@ -26,7 +26,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 ## Building Your Own Boxes
 
 * [Arista vEOS](eos.md)
-* [Cisco IOSv](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/) by [Brad Searle](https://codingpackets.com)
+* [Cisco IOSv](iosv.md)
 * [Cisco CSR](csr.md)
 * [Cisco Nexus OS](nxos.md)
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
@@ -46,6 +46,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 
    csr.md
    eos.md
+   iosv.md
    nxos.md
    vsrx.md
 ..
