@@ -1,6 +1,10 @@
 # Getting Started
 
-In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netsim-tools*](install.md), all the software needed to run your labs on *[libvirt](labs/libvirt.md)* or *[Virtualbox](labs/virtualbox.md)*, and Ansible[^NEED_ANS]
+In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netsim-tools* and all the other software needed to run your labs](install.md).
+
+```{tip}
+If you plan to run your lab on MacOS or Windows, use [Vagrant with VirtualBox](labs/virtualbox.md). If you plan to run your lab on a Linux server or VM, use [containerlab](labs/clab.md).
+```
 
 ![](topo-tutorial.png)
 
@@ -11,22 +15,25 @@ In this tutorial we'll build a simple 2-node network running OSPF. We're assumin
 You might want to start somewhere else:
 
 * For a step-by-step tutorial starting with *let's create a Linux virtual machine on our Windows/Mac laptop*, please read *[A Quick Introduction to Netsim-Tools](https://blog.kirchne.red/netsim-tools-quickstart.html)* by [Leo Kirchner](https://www.linkedin.com/in/leo-kirchner/).
-* [JulioPDX](https://github.com/JulioPDX) wrote a [container-focused tutorial using Arista cEOS](https://juliopdx.com/2022/02/13/network-simulation-tools-and-containerlab/).
+* [Julio Perez](https://github.com/JulioPDX) wrote a [container-focused tutorial using Arista cEOS](https://juliopdx.com/2022/02/13/network-simulation-tools-and-containerlab/).
 * For more complex tutorials, check the *[More Tutorials](#more-tutorials)* section at the end of this document.
 
 Still here? Let's roll...
 
 ## Preparing the Network Device Images
 
-We'll use Arista EOS box available for download on [Arista's web site](https://www.arista.com/en/support/software-download) (login required). Alternatively, you could use Cumulus VX, but it's a bit harder to work with unless you're used to working with Linux-based network devices using FRR.
+We'll use Arista EOS image available for download on [Arista's web site](https://www.arista.com/en/support/software-download) (login required). Alternatively, you could use Cumulus VX, but it's a bit harder to work with unless you're used to working with Linux-based network devices using FRR.
 
-* Download the Arista vEOS Box file. The most recent vEOS version accessible in that format seems to be `vEOS-lab-4.21.14M-virtualbox.box`.
+If you're using VirtualBox with Vagrant:
+
+* Download the Arista vEOS Box file. The most recent vEOS version accessible in that format at the time this document was last updated was `vEOS-lab-4.24.8M-virtualbox.box`.
 * Install the .box file with `vagrant box add vEOS-lab-4.21.14M-virtualbox.box --name arista/veos`
-* If you're using *libvirt*, mutate the *virtualbox* box you've just installed with `vagrant mutate arista/veos libvirt`.
+
+If you're using containerlab, [download and install cEOS image](labs/ceos.md).
 
 ## Creating Lab Topology File
 
-In an empty directory create the [lab topology file](topology-overview.md) `topology.yml`:
+In an empty directory create the [lab topology file](topology-overview.md) `topology.yml`. 
 
 ```
 ---
@@ -36,30 +43,27 @@ defaults:
 module: [ ospf ]
 
 nodes: [ r1, r2 ]
-links:
-- r1
-- r2
-- r1-r2
+links: [ r1, r2, r1-r2 ]
 ```
 
 The networking lab specified in the above topology file:
 
-* Uses *virtualbox* Vagrant provider
+* Uses *virtualbox* Vagrant provider.
 * Uses Arista vEOS as the default device
 * Uses OSPF as the routing protocol
 * Has two nodes (*r1* and *r2*)
 * Has three links -- a stub network connected to *r1*, another stub network connected to *r2*, and a link between *r1* and *r2*.
 
 **Notes:**
-* If you're using *libvirt*, replace the **provider** line with `provider: libvirt`.
+* Replace `provider: virtualbox` with `provider: clab` if you're running Arista cEOS container with *containerlab*.
 * If you prefer using Cumulus VX, replace `device: eos` with `device: cumulus`
 
 ## Starting the Lab
 
 The easiest way to start the lab is to execute **[netlab up](../netlab/up.md)** command which:
 
-* Creates `Vagrantfile` and Ansible inventory files;
-* Starts the devices with **vagrant up** command
+* Creates `Vagrantfile` or `clab.yml`, and Ansible inventory files;
+* Starts the devices with **vagrant up** or **containerlab deploy** command
 * Configures the devices with **netlab initial** command.
 
 To execute individual steps in this process, follow the rest of this section, otherwise skip to [connecting to network devices](#connecting-to-network-devices).
@@ -80,7 +84,7 @@ Created Ansible configuration file: ansible.cfg
 
 ### Start the Virtual Devices
 
-Start the lab with **vagrant up**. Once all the lab devices have started, connect to individual devices with **vagrant ssh** or **[netlab connect](../netlab/connect.md)**.
+Start the lab with **vagrant up** or **sudo containerlab deploy -t clab.yml**. Once all the lab devices have started, connect to individual devices with **vagrant ssh** or **[netlab connect](../netlab/connect.md)**.
 
 ```
 $ vagrant up
@@ -110,7 +114,7 @@ Bringing machine 'r2' up with 'virtualbox' provider...
 
 ### Deploy Device Configurations
 
-You'll need a working Ansible installation for the rest of this tutorial. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1] or use **[netlab install ansible](../netlab/install.md)**.
+You'll need a working Ansible installation for the rest of this tutorial. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1], or use **[netlab install ansible](../netlab/install.md)** on Ubuntu.
 
 [^1]: I prefer using **homebrew** to install Ansible on MacOS.
 
