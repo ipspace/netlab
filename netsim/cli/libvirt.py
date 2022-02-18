@@ -146,6 +146,17 @@ device.
   if not boxname:
     boxname = input('Enter box name: ')
 
+  print(f"""
+Your boxes should have versions. A box version can be anything; it's
+best to use the version of the network operating system so you'll know
+what your boxes do and be able to select a particular OS version in your
+lab topology if you feel like building multiple boxes for the same OS.
+
+You might want to limit yourself to using alphanumeric characters and dots.
+
+Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
+
+""")
   version = input('Enter box version: ')
   description = devdata.libvirt.description or devdata.description or (args.device+" box")
   json = string.Template("""
