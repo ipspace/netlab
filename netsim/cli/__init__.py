@@ -29,7 +29,7 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
 
 def topology_parse_args() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common topology arguments',add_help=False)
-  parser.add_argument('--defaults', dest='defaults', action='store', default='topology-defaults.yml',
+  parser.add_argument('--defaults', dest='defaults', action='store',
                   help='Local topology defaults file')
   parser.add_argument('-d','--device', dest='device', action='store', help='Default device type')
   parser.add_argument('-p','--provider', dest='provider', action='store',help='Override virtualization provider')
