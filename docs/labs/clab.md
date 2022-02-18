@@ -9,24 +9,19 @@
 
 ## Container Images
 
-Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab create](../netlab/create.md)** command uses these container images:
+Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab create](../netlab/create.md)** command uses these container images (use **netlab show images** to display the actual system settings):
 
 | Virtual network device | Container image              |
 |------------------------|------------------------------|
-| Arista cEOS            | ceos:4.25.1F                 |
+| Arista cEOS            | ceos:4.26.4M                 |
 | Cumulus VX             | networkop/cx:4.3.0           |
 | FRR                    | frrouting/frr:v7.5.0         |
 | Nokia SR Linux         | ghcr.io/nokia/srlinux:latest |
 | Nokia SR OS            | vrnetlab/vr-sros:latest      |
 
-Cumulus VX, FRR, and Nokia SR Linux images are downloaded from Docker Hub.
-
-To install the Arista cEOS container image:
-
-* Download the image from Arista web site
-* Import the image with **docker image import _file_ _imagename_**
-
-To install the Nokia SR OS container image (requires a license), see [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
+* Cumulus VX, FRR, and Nokia SR Linux images are automatically downloaded from Docker Hub.
+* Arista cEOS image has to be [downloaded and installed manually](ceos.md).
+* Nokia SR OS container image (requires a license), see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 
 You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Nexus 9300v and IOS XR, OpenWRT, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
 
@@ -45,4 +40,14 @@ defaults.providers.clab.bridge_type: ovs-bridge
 module: [ ospf ]
 nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3 ]
+```
+
+```{eval-rst}
+.. toctree::
+   :caption: Installing Container Images
+   :maxdepth: 1
+   :hidden:
+
+   ceos.md
+..
 ```
