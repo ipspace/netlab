@@ -43,10 +43,10 @@ def create_node_dict(nodes: Box) -> Box:
       node_dict[name] = { 'name': name, 'extra': ndata }
     else:
       ndata['name'] = name
+    ndata['interfaces'] = [] # Make sure node.interfaces is always defined
     node_dict[name] = ndata
 
   common.exit_on_error()
-  node_dict['interfaces'] = [] # Make sure node.interfaces is always defined
   return node_dict
 
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
@@ -89,7 +89,7 @@ def augment_node_provider_data(topology: Box) -> None:
     common.fatal('Device defaults (defaults.devices) are missing')
 
   for name,n in topology.nodes.items():
-    if not n.device:
+    if 'device' not in n:
       n.device = topology.defaults.device
 
     if not n.device:
