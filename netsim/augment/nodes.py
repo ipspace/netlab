@@ -46,6 +46,7 @@ def create_node_dict(nodes: Box) -> Box:
     node_dict[name] = ndata
 
   common.exit_on_error()
+  node_dict['interfaces'] = [] # Make sure node.interfaces is always defined
   return node_dict
 
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:

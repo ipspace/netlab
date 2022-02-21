@@ -114,9 +114,6 @@ def get_link_base_attributes(defaults: Box) -> set:
   return get_link_full_attributes(defaults) - set(no_propagate)
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
-  if not 'interfaces' in node:
-    node.interfaces = []
-
   ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
   if ifindex_offset is None:
     ifindex_offset = 1
@@ -444,7 +441,7 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
     if not 'role' in link:
       link.role = 'stub'
 
-  return 
+  return
 
 def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
@@ -452,7 +449,7 @@ def check_link_type(data: Box) -> bool:
 
   if 'mtu' in data and not isinstance(data.mtu,int): # pragma: no cover
     common.error(f'MTU parameter should be an integer: {data}',common.IncorrectValue,'links')
-    
+
   if not link_type: # pragma: no cover (shouldn't get here)
     common.fatal('Internal error: link type still undefined in check_link_type: %s' % data,'links')
     return False
