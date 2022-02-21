@@ -1,0 +1,23 @@
+#
+# Fetch SR Linux configuration using gNMI
+#
+- name: Backup SR Linux node config user={{ ansible_user }}
+  vars:
+   ansible_connection: nokia.grpc.gnmi
+   ansible_port: "{{ srlinux_grpc_port }}" # Uses gNMI over TLS to this port
+   clab_base: "{{ hostname|replace('-'+inventory_hostname,'') }}"
+   clab_ca_dir: "{{ inventory_dir }}/{{ clab_base }}/ca"
+   ansible_root_certificates_file: '{{ clab_ca_dir }}/root/root-ca.pem'
+   ansible_certificate_chain_file: ''
+
+  nokia.grpc.gnmi_config:
+   backup: yes
+   backup_options:
+    dir_path: "{{ config_dir }}"
+    filename: "{{ inventory_hostname+'.config' }}"
+  register: backup_info
+  changed_when: no
+
+- name: SR Linux backup details
+  debug:
+   msg: "{{ backup_info }}"
