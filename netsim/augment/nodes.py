@@ -41,8 +41,11 @@ def create_node_dict(nodes: Box) -> Box:
     elif not isinstance(ndata,dict):
       common.error(f'Node data for node {name} must be a dictionary')
       node_dict[name] = { 'name': name, 'extra': ndata }
+      ndata = node_dict[name]
     else:
       ndata['name'] = name
+
+    ndata.interfaces = ndata.interfaces or []   # Make sure node.interfaces is always defined
     node_dict[name] = ndata
 
   common.exit_on_error()
@@ -88,7 +91,7 @@ def augment_node_provider_data(topology: Box) -> None:
     common.fatal('Device defaults (defaults.devices) are missing')
 
   for name,n in topology.nodes.items():
-    if not n.device:
+    if 'device' not in n:
       n.device = topology.defaults.device
 
     if not n.device:
