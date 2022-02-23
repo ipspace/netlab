@@ -86,6 +86,8 @@ Created Ansible configuration file: ansible.cfg
 
 Start the lab with **vagrant up** or **sudo containerlab deploy -t clab.yml**. Once all the lab devices have started, connect to individual devices with **vagrant ssh** or **[netlab connect](../netlab/connect.md)**.
 
+If you execute **vagrant up** in a VirtualBox environment, you should get a printout similar to the one below:
+
 ```
 $ vagrant up
 Bringing machine 'r1' up with 'virtualbox' provider...
