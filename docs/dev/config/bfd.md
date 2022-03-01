@@ -16,7 +16,7 @@ When configuring BFD on an interface, you have to consider global and interface 
 * You could specify default platform values for **bfd.min_rx** and **bfd.min_tx** in **devices._device_.bfd** system settings or in the configuration template.
 
 ```
-{% for l in links|default([]) if bfd|default(False) or l.bfd|default(False) %}
+{% for l in interfaces if bfd|default(False) or l.bfd|default(False) %}
 interface {{ l.ifname }}
 {%   set disable_bfd = l.bfd is defined and not l.bfd %}
 {%   if not disable_bfd %}
@@ -36,6 +36,7 @@ bfd slow-timers {{ bfd.min_echo_rx }}
 {% endif %}
 ```
 
+(igp-bfd-interaction)=
 ## IGP/BFD Interaction
 
 There are so many corner cases in BFD-with-IGP configuration matrix that it turned out to be simpler to calculate target IGP BFD state in the transformation code than to try to figure it out in Jinja2 configuration templates.
@@ -179,15 +180,15 @@ Resulting interface data:
   type: p2p
 ```
 
-
+(igp-bfd-config)=
 ## IGP BFD Configuration Template Boilerplate
 
 Adding BFD to an IGP configuration template is trivial due to already-computed interface BFD state.
 
-Single-protocol boilerplate:
+Single-protocol boilerplate (OSPFv2):
 
 ```
-{% for l in links|default([]) %}
+{% for l in interfaces %}
 ...
 {%     if l.ospf.bfd|default(False) %}
  ip ospf bfd
@@ -196,10 +197,10 @@ Single-protocol boilerplate:
 {% endfor %}
 ```
 
-Multi-protocol boilerplate:
+Multi-protocol boilerplate (IS-IS):
 
 ```
-{% for l in links|default([]) %}
+{% for l in interfaces %}
 ...
 {%     if l.isis.bfd.ipv4|default(False) %}
  isis bfd

@@ -11,3 +11,13 @@ If you want to add support for a new configuration module (example: MPLS segment
 * If possible, create virtual labs with mixed device types to verify interoperability of your configuration settings (example: running OSPF on unnumbered interfaces requires an extra configuration command on Arista EOS).
 * Update the [supported platforms](../platforms.md) documentation and add [caveats](../caveats.md) (if needed).
 * [Submit a PR](guidelines.md).
+
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+   :caption: Implementation Notes
+
+   config/initial.md
+   config/ospf.md
+   config/bfd.md
+```

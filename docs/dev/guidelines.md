@@ -27,6 +27,8 @@ The easiest way to get started is to [add support for a new platform for an exis
    :maxdepth: 1
    :caption: Implementation Notes
 
-   bfd.md
+   config/initial.md
+   config/ospf.md
+   config/bfd.md
 ```
 
