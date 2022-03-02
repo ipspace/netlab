@@ -5,17 +5,20 @@
   strategy: "{{ netsim_strategy|default('linear') }}"
   gather_facts: false
   tasks:
+  - set_fact:
+      netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
+
   - name: Find initial configuration template
     debug:
       msg: |
-        Config for {{ inventory_hostname }} (NOS {{ ansible_network_os }})
+        Config for {{ inventory_hostname }} (type {{ netlab_device_type }})
         ===================================
         {{ lookup('template',item) }}
       verbosity: 1
     vars:
       config_module: initial
     with_first_found:
-    - "templates/{{ config_module }}/{{ ansible_network_os }}.j2"
+    - "templates/{{ config_module }}/{{ netlab_device_type }}.j2"
     - "templates/missing.j2"
     tags: [ initial,test ]
 
@@ -23,13 +26,13 @@
     name: Deploy initial device configuration
     tags: [ initial ]
     with_first_found:
-    - "tasks/{{ansible_network_os}}/initial.yml"
-    - "tasks/deploy-config/{{ansible_network_os}}.yml"
+    - "tasks/{{netlab_device_type}}/initial.yml"
+    - "tasks/deploy-config/{{netlab_device_type}}.yml"
     - "missing.yml"
     args:
       apply:
         vars:
-          config_template: "templates/initial/{{ansible_network_os}}.j2"
+          config_template: "templates/initial/{{netlab_device_type}}.j2"
           netsim_action: initial
         tags: [ always ]
 
