@@ -6,7 +6,7 @@ Most of the document assumes you already created an Ansible task list that is ab
 
 **Notes:**
 
-* The device configuration template (in Jinja2 format) should be stored in `netsim/templates/ospf/<nos>.j2` with **nos** being the value of **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
+* The device configuration template (in Jinja2 format) should be stored in `netsim/templates/ospf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
 * Most of the data model attributes are optional. Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
 * If you want to support OSPFv2 and OSPFv3, start with the [](ospf-af) section.
 

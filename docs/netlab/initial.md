@@ -47,7 +47,7 @@ All other arguments are passed directly to ansible-playbook
 
 ## Initial Device Configurations
 
-Initial device configurations are created from inventory data and templates in `netsim/ansible/templates/initial` directory. Device-specific configuration template is selected using `ansible_network_os` value (making IOSv and CSR 1000v templates identical).
+Initial device configurations are created from inventory data and templates in `netsim/ansible/templates/initial` directory. Device-specific configuration template is selected using `network_device_type` or `ansible_network_os` value (making IOSv and CSR 1000v templates identical). See [](../dev/config/deploy.md) for more details.
 
 The following initial configuration parameters are supported:
 
@@ -64,18 +64,19 @@ Default passwords and other default configuration parameters are supposed to be 
 
 ## Module Configurations
 
-Module-specific device configurations are created from templates in `netsim/ansible/templates/_module_` directory. Device-specific configuration template is selected using `ansible_network_os` value. See the [module descriptions](../module-reference.md) for list of supported model parameters.
+Module-specific device configurations are created from templates in `netsim/ansible/templates/_module_` directory. Device-specific configuration template is selected using `netlab_device_type` or `ansible_network_os` value. 
+
+More details: 
+
+* [Module descriptions](../module-reference.md) contain list of supported model parameters.
+* [](../dev/config/deploy.md) describes the details of template search process
+* [](../dev/device-features.md) contains the configuration template guidelines.
 
 ## Custom Deployment Templates
 
-[Custom deployment templates](../groups.md#custom-configuration-templates) are specified in **config** group- or node parameter. `initial-config.ansible` playbook uses the following file search list to find the target configuration template:
+[Custom deployment templates](../groups.md#custom-configuration-templates) are specified in **config** group- or node parameter. `initial-config.ansible` playbook tries to find the target configuration template in user- (current) and system (`netsim/extra`) directories and uses `netlab_device_type` and `ansible_network_os` to allow you to create numerous device-specific configuration templates.
 
-* _template_/_ansible_network_os_.j2 (device-specific templates within _template_ directory)
-* _template_._ansible_network_os_.j2 (device-specific templates within the current directory)
-* _template_ (try the template name verbatim regardless of device type)
-* _template_.j2 (try appending j2 suffix to template name).
-
-The configuration templates could be stored either in current directory or in `netsim.extra` package directory.
+You'll find more details in [](../dev/config/deploy.md).
 
 ## Limiting the Scope of Configuration Deployments
 

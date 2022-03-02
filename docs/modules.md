@@ -128,9 +128,9 @@ During the initial device configuration, the **[netlab initial](../netlab/initia
 **Notes:**
 
 * The configuration snippets are created from templates in the **netsim/ansible/templates/_module_** directory.
-* The device-specific template is selected based on **ansible_network_os** value. For example, `netsim/ansible/templates/ospf/eos.j2` will be used to create OSPF configuration for an Arista EOS device.
+* The device-specific template is selected based on **netlab_device_type** or **ansible_network_os** value. For example, `netsim/ansible/templates/ospf/eos.j2` will be used to create OSPF configuration for an Arista EOS device. More details in [](dev/config/deploy.md).
 
-For more information, see [list of configuration modules](module-reference.md)
+For module-specific information, see [list of configuration modules](module-reference.md)
 
 ## Merging Default Values
 

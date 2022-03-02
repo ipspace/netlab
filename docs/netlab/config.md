@@ -25,13 +25,9 @@ All other arguments are passed directly to ansible-playbook
 
 ## Selecting Configuration Template
 
-**netlab config** uses these steps trying to find the configuration template for individual lab devices:
+When the configuration template specified in **netlab config** command is not a Jinja2 template, the command tries to find the configuration template for individual lab devices using `netlab_device_type` or `ansible_network_os` Ansible variable, allowing you to create a set of templates to deploy the same functionality to lab devices running different network operating systems.
 
-* Combine template name with `ansible_network_os` and `.j2` suffix
-* Use template name as specified
-* Add `.j2` suffix to the template name.
-
-The first step allows you to create a set of templates to deploy the same functionality to lab devices running different network operating systems. The last step allows you to specify just the template name without the `.j2` suffix.
+See [](../dev/config/deploy.md) for more details.
 
 ## Limiting the Scope of Configuration Deployments
 

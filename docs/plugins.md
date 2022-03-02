@@ -17,7 +17,7 @@ module: [ ospf, bgp ]
 
 Plugins are either Python files or directories containing Python code plus configuration templates. They are loaded from the current directory or `netsim/extra` directory.
 
-For simple plugins, the plugin name specifies the file name (without the `.py` extension). For plugin packages, the plugin name specifies the directory with `plugin.py` Python module and one or more Jinja2 templates (one per supported **ansible_network_os** type).
+For simple plugins, the plugin name specifies the file name (without the `.py` extension). For plugin packages, the plugin name specifies the directory with `plugin.py` Python module and one or more Jinja2 templates (one per supported **netlab_device_type**/**ansible_network_os**).
 
 Plugins can define well-known functions that are invoked during the [topology transformation process](dev/transform.md) which includes these steps:
 
