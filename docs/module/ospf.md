@@ -41,7 +41,7 @@ The following table describes per-platform support of individual router-level OS
 | Mikrotik CHR RouterOS    |   ✅  |            ❌          |   ❌   |  ✅  |
 | Nokia SR Linux           |   ✅  |            ✅          |   ❌   |  ✅  |
 | Nokia SR OS              |   ✅  |            ✅          |   ❌   |  ✅  |
-| VyOS                     |   ✅  |            ✅          |   ❌   |  ✅  |
+| VyOS                     |   ✅  |            ✅          |   ✅   |  ✅  |
 
 **Notes:**
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.

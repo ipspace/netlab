@@ -1,0 +1,26 @@
+{% if ospf.router_id|ipv4 %}
+set protocols ospfv3 parameters router-id {{ ospf.router_id }}
+{% endif %}
+
+{% for l in interfaces|default([]) if l.ospf.passive|default(False) %}
+set protocols ospfv3 interface {{ l.ifname }} passive
+{% endfor %}
+
+set protocols ospfv3 interface dum0 passive
+set protocols ospfv3 interface dum0 area {{ ospf.area }}
+
+{% for l in interfaces|default([]) if 'ospf' in l %}
+
+set protocols ospfv3 interface {{ l.ifname }} area {{ l.ospf.area }}
+
+{%   if l.ospf.network_type is defined %}
+set protocols ospfv3 interface {{ l.ifname }} network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+set protocols ospfv3 interface {{ l.ifname }} cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+set protocols ospfv3 interface {{ l.ifname }} bfd
+{%   endif %}
+
+{% endfor %}
