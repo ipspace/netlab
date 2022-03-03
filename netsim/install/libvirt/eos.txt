@@ -5,6 +5,8 @@ Creating initial configuration for Arista EOS
 * Login as 'admin' (no password)
 * Disable zero-touch with 'zerotouch disable'
 
+NOTE: the management traffic is isolated in a dedicated management VRF (management).
+
 ===============
 *** WARNING ***
 ===============
@@ -26,19 +28,26 @@ no aaa root
 !
 service routing protocols model multi-agent
 !
+vrf instance management
+!
 username vagrant privilege 15 secret sha512 $6$3kgdKcJLJ3j/0N51$a0YshIzKL3xtdwP6XXXRlY9B8yHFK/tLdg0I95YUIaW7oHqLsgK9TxMg8/0bL6VDkImuWT.g7WRKTxi8nNPtA1
 username vagrant ssh-key ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key
 !
 interface Management1
+   vrf management
    ip address dhcp
 !
 no ip routing
+no ip routing vrf management
 !
 security pki key generate rsa 2048 default
 security pki certificate generate self-signed default key default param common-name Arista
 !
 management api http-commands
    no shutdown
+   !
+   vrf management
+      no shutdown
 !
 management api netconf
  transport ssh default
@@ -52,6 +61,10 @@ management security
  ssl profile default
   certificate default key default
 !
+management ssh
+   vrf management
+      no shutdown
+!
 no user vagrant shell
 !
 end
@@ -59,28 +72,3 @@ end
 
 * Save the configuration with 'wr mem'
 * Poweroff the VM with 'bash sudo poweroff'
-
-NOTE: if you want to keep the management traffic in a dedicated VRF, add to your initial configuration:
-=============================================
-vrf instance management
-!
-management api http-commands
-   no shutdown
-   !
-   vrf management
-      no shutdown
-!
-interface Management1
-   vrf management
-   ip address dhcp
-   no lldp transmit
-   no lldp receive
-!
-ip routing
-no ip routing vrf management
-!
-management ssh
-   vrf management
-      no shutdown
-end
-=============================================
