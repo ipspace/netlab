@@ -9,38 +9,12 @@ fi
 
 configure
 
-{% if ospf.router_id|ipv4 %}
-set protocols ospf parameters router-id {{ ospf.router_id }}
+{% if ospf.af.ipv4 is defined %}
+{% include 'vyos.ospfv2.j2' %}
 {% endif %}
-
-{% if ospf.reference_bandwidth is defined %}
-set protocols ospf auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% if ospf.af.ipv6 is defined %}
+{% include 'vyos.ospfv3.j2' %}
 {% endif %}
-
-{% for l in interfaces|default([]) if l.ospf.passive|default(False) %}
-set protocols ospf passive-interface {{ l.ifname }}
-{% endfor %}
-
-set protocols ospf passive-interface dum0
-set protocols ospf interface dum0 area {{ ospf.area }}
-
-
-{% for l in interfaces|default([]) if 'ospf' in l %}
-
-set protocols ospf interface {{ l.ifname }} area {{ l.ospf.area }}
-
-{%   if l.ospf.network_type is defined %}
-set protocols ospf interface {{ l.ifname }} network {{ l.ospf.network_type }}
-{%   endif %}
-{%   if l.ospf.cost is defined %}
-set protocols ospf interface {{ l.ifname }} cost {{ l.ospf.cost }}
-{%   endif %}
-{%   if l.ospf.bfd|default(False) %}
-set protocols ospf interface {{ l.ifname }} bfd
-{%   endif %}
-
-{% endfor %}
-
 
 commit
 save
