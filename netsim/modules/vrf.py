@@ -128,16 +128,27 @@ class VRF(_Module):
         vrf_count = vrf_count + 1
         if 'vrfs' in topology and ifdata.vrf in topology.vrfs:
           node.vrfs[ifdata.vrf] = topology.vrfs[ifdata.vrf] + node.vrfs[ifdata.vrf]
+
         if not node.vrfs[ifdata.vrf]:
           common.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
             common.MissingValue,
             'vrf')
+          continue
         if not node.vrfs[ifdata.vrf].rd:
           common.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} does not have a usable RD',
             common.MissingValue,
             'vrf')
+          continue
 
-    if not vrf_count:       # Remove VRF module from the node if the node has no VRFs
+        node.vrfs[ifdata.vrf].af = {}
+        for af in ['v4','v6']:
+          if f'ip{af}' in ifdata:
+            node.af[f'vpn{af}'] = True
+            node.vrfs[ifdata.vrf].af[f'ip{af}'] = True
+
+    if not vrf_count:                # Remove VRF module from the node if the node has no VRFs
       node.module = [ m for m in node.module if m != 'vrf' ]
+    else:
+      node.vrfs = node.vrfs or {}    # ... otherwise make sure the 'vrfs' dictionary is not empty
