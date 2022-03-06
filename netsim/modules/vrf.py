@@ -126,7 +126,8 @@ class VRF(_Module):
     for ifdata in node.interfaces:
       if 'vrf' in ifdata:
         vrf_count = vrf_count + 1
-        node.vrfs[ifdata.vrf] = topology.vrfs[ifdata.vrf] + node.vrfs[ifdata.vrf]
+        if 'vrfs' in topology and ifdata.vrf in topology.vrfs:
+          node.vrfs[ifdata.vrf] = topology.vrfs[ifdata.vrf] + node.vrfs[ifdata.vrf]
         if not node.vrfs[ifdata.vrf]:
           common.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
