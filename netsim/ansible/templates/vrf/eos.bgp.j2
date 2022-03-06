@@ -1,0 +1,21 @@
+{% import "eos.bgp-macro.j2" as bgpcfg %}
+!
+router bgp {{ bgp.as }}
+{% for vname,vdata in vrfs.items() %}
+!
+ vrf {{ vname }}
+  redistribute connected
+{%   for n in vdata.bgp.neighbors|default([]) %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{       bgpcfg.neighbor(n,n[af]) }}
+{%     endfor %}
+{%   endfor %}
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
+{%       if loop.index == 1 %}
+  address-family {{ af }}
+{%       endif %}
+   neighbor {{ n[af] }} activate
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

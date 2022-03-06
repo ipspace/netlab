@@ -1,5 +1,22 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+  as65001:
+    members:
+    - r2
 input:
-- topology/input/vrf-lite.yml
+- topology/input/vrf.yml
 - package:topology-defaults.yml
 links:
 - interfaces:
@@ -21,6 +38,7 @@ links:
     ifname: Ethernet1
     ipv4: 10.1.0.2/30
     node: r2
+  role: external
   type: p2p
 - interfaces:
   - ipv4: 10.1.0.5/30
@@ -54,12 +72,26 @@ links:
   type: stub
 module:
 - vrf
+- bgp
+- ospf
 name: input
 nodes:
   r1:
     af:
       ipv4: true
       vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.1
     box: ceos:4.26.4M
     clab:
       env:
@@ -82,6 +114,7 @@ nodes:
         node: r2
       remote_id: 2
       remote_ifindex: 1
+      role: external
       type: p2p
       vrf: red
     - clab:
@@ -95,6 +128,10 @@ nodes:
       - ifname: Ethernet1
         ipv4: 10.1.0.6/30
         node: r3
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       remote_id: 3
       remote_ifindex: 1
       type: p2p
@@ -107,7 +144,14 @@ nodes:
       mac: 08-4F-A9-00-00-01
     module:
     - vrf
+    - bgp
+    - ospf
     name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
     vrf:
       as: 65000
     vrfs:
@@ -121,6 +165,13 @@ nodes:
       red:
         af:
           ipv4: true
+        bgp:
+          neighbors:
+          - as: 65001
+            ifindex: 1
+            ipv4: 10.1.0.2
+            name: r2
+            type: ebgp
         export: '65000:2'
         id: 2
         import: '65000:2'
@@ -128,6 +179,24 @@ nodes:
   r2:
     af:
       ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
     box: ceos:4.26.4M
     clab:
       env:
@@ -150,6 +219,7 @@ nodes:
         node: r1
       remote_id: 1
       remote_ifindex: 1
+      role: external
       type: p2p
     loopback:
       ipv4: 10.0.0.2/32
@@ -157,8 +227,15 @@ nodes:
       ifname: Management0
       ipv4: 192.168.121.102
       mac: 08-4F-A9-00-00-02
-    module: []
+    module:
+    - bgp
+    - ospf
     name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
     vrf:
       as: 65000
     vrfs:
@@ -191,6 +268,10 @@ nodes:
       - ifname: Ethernet2
         ipv4: 10.1.0.5/30
         node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       remote_id: 1
       remote_ifindex: 2
       type: p2p
@@ -202,6 +283,9 @@ nodes:
       ipv4: 172.16.0.3/24
       linkindex: 3
       neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: true
       type: stub
       vrf: yellow
     loopback:
@@ -212,7 +296,13 @@ nodes:
       mac: 08-4F-A9-00-00-03
     module:
     - vrf
+    - ospf
     name: r3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
     vrf:
       as: 65000
     vrfs:
@@ -236,6 +326,8 @@ nodes:
         id: 1
         import: '65000:1'
         rd: '65000:1'
+ospf:
+  area: 0.0.0.0
 provider: clab
 vrf:
   as: 65000

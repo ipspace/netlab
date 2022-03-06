@@ -1,27 +1,4 @@
-{#
-  Define a BGP neighbor
-#}
-{% macro neighbor(n,ip) %}
-!
-  neighbor {{ ip }} remote-as {{ n.as }}
-  neighbor {{ ip }} description {{ n.name }}
-{%     if n.type == 'ibgp' %}
-  neighbor {{ ip }} update-source Loopback0
-{%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
-  neighbor {{ ip }} next-hop-self
-{%       endif %}
-{%       if bgp.rr|default('') and not n.rr|default('') %}
-  neighbor {{ ip }} route-reflector-client
-{%       endif %}
-{%       if bgp.community.ibgp|default([]) %}
-  neighbor {{ ip }} send-community {{ bgp.community.ibgp|join(' ') }}
-{%       endif %}
-{%   else %}
-{%       if bgp.community.ebgp|default([]) %}
-  neighbor {{ ip }} send-community {{ bgp.community.ebgp|join(' ') }}
-{%       endif %}
-{%     endif %}
-{%- endmacro %}
+{% import "eos.macro.j2" as bgpcfg %}
 !
 router bgp {{ bgp.as }}
   bgp advertise-inactive
@@ -37,7 +14,7 @@ router bgp {{ bgp.as }}
 {% endif %}
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-{{     neighbor(n,n[af]) }}
+{{     bgpcfg.neighbor(n,n[af]) }}
 {%   endfor %}
 {% endfor %}
 !
