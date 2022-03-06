@@ -11,9 +11,6 @@ from ..augment import devices
 class ISIS(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    _routing.routing_af(node,'isis')
-
-    bfd.multiprotocol_bfd_link_state(node,'isis')
     features = devices.get_device_features(node,topology.defaults)
 
     for af in ('ipv4','ipv6'):
@@ -47,3 +44,16 @@ class ISIS(_Module):
         err = _routing.network_type(l,'isis',['point-to-point'])
         if err:
           common.error(f'{err}\n... node {node.name} link {l}')
+
+    #
+    # Final steps:
+    #
+    # * remove IS-IS from VRF interfaces
+    # * Calculate address families
+    # * Enable BFD
+    # * Remove ISIS module if there are no IS-IS enabled global interfaces
+    #
+    _routing.remove_vrf_interfaces(node,'isis')
+    _routing.routing_af(node,'isis')
+    bfd.multiprotocol_bfd_link_state(node,'isis')
+    _routing.remove_unused_igp(node,'isis')

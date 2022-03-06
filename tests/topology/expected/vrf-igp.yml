@@ -11,61 +11,85 @@ bgp:
 groups:
   as65000:
     members:
-    - r1
+    - pe1
+    - pe2
   as65001:
     members:
     - r2
 input:
-- topology/input/vrf.yml
+- topology/input/vrf-igp.yml
 - package:topology-defaults.yml
+isis:
+  area: 49.0001
+  type: level-2
 links:
 - interfaces:
   - ipv4: 10.1.0.1/30
-    node: r1
-    vrf: red
+    node: pe1
   - ipv4: 10.1.0.2/30
-    node: r2
+    node: pe2
   left:
     ifname: Ethernet1
     ipv4: 10.1.0.1/30
-    node: r1
+    node: pe1
   linkindex: 1
-  name: r1 - r2
+  name: pe1 - pe2
   node_count: 2
+  ospf: false
   prefix:
     ipv4: 10.1.0.0/30
   right:
     ifname: Ethernet1
     ipv4: 10.1.0.2/30
-    node: r2
-  role: external
+    node: pe2
   type: p2p
 - interfaces:
   - ipv4: 10.1.0.5/30
-    node: r1
-    vrf: blue
+    node: pe1
+    vrf: red
   - ipv4: 10.1.0.6/30
-    node: r3
+    node: r2
   left:
     ifname: Ethernet2
     ipv4: 10.1.0.5/30
-    node: r1
+    node: pe1
   linkindex: 2
-  name: r1 - r3
+  name: pe1 - r2
   node_count: 2
   prefix:
     ipv4: 10.1.0.4/30
   right:
     ifname: Ethernet1
     ipv4: 10.1.0.6/30
+    node: r2
+  role: external
+  type: p2p
+- interfaces:
+  - ipv4: 10.1.0.9/30
+    node: pe2
+    vrf: blue
+  - ipv4: 10.1.0.10/30
+    node: r3
+  left:
+    ifname: Ethernet2
+    ipv4: 10.1.0.9/30
+    node: pe2
+  linkindex: 3
+  name: pe2 - r3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.10/30
     node: r3
   type: p2p
-- bridge: input_3
+- bridge: input_4
   interfaces:
-  - ipv4: 172.16.0.3/24
+  - ipv4: 172.16.0.4/24
     node: r3
     vrf: yellow
-  linkindex: 3
+  linkindex: 4
   node_count: 1
   prefix:
     ipv4: 172.16.0.0/24
@@ -74,9 +98,10 @@ module:
 - vrf
 - bgp
 - ospf
+- isis
 name: input
 nodes:
-  r1:
+  pe1:
     af:
       ipv4: true
       vpnv4: true
@@ -89,7 +114,12 @@ nodes:
         ibgp:
         - standard
         - extended
-      neighbors: []
+      ipv4: true
+      neighbors:
+      - as: 65000
+        ipv4: 10.0.0.2
+        name: pe2
+        type: ibgp
       next_hop_self: true
       router_id: 10.0.0.1
     box: ceos:4.26.4M
@@ -98,7 +128,7 @@ nodes:
         INTFTYPE: et
       kind: ceos
     device: eos
-    hostname: clab-input-r1
+    hostname: clab-input-pe1
     id: 1
     interfaces:
     - clab:
@@ -106,32 +136,39 @@ nodes:
       ifindex: 1
       ifname: Ethernet1
       ipv4: 10.1.0.1/30
+      isis:
+        network_type: point-to-point
+        passive: false
       linkindex: 1
-      name: r1 -> r2
+      name: pe1 -> pe2
       neighbors:
       - ifname: Ethernet1
         ipv4: 10.1.0.2/30
-        node: r2
+        node: pe2
       remote_id: 2
       remote_ifindex: 1
-      role: external
       type: p2p
-      vrf: red
     - clab:
         name: et2
       ifindex: 2
       ifname: Ethernet2
       ipv4: 10.1.0.5/30
       linkindex: 2
-      name: r1 -> r3
+      name: pe1 -> r2
       neighbors:
       - ifname: Ethernet1
         ipv4: 10.1.0.6/30
-        node: r3
+        node: r2
       remote_id: 3
       remote_ifindex: 1
+      role: external
       type: p2p
-      vrf: blue
+      vrf: red
+    isis:
+      af:
+        ipv4: true
+      area: 49.0001
+      type: level-2
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
@@ -142,12 +179,114 @@ nodes:
     - vrf
     - bgp
     - ospf
-    name: r1
+    - isis
+    name: pe1
     ospf:
       af:
         ipv4: true
       area: 0.0.0.0
       router_id: 10.0.0.1
+    vrf:
+      as: 65000
+    vrfs:
+      red:
+        af:
+          ipv4: true
+        bgp:
+          neighbors:
+          - as: 65001
+            ifindex: 2
+            ipv4: 10.1.0.6
+            name: r2
+            type: ebgp
+        export: '65000:2'
+        id: 2
+        import: '65000:2'
+        rd: '65000:2'
+  pe2:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - as: 65000
+        ipv4: 10.0.0.1
+        name: pe1
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-pe2
+    id: 2
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 1
+      name: pe2 -> pe1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: pe1
+      remote_id: 1
+      remote_ifindex: 1
+      type: p2p
+    - clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: pe2 -> r3
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.10/30
+        node: r3
+      remote_id: 4
+      remote_ifindex: 1
+      type: p2p
+      vrf: blue
+    isis:
+      af:
+        ipv4: true
+      area: 49.0001
+      type: level-2
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - vrf
+    - bgp
+    - ospf
+    - isis
+    name: pe2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
     vrf:
       as: 65000
     vrfs:
@@ -164,37 +303,23 @@ nodes:
               name: et2
             ifindex: 2
             ifname: Ethernet2
-            ipv4: 10.1.0.5/30
-            linkindex: 2
-            name: r1 -> r3
+            ipv4: 10.1.0.9/30
+            linkindex: 3
+            name: pe2 -> r3
             neighbors:
             - ifname: Ethernet1
-              ipv4: 10.1.0.6/30
+              ipv4: 10.1.0.10/30
               node: r3
             ospf:
               area: 0.0.0.0
               network_type: point-to-point
               passive: false
-            remote_id: 3
+            remote_id: 4
             remote_ifindex: 1
             type: p2p
             vrf: blue
-          router_id: 10.0.0.1
+          router_id: 10.0.0.2
         rd: '65000:3'
-      red:
-        af:
-          ipv4: true
-        bgp:
-          neighbors:
-          - as: 65001
-            ifindex: 1
-            ipv4: 10.1.0.2
-            name: r2
-            type: ebgp
-        export: '65000:2'
-        id: 2
-        import: '65000:2'
-        rd: '65000:2'
   r2:
     af:
       ipv4: true
@@ -211,11 +336,11 @@ nodes:
       neighbors:
       - as: 65000
         ifindex: 1
-        ipv4: 10.1.0.1
-        name: r1
+        ipv4: 10.1.0.5
+        name: pe1
         type: ebgp
       next_hop_self: true
-      router_id: 10.0.0.2
+      router_id: 10.0.0.3
     box: ceos:4.26.4M
     clab:
       env:
@@ -223,46 +348,32 @@ nodes:
       kind: ceos
     device: eos
     hostname: clab-input-r2
-    id: 2
+    id: 3
     interfaces:
     - clab:
         name: et1
       ifindex: 1
       ifname: Ethernet1
-      ipv4: 10.1.0.2/30
-      linkindex: 1
-      name: r2 -> r1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: r2 -> pe1
       neighbors:
-      - ifname: Ethernet1
-        ipv4: 10.1.0.1/30
-        node: r1
+      - ifname: Ethernet2
+        ipv4: 10.1.0.5/30
+        node: pe1
       remote_id: 1
-      remote_ifindex: 1
+      remote_ifindex: 2
       role: external
       type: p2p
     loopback:
-      ipv4: 10.0.0.2/32
+      ipv4: 10.0.0.3/32
     mgmt:
       ifname: Management0
-      ipv4: 192.168.121.102
-      mac: 08-4F-A9-00-00-02
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
     module:
     - bgp
-    - ospf
     name: r2
-    ospf:
-      af:
-        ipv4: true
-      area: 0.0.0.0
-      router_id: 10.0.0.2
-    vrf:
-      as: 65000
-    vrfs:
-      green:
-        export: '65000:4'
-        id: 4
-        import: '65000:4'
-        rd: '65000:4'
   r3:
     af:
       ipv4: true
@@ -274,42 +385,42 @@ nodes:
       kind: ceos
     device: eos
     hostname: clab-input-r3
-    id: 3
+    id: 4
     interfaces:
     - clab:
         name: et1
       ifindex: 1
       ifname: Ethernet1
-      ipv4: 10.1.0.6/30
-      linkindex: 2
-      name: r3 -> r1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: r3 -> pe2
       neighbors:
       - ifname: Ethernet2
-        ipv4: 10.1.0.5/30
-        node: r1
+        ipv4: 10.1.0.9/30
+        node: pe2
       ospf:
         area: 0.0.0.0
         network_type: point-to-point
         passive: false
-      remote_id: 1
+      remote_id: 2
       remote_ifindex: 2
       type: p2p
-    - bridge: input_3
+    - bridge: input_4
       clab:
         name: et2
       ifindex: 2
       ifname: Ethernet2
-      ipv4: 172.16.0.3/24
-      linkindex: 3
+      ipv4: 172.16.0.4/24
+      linkindex: 4
       neighbors: []
       type: stub
       vrf: yellow
     loopback:
-      ipv4: 10.0.0.3/32
+      ipv4: 10.0.0.4/32
     mgmt:
       ifname: Management0
-      ipv4: 192.168.121.103
-      mac: 08-4F-A9-00-00-03
+      ipv4: 192.168.121.104
+      mac: 08-4F-A9-00-00-04
     module:
     - vrf
     - ospf
@@ -318,23 +429,10 @@ nodes:
       af:
         ipv4: true
       area: 0.0.0.0
-      router_id: 10.0.0.3
+      router_id: 10.0.0.4
     vrf:
       as: 65000
     vrfs:
-      black:
-        export: '65303:3'
-        id: 3
-        import: '65303:3'
-        loopback:
-          ipv4: 10.0.0.1
-        rd: '65303:3'
-      orange:
-        export: '65101:2'
-        id: 2
-        import: '65101:2'
-        loopback: null
-        rd: '65101:2'
       yellow:
         af:
           ipv4: true
@@ -344,20 +442,20 @@ nodes:
         ospf:
           area: 0.0.0.0
           interfaces:
-          - bridge: input_3
+          - bridge: input_4
             clab:
               name: et2
             ifindex: 2
             ifname: Ethernet2
-            ipv4: 172.16.0.3/24
-            linkindex: 3
+            ipv4: 172.16.0.4/24
+            linkindex: 4
             neighbors: []
             ospf:
               area: 0.0.0.0
               passive: true
             type: stub
             vrf: yellow
-          router_id: 10.0.0.3
+          router_id: 10.0.0.4
         rd: '65000:1'
 ospf:
   area: 0.0.0.0

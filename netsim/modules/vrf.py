@@ -9,8 +9,8 @@ from . import bfd
 from .. import common
 from ..augment import devices
 
-vrf_id_set: set = set()
-vrf_last_id: int = 1
+vrf_id_set: set
+vrf_last_id: int
 
 #
 # VRF ID handling routing
@@ -24,9 +24,10 @@ def build_vrf_id_set(obj: Box) -> set:
   return set()
 
 def populate_vrf_id_set(topology: Box) -> None:
-  global vrf_id_set
+  global vrf_id_set, vrf_last_id
 
   vrf_id_set = build_vrf_id_set(topology)
+  vrf_last_id = 1
 
   for n in topology.nodes.values():
     if 'vrfs' in n:

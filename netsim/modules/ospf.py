@@ -13,8 +13,6 @@ from ..augment import devices
 class OSPF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    _routing.routing_af(node,'ospf')
-    bfd.bfd_link_state(node,'ospf')
     features = devices.get_device_features(node,topology.defaults)
 
     _routing.router_id(node,'ospf',topology.pools)
@@ -58,3 +56,15 @@ class OSPF(_Module):
           f'Device {node.device} used on node {node.name} cannot run OSPF over unnumbered interface',
           common.IncorrectValue,
           'interfaces')
+
+    #
+    # Final steps:
+    # * move OSPF-enabled VRF interfaces into VRF dictionary
+    # * Calculate address families
+    # * Enable BFD
+    # * Remove OSPF module if there are no OSPF-enabled global or VRF interfaces
+    #
+    _routing.build_vrf_interface_list(node,'ospf')
+    _routing.routing_af(node,'ospf')
+    bfd.bfd_link_state(node,'ospf')
+    _routing.remove_unused_igp(node,'ospf')
