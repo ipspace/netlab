@@ -42,19 +42,58 @@ def get_next_vrf_id() -> int:
   return vrf_last_id
 
 #
+# Get AS number to use in VRF identifiers (ID/RD/RT): object.vrf.as or object.bgp.as
+#
+def get_vrf_asn(obj: Box) -> typing.Optional[str]:
+  return obj.get('vrf',{}).get('as',None) or obj.get('bgp',{}).get('as',None)
+
+def get_vrf_id(vname: str, vrfs: Box, obj: Box) -> str:
+  if not vname in vrfs:
+    common.error(
+      f'Cannot get VRF ID for unknown VRF {{ vname }} in {{ obj.name }}',
+      common.MissingValue,
+      'vrf')
+    return ""
+
+  if not 'id' in vrfs[vname]:
+    vrfs[vname].id = get_next_vrf_id()
+
+  if isinstance(vrfs[vname].id,int):
+    asn = get_vrf_asn(obj)
+    if not asn:
+      common.error(
+        f"Cannot find ASN to create VRF ID for VRF {{ vname }} in {{ obj.name }}\n... set vrf.as or bgp.as in topology or node",
+        common.MissingValue,
+        'vrf')
+    return f"{asn}:{vrfs[vname].id}"
+  else:
+    return vrfs[vname].id
+
+#
 # Check global or node VRF definitons and set RD/RT values if needed
 #
-def parse_vrf_attr(vrf: Box, objname: str, vname: str, attr: str) -> typing.Optional[typing.List[int]]:
+def parse_vrf_attr(vrf: Box, objname: str, vname: str, attr: str,obj : Box, topology: Box) -> typing.Optional[typing.List[int]]:
   if not attr in vrf:
     return None
+
+  # Check for named attribute values (references to other VRFs)
+  #
+  value = vrf[attr]
+  if 'vrfs' in obj and value in obj.vrfs:
+    value = get_vrf_id(value,obj.vrfs,obj)
+  elif 'vrfs' in topology and value in topology.vrfs:
+    value = get_vrf_id(value,topology.vrfs,topology)
+
+  # We should have attribute value in N:N format, try to parse it
+  #
   try:
-    (asn,vid) = str(vrf[attr]).split(':')
+    (asn,vid) = str(value).split(':')
     return [int(asn),int(vid)]
   except Exception as ex:
     common.error(f'Invalid {attr} value in {vname} in {objname}\n{ex}',common.IncorrectValue,'vrf')
     return None
 
-def set_vrf_ids(obj: Box, name: str) -> None:
+def set_vrf_ids(obj: Box, topology: Box, name: str) -> None:
   if not isinstance(obj.vrfs,dict):
     common.error(f'VRF definition in {name} is not a dictionary',common.IncorrectValue,'vrf')
     return
@@ -76,8 +115,8 @@ def set_vrf_ids(obj: Box, name: str) -> None:
             common.error(f'VRF {vname} in {name} is using integer RD/RT value, but vrf.as is not set')
             continue
           obj.vrfs[vname][attr] = f'{vrf_as}:{obj.vrfs[vname][attr]}'
-        else:                                                           # VRF attribute should be a string
-          parsed_attr = parse_vrf_attr(obj.vrfs[vname],name,vname,attr) # Parse N:N into ASN and ID
+        else:                                                           # VRF attribute should be a string, parse it into ASN and ID
+          parsed_attr = parse_vrf_attr(obj.vrfs[vname],name,vname,attr,obj,topology)
           if not parsed_attr:                                           # ... failed to parse, error has already been reported
             continue
           if not 'id' in obj.vrfs[vname]:                               # Use parsed ID as VRF ID if needed
@@ -111,13 +150,17 @@ class VRF(_Module):
       return
 
     populate_vrf_id_set(topology)
-    set_vrf_ids(topology,'global VRFs')
+    set_vrf_ids(topology,topology,'global VRFs')
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if not 'vrfs' in node:
       return
 
-    set_vrf_ids(node,node.name)
+    for vname in node.vrfs.keys():
+      if 'vrfs' in topology and vname in topology.vrfs:
+        node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
+
+    set_vrf_ids(node,topology,node.name)
 
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     pass
@@ -152,4 +195,8 @@ class VRF(_Module):
     if not vrf_count:                # Remove VRF module from the node if the node has no VRFs
       node.module = [ m for m in node.module if m != 'vrf' ]
     else:
-      node.vrfs = node.vrfs or {}    # ... otherwise make sure the 'vrfs' dictionary is not empty
+      node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
+      vrfidx = 100
+      for v in node.vrfs.values():    # We need unique VRF index to create OSPF processes
+        v.vrfidx = vrfidx
+        vrfidx = vrfidx + 1
