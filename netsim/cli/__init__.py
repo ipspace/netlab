@@ -6,6 +6,10 @@
 import sys
 import importlib
 import argparse
+import os
+import shutil
+import typing
+
 from box import Box
 
 from . import usage
@@ -35,6 +39,27 @@ def topology_parse_args() -> argparse.ArgumentParser:
   parser.add_argument('-p','--provider', dest='provider', action='store',help='Override virtualization provider')
   parser.add_argument('-s','--set',dest='settings', action='append',help='Additional parameters added to topology file')
   return parser
+
+#
+# Common file/directory cleanup routine, used by collect/clab/down
+#
+
+def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
+  for fname in filelist:
+    if os.path.isdir(fname):
+      if verbose:
+        print(f"... removing directory tree {fname}")
+      try:
+        shutil.rmtree(fname)
+      except Exception as ex:
+        common.fatal(f"Cannot clean up directory {fname}: {ex}")
+    elif os.path.exists(fname):
+      if verbose:
+        print(f"... removing {fname}")
+      try:
+        os.remove(fname)
+      except Exception as ex:
+        common.fatal(f"Cannot remove {fname}: {ex}")
 
 # Common topology loader (used by create and down)
 

@@ -120,10 +120,10 @@ def print_verbose(t: typing.Any) -> None:
 def set_logging_flags(args: argparse.Namespace) -> None:
   global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR
   
-  if args.verbose:
+  if 'verbose' in args and args.verbose:
     VERBOSE = args.verbose
 
-  if args.logging:
+  if 'logging' in args and args.logging:
     LOGGING = True
 
   if 'debug' in args and args.debug:
