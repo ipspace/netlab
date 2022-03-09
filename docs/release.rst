@@ -1,6 +1,20 @@
 Release notes
 =============
 
+2022-03-09 (release 1.1.4)
+  * **netlab clab tarball** create a tar package that can be deployed with *containerlab*
+    without *netsim-tools*
+  * Added **tar** and **cleanup** options to **netlab collect**
+  * Added **cleanup** option to **netlab down**
+  * Support for OSPFv3 on VyOS
+  * Build recipes for Arista vEOS and Juniper vSRX use management VRF
+  * Use **netlab_device_type** instead of **ansible_network_os** to select configuration templates
+  * Developer documentation for initial device configurations, OSPFv2 and OSPFv3
+  * Add **fetch_config** action for SR Linux and SR OS. You can use **netlab collect** to get current
+    configuration from these devices
+
+  :doc:`More details <release/1.1>`
+
 2022-02-14 (release 1.1.3)
   * Restructured installation documentation
   * OSPFv3 support
