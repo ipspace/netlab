@@ -105,6 +105,8 @@ def merge_node_module_params(topology: Box) -> None:
   for name,n in topology.nodes.items():
     if 'module' in n:
       for m in n.module:
+        if not m in topology.defaults:      # Cannot propagate parameters of unknown module
+          continue                          # ... error will be reported later
         if m in topology:
           global_settings = get_propagated_global_module_params(m,topology.get(m,{}),topology.defaults[m])
           if global_settings:
@@ -168,6 +170,10 @@ def adjust_global_modules(topology: Box) -> None:
   topology.module = list(mod_dict.keys())
   for m in topology.module:                                     # Iterate over all configured modules
     if not m in topology.defaults:                              # Does this module have defaults?
+      common.error(
+        f"Unknown module {m} (we found no system defaults for it)",
+        common.IncorrectValue,
+        'module')
       continue                                                  # Nope. Weird, but doesn't matter right now.
     mod_def = topology.defaults[m]
     if not isinstance(mod_def,dict):                               # Are module defaults a dict?
