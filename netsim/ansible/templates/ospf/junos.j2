@@ -1,44 +1,15 @@
 {% set KW_NETWORK_TYPE = {'point-to-point': 'p2p','point-to-multipoint': 'p2mp', 'non-broadcast': 'nbma' } %}
 {% set pid = ospf.process|default(1) %}
+
 {% if ospf.router_id|ipv4 %}
 routing-options {
   router-id {{ ospf.router_id }}
 }
 {% endif %}
-protocols {
-  delete: ospf;
-}
-protocols {
-  ospf {
-{% if ospf.reference_bandwidth is defined %}
-    reference-bandwidth {{ ospf.reference_bandwidth * 1000000 }};
+
+{% if ospf.af.ipv4 is defined %}
+{% include 'junos.ospfv2.j2' %}
 {% endif %}
-    area {{ ospf.area }} {
-      interface lo0;
-    }
-{% for l in interfaces|default([]) if 'ospf' in l %}
-    area {{ l.ospf.area }} {
-      interface {{ l.ifname }} {
-{%   if l.ospf.network_type is defined and l.ospf.network_type != 'broadcast' %}
-        interface-type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
-{%   endif %}
-{%   if l.ospf.passive|default(False) %}
-        passive;
-{%   endif %}
-{%   if l.ospf.cost is defined %}
-        metric {{ l.ospf.cost }};
-{%   endif %}
-{%   if l.ospf.bfd|default(False) %}
-        bfd-liveness-detection {
-          minimum-receive-interval {{ l.bfd.min_rx|default(bfd.min_rx)|default(500) }};
-          multiplier {{ l.bfd.multiplier|default(bfd.multiplier)|default(3) }};
-          transmit-interval {
-            minimum-interval {{ l.bfd.min_tx|default(bfd.min_tx)|default(500) }};
-          }
-        }
-{%   endif %}
-      }
-    }
-{% endfor %}
-  }
-}
+{% if ospf.af.ipv6 is defined %}
+{% include 'junos.ospfv3.j2' %}
+{% endif %}
