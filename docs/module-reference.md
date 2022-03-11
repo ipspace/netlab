@@ -12,6 +12,7 @@ The following configuration modules are included in **netsim-tools** distributio
    module/isis.md
    module/ospf.md
    module/sr-mpls.md
+   module/vrf.md
 ```
 
 ```eval_rst
