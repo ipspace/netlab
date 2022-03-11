@@ -19,7 +19,7 @@ vrf_last_id: int
 #
 def build_vrf_id_set(obj: Box, attr: str) -> set:
   if 'vrfs' in obj:
-    return { v[attr] for v in obj.vrfs.values() if isinstance(v,dict) and attr in v }
+    return { v[attr] for v in obj.vrfs.values() if isinstance(v,dict) and attr in v and v[attr] is not None }
   return set()
 
 def populate_vrf_id_set(topology: Box) -> None:
@@ -82,28 +82,30 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
     if not isinstance(obj.vrfs[vname],dict):
-      common.error('VRF definition for {vname} in {obj_name} should be empty or a dictionary',
+      common.error(f'VRF definition for {vname} in {obj_name} should be empty or a dictionary',
         common.IncorrectValue,
         'vrf')
       return
 
     vdata = obj.vrfs[vname]
     if 'rd' in vdata:
+      if vdata.rd is None:      # RD set to None can be used to auto-generate RD while preventing RD inheritance
+        continue                # ... skip the rest of the checks
       if isinstance(vdata.rd,int):
         asn = asn or get_rd_as_number(obj,topology)
         if not asn:
-          common.error('VRF {vname} in {obj_name} uses integer RD value without a usable vrf.as or bgp.as AS number',
+          common.error(f'VRF {vname} in {obj_name} uses integer RD value without a usable vrf.as or bgp.as AS number',
             common.MissingValue,
             'vrf')
           return
         vdata.rd = f'{asn}:{vdata.rd}'
       elif isinstance(vdata.rd,str):
         if parse_rdrt_value(vdata.rd) is None:
-          common.error('RD value in VRF {vname} in {obj_name} is not in N:N format',
+          common.error(f'RD value in VRF {vname} in {obj_name} is not in N:N format',
             common.IncorrectValue,
             'vrf')
       else:
-        common.error('RD value in VRF {vname} in {obj_name} must be a string or an integer',
+        common.error(f'RD value in VRF {vname} in {obj_name} must be a string or an integer',
           common.IncorrectValue,
           'vrf')
 
@@ -229,7 +231,6 @@ class VRF(_Module):
     if not 'vrfs' in node:
       return
 
-    normalize_vrf_ids(topology)
     for vname in node.vrfs.keys():
       if 'vrfs' in topology and vname in topology.vrfs:
         node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
