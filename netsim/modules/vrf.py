@@ -7,136 +7,207 @@ from box import Box
 from . import _Module,_routing
 from . import bfd
 from .. import common
+from ..common import get_from_box
 from ..augment import devices
 
 vrf_id_set: set
 vrf_last_id: int
 
 #
-# VRF ID handling routing
+# build_vrf_id_set: given an object (topology or node), create a set of RDs
+# that appear in that object.
 #
-# VRF ID is used to create RD/RT values for VRFs that don't have those values
-# explicitely set.
-#
-def build_vrf_id_set(obj: Box) -> set:
+def build_vrf_id_set(obj: Box, attr: str) -> set:
   if 'vrfs' in obj:
-    return { v['id'] for v in obj.vrfs.values() if isinstance(v,dict) and 'id' in v }
+    return { v[attr] for v in obj.vrfs.values() if isinstance(v,dict) and attr in v }
   return set()
 
 def populate_vrf_id_set(topology: Box) -> None:
   global vrf_id_set, vrf_last_id
 
-  vrf_id_set = build_vrf_id_set(topology)
+  vrf_id_set = build_vrf_id_set(topology,'rd')
   vrf_last_id = 1
 
   for n in topology.nodes.values():
     if 'vrfs' in n:
-      vrf_id_set = vrf_id_set.union(build_vrf_id_set(n))
-
-def get_next_vrf_id() -> int:
-  global vrf_id_set, vrf_last_id
-
-  while vrf_last_id in vrf_id_set:
-    vrf_last_id = vrf_last_id + 1
-  vrf_id_set.add(vrf_last_id)
-  return vrf_last_id
+      vrf_id_set = vrf_id_set.union(build_vrf_id_set(n,'rd'))
 
 #
-# Get AS number to use in VRF identifiers (ID/RD/RT): object.vrf.as or object.bgp.as
+# Get a usable AS number. Try bgp.as then vrf.as from node and global settings
 #
-def get_vrf_asn(obj: Box) -> typing.Optional[str]:
-  return obj.get('vrf',{}).get('as',None) or obj.get('bgp',{}).get('as',None)
-
-def get_vrf_id(vname: str, vrfs: Box, obj: Box) -> str:
-  if not vname in vrfs:
-    common.error(
-      f'Cannot get VRF ID for unknown VRF {{ vname }} in {{ obj.name }}',
-      common.MissingValue,
-      'vrf')
-    return ""
-
-  if not 'id' in vrfs[vname]:
-    vrfs[vname].id = get_next_vrf_id()
-
-  if isinstance(vrfs[vname].id,int):
-    asn = get_vrf_asn(obj)
-    if not asn:
-      common.error(
-        f"Cannot find ASN to create VRF ID for VRF {{ vname }} in {{ obj.name }}\n... set vrf.as or bgp.as in topology or node",
-        common.MissingValue,
-        'vrf')
-    return f"{asn}:{vrfs[vname].id}"
-  else:
-    return vrfs[vname].id
+def get_rd_as_number(obj: Box, topology: Box) -> typing.Optional[typing.Any]:
+  return \
+    get_from_box(obj,'bgp.as') or \
+    get_from_box(obj,'vrf.as') or \
+    get_from_box(topology,'bgp.as') or \
+    get_from_box(topology,'vrf.as')
 
 #
-# Check global or node VRF definitons and set RD/RT values if needed
+# Parse rd/rt value -- check whether the RD/RT value is in N:N format
 #
-def parse_vrf_attr(vrf: Box, objname: str, vname: str, attr: str,obj : Box, topology: Box) -> typing.Optional[typing.List[int]]:
-  if not attr in vrf:
-    return None
 
-  # Check for named attribute values (references to other VRFs)
-  #
-  value = vrf[attr]
-  if 'vrfs' in obj and value in obj.vrfs:
-    value = get_vrf_id(value,obj.vrfs,obj)
-  elif 'vrfs' in topology and value in topology.vrfs:
-    value = get_vrf_id(value,topology.vrfs,topology)
-
-  # We should have attribute value in N:N format, try to parse it
-  #
+def parse_rdrt_value(value: str) -> typing.Optional[typing.List[int]]:
   try:
     (asn,vid) = str(value).split(':')
     return [int(asn),int(vid)]
   except Exception as ex:
-    common.error(f'Invalid {attr} value in {vname} in {objname}\n{ex}',common.IncorrectValue,'vrf')
     return None
 
-def set_vrf_ids(obj: Box, topology: Box, name: str) -> None:
+def get_next_vrf_id(asn: str) -> str:
+  global vrf_id_set, vrf_last_id
+
+  while f'{asn}:{vrf_last_id}' in vrf_id_set:
+    vrf_last_id = vrf_last_id + 1
+
+  rd = f'{asn}:{vrf_last_id}'
+  vrf_id_set.add(rd)
+  return rd
+
+#
+# Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
+#
+
+def normalize_vrf_dict(obj: Box, topology: Box) -> None:
+  if not 'vrfs' in obj:
+    return
+
+  asn = None
+  obj_name = 'global VRFs' if obj is topology else obj.name
+
   if not isinstance(obj.vrfs,dict):
-    common.error(f'VRF definition in {name} is not a dictionary',common.IncorrectValue,'vrf')
+    common.error(f'VRF definition in {obj_name} is not a dictionary',common.IncorrectValue,'vrf')
     return
 
   for vname in list(obj.vrfs.keys()):
-    vrf_as = obj.get('vrf',{}).get('as',None)                           # Get VRF ASN
-    if not vrf_as:                                                      # If that's not defined, try getting BGP ASN
-      vrf_as = obj.get('bgp',{}).get('as',None)
-
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
     if not isinstance(obj.vrfs[vname],dict):
-      common.error(f'Definition for VRF {vname} in {name} is not a dictionary or empty',common.IncorrectValue,'vrf')
-      continue
-    for attr in ['rd','import','export']:                               # Iterate over VRF attributes
-      if attr in obj.vrfs[vname]:
-        if isinstance(obj.vrfs[vname][attr],int):                       # Prepend VRF AS to integer attributes
-          if not vrf_as:                                                # But only if vrf.as is defined
-            common.error(f'VRF {vname} in {name} is using integer RD/RT value, but vrf.as is not set')
-            continue
-          obj.vrfs[vname][attr] = f'{vrf_as}:{obj.vrfs[vname][attr]}'
-        else:                                                           # VRF attribute should be a string, parse it into ASN and ID
-          parsed_attr = parse_vrf_attr(obj.vrfs[vname],name,vname,attr,obj,topology)
-          if not parsed_attr:                                           # ... failed to parse, error has already been reported
-            continue
-          if not 'id' in obj.vrfs[vname]:                               # Use parsed ID as VRF ID if needed
-            obj.vrfs[vname].id = parsed_attr[1]
-          vrf_as = parsed_attr[0]                                       # Use parsed AS for subsequent attributes if needed
+      common.error('VRF definition for {vname} in {obj_name} should be empty or a dictionary',
+        common.IncorrectValue,
+        'vrf')
+      return
 
-    # We checked existing VRF attributes and extracted ID and/or ASN from them. Now make sure
-    # all required VRF attributes are set
-    #
-    if not 'rd' in obj.vrfs[vname]:                                     # RD is not set
-      if not 'id' in obj.vrfs[vname]:                                   # Do we have VRF ID?
-        obj.vrfs[vname].id = get_next_vrf_id()                          # ... if not, get the next free ID
-      if not vrf_as:                                                    # Hope we have ASN
-        common.error(f'VRF {vname} in {name} is using auto-ID, but vrf.as is not set')
+    vdata = obj.vrfs[vname]
+    if 'rd' in vdata:
+      if isinstance(vdata.rd,int):
+        asn = asn or get_rd_as_number(obj,topology)
+        if not asn:
+          common.error('VRF {vname} in {obj_name} uses integer RD value without a usable vrf.as or bgp.as AS number',
+            common.MissingValue,
+            'vrf')
+          return
+        vdata.rd = f'{asn}:{vdata.rd}'
+      elif isinstance(vdata.rd,str):
+        if parse_rdrt_value(vdata.rd) is None:
+          common.error('RD value in VRF {vname} in {obj_name} is not in N:N format',
+            common.IncorrectValue,
+            'vrf')
+      else:
+        common.error('RD value in VRF {vname} in {obj_name} must be a string or an integer',
+          common.IncorrectValue,
+          'vrf')
+
+def normalize_vrf_ids(topology: Box) -> None:
+  normalize_vrf_dict(topology,topology)
+
+  for n in topology.nodes.values():
+    normalize_vrf_dict(n,topology)
+
+#
+# Get VRF RD value needed for import/export values. 
+#
+# WARNING: Global value takes precedence over node value because you might want to change per-node RD
+# values for weird topologies like hub-and-spoke
+#
+def get_vrf_id(vname: str, obj: Box, topology: Box) -> typing.Optional[str]:
+  obj_name = 'global VRFs' if obj is topology else obj.name
+  vrfs = get_from_box(topology,['vrfs',vname]) or get_from_box(obj,['vrfs',vname]) or Box({})
+  if not isinstance(vrfs,Box):
+    common.fatal(f'Internal error: got a VRF definition that is not a dictionary')
+    return None
+
+  if not vname in vrfs:
+    common.error(
+      f'Cannot get VRF ID for unknown VRF {{ vname }} needed in {{ obj_name }}',
+      common.MissingValue,
+      'vrf')
+    return None
+
+  if not 'rd' in vrfs[vname]:
+    common.fatal(f'Internal error: VRF {{vname}} in {{obj_name}} should have a RD value by now')
+    return None
+
+  return vrfs[vname].rd
+
+#
+# Set RD values for all VRFs that have no RD attribute or RD value set to None (= auto-generate)
+#
+def set_vrf_ids(obj: Box, topology: Box) -> None:
+  if not 'vrfs' in obj:
+    return
+
+  asn = None
+  obj_name = 'global VRFs' if obj is topology else obj.name
+
+  for vname,vdata in obj.vrfs.items():
+    if vdata.get('rd',None) is None:
+      asn = asn or get_rd_as_number(obj,topology)
+      if not asn:
+        common.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
+          common.MissingValue,
+          'vrf')
+        return
+      vdata.rd = get_next_vrf_id(asn)
+
+#
+# Set import/export route targets
+#
+def set_import_export_rt(obj : Box, topology: Box) -> None:
+  if not 'vrfs' in obj:
+    return None
+
+  obj_name = 'global VRFs' if obj is topology else obj.name
+  obj_id   = 'vrfs' if obj is topology else f'nodes.{obj.name}.vrfs'
+  asn      = None
+
+  for vname,vdata in obj.vrfs.items():
+    for rtname in ['import','export']:
+      if not rtname in vdata:
+        vdata[rtname] = [ vdata.rd ]
         continue
-      obj.vrfs[vname].rd = f'{vrf_as}:{obj.vrfs[vname].id}'             # ... cool, we're all set, set RD in ASN:ID format
 
-    for attr in ['import','export']:                                    # If import or export RT is missing
-      if not attr in obj.vrfs[vname]:                                   # ... set it to RD
-        obj.vrfs[vname][attr] = obj.vrfs[vname].rd
+      common.must_be_list(vdata,rtname,f'{obj_id}.{vname}')
+
+      rtlist = []     # The final parsed and looked-up list of RT values
+      for rtvalue in vdata[rtname]:
+        if isinstance(rtvalue,int):         # RT can be specified as an integer, in which case ASN is prepended to it
+          asn = asn or get_rd_as_number(obj,topology)
+          if not asn:
+            common.error('VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
+              common.MissingValue,
+              'vrf')
+            continue
+          rtvalue = f'{asn}:{rtvalue}'
+        elif not isinstance(rtvalue,str):   # If RT is not an integer, it really should be a string
+          common.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
+            common.IncorrectValue,
+            'vrf')
+          continue
+        else:
+          if ':' in rtvalue:                # If there's a colon in RT value, then we're assuming N:N format
+            if parse_rdrt_value(rtvalue) is None:
+              common.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
+                common.IncorrectValue,
+                'vrf')
+              continue
+          else:                             # Otherwise the RT value should refer to another VRF name
+            rtvalue = get_vrf_id(rtvalue,obj,topology)
+            if rtvalue is None:
+              continue            # Error message generated in get_vrf_id
+
+        rtlist.append(rtvalue)
+
+      vdata[rtname] = rtlist
 
 class VRF(_Module):
 
@@ -149,18 +220,22 @@ class VRF(_Module):
     if not 'vrfs' in topology:
       return
 
+    normalize_vrf_ids(topology)
     populate_vrf_id_set(topology)
-    set_vrf_ids(topology,topology,'global VRFs')
+    set_vrf_ids(topology,topology)
+    set_import_export_rt(topology,topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if not 'vrfs' in node:
       return
 
+    normalize_vrf_ids(topology)
     for vname in node.vrfs.keys():
       if 'vrfs' in topology and vname in topology.vrfs:
         node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
 
-    set_vrf_ids(node,topology,node.name)
+    set_vrf_ids(node,topology)
+    set_import_export_rt(node,topology)
 
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     pass
@@ -186,7 +261,6 @@ class VRF(_Module):
             'vrf')
           continue
 
-        node.vrfs[ifdata.vrf].af = {}
         for af in ['v4','v6']:
           if f'ip{af}' in ifdata:
             node.af[f'vpn{af}'] = True

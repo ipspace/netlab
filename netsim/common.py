@@ -211,6 +211,25 @@ def must_be_list(parent: Box, key: str, path: str) -> typing.Optional[list]:
   return None
 
 #
+# Safe get from a hierarchical dictionary (won't create new objects)
+#
+
+def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: bool = False) -> typing.Optional[typing.Any]:
+  if isinstance(selector,str):
+    selector = selector.split('.')
+
+  for idx,k in enumerate(selector):
+    if not k in b:
+      return b if partial and idx > 0 else None   # return partial result if request assuming we got at least one match before
+
+    if not isinstance(b[k],dict):                                       # we are at a leaf node
+      return b[k] if partial or idx == len(selector) - 1 else None      # ... return the value if we're at the end of
+                                                                        # ... the chain or accept partial lookup
+    b = b[k]
+
+  return b
+
+#
 # Set a dictionary value specified by a list of keys
 #
 def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
