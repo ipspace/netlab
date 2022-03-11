@@ -74,6 +74,23 @@ def load_topology(args: argparse.Namespace) -> Box:
   common.exit_on_error()
   return topology
 
+# Snapshot-or-topology loader (used by down)
+
+def load_snapshot_or_topology(args: argparse.Namespace) -> typing.Optional[Box]:
+  common.set_logging_flags(args)
+  if args.device or args.provider or args.settings:     # If we have -d, -p or -s flag
+    if not args.topology:                               # ... then the user wants to use the topology file
+      args.topology = 'topology.yml'                    # ... so let's set the default value if needed
+
+  if args.topology:
+    topology = load_topology(args)
+    augment.main.transform(topology)
+    common.exit_on_error()
+    return topology
+  else:
+    args.snapshot = args.snapshot or 'netlab.snapshot.yml'
+    return read_topology.read_yaml(filename=args.snapshot)
+
 #
 # Main command dispatcher
 #

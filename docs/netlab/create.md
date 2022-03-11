@@ -14,6 +14,7 @@ The **netlab create** command reads network topology description in YAML format,
 
 After reading the network topology, **netlab create** performs a complex data transformation to create device- and link-level data structures fully describing network topology, IP addressing and (optional) routing protocols. These data structures are then used to create:
 
+* Snapshot of the transformed topology in the **netlab.snapshot.yml** file. This file is used by **netlab down** command to find the virtualization provider and link (bridge) names.
 * **Vagrantfile** supporting *[libvirt](../labs/libvirt.md)* or *[virtualbox](../labs/virtualbox.md)* environment
 * **clab.yml** file used by *containerlab*.
 * Ansible inventory[^1], either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
@@ -52,6 +53,7 @@ optional arguments:
 
 output files created when no output is specified:
 
+  * Transformed topology snapshot in netlab.snapshot.yml
   * Virtualization provider file with provider-specific filename
     (Vagrantfile or clab.yml)
   * Ansible inventory file (hosts.yml) and configuration (ansible.cfg)

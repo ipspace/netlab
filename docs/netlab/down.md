@@ -8,7 +8,7 @@ This command uses provider-specific CLI commands to destroy the virtual lab, and
 
 ```
 usage: netlab down [-h] [--defaults DEFAULTS] [-d DEVICE] [-p PROVIDER] [-s SETTINGS]
-                   [-v] [--cleanup]
+                   [-v] [--cleanup] [--snapshot SNAPSHOT]
                    [topology]
 
 Destroy the virtual lab
@@ -27,9 +27,11 @@ optional arguments:
                         Additional parameters added to topology file
   -v, --verbose         Verbose logging (where applicable)
   --cleanup             Remove all configuration files created by netlab create
+  --snapshot SNAPSHOT   Transformed topology snapshot file
 ```
 
 Notes:
 
-* If you changed the virtualization provider with `-p` flag in **netlab create** or **netlab up**, you MUST specify the same value in **netlab down**
+* **netlab down** needs transformed topology data to find the virtualization provider and link (bridge) names.
+* **netlab down** reads the transformed topology from `netlab.snapshot.yml` file created by **netlab up** or **netlab create** unless you specify the topology file name or any of the `-d`, `-p` or `-s` flags.
 * Use the `--cleanup` flag to delete all Ansible-, Vagrant- or containerlab-related configuration files.

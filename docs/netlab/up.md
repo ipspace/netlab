@@ -2,7 +2,7 @@
 
 **netlab up** is a high-level command that uses other **netlab** commands to:
 
-* Create virtualization provider configuration files;
+* Create virtualization provider configuration files and transformed topology snapshot;
 * Create network automation configuration files;
 * Check the virtualization provider installation;
 * Start the virtual lab;

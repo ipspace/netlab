@@ -9,7 +9,7 @@ import typing
 import textwrap
 from box import Box
 
-from . import common_parse_args, topology_parse_args, load_topology, external_commands,fs_cleanup
+from . import common_parse_args, topology_parse_args, load_topology, load_snapshot_or_topology, external_commands,fs_cleanup
 from .. import read_topology,augment,common
 from .. import providers
 
@@ -34,9 +34,13 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store_true',
     help='Remove all configuration files created by netlab create')
   parser.add_argument(
+    '--snapshot',
+    dest='snapshot',
+    action='store',
+    default='netlab.snapshot.yml',
+    help='Transformed topology snapshot file')
+  parser.add_argument(
     dest='topology', action='store', nargs='?',
-    type=argparse.FileType('r'),
-    default='topology.yml',
     help='Topology file (default: topology.yml)')
 
   return parser.parse_args(args)
@@ -44,14 +48,21 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
 def down_cleanup(topology: Box, verbose: bool = False) -> None:
   cleanup_list = topology.defaults.providers[topology.provider].cleanup or []
   cleanup_list.extend(topology.defaults.automation.ansible.cleanup)
+  cleanup_list.append('netlab.snapshot.yml')
   fs_cleanup(cleanup_list,verbose)
 
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
-  topology = load_topology(args)
+  topology = load_snapshot_or_topology(args)
 
-  augment.main.transform(topology)
-  common.exit_on_error()
+  if args.topology:
+    print(f"Reading lab topology from {args.topology}")
+  else:
+    print(f"Reading transformed lab topology from snapshot file {args.snapshot}")
+
+  if topology is None:
+    common.fatal('... could not read the lab topology, aborting')
+    return
 
   settings = topology.defaults
   external_commands.run_probes(settings,topology.provider,1)

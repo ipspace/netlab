@@ -27,6 +27,7 @@ def create_topology_parse(
     epilog = textwrap.dedent('''
       output files created when no output is specified:
 
+        * Transformed topology snapshot in netlab.snapshot.yml
         * Virtualization provider file with provider-specific filename
           (Vagrantfile or clab.yml)
         * Ansible inventory file (hosts.yml) and configuration (ansible.cfg)
@@ -66,7 +67,8 @@ def run(cli_args: typing.List[str],
     args.devices = None
 
   if not args.output:
-    args.output = ['provider','devices'] if args.devices else ['provider','ansible:dirs']
+    args.output = ['provider','yaml=netlab.snapshot.yml']
+    args.output.append('devices' if args.devices else 'ansible:dirs')
   elif args.devices:
     common.error('--output and --devices flags are mutually exclusive',common.IncorrectValue,'create')
 
