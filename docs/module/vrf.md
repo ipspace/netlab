@@ -179,6 +179,7 @@ BGP, OSPF, and IS-IS configuration modules are VRF aware:
 Notes:
 
 * VRF-specific OSPF and BGP configuration is included in the VRF  configuration templates.
+* Connected subnets are always redistributed into the BGP VRF address family.
 * If a node has **bgp.as** parameter and VRF-specific OSPF instance(s), the VRF configuration templates configure two-way redistribution between VRF-specific OSPF instances and BGP VRF address family.
 
 ## Examples
