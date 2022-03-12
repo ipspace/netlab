@@ -1,13 +1,25 @@
 {% import "eos.bgp-macro.j2" as bgpcfg %}
 !
+mpls ip
+!
 router bgp {{ bgp.as }}
 {% for vname,vdata in vrfs.items() %}
 !
  vrf {{ vname }}
   redistribute connected
-{% if 'ospf' in vdata %}
+  router-id {{ bgp.router_id }}
+  rd {{ vdata.rd }}
+{%   if 'ospf' in vdata %}
   redistribute ospf
-{% endif %}
+{%   endif %}
+{%   for af in ['ipv4','ipv6'] if af in vdata.af %}
+{%     for rt in vdata.import %}
+  route-target import vpn-ipv4 {{ rt }}
+{%     endfor %}
+{%     for rt in vdata.export %}
+  route-target export vpn-ipv4 {{ rt }}
+{%     endfor %}
+{%   endfor %}
 {%   for n in vdata.bgp.neighbors|default([]) %}
 {%     for af in ['ipv4','ipv6'] if n[af] is defined %}
 {{       bgpcfg.neighbor(n,n[af]) }}

@@ -123,23 +123,24 @@ def normalize_vrf_ids(topology: Box) -> None:
 #
 def get_vrf_id(vname: str, obj: Box, topology: Box) -> typing.Optional[str]:
   obj_name = 'global VRFs' if obj is topology else obj.name
-  vrfs = get_from_box(topology,['vrfs',vname]) or get_from_box(obj,['vrfs',vname]) or Box({})
-  if not isinstance(vrfs,Box):
-    common.fatal(f'Internal error: got a VRF definition that is not a dictionary')
-    return None
+  vdata = get_from_box(topology,['vrfs',vname]) or get_from_box(obj,['vrfs',vname]) or None
 
-  if not vname in vrfs:
+  if vdata is None:
     common.error(
       f'Cannot get VRF ID for unknown VRF {vname} needed in {obj_name}',
       common.MissingValue,
       'vrf')
     return None
 
-  if not 'rd' in vrfs[vname]:
+  if not isinstance(vdata,Box):
+    common.fatal(f'Internal error: got a VRF definition that is not a dictionary')
+    return None
+
+  if not 'rd' in vdata:
     common.fatal(f'Internal error: VRF {vname} in {obj_name} should have a RD value by now')
     return None
 
-  return vrfs[vname].rd
+  return vdata.rd
 
 #
 # Set RD values for all VRFs that have no RD attribute or RD value set to None (= auto-generate)
@@ -211,6 +212,22 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
 
       vdata[rtname] = rtlist
 
+#
+# VRF route leaking is usually implemented through BGP VPNv4 address families
+# Check whether we have BGP AS configured on all nodes that use VRFs with route leaking
+# (identified as import or export RT not equal to [ RD ])
+#
+
+def validate_vrf_route_leaking(node : Box) -> None:
+  for vname,vdata in node.vrfs.items():
+    simple_rt = [ vdata.rd ]
+    if vdata['import'] != simple_rt or vdata['export'] != simple_rt:
+      if not get_from_box(node,'bgp.as'):
+        common.error(
+          f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
+          common.MissingValue,
+          'vrf')
+
 class VRF(_Module):
 
   def module_pre_default(self, topology: Box) -> None:
@@ -275,3 +292,5 @@ class VRF(_Module):
       for v in node.vrfs.values():    # We need unique VRF index to create OSPF processes
         v.vrfidx = vrfidx
         vrfidx = vrfidx + 1
+
+      validate_vrf_route_leaking(node)
