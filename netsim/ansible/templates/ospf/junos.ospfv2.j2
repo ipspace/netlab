@@ -1,0 +1,39 @@
+
+protocols {
+  delete: ospf;
+}
+
+protocols {
+  ospf {
+{% if ospf.reference_bandwidth is defined %}
+    reference-bandwidth {{ ospf.reference_bandwidth * 1000000 }};
+{% endif %}
+    area {{ ospf.area }} {
+      interface lo0;
+    }
+{% for l in interfaces|default([]) if 'ospf' in l %}
+    area {{ l.ospf.area }} {
+      interface {{ l.ifname }} {
+{%   if l.ospf.network_type is defined and l.ospf.network_type != 'broadcast' %}
+        interface-type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
+{%   endif %}
+{%   if l.ospf.passive|default(False) %}
+        passive;
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+        metric {{ l.ospf.cost }};
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+        bfd-liveness-detection {
+          minimum-receive-interval {{ l.bfd.min_rx|default(bfd.min_rx)|default(500) }};
+          multiplier {{ l.bfd.multiplier|default(bfd.multiplier)|default(3) }};
+          transmit-interval {
+            minimum-interval {{ l.bfd.min_tx|default(bfd.min_tx)|default(500) }};
+          }
+        }
+{%   endif %}
+      }
+    }
+{% endfor %}
+  }
+}

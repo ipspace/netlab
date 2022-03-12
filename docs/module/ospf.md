@@ -37,7 +37,7 @@ The following table describes per-platform support of individual router-level OS
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅          |   ❌   |  ❌  |
 | Fortinet FortiOS         |   ❗  |            ✅          |   ❌   |  ❌  |
 | FRR 7.5.0                |   ✅  |            ✅          |   ✅   |  ❌  |
-| Juniper vSRX 3.0         |   ✅  |            ✅          |   ❌   |  ✅  |
+| Juniper vSRX 3.0         |   ✅  |            ✅          |   ✅   |  ✅  |
 | Mikrotik CHR RouterOS    |   ✅  |            ❌          |   ❌   |  ✅  |
 | Nokia SR Linux           |   ✅  |            ✅          |   ❌   |  ✅  |
 | Nokia SR OS              |   ✅  |            ✅          |   ❌   |  ✅  |
