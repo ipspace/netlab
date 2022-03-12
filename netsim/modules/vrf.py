@@ -130,13 +130,13 @@ def get_vrf_id(vname: str, obj: Box, topology: Box) -> typing.Optional[str]:
 
   if not vname in vrfs:
     common.error(
-      f'Cannot get VRF ID for unknown VRF {{ vname }} needed in {{ obj_name }}',
+      f'Cannot get VRF ID for unknown VRF {vname} needed in {obj_name}',
       common.MissingValue,
       'vrf')
     return None
 
   if not 'rd' in vrfs[vname]:
-    common.fatal(f'Internal error: VRF {{vname}} in {{obj_name}} should have a RD value by now')
+    common.fatal(f'Internal error: VRF {vname} in {obj_name} should have a RD value by now')
     return None
 
   return vrfs[vname].rd
