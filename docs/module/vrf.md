@@ -29,6 +29,7 @@ The following parameters can be set globally or per node:
 * **vrfs**: A dictionary of VRF definitions (see below)
 * **vrf.as**: The default AS number used in RD/RT values when **bgp.as** is not set. The system default for **vrf.as** is 65000.
 
+(module-vrf-definition)=
 ## VRF Definition
 
 VRFs are defined in a global- or node-specific **vrfs** dictionary, allowing you to create VRFs that are used network-wide or VRFs that are used only on a single node.
@@ -137,6 +138,7 @@ Notes:
 * Global RT values for the *red* VRF are copied into the node data structures. Global RD value is not copied because it's set in the node VRF definition.
 * Node RD value for the *red* VRF is generated using the node **bgp.as** value (65001).
 
+(module-vrf-interface)=
 ## Using VRFs on Interfaces and Links
 
 To use a VRF, add **vrf** attribute (global- or node-specific VRF name) to a link or an interface on a link. 
