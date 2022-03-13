@@ -1,0 +1,38 @@
+!
+router ospf {{ vdata.vrfidx }} vrf {{ vname }}
+ router-id {{ vdata.ospf.router_id|default(ospf.router_id) }}
+ interface unnumbered hello mask tx 0.0.0.0
+{% if bgp.as is defined %}
+ redistribute bgp
+{% endif %}
+{% if ospf.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+{% for l in vdata.ospf.interfaces|default([]) if l.ospf.passive|default(False) %}
+ passive-interface {{ l.ifname }}
+{% endfor %}
+!
+{% if 'ipv4' in loopback %}
+interface Loopback{{ vdata.vrfidx }}
+ ip ospf area {{ vdata.ospf.area|default(ospf.area) }}
+{% endif %}
+!
+{% for l in vdata.ospf.interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
+interface {{ l.ifname }}
+! {{ l.name|default("") }}
+ ip ospf area {{ l.ospf.area }}
+{%   if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
+{%     if l.ospf.network_type == "broadcast" %}
+ no ip ospf network
+{%     else %}
+ ip ospf network {{ l.ospf.network_type }}
+{%     endif %}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+ ip ospf cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+ ip ospf neighbor bfd
+{%   endif %}
+!
+{% endfor %}

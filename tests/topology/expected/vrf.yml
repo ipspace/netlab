@@ -1,0 +1,394 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+  as65001:
+    members:
+    - r2
+input:
+- topology/input/vrf.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    node: r1
+    vrf: red
+  - ipv4: 10.1.0.2/30
+    node: r2
+  left:
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: r2
+  role: external
+  type: p2p
+- interfaces:
+  - ipv4: 10.1.0.5/30
+    node: r1
+    vrf: blue
+  - ipv4: 10.1.0.6/30
+    node: r3
+  left:
+    ifname: Ethernet2
+    ipv4: 10.1.0.5/30
+    node: r1
+  linkindex: 2
+  name: r1 - r3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.6/30
+    node: r3
+  type: p2p
+- bridge: input_3
+  interfaces:
+  - ipv4: 172.16.0.3/24
+    node: r3
+    vrf: yellow
+  linkindex: 3
+  node_count: 1
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: stub
+module:
+- vrf
+- bgp
+- ospf
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: r2
+      remote_id: 2
+      remote_ifindex: 1
+      role: external
+      type: p2p
+      vrf: red
+    - clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: r1 -> r3
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.6/30
+        node: r3
+      remote_id: 3
+      remote_ifindex: 1
+      type: p2p
+      vrf: blue
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - vrf
+    - bgp
+    - ospf
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+    vrf:
+      as: 65000
+    vrfs:
+      blue:
+        af:
+          ipv4: true
+        export:
+        - '65000:3'
+        import:
+        - '65000:3'
+        ospf:
+          area: 0.0.0.0
+          interfaces:
+          - clab:
+              name: et2
+            ifindex: 2
+            ifname: Ethernet2
+            ipv4: 10.1.0.5/30
+            linkindex: 2
+            name: r1 -> r3
+            neighbors:
+            - ifname: Ethernet1
+              ipv4: 10.1.0.6/30
+              node: r3
+            ospf:
+              area: 0.0.0.0
+              network_type: point-to-point
+              passive: false
+            remote_id: 3
+            remote_ifindex: 1
+            type: p2p
+            vrf: blue
+          router_id: 10.0.0.1
+        rd: '65000:3'
+        vrfidx: 101
+      red:
+        af:
+          ipv4: true
+        bgp:
+          neighbors:
+          - as: 65001
+            ifindex: 1
+            ipv4: 10.1.0.2
+            name: r2
+            type: ebgp
+        export:
+        - '65000:2'
+        import:
+        - '65000:2'
+        rd: '65000:2'
+        vrfidx: 100
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: r1
+      remote_id: 1
+      remote_ifindex: 1
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - bgp
+    - ospf
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+    vrf:
+      as: 65000
+    vrfs:
+      black:
+        export:
+        - '65001:5'
+        import:
+        - '65303:3'
+        loopback:
+          ipv4: 10.0.0.1
+        rd: '65001:5'
+      green:
+        export:
+        - '65001:3'
+        import:
+        - '65001:3'
+        rd: '65001:3'
+      red:
+        export:
+        - '65000:2'
+        import:
+        - '65000:2'
+        rd: '65001:4'
+  r3:
+    af:
+      ipv4: true
+      vpnv4: true
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-r3
+    id: 3
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: r3 -> r1
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.5/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      remote_id: 1
+      remote_ifindex: 2
+      type: p2p
+    - bridge: input_3
+      clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 172.16.0.3/24
+      linkindex: 3
+      neighbors: []
+      type: stub
+      vrf: yellow
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - vrf
+    - ospf
+    name: r3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+    vrf:
+      as: 65000
+    vrfs:
+      orange:
+        export: []
+        import:
+        - '65101:2'
+        loopback: null
+        rd: '65101:2'
+        vrfidx: 101
+      yellow:
+        af:
+          ipv4: true
+        export:
+        - '65000:1'
+        import:
+        - '65000:1'
+        ospf:
+          area: 0.0.0.0
+          interfaces:
+          - bridge: input_3
+            clab:
+              name: et2
+            ifindex: 2
+            ifname: Ethernet2
+            ipv4: 172.16.0.3/24
+            linkindex: 3
+            neighbors: []
+            ospf:
+              area: 0.0.0.0
+              passive: true
+            type: stub
+            vrf: yellow
+          router_id: 10.0.0.3
+        rd: '65000:1'
+        vrfidx: 100
+ospf:
+  area: 0.0.0.0
+provider: clab
+vrf:
+  as: 65000
+vrfs:
+  blue:
+    export:
+    - '65000:3'
+    import:
+    - '65000:3'
+    rd: '65000:3'
+  red:
+    export:
+    - '65000:2'
+    import:
+    - '65000:2'
+    rd: '65000:2'

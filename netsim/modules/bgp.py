@@ -239,7 +239,14 @@ class BGP(_Module):
           if "unnumbered" in l:
             extra_data.unnumbered = True
             extra_data.local_if = l.ifname
-          node.bgp.neighbors.append(bgp_neighbor(neighbor,ngb_ifdata,'ebgp',extra_data))
+
+          ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,'ebgp',extra_data)
+          if 'vrf' in l:        # VRF neighbor
+            if not node.vrfs[l.vrf].bgp.neighbors:
+              node.vrfs[l.vrf].bgp.neighbors = []
+            node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
+          else:                 # Global neighbor
+            node.bgp.neighbors.append(ebgp_data)
 
     # Calculate BGP address families
     #

@@ -48,9 +48,9 @@ def routing_af(node: Box, proto: str) -> None:
         node[proto].af[af] = True       # ... we need it in the routing protocol
         continue
 
-      for l in node.get('interfaces',[]): # Scan all interfaces
-        if af in l:                       # Do we have AF enabled on any of them?
-          node[proto].af[af] = True       # Found it - we need it the module
+      for l in node.get('interfaces',[]):              # Scan all interfaces
+        if af in l and proto in l and not 'vrf' in l:  # Do we have AF enabled on any global interface?
+          node[proto].af[af] = True                    # Found it - we need it the module
           continue
 
   for af in ['ipv4','ipv6']:              # Remove unused address families
@@ -82,6 +82,10 @@ def network_type(
 #
 def external(intf: Box, proto: str) -> bool:
   if intf.get('role','') == "external":
+    intf.pop(proto,None)
+    return True
+
+  if proto in intf and isinstance(intf[proto],bool) and not intf[proto]:        # Disable IGP on an interface by setting it to False
     intf.pop(proto,None)
     return True
 
@@ -148,3 +152,36 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
 
   node.router_id = str(netaddr.IPNetwork(pfx['ipv4']).ip)
   node[proto].router_id = node.router_id
+
+#
+# remove_vrf_interfaces -- remove interfaces in a VRF from a routing process that is not VRF-aware
+#
+def remove_vrf_interfaces(node: Box, proto: str) -> None:
+  for l in node.interfaces:
+    if proto in l and 'vrf' in l:
+      l.pop(proto,None)
+
+#
+# build_vrf_interface_list -- copy VRF interfaces into VRF definition
+#
+def build_vrf_interface_list(node: Box, proto: str) -> None:
+  for l in node.interfaces:
+    if proto in l and 'vrf' in l:
+      if not 'interfaces' in node.vrfs[l.vrf][proto]:
+        node.vrfs[l.vrf][proto].interfaces = []
+      node.vrfs[l.vrf][proto] = node[proto] + node.vrfs[l.vrf][proto]       # Add node IGP parameters to VRF IGP parameters
+      node.vrfs[l.vrf][proto].interfaces.append(Box(l))                     # Append a copy of the interface data
+      l.pop(proto,None)                                                     # ... and remove global IGP parameters from interface
+
+#
+# remove_unused_igp -- remove IGP module if it's not configured on any interface
+#
+def remove_unused_igp(node: Box, proto: str) -> None:
+  if proto in node and 'af' in node[proto] and node[proto].af:
+    return
+
+  for vdata in node.get('vrfs',{}).values():
+    if proto in vdata:
+      return
+
+  node.module = [ m for m in node.module if m != proto ]

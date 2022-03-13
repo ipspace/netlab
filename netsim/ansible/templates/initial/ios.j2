@@ -14,6 +14,11 @@ ip host {{ k }}{% if v.loopback.ipv4 is defined %} {{ v.loopback.ipv4|ipaddr('ad
 ipv6 unicast-routing
 !
 {% endif %}
+{% if vrfs is defined %}
+{% include 'ios.vrf.j2' %}
+!
+{% endif %}
+!
 interface Loopback0
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
@@ -29,6 +34,9 @@ interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
 {% for l in interfaces|default([]) %}
 interface {{ l.ifname }}
  no shutdown
+{% if l.vrf is defined %}
+ vrf forwarding {{ l.vrf }}
+{% endif %}
 {% if l.name is defined %}
  description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
 {% elif l.type|default("") == "stub" %}
@@ -45,11 +53,11 @@ interface {{ l.ifname }}
 {%   endif %}
 {% endif %}
 {#
-    IPv4 addresses
+    Set interface addresses: IPv4
 #}
 {% if 'ipv4' in l %}
 {%   if l.ipv4 == True %}
- ip unnumbered Loopback0 poll
+ ip unnumbered {{ loopback_name|default('Loopback0') }} poll
 {%   elif l.ipv4|ipv4 %}
  ip address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
 {%   else %}
@@ -57,7 +65,7 @@ interface {{ l.ifname }}
 {%   endif %}
 {% endif %}
 {#
-    IPv6 addresses
+    Set interface addresses: IPv6
 #}
 {% if 'ipv6' in l %}
 {%   if l.ipv6 == True %}

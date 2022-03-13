@@ -56,6 +56,7 @@ Getting Started
    topology-overview.md
    cli-overview.md
    example/addressing-tutorial.md
+   example/vrf-tutorial.md
 ..
 
 .. toctree::
