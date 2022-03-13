@@ -221,12 +221,13 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
 def validate_vrf_route_leaking(node : Box) -> None:
   for vname,vdata in node.vrfs.items():
     simple_rt = [ vdata.rd ]
-    if vdata['import'] != simple_rt or vdata['export'] != simple_rt:
-      if not get_from_box(node,'bgp.as'):
-        common.error(
-          f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
-          common.MissingValue,
-          'vrf')
+    leaked_routes = vdata['import'] and vdata['import'] != simple_rt
+    leaked_routes = leaked_routes or (vdata['export'] and vdata['export'] != simple_rt)
+    if leaked_routes and not get_from_box(node,'bgp.as'):
+      common.error(
+        f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
+        common.MissingValue,
+        'vrf')
 
 class VRF(_Module):
 
