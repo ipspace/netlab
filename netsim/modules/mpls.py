@@ -15,9 +15,6 @@ DEFAULT_BGP_LU: dict = {
 }
 
 def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
-  if not 'ldp' in node.mpls:
-    return
-
   if not 'ipv4' in node.get('af',{}):
     common.error(
       f'You cannot enable MPLS LDP on node {node.name} without IPv4 address family',
@@ -61,7 +58,10 @@ def validate_mpls_bgp_parameter(node: Box, topology: Box, features: Box) -> bool
     for af in node.af:
       node.mpls.bgp[af] = session_list
   elif isinstance(node.mpls.bgp,Box):
-    for af in node.mpls.bgp.keys():
+    for af in ['ipv4','ipv6']:
+      if not af in node.mpls.bgp:
+        continue
+
       if common.must_be_list(node.mpls.bgp,af,f'nodes.{node.name}.mpls.bgp') is None:
         return False
 
@@ -81,9 +81,6 @@ def validate_mpls_bgp_parameter(node: Box, topology: Box, features: Box) -> bool
   return True
 
 def node_adjust_bgplu(node: Box, topology: Box, features: Box) -> None:
-  if not 'bgp' in node.mpls:
-    return
-
   if not validate_mpls_bgp_parameter(node,topology,features):
     return
 
@@ -124,5 +121,20 @@ class MPLS(_Module):
     if not 'mpls' in node:
       return
 
-    node_adjust_ldp(node,topology,features)
-    node_adjust_bgplu(node,topology,features)
+    if 'ldp' in node.mpls:
+      if not features.mpls.ldp:
+        common.error(
+          f'Device {node.device} used by {node.name} does not support LDP',
+          common.IncorrectValue,
+          'mpls')
+      else:
+        node_adjust_ldp(node,topology,features)
+
+    if 'bgp' in node.mpls:
+      if not features.mpls.bgp:
+        common.error(
+          f'Device {node.device} used by {node.name} does not support BGP Labeled Unicast',
+          common.IncorrectValue,
+          'mpls')
+      else:
+        node_adjust_bgplu(node,topology,features)

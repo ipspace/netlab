@@ -9,11 +9,17 @@ Supported features:
  
 The following table describes per-platform support of individual MPLS label distribution features:
 
-| Operating system  | LDP   | BGP LU |
-| ------------------| :---: | :----: |
-| Arista EOS        |   ✅  |   ✅   |
-| Cisco IOS         |   ✅  |   ✅   |
-| Cisco IOS XE      |   ✅  |   ✅   |
+| Operating system  | LDP   | Exp.Null | IGP sync | Advertise<br>filter |
+| ------------------| :---: | :------: | :--: | :--: |
+| Arista EOS        |   ✅  |   ✅    |   ❌  |   ❌  |
+| Cisco IOS         |   ✅  |   ✅    |   ❌  |   ❌  |
+| Cisco IOS XE      |   ✅  |   ✅    |   ❌  |   ❌  |
+
+| Operating system  | BGP LU | Exp.Null |
+| ------------------| :----: | :------: |
+| Arista EOS        |   ✅   |    ❌     |
+| Cisco IOS         |   ✅   |    ✅    |
+| Cisco IOS XE      |   ✅   |    ✅    |
 
 ## Configurable Global and Node Parameters
 
@@ -30,6 +36,7 @@ The following table describes per-platform support of individual MPLS label dist
 
 * **router_id** -- Router ID to be used for LDP. Should correspond to a reachable loopback IP address.
 * **igp_sync** (boolean) -- Enable LDP/IGP synchronization
+* **explicit_null** (boolean) -- Enable Explicit Null advertisement
 * **advertise** -- list of link roles to advertise (including *loopback* pseudo-role). The default behavior is device-specific.
 
 ## Configurable BGP LU Parameters
@@ -38,12 +45,13 @@ The following table describes per-platform support of individual MPLS label dist
 
 * **ipv4** -- enable BGP LU for IPv4 unicast address family
 * **ipv6** -- enable BGP LU for IPv6 unicast address family
+* **explicit_null** -- advertise Explicit Null labels on BGP LU sessions
 
-**ipv4** and **ipv6** parameters could be a boolean (*True*: enable BGP LU on all BGP sessions) or a list of *ibgp/ebgp* keywords, for example:
+**ipv4** and **ipv6** parameters have to be a list of *ibgp/ebgp* keywords, for example:
 
 ```
 mpls:
   bgp:
-    ipv4: True
+    ipv4: [ ibgp, ebgp ]
     ipv6: [ ibgp ]
 ```

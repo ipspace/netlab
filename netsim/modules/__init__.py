@@ -188,6 +188,8 @@ def adjust_global_modules(topology: Box) -> None:
     if len(default_copy):                        # Anything left? Let's merge it with existing settings
       topology[m] = default_copy + topology[m]   # Have to use this convoluted way to prevent generating empty dict
 
+  reorder_node_modules(topology,'transform_after')
+
 '''
 adjust_modules: somewhat intricate multi-step config module adjustments
 
@@ -354,16 +356,16 @@ def check_module_dependencies(topology:  Box) -> None:
 """
 reorder_node_modules:
 
-For every node with at least two modules: sort the list of modules based on their dependencies preserving
-the original order as much as possible.
+For every node with at least two modules: sort the list of modules based on their _requires_ and
+_config_after_/_transform_after_ dependencies preserving the original order as much as possible.
 """
 
-def reorder_node_modules(topology: Box) -> None:
+def reorder_node_modules(topology: Box, secondary_sort: str = "config_after") -> None:
   for name,n in topology.nodes.items():
     if 'module' in n:
-      n.module = sort_module_list(n.module,topology.defaults)
+      n.module = sort_module_list(n.module,topology.defaults, secondary_sort)
 
-def sort_module_list(mods: list, mod_params: Box) -> list:
+def sort_module_list(mods: list, mod_params: Box, secondary_sort: str = "config_after") -> list:
   if (len(mods) < 2):
     return mods
 
@@ -372,7 +374,7 @@ def sort_module_list(mods: list, mod_params: Box) -> list:
     skipped: typing.List[str] = []
     for m in mods:
       if m in mod_params:
-        requires = mod_params[m].get('requires',[])
+        requires = mod_params[m].get('requires',[]) + mod_params[m].get(secondary_sort,[])
         if [ r for r in requires if r in mods ]:
           skipped = skipped + [ m ]
         else:

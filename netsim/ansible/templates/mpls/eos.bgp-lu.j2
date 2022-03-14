@@ -1,0 +1,25 @@
+!
+router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ address-family {{ af }} labeled-unicast
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+  network {{ loopback[af]|ipaddr('0') }}
+{%   endif %}
+!
+{%   for l in interfaces if l.bgp.advertise|default(False) and af in l %}
+  network {{ l[af]|ipaddr('0') }}
+{%     endfor %}
+!
+{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+  network {{ pfx|ipaddr('0') }}
+{%     endfor %}
+!
+{%   for n in bgp.neighbors if n[af] is defined and n[af+'_label']|default(False) %}
+  neighbor {{ n[af] }} activate
+{%   endfor %}
+{% endfor %}
+!
+{%   for n in bgp.neighbors if n.ifindex is defined and (n['ipv4_label']|default(False) or n['ipv6_label']|default(False)) %}
+interface {{ interfaces[n.ifindex-1].ifname }}
+ mpls ip
+{%   endfor %}
