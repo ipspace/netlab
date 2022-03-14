@@ -1,0 +1,14 @@
+!
+router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ address-family {{ af }}
+!
+{%   for n in bgp.neighbors if n[af] is defined and n[af+'_label']|default(False) %}
+  neighbor {{ n[af] }} send-label{% if mpls.bgp.explicit_null|default(False) %} explicit-null{% endif +%}
+{%   endfor %}
+{% endfor %}
+!
+{%   for n in bgp.neighbors if n.ifindex is defined and (n['ipv4_label']|default(False) or n['ipv6_label']|default(False)) %}
+interface {{ interfaces[n.ifindex-1].ifname }}
+ mpls bgp forwarding
+{%   endfor %}

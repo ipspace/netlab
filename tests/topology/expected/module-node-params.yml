@@ -15,16 +15,54 @@ groups:
 input:
 - topology/input/module-node-params.yml
 - package:topology-defaults.yml
+links:
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    node: r1
+  - ipv4: 10.1.0.2/30
+    node: r3
+  left:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.2/30
+    node: r3
+  type: p2p
 module:
 - ospf
 - bgp
 name: input
 nodes:
   r1:
+    af:
+      ipv4: true
     box: cisco/iosv
     device: iosv
     id: 1
-    interfaces: []
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r3
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.2/30
+        node: r3
+      ospf:
+        area: 0.0.0.1
+        network_type: point-to-point
+        passive: false
+      remote_id: 3
+      remote_ifindex: 1
+      type: p2p
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
@@ -41,6 +79,8 @@ nodes:
       process: 1
       router_id: 0.0.0.17
   r2:
+    af:
+      ipv4: true
     bgp:
       advertise_loopback: true
       as: 65000
@@ -66,6 +106,44 @@ nodes:
     module:
     - bgp
     name: r2
+  r3:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r3 -> r1
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.1/30
+        node: r1
+      ospf:
+        area: 0.0.0.1
+        network_type: point-to-point
+        passive: false
+      remote_id: 1
+      remote_ifindex: 1
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - ospf
+    name: r3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.1
+      process: 1
+      router_id: 10.0.0.3
 ospf:
   area: 0.0.0.0
   process: 1

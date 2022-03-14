@@ -15,16 +15,54 @@ groups:
 input:
 - topology/input/module-node-global-params.yml
 - package:topology-defaults.yml
+links:
+- interfaces:
+  - ipv4: 10.1.0.1/30
+    node: r1
+  - ipv4: 10.1.0.2/30
+    node: r2
+  left:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.2/30
+    node: r2
+  type: p2p
 module:
 - ospf
 - bgp
 name: input
 nodes:
   r1:
+    af:
+      ipv4: true
     box: cisco/iosv
     device: iosv
     id: 1
-    interfaces: []
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.2/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      remote_id: 2
+      remote_ifindex: 1
+      type: p2p
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
@@ -40,6 +78,8 @@ nodes:
       area: 0.0.0.0
       router_id: 10.0.0.1
   r2:
+    af:
+      ipv4: true
     bgp:
       advertise_loopback: true
       as: 65000
@@ -55,7 +95,19 @@ nodes:
     box: cisco/iosv
     device: iosv
     id: 2
-    interfaces: []
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.1/30
+        node: r1
+      remote_id: 1
+      remote_ifindex: 1
+      type: p2p
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:

@@ -177,11 +177,46 @@ def build_vrf_interface_list(node: Box, proto: str) -> None:
 # remove_unused_igp -- remove IGP module if it's not configured on any interface
 #
 def remove_unused_igp(node: Box, proto: str) -> None:
-  if proto in node and 'af' in node[proto] and node[proto].af:
+  if not any(proto in ifdata for ifdata in node.interfaces):                # Is protocol configured on any non-loopback interface?
+    node.pop(proto,None)                                                    # ... no, remove protocol data from node
+
+  if proto in node and 'af' in node[proto] and node[proto].af:              # Is at least one global AF active for the protocol?
+    return                                                                  # ... OK, we're good
+
+  for vdata in node.get('vrfs',{}).values():                                # Is protocol active in at least one VRF?
+    if proto in vdata:
+      return                                                                # ... OK, we're good
+
+  node.module = [ m for m in node.module if m != proto ]                    # Makes no sense to keep it, remove the config module
+
+#
+# upgrade_boolean_setting: 
+#
+# * remove a parameter set to False just to prevent default propagation
+# * replace a True value with a default dictionary
+#
+
+def upgrade_boolean_setting(obj: Box, attr: str, defvalue: typing.Optional[typing.Any] = None) -> None:
+  if not attr in obj:                   # Attribute not in dictionary, nothing to do
     return
 
-  for vdata in node.get('vrfs',{}).values():
-    if proto in vdata:
-      return
+  if not isinstance(obj[attr],bool):    # Attribute not a boolean, no further work needed
+    return
 
-  node.module = [ m for m in node.module if m != proto ]
+  if not obj[attr]:                     # Remove False value
+    obj.pop(attr,None)
+    return
+
+  if not defvalue is None:              # If the default value was specified, replace True with default value
+    obj[attr] = defvalue
+
+#
+# Validate list of BGP session types
+#
+
+def validate_bgp_session_types(session_list: list) -> bool:
+  for item in session_list:
+    if not item in ['ibgp','ebgp']:
+      return False
+
+  return True
