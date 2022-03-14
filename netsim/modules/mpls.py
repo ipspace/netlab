@@ -57,10 +57,10 @@ def validate_mpls_bgp_parameter(node: Box, topology: Box, features: Box) -> bool
         'mpls')
       return False
 
-    node.mpls.bgp = {}
+    node.mpls.bgp = Box({})
     for af in node.af:
       node.mpls.bgp[af] = session_list
-  elif isinstance(node.mpls.bgp,dict):
+  elif isinstance(node.mpls.bgp,Box):
     for af in node.mpls.bgp.keys():
       if common.must_be_list(node.mpls.bgp,af,f'nodes.{node.name}.mpls.bgp') is None:
         return False
