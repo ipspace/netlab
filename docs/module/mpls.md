@@ -5,7 +5,7 @@ MPLS configuration module implements traditional MPLS control plane using LDP- o
 Supported features:
 
 * LDP within an autonomous system
-* BGP Labeled Unicast over IBGP and/or EBGP sessions for IPv4 and IPv6
+* BGP Labeled Unicast (LU) over IBGP and/or EBGP sessions for IPv4 and IPv6
  
 The following table describes per-platform support of individual MPLS label distribution features:
 
@@ -30,11 +30,20 @@ The following table describes per-platform support of individual MPLS label dist
 
 * **router_id** -- Router ID to be used for LDP. Should correspond to a reachable loopback IP address.
 * **igp_sync** (boolean) -- Enable LDP/IGP synchronization
+* **advertise** -- list of link roles to advertise (including *loopback* pseudo-role). The default behavior is device-specific.
 
 ## Configurable BGP LU Parameters
 
-**mpls.bgp** could be:
+**mpls.bgp** could be a boolean (*True* to enable all possible BGP LU sessions), or a dictionary of parameters:
 
-* A boolean: *True* enables BGP LU on all BGP sessions;
-* A list of BGP session types on which BGP LU should be enabled  for all address families (*ibgp* and/or *ebgp*)
-* A dictionary of address families, each one of them being a list of session types.
+* **ipv4** -- enable BGP LU for IPv4 unicast address family
+* **ipv6** -- enable BGP LU for IPv6 unicast address family
+
+**ipv4** and **ipv6** parameters could be a boolean (*True*: enable BGP LU on all BGP sessions) or a list of *ibgp/ebgp* keywords, for example:
+
+```
+mpls:
+  bgp:
+    ipv4: True
+    ipv6: [ ibgp ]
+```
