@@ -41,7 +41,7 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
       _routing.upgrade_boolean_setting(intf.mpls,'ldp')
       if 'ldp' in intf.mpls:
         intf.ldp = intf.mpls.ldp
-        
+
     if not _routing.external(intf,'ldp'):
       _routing.passive(intf,'ldp')
 
