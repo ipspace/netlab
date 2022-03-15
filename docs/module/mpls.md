@@ -47,11 +47,17 @@ The following table describes per-platform support of individual MPLS label dist
 * **ipv6** -- enable BGP LU for IPv6 unicast address family
 * **explicit_null** -- advertise Explicit Null labels on BGP LU sessions
 
-**ipv4** and **ipv6** parameters have to be a list of *ibgp/ebgp* keywords, for example:
+**ipv4** and **ipv6** parameters could be:
+
+* Boolean value *False* to disable BGP-LU sessions for an address family within node data (overwriting global defaults)
+* Boolean value *True* to enable BGP-LU on IBGP and EBGP sessions
+* A string or a list of *ibgp/ebgp* keywords
+
+In the following example, BGP-LU is enabled on IBGP and EBGP sessions for IPv4 and for IBGP sessions for IPv6:
 
 ```
 mpls:
   bgp:
-    ipv4: [ ibgp, ebgp ]
+    ipv4: True
     ipv6: [ ibgp ]
 ```
