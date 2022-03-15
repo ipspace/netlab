@@ -55,6 +55,7 @@ from box import Box
 
 # Related modules
 from . import common
+from . import data
 
 def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
   if not pfx:
@@ -246,7 +247,7 @@ def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typi
     return {}                             # pragma: no cover -- can't figure out how to get here
 
 def setup(topo: Box, defaults: Box) -> None:
-  common.null_to_string(topo.addressing)
+  data.null_to_string(topo.addressing)
   addrs = setup_pools(defaults.addressing + topo.addressing,defaults)
 
   common.print_verbose("Addressing\n=================")

@@ -14,6 +14,7 @@ except ImportError:
 
 # Related modules
 from . import common
+from . import data
 
 #
 # Read YAML from file, package file, or string
@@ -21,7 +22,7 @@ from . import common
 def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
   if string is not None:
     try:
-      data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False)
+      yaml_data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False)
     except:                                                                    # pragma: no cover -- can't get here unless there's a package error
       common.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
   elif filename is None:
@@ -36,15 +37,15 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
         print("YAML file %s does not exist" % filename) # pragma: no cover -- too hard to test to bother
       return None
     try:
-      data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
+      yaml_data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
     except:
       common.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
 
   if common.LOGGING or common.VERBOSE:
     print("Read YAML data from %s" % (filename or "string"))
 
-  common.unroll_dots(data)
-  return data
+  data.unroll_dots(yaml_data)
+  return yaml_data
 
 def include_defaults(topo: Box, fname: str) -> None:
   defaults = read_yaml(fname)
@@ -96,7 +97,7 @@ def add_cli_args(topo: Box, args: argparse.Namespace) -> None:
       (k,v) = s.split("=")
       if '.' in k:
         try:
-          common.set_dots(topo,k.split('.'),v)
+          data.set_dots(topo,k.split('.'),v)
         except TypeError as ex:
           if 'nodes.' in k:
             common.error(

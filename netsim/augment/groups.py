@@ -9,6 +9,7 @@ import typing
 from box import Box
 
 from .. import common
+from .. import data
 from . import nodes
 
 group_attr = [ 'members','vars','config','node_data' ]
@@ -80,7 +81,7 @@ def check_group_data_structure(topology: Box) -> None:
         common.error('Group variables must be a dictionary: %s' % grp)
 
     if 'config' in gdata:
-      common.must_be_list(gdata,'config',f'groups.{grp}')
+      data.must_be_list(gdata,'config',f'groups.{grp}')
 
     for k in gdata.keys():
       if not k in group_attr:
@@ -230,11 +231,11 @@ def node_config_templates(topology: Box) -> None:
     if not 'config' in topology.groups[group_name]:
       continue
 
-    common.must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
+    data.must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
     g_members = group_members(topology,group_name)
     for name,ndata in topology.nodes.items():
       if name in g_members or group_name == 'all':
-        if not common.must_be_list(ndata,'config',f'nodes.{name}') is None:
+        if not data.must_be_list(ndata,'config',f'nodes.{name}') is None:
           ndata.config = topology.groups[group_name].config + ndata.config
 
   '''

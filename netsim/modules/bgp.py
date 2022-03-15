@@ -9,6 +9,7 @@ import netaddr
 
 from . import _Module,_routing
 from .. import common
+from .. import data
 from ..augment.links import IFATTR
 
 def check_bgp_parameters(node: Box) -> None:
@@ -81,23 +82,23 @@ class BGP(_Module):
       return
 
     node_data = Box({},default_box=True,box_dots=True)
-    for asn,data in topology.bgp.as_list.items():
-      if not isinstance(data,Box):
+    for asn,as_data in topology.bgp.as_list.items():
+      if not isinstance(as_data,Box):
         common.error(
           "Invalid value in bgp.as_list for ASN %s: " % asn + \
           "\n... Each ASN in a BGP as_list must be a dictionary with (at least) members key:"+
-          "\n... Found: %s" % data,
+          "\n... Found: %s" % as_data,
           common.IncorrectValue)
         continue
 
-      if not 'members' in data:
+      if not 'members' in as_data:
         common.error(
           "BGP as_list for ASN %s does not have a member attribute" % asn,
           common.IncorrectValue)
         continue
 
-      common.must_be_list(data,'members',f'bgp.as_list.{asn}')
-      for n in data.members:
+      data.must_be_list(as_data,'members',f'bgp.as_list.{asn}')
+      for n in as_data.members:
         if not n in topology.nodes:
           common.error(
             "Invalid node name %s in member list of BGP AS %s" % (n,asn),
@@ -110,7 +111,7 @@ class BGP(_Module):
           continue
         node_data[n]["as"] = asn
 
-      for n in data.get('rr',{}):
+      for n in as_data.get('rr',{}):
         if not n in topology.nodes:
           common.error(
             "Invalid node name %s in route reflector list of BGP AS %s" % (n,asn),

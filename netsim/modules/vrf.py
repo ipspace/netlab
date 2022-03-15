@@ -7,7 +7,8 @@ from box import Box
 from . import _Module,_routing
 from . import bfd
 from .. import common
-from ..common import get_from_box
+from .. import data
+from ..data import get_from_box
 from ..augment import devices
 
 vrf_id_set: set
@@ -179,7 +180,7 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
         vdata[rtname] = [ vdata.rd ]
         continue
 
-      common.must_be_list(vdata,rtname,f'{obj_id}.{vname}')
+      data.must_be_list(vdata,rtname,f'{obj_id}.{vname}')
 
       rtlist = []     # The final parsed and looked-up list of RT values
       for rtvalue in vdata[rtname]:

@@ -8,6 +8,7 @@ import os
 from box import Box
 
 from . import common
+from . import data
 
 def get_config_name(g: dict) -> typing.Optional[str]:
   config_name = g.get('config_name',None)
@@ -24,4 +25,4 @@ def node_config(node: Box, config_name: typing.Optional[str]) -> None:
       node.config =  config + [ config_name ]
 
 def list_attribute(parent: Box, key: str, path: str) -> typing.Optional[list]:
-  return common.must_be_list(parent,key,path)
+  return data.must_be_list(parent,key,path)

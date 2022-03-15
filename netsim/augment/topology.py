@@ -8,11 +8,10 @@ Topology-level transformation:
 '''
 
 import os
-
 from box import Box
 
-# Related modules
 from .. import common
+from .. import data
 
 #
 # Extend link/node/global attribute lists with extra attributes
@@ -31,7 +30,7 @@ def extend_attribute_list(settings: Box, attribute_path: str = 'topology.default
           common.IncorrectValue,
           'topology')
 
-    common.must_be_list(                               # Make sure the extension is a list so it's safe to iterate over
+    data.must_be_list(                               # Make sure the extension is a list so it's safe to iterate over
       parent = settings.extra_attributes,
       key = k,
       path = f'{attribute_path}.extra_attributes.{k}')
@@ -72,7 +71,7 @@ def check_required_elements(topology: Box) -> None:
     topology.name = topo_name
 
   if 'module' in topology:
-    common.must_be_list(topology,'module','')
+    data.must_be_list(topology,'module','')
     topology.defaults.module = topology.module
 
   topology.defaults.name = topology.name

@@ -7,6 +7,8 @@ from box import Box
 
 from . import _Module,_routing
 from .. import common
+from ..common import AF_LIST,BGP_SESSIONS
+from .. import data
 from ..augment import devices
 
 DEFAULT_BGP_LU: dict = {
@@ -35,7 +37,7 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
       continue
 
     if 'mpls' in intf:
-      _routing.upgrade_boolean_setting(intf.mpls,'ldp')
+      data.bool_to_defaults(intf.mpls,'ldp')
       if 'ldp' in intf.mpls:
         intf.ldp = intf.mpls.ldp
 
@@ -47,7 +49,7 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
 def validate_mpls_bgp_parameter(node: Box, topology: Box, features: Box) -> bool:
   if isinstance(node.mpls.bgp,list):
     session_list = node.mpls.bgp
-    if not _routing.validate_bgp_session_types(session_list):
+    if not data.validate_list_elements(session_list,BGP_SESSIONS):
       common.error(
         f'Invalid BGP session type in nodes.{node.name}.mpls.bgp parameter',
         common.IncorrectValue,
@@ -58,14 +60,14 @@ def validate_mpls_bgp_parameter(node: Box, topology: Box, features: Box) -> bool
     for af in node.af:
       node.mpls.bgp[af] = session_list
   elif isinstance(node.mpls.bgp,Box):
-    for af in ['ipv4','ipv6']:
+    for af in AF_LIST:
       if not af in node.mpls.bgp:
         continue
 
-      if common.must_be_list(node.mpls.bgp,af,f'nodes.{node.name}.mpls.bgp') is None:
+      if data.must_be_list(node.mpls.bgp,af,f'nodes.{node.name}.mpls.bgp') is None:
         return False
 
-      if not _routing.validate_bgp_session_types(node.mpls.bgp[af]):
+      if not data.validate_list_elements(node.mpls.bgp[af],BGP_SESSIONS):
         common.error(
           f'Invalid BGP session type in nodes.{node.name}.mpls.bgp.{af} parameter',
           common.IncorrectValue,
@@ -99,7 +101,7 @@ class MPLS(_Module):
     if not 'mpls' in node:
       return
 
-    _routing.upgrade_boolean_setting(node.mpls,'ldp',{})
+    data.bool_to_defaults(node.mpls,'ldp',{})
     if 'ldp' in node.mpls:
       if not any(m in ['ospf','isis','eigrp'] for m in node.module):
         common.error(
@@ -107,7 +109,7 @@ class MPLS(_Module):
           common.MissingValue,
           'mpls')
 
-    _routing.upgrade_boolean_setting(node.mpls,'bgp',DEFAULT_BGP_LU)
+    data.bool_to_defaults(node.mpls,'bgp',DEFAULT_BGP_LU)
     if 'bgp' in node.mpls:
       if not 'bgp' in node.module:
         common.error(

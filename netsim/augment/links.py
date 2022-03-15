@@ -9,6 +9,7 @@ from box import Box
 
 # Related modules
 from .. import common
+from .. import data
 from .. import addressing
 from . import devices
 
@@ -50,7 +51,7 @@ def adjust_link_list(links: list, nodes: Box) -> list:
   for l in links:
     if isinstance(l,dict) and IFATTR in l:               # a dictionary with 'interfaces' element
       l = Box(l,default_box=True,box_dots=True)
-      common.must_be_list(l,IFATTR,f'link[{link_cnt}]')  # ... check it's a list and move on
+      data.must_be_list(l,IFATTR,f'link[{link_cnt}]')    # ... check it's a list and move on
       l[IFATTR] = adjust_interface_list(l[IFATTR],l,nodes)
       link_list.append(l)
     elif isinstance(l,dict):                             # a dictionary without 'interfaces' element
