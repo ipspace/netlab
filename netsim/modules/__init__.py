@@ -57,6 +57,7 @@ post_transform:
 """
 def post_transform(topology: Box) -> None:
   check_supported_node_devices(topology)       # A bit late, but we can do this check only after node data has been adjusted
+  common.exit_on_error()
   copy_node_data_into_interfaces(topology)     # Copy node attributes that match interface attributes into interfaces
   module_transform("post_transform",topology)
   node_transform("post_transform",topology)
@@ -202,6 +203,7 @@ def adjust_modules(topology: Box) -> None:
   augment_node_module(topology)
   merge_node_module_params(topology)
   adjust_global_modules(topology)
+  module_transform("init",topology)
   check_module_parameters(topology)
   check_module_dependencies(topology)
   module_transform("pre_default",topology)
