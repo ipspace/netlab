@@ -32,7 +32,7 @@ Experimental modules are usually implemented on a small set of devices. We're al
    :maxdepth: 1
 
    module/evpn.md
-   module/mpls.md
+   MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
    module/srv6.md
    module/vrf.md
 ```
