@@ -99,6 +99,28 @@ def must_be_list(parent: Box, key: str, path: str) -> typing.Optional[list]:
   	common.IncorrectType)
   return None
 
+#
+# must_be_bool: check whether a parameter is a boolean value and remove False value
+#   to simplify Jinja2 templates
+#
+# Input arguments:
+#   parent - parent dictionary
+#   key    - parent dictionary key
+#   path   - parent dictionary path (used in error messages)
+#
+def must_be_bool(parent: Box, key: str, path: str) -> None:
+  if not key in parent:
+    return
+
+  if isinstance(parent[key],bool):
+    if not parent[key]:
+      parent.pop(key,None)
+    return
+
+  common.error(
+    f'attribute {path}.{key} must be a boolean, found {str(type(parent[key]))}',
+    common.IncorrectType)
+
 """
 bool_to_defaults: 
 

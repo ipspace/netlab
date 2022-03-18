@@ -1,5 +1,6 @@
 !
 router bgp {{ bgp.as }}
+ bgp labeled-unicast rib ip tunnel
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
  address-family {{ af }} labeled-unicast
 {%   if loopback[af] is defined and bgp.advertise_loopback %}
@@ -17,6 +18,13 @@ router bgp {{ bgp.as }}
 {%   for n in bgp.neighbors if n[af] is defined and n[af+'_label']|default(False) %}
   neighbor {{ n[af] }} activate
 {%   endfor %}
+{%   if mpls.bgp.disable_unlabeled is defined %}
+!
+ address-family {{ af }}
+{%     for n in bgp.neighbors if n[af] is defined and n[af+'_label']|default(False) %}
+  no neighbor {{ n[af] }} activate
+{%     endfor %}
+{%   endif %}
 {% endfor %}
 !
 {%   for n in bgp.neighbors if n.ifindex is defined and (n['ipv4_label']|default(False) or n['ipv6_label']|default(False)) %}
