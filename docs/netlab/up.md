@@ -37,6 +37,10 @@ optional arguments:
   --fast-config         Use fast device configuration (Ansible strategy = free)
 ```
 
+```{warning}
+Do not use the `--fast-config` option with configuration modules that depend on other configuration modules (example: MPLS, SR). See **‌[netlab initial](netlab-initial-module)** documentation for more details.
+```
+
 ## Provider-Specific Initialization
 
 When used with *libvirt* provider, **netlab up** creates the *vagrant-libvirt* management network before starting the virtual machines, and sets the `group_fwd_mask` for all Vagrant-created Linux bridges to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).

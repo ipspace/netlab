@@ -1,6 +1,6 @@
 #!/usr/bin/env ansible-playbook
 ---
-- name: Deploy device configuration
+- name: Deploy initial device configuration
   hosts: all
   strategy: "{{ netsim_strategy|default('linear') }}"
   gather_facts: false
@@ -37,16 +37,24 @@
           netsim_action: initial
         tags: [ always ]
 
-  - name: Deploy module-specific configurations
-    include_tasks: "tasks/deploy-module.yml"
+- name: Deploy module-specific configurations
+  hosts: all
+  strategy: "{{ netsim_strategy|default('linear') }}"
+  serial: "{{ 5 if netsim_strategy is defined else 1 }}"
+  tasks:
+  - include_tasks: "tasks/deploy-module.yml"
     tags: [ module,test ]
     loop: "{{ module | default([]) }}"
     loop_control:
       loop_var: config_module
     when: module is defined and (not(modlist is defined) or config_module in modlist)
 
-  - name: Deploy custom deployment templates
-    include_tasks: "tasks/deploy-custom-config.yml"
+- name: Deploy custom deployment templates
+  hosts: all
+  strategy: "{{ netsim_strategy|default('linear') }}"
+  serial: "{{ 5 if netsim_strategy is defined else 1 }}"
+  tasks:
+  - include_tasks: "tasks/deploy-custom-config.yml"
     tags: [ custom,test ]
     loop: "{{ config | default([]) }}"
     loop_control:
