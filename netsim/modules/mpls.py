@@ -144,6 +144,7 @@ class MPLS(_Module):
 
     data.bool_to_defaults(node.mpls,'ldp',{})
     if 'ldp' in node.mpls:
+      data.must_be_bool(node.mpls.ldp,'disable_unlabeled',f'nodes.{node.name}.mpls.ldp')
       if not any(m in ['ospf','isis','eigrp'] for m in node.module):
         common.error(
           f'You cannot enable LDP on node {node.name} without an IGP',
