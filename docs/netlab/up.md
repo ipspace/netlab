@@ -38,7 +38,7 @@ optional arguments:
 ```
 
 ```{warning}
-Do not use the `--fast-config` option with configuration modules that depend on other configuration modules (example: MPLS, SR). See **‌[netlab initial](netlab-initial-module)** documentation for more details.
+Do not use the `--fast-config` option with custom configuration templates that must be executed in specific order. See **‌[netlab initial](netlab-initial-custom)** documentation for more details.
 ```
 
 ## Provider-Specific Initialization

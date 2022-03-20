@@ -363,6 +363,10 @@ _config_after_/_transform_after_ dependencies preserving the original order as m
 """
 
 def reorder_node_modules(topology: Box, secondary_sort: str = "config_after") -> None:
+  if 'module' in topology:
+    topology.module = sort_module_list(topology.module,topology.defaults, secondary_sort)
+    topology.defaults.module = topology.module
+
   for name,n in topology.nodes.items():
     if 'module' in n:
       n.module = sort_module_list(n.module,topology.defaults, secondary_sort)

@@ -51,6 +51,10 @@ def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[B
 
   inventory.all.vars.netlab_provider = defaults.provider
 
+  if 'module' in defaults:
+    inventory.modules.hosts = {}
+    inventory.modules.vars.netlab_module = defaults.module
+
   if addressing:
     inventory.all.vars.pools = addressing
     for name,pool in inventory.all.vars.pools.items():
@@ -60,9 +64,13 @@ def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[B
 
   for name,node in nodes.items():
     group = node.get('device','all')
-    if not group in inventory:
-      inventory[group] = { 'hosts': {} }
-    inventory[group]['hosts'][name] = ansible_inventory_host(node,defaults)
+    inventory[group].hosts[name] = ansible_inventory_host(node,defaults)
+
+    if 'module' in node:
+      inventory.modules.hosts[name] = {}
+
+    if 'config' in node:
+      inventory.custom_configs.hosts[name] = {}
 
   if 'devices' in defaults:
     for group in inventory.keys():

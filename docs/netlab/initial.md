@@ -62,7 +62,6 @@ The initial configuration also includes LLDP running on all interfaces apart fro
 
 Default passwords and other default configuration parameters are supposed to be provided by the Vagrant boxes.
 
-(netlab-initial-module)=
 ## Module Configurations
 
 Module-specific device configurations are created from templates in `netsim/ansible/templates/_module_` directory. Device-specific configuration template is selected using `netlab_device_type` or `ansible_network_os` value. 
@@ -73,19 +72,20 @@ More details:
 * [](../dev/config/deploy.md) describes the details of template search process
 * [](../dev/device-features.md) contains the configuration template guidelines.
 
-Module-specific configuration templates have to be applied in correct order. For example, the base BGP configuration must be applied before applying BGP Labeled Unicast configuration in the MPLS configuration module. 
-
-Some Ansible versions "optimize" task execution by rearranging the order of loop parameters, resulting in incorrect configurations. As a workaround, the Ansible playbook deploying module configurations deploys them on a single device at a time. 
-
-You can bypass that safety measure with `--fast` parameter (revering to the default behavior of processing five devices in parallel), but don't complain if you get unexpected results.
-
+(netlab-initial-custom)=
 ## Custom Deployment Templates
 
 [Custom deployment templates](../groups.md#custom-configuration-templates) are specified in **config** group- or node parameter. `initial-config.ansible` playbook tries to find the target configuration template in user- (current) and system (`netsim/extra`) directories and uses `netlab_device_type` and `ansible_network_os` to allow you to create numerous device-specific configuration templates.
 
 You'll find more details in [](../dev/config/deploy.md).
 
-**netlab initial** command assumes you want to deploy the custom templates in the order you specified them and therefore deploys them on a single device at a time unless you use the `--fast` parameter ([details above](netlab-initial-module))
+**netlab initial** command assumes you want to deploy the custom templates in the order you specified them and therefore deploys them on a single device at a time unless you use the `--fast` parameter.
+
+```{warning}
+Numerous Ansible versions "optimize" task execution by rearranging the order of loop parameters, potentially resulting in custom configurations being applied out of order. As a workaround, the Ansible play deploying custom configuration templates executes on a single device at a time. 
+
+You can bypass that safety measure with `--fast` parameter, but don't complain if you get unexpected results.
+```
 
 ## Limiting the Scope of Configuration Deployments
 

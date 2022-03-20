@@ -37,26 +37,57 @@
           netsim_action: initial
         tags: [ always ]
 
+#
+# Deploy module-specific configurations
+#
+# Input parameters:
+#
+# * The "modules" group contains all nodes with "module" attribute
+# * The global list of modules sorted in proper config order is defined in netlab_module
+#   variable in "modules" group.
+# * Optional "modlist" variable defines the modules to be configured (set with -e flag)
+#
+# Hints to understand the spaghetti code the follows:
+#
+# * We need to configure modules defined in "netlab_module" limited by the list specified
+#   in "modlist" -- an intersection of the two lists. "modlist" might not be defined, in that
+#   case we take "netlab_module" as default value, and the intersection will be the whole
+#   "netlab_module" list
+#
 - name: Deploy module-specific configurations
-  hosts: all
+  hosts: modules
   strategy: "{{ netsim_strategy|default('linear') }}"
-  serial: "{{ 5 if netsim_strategy is defined else 1 }}"
+  tags: [ module,test ]
   tasks:
+  - set_fact:
+      modlist: "{{ modlist|split(',') if modlist is defined else netlab_module }}"
   - include_tasks: "tasks/deploy-module.yml"
-    tags: [ module,test ]
-    loop: "{{ module | default([]) }}"
+    loop: "{{ netlab_module|intersect(modlist) }}"
     loop_control:
       loop_var: config_module
-    when: module is defined and (not(modlist is defined) or config_module in modlist)
 
+#
+# Deploy custom configuration templates
+#
+# Input parameters:
+#
+# * The "custom_configs" group contains all nodes with "config" attribute
+#
+# Hints to understand the code the follows:
+#
+# * When different nodes use the same config modules in different order, they
+#   might be applied out-of-order due to Ansible "optimization" attempts
+# * To prevent that "optimization", we deploy custom configs on a single device at a time
+# * If the user chose '--fast' deployment, then we stop caring about order of execution.
+#   Sorry -- you can have one or the other ;)
+#
 - name: Deploy custom deployment templates
-  hosts: all
+  hosts: custom_configs
   strategy: "{{ netsim_strategy|default('linear') }}"
   serial: "{{ 5 if netsim_strategy is defined else 1 }}"
+  tags: [ custom,test ]
   tasks:
   - include_tasks: "tasks/deploy-custom-config.yml"
-    tags: [ custom,test ]
-    loop: "{{ config | default([]) }}"
+    loop: "{{ config }}"
     loop_control:
       loop_var: custom_config
-    when: config is defined

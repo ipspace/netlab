@@ -1,26 +1,44 @@
 #
-# Deploy module-specific configuration (specified in "item") to a device
+# Deploy module-specific configuration (specified in "config_module") to a device
 #
-- debug:
-    msg: |
-      {{ config_module }} configuration for {{ inventory_hostname }}
-      =========================================
-      {{ lookup('template',item) }}
-    verbosity: 1
-  tags: [ test,module ]
-  with_first_found:
-  - "../templates/{{ config_module }}/{{ netlab_device_type }}.j2"
-  - "../templates/missing.j2"
+# WARNING:
+# ========
+# To work around Ansible "optimization" attempts, the deploy-module is called for
+# all modules specified in global netlab_module list.
+#
+# The module might not be applicable to the current device, that's why the whole
+# task list is wrapped into a "block/when" construct.
+#
+# OTHER TRICKS
+# ============
+# The code is executed only when the 'module' tag is set, but once we decide to
+# include the configuration task list for the device, it MUST be executed, so
+# we apply the 'always' tag to all tasks in the included task list.
+#
 
-- include_tasks: "{{ item }}"
-  tags: [ module ]
-  with_first_found:
-  - "{{netlab_device_type}}/{{ config_module }}.yml"
-  - "deploy-config/{{netlab_device_type}}.yml"
-  - "../missing.yml"
-  args:
-    apply:
-      vars:
-        config_template: "../templates/{{ config_module }}/{{netlab_device_type}}.j2"
-        netsim_action: "{{ config_module }}"
-      tags: [ always ]
+- block:
+  - debug:
+      msg: |
+        {{ config_module }} configuration for {{ inventory_hostname }}
+        =========================================
+        {{ lookup('template',item) }}
+      verbosity: 1
+    tags: [ test,module ]
+    with_first_found:
+    - "../templates/{{ config_module }}/{{ netlab_device_type }}.j2"
+    - "../templates/missing.j2"
+
+  - include_tasks: "{{ item }}"
+    tags: [ module ]
+    with_first_found:
+    - "{{netlab_device_type}}/{{ config_module }}.yml"
+    - "deploy-config/{{netlab_device_type}}.yml"
+    - "../missing.yml"
+    args:
+      apply:
+        vars:
+          config_template: "../templates/{{ config_module }}/{{netlab_device_type}}.j2"
+          netsim_action: "{{ config_module }}"
+        tags: [ always ]
+
+  when: config_module in module|default([])
