@@ -41,6 +41,9 @@ def run(cli_args: typing.List[str]) -> None:
   settings = topology.defaults
 
   (args,rest) = up_args_parser.parse_known_args(cli_args)
+  if common.QUIET:
+    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
+
   external_commands.run_probes(settings,topology.provider,2)
 
   provider = providers._Provider.load(topology.provider,topology.defaults.providers[topology.provider])

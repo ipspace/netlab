@@ -53,7 +53,7 @@ def set_ansible_flags(cmd : list) -> list:
     cmd.append("-" + "v" * common.VERBOSE)
 
   if common.QUIET:
-    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "dense"
+    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
   return cmd
 

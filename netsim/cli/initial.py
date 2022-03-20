@@ -51,6 +51,9 @@ def run(cli_args: typing.List[str]) -> None:
   if args.initial:
     rest = ['-t','initial'] + rest
 
+  if args.quiet:
+    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
+
   if args.module:
     if args.module != "*":
       rest = ['-e','modlist='+args.module] + rest
