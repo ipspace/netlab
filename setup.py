@@ -1,9 +1,13 @@
 """setup.py file."""
 from setuptools import setup, find_packages
 import netsim
+import sys
 
 with open("requirements.txt", "r") as fs:
   reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
+
+if sys.version_info < (3, 7):
+  raise RuntimeError("This package requires Python 3.7+")
 
 setup(
   name="netsim-tools",
