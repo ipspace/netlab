@@ -43,6 +43,7 @@ The following table describes per-platform support of individual MPLS label dist
 * Cisco IOS merges labeled and unlabeled BGP routes.
 * You might have to disable unlabeled address families on Arista EOS
 
+(mpls-l3vpn-supported-platforms)=
 ### BGP/MPLS L3VPN
 
 | Operating system  | VPNv4 | VPNv6 |
