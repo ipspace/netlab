@@ -5,7 +5,6 @@ import typing
 from box import Box
 
 from . import _Module,_routing
-from . import bfd
 from .. import common
 from .. import data
 from ..data import get_from_box
@@ -224,11 +223,15 @@ def validate_vrf_route_leaking(node : Box) -> None:
     simple_rt = [ vdata.rd ]
     leaked_routes = vdata['import'] and vdata['import'] != simple_rt
     leaked_routes = leaked_routes or (vdata['export'] and vdata['export'] != simple_rt)
-    if leaked_routes and not get_from_box(node,'bgp.as'):
-      common.error(
-        f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
-        common.MissingValue,
-        'vrf')
+    if leaked_routes:
+      if not get_from_box(node,'bgp.as'):
+        if get_from_box(node,'vrf.as'):
+          node.bgp['as'] = node.vrf['as']
+        else:
+          common.error(
+            f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
+            common.MissingValue,
+            'vrf')
 
 class VRF(_Module):
 
@@ -296,3 +299,8 @@ class VRF(_Module):
         vrfidx = vrfidx + 1
 
       validate_vrf_route_leaking(node)
+
+    # Finally, set BGP router ID if we set BGP AS number
+    #
+    if get_from_box(node,'bgp.as') and not get_from_box(node,'bgp.router_id'):
+      _routing.router_id(node,'bgp',topology.pools)
