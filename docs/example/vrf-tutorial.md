@@ -185,7 +185,7 @@ links:
 **Notes:**
 * The EBGP sessions between PE1 and PE2, and CB1 and CB2 will be configured within the VRF address family on PE1 and PE2.
 * A global IPv4/IPv6 IBGP session will be configured between PE1 and PE2.
-* The global IBGP session will not carry VPNv4 prefixes unless you add **mpls.vpn** (TBD) module to PE1 and PE2.
+* The global IBGP session will not carry VPNv4 prefixes unless you add **mpls.vpn** (see example below) module to PE1 and PE2.
 
 Behind the scenes, the VRF configuration module removes EBGP neighbors reachable through VRF interfaces from the global list of BGP neighbors on the PE-routers (so they won't be configured as part of the BGP routing process) and adds them to VRF data structure:
 
@@ -281,4 +281,54 @@ interface GigabitEthernet0/2
  ip ospf 100 area 0.0.0.0
  ip ospf network point-to-point
  ip ospf cost 10
+```
+
+## VPNv4 Prefixes
+If you want to carry VPNv4 (or VPNv6) prefixes, you have to enable **mpls.vpn** (and a MPLS label protocol, such as **mpls.ldp**).
+
+The following example expands the *EBGP Sessions with CE-Routers* configuration:
+```
+vrfs:
+  blue:
+
+module: [ vrf,ospf,bgp,mpls ]
+bgp.as: 65000
+
+nodes:
+  pe1:
+    mpls:
+      vpn: true
+      ldp: true
+  pe2:
+     mpls:
+       vpn: true
+       ldp: true
+  cb1:
+    module: [ bgp ]
+    bgp.as: 65101
+  cb2:
+    module: [ bgp ]
+    bgp.as: 65102
+  cb3:
+    module: [ bgp ]
+    bgp.as: 65103
+  cb4:
+    module: [ bgp ]
+    bgp.as: 65104
+
+links:
+- pe1:
+  pe2:
+- pe1: { vrf: blue }
+  cb1:
+- pe2: { vrf: blue }
+  cb1:
+- pe1: { vrf: blue }
+  cb2:
+- pe2: { vrf: blue }
+  cb2:
+- pe1: { vrf: blue }
+  cb3:
+- pe2: { vrf: blue }
+  cb4:
 ```
