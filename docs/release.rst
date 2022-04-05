@@ -1,6 +1,17 @@
 Release notes
 =============
 
+2022-04-01 (release 1.2)
+  * VRF definitions and layer-3 VRFs
+  * VRF-aware OSPF, IS-IS and BGP
+  * Traditional MPLS with LDP
+  * BGP Labeled Unicast
+  * MPLS/VPN: VPNv4 and VPNv6 address family support
+  * OSPFv3 support on Juniper vSRX
+  * Use topology snapshot file in **netlab down**
+
+  :doc:`More details <release/1.2>`
+
 2022-03-09 (release 1.1.4)
   * **netlab clab tarball** create a tar package that can be deployed with *containerlab*
     without *netsim-tools*
@@ -214,6 +225,7 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.2.md
    release/1.1.md
    release/1.0.md
    release/0.9.md
