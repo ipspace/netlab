@@ -2,7 +2,7 @@
 
 **netlab down** destroys a virtual lab created with **[netlab up](up.md)** command.
 
-This command uses provider-specific CLI commands to destroy the virtual lab, and needs the lab topology file to discover the virtualization provider the lab is using.
+This command uses the lab topology or the snapshot file created by **netlab up** or **[netlab create](create.md)** to find the virtualization provider, and executes provider-specific CLI commands to destroy the virtual lab.
 
 ## Usage
 
