@@ -21,11 +21,12 @@ The following table describes per-platform support of individual MPLS label dist
 
 ### Label Distribution Protocol (LDP)
 
-| Operating system  | LDP   | Exp.Null | IGP sync | Advertise<br>filter | CsC |
-| ------------------| :---: | :------: | :--: | :--: | :--: |
-| Arista EOS        |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco IOS         |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco IOS XE      |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Operating system      | LDP   | Exp.Null | IGP sync | Advertise<br>filter | CsC |
+| ----------------------| :---: | :------: | :--: | :--: | :--: |
+| Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Cisco IOS             |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Cisco IOS XE          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Mikrotik CHR RouterOS |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
@@ -33,11 +34,12 @@ The following table describes per-platform support of individual MPLS label dist
 
 ### BGP Labeled Unicast (BGP-LU)
 
-| Operating system  | BGP LU | Exp.Null | Disable<br>unlabeled |
-| ------------------| :----: | :------: | :------: |
-| Arista EOS        |   ✅   |    ❌     |    ✅    |
-| Cisco IOS         |   ✅   |    ✅    |    ❌     |
-| Cisco IOS XE      |   ✅   |    ✅    |    ❌     |
+| Operating system      | BGP LU | Exp.Null | Disable<br>unlabeled |
+| ----------------------| :----: | :------: | :------: |
+| Arista EOS            |   ✅   |    ❌   |    ✅    |
+| Cisco IOS             |   ✅   |    ✅   |    ❌    |
+| Cisco IOS XE          |   ✅   |    ✅   |    ❌    |
+| Mikrotik CHR RouterOS |   ❌   |    ❌   |    ❌    |
 
 **Notes**
 * Cisco IOS merges labeled and unlabeled BGP routes.
@@ -46,14 +48,16 @@ The following table describes per-platform support of individual MPLS label dist
 (mpls-l3vpn-supported-platforms)=
 ### BGP/MPLS L3VPN
 
-| Operating system  | VPNv4 | VPNv6 |
-| ------------------| :---: | :---: |
-| Arista EOS        |   ✅  |   ✅  |
-| Cisco IOS         |   ✅  |   ✅  |
-| Cisco IOS XE      |   ✅  |   ✅  |
+| Operating system      | VPNv4 | VPNv6 |
+| ----------------------| :---: | :---: |
+| Arista EOS            |   ✅  |   ✅  |
+| Cisco IOS             |   ✅  |   ✅  |
+| Cisco IOS XE          |   ✅  |   ✅  |
+| Mikrotik CHR RouterOS |   ✅  |   ❌  |
 
 **Notes**
 * VPNv4 and VPNv6 address families are enabled on IPv4 IBGP/EBGP sessions
+* On Mikrotik RouterOS BGP configuration/implementation, adding the VPNv4 AFI will completely overwrite the AFI supported list for the peer with "ip,vpnv4" (current template limitation). Given the general limitations of ROSv6 on IPv6, this should not be such a big problem.
 
 ## Configurable Global and Node Parameters
 

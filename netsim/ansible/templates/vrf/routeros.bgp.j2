@@ -1,16 +1,35 @@
+{% import "routeros.bgp-macro.j2" as bgpcfg %}
 {% for vname,vdata in vrfs.items() %}
 {#
     First of all, need to add the vrf to the default instance
 #}
-/routing bgp instance vrf add instance=default routing-mark={{ vname }} redistribute-connected=yes
+/routing bgp instance vrf add instance=default routing-mark={{ vname }} redistribute-connected=yes redistribute-other-bgp=yes
 {% if 'ospf' in vdata %}
 /routing bgp instance vrf set [find routing-mark={{ vname }}] redistribute-ospf=yes
 {% endif %}
 
 {#
+    Create a new BGP instance
+    NOTE: I had to do a bad workaround here.
+    Unfortunately, Mikrotik ROS does not like the fact that a BGP VRF instance can have the same Router ID of the main one.
+    The reported message is: "failure: instance with this RouterId already configured"
+    For that reason, as instance Router ID, the IP of the last interface in that VRF is used (can't easily use break in Jinja loops).
+#}
+{% set vrf_router_ids = [ '0.0.0.0' ] %}
+{% for l in interfaces|default([]) if l.vrf is defined and l.vrf == vname %}
+{{ vrf_router_ids.append(l.ipv4|ipaddr('address')) }}
+{% endfor %}
+{% set vrf_router_id = vrf_router_ids|last %}
+
+/routing bgp instance add router-id={{ vrf_router_id }} name={{ vname }} as={{ bgp.as }} routing-table={{ vname }} redistribute-other-bgp=yes
+
+{#
     And now the peers...
 #}
 {%   for n in vdata.bgp.neighbors|default([]) %}
+{%     for af in ['ipv4'] if n[af] is defined %}
+{{       bgpcfg.neighbor(n,n[af],vname) }}
+{%     endfor %}
 {%   endfor %}
 
 {% endfor %}
