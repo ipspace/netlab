@@ -1,17 +1,28 @@
-- name: "start nvue daemon"
-  command: systemctl start nvued
-
-- name: "enable nvue"
-  command: systemctl enable nvued
-
-- name: "copy the cumulus nvue yaml config file to switch for {{ config_module }} config"
+- name: "copy the cumulus nvue YAML {{ netsim_action }} config file to switch (generated from {{ config_template }})"
   template:
     src: "{{ config_template }}"
     dest: /tmp/nvue_config.yaml
     mode: 0644
 
-- name: "execute on cumulus: 'nv config patch' for {{ config_module }} config"
+- block:
+  - name: "Start NVUE daemon"
+    command: systemctl start nvued
+
+  - name: "Wait for nvued to start"
+    service_facts:
+    register: svc
+    until: svc.ansible_facts.services['nvued.service'].state == 'running'
+    retries: 10
+    delay: 5
+
+  when: nvue_service_running is not defined
+
+- set_fact:
+    nvue_service_running: 1 
+
+- name: "execute on cumulus: 'nv config patch' for {{ netsim_action }} config"
   command: nv config patch /tmp/nvue_config.yaml
 
-- name: "execute on cumulus: 'nv config apply' for {{ config_module }} config"
+- name: "execute on cumulus: 'nv config apply' for {{ netsim_action }} config"
   command: nv config apply -y
+  tags: [ print_action, always ]
