@@ -1,3 +1,4 @@
+{% import "routeros.macro.j2" as bgpcfg %}
 
 /routing bgp instance set 0 as={{ bgp.as }}
 
@@ -7,28 +8,7 @@
 
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-{%     set neigh_id = n[af]|replace('.', '_')|replace(':', '_') %}
-{%     set afi_list = [] %}
-{%     if n['ipv4'] is defined %}
-{{ afi_list.append('ip') }}
-{%     endif %}
-{%     if n['ipv6'] is defined %}
-{{ afi_list.append('ipv6') }}
-{%     endif %}
-
-/routing bgp peer add name={{ neigh_id }} remote-address={{ n[af] }} remote-as={{ n.as }} comment="{{ n.name }}" address-families={{ afi_list|join(',') }}
-{%   if n.type == 'ibgp' %}
-/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] update-source=loopback
-{%   endif %}
-
-{%    if bgp.rr|default('') and not n.rr|default('') %}
-/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] route-reflect=yes
-{%    endif %}
-
-{%    if bgp.next_hop_self is defined and bgp.next_hop_self %}
-/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] nexthop-choice=force-self
-{%    endif %}
-
+{{     bgpcfg.neighbor(n,n[af],'default') }}
 {%   endfor %}
 {% endfor %}
 
@@ -37,15 +17,15 @@
 {%   if bgp[af] is defined %}
 
 {%     if loopback[af] is defined and bgp.advertise_loopback %}
-/routing bgp network add network={{ loopback[af]|ipaddr('0') }}
+{{       bgpcfg.bgp_network(af,loopback[af]) }}
 {%     endif %}
 
 {%     for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
-/routing bgp network add network={{ l[af]|ipaddr('0') }}
+{{       bgpcfg.bgp_network(af,l[af]) }}
 {%     endfor %}
 
 {%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-/routing bgp network add network={{ pfx|ipaddr('0') }}
+{{       bgpcfg.bgp_network(af,pfx) }}
 {%     endfor %}
 
 {%   endif %}

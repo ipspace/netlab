@@ -1,0 +1,38 @@
+{#
+   BGP neighbor definition
+#}
+{% macro neighbor(n,ip,instance) %}
+
+{%   set neigh_id = ip|replace('.', '_')|replace(':', '_') %}
+{%   set afi_list = [] %}
+{%   if n['ipv4'] is defined %}
+{{ afi_list.append('ip') }}
+{%  endif %}
+{%   if n['ipv6'] is defined %}
+{{ afi_list.append('ipv6') }}
+{%   endif %}
+
+/routing bgp peer add name={{ neigh_id }} remote-address={{ ip }} remote-as={{ n.as }} \
+ comment="{{ n.name }}" instance={{ instance }} \
+  address-families={{ afi_list|join(',') }}
+
+{%   if n.type == 'ibgp' %}
+/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] update-source=loopback
+{%   endif %}
+
+{%    if bgp.rr|default('') and not n.rr|default('') %}
+/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] route-reflect=yes
+{%    endif %}
+
+{%    if bgp.next_hop_self is defined and bgp.next_hop_self %}
+/routing bgp peer set [/routing bgp peer find name={{ neigh_id }}] nexthop-choice=force-self
+{%    endif %}
+
+{%- endmacro %}
+
+{#
+   BGP network statement
+#}
+{% macro bgp_network(af,pfx) %}
+/routing bgp network add network={{ pfx|ipaddr('0') }}
+{%- endmacro %}
