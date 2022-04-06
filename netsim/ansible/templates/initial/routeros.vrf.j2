@@ -1,0 +1,19 @@
+{% for vname,vdata in vrfs.items() %}
+
+{#
+  Create interface list for the vrf
+#}
+{% set vrf_if_list = [] %}
+{% for l in interfaces|default([]) %}
+{%   if l.vrf is defined %}
+{{ vrf_if_list.append(l.ifname) }}
+{%   endif %}
+{% endfor %}
+
+/ip route vrf add routing-mark={{ vname }} \
+ route-distinguisher={{ vdata.rd }} \
+ import-route-targets={{ vdata.import|join(',') }} \
+ export-route-targets={{ vdata.export|join(',') }} \
+ interfaces={{ vrf_if_list|join(',') }}
+
+{% endfor %}

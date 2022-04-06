@@ -34,15 +34,15 @@
 
 /routing ospf interface add interface=loopback passive=yes
 {% if 'ipv4' in loopback %}
-/routing ospf network add area=[/routing ospf area find area-id={{ area }}] network={{ loopback.ipv4 }}
+/routing ospf network add area=[/routing ospf area find area-id={{ area }} and instance=default] network={{ loopback.ipv4 }}
 {% endif %}
 
-{% for l in interfaces|default([]) %}
+{% for l in interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
 {%   if "external" in l.role|default("") %}
 ## OSPF not configured on external interface {{ l.ifname }}
 {%   else %}
 
-/routing ospf network add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }}] network={{ l.ipv4 | ipaddr('subnet') }}
+/routing ospf network add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }} and instance=default] network={{ l.ipv4 | ipaddr('subnet') }}
 
 {% set ospf_intf_params=[] %}
 
@@ -51,7 +51,7 @@
 {%     endif %}
 
 {%     if l.ospf.cost is defined %}
-{{ ospf_intf_params.append('cost='+l.ospfcost) }}
+{{ ospf_intf_params.append('cost='+l.ospf.cost|string) }}
 {%     endif %}
 
 {%     if l.ospf.bfd|default(False) %}

@@ -1,0 +1,52 @@
+{% set KW_NETWORK_TYPE = {'point-to-point': 'point-to-point','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma','broadcast': 'broadcast' } %}
+{% set area = ospf.area|default("0.0.0.0") %}
+{#
+  Create new OSPF instance for the VRF
+#}
+/routing ospf instance add router-id={{ vdata.ospf.router_id|default(ospf.router_id) }} \
+  name={{ vname }} routing-table={{ vname }} redistribute-bgp=as-type-1
+
+{#
+  Create AREA list for the new instance
+#}
+{% set area_list = [] %}
+{% for l in vdata.ospf.interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
+{{ area_list.append(l.ospf.area) }}
+{% endfor %}
+
+{#
+  For each unique area, add to area configuration
+#}
+{% for a_def in area_list|unique %}
+/routing ospf area add name={{ vname }}-{{ a_def }} area-id={{ a_def }} instance={{ vname }}
+{% endfor %}
+
+
+{% for l in vdata.ospf.interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
+{%   if "external" in l.role|default("") %}
+## OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+
+/routing ospf network add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }} and instance={{ vname }}] network={{ l.ipv4 | ipaddr('subnet') }}
+
+{% set ospf_intf_params=[] %}
+
+{%     if l.ospf.network_type is defined %}
+{{ ospf_intf_params.append('network-type='+KW_NETWORK_TYPE[l.ospf.network_type]) }}
+{%     endif %}
+
+{%     if l.ospf.cost is defined %}
+{{ ospf_intf_params.append('cost='+l.ospf.cost|string) }}
+{%     endif %}
+
+{%     if l.ospf.bfd|default(False) %}
+{{ ospf_intf_params.append('use-bfd=yes') }}
+{%     endif %}
+
+{%     if ospf_intf_params|length > 0 %}
+/routing ospf interface add interface={{ l.ifname }} {{ ospf_intf_params|join(' ') }}
+{%     endif %}
+
+{%   endif %}
+
+{% endfor %}

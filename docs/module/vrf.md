@@ -18,9 +18,11 @@ VRFs are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  |
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
+* On Mikrotik RouterOS BGP configuration/implementation, a BGP VRF instance cannot have the same Router ID of the default one. The current configuration template uses the IP Address of the last interface in the VRF as instance Router ID.
 
 ## Parameters
 
@@ -180,7 +182,7 @@ BGP, OSPF, and IS-IS configuration modules are VRF aware:
 
 Notes:
 
-* VRF-specific OSPF and BGP configuration is included in the VRF  configuration templates.
+* VRF-specific OSPF and BGP configuration is included in the VRF configuration templates.
 * Connected subnets are always redistributed into the BGP VRF address family.
 * If a node has **bgp.as** parameter and VRF-specific OSPF instance(s), the VRF configuration templates configure two-way redistribution between VRF-specific OSPF instances and BGP VRF address family.
 
