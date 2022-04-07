@@ -83,7 +83,7 @@ def check_global_elements(topology: Box) -> None:
 
   for k in topology.keys():
     if not k in topo_elements:
-      common.error("Unknown top-level element %s" % k,category=common.IncorrectValue,module="topology")
+      common.error("Unknown top-level element %s, module not defined" % k,category=common.IncorrectValue,module="topology")
 #
 # Find virtualization provider, set provider and defaults.provider to that value
 #
