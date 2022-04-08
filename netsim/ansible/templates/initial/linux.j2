@@ -9,6 +9,38 @@ cat <<SCRIPT >/root/.bash_profile
 #
 export PS1="\h(bash)$ "
 SCRIPT
+
+# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+# This is annoying on a network with filtered DNS.
+# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+# Let's use that.
+
+# (Overwrite netplan config to remove DNS stuff)
+cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp6: false
+      optional: true
+SCRIPT
+netplan apply
+
+# (Overwrite resolved config to remove DNS stuff)
+cat <<SCRIPT > /etc/systemd/resolved.conf 
+[Resolve]
+DNS=
+FallbackDNS=
+Domains=
+DNSOverTLS=no
+Cache=yes
+DNSStubListener=yes
+SCRIPT
+
+systemctl restart systemd-resolved
+
 #
 # Build hosts file
 #
