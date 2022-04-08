@@ -47,7 +47,7 @@ def nodes_items(topology: Box) -> list:
         )
     return r
 
-def get_lan_intf_name(topology: Box, node_name, bridge_name) -> str:
+def get_lan_intf_name(topology: Box, node_name: str, bridge_name: str) -> str:
     for intf in topology.nodes[node_name].interfaces:
         if intf.get('bridge','') == bridge_name:
             return intf.ifname
