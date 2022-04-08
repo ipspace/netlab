@@ -23,7 +23,7 @@ from . import _TopologyOutput
 
 DEFAULT_NODE_ICON = "router"
 
-def nodes_items(topology: Box):
+def nodes_items(topology: Box) -> list:
     r = []
     for name,n in topology.nodes.items():
         node_icon = DEFAULT_NODE_ICON
@@ -47,13 +47,13 @@ def nodes_items(topology: Box):
         )
     return r
 
-def get_lan_intf_name(topology: Box, node_name, bridge_name):
+def get_lan_intf_name(topology: Box, node_name, bridge_name) -> str:
     for intf in topology.nodes[node_name].interfaces:
         if intf.get('bridge','') == bridge_name:
             return intf.ifname
     return "<unknown>"
 
-def links_items(topology: Box):
+def links_items(topology: Box) -> list:
     r = []
     for l in topology.links:
         # P2P Links
