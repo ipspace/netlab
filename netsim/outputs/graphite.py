@@ -19,6 +19,7 @@ import os
 from box import Box
 
 from .. import common
+from .. import data
 from . import _TopologyOutput
 
 DEFAULT_NODE_ICON = "router"
@@ -26,9 +27,9 @@ DEFAULT_NODE_ICON = "router"
 def nodes_items(topology: Box) -> list:
     r = []
     for name,n in topology.nodes.items():
-        node_icon = DEFAULT_NODE_ICON
-        if n.device == 'linux':
-            node_icon = 'server'
+        node_icon = ( data.get_from_box(n,'graphite.icon') or 
+            data.get_from_box(topology,f'defaults.devices.{n.device}.graphite.icon') or 
+            DEFAULT_NODE_ICON )
         node_group = "tier-1"
         node_as = n.get('bgp', {}).get('as')
         if node_as:
