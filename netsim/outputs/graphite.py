@@ -31,6 +31,7 @@ def nodes_items(topology: Box) -> list:
         node_icon = ( data.get_from_box(n,'graphite.icon') or 
             data.get_from_box(topology,f'defaults.devices.{n.device}.graphite.icon') or 
             DEFAULT_NODE_ICON )
+        graph_level = data.get_from_box(n,'graphite.level') or 1
         node_group = "tier-1"
         node_as = n.get('bgp', {}).get('as')
         if node_as:
@@ -42,7 +43,7 @@ def nodes_items(topology: Box) -> list:
                 "ipv4_address": n.mgmt.ipv4,
                 "group": node_group,
                 "labels": {
-                    "graph-level": 1,
+                    "graph-level": graph_level,
                     "graph-icon": node_icon,
                 },
             }
@@ -52,13 +53,21 @@ def nodes_items(topology: Box) -> list:
     for l in topology.links:
         if (l.type == "lan" and l.node_count != 2) or l.type == "stub":
             # Create fake node
+            # Inherit graph level and group from first node (l.interfaces[0].node)
+            node_item = topology.nodes[l.interfaces[0].node]
+            graph_level = data.get_from_box(node_item,'graphite.level') or 1
+            node_group = "tier-1"
+            node_as = node_item.get('bgp', {}).get('as')
+            if node_as:
+                node_group = "as{}".format(node_as)
             r.append(
                 {
                     'name': HOST_BRIDGE_NODE_NAME.format(type=l.type, index=l.linkindex),
                     'kind': "(host bridge: {})".format(l.bridge),
                     "ipv4_address": '',
+                    "group": node_group,
                     "labels": {
-                        "graph-level": 1,
+                        "graph-level": graph_level,
                         "graph-icon": 'expand',
                     },
                 }
