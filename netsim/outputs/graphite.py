@@ -23,6 +23,7 @@ from .. import data
 from . import _TopologyOutput
 
 DEFAULT_NODE_ICON = "router"
+HOST_BRIDGE_NODE_NAME = "({type}:{index})"
 
 def nodes_items(topology: Box) -> list:
     r = []
@@ -46,6 +47,22 @@ def nodes_items(topology: Box) -> list:
                 },
             }
         )
+    # Special Case:
+    # Create a fake node to identify a host bridge, in case there are 1 or more than 2 nodes attached to it.
+    for l in topology.links:
+        if (l.type == "lan" and l.node_count != 2) or l.type == "stub":
+            # Create fake node
+            r.append(
+                {
+                    'name': HOST_BRIDGE_NODE_NAME.format(type=l.type, index=l.linkindex),
+                    'kind': "(host bridge: {})".format(l.bridge),
+                    "ipv4_address": '',
+                    "labels": {
+                        "graph-level": 1,
+                        "graph-icon": 'expand',
+                    },
+                }
+            )
     return r
 
 def get_lan_intf_name(topology: Box, node_name: str, bridge_name: str) -> str:
@@ -67,10 +84,10 @@ def links_items(topology: Box) -> list:
                     "target_endpoint": l.right.ifname
                 }
             )
-        # For now threat LAN Links like a P2P, using only the first two interfaces 
-        # TODO: verify additional behaviour
-        elif l.type == "lan":
-            if l.node_count > 1:
+        elif l.type == "lan" or l.type == "stub":
+            # If LAN link have only two interfaces in it, treat it like a P2P
+            # - Else, in nodes_items create a fake item that represents the host bridge, and attach the devices to it.
+            if l.type == "lan" and l.node_count == 2:
                 r.append(
                     {
                         "source": l.interfaces[0].node,
@@ -79,6 +96,18 @@ def links_items(topology: Box) -> list:
                         "target_endpoint": get_lan_intf_name(topology, l.interfaces[1].node, l.bridge),
                     }
                 )
+            else:
+                bridge_node_name = HOST_BRIDGE_NODE_NAME.format(type=l.type, index=l.linkindex)
+                for bridge_intf in l.interfaces:
+                    # Create an attachment
+                    r.append(
+                        {
+                            "source": bridge_node_name,
+                            "source_endpoint": "",
+                            "target": bridge_intf.node,
+                            "target_endpoint": get_lan_intf_name(topology, bridge_intf.node, l.bridge),
+                        }
+                    )
     return r
 
 class Graphite(_TopologyOutput):
