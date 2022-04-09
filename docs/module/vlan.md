@@ -31,7 +31,8 @@ The following parameters can be set globally or per node:
 
 * **vlans**: A dictionary of VLAN definitions (see below)
 * **vlan.mode**: The default VLAN forwarding mode (**route**, **bridge**, or **irb**).
-* **vlan.start_id**: This global value specifies the first auto-assigned VLAN ID (default: 1000).
+* **vlan.start_vlan_id**: This global value specifies the first auto-assigned VLAN ID (default: 1000).
+* **vlan.start_vni**: This global value specifies the first auto-assigned VNI (default: 1000).
 
 (module-vlan-definition)=
 ## VLAN Definition
