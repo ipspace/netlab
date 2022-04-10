@@ -1,0 +1,43 @@
+{% import "dellos10.macro.j2" as bgpcfg %}
+!
+router bgp {{ bgp.as }}
+  log-neighbor-changes
+
+{% if bgp.router_id|ipv4 %}
+  router-id {{ bgp.router_id }}
+{% endif %}
+{% if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
+  cluster-id {{ bgp.rr_cluster_id }}
+{% endif %}
+{% if bgp.rr|default('') %}
+  client-to-client reflection
+{% endif %}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     bgpcfg.neighbor(n,n[af],bgp) }}
+{%   endfor %}
+{% endfor %}
+!
+{% for af in ['ipv4','ipv6'] %}
+{%   if bgp[af] is defined %}
+!
+ address-family {{ af }} unicast
+!
+{%     if loopback[af] is defined and bgp.advertise_loopback %}
+  network {{ loopback[af]|ipaddr('0') }}
+{%     endif %}
+!
+{%     for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+  network {{ l[af]|ipaddr('0') }}
+{%     endfor %}
+!
+{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+  network {{ pfx|ipaddr('0') }}
+{%     endfor %}
+!
+{%   endif %}
+{% endfor %}
+!
+{% for pfx in bgp.originate|default([]) %}
+ip route {{ pfx|ipaddr('0') }} interface null 0
+{% endfor %}

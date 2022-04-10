@@ -1,0 +1,52 @@
+{#
+  Define a BGP neighbor
+#}
+{% macro neighbor(n,ip,bgp) %}
+!
+  neighbor {{ ip }}
+    remote-as {{ n.as }}
+    description "{{ n.name }}"
+{%     if n.type == 'ibgp' %}
+    update-source loopback0
+{%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
+{#
+  In Dell OS10, next-hop-self is configured under AF
+#}
+{%         for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+!
+ address-family {{ af }} unicast
+   next-hop-self
+ exit
+{%         endfor %}
+
+{%       endif %}
+{%       if bgp.rr|default('') and not n.rr|default('') %}
+    route-reflector-client
+{%       endif %}
+{%       if bgp.community.ibgp|default([]) %}
+{%         if "extended" in bgp.community.ibgp|default([]) %}
+    send-community extended
+{%         else %}
+    send-community standard
+{%         endif %}
+{%       endif %}
+{%   else %}
+{%       if bgp.community.ebgp|default([]) %}
+{%         if "extended" in bgp.community.ebgp|default([]) %}
+    send-community extended
+{%         else %}
+    send-community standard
+{%         endif %}
+{%       endif %}
+{%     endif %}
+
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+!
+ address-family {{ af }} unicast
+   activate
+ exit
+{% endfor %}
+  
+  no shutdown
+  exit
+{%- endmacro %}
