@@ -1,0 +1,45 @@
+---
+defaults:
+  device: dellos10
+
+vrfs:
+  common:
+    import: [ red, blue, common ]
+  blue:
+    import: [ blue, common ]
+  red:
+    import: [ red, common ]
+
+
+nodes:
+  core1:
+    module: [ bgp, ospf, vrf ]
+    bgp.as: 65000
+  aggr1:
+    module: [ ospf ]
+  aggr2:
+    module: [ bgp ]
+    bgp.as: 65111
+    bgp.originate: [ 100.64.0.0/24 ]
+  host1:
+    module: []
+    device: linux
+  host2:
+    module: []
+    device: linux
+  server:
+    module: []
+    device: linux
+
+links:
+- core1: { vrf: red }
+  aggr1:
+- core1: { vrf: blue }
+  aggr2:
+- aggr1:
+  host1:
+  ospf.cost: 22
+- aggr2:
+  host2:
+- core1: { vrf: common }
+  server:

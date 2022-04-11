@@ -1,0 +1,24 @@
+{% import "dellos10.bgp-macro.j2" as bgpcfg %}
+!
+router bgp {{ bgp.as }}
+{% for vname,vdata in vrfs.items() %}
+!
+ vrf {{ vname }}
+  router-id {{ bgp.router_id }}
+
+{%   for n in vdata.bgp.neighbors|default([]) %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{       bgpcfg.neighbor(n,n[af],bgp) }}
+{%     endfor %}
+{%   endfor %}
+
+{%   for af in ['ipv4','ipv6'] if vdata.af[af] is defined %}
+!
+ address-family {{ af }} unicast
+   redistribute connected
+{%     if 'ospf' in vdata %}
+   redistribute ospf {{ vdata.vrfidx }}
+{%     endif %}
+{%   endfor %}
+
+{% endfor %}

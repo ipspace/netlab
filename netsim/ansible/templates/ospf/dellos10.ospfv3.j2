@@ -1,0 +1,30 @@
+router ospfv3 {{ pid }}
+ router-id {{ ospf.router_id }}
+{% if ospf.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+
+!
+{% if 'ipv6' in loopback %}
+interface loopback0
+ ipv6 ospf {{ pid }} area {{ ospf.area }}
+{% endif %}
+!
+{% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
+interface {{ l.ifname }}
+! {{ l.name|default("") }}
+ ipv6 ospf {{ pid }} area {{ l.ospf.area }}
+{%   if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
+ ipv6 ospf network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+ ipv6 ospf cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+ ipv6 ospf bfd all-neighbors
+{%   endif %}
+{%   if l.ospf.passive|default(False) %}
+ ipv6 ospf passive
+{%   endif %}
+!
+{% endfor %}

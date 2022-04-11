@@ -1,0 +1,68 @@
+hostname {{ inventory_hostname.replace("_","-") }}
+!
+lldp enable
+!
+{% if vrfs is defined %}
+{% include 'dellos10.vrf.j2' %}
+{% endif %}
+!
+{% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) and v.loopback.ipv4 is defined %}
+ip host {{ k|replace('_','') }} {{ v.loopback.ipv4|ipaddr('address') }}
+{% endfor %}
+!
+{% if mtu is defined %}
+!
+default mtu {{ mtu }}
+{% endif %}
+!
+interface loopback0
+{% if 'ipv4' in loopback %}
+ ip address {{ loopback.ipv4 }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 address {{ loopback.ipv6 }}
+{% endif %}
+!
+interface {{ mgmt.ifname|default('mgmt1/1/1') }}
+ no lldp transmit
+ no lldp receive
+!
+{% for l in interfaces|default([]) %}
+interface {{ l.ifname }}
+ no shutdown
+ no switchport
+{% if l.vrf is defined %}
+ ip vrf forwarding {{ l.vrf }}
+{% endif %}
+{% if l.mtu is defined %}
+ mtu {{ l.mtu }}
+{% endif %}
+{% if l.name is defined %}
+ description "{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}"
+{% elif l.type|default("") == "stub" %}
+ description "Stub interface"
+{% endif %}
+{#
+    Set interface IPv4 addresses
+#}
+{% if 'ipv4' in l %}
+{%   if l.ipv4|ipv4 %}
+ ip address {{ l.ipv4 }}
+{%   else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%   endif %}
+{% endif %}
+{#
+    Set interface IPv6 addresses
+#}
+{% if 'ipv6' in l %}
+{%   if l.ipv6 == True %}
+ ipv6 enable
+{%   elif l.ipv6|ipv6 %}
+ ipv6 address {{ l.ipv6 }}
+{%   else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%   endif %}
+{% endif %}
+!
+{% endfor %}

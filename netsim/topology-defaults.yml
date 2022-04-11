@@ -33,7 +33,7 @@ attributes:
 # Built-in module defaults
 #
 bgp:
-  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none ]
+  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none, dellos10 ]
   ebgp_role: external
   advertise_roles: [ stub ]
   advertise_loopback: True
@@ -60,7 +60,7 @@ isis:
 
 ospf:
   area: 0.0.0.0
-  supported_on: [ arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none ]
+  supported_on: [ arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none, dellos10 ]
   attributes:
     global: [ af, area, process, reference_bandwidth, bfd ]
     node: [ af, area, process, reference_bandwidth, bfd, router_id ]
@@ -111,7 +111,7 @@ evpn: # Enables the EVPN address family towards BGP peers
     global: [ use_ibgp ]
 
 vrf: # Basic VRF support
-  supported_on: [ eos, iosv, csr, routeros ]
+  supported_on: [ eos, iosv, csr, routeros, dellos10 ]
   as: 65000
   attributes:
     global: [ as ]
@@ -623,6 +623,24 @@ devices:
       ansible_user: vagrant
       ansible_ssh_pass: vagrant
   graphite.icon: router
+
+  dellos10:
+    interface_name: ethernet1/1/%d
+    mgmt_if: mgmt1/1/1
+    libvirt:
+      image: dell/os10
+      create:
+        virt-install --connect=qemu:///system --name=vm_box --arch=x86_64 --cpu host --vcpus=2 --hvm
+          --ram=2048 --network=network:vagrant-libvirt,model=virtio --graphics none --import
+          --disk path=vm.qcow2,format=qcow2,bus=sata
+          --disk path=hdb_OS10-installer.qcow2,format=qcow2,bus=virtio
+          --disk path=hdc_OS10-platform-S4128F.qcow2,format=qcow2,bus=virtio
+    group_vars:
+      ansible_network_os: dellos10
+      ansible_connection: network_cli
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+  graphite.icon: switch
 
   routeros:
     interface_name: ether%d

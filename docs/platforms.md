@@ -18,6 +18,7 @@ The following virtual network devices are supported by *netsim-tools*:
 | Nokia SR Linux                            | srlinux            |
 | Nokia SR OS [❗](caveats.html#nokia-sr-os) | sros               |
 | VyOS                                      | vyos               |
+| Dell OS10                                 | dellos10           |
 
 **Notes:**
 
@@ -69,6 +70,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
 | Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
 | VyOS                                               |          ✅           |              ❌               |            ❌             |
+| Dell OS10                                          |          ✅           |              ❌               |            ❌             |
 
 Configuration files for Virtualbox and KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
 
@@ -85,6 +87,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Juniper vSRX 3.0           | vsrx               |    2 |   4096 | 
 | Mikrotik CHR RouterOS      | routeros           |    1 |    256 |
 | VyOS                       | vyos               |    2 |   1024 |
+| Dell OS10                  | vyos               |    2 |   2048 |
 
 ## Configuration Deployments
 
@@ -104,6 +107,7 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Nokia SR Linux        |          ✅           |           ❌           |
 | Nokia SR OS           |          ✅           |           ❌           |
 | VyOS                  |          ✅           |           ✅           |
+| Dell OS10             |          ✅           |           ✅           |
 
 ## Initial Device Configurations
 
@@ -124,6 +128,7 @@ The following system-wide features are configured on supported network operating
 | Nokia SR OS           |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Mikrotik CHR RouterOS |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-chr-routeros) |             ✅              |             ✅              |
+| Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
@@ -142,6 +147,7 @@ The following interface parameters are configured on supported network operating
 | Nokia SR Linux        |            ✅              |            ❌            | ❌ |
 | Nokia SR OS           |            ✅              |            ❌            | ❌ |
 | VyOS                  |            ✅              |            ❌            | ✅ |
+| Dell OS10             |            ✅              |            ❌            | ✅ |
 
 
 The following interface addresses are supported on various platforms:
@@ -161,6 +167,7 @@ The following interface addresses are supported on various platforms:
 | Nokia SR Linux        |          ✅          |          ✅          |             ❌              |
 | Nokia SR OS           |          ✅          |          ✅          |             ✅              |
 | VyOS                  |          ✅          |          ✅          |             ❌              |
+| Dell OS10             |          ✅          |          ✅          |             ❌              |
 
 ## Supported Configuration Modules
 
@@ -182,6 +189,7 @@ Individual **netsim-tools** [configuration modules](module-reference.md) are sup
 | Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
 | Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
 | VyOS                  | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
+| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
 
 ## IPv6 Support
 
@@ -203,3 +211,4 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | VyOS                  |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |

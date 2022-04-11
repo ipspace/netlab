@@ -42,6 +42,7 @@ The following table describes per-platform support of individual router-level OS
 | Nokia SR Linux           |   ✅  |            ✅          |   ❌   |  ✅  |
 | Nokia SR OS              |   ✅  |            ✅          |   ❌   |  ✅  |
 | VyOS                     |   ✅  |            ✅          |   ✅   |  ✅  |
+| Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
 
 **Notes:**
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
@@ -64,9 +65,10 @@ The following table documents the interface-level OSPF features:
 | Nokia SR Linux           |   ✅  |         ✅        |             ❌            |            ✅           |
 | Nokia SR OS              |   ✅  |         ✅        |             ✅            |            ✅           |
 | VyOS                     |   ✅  |         ✅        |             ❌            |            ✅           |
+| Dell OS10                |   ✅  |         ✅        |             ❌            |            ✅           |
 
 Notes:
-* Arista EOS, Cisco Nexus OS, and SR Linux support point-to-point and broadcast network types. Other network types will not be configured.
+* Arista EOS, Cisco Nexus OS, SR Linux and Dell OS10 support point-to-point and broadcast network types. Other network types will not be configured.
 * SR OS supports point-to-point, broadcast and non-broadcast network types. Point-to-multipoint network type will not be configured.
 * Cisco IOSv (release 15.x) does not support unnumbered IPv4 interfaces
 * FRR does not support passive interfaces with OSPFv3
