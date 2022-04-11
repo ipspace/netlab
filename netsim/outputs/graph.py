@@ -11,16 +11,16 @@ from .. import common
 from . import _TopologyOutput
 
 def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Optional[str] = '') -> None:
-  f.write('%s  %s [\n' % (indent,n.name))
+  f.write('%s  "%s" [\n' % (indent,n.name))
   f.write('%s    label=<%s [%s]<br /><sub>%s</sub>>\n' % (indent,n.name,n.device,n.loopback.ipv4 or n.loopback.ipv6 or ""))
   f.write('%s    fillcolor="%s"\n' % (indent,settings.colors.get('node','#ff9f01')))
   f.write('%s  ]\n' % indent)
 
-def network_with_label(f : typing.TextIO, n: Box, settings: Box) -> None:
-  f.write('  %s [' % n.bridge)
-  f.write(' style=filled fillcolor="%s" fontsize=11' % settings.colors.get("stub","#d1bfab"))
+def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Optional[str] = '') -> None:
+  f.write('%s  "%s" [' % (indent,n.bridge))
+  f.write('style=filled fillcolor="%s" fontsize=11' % (settings.colors.get("stub","#d1bfab")))
   f.write(' label="%s"' % (n.prefix.ipv4 or n.prefix.ipv6 or n.bridge))
-  f.write(" ]\n")
+  f.write("]\n")
 
 def edge_label(f : typing.TextIO, direction: str, data: Box) -> None:
   addr = data.ipv4 or data.ipv6
@@ -28,7 +28,7 @@ def edge_label(f : typing.TextIO, direction: str, data: Box) -> None:
     f.write(' %slabel="%s"' % (direction,addr))
 
 def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
-  f.write(' %s -- %s' % (l.left.node, l.right.node))
+  f.write(' "%s" -- "%s"' % (l.left.node, l.right.node))
   f.write(' [')
   if labels:
     edge_label(f,'tail',l[l.left.node])
@@ -36,7 +36,7 @@ def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -
   f.write(' ]\n')
 
 def edge_node_net(f : typing.TextIO, l: Box, k: str, labels: typing.Optional[bool] = False) -> None:
-  f.write(" %s -- %s" % (k,l.bridge))
+  f.write(' "%s" -- "%s"' % (k,l.bridge))
   f.write(' [')
   if labels:
     edge_label(f,'tail',l[k])
@@ -120,7 +120,7 @@ def bgp_session(f : typing.TextIO, node: Box, session: Box, settings: Box, rr_se
       if not 'rr' in node.bgp and 'rr' in session:
         arrow_dir = 'back'
 
-  f.write("  %s -- %s" % (node.name,session.name))
+  f.write('  "%s" -- "%s"' % (node.name,session.name))
   f.write('  [\n')
   if session.type == 'ibgp':
     f.write('    color="%s"\n' % settings.colors.get('ibgp','#613913'))
