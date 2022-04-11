@@ -15,6 +15,7 @@ BFD is supported on these platforms:
 | Nokia SR Linux        | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
 | VyOS                  |  ❌  | ✅  | ✅  |
+| Dell OS10             |  ❌  | ✅  | ❌  |
 
 **Notes:**
 * Junos configuration template configures BFD timers within routing protocol configuration, not in individual interfaces

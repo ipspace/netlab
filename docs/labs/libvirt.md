@@ -14,6 +14,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Juniper vSRX 3.0       | juniper/vsrx3               |
 | VyOS                   | vyos/vyos                   |
 | Mikrotik CHR RouterOS  | mikrotik/chr                |
+| Dell OS10              | dell/os10                   |
 
 The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
 
@@ -33,6 +34,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 * [Juniper vSRX 3.0](vsrx.md)
 * [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org)
+* [Dell OS10](dellos10.md)
 
 **Notes:**
 
