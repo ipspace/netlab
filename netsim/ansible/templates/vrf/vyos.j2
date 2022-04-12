@@ -1,0 +1,31 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+configure
+
+# Enter vrf sublevel
+{% for vname,vdata in vrfs.items() %}
+edit vrf name {{ vname }}
+
+{% if bgp.as is defined %}
+{% include 'vyos.bgp.j2' %}
+{% endif %}
+
+{% if 'ospf' in vdata %}
+{% include 'vyos.ospfv2-vrf.j2' %}
+{% endif %}
+
+# Back to root level
+top
+{% endfor %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit

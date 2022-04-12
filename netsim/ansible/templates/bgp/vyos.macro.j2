@@ -1,0 +1,31 @@
+{#
+  Define a BGP neighbor
+#}
+{% macro neighbor(n,ip,bgp) %}
+set protocols bgp neighbor {{ ip }} remote-as {{ n.as }}
+set protocols bgp neighbor {{ ip }} description '{{ n.name }}'
+ 
+{%   if n.type == 'ibgp' %}
+set protocols bgp neighbor {{ ip }} update-source dum0
+{%   endif %}
+{%- endmacro %}
+{#
+   Address family BGP neighbor definition
+#}
+{% macro neighbor_af(n,ip,bgp,af) %}
+
+set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast
+
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast nexthop-self
+{%   endif %}
+{%   if bgp.rr|default('') and not n.rr|default('') %}
+  set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast route-reflector-client
+{%   endif %}
+{%- endmacro -%}
+{#
+   BGP network statement
+#}
+{% macro bgp_network(af,pfx) %}
+set protocols bgp address-family {{ af }}-unicast network {{ pfx|ipaddr('0') }}
+{%- endmacro %}
