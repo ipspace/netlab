@@ -1,0 +1,32 @@
+
+{% if vdata.ospf.router_id|ipv4 or ospf.router_id|ipv4 %}
+set protocols ospf parameters router-id {{ vdata.ospf.router_id|default(ospf.router_id) }}
+{% endif %}
+
+set protocols ospf redistribute connected
+{% if bgp.as is defined %}
+set protocols ospf redistribute bgp
+{% endif %}
+
+{% if ospf.reference_bandwidth is defined %}
+set protocols ospf auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+
+{% for l in vdata.ospf.interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
+
+set protocols ospf interface {{ l.ifname }} area {{ l.ospf.area }}
+
+{%   if l.ospf.passive|default(False) %}
+set protocols ospf interface {{ l.ifname }} passive
+{%   endif %}
+{%   if l.ospf.network_type is defined %}
+set protocols ospf interface {{ l.ifname }} network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+set protocols ospf interface {{ l.ifname }} cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+set protocols ospf interface {{ l.ifname }} bfd
+{%   endif %}
+
+{% endfor %}

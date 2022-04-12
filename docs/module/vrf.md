@@ -20,6 +20,7 @@ VRFs are supported on these platforms:
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅  | ✅  | ✅  |
+| VyOS                  | ✅  | ✅  | ✅  |
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
