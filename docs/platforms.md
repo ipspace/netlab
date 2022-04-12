@@ -210,5 +210,5 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
-| VyOS                  |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| VyOS                  |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
