@@ -1,0 +1,15 @@
+{% for af in ['ipv4','ipv6'] if mpls.vpn[af] is defined %}
+{%   set vpnaf = 'vpn' + af.replace('ip','') %}
+{%   for n in bgp.neighbors if n[vpnaf] is defined %}
+# Activate BGP AFI {{ vpnaf }} -> {{ af }}-vpn for VyOS NEIGH: {{ n[vpnaf] }}
+set protocols bgp neighbor {{ n[vpnaf] }} address-family {{ af }}-vpn
+
+{%     if bgp.next_hop_self is defined and bgp.next_hop_self %}
+set protocols bgp neighbor {{ n[vpnaf] }} address-family {{ af }}-vpn nexthop-self
+{%     endif %}
+{%     if bgp.rr|default('') and not n.rr|default('') %}
+set protocols bgp neighbor {{ n[vpnaf] }} address-family {{ af }}-vpn route-reflector-client
+{%     endif %}
+
+{%   endfor %}
+{% endfor %}

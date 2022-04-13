@@ -1,0 +1,23 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+configure
+
+# MPLS: {{ mpls }}
+{% if ldp is defined %}
+{%   include 'vyos.ldp.j2' +%}
+{% endif %}
+{% if mpls.vpn is defined %}
+{%   include 'vyos.mplsvpn.j2' +%}
+{% endif %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit

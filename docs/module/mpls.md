@@ -27,6 +27,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Cisco IOS             |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOS XE          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik CHR RouterOS |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
@@ -40,6 +41,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Cisco IOS             |   ✅   |    ✅   |    ❌    |
 | Cisco IOS XE          |   ✅   |    ✅   |    ❌    |
 | Mikrotik CHR RouterOS |   ❌   |    ❌   |    ❌    |
+| VyOS                  |   ❌   |    ❌   |    ❌    |
 
 **Notes**
 * Cisco IOS merges labeled and unlabeled BGP routes.
@@ -54,6 +56,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Cisco IOS             |   ✅  |   ✅  |
 | Cisco IOS XE          |   ✅  |   ✅  |
 | Mikrotik CHR RouterOS |   ✅  |   ❌  |
+| VyOS                  |   ✅  |   ✅  |
 
 **Notes**
 * VPNv4 and VPNv6 address families are enabled on IPv4 IBGP/EBGP sessions
