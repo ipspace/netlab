@@ -25,6 +25,22 @@ from . import _TopologyOutput
 DEFAULT_NODE_ICON = "router"
 HOST_BRIDGE_NODE_NAME = "({type}:{index})"
 
+short_ifname_lookup = {
+    'GigabitEthernet': 'ge',
+    'Ethernet': 'eth',
+    'ethernet': 'eth',
+    'ether': 'eth'
+}
+
+def short_ifname(n : str) -> str:
+    global short_ifname_lookup
+
+    for long_name in short_ifname_lookup.keys():
+        if long_name in n:
+            return n.replace(long_name,short_ifname_lookup[long_name],1)
+
+    return n
+
 def nodes_items(topology: Box) -> list:
     r = []
     for name,n in topology.nodes.items():
@@ -77,7 +93,7 @@ def nodes_items(topology: Box) -> list:
 def get_lan_intf_name(topology: Box, node_name: str, bridge_name: str) -> str:
     for intf in topology.nodes[node_name].interfaces:
         if intf.get('bridge','') == bridge_name:
-            return intf.ifname
+            return short_ifname(intf.ifname)
     return "<unknown>"
 
 def links_items(topology: Box) -> list:
@@ -88,9 +104,9 @@ def links_items(topology: Box) -> list:
             r.append(
                 {
                     "source": l.left.node,
-                    "source_endpoint": l.left.ifname,
+                    "source_endpoint": short_ifname(l.left.ifname),
                     "target": l.right.node,
-                    "target_endpoint": l.right.ifname
+                    "target_endpoint": short_ifname(l.right.ifname)
                 }
             )
         elif l.type == "lan" or l.type == "stub":
