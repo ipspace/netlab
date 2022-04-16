@@ -30,11 +30,11 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 * [Cisco IOSv](iosv.md)
 * [Cisco CSR](csr.md)
 * [Cisco Nexus OS](nxos.md)
+* [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
 * [Juniper vSRX 3.0](vsrx.md)
 * [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org)
-* [Dell OS10](dellos10.md)
 
 **Notes:**
 
@@ -47,6 +47,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
    :hidden:
 
    csr.md
+   dellos10.md
    eos.md
    iosv.md
    nxos.md

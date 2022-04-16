@@ -11,6 +11,7 @@ This configuration module implements the VRF planning and configuration logic an
 
 ## Platform Support
 
+(module-vrf-platform-support)=
 VRFs are supported on these platforms:
 
 | Operating system      | VRF<br />config | Route<br />leaking | VRF-aware<br />OSPF | VRF-aware<br />BGP |

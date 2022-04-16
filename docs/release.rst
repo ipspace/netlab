@@ -1,7 +1,16 @@
 Release notes
 =============
 
-2022-04-01 (release 1.2)
+2022-04-16 (release 1.2.1)
+ * Graphite GUI
+ * Dell OS10 on *libvirt*
+ * VRFs, MPLS, and MPLS/VPN on Mikrotik RouterOS and VyOS
+ * Containerlab support for Cumulus NVUE
+ * VRF Lite on Cumulus NVUE
+
+ :doc:`More details <release/1.2>`
+
+2022-04-01 (release 1.2.0)
   * VRF definitions and layer-3 VRFs
   * VRF-aware OSPF, IS-IS and BGP
   * Traditional MPLS with LDP

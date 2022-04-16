@@ -55,16 +55,18 @@ See [lab topology overview](topology-overview.md) for more details.
 
 You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings).
 
+(platform-provider-support)=
 | Virtual network device                             | Vagrant<br />Libvirt |   Vagrant<br />Virtualbox    |       Containerlab       |
 | -------------------------------------------------- | :------------------: | :--------------------------: | :----------------------: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
-| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
+| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.md#cumulus-linux-in-containerlab) |
+| Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.md#cumulus-linux-in-containerlab) |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
-| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
-| Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
+| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.md#frr)   |
+| Generic Linux (Ubuntu/Alpine)[❗](caveats.md#generic-linux) |          ✅           |              ✅               |            ✅             |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
 | Mikrotik CHR RouterOS                              |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
@@ -149,7 +151,6 @@ The following interface parameters are configured on supported network operating
 | VyOS                  |            ✅              |            ❌            | ✅ |
 | Dell OS10             |            ✅              |            ❌            | ✅ |
 
-
 The following interface addresses are supported on various platforms:
 
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | 
@@ -171,25 +172,42 @@ The following interface addresses are supported on various platforms:
 
 ## Supported Configuration Modules
 
-Individual **netsim-tools** [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings).
+(platform-routing-support)=
+Routing protocol [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
 
-| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | SR-MPLS |
-| --------------------- | :--: | :---: | :---: | :-: | :-: | :-----: |
-| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅ |    ✅   |
-| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ❌    |
-| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ✅   |
-| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅ |    ❌    |
-| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  |    ❌    |
-| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |    ❌    |
-| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |    ❌    |
-| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  |    ❌    |
-| Generic Linux         |  ❌   |   ❌   |   ❌   |   ❌  |  ❌  |    ❌    |
-| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅    |
-| Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
-| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
-| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  |    ✅   |
-| VyOS                  | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
-| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  |    ❌    |
+| Operating system      | OSPF | IS-IS | EIGRP | BGP |
+| --------------------- | :--: | :---: | :---: | :-: |
+| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  |
+| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  |
+| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  |
+| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  |
+| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |
+| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |
+| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |
+| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |
+| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  |
+| Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  |
+| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  |
+| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  |
+| VyOS                  | ✅   |   ❌   |   ❌   | ✅  |
+| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  |
+
+(platform-module-support)=
+Additional [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
+
+| Operating system      | BFD | VRF | MPLS | SR-MPLS | SRv6 |
+| --------------------- | :-: | :-: | :--: | :-----: | :--: |
+| Arista EOS            | ✅  | ✅  | ✅   |    ✅   |  ❌   |
+| Cisco IOS             | ✅  | ✅  | ✅   |    ❌    |  ❌   |
+| Cisco IOS XE          | ✅  | ✅  | ✅   |    ✅   |  ❌   |
+| Cisco Nexus OS        | ✅  |  ❌  |  ❌   |    ❌    |  ❌   |
+| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.md#platform-support)| ❌  |   ❌    |  ❌   |
+| Juniper vSRX 3.0      | ✅  |  ❌  |  ❌   |    ✅   |  ❌   |
+| Mikrotik CHR RouterOS | ✅  | ✅  | ✅   |    ❌    |  ❌   |
+| Nokia SR Linux        | ✅  |  ❌  |  ❌   |    ✅   |  ❌   |
+| Nokia SR OS           | ✅  |  ❌  |  ❌   |    ✅   |  ✅   |
+| VyOS                  | ✅  | ✅  | ✅   |    ❌    |  ❌   |
+| Dell OS10             | ✅  | ✅  |   ❌  |    ❌    |  ❌   |
 
 ## IPv6 Support
 

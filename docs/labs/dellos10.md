@@ -8,8 +8,9 @@ Dell provides the OS10 Virtual image as a set of vmdk and gns3a files to be used
 
 To prepare for the build:
 
+* Download OS10 files into `/tmp` directory
 * Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
-* QEMU Covert these 3 files:
+* Convert these *vmdk* files into *qcow2* format with *qemu-img* utility:
   * OS10-Disk-1.0.0.vmdk
   * OS10-Installer-`<VERSION>`.vmdk
   * OS10-platform-S4128F-`<VERSION>`.vmdk
