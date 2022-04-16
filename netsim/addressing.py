@@ -69,6 +69,13 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
 
   return pfx
 
+def rebuild_prefix(pfx: typing.Union[dict,Box]) -> dict:
+  out_pfx = {}
+  for af in ('ipv4','ipv6'):
+    if af in pfx:
+      out_pfx[af] = str(pfx[af])
+  return out_pfx
+
 def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
   addrs = addr_pools or Box({},default_box=True)
   defaults = defaults or Box({},default_box=True)

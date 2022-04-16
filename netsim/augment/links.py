@@ -268,6 +268,8 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> di
     pools = [ link.get('role') ] + pools
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
+    if isinstance(link.prefix,str):
+      link.prefix = addressing.rebuild_prefix(pfx_list)
   elif 'unnumbered' in link:
     pfx_list = Box({ 'unnumbered': True })
   else:
