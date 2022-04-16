@@ -13,14 +13,15 @@ This configuration module implements the VRF planning and configuration logic an
 
 VRFs are supported on these platforms:
 
-| Operating system      | VRF configuration | VRF-aware OSPF | VRF-aware BGP |
-| --------------------- | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  |
-| Cisco IOS             | ✅  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  |
-| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  |
-| Dell OS10             | ✅  | ✅  | ✅  |
-| VyOS                  | ✅  | ✅  | ✅  |
+| Operating system      | VRF<br />config | Route<br />leaking | VRF-aware<br />OSPF | VRF-aware<br />BGP |
+| --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS             | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XE          | ✅  | ✅  | ✅  | ✅  |
+| Dell OS10             | ✅  | ✅  | ✅  | ✅  |
+| Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |
+| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |
+| VyOS                  | ✅  | ✅  | ✅  | ✅  |
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
