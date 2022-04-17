@@ -1,10 +1,14 @@
 # VLANs
 
-The VLAN configuration module implements VLANs and VLAN-related interfaces, including:
+The VLAN configuration module implements VLANs and VLAN-related interfaces. Initial implementation supports:
 
-* Bridging-only VLANs
+* Access VLANs
 * VLAN interfaces (integrated routing and bridging)
-* Routed subinterfaces (TBD)
+* Bridging-only VLANs
+
+The following features are currently _on the radar_:
+
+* Routed subinterfaces
 * Access and trunk ports
 * Native VLAN
 
@@ -19,18 +23,18 @@ The VLAN configuration module implements VLANs and VLAN-related interfaces, incl
 
 VLANs are supported on these platforms:
 
-| Operating system      | VLAN interfaces | Subinterfaces | Trunk ports | Native VLAN |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ❌  | ✅  | ✅  |
-| Cisco IOS             | ✅  | ❌  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ❌  | ✅  | ✅  |
+| Operating system      | Access<br>VLANs | VLAN<br>interfaces | Routed<br>subinterfaces | Trunk<br>ports | Native<br>VLAN |
+| --------------------- | :-: | :-: |:-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ❌   | ❌   | ❌   |
+| Cisco IOS             | ✅  | ✅  | ❌   | ❌   | ❌   |
+| Cisco IOS XE          | ✅  | ✅  | ❌   | ❌   | ❌   |
 
 ## Parameters
 
 The following parameters can be set globally or per node:
 
 * **vlans**: A dictionary of VLAN definitions (see below)
-* **vlan.mode**: The default VLAN forwarding mode (**route**, **bridge**, or **irb**).
+* **vlan.mode**: The default VLAN forwarding mode (<!-- **route**, -->**bridge** or **irb**).
 * **vlan.start_vlan_id**: This global value specifies the first auto-assigned VLAN ID (default: 1000).
 * **vlan.start_vni**: This global value specifies the first auto-assigned VNI (default: 1000).
 
@@ -56,7 +60,7 @@ Empty VLAN definition will get [default values](default-vlan-values) assigned du
 (default-vlan-values)=
 ## Default VLAN Values
 
-VLAN definitions without **id** attribute will get a VLAN ID assigned automatically. The first auto-assigned VLAN ID is specified in the **vlan.start_id** global attribute; ID assignment process skips IDs assigned to existing VLANs.
+VLAN definitions without **id** or **vni** attribute will get a VLAN ID or VNI assigned automatically. The first auto-assigned VLAN ID is specified in the **vlan.start_id** global attribute; ID assignment process skips IDs assigned to existing VLANs.
 
 (module-vlan-interface)=
 ## Using VRFs on Interfaces and Links
@@ -64,6 +68,8 @@ VLAN definitions without **id** attribute will get a VLAN ID assigned automatica
 To use a VLAN on a link, add **vlan** dictionary to a link or an interface on a link. The VLAN dictionary may contain the following attributes:
 
 * **access** -- the name of access VLAN configured on the link or interface
+
+<!--
 * **native** -- the name of native VLAN configured on a trunk port
 * **mode** -- the default VLAN forwarding mode (route/bridge/irb) for this link or interface -- overrides the node- or global forwarding mode
 * **trunk** -- a list or dictionary of VLANs configured on a trunk port
@@ -75,21 +81,21 @@ A VLAN within a **trunk** dictionary can have these attributes:
 * **mode** -- forwarding mode (route/bridge/irb)
 * **ipv4** -- IPv4 address to use on VLAN interface or routed subinterface
 * **ipv6** -- IPv6 address to use on VLAN interface or routed subinterface
-
+-->
 (module-vlan-creating-interfaces)=
 ## Creating VLAN Interfaces and Routed Subinterfaces
 
-VLAN interfaces and routed subinterfaces are created on-demand based on these rules:
+VLAN interfaces <!-- and routed subinterfaces -->are created on-demand based on these rules:
 
 * A VLAN interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node.
-* A routed subinterface is created on every interface that has a VLAN with **mode** set to *route*.
-* Routed subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*.
+<!-- * A routed subinterface is created on every interface that has a VLAN with **mode** set to *route*.
+* Routed subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*.-->
 
 The VLAN **mode** can be set in global- or node **vlans** dictionary or with the **mode** attribute of interface/link **vlan** dictionary or **trunk** dictionary within **vlan** dictionary.
 
 The default VLAN **mode** is specified in global or node **vlan.mode** attribute.
 
-## Physical Interface, VLAN Interface and Routed Subinterface Addressing
+## Physical Interface and VLAN Interface Addressing
 
 IPv4 and/or IPv6 prefixes are automatically assigned to VLAN-enabled links:
 
@@ -101,6 +107,8 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 
 * When a node is attached to a VLAN-enabled link, but does not have a **vlan** interface attribute, the VLAN IP address is assigned to physical interface.
 * When the VLAN forwarding mode is set to *irb*, the node VLAN IP address is assigned to a VLAN interface.
-* When the VLAN forwarding mode is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
 * No IP address is assigned to the VLAN interface when the VLAN forwarding mode is set to *bridge*.
-* No IP address is assigned to the physical interface that has an **access** VLAN, or a VLAN **trunk**. You can force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute (and become responsible for the results of your actions).
+* No IP address is assigned to the physical interface that has an **access** VLAN<!--, or a VLAN **trunk**-->. <!-- You can force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute (and become responsible for the results of your actions). -->
+<!--
+* When the VLAN forwarding mode is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
+-->
