@@ -14,12 +14,14 @@ EOM
 if [[ -z "$FLAG_YES" ]]; then
   read -p "Are you sure you want to proceed [Y/n] " -n 1 -r
   echo
-  FLAG_YES="$REPLY"
+  # Original script didn't properly accept an empty response as a default Y - ghostinthenet - 20220417
+  if ! [[ $REPLY =~ ^$|[Yy] ]]; then
+   echo "Aborting..."
+   exit 1
+  fi
+  FLAG_YES="Y"
 fi
-if [[ ! $FLAG_YES =~ ^[Yy]$ ]]; then
-  echo "Aborting..."
-  exit 1
-fi
+#
 set -e
 #
 # Comment the next line if you want to have verbose installation messages
@@ -31,7 +33,8 @@ sudo apt-get upgrade -y $FLAG_APT
 # Install missing packages
 #
 echo "Install missing packages (also a pretty long operation)"
-sudo apt-get -y $FLAG_APT install python3 python3-setuptools ifupdown python3-pip
+# Added curl, which is not installed by default on Debian - ghostinthenet - 20220417
+sudo apt-get -y $FLAG_APT install python3 python3-setuptools ifupdown python3-pip curl
 echo "Install nice-to-have packages"
 sudo apt-get -y $FLAG_APT install git ack-grep jq tree sshpass colordiff
 #

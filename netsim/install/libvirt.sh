@@ -3,7 +3,8 @@ cat <<EOM
 Libvirt/Ubuntu Installation Script
 =====================================================================
 This script installs Libvirt, Vagrant, and vagrant-libvirt plugin
-on a Ubuntu system. The script was tested on Ubuntu 20.04.
+on a Ubuntu system. The script was tested on Debian 11.3 and Ubuntu
+20.04.
 
 NOTE: the script is set to abort on first error. If the installation
 completed you're probably OK even though you might have seen errors
@@ -14,12 +15,14 @@ EOM
 if [[ -z "$FLAG_YES" ]]; then
   read -p "Are you sure you want to proceed [Y/n] " -n 1 -r
   echo
-  FLAG_YES="$REPLY"
+  # Added curl, which is not installed by default on Debian - ghostinthenet - 20220417
+  if ! [[ $REPLY =~ ^$|[Yy] ]]; then
+   echo "Aborting..."
+   exit 1
+  fi
+  FLAG_YES="Y"
 fi
-if [[ ! $FLAG_YES =~ ^[Yy]$ ]]; then
-  echo "Aborting..."
-  exit 1
-fi
+#
 set -e
 #
 echo "Update the package list"
@@ -38,8 +41,14 @@ echo ".. libvirt packages installed"
 echo
 echo "Install vagrant"
 echo ".. setting up Vagrant repository"
-curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+set +e
+sudo rm /etc/apt/trusted.gpg.d/hashicorp-security.gpg 2>/dev/null
+sudo rm /etc/apt/sources.list.d/vagrant.list 2>/dev/null
+set -e
+# add-apt-repository has been deprecated, doesn't work on Debian 11 and will be removed from Ubuntu 22
+# changed to new method - ghostinthenet - 20220417
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-security.gpg
+sudo echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list
 sudo apt-get update
 sudo apt-get install -y $FLAG_QUIET ruby-dev ruby-libvirt vagrant
 set +e
