@@ -18,11 +18,12 @@ EOM
 if [[ -z "$FLAG_YES" ]]; then
   read -p "Are you sure you want to proceed [Y/n] " -n 1 -r
   echo
-  FLAG_YES="$REPLY"
-fi
-if [[ ! $FLAG_YES =~ ^[Yy]$ ]]; then
-  echo "Aborting..."
-  exit 1
+  # Original script didn't properly accept an empty response as a default Y - ghostinthenet 20220417
+  if ! [[ $REPLY =~ ^$|[Yy] ]]; then
+   echo "Aborting..."
+   exit 1
+  fi
+  FLAG_YES="Y"
 fi
 #
 set -e
