@@ -232,6 +232,8 @@ create_svi_interfaces: for every physical interface with access VLAN, create an 
 """
 def create_svi_interfaces(node: Box, topology: Box) -> None:
   vlan_ifmap: dict = {}
+  bridge_group = 0
+
   phy_ifattr = ['bridge','ifindex','ifname','linkindex','type','vlan']      # Physical interface attributes
   svi_skipattr = ['id','vni','prefix','pool']                               # VLAN attributes not copied into VLAN interface
   iflist_len = len(node.interfaces)
@@ -242,7 +244,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
       continue                                                              # ... good, move on
 
     if not access_vlan in node.vlans:                                       # Do we have VLAN defined in the node?
-      node.vlans[access_vlan] = topology.vlans[access_vlan]                 # ... no, use the global definition
+      node.vlans[access_vlan] = Box(topology.vlans[access_vlan])            # ... no, create a copy of the global definition
       if not node.vlans[access_vlan]:                                       # Oh, we don't have a global definition?
         common.error(
           f'Unknown VLAN {access_vlan} used on node {node.name}',
@@ -251,6 +253,9 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
         continue
 
     vlan_data = node.vlans[access_vlan]                                     # Slowly setting things up: VLAN data
+    if not 'bridge_group' in vlan_data:                                     # ... bridge group in VLAN definition
+      bridge_group = bridge_group + 1
+      vlan_data.bridge_group = bridge_group
                                                                             # ... and SVI interface name
     svi_name = devices.get_device_attribute(node,'svi_name',topology.defaults)
     if not svi_name:                                                        # ... unless SVI interfaces are not supported.
@@ -266,9 +271,11 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
         default_box=True,
         box_dots=True)
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
-      vlan_ifdata.ifname = svi_name % vlan_data.id                          # ... ifindex, ifname, description
+      vlan_ifdata.ifname = svi_name.format(                                 # ... ifindex, ifname, description
+                              vlan=vlan_data.id,
+                              bvi=vlan_data.bridge_group)
       vlan_ifdata.name = f'VLAN {access_vlan} ({vlan_data.id})'
-      #vlan_ifdata.vlan_name = access_vlan                                   # Save VLAN name for the next transformation step
+      vlan_ifdata.virtual_interface = True                                  # Mark interface as virtual
       vlan_ifdata.neighbors = []                                            # No neighbors so far
                                                                             # Overwrite interface settings with VLAN settings
       vlan_ifdata = vlan_ifdata + { k:v for k,v in vlan_data.items() if k not in svi_skipattr }
@@ -283,7 +290,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
       if not attr in phy_ifattr:
         ifdata.pop(attr,None)
 
-    ifdata.vlan.access = vlan_data.id                                       # Replace access VLAN name with VLAN ID
+    ifdata.vlan.access_id = vlan_data.id                                    # Add VLAN ID to interface data to simplify config templates
 
 """
 set_svi_neighbor_list: set SVI neighbor list from VLAN neighbor list

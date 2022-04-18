@@ -106,8 +106,8 @@ Ansible playbooks included with **netsim-tools** can deploy and collect device c
 | Generic Linux         |          ✅           |           ❌           |
 | Juniper vSRX 3.0      |          ✅           |           ✅           |
 | Mikrotik CHR RouterOS |          ✅           |           ✅           |
-| Nokia SR Linux        |          ✅           |           ❌           |
-| Nokia SR OS           |          ✅           |           ❌           |
+| Nokia SR Linux        |          ✅           |           ✅           |
+| Nokia SR OS           |          ✅           |           ✅           |
 | VyOS                  |          ✅           |           ✅           |
 | Dell OS10             |          ✅           |           ✅           |
 
@@ -195,19 +195,19 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 (platform-module-support)=
 Additional [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
 
-| Operating system      | BFD | VRF | MPLS | SR-MPLS | SRv6 |
-| --------------------- | :-: | :-: | :--: | :-----: | :--: |
-| Arista EOS            | ✅  | ✅  | ✅   |    ✅   |  ❌   |
-| Cisco IOS             | ✅  | ✅  | ✅   |    ❌    |  ❌   |
-| Cisco IOS XE          | ✅  | ✅  | ✅   |    ✅   |  ❌   |
-| Cisco Nexus OS        | ✅  |  ❌  |  ❌   |    ❌    |  ❌   |
-| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.md#platform-support)| ❌  |   ❌    |  ❌   |
-| Juniper vSRX 3.0      | ✅  |  ❌  |  ❌   |    ✅   |  ❌   |
-| Mikrotik CHR RouterOS | ✅  | ✅  | ✅   |    ❌    |  ❌   |
-| Nokia SR Linux        | ✅  |  ❌  |  ❌   |    ✅   |  ❌   |
-| Nokia SR OS           | ✅  |  ❌  |  ❌   |    ✅   |  ✅   |
-| VyOS                  | ✅  | ✅  | ✅   |    ❌    |  ❌   |
-| Dell OS10             | ✅  | ✅  |   ❌  |    ❌    |  ❌   |
+| Operating system      | BFD | VLAN | VRF | MPLS | SR-MPLS | SRv6 |
+| --------------------- | :-: | :--: | :-: | :--: | :-----: | :--: |
+| Arista EOS            | ✅  |  ✅  | ✅  | ✅   |    ✅   |  ❌   |
+| Cisco IOS             | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
+| Cisco IOS XE          | ✅  |   ❌  | ✅  | ✅   |    ✅   |  ❌   |
+| Cisco Nexus OS        | ✅  |   ❌  |  ❌  |  ❌   |    ❌    |  ❌   |
+| Cumulus Linux 5.0 (NVUE) | ❌ |   ❌  |[❗](module/vrf.md#platform-support)| ❌  |   ❌    |  ❌   |
+| Juniper vSRX 3.0      | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ❌   |
+| Mikrotik CHR RouterOS | ✅  |   ❌  | ✅  | ✅   |    ❌    |  ❌   |
+| Nokia SR Linux        | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ❌   |
+| Nokia SR OS           | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ✅  |
+| VyOS                  | ✅  |   ❌  | ✅  | ✅   |    ❌    |  ❌   |
+| Dell OS10             | ✅  |   ❌  | ✅  |   ❌  |    ❌    |  ❌   |
 
 ## IPv6 Support
 
