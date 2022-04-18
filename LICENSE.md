@@ -1,5 +1,5 @@
 Copyright (c) 2020-2022 Ivan Pepelnjak, Jeroen van Bemmel, Pete Crocker,
-Stefano Sasso, Julien Dhaille, and others
+Stefano Sasso, Julien Dhaille, Jody Lemoine, and others
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
