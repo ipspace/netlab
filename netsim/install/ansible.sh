@@ -15,11 +15,23 @@ during the installation process.
 =====================================================================
 
 EOM
+
+# Add sudo / root check - ghostinthenet 20220418
+SUDO=''
+if [ "$UID" != "0" ]; then
+ if [ -x "$(command -v sudo)" ]; then
+  SUDO=sudo
+ else
+  echo 'Script requires root privileges.'
+  exit 0
+ fi
+fi
+
 if [[ -z "$FLAG_YES" ]]; then
-  read -p "Are you sure you want to proceed [Y/n] " -n 1 -r
+  # Remove implied default of Y - ghostinthenet 20220418
+  read -p "Are you sure you want to proceed [y/n] " -n 1 -r
   echo
-  # Original script didn't properly accept an empty response as a default Y - ghostinthenet 20220417
-  if ! [[ $REPLY =~ ^$|[Yy] ]]; then
+  if ! [[ $REPLY =~ [Yy] ]]; then
    echo "Aborting..."
    exit 1
   fi
@@ -33,25 +45,25 @@ IGNORE="--ignore-installed"
 # Install Python components
 #
 echo "Install baseline Python components"
-sudo pip3 install $REPLACE $IGNORE $FLAG_PIP testresources pyyaml httplib2
-sudo pip3 install $REPLACE $IGNORE $FLAG_PIP jinja2 six bracket-expansion netaddr
+$SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP testresources pyyaml httplib2
+$SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP jinja2 six bracket-expansion netaddr
 #
 echo "Install Ansible Python dependencies"
 echo ".. pynacl lxml"
-sudo pip3 install $REPLACE $IGNORE $FLAG_PIP pynacl lxml
+$SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP pynacl lxml
 echo ".. paramiko netmiko"
-sudo pip3 install $REPLACE $FLAG_PIP paramiko netmiko
+$SUDO pip3 install $REPLACE $FLAG_PIP paramiko netmiko
 #
 echo "Install optional Python components"
-sudo pip3 install $REPLACE $FLAG_PIP textfsm ttp jmespath ntc-templates
+$SUDO pip3 install $REPLACE $FLAG_PIP textfsm ttp jmespath ntc-templates
 #
 echo "Install nice-to-have Python software"
-sudo pip3 install $REPLACE $FLAG_PIP yamllint yq
+$SUDO pip3 install $REPLACE $FLAG_PIP yamllint yq
 #
 # Install latest Ansible version with pip
 #
 echo "Installing Ansible"
-sudo pip3 install $REPLACE $FLAG_PIP ansible
+$SUDO pip3 install $REPLACE $FLAG_PIP ansible
 #
 echo
 echo "Installation complete. Let's test Ansible version"
