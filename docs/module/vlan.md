@@ -28,6 +28,16 @@ VLANs are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ❌   | ❌   | ❌   |
 | Cisco IOSv            | ✅  | ✅  | ❌   | ❌   | ❌   |
 
+## VLAN Connectivity Model
+
+The VLAN configuration module assumes you're creating a sane design in which:
+
+* VLAN numbers are globally unique (you're not reusing 802.1q values)
+* Every VLAN is contiguous and might span multiple physical links (please note that VLANs bridged across VXLAN or MPLS are still contiguous)
+* Every VLAN uses a unique IP subnet across all physical links where it's used.
+
+It might be possible to build topologies that deviate from these rules, but don't be surprised when the results look weird.
+
 ## Parameters
 
 The following parameters can be set globally or per node:
@@ -81,6 +91,15 @@ A VLAN within a **trunk** dictionary can have these attributes:
 * **ipv4** -- IPv4 address to use on VLAN interface or routed subinterface
 * **ipv6** -- IPv6 address to use on VLAN interface or routed subinterface
 -->
+
+### Access VLAN Restrictions
+
+To keep the VLAN complexity manageable, the VLAN configuration module enforces these rules:
+
+* Access VLAN defined with link **vlan.access** attribute applies to every attached node that uses **vlan** configuration module.
+* Access VLANs defined with interface **vlan.access** attribute on multiple nodes attached to the same link must match (you cannot change access VLAN numbers on the same physical segment).
+* An access VLAN used by more than one node attached to a physical link must be defined in global **vlans** dictionary to ensure the same VLAN parameters (in particular the IPv4/IPv6 subnets) apply to all nodes using the VLAN.
+
 (module-vlan-creating-interfaces)=
 ## Creating VLAN Interfaces and Routed Subinterfaces
 

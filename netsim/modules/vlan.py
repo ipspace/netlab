@@ -63,11 +63,15 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     return
 
   obj_name = 'global VLANs' if obj is topology else obj.name
+  default_fwd_mode = get_from_box(obj,'vlan.mode')
 
   for vname in list(obj.vlans.keys()):
     if not obj.vlans[vname]:
       obj.vlans[vname] = Box({},default_box=True,box_dots=True)
+
     vdata = obj.vlans[vname]
+    if default_fwd_mode and not 'mode' in vdata:                    # Propagate default VLAN forwarding mode if needed
+      vdata.mode = default_fwd_mode
     if not 'id' in vdata:                                           # When VLAN ID is not defined
       vdata.id = get_next_vlan_id('id')                             # ... take the next free VLAN ID from the list
     if not isinstance(vdata.id,int):                                # Now validate the heck out of VLAN ID
@@ -220,6 +224,11 @@ def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,top
 
   if node.name in n_map:                                                # Is the current node in the list?
     n_map[node.name].ifname = svi_if.ifname                             # ... it is, fix the interface name
+    for af in ('ipv4','ipv6'):
+      if af in svi_if:
+        n_map[node.name][af] = svi_if[af]
+      else:
+        n_map[node.name].pop(af,None)
   else:
     n_data = { 'ifname': svi_if.ifname, 'node': node.name }             # ... not yet, create neighbor data
     for af in ('ipv4','ipv6'):
@@ -265,9 +274,12 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
         'vlan')
       return
 
-    if not access_vlan in vlan_ifmap:                                       # Do we have an existing SVI interface?
+    if not access_vlan in vlan_ifmap:                                       # Do we need to create a SVI interface?
+      skip_attr = list(phy_ifattr)                                          # Create a local copy of the attribute skip list
+      if vlan_data.get('mode','') == 'bridge':                              # ... and skip IP addresses for bridging-only VLANs
+        skip_attr.extend(['ipv4','ipv6'])
       vlan_ifdata = Box(                                                    # Copy non-physical interface attributes into SVI interface
-        { k:v for k,v in ifdata.items() if k not in phy_ifattr },           # ... that will also give us IP addresses
+        { k:v for k,v in ifdata.items() if k not in skip_attr },            # ... that will also give us IP addresses
         default_box=True,
         box_dots=True)
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
