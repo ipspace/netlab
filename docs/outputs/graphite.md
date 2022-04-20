@@ -8,7 +8,7 @@ After creating the lab topology with `netlab create -o graphite`, launch the Gra
 
 ```
 docker run -d \
- -v "$(pwd)/graphite-default.json":/var/www/localhost/htdocs/default/default.json \
+ -v "$(pwd)/graphite-default.json":/htdocs/default/default.json \
  -p 8080:80 \
  --name graphite \
  netreplica/graphite:webssh2
