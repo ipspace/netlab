@@ -299,6 +299,13 @@ def set_svi_neighbor_list(node: Box, topology: Box) -> None:
   for ifdata in node.interfaces:
     if 'vlan_name' in ifdata:
       vlan_data = get_vlan_data(ifdata.vlan_name,node,topology)
+      if not 'host_count' in vlan_data:                                     # Calculate the number of hosts attached to the VLAN
+        vlan_data.host_count = len([ n for n in vlan_data.neighbors if topology.nodes[n.node].get('role','') == 'host' ])
+
+      if not 'role' in ifdata:                                              # If the interface has no 'role' copied from the link
+        if len(vlan_data.neighbors) == vlan_data.host_count +1:             # ... and there's exactly one non-host attached to the VLAN
+          ifdata.role = 'stub'                                              # ... then we have a stub link, mark it for IGP modules
+
       ifdata.neighbors = [ n for n in vlan_data.neighbors if n.node != node.name ]
       if ifdata.neighbors:
         if ' -> ' in ifdata.name:
