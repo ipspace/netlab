@@ -428,21 +428,24 @@ def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
 def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
   node_cnt = len(link[IFATTR])      # Set the number of attached nodes (used in many places further on)
   link['node_count'] = node_cnt
+
+  host_count = 0                    # Count the number of hosts attached to the link
+  for ifdata in link[IFATTR]:
+    if nodes[ifdata.node].get('role','') == 'host':
+      host_count = host_count + 1
+
+  if host_count > 0:                # If we have hosts and a single router attached to a non-VLAN link, set link role to 'stub'
+    link.host_count = host_count    # ... VLAN case will be set in the VLAN module
+    if not 'role' in link and host_count == node_cnt - 1 and not 'vlan_name' in link:
+      link.role = 'stub'
+
   if 'type' in link:                # Link type already set, nothing to do
     return
 
   link.type = 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'     # Set link type based on number of attached nodes
 
-  host_count = 0
-  for ifdata in link[IFATTR]:
-    if nodes[ifdata.node].get('role','') == 'host':
-      host_count = host_count + 1
-
   if host_count > 0:
     link.type = 'lan'
-    link.host_count = host_count
-    if not 'role' in link:
-      link.role = 'stub'
 
   return
 
