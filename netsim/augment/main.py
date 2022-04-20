@@ -44,12 +44,14 @@ def transform_data(topology: Box) -> None:
   augment.topology.check_global_elements(topology)
 
   augment.plugin.execute('pre_node_transform',topology)
+  modules.pre_node_transform(topology)
   augment.nodes.transform(topology,topology.defaults,topology.pools)
   common.exit_on_error()
   augment.plugin.execute('post_node_transform',topology)
 
   if 'links' in topology:
     augment.plugin.execute('pre_link_transform',topology)
+    modules.pre_link_transform(topology)
     augment.links.transform(topology.links,topology.defaults,topology.nodes,topology.pools)
     common.exit_on_error()
     augment.plugin.execute('post_link_transform',topology)
