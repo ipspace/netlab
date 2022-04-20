@@ -64,7 +64,7 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
 def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
   if isinstance(node.mpls[feature],list):
     session_list = node.mpls[feature]
-    if not data.validate_list_elements(session_list,BGP_SESSIONS):
+    if not data.validate_list_elements(session_list,BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}'):
       common.error(
         f'Invalid BGP session type in nodes.{node.name}.mpls.{feature} parameter',
         common.IncorrectValue,
@@ -82,7 +82,7 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
       if data.must_be_list(node.mpls[feature],af,f'nodes.{node.name}.mpls.{feature}') is None:
         return False
 
-      if not data.validate_list_elements(node.mpls[feature][af],BGP_SESSIONS):
+      if not data.validate_list_elements(node.mpls[feature][af],BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}.{af}'):
         common.error(
           f'Invalid BGP session type in nodes.{node.name}.mpls.{feature}.{af} parameter',
           common.IncorrectValue,
