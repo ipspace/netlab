@@ -153,5 +153,8 @@ def bool_to_defaults(obj: Box, attr: str, defvalue: typing.Optional[typing.Any] 
 validate_list_elements: check whether the elements of a list belong to a set of predefined values
 """
 
-def validate_list_elements(data: list, values: list) -> bool:
+def validate_list_elements(data: list, values: list, path: str) -> bool:
+  if not isinstance(data,list):  # pragma: no cover
+    common.fatal(f'{path} should be a list')
+    return False
   return all(item in values for item in data)
