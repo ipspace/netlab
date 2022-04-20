@@ -14,22 +14,26 @@ from ..augment import links
 
 vlan_ids = Box({},default_box=True,box_dots=True)
 vlan_next = Box({},default_box=True,box_dots=True)
+vlan_mode_kwd = [ 'bridge', 'irb', 'route' ]
 
 #
 # build_vrf_id_set: given an object (topology or node), create a set of RDs
 # that appear in that object.
 #
-def build_vlan_id_set(obj: Box, attr: str) -> set:
+def build_vlan_id_set(obj: Box, attr: str, objname: str) -> set:
   if 'vlans' in obj:
+    if not isinstance(obj.vlans,dict):    # pragma: no cover
+      common.fatal(f'Found a "vlans" setting that is not a dictionary in {objname}','vlan')
+      return set()
+
     return { v[attr] for v in obj.vlans.values() if isinstance(v,dict) and attr in v and v[attr] is not None }
   return set()
 
 def populate_vlan_id_set(topology: Box) -> None:
   global vlan_ids, vlan_next
 
-  if 'vlans' in topology:
-    for k in ('id','vni'):
-      vlan_ids[k] = build_vlan_id_set(topology,k)
+  for k in ('id','vni'):
+    vlan_ids[k] = build_vlan_id_set(topology,k,'topology')
 
   vlan_next['id'] = topology.defaults.vlan.start_vlan_id
   vlan_next['vni'] = topology.defaults.vlan.start_vni
@@ -37,7 +41,7 @@ def populate_vlan_id_set(topology: Box) -> None:
   for n in topology.nodes.values():
     if 'vlans' in n:
       for k in ('id','vni'):
-        vlan_ids[k] = vlan_ids[k].union(build_vlan_id_set(n,k))
+        vlan_ids[k] = vlan_ids[k].union(build_vlan_id_set(n,k,n.name))
 
 def get_next_vlan_id(k : str) -> int:
   global vlan_ids,vlan_next
@@ -59,26 +63,44 @@ def get_next_vlan_id(k : str) -> int:
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   global vlan_ids
 
+  obj_name = 'global VLANs' if obj is topology else obj.name
+  default_fwd_mode = get_from_box(obj,'vlan.mode')                # Get node-wide VLAN forwarding mode
+  if default_fwd_mode:                                            # ... is it set?
+    default_fwd_mode = str(default_fwd_mode)                      # Convert it to string so we don't have to deal with weird types
+    if not default_fwd_mode in vlan_mode_kwd:                     # ... and check keyword validity
+      common.error(
+        f'Invalid vlan.mode setting {default_fwd_mode} in {obj_name}',
+        common.IncorrectValue,
+        'vlan')
+
   if not 'vlans' in obj:
     return
-
-  obj_name = 'global VLANs' if obj is topology else obj.name
-  default_fwd_mode = get_from_box(obj,'vlan.mode')
 
   for vname in list(obj.vlans.keys()):
     if not obj.vlans[vname]:
       obj.vlans[vname] = Box({},default_box=True,box_dots=True)
 
     vdata = obj.vlans[vname]
-    if default_fwd_mode and not 'mode' in vdata:                    # Propagate default VLAN forwarding mode if needed
-      vdata.mode = default_fwd_mode
+
+    if 'mode' in vdata:                                             # Do we have 'mode' set in the VLAN definition?
+      if not vdata.mode in vlan_mode_kwd:                           # ... check the keyword value 
+        common.error(
+          f'Invalid VLAN mode setting {vdata.mode} in VLAN {vname} in {obj_name}',
+          common.IncorrectValue,
+          'vlan')
+    else:
+      if default_fwd_mode:                                          # Propagate default VLAN forwarding mode if needed
+        vdata.mode = default_fwd_mode
+
+    if 'mode' in vdata and vdata.mode == 'route':                   # Throw out attempts to have routed interfaces
+      common.error(f'VLAN routed interfaces not yet supported: VLAN {vname} in {obj_name}',common.IncorrectValue,'vlan')
     if not 'id' in vdata:                                           # When VLAN ID is not defined
       vdata.id = get_next_vlan_id('id')                             # ... take the next free VLAN ID from the list
     if not isinstance(vdata.id,int):                                # Now validate the heck out of VLAN ID
-      common.error(f'VLAN ID for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
+      common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
       continue
     if vdata.id < 2 or vdata.id > 4094:
-      common.error(f'VLAN ID for VLAN {vname} in {obj_name} must be between 2 and 4094',common.IncorrectValue,'vlan')
+      common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be between 2 and 4094',common.IncorrectValue,'vlan')
       continue
 
     if not 'vni' in vdata:                                          # When VNI is not defined
@@ -89,10 +111,10 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
       else:                                                         # Too bad, we had such a great idea but it failed
         vdata.vni = get_next_vlan_id('vni')                         # ... so take the next available VNI
     if not isinstance(vdata.vni,int):                               # Not done yet, we still have to validate the VNI type and range
-      common.error(f'VNI for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
+      common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
       continue
     if vdata.vni < 2 or vdata.vni > 16777215:
-      common.error(f'VNI for VLAN {vname} in {obj_name} must be between 2 and 16777215',common.IncorrectValue,'vlan')
+      common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be between 2 and 16777215',common.IncorrectValue,'vlan')
       continue
 
     vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
@@ -112,7 +134,11 @@ def validate_link_vlan_attributes(obj: Box,link: Box) -> bool:
   if not 'vlan' in obj:
     return True
 
-  for attr in ('trunk','native','mode'):
+  if not isinstance(obj.vlan,dict):
+    common.error(f'vlan link attribute must be a dictionary\n... {link}',common.IncorrectValue,'vlan')
+    return False
+
+  for attr in ('trunk','native'):
     if attr in obj.vlan:
       common.error(
         f'VLAN link/interface attribute {attr} is not yet supported',
@@ -122,7 +148,7 @@ def validate_link_vlan_attributes(obj: Box,link: Box) -> bool:
 
   if not 'access' in obj.vlan:
     common.error(
-      f"You must specify access VLAN when using 'vlan' link attribute\n... {link}",
+      f"You must specify access VLAN when using 'vlan' attribute on a link/interface\n... {link}",
       common.IncorrectValue,
       'vlan')
     return False
@@ -170,13 +196,12 @@ def set_link_vlan_prefix(link: Box,topology: Box) -> None:
   # No link-level access VLAN, build a list of interface access VLANs
   vlan_list = [ get_from_box(intf,'vlan.access') for intf in link.interfaces ]      # Collect all vlan.access settings
   vlan_list = [ vlan for vlan in vlan_list if vlan ]                                # ... and remove the empty ones
-
   if not vlan_list:                                   # No interface access VLAN? We're done, let's get out of here
     return
 
   if len(set(vlan_list)) > 1:                         # Oh my, more than one access VLAN. That can't be right
     common.error(
-      f'Cannot use more than one access VLAN per link\n...{link}',
+      f'Cannot use more than one access VLAN per link, found {vlan_list}\n...{link}',
       common.IncorrectValue,
       'vlan')
     return
@@ -187,20 +212,20 @@ def set_link_vlan_prefix(link: Box,topology: Box) -> None:
   else:
     if len(vlan_list) > 1:                             # Access VLAN defined on more than one interface?
       common.error(
-        f'An access VLAN used on more than one interface attached to a link must be a global VLAN\n... {link}',
+        f'Access VLAN {link_vlan} used by more than one node attached to a link must be a global VLAN\n... {link}',
         common.IncorrectValue,
         'vlan')
       return
 
     # Find the node using the access VLAN
-    node = next(intf.node for intf in link.interfaces if get_from_box(intf,'access.vlan') == link_vlan)
+    node = next(intf.node for intf in link.interfaces if get_from_box(intf,'vlan.access') == link_vlan)
 
     # Hope the VLAN is defined within the node, otherwise we're truly lost
     if link_vlan in topology.nodes[node].get('vlans',{}):
       copy_vlan_attributes(link_vlan,topology.nodes[node].vlans[link_vlan],link)
     else:
       common.error(
-        f'Access VLAN used by node {node} should be defined globally or within the node\n... {link}',
+        f'Access VLAN {link_vlan} used by node {node} should be defined globally or within the node\n... {link}',
         common.IncorrectValue,
         'vlan')
 
@@ -254,11 +279,9 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
 
     if not access_vlan in node.vlans:                                       # Do we have VLAN defined in the node?
       node.vlans[access_vlan] = Box(topology.vlans[access_vlan])            # ... no, create a copy of the global definition
-      if not node.vlans[access_vlan]:                                       # Oh, we don't have a global definition?
-        common.error(
-          f'Unknown VLAN {access_vlan} used on node {node.name}',
-          common.IncorrectValue,
-          'vlan')
+      if not node.vlans[access_vlan]:                                       # pragma: no cover -- we don't have a global definition? 
+        common.fatal(                                                       # ... this should have been detected way earlier
+          f'Unknown VLAN {access_vlan} used on node {node.name}','vlan')
         continue
 
     vlan_data = node.vlans[access_vlan]                                     # Slowly setting things up: VLAN data
@@ -267,8 +290,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
       vlan_data.bridge_group = bridge_group
                                                                             # ... and SVI interface name
     svi_name = devices.get_device_attribute(node,'svi_name',topology.defaults)
-    if not svi_name:                                                        # ... unless SVI interfaces are not supported.
-      common.error(
+    if not svi_name:                                                        # pragma: no cover -- hope we got device settings right ;)
+      common.error(                                                         # SVI interfaces are not supported on this device
         f'Device {node.device} used by {node.name} does not support VLAN interfaces (access vlan {access_vlan})',
         common.IncorrectValue,
         'vlan')
@@ -327,6 +350,14 @@ def set_svi_neighbor_list(node: Box, topology: Box) -> None:
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
+    if get_from_box(topology,'vlan.mode'):
+      if topology.vlan.mode not in vlan_mode_kwd:     # pragma: no cover
+        common.error(
+          f'Invalid global vlan.mode value {topology.vlan.mode}',
+          common.IncorrectValue,
+          'vlan')
+        return
+
     populate_vlan_id_set(topology)
 
     if not 'vlans' in topology:
@@ -336,18 +367,16 @@ class VLAN(_Module):
     validate_vlan_attributes(topology,topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
-    if not 'vlans' in node:
-      return
-
-    for vname in node.vlans.keys():
-      if 'vlans' in topology and vname in topology.vlans:
-        for kw in ('prefix','id','vni'):
-          if kw in node.vlans[vname]:
-            common.error(
-              f'Cannot set {kw} for VLAN {vname} on node {node.name} -- VLAN is defined globally',
-              common.IncorrectValue,
-              'vlan')
-        node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
+    if 'vlans' in node:
+      for vname in node.vlans.keys():
+        if 'vlans' in topology and vname in topology.vlans:
+          for kw in ('prefix','id','vni'):
+            if kw in node.vlans[vname]:
+              common.error(
+                f'Cannot set {kw} for VLAN {vname} on node {node.name} -- VLAN is defined globally',
+                common.IncorrectValue,
+                'vlan')
+          node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
 
     validate_vlan_attributes(node,topology)
 
