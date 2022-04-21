@@ -12,7 +12,7 @@ from .. import common
 from .. import data
 from . import nodes
 
-group_attr = [ 'members','vars','config','node_data' ]
+group_attr = [ 'members','vars','config','node_data','device','module' ]
 
 '''
 Return members of the specified group. Recurse through child groups if needed
@@ -80,8 +80,12 @@ def check_group_data_structure(topology: Box) -> None:
       if not isinstance(gdata.vars,dict):
         common.error('Group variables must be a dictionary: %s' % grp)
 
-    if 'config' in gdata:
-      data.must_be_list(gdata,'config',f'groups.{grp}')
+    for attr in ('config','module'):
+      if attr in gdata:
+        data.must_be_list(gdata,attr,f'groups.{grp}')
+
+    for attr in ('device'):
+      data.must_be_string(gdata,attr,f'groups.{grp}')
 
     for k in gdata.keys():
       if not k in group_attr:
@@ -157,13 +161,45 @@ def reverse_topsort(topology: Box) -> list:
   return sort_list
 
 '''
+Copy group-level module or device setting into node data
+'''
+def copy_group_device_module(topology: Box) -> None:
+  for grp in reverse_topsort(topology):
+    gdata = topology.groups[grp]
+    if 'device' in gdata or 'module' in gdata:
+      g_members = group_members(topology,grp)
+      if g_members:
+        for name,ndata in topology.nodes.items():
+          if name in g_members:
+            for attr in ('device','module'):
+              if attr in gdata and not attr in ndata:
+                ndata[attr] = gdata[attr]
+      else:
+        common.error(
+          f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
+          common.IncorrectValue,
+          'groups')
+
+'''
 Copy node data from group into group members
 '''
 def copy_group_node_data(topology: Box) -> None:
   for grp in reverse_topsort(topology):
     gdata = topology.groups[grp]
-    g_members = group_members(topology,grp)
     if 'node_data' in gdata:
+      node_data_keys  = set(gdata.node_data.keys())                   # You cannot set device type or node modules with
+      node_data_wrong = False                                         # ... node data, those attributes have to be set
+      for k in ('module','device'):                                   # ... at group level
+        if k in node_data_keys:
+          common.error(
+            f'Cannot use attribute {k} in node_data in group {grp}, set it as a group attribute',
+            common.IncorrectValue,
+            'groups')
+          node_data_wrong = True
+      if node_data_wrong:
+        continue
+
+      g_members = group_members(topology,grp)
       for name,ndata in topology.nodes.items():
         if name in g_members:
           for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
@@ -179,21 +215,16 @@ def copy_group_node_data(topology: Box) -> None:
                   'groups')
 
 #
-# adjust_group:
+# init_groups:
 #
 # * Check and adjust group data structures
 # * Check recursive groups
 # * Add nodes to groups based on node 'group' attribute
-# * Copy group node_data into nodes
 #
 # Please note that check_group_data_structure creates 'groups' element if needed
 # and 'adjust_groups' deletes it if there are no groups in the topology.
 #
-# We cannot move the "create groups if needed" code into adjust_groups because
-# augment.main calls 'check_group_data_structure' early in the transformation process.
-# The reason we call it again here are BGP auto groups.
-#
-def adjust_groups(topology: Box) -> None:
+def init_groups(topology: Box) -> None:
   check_group_data_structure(topology)
   add_node_level_groups(topology)
   common.exit_on_error()
@@ -201,6 +232,17 @@ def adjust_groups(topology: Box) -> None:
   check_recursive_groups(topology)
   common.exit_on_error()
 
+  copy_group_device_module(topology)
+
+#
+# adjust_groups:
+#
+# * Copy group data into nodes
+#
+# We have to split the group initialization code into two phases
+# due to BGP auto groups.
+#
+def adjust_groups(topology: Box) -> None:
   copy_group_node_data(topology)
   common.exit_on_error()
 
