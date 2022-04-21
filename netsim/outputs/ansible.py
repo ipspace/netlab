@@ -50,9 +50,10 @@ def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[B
   inventory = Box({},default_box=True,box_dots=True)
 
   inventory.all.vars.netlab_provider = defaults.provider
+  inventory.modules.hosts = {}
+  inventory.custom_configs.hosts = {}
 
   if 'module' in defaults:
-    inventory.modules.hosts = {}
     inventory.modules.vars.netlab_module = defaults.module
 
   if addressing:
