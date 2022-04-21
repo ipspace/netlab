@@ -78,12 +78,35 @@ def check_required_elements(topology: Box) -> None:
 
 def check_global_elements(topology: Box) -> None:
   topo_elements = topology.defaults.attributes.get('global',[]) + topology.defaults.attributes.get('internal',[])
+  module_list   = [ modname for modname in topology.defaults.keys() if 'supported_on' in topology.defaults[modname] ]
+  extra_modattr: dict = {}
+  for m,x_list in [ (modname,topology.defaults[modname].attributes.extra['global']) \
+                    for modname in topology.defaults.keys() \
+                      if data.get_from_box(topology.defaults[modname],'attributes.extra.global') ]:
+    for attr in x_list:
+      extra_modattr[attr] = m
+
   if topology.get('module'):
     topo_elements = topo_elements + topology.module
 
   for k in topology.keys():
     if not k in topo_elements:
-      common.error("Unknown top-level element %s" % k,category=common.IncorrectValue,module="topology")
+      if k in module_list:
+        common.error(
+          f'Add module {k} to global- or node configuration modules to use {k}.something global attribute',
+          category=common.IncorrectValue,
+          module="topology")
+      elif k in extra_modattr:
+        common.error(
+          f'Global attribute {k} is defined by module {extra_modattr[k]} which is not used in your topology',
+          category=common.IncorrectValue,
+          module="topology")
+      else:
+        common.error(
+          f'Unknown top-level element {k} -- typo?',
+          category=common.IncorrectValue,
+          module="topology")
+
 #
 # Find virtualization provider, set provider and defaults.provider to that value
 #
