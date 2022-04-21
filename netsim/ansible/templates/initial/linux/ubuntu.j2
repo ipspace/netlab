@@ -1,0 +1,123 @@
+# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+# This is annoying on a network with filtered DNS.
+# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+# Let's use that.
+#
+# (Overwrite netplan config to remove DNS stuff)
+cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp6: false
+      optional: true
+SCRIPT
+netplan apply
+
+# (Overwrite resolved config to remove DNS stuff)
+cat <<SCRIPT > /etc/systemd/resolved.conf 
+[Resolve]
+DNS=
+FallbackDNS=
+Domains=
+DNSOverTLS=no
+Cache=yes
+DNSStubListener=yes
+SCRIPT
+
+systemctl restart systemd-resolved
+
+# Set persistent hostname
+hostnamectl set-hostname {{ inventory_hostname }}
+
+#
+# Enable LLDP
+#
+apt-get update -qq
+apt-get install -qq lldpd net-tools
+cat <<CONFIG >/etc/lldpd.d/system.conf
+configure lldp tx-interval 30
+configure lldp tx-hold 3
+configure system interface pattern *,!eth0,eth*
+CONFIG
+systemctl enable lldpd
+systemctl restart lldpd
+
+# Sysctl
+cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+net.ipv4.ip_forward=0
+net.ipv6.conf.all.forwarding=0
+
+{%   if loopback.ipv6 is defined %}
+net.ipv6.conf.lo.disable_ipv6=0
+{%   endif %}
+{% for l in interfaces|default([]) %}
+{%   if l.ipv6 is defined %}
+net.ipv6.conf.{{ l.ifname }}.disable_ipv6=0
+{%   endif %}
+{% endfor %}
+
+SCRIPT
+sysctl -p /etc/sysctl.d/10-netsim.conf
+
+# Loopback addressing
+{% if loopback.ipv4 is defined or loopback.ipv6 is defined %}
+cat <<SCRIPT > /etc/netplan/02-loopback.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    lo:
+      addresses:
+{%   if 'ipv4' in loopback %}
+        - {{ loopback.ipv4 }}
+{%   endif %}
+{%   if 'ipv6' in loopback %}
+        - {{ loopback.ipv6 }}
+{%   endif %}
+SCRIPT
+{% endif %}
+
+# Interface addressing
+{% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined)%}
+cat <<SCRIPT > /etc/netplan/03-eth-{{ l.ifname }}.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ l.ifname }}:
+      addresses:
+{% if l.ipv4 is defined %}
+        - {{ l.ipv4 }}
+{%   endif %}
+{% if l.ipv6 is defined %}
+        - {{ l.ipv6 }}
+{%   endif %}
+{% if l.mtu is defined %}
+      mtu: {{ l.mtu }}
+{% endif %}
+SCRIPT
+{% endfor %}
+
+# Add routes to IPv4 address pools pointing to the first neighbor on the first link
+{% for ifdata in interfaces|default([]) if ifdata.gateway is defined %}
+cat <<SCRIPT > /etc/netplan/04-routes-{{ ifdata.ifname }}.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ ifdata.ifname }}:
+      routes:
+{%   for name,pool in pools.items()|default({}) %}
+{%     for af,pfx in pool.items() if af == 'ipv4' and name != 'mgmt' and name != 'router_id' %}
+        - to: {{ pfx }}
+          via: {{ ifdata.gateway.ipv4|ipaddr('address') }}
+{%     endfor %}
+{%   endfor %}
+SCRIPT
+{% endfor  %}
+
+netplan generate
+netplan apply
