@@ -18,6 +18,7 @@ def transform_setup(topology: Box) -> None:
   if 'links' in topology:
     topology.links = augment.links.adjust_link_list(topology.links,topology.nodes)
   augment.devices.augment_device_settings(topology)
+  augment.groups.init_groups(topology)
   common.exit_on_error()
 
   augment.plugin.init(topology)
@@ -30,9 +31,6 @@ def transform_setup(topology: Box) -> None:
 
   augment.nodes.augment_node_provider_data(topology)
   augment.nodes.augment_node_system_data(topology)
-  common.exit_on_error()
-
-  augment.groups.check_group_data_structure(topology)
   common.exit_on_error()
 
 def transform_data(topology: Box) -> None:

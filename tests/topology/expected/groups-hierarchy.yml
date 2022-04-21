@@ -1,9 +1,19 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
 groups:
   g1:
     members:
     - a
     - b
   g2:
+    device: cumulus
     members:
     - d
     - f
@@ -12,13 +22,20 @@ groups:
     node_data:
       foo: bar
   g3:
+    device: iosv
     members:
     - e
+    module:
+    - bgp
     node_data:
+      bgp:
+        as: 65000
       foo: baz
 input:
 - topology/input/groups-hierarchy.yml
 - package:topology-defaults.yml
+module:
+- bgp
 name: input
 nodes:
   a:
@@ -53,14 +70,14 @@ nodes:
       mac: 08-4F-A9-00-00-02
     name: b
   c:
-    box: CumulusCommunity/cumulus-vx:4.4.0
-    device: cumulus
+    box: arista/veos
+    device: eos
     id: 3
     interfaces: []
     loopback:
       ipv4: 10.0.0.3/32
     mgmt:
-      ifname: eth0
+      ifname: Management1
       ipv4: 192.168.121.103
       mac: 08-4F-A9-00-00-03
     name: c
@@ -81,22 +98,36 @@ nodes:
       mac: 08-4F-A9-00-00-04
     name: d
   e:
-    box: CumulusCommunity/cumulus-vx:4.4.0
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.5
+    box: cisco/iosv
     config:
     - g2a
     - g2b
     - g3
     - e
-    device: cumulus
+    device: iosv
     foo: baz
     id: 5
     interfaces: []
     loopback:
       ipv4: 10.0.0.5/32
     mgmt:
-      ifname: eth0
+      ifname: GigabitEthernet0/0
       ipv4: 192.168.121.105
       mac: 08-4F-A9-00-00-05
+    module:
+    - bgp
     name: e
   f:
     box: CumulusCommunity/cumulus-vx:4.4.0

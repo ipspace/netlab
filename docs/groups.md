@@ -150,9 +150,42 @@ groups:
     node_data:
       bgp.as: 65001
       bgp.advertise_loopback: false
-			
+
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
+
+## Setting Device Type or List of Modules in Groups
+
+Node device type (**device** attribute[^DVTRANS]) or the list of configuration modules (**module** attribute[^MDTRANS]) cannot be set within group **node_data**. Use **device** or **module** attribute at the group level to set them.
+
+The following example uses this functionality to use Cumulus VX on routers advertising anycast IP address, and to use BGP as the only configuration module on those devices.
+
+```
+defaults:
+  device: iosv
+
+module: [ bgp, ospf ]
+bgp.as: 65000
+
+groups:
+  anycast:
+    members: [ a1, a2, a3 ]
+    module: [ bgp ]
+    device: cumulus
+    node_data:
+      bgp.as: 65001
+      bgp.advertise_loopback: false
+
+nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
+```
+
+Notes:
+
+* You can use **device** or **module** attribute only on groups with static members.
+
+[^DVTRANS]: Device type must be set very early in the topology transformation process to check whether the selected device supports the configuration modules enabled for a node.
+
+[^MDTRANS]: Configuration modules have to be initialized before the **node_data** is copied into nodes to support automatic BGP groups. Modifying the list of node modules after the modules have been initialized would result in weird errors.
 
 ## Automatic BGP Groups
 

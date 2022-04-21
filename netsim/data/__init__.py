@@ -70,6 +70,8 @@ def unroll_dots(b : typing.Any) -> None:
 # must_be_list: make sure a dictionary value is a list. Convert scalar values
 #   to list if needed, report an error otherwise.
 #
+# must_be_string: make sure a dictionary value is a string. Throw an error otherwise.
+#
 # Input arguments:
 #   parent - the parent dictionary of the attribute we want to listify
 #            (a pointer to the element would be even better, but Python)
@@ -97,6 +99,19 @@ def must_be_list(parent: Box, key: str, path: str) -> typing.Optional[list]:
   common.error(
   	f'attribute {path}.{key} must be a scalar or a list, found {wrong_type}',
   	common.IncorrectType)
+  return None
+
+def must_be_string(parent: Box, key: str, path: str) -> typing.Optional[str]:
+  if not key in parent:
+    return None
+
+  if isinstance(parent[key],str):
+    return parent[key]
+
+  wrong_type = "dictionary" if isinstance(parent[key],dict) else str(type(parent[key]))
+  common.error(
+    f'attribute {path}.{key} must be a string, found {wrong_type}',
+    common.IncorrectType)
   return None
 
 #
