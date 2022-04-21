@@ -1,0 +1,61 @@
+### One-Shot configuration (non-Ubuntu VM or container)
+#
+# Disable IPv4 and IPv6 forwarding
+#
+sysctl -w net.ipv4.ip_forward=0
+sysctl -w net.ipv6.conf.all.forwarding=0
+{% if loopback is defined %}
+#
+# Loopback addressing
+#
+{%   if 'ipv4' in loopback %}
+set +e
+ip addr del {{ loopback.ipv4 }} dev lo 2>/dev/null
+set -e
+ip addr add {{ loopback.ipv4 }} dev lo
+{%   endif %}
+{%   if 'ipv6' in loopback %}
+sysctl -w net.ipv6.conf.lo.disable_ipv6=0
+set +e
+ip -6 addr del {{ loopback.ipv6 }} dev lo 2>/dev/null
+set -e
+ip -6 addr add {{ loopback.ipv6 }} dev lo
+{%   endif %}
+{% endif %}
+#
+# Interface addressing
+#
+{% for l in interfaces|default([]) %}
+ip link set dev {{ l.ifname }} up
+{% if l.ipv4 is defined %}
+set +e
+ip addr del {{ l.ipv4 }} dev {{ l.ifname }} 2>/dev/null
+set -e
+ip addr add {{ l.ipv4 }} dev {{ l.ifname }}
+{% endif %}
+{% if l.ipv6 is defined %}
+sysctl -w net.ipv6.conf.{{ l.ifname }}.disable_ipv6=0
+set +e
+ip -6 addr del {{ l.ipv6 }} dev {{ l.ifname }} 2>/dev/null
+set -e
+ip -6 addr add {{ l.ipv6 }} dev {{ l.ifname }}
+{% endif %}
+{% if l.mtu is defined %}
+ip link set {{ l.ifname }} mtu {{ l.mtu }}
+{% endif %}
+{% endfor %}
+#
+# Add routes to IPv4 address pools pointing to the first neighbor on the first link
+#
+# If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+#
+{% for ifdata in interfaces|default([]) if ifdata.gateway is defined %}
+{%   for name,pool in pools.items()|default({}) %}
+{%     for af,pfx in pool.items() if af == 'ipv4' and name != 'mgmt' and name != 'router_id' %}
+set +e
+ip route del {{ pfx }} 2>/dev/null
+set -e
+ip route add {{ pfx }} via {{ ifdata.gateway.ipv4|ipaddr('address') }}
+{%     endfor %}
+{%   endfor %}
+{% endfor  %}
