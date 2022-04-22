@@ -322,7 +322,9 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
 
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
-    interfaces.append({ 'node': node, 'data': add_node_interface(ndict[node],ifdata,defaults) })
+    node_intf = add_node_interface(ndict[node],ifdata,defaults)
+    value.ifindex = node_intf.ifindex
+    interfaces.append({ 'node': node, 'data':  node_intf })
 
     link_cnt = link_cnt + 1
 
@@ -349,8 +351,13 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   link_nodes: typing.List[Box] = []
   interfaces: typing.List[Box] = []
 
-  intf_cnt = 0
-  for value in sorted(link[IFATTR],key=lambda v: v.node):
+  if len(link[IFATTR]) > len(end_names): # pragma: no cover (this error is reported earlier)
+    common.fatal(f"Internal error: Too many nodes specified on a P2P link {link}",'links')
+    return None
+
+  link[IFATTR] = sorted(link[IFATTR],key=lambda v: v.node)       # Keep nodes sorted in alphabetic order for historic reasons
+  value: Box
+  for intf_cnt,value in enumerate(link[IFATTR]):
     node = value.node
     ecount = len(link_nodes)
     ifaddr = Box({},default_box=True)
@@ -377,30 +384,20 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     ifaddr = ifaddr + value
     ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
     link[IFATTR][intf_cnt] = value
-    intf_cnt = intf_cnt + 1
     link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
-  if len(link_nodes) > len(end_names): # pragma: no cover (this error is reported earlier)
-    common.fatal(f"Internal error: Too many nodes specified on a P2P link {link}",'links')
-    return None
-
-  for i in range(0,len(link_nodes)):
-    node = link_nodes[i].name
-    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=link_nodes[i].ifaddr)
-    ifdata.name = link.get("name") or (link_nodes[i].name + " -> " + link_nodes[1-i].name)
+    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
+    if 'bridge' in link:
+      ifdata.bridge = link.bridge
+    ifdata.name = link.get("name") or (link[IFATTR][intf_cnt].node + " -> " + link[IFATTR][1-intf_cnt].node)
     dict_2_update = add_node_interface(ndict[node],ifdata,defaults)
+    value.ifindex = dict_2_update.ifindex
     interfaces.append(dict_2_update)
 
   if not 'name' in link:
     link.name = link_nodes[0].name + " - " + link_nodes[1].name
 
   for i in range(0,2):
-    if 'bridge' in link:
-      interfaces[i].bridge = link.bridge
-    else:
-      interfaces[i].remote_id = ndict[link_nodes[1-i].name].id
-      interfaces[i].remote_ifindex = interfaces[1-i].ifindex
-
     link[end_names[i]] = { 'node': link_nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
 
     remote = link_nodes[1-i].name
