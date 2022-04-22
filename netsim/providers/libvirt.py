@@ -18,6 +18,27 @@ class Libvirt(_Provider):
   def transform_node_images(self, topology: Box) -> None:
     self.node_image_version(topology)
 
+  def pre_output_transform(self, topology: Box) -> None:
+    for node in topology.nodes.values():
+      for intf in node.interfaces:
+        if intf.get('linkindex') and not intf.get('virtual_interface'):
+          link = topology.links[intf.linkindex - 1]
+          if len(link.interfaces) == 2:
+            intf.libvirt.type = "tunnel"
+            remote_if_list = [ rif for rif in link.interfaces if rif.node != node.name or rif.ifindex != intf.ifindex ]
+            if len(remote_if_list) != 1:
+              common.fatal(
+                f'Cannot find remote interface for P2P link\n... node {node.name}\n... intf {intf}\n... link {link}\n... iflist {remote_if_list}')
+              return
+
+            remote_if = remote_if_list[0]
+            intf.remote_ifindex = remote_if.ifindex
+            intf.remote_id = topology.nodes[remote_if.node].id
+            if not intf.remote_id:
+              common.fatal(
+                f'Cannot find remote node ID on a P2P link\n... node {node.name}\n... intf {intf}\n... link {link}')
+              return
+
   def pre_start_lab(self, topology: Box) -> None:
     common.print_verbose('pre-start hook for libvirt')
     # Starting from vagrant-libvirt 0.7.0, the destroy actions deletes all the networking
