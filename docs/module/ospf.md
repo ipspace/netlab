@@ -13,6 +13,7 @@ Supported features:
 * [Passive interfaces](routing.md#passive-interfaces)
 * [Static router ID](routing.md#router-id)
 * BFD
+* VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
 
 Missing features:
 
