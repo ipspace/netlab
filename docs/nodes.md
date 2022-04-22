@@ -105,7 +105,7 @@ These node attributes are recognized and used by *netsim-tools*:
 * **loopback** -- static loopback addresses. Must be a dictionary with **ipv4** and/or **ipv6** attributes.
 * **memory** -- memory allocated to the VM lab device. Not applicable for container-based devices.
 * **cpu** -- virtual CPU cores allocated to the VM lab device. Not applicable for container-based devices.
-* **nic_model** - virtual NIC model allocated to the VM lab device. Applicable only to **libvirt**. Supported values are:
+* **libvirt.nic_model** - virtual NIC model allocated to the VM lab device. Applicable only to **libvirt**. Supported values are:
   * virtio (*libvirt default*)
   * e1000
   * rtl8139
