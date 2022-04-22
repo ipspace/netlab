@@ -206,7 +206,7 @@ Additional [configuration modules](module-reference.md) are supported on these d
 | Mikrotik CHR RouterOS | ✅  |   ❌  | ✅  | ✅   |    ❌    |  ❌   |
 | Nokia SR Linux        | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ❌   |
 | Nokia SR OS           | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ✅  |
-| VyOS                  | ✅  |   ❌  | ✅  | ✅   |    ❌    |  ❌   |
+| VyOS                  | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
 | Dell OS10             | ✅  |   ❌  | ✅  |   ❌  |    ❌    |  ❌   |
 
 ## IPv6 Support
