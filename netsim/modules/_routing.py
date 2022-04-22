@@ -14,6 +14,7 @@ import netaddr
 
 from .. import common
 from .. import addressing
+from ..data import get_from_box
 
 # Build routing protocol address families
 #
@@ -164,14 +165,25 @@ def remove_vrf_interfaces(node: Box, proto: str) -> None:
 #
 # build_vrf_interface_list -- copy VRF interfaces into VRF definition
 #
-def build_vrf_interface_list(node: Box, proto: str) -> None:
+def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
   for l in node.interfaces:
     if proto in l and 'vrf' in l:
-      if not 'interfaces' in node.vrfs[l.vrf][proto]:
+      if not 'interfaces' in node.vrfs[l.vrf][proto]:                       # Start with an empty interface list
         node.vrfs[l.vrf][proto].interfaces = []
+      if not 'active' in node.vrfs[l.vrf][proto]:                           # Assume there are no IGP neighbors in this VRF
+        node.vrfs[l.vrf][proto].active = False
       node.vrfs[l.vrf][proto] = node[proto] + node.vrfs[l.vrf][proto]       # Add node IGP parameters to VRF IGP parameters
       node.vrfs[l.vrf][proto].interfaces.append(Box(l))                     # Append a copy of the interface data
       l.pop(proto,None)                                                     # ... and remove global IGP parameters from interface
+                                                                            # Next we need to find if the VRF instance of IGP matters
+      for neighbor in l.neighbors:                                          # ... iterate over the list of neighbors
+        n_data = topology.nodes[neighbor.node]
+        if proto in n_data.get('module',[]):                                # ... and check if at least one of them uses the IGP
+          node.vrfs[l.vrf][proto].active = True
+                                                                            # Cleanup IGP data
+  for vdata in node.get('vrfs',{}).values():                                # ... iterate over the list of VRFs
+    if not get_from_box(vdata,f'{proto}.active'):                           # ... and if there's no record of active IGP neighbors
+      vdata.pop(proto,None)                                                 # ... remove the VRF IGP instance
 
 #
 # remove_unused_igp -- remove IGP module if it's not configured on any interface
