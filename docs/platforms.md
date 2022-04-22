@@ -89,7 +89,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Juniper vSRX 3.0           | vsrx               |    2 |   4096 | 
 | Mikrotik CHR RouterOS      | routeros           |    1 |    256 |
 | VyOS                       | vyos               |    2 |   1024 |
-| Dell OS10                  | vyos               |    2 |   2048 |
+| Dell OS10                  | dellos10           |    2 |   2048 |
 
 ## Configuration Deployments
 
