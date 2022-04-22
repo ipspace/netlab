@@ -34,32 +34,41 @@ set interfaces dummy dum0 address {{ loopback.ipv6 }}
 {% for l in interfaces|default([]) %}
 
 {#
-# Define interface hierarchy/tree level (i.e. ethernet, bridge, ...)
+# - Define interface hierarchy/tree level (i.e. ethernet, bridge, ...)
+# - Set proper interface name to be used below
+# While right now the ifname, when a bridge, is always brX.Y,
+#  this code is ready for future "plain" bridges (i.e., br1)
 #}
-{% set ns = namespace(iface_level="ethernet") %}
-{% if l.virtual_interface is defined and l.virtual_interface %}
-{% set ns.iface_level = "bridge br0 vif" %}
-{% endif %}
+{%   set ns = namespace(iface_level="ethernet", ifname=l.ifname) %}
+{%   if l.ifname.startswith('br') %}
+{%     set ns.iface_level = "bridge" %}
+{%     set brdata = l.ifname.split('.') %}
+{%     if brdata|length == 1 %}
+{%       set ns.ifname = brdata[0] %}
+{%     else %}
+{%       set ns.ifname = brdata[0] + ' vif ' + brdata[1] %}
+{%     endif %}
+{%   endif %}
 
 {% if l.name is defined %}
-set interfaces {{ ns.iface_level }} {{ l.ifname }} description '{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}'
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} description '{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}'
 {% elif l.type|default("") == "stub" %}
-set interfaces {{ ns.iface_level }} {{ l.ifname }} description 'Stub interface'
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} description 'Stub interface'
 {% endif %}
 
 {% if l.mtu is defined %}
-set interfaces {{ ns.iface_level }} {{ l.ifname }} mtu {{ l.mtu }}
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} mtu {{ l.mtu }}
 {% endif %}
 
 {% if 'ipv4' in l %}
-set interfaces {{ ns.iface_level }} {{ l.ifname }} address {{ l.ipv4 }}
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} address {{ l.ipv4 }}
 {% endif %}
 {% if 'ipv6' in l %}
-set interfaces {{ ns.iface_level }} {{ l.ifname }} address {{ l.ipv6 }};
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} address {{ l.ipv6 }};
 {% endif %}
 
 {% if l.vrf is defined %}
-set interfaces {{ ns.iface_level }} {{ l.ifname }} vrf {{ l.vrf }}
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} vrf {{ l.vrf }}
 {% endif %}
 
 {% endfor %}
