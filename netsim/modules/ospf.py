@@ -64,7 +64,7 @@ class OSPF(_Module):
     # * Enable BFD
     # * Remove OSPF module if there are no OSPF-enabled global or VRF interfaces
     #
-    _routing.build_vrf_interface_list(node,'ospf')
+    _routing.build_vrf_interface_list(node,'ospf',topology)
     _routing.routing_af(node,'ospf')
     bfd.bfd_link_state(node,'ospf')
     _routing.remove_unused_igp(node,'ospf')

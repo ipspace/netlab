@@ -186,9 +186,27 @@ BGP, OSPF, and IS-IS configuration modules are VRF aware:
 
 Notes:
 
+* VRF OSPF instances are created only in VRFs that have neighbors using **ospf**  configuration module. To create an OSPF instance in a VRF that would need OSPF based on the lab topology, set **ospf.active** node VRF parameter to *True*.
 * VRF-specific OSPF and BGP configuration is included in the VRF configuration templates.
 * Connected subnets are always redistributed into the BGP VRF address family.
 * If a node has **bgp.as** parameter and VRF-specific OSPF instance(s), the VRF configuration templates configure two-way redistribution between VRF-specific OSPF instances and BGP VRF address family.
+
+### Creating VRF OSPF Instances
+
+Assume that we want to have OSPF instance in the brown VRF, but the only link in the VRF is a stub link, so the OSPF instance would not be created with default settings. Setting **ospf.active** parameter in **nodes.r3.vrfs.brown** forces the creation of VRF OSPF instance.
+
+```
+nodes:
+  r3:
+    module: [ vrf,ospf ]
+    vrfs:
+      brown:
+        ospf.active: True
+
+links:
+- r3:
+    vrf: brown
+```
 
 ## Examples
 
