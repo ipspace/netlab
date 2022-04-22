@@ -11,6 +11,7 @@ class ProviderConfiguration(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
     provider = providers._Provider.load(topology.provider,topology.defaults.providers[topology.provider])
+    provider.call('pre_output_transform',topology)
 
     filename = None
     if hasattr(self,'filenames'):
