@@ -8,6 +8,8 @@
 * Start the virtual lab;
 * Deploy device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag
 
+You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab using the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
+
 ## Usage
 
 ```text
@@ -35,6 +37,8 @@ optional arguments:
                         Additional parameters added to topology file
   --no-config           Do not configure lab devices
   --fast-config         Use fast device configuration (Ansible strategy = free)
+  --snapshot [SNAPSHOT]
+                        Use netlab snapshot file created by a previous lab run
 ```
 
 ```{warning}
