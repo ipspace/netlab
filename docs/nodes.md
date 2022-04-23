@@ -2,13 +2,17 @@
 
 Network devices (nodes) used in a virtual lab are specified in **nodes** element in the topology file. Nodes can be specified as:
 
-* A list of strings
+* A list of strings (node names)
 * A dictionary of node names and node attributes
-* A list of node objects
 
-Regardless of the format used, the [topology transformation process](dev/transform.md) converts the **nodes** element into a dictionary of dictionaries before further processing.
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
 
-## List of Strings
+## Nodes Specified as a List of Strings 
 
 The easiest way to specify nodes in a virtual lab topology is to list node names as a list of strings:
 
@@ -17,13 +21,12 @@ The easiest way to specify nodes in a virtual lab topology is to list node names
 defaults:
   device: iosv
   
-nodes:
-- r1
-- r2
-- r3
+nodes: [ r1, r2, r3 ]
 ```
 
 When using this format you cannot specify the device types or any other node attributes. Default device type specified in **defaults.device** is used for all nodes specified in this manner.
+
+The [topology transformation process](dev/transform.md) converts the **nodes** element specified as a list of strings into a dictionary of dictionaries before further processing.
 
 ## Dictionary of Nodes
 
@@ -47,59 +50,12 @@ nodes:
       as: 65000
 ```
 
-## List of Node Objects
-
-You could also use a list of node objects. In this format, the node name is specified in the **name** attribute. You might want to use this format with older versions of Python 3 to ensure the nodes get consistent node IDs.
-
-Simple example:
-
-```
-nodes:
-- name: c_ios
-  device: iosv
-- name: c_csr
-  device: csr
-- name: c_nxos
-  device: nxos
-- name: a_eos
-  device: eos
-- name: j_vsrx
-  device: vsrx
-```
-
-More complex example with additional node attributes:
-
-```
-nodes:
-- name: e1
-  module: [ ospf, bgp ]
-  bgp:
-    as: 65000
-- name: e2
-  module: [ ospf ]
-  edge: true
-- name: pe1
-  device: csr
-  module: [ ospf, bgp ]
-  bgp:
-    as: 65001
-```
-
-You can also combine the list formats, specifying some nodes as strings (using default device type) and others as objects:
-
-```
-nodes:
-- e1
-- e2
-- name: pe1
-  device: nxos
-```
-
 ## Node Attributes
 
 These node attributes are recognized and used by *netsim-tools*:
 
-* **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*.
+* **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device.
+* **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*, for which the host **role** is set in system device defaults.
 * **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU.
 * **id** -- static node identifier[^id] (see below)
 * **loopback** -- static loopback addresses. Must be a dictionary with **ipv4** and/or **ipv6** attributes.
@@ -108,23 +64,13 @@ These node attributes are recognized and used by *netsim-tools*:
 
 [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
 
-### Platform specific Node Attributes
+## Provider-Specific Node Attributes
 
-Some node attributes are used only within specific *netsim-tools* platforms.
+Some node attributes are used only with specific *netsim-tools* virtualization provider. These attributes can be specified at node level as `<provider>.<attribute>`, or as default with `defaults.devices.<device>.<provider>.node.<attribute>`.
 
-These attributes can be specified at node level as `<platform>.<attribute>`, or as default with `defaults.devices.<device>.<platform>.node.<attribute>`.
+### Libvirt Attributes
 
-* **libvirt**:
-  * **libvirt.nic_model** - virtual NIC model allocated to the VM lab device. Applicable only to **libvirt**. Supported values are:
-    * virtio (*libvirt default*)
-    * e1000
-    * rtl8139
-    * pcnet
-    * ne2k_pci
-    * i82559er
-    * i82557b
-    * i82551
-    * ne2k_isa
+* **libvirt.nic_model** -- *libvirt* virtual NIC model used by the VM lab device. See *libvirt* and *KVM* documentation for supported values; the most common settings are *virtio* (*libvirt* default) and *e1000*. Other supported values include *rtl8139*, *pcnet*, *ne2k_pci*, *i82559er*, *i82557b*, *i82551* and *ne2k_isa*.
 
 Example:
 ```
@@ -141,12 +87,19 @@ nodes:
 
 [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **nic_model** for all devices that can be run as virtual machines.
 
+### Containerlab Attributes
+
+* **clab.kind** -- [containerlab device kind](https://containerlab.dev/manual/kinds/kinds/). Set in the system defaults for all supported devices.
+* **clab.type** -- device *type* when supported by containerlab (example: [SR Linux](https://containerlab.dev/manual/kinds/srl/#types))
+* **clab.env** -- container environment variables. Used in system defaults to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations).
+* **clab.license** -- license file needed for a network device running under containerlab. Used by Nokia SR OS.
+
 ## Augmenting Node Data
 
 After the initial cleanup, *netsim-tools* topology transformation code augments node data as follows (bold text indicates attribute names):
 
 * Unless the node data contain an **id** attribute, the node **id** is set based on node's position in the **nodes** dictionary[^IDLIST] -- starting with 1 and skipping static **id** used by other nodes.
-* Unless the node is a *host*[^HOST], it's  **loopback*** addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.
+* Unless the node is a *host*[^HOST], or has a **loopback** attribute, it's loopback addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.
 * **device** type is copied from **defaults.device** if not already set.
 * Vagrant **box** is set from device data if not specified in the node attributes
 * Device settings **role**, **mtu** and **runtime** are copied into the node data unless you set the corresponding attribute in the topology file.
