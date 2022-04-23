@@ -108,6 +108,39 @@ These node attributes are recognized and used by *netsim-tools*:
 
 [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
 
+### Platform specific Node Attributes
+
+Some node attributes are used only within specific *netsim-tools* platforms.
+
+These attributes can be specified at node level as `<platform>.<attribute>`, or as default with `defaults.devices.<device>.<platform>.node.<attribute>`.
+
+* **libvirt**:
+  * **libvirt.nic_model** - virtual NIC model allocated to the VM lab device. Applicable only to **libvirt**. Supported values are:
+    * virtio (*libvirt default*)
+    * e1000
+    * rtl8139
+    * pcnet
+    * ne2k_pci
+    * i82559er
+    * i82557b
+    * i82551
+    * ne2k_isa
+
+Example:
+```
+---
+defaults.devices.vyos.libvirt.node.nic_model: e1000
+
+nodes:
+  vyos1:
+    device: vyos
+  vyos2:
+    device: vyos
+    libvirt.nic_model: virtio
+```
+
+[Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **nic_model** for all devices that can be run as virtual machines.
+
 ## Augmenting Node Data
 
 After the initial cleanup, *netsim-tools* topology transformation code augments node data as follows (bold text indicates attribute names):
