@@ -76,20 +76,20 @@ You cannot use all supported network devices with all virtualization providers. 
 
 Configuration files for Virtualbox and KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
 
-| Virtual network device     | netsim device type | CPUs | memory |
-| -------------------------- | ------------------ | ---: | -----: |
-| Arista vEOS                | eos                |    2 |   2048 |
-| Cisco IOSv                 | iosv               |    1 |    512 |
-| Cisco CSR 1000v            | csr                |    2 |   4096 | 
-| Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| 
-| Cumulus Linux              | cumulus            |    2 |   1024 |
-| Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 |
-| Fortinet FortiOS           | fortios            |    1 |   1024 |
-| Generic Linux host         | linux              |    1 |   1024 |
-| Juniper vSRX 3.0           | vsrx               |    2 |   4096 | 
-| Mikrotik CHR RouterOS      | routeros           |    1 |    256 |
-| VyOS                       | vyos               |    2 |   1024 |
-| Dell OS10                  | dellos10           |    2 |   2048 |
+| Virtual network device     | netsim device type | CPUs | memory | libvirt NIC model          |
+| -------------------------- | ------------------ | ---: | -----: | -------------------------: |
+| Arista vEOS                | eos                |    2 |   2048 | virtio (*libvirt default*) |
+| Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
+| Cisco CSR 1000v            | csr                |    2 |   4096 | virtio (*libvirt default*) |
+| Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| e1000 |
+| Cumulus Linux              | cumulus            |    2 |   1024 | virtio (*libvirt default*) |
+| Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio (*libvirt default*) |
+| Fortinet FortiOS           | fortios            |    1 |   1024 | virtio (*libvirt default*) |
+| Generic Linux host         | linux              |    1 |   1024 | virtio (*libvirt default*) |
+| Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio (*libvirt default*) |
+| Mikrotik CHR RouterOS      | routeros           |    1 |    256 | virtio (*libvirt default*) |
+| VyOS                       | vyos               |    2 |   1024 | virtio (*libvirt default*) |
+| Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
 
 ## Configuration Deployments
 
