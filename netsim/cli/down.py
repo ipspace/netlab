@@ -1,8 +1,9 @@
 #
-# netlab create command
+# netlab down command
 #
-# Creates virtualization provider configuration and automation inventory from
-# the specified topology
+# * Transform lab topology or read transformed lab topology from snapshot file
+# * Stop the lab, including provider-specific pre- and post-stop hooks
+# * Clean up the working directory (optional)
 #
 import argparse
 import typing
@@ -14,7 +15,7 @@ from .. import read_topology,augment,common
 from .. import providers
 
 #
-# CLI parser for create-topology script
+# CLI parser for 'netlab down' command
 #
 def down_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
@@ -37,7 +38,8 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
     '--snapshot',
     dest='snapshot',
     action='store',
-    default='netlab.snapshot.yml',
+    nargs='?',
+    const='netlab.snapshot.yml',
     help='Transformed topology snapshot file')
   parser.add_argument(
     dest='topology', action='store', nargs='?',

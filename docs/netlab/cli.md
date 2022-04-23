@@ -7,6 +7,7 @@ The **netlab** command is the CLI interface to *netsim-tools* functionality, inc
 * **[netlab up](up.md)** creates configuration files from lab topology, starts the virtual lab, and deploys initial device configurations
 * **[netlab down](down.md)** destroys the virtual lab
 * **[netlab create](create.md)** creates virtualization provider and network automation configuration files (usually `Vagrantfile`, `hosts.yml` and `ansible.cfg`)
+* **[netlab restart](restart.md)** stops and restarts the lab, including lab topology reconfiguration and recreation of configuration files if you changed the lab topology definition.
 
 ## Configuring and Controlling the Lab
 
@@ -37,6 +38,7 @@ The **netlab** command is the CLI interface to *netsim-tools* functionality, inc
    netlab down <down.md>
    netlab initial <initial.md>
    netlab install <install.md>
+   netlab restart <restart.md>
    netlab show <show.md>
    netlab test <test.md>
    netlab up <up.md>
