@@ -123,44 +123,140 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     vdata.prefix = addressing.rebuild_prefix(pfx_list)
 
 """
-validate_link_vlan_attributes: limited implementation dealing with access VLANs
+check_link_vlan_attributes: check correctness of VLAN link attributes
 
-Make sure that:
-* nobody is using 'trunk','native' or 'mode' attributes
-* access VLAN is specified if the VLAN attribute is used
-* access VLAN is not specified on a link and on an interface
+* known attributes only
+* attribute types must be correct
+* VLANs used in attribute types must be defined
 """
-def validate_link_vlan_attributes(obj: Box,link: Box) -> bool:
+
+vlan_link_attr: dict = {
+  'access': { 'type' : str, 'vlan': True, 'single': True },
+  'native': { 'type' : str, 'vlan': True, 'single': True },
+  'mode':   { 'type' : str },
+  'trunk' : { 'type' : dict,'vlan': True }
+}
+
+def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) -> bool:
+  global vlan_link_attr
   if not 'vlan' in obj:
     return True
 
-  if not isinstance(obj.vlan,dict):
-    common.error(f'vlan link attribute must be a dictionary\n... {link}',common.IncorrectValue,'vlan')
-    return False
-
-  for attr in ('trunk','native'):
-    if attr in obj.vlan:
-      common.error(
-        f'VLAN link/interface attribute {attr} is not yet supported',
-        common.IncorrectValue,
-        'vlan')
-      return False
-
-  if not 'access' in obj.vlan:
+  if not isinstance(obj.vlan,dict):                               # Basic sanity check: VLAN attribute must be a dictionary
     common.error(
-      f"You must specify access VLAN when using 'vlan' attribute on a link/interface\n... {link}",
+      f'vlan link attribute must be a dictionary\n... {link}',
       common.IncorrectValue,
       'vlan')
     return False
-  else:
-    if not obj is link and link.get('vlan',{}).get('access',None):
+
+  node_error = f' in node {obj.node}' if not obj is link else ''  # Prepare for error checking
+  link_ok = True
+
+  for attr in obj.vlan.keys():                                    # Check for unexpected attributes
+    if not attr in vlan_link_attr:
       common.error(
-        f"You cannot specify access VLAN on a link and an attached node\n... {link}",
+        f'Unknown VLAN attribute {attr}{node_error}\n... {link}',
+        common.IncorrectValue,
+        'vlan')
+      link_ok = False
+
+  for attr in vlan_link_attr.keys():                              # Loop over VLAN attributes
+    if not attr in obj.vlan:                                      # ... not present, skip
+      continue
+
+    a_type = vlan_link_attr[attr]['type']
+    if not isinstance(obj.vlan[attr],a_type):                     # Is the attribute type correct?
+      if a_type is dict and isinstance(obj.vlan[attr],list):      # ... only exception: convert list to dict
+        obj.vlan[attr] = { vname: {} for vname in obj.vlan[attr] }
+      else:
+        common.error(
+          f'VLAN attribute {attr}{node_error} must be a {a_type.__name__}\n... {link}',
+          common.IncorrectValue,
+          'vlan')  
+        link_ok = False
+        continue
+
+    if not 'vlan' in vlan_link_attr[attr]:                        # If this attribute does not contain VLAN names, skip the rest
+      continue
+                                                                  # Build a list of VLANs out of a string or a dict
+    vlan_list = [ obj.vlan[attr] ] if isinstance(obj.vlan[attr],str) else obj.vlan[attr].keys()
+    if not attr in v_attr:                                        # Prepare attribute collection dictionary if needed
+      v_attr[attr].list = []
+      v_attr[attr].set = set()
+      v_attr[attr].node_set = set()
+      v_attr[attr].use_count = 0
+
+    v_attr[attr].list.extend(vlan_list)                           # ... and add collected VLANs to attribute dictionary
+    v_attr[attr].set.update(vlan_list)
+    v_attr[attr].use_count = v_attr[attr].use_count + 1
+
+    for vname in vlan_list:                                       # Check that VLANs exist
+      if vname in topology.get('vlans',{}):
+        continue
+      if not obj is link and vname in topology.nodes[obj.node].get('vlans',{}):
+        v_attr[attr].node_set.add(obj.node)
+        continue
+      common.error(
+        f'VLAN {vname} used in vlan.{attr}{node_error} is not defined\n... {link}',
+        common.IncorrectValue,
+        'vlan')
+      link_ok = False
+
+  return link_ok
+
+"""
+validate_link_vlan_attributes: check semantical correctness of VLAN attributes
+
+* 'trunk' and 'access' cannot be mixed
+* 'native' is valid only with 'trunk'
+* 'access' and 'native' should have a single value
+"""
+def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
+  global vlan_link_attr
+
+  if 'trunk' in v_attr and 'access' in v_attr:
+    common.error(
+      f"Cannot mix trunk and access VLANs on the same link\n... {link}",
+      common.IncorrectValue,
+      'vlan')
+    return False
+
+  if 'native' in v_attr and not 'trunk' in v_attr:
+    common.error(
+      f"Native VLAN is valid only on VLAN trunks\n... {link}",
+      common.IncorrectValue,
+      'vlan')
+    return False
+
+  link_ok = True
+
+  for attr in vlan_link_attr.keys():                              # Loop over VLAN attributes
+    if not attr in v_attr:                                        # ... not present, skip
+      continue
+
+    if not 'vlan' in v_attr:                                      # Not a list of VLANs, no further checks necessary
+      continue
+
+    if v_attr[attr].use_count > 1:                                # Is this attribute used in more than one place on the link?
+      for vname in v_attr[attr].set:                              # Iterate over the VLAN set
+        if not vname in topology.get('vlans',{}):                 # ... and check that all VLANs used this way are globally defined
+          common.error(
+            f"VLAN {vname} used in more than one place on the same link must be a global VLAN\n... {link}",
+            common.IncorrectValue,
+            'vlan')
+          link_ok = False
+
+    if not 'single' in v_attr:                                    # Does the attribute require a consistent VLAN across the link?
+      continue
+
+    if len(v_attr[attr].set) > 1:                                 # ... if so, check the length of the VLAN set
+      common.error(
+        f"Cannot use more than one {attr} VLAN on the same link\n... {link}",
         common.IncorrectValue,
         'vlan')
       return False
 
-  return True
+  return link_ok
 
 """
 copy_vlan_attributes: copy prefix and link type from vlan to link
@@ -173,61 +269,37 @@ def copy_vlan_attributes(vlan: str, vlan_data: Box, link: Box) -> None:
   link.vlan_name = vlan
 
 """
-set_link_vlan_prefix: spaghetti mess trying to set a VLAN-derived prefix on a link
+set_link_vlan_prefix: copy link attributes from VLAN for access/native VLAN links
 
-* Do we have link-level access VLAN? Fine, use prefix from global VLAN definition
-* Do we have interface access VLAN on more than two interfaces? They must match, and
-  we have to use prefix from global VLAN definition
-* Otherwise we're dealing with a single access VLAN interface on a link. We're OK
-  with using global or node VLAN definition
+* We're assuming the attributes passed VLAN validity checks, so it's safe to
+  use the collected v_attr data
+* If there's access or native VLAN defined on the link, use it to set link attributes
 """
 
-def set_link_vlan_prefix(link: Box,topology: Box) -> None:
-  if get_from_box(link,'vlan.access'):                    # Is access VLAN defined for the link?
-    if not link.vlan.access in topology.get('vlans',{}):  # ... if so, it must be a global VLAN, or we wouldn't know 
-      common.error(                                       # ... which definition to use
-        f'Link-level access VLAN {link.vlan.access} should be defined as a global VLAN\n... {link}',
-        common.IncorrectValue,
-        'vlan')
-      return
-    copy_vlan_attributes(link.vlan.access,topology.vlans[link.vlan.access],link)
+def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
+  link_vlan_set: set = set()
+  node_set: set = set()
+
+  if 'access' in v_attr:
+    link_vlan_set = v_attr.access.set
+    node_set = v_attr.access.node_set
+  elif 'native' in v_attr:
+    link_vlan_set = v_attr.native.set
+    node_set = v_attr.native.node_set
+
+  if not link_vlan_set:
     return
 
-  # No link-level access VLAN, build a list of interface access VLANs
-  vlan_list = [ get_from_box(intf,'vlan.access') for intf in link.interfaces ]      # Collect all vlan.access settings
-  vlan_list = [ vlan for vlan in vlan_list if vlan ]                                # ... and remove the empty ones
-  if not vlan_list:                                   # No interface access VLAN? We're done, let's get out of here
-    return
-
-  if len(set(vlan_list)) > 1:                         # Oh my, more than one access VLAN. That can't be right
-    common.error(
-      f'Cannot use more than one access VLAN per link, found {vlan_list}\n...{link}',
-      common.IncorrectValue,
-      'vlan')
-    return
-
-  link_vlan = str(vlan_list[0])                       # All interface access VLANs are the same, take the first one
-  if link_vlan in topology.get('vlans',{}):           # Are we dealing with a global access VLAN?
+  link_vlan = list(link_vlan_set)[0]                  # Got the access/native VLAN
+  if link_vlan in topology.get('vlans',{}):
     copy_vlan_attributes(link_vlan,topology.vlans[link_vlan],link)
-  else:
-    if len(vlan_list) > 1:                             # Access VLAN defined on more than one interface?
-      common.error(
-        f'Access VLAN {link_vlan} used by more than one node attached to a link must be a global VLAN\n... {link}',
-        common.IncorrectValue,
-        'vlan')
-      return
+    return
 
-    # Find the node using the access VLAN
-    node = next(intf.node for intf in link.interfaces if get_from_box(intf,'vlan.access') == link_vlan)
+  if not node_set:
+    common.fatal(f'Cannot find the node using VLAN {link_vlan}\n... {link}')
+    return
 
-    # Hope the VLAN is defined within the node, otherwise we're truly lost
-    if link_vlan in topology.nodes[node].get('vlans',{}):
-      copy_vlan_attributes(link_vlan,topology.nodes[node].vlans[link_vlan],link)
-    else:
-      common.error(
-        f'Access VLAN {link_vlan} used by node {node} should be defined globally or within the node\n... {link}',
-        common.IncorrectValue,
-        'vlan')
+  copy_vlan_attributes(link_vlan,topology.nodes[list(node_set)[0]].vlans[link_vlan],link)
 
 """
 get_vlan_data: Get VLAN data structure (node or topology)
@@ -363,7 +435,6 @@ class VLAN(_Module):
     if not 'vlans' in topology:
       return
 
-    populate_vlan_id_set(topology)
     validate_vlan_attributes(topology,topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
@@ -381,17 +452,19 @@ class VLAN(_Module):
     validate_vlan_attributes(node,topology)
 
   def link_pre_transform(self, link: Box, topology: Box) -> None:
-    if not validate_link_vlan_attributes(link,link):                    # Check link-level VLAN attributes
-      return
+    v_attr = Box({},default_box=True,box_dots=True)
+    link_ok = check_link_vlan_attributes(link,link,v_attr,topology)                # Check link-level VLAN attributes
 
-    link_ok = True
     for intf in link.interfaces:
-      link_ok = link_ok and validate_link_vlan_attributes(intf,link)    # Check interface VLAN attributes
+      link_ok = link_ok and check_link_vlan_attributes(intf,link,v_attr,topology)  # Check interface VLAN attributes
 
     if not link_ok:
       return
 
-    set_link_vlan_prefix(link,topology)
+    if not validate_link_vlan_attributes(link,v_attr,topology):
+      return
+
+    set_link_vlan_prefix(link,v_attr,topology)
 
   def module_post_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
