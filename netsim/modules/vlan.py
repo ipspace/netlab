@@ -453,10 +453,10 @@ class VLAN(_Module):
 
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     v_attr = Box({},default_box=True,box_dots=True)
-    link_ok = check_link_vlan_attributes(link,link,v_attr,topology)                # Check link-level VLAN attributes
+    link_ok = check_link_vlan_attributes(link,link,v_attr,topology)               # Check link-level VLAN attributes
 
     for intf in link.interfaces:
-      link_ok = link_ok and check_link_vlan_attributes(intf,link,v_attr,topology)  # Check interface VLAN attributes
+      link_ok = link_ok and check_link_vlan_attributes(intf,link,v_attr,topology) # Check interface VLAN attributes
 
     if not link_ok:
       return
@@ -465,6 +465,12 @@ class VLAN(_Module):
       return
 
     set_link_vlan_prefix(link,v_attr,topology)
+
+    # Merge link VLAN attributes into interface VLAN attributes to make subsequent steps easier
+    if 'vlan' in link:
+      for intf in link.interfaces:
+        if 'vlan' in topology.nodes[intf.node].get('module',[]):
+          intf.vlan = link.vlan + intf.vlan
 
   def module_post_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
