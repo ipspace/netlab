@@ -52,6 +52,7 @@ def get_next_vlan_id(k : str) -> int:
   while vlan_next[k] in vlan_ids[k]:
     vlan_next[k] = vlan_next[k] + 1
 
+  vlan_ids[k].add(vlan_next[k])
   return vlan_next[k]
 
 #
@@ -176,6 +177,11 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         link_ok = False
         continue
 
+    if isinstance(obj.vlan[attr],dict):                           # Change empty VLAN keys into dictionaries
+      for k in obj.vlan[attr].keys():
+        if obj.vlan[attr][k] is None:
+          obj.vlan[attr][k] = {}
+
     if not 'vlan' in vlan_link_attr[attr]:                        # If this attribute does not contain VLAN names, skip the rest
       continue
                                                                   # Build a list of VLANs out of a string or a dict
@@ -286,6 +292,10 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
   elif 'native' in v_attr:
     link_vlan_set = v_attr.native.set
     node_set = v_attr.native.node_set
+  elif 'trunk' in v_attr:
+    if not 'pool' in link and not 'prefix' in link:   # If the user set prefix or address pool leave it alone
+      link.prefix = {}                                # ... otherwise we need no IP addressing on trunk links without a native VLAN
+    return
 
   if not link_vlan_set:
     return
@@ -300,6 +310,27 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
     return
 
   copy_vlan_attributes(link_vlan,topology.nodes[list(node_set)[0]].vlans[link_vlan],link)
+
+"""
+create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
+"""
+def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
+  native_vlan = link.get('vlan_name',None)
+  for vname in v_attr.trunk.set:
+    if vname != native_vlan:           # Skip native VLAN
+      link_data = Box(link.vlan.trunk[vname] or {},default_box=True,box_dots=True)
+      link_data.linkindex = topology.links[-1].linkindex + 1
+      link_data.parentindex = link.linkindex
+      link_data.vlan.access = vname
+      link_data.vlan_name = vname
+      link_data.type = 'vlan_member'
+      link_data.interfaces = []
+      for intf in link.interfaces:
+        if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
+          intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
+          intf_data.node = intf.node
+          link_data.interfaces.append(intf_data)
+      topology.links.append(link_data)
 
 """
 get_vlan_data: Get VLAN data structure (node or topology)
@@ -334,40 +365,55 @@ def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,top
     vlan_data.neighbors.append(n_data)                                  # Add current node as a neighbor to VLAN neighbor list
 
 """
+create_node_vlan: Create a local (node) copy of a VLAN used on an interface
+"""
+def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box]:
+  if not vlan in node.vlans:                                        # Do we have VLAN defined in the node?
+    node.vlans[vlan] = Box(topology.vlans[vlan])                    # ... no, create a copy of the global definition
+    if not node.vlans[vlan]:                                        # pragma: no cover -- we don't have a global definition? 
+      common.fatal(                                                 # ... this should have been detected way earlier
+        f'Unknown VLAN {vlan} used on node {node.name}','vlan')
+      return None
+
+  if not 'bridge_group' in node.vlans[vlan]:                        # Set bridge group in VLAN data
+    if not node.vlan.max_bridge_group:                              # ... current counter is in node.vlan dictionary
+      node.vlan.max_bridge_group = 1
+    else:
+      node.vlan.max_bridge_group = node.vlan.max_bridge_group + 1
+    node.vlans[vlan].bridge_group = node.vlan.max_bridge_group
+
+  return node.vlans[vlan]
+
+"""
 create_svi_interfaces: for every physical interface with access VLAN, create an SVI interface
 """
-def create_svi_interfaces(node: Box, topology: Box) -> None:
-  vlan_ifmap: dict = {}
-  bridge_group = 0
 
-  phy_ifattr = ['bridge','ifindex','ifname','linkindex','type','vlan']      # Physical interface attributes
+phy_ifattr = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan'] # Physical interface attributes
+
+def create_svi_interfaces(node: Box, topology: Box) -> dict:
+  global phy_ifattr
+  vlan_ifmap: dict = {}
+
   svi_skipattr = ['id','vni','prefix','pool']                               # VLAN attributes not copied into VLAN interface
   iflist_len = len(node.interfaces)
   for ifidx in range(0,iflist_len):
     ifdata = node.interfaces[ifidx]
-    access_vlan = get_from_box(ifdata,'vlan.access')
+    access_vlan = get_from_box(ifdata,'vlan.access') or get_from_box(ifdata,'vlan.native')
     if not access_vlan:                                                     # No access VLAN on this interface?
       continue                                                              # ... good, move on
 
-    if not access_vlan in node.vlans:                                       # Do we have VLAN defined in the node?
-      node.vlans[access_vlan] = Box(topology.vlans[access_vlan])            # ... no, create a copy of the global definition
-      if not node.vlans[access_vlan]:                                       # pragma: no cover -- we don't have a global definition? 
-        common.fatal(                                                       # ... this should have been detected way earlier
-          f'Unknown VLAN {access_vlan} used on node {node.name}','vlan')
-        continue
+    vlan_data = create_node_vlan(node,access_vlan,topology)
+    if vlan_data is None:
+      continue
 
-    vlan_data = node.vlans[access_vlan]                                     # Slowly setting things up: VLAN data
-    if not 'bridge_group' in vlan_data:                                     # ... bridge group in VLAN definition
-      bridge_group = bridge_group + 1
-      vlan_data.bridge_group = bridge_group
-                                                                            # ... and SVI interface name
-    svi_name = devices.get_device_attribute(node,'svi_name',topology.defaults)
+    features = devices.get_device_features(node,topology.defaults)
+    svi_name = features.vlan.svi_interface_name
     if not svi_name:                                                        # pragma: no cover -- hope we got device settings right ;)
       common.error(                                                         # SVI interfaces are not supported on this device
         f'Device {node.device} used by {node.name} does not support VLAN interfaces (access vlan {access_vlan})',
         common.IncorrectValue,
         'vlan')
-      return
+      return vlan_ifmap
 
     if not access_vlan in vlan_ifmap:                                       # Do we need to create a SVI interface?
       skip_attr = list(phy_ifattr)                                          # Create a local copy of the attribute skip list
@@ -383,6 +429,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
                               bvi=vlan_data.bridge_group)
       vlan_ifdata.name = f'VLAN {access_vlan} ({vlan_data.id})'
       vlan_ifdata.virtual_interface = True                                  # Mark interface as virtual
+      vlan_ifdata.type = "svi"
       vlan_ifdata.neighbors = []                                            # No neighbors so far
                                                                             # Overwrite interface settings with VLAN settings
       vlan_ifdata = vlan_ifdata + { k:v for k,v in vlan_data.items() if k not in svi_skipattr }
@@ -398,6 +445,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> None:
         ifdata.pop(attr,None)
 
     ifdata.vlan.access_id = vlan_data.id                                    # Add VLAN ID to interface data to simplify config templates
+
+  return vlan_ifmap
 
 """
 set_svi_neighbor_list: set SVI neighbor list from VLAN neighbor list
@@ -418,6 +467,79 @@ def set_svi_neighbor_list(node: Box, topology: Box) -> None:
         if ' -> ' in ifdata.name:
           ifdata.name = ifdata.name.split(' -> ')[0]
         ifdata.name = ifdata.name + " -> [" + ",".join([ n.node for n in ifdata.neighbors]) + "]"
+
+"""
+map_trunk_vlans: build a list of VLAN IDs on trunk interfaces
+"""
+def map_trunk_vlans(node: Box, topology: Box) -> None:
+  for intf in node.interfaces:
+    trunk = get_from_box(intf,'vlan.trunk')
+    if not trunk:
+      continue
+
+    vlan_list = []
+    for vlan in trunk.keys():
+      if not vlan in node.vlans:
+        common.fatal(f'Internal error: VLAN {vlan} should be already defined on node {node.name}')
+        break
+      vlan_list.append(node.vlans[vlan].id)
+
+    intf.vlan.trunk_id = vlan_list
+
+"""
+find_parent_interface: Find the parent interface of a VLAN member subinterface
+"""
+def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optional[Box]:
+  link_list = [ l for l in topology.links if l.linkindex == intf.parentindex ]
+  if not link_list:
+    return None
+
+  link = link_list[0]
+  intf_list = [ intf for intf in link.interfaces if intf.node == node.name]
+  if not intf_list:
+    return None
+
+  link_intf = intf_list[0]
+
+  node_iflist = [ intf for intf in node.interfaces if intf.ifindex == link_intf.ifindex]
+  if not node_iflist:
+    return None
+
+  return node_iflist[0]
+
+"""
+rename_vlan_subinterfaces: rename or remove interfaces created from VLAN pseudo-links
+"""
+def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
+  global phy_ifattr
+  keep_attr = ['vlan','ifindex' ]
+
+  features = devices.get_device_features(node,topology.defaults)
+  subif_name = features.vlan.vlan_subif_name
+
+  if not subif_name:
+    node.interfaces = [ intf for intf in node.interfaces if intf.type != 'vlan_member']
+    return
+
+  for intf in node.interfaces:
+    if intf.type != 'vlan_member':
+      continue
+
+    parent_intf = find_parent_interface(intf,node,topology)
+    if parent_intf is None:
+      common.fatal(f'Internal error: cannot find parent interface for {intf} in node {node.name}')
+      return
+
+    if 'subif_index' in parent_intf:
+      parent_intf.subif_index = parent_intf.subif_index + 1
+    else:
+      parent_intf.subif_index = 1
+
+    intf.ifname = subif_name.format(**parent_intf)
+    intf.parent_ifindex = parent_intf.ifindex
+    for attr in phy_ifattr:
+      if attr in intf and not attr in keep_attr:
+        intf.pop(attr,None)
 
 class VLAN(_Module):
 
@@ -452,6 +574,9 @@ class VLAN(_Module):
     validate_vlan_attributes(node,topology)
 
   def link_pre_transform(self, link: Box, topology: Box) -> None:
+    if link.get('type','') == 'vlan_member':                                      # Skip VLAN member links, we've been there...
+      return
+
     v_attr = Box({},default_box=True,box_dots=True)
     link_ok = check_link_vlan_attributes(link,link,v_attr,topology)               # Check link-level VLAN attributes
 
@@ -472,10 +597,17 @@ class VLAN(_Module):
         if 'vlan' in topology.nodes[intf.node].get('module',[]):
           intf.vlan = link.vlan + intf.vlan
 
+    if 'trunk' in v_attr:
+      create_vlan_links(link,v_attr,topology)
+
   def module_post_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
       if 'vlan' in n.get('module',[]):
-        create_svi_interfaces(n,topology)
+        vlan_ifmap = create_svi_interfaces(n,topology)
+        map_trunk_vlans(n,topology)
+        rename_vlan_subinterfaces(n,topology)
 
     for n in topology.nodes.values():
       set_svi_neighbor_list(n,topology)
+
+    topology.links = [ link for link in topology.links if link.type != 'vlan_member' ]
