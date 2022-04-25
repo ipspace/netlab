@@ -342,11 +342,20 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
       link_data.vlan_name = vname
       link_data.type = 'vlan_member'
       link_data.interfaces = []
+
+      if vname in topology.get('vlans',{}):                 # We need an IP prefix for the VLAN link
+        prefix = topology.vlans[vname].prefix               # Hopefully we can get it from the global VLAN pool
+
       for intf in link.interfaces:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
           intf_data.node = intf.node
           link_data.interfaces.append(intf_data)
+          if not prefix:                                    # Still no usable IP prefix? Try to get it from the node VLAN pool
+            if vname in topology.nodes[intf.node].get('vlans',{}):
+              prefix = topology.node[intf.node].vlans[vname].prefix
+
+      link_data.prefix = prefix
       topology.links.append(link_data)
 
 """
