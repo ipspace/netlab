@@ -12,9 +12,33 @@ from ..data import get_from_box
 from ..augment import devices
 from ..augment import links
 
-vlan_ids = Box({},default_box=True,box_dots=True)
-vlan_next = Box({},default_box=True,box_dots=True)
-vlan_mode_kwd = [ 'bridge', 'irb', 'route' ]
+# Global variables -- would love to be without them, but the alternatives
+# are even messier
+#
+vlan_ids: Box
+vlan_next: Box
+
+# Static lists of keywords
+#
+vlan_mode_kwd: typing.Final[list] = [ 'bridge', 'irb', 'route' ]
+
+vlan_link_attr: typing.Final[dict] = {
+  'access': { 'type' : str, 'vlan': True, 'single': True },
+  'native': { 'type' : str, 'vlan': True, 'single': True },
+  'mode':   { 'type' : str },
+  'trunk' : { 'type' : dict,'vlan': True }
+}
+
+phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan'] # Physical interface attributes
+keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
+
+"""
+init_global_vars: Initialize the VLAN ID pool
+"""
+def init_global_vars() -> None:
+  global vlan_ids, vlan_next
+  vlan_ids = Box({},default_box=True,box_dots=True)
+  vlan_next = Box({},default_box=True,box_dots=True)
 
 #
 # build_vrf_id_set: given an object (topology or node), create a set of RDs
@@ -130,13 +154,6 @@ check_link_vlan_attributes: check correctness of VLAN link attributes
 * attribute types must be correct
 * VLANs used in attribute types must be defined
 """
-
-vlan_link_attr: dict = {
-  'access': { 'type' : str, 'vlan': True, 'single': True },
-  'native': { 'type' : str, 'vlan': True, 'single': True },
-  'mode':   { 'type' : str },
-  'trunk' : { 'type' : dict,'vlan': True }
-}
 
 def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) -> bool:
   global vlan_link_attr
@@ -316,7 +333,7 @@ create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
 """
 def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
   native_vlan = link.get('vlan_name',None)
-  for vname in v_attr.trunk.set:
+  for vname in sorted(v_attr.trunk.set):
     if vname != native_vlan:           # Skip native VLAN
       link_data = Box(link.vlan.trunk[vname] or {},default_box=True,box_dots=True)
       link_data.linkindex = topology.links[-1].linkindex + 1
@@ -387,8 +404,6 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
 """
 create_svi_interfaces: for every physical interface with access VLAN, create an SVI interface
 """
-
-phy_ifattr = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan'] # Physical interface attributes
 
 def create_svi_interfaces(node: Box, topology: Box) -> dict:
   global phy_ifattr
@@ -512,7 +527,6 @@ rename_vlan_subinterfaces: rename or remove interfaces created from VLAN pseudo-
 """
 def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
   global phy_ifattr
-  keep_attr = ['vlan','ifindex','ifname','type']
 
   features = devices.get_device_features(node,topology.defaults)
   subif_name = features.vlan.vlan_subif_name
@@ -539,12 +553,13 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     intf.parent_ifindex = parent_intf.ifindex
     intf.virtual_interface = True
     for attr in phy_ifattr:
-      if attr in intf and not attr in keep_attr:
+      if attr in intf and not attr in keep_subif_attr:
         intf.pop(attr,None)
 
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
+    init_global_vars()
     if get_from_box(topology,'vlan.mode'):
       if topology.vlan.mode not in vlan_mode_kwd:     # pragma: no cover
         common.error(
