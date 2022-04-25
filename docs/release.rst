@@ -1,6 +1,17 @@
 Release notes
 =============
 
+2022-XX-XX (release 1.2.2)
+ * VLAN configuration module]
+ * netlab restart command restarts or reconfigures the lab
+ * Use the snapshot file to start a lab
+ * Specify NIC model used by *libvirt* virtualization provider
+ * Set device type or configuration modules in groups
+ * Persistent Linux network provisioning
+ * Debian supported by the installation scripts
+
+ :doc:`More details <release/1.2>`
+
 2022-04-16 (release 1.2.1)
  * Graphite GUI
  * Dell OS10 on *libvirt*

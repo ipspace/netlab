@@ -1,8 +1,20 @@
 # Groups of Lab Devices (Nodes)
 
-Network devices (nodes) used in a virtual lab are automatically grouped into platform-specific groups like *iosv* or *nxos*. These groups could be used to limit the scope of **[netlab](netlab/cli.md)** commands that invoke Ansible playbooks. 
+Network devices (nodes) used in a virtual lab are automatically grouped into platform-specific groups like *iosv* or *nxos*. You can use these groups or custom groups to:
+
+* Set node attributes or Ansible group variables
+* Set device type or [configuration modules](module-reference.md) for a set of devices
+* Attach additional configuration templates to a set of devices
+* Limit the scope of **[netlab](netlab/cli.md)** commands that invoke Ansible playbooks. 
 
 For example, you could use `netlab config mpls.j2 --limit iosv` to deploy configuration specified in Jinja2 template `mpls.j2` only on Cisco IOSv devices.
+
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
 
 ## Custom Node Groups
 
