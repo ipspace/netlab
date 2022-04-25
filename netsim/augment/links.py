@@ -345,6 +345,8 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   link_attr_base = get_link_base_attributes(defaults)
   if not defaults:      # pragma: no cover (almost impossible to get there)
     defaults = Box({})
+  if common.DEBUG:     # pragma: no cover (debugging)
+    print(f'\nProcess P2P link {link}')
   pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools)
 
   end_names = ['left','right']
@@ -360,7 +362,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   for intf_cnt,value in enumerate(link[IFATTR]):
     node = value.node
     ecount = len(link_nodes)
-    ifaddr = Box({},default_box=True)
+    ifaddr = Box({},default_box=True,box_dots=True)
     if link.get('unnumbered',None):
       ifaddr.unnumbered = True
 
@@ -383,7 +385,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
     ifaddr = ifaddr + value
     ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
-    link[IFATTR][intf_cnt] = value
+#    link[IFATTR][intf_cnt] = value
     link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
     ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
@@ -469,7 +471,7 @@ def check_link_type(data: Box) -> bool:
     common.error('Point-to-point link needs exactly two nodes: %s' % data,common.IncorrectValue,'links')
     return False
 
-  if not link_type in [ 'stub','p2p','lan']:
+  if not link_type in [ 'stub','p2p','lan','vlan_member']:
     common.error('Invalid link type %s: %s' % (link_type,data),common.IncorrectValue,'links')
     return False
   return True
@@ -542,12 +544,20 @@ def set_node_af(nodes: Box) -> None:
           n.af[af] = True
           continue
 
+def set_linkindex(topology: Box) -> None:
+  if not 'links' in topology:
+    return
+
+  linkindex = topology.defaults.get('link_index',1)
+  for link in topology.links:
+    link.linkindex = linkindex
+    linkindex = linkindex + 1
+
 def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
   if not link_list:
     return None
 
   link_attr_full = get_link_full_attributes(defaults)
-  linkindex = defaults.get('link_index',1)
 
   for link in link_list:
     if not check_link_attributes(data=link,nodes=nodes,valid=link_attr_full):
@@ -557,21 +567,18 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     if not check_link_type(data=link):
       continue
 
-    link.linkindex = linkindex
     if link.type == 'p2p':
       augment_p2p_link(link,pools,nodes,defaults=defaults)
     else:
       if not 'bridge' in link:
-        br = defaults.name if len(defaults.name)<12 and linkindex<100 else 'netsim-br'
-        link['bridge'] = "%s_%d" % (br,linkindex) # max 15 chars on Linux
-      elif len(link['bridge'])>15:
+        link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex) # max 15 chars on Linux
+      elif len(link['bridge']) > 15:
         common.error(
             f'Bridge name {link["bridge"]} has more than 15 characters',
             common.IncorrectValue,
             'interfaces')
       augment_lan_link(link,pools,nodes,defaults=defaults)
 
-    linkindex = linkindex + 1
     set_default_gateway(link,nodes)
 
   interface_feature_check(nodes,defaults)
