@@ -1,16 +1,20 @@
 # VLANs
 
-The VLAN configuration module implements VLANs and VLAN-related interfaces. Initial implementation supports:
+The VLAN configuration module implements VLANs and VLAN-related interfaces. The current initial implementation supports:
 
 * Access VLANs
+* VLAN trunks (native VLAN is not yet configurable)
 * VLAN interfaces (integrated routing and bridging)
-* Bridging-only VLANs
+* Bridging-only and IRB VLANs
 
 The following features are currently _on the radar_:
 
+* Configurable native VLAN on VLAN trunks
 * Routed subinterfaces
-* Access and trunk ports
-* Native VLAN
+
+```{warning}
+This module is **experimental** for a reason. The VLAN transformation code is the biggest bowl of spaghetti code in the whole system, and is probably full of bugs. We'll whack them as we create more interesting scenarios, but it will take us a while to get there.
+```
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -25,8 +29,8 @@ VLANs are supported on these platforms:
 
 | Operating system      | Access<br>VLANs | VLAN<br>interfaces | Routed<br>subinterfaces | Trunk<br>ports | Native<br>VLAN |
 | --------------------- | :-: | :-: |:-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ❌   | ❌   | ❌   |
-| Cisco IOSv            | ✅  | ✅  | ❌   | ❌   | ❌   |
+| Arista EOS            | ✅  | ✅  | ❌   | ✅ | ❌   |
+| Cisco IOSv            | ✅  | ✅  | ❌   | ✅ | ❌   |
 | Vyatta VyOS           | ✅  | ✅  | ❌   | ❌   | ❌   |
 
 ## VLAN Connectivity Model
@@ -78,21 +82,21 @@ VLAN definitions without **id** or **vni** attribute will get a VLAN ID or VNI a
 To use a VLAN on a link, add **vlan** dictionary to a link or an interface on a link. The VLAN dictionary may contain the following attributes:
 
 * **access** -- the name of access VLAN configured on the link or interface
+* **trunk** -- a list or dictionary of VLANs configured on a trunk port
 
 <!--
 * **native** -- the name of native VLAN configured on a trunk port
 * **mode** -- the default VLAN forwarding mode (route/bridge/irb) for this link or interface -- overrides the node- or global forwarding mode
-* **trunk** -- a list or dictionary of VLANs configured on a trunk port
+-->
 
 Use a list of VLANs in a **trunk** attribute when you don't want to change individual VLAN attributes on a link/interface level. Use a **trunk** dictionary when you want to set forwarding mode or IPv4/IPv6 addresses for individual VLAN interfaces or routed subinterfaces.
-
+<!--
 A VLAN within a **trunk** dictionary can have these attributes:
 
 * **mode** -- forwarding mode (route/bridge/irb)
 * **ipv4** -- IPv4 address to use on VLAN interface or routed subinterface
 * **ipv6** -- IPv6 address to use on VLAN interface or routed subinterface
 -->
-
 ### Access VLAN Restrictions
 
 To keep the VLAN complexity manageable, the VLAN configuration module enforces these rules:
@@ -107,6 +111,7 @@ To keep the VLAN complexity manageable, the VLAN configuration module enforces t
 VLAN interfaces <!-- and routed subinterfaces -->are created on-demand based on these rules:
 
 * A VLAN interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node.
+* VLAN subinterfaces are created on VLAN trunks on platforms behaving more like routers than switches (example: Cisco IOS)
 <!-- * A routed subinterface is created on every interface that has a VLAN with **mode** set to *route*.
 * Routed subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*.-->
 
@@ -121,13 +126,21 @@ IPv4 and/or IPv6 prefixes are automatically assigned to VLAN-enabled links:
 * A VLAN is treated like a multi-access link with an IPv4/IPv6 prefix, and gets an addressing prefix assigned from the corresponding address pool if needed.
 * All nodes connected to a VLAN get their IP addresses from the VLAN **prefix** (see below). Node addresses within a VLAN prefix are calculated with the algorithm used to calculate IP addresses on multi-access links.
 * Whenever a VLAN access interface is attached to a link, the VLAN prefix is used to assign IP addresses to all nodes on that link.
+* A VLAN trunk is decomposed into a number of virtual links (one per VLAN). The above rules are then applied to those virtual links.
 
 The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfaces:
 
 * When a node is attached to a VLAN-enabled link, but does not have a **vlan** interface attribute, the VLAN IP address is assigned to physical interface.
 * When the VLAN forwarding mode is set to *irb*, the node VLAN IP address is assigned to a VLAN interface.
 * No IP address is assigned to the VLAN interface when the VLAN forwarding mode is set to *bridge*.
-* No IP address is assigned to the physical interface that has an **access** VLAN<!--, or a VLAN **trunk**-->. <!-- You can force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute (and become responsible for the results of your actions). -->
+* No IP address is assigned to the physical interface that has an **access** VLAN. You can force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
+* IP prefixes are not assigned to the physical interfaces with VLAN trunks. If you want to assign IP addresses to default native VLAN (1), use **role** or **prefix** link attribute.
 <!--
 * When the VLAN forwarding mode is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
 -->
+
+## Untested Bits
+
+* You should be able to use any module-specific attributes in VLAN definitions (global or node-level). No idea whether that works.
+* **vlan.trunk** dictionary does not support additional link- or node-level attributes yet.
+

@@ -310,7 +310,7 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
     link_vlan_set = v_attr.native.set
     node_set = v_attr.native.node_set
   elif 'trunk' in v_attr:
-    if not 'pool' in link and not 'prefix' in link:   # If the user set prefix or address pool leave it alone
+    if not 'role' in link and not 'prefix' in link:   # If the user set prefix or address pool leave it alone
       link.prefix = {}                                # ... otherwise we need no IP addressing on trunk links without a native VLAN
     return
 
