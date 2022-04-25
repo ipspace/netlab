@@ -70,6 +70,7 @@ def run(cli_args: typing.List[str]) -> None:
   external_commands.run_probes(settings,topology.provider,1)
 
   provider = providers._Provider.load(topology.provider,topology.defaults.providers[topology.provider])
+  provider.call('pre_output_transform',topology)
 
   if hasattr(provider,'pre_stop_lab') and callable(provider.pre_stop_lab):
     provider.pre_stop_lab(topology)
