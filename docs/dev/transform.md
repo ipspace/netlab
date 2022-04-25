@@ -22,7 +22,7 @@ The data transformation has three major steps:
   * Merge provider-specific device and addressing defaults with global defaults
 
 * Load provider plugin (`netsim.providers._Provider.load`)
-* Adjust the list of nodes -- transform [list of strings](nodes.md#list-of-strings) or [dictionary of nodes](nodes.md#dictionary-of-nodes) into list of node objects (dictionaries) (`netsim.augment.nodes.adjust_node_list`)
+* Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.adjust_node_list`)
 * Augment node provider data: set node device type, select VM/container image, copy provider-specific node data into node dictionary (`netsim.augment.nodes.augment_node_provider_data`)
 * Adjust the list of links -- transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
 * Setup [addressing pools](../addressing.md) (`netsim.addressing.setup`)
