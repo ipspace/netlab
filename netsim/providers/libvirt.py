@@ -25,6 +25,7 @@ class Libvirt(_Provider):
           link = topology.links[intf.linkindex - 1]
           if len(link.interfaces) == 2:
             intf.libvirt.type = "tunnel"
+            link.pop("bridge",None)
             remote_if_list = [ rif for rif in link.interfaces if rif.node != node.name or rif.ifindex != intf.ifindex ]
             if len(remote_if_list) != 1:
               common.fatal(
@@ -62,6 +63,7 @@ class Libvirt(_Provider):
       if not brname:
         continue
       try:
+        print(l)
         result = subprocess.run(['virsh','net-info',brname],capture_output=True,check=True,text=True)
       except:
         common.error('Cannot run net-info for libvirt network %s' % brname, module='libvirt')
