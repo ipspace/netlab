@@ -12,6 +12,7 @@ Network devices (nodes) used in a virtual lab are specified in **nodes** element
    :backlinks: none
 ```
 
+(nodes-list-of-strings)=
 ## Nodes Specified as a List of Strings 
 
 The easiest way to specify nodes in a virtual lab topology is to list node names as a list of strings:
