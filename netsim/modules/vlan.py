@@ -512,7 +512,7 @@ rename_vlan_subinterfaces: rename or remove interfaces created from VLAN pseudo-
 """
 def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
   global phy_ifattr
-  keep_attr = ['vlan','ifindex' ]
+  keep_attr = ['vlan','ifindex','ifname','type']
 
   features = devices.get_device_features(node,topology.defaults)
   subif_name = features.vlan.vlan_subif_name
@@ -537,6 +537,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
 
     intf.ifname = subif_name.format(**parent_intf)
     intf.parent_ifindex = parent_intf.ifindex
+    intf.virtual_interface = True
     for attr in phy_ifattr:
       if attr in intf and not attr in keep_attr:
         intf.pop(attr,None)
