@@ -3,13 +3,12 @@
 The VLAN configuration module implements VLANs and VLAN-related interfaces. The current initial implementation supports:
 
 * Access VLANs
-* VLAN trunks (native VLAN is not yet configurable)
+* VLAN trunks, including configurable native VLAN
 * VLAN interfaces (integrated routing and bridging)
 * Bridging-only and IRB VLANs
 
 The following features are currently _on the radar_:
 
-* Configurable native VLAN on VLAN trunks
 * Routed subinterfaces
 
 ```{warning}
@@ -29,8 +28,8 @@ VLANs are supported on these platforms:
 
 | Operating system      | Access<br>VLANs | VLAN<br>interfaces | Routed<br>subinterfaces | Trunk<br>ports | Native<br>VLAN |
 | --------------------- | :-: | :-: |:-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ❌   | ✅ | ❌   |
-| Cisco IOSv            | ✅  | ✅  | ❌   | ✅ | ❌   |
+| Arista EOS            | ✅  | ✅  | ❌   | ✅ | ✅ |
+| Cisco IOSv            | ✅  | ✅  | ❌   | ✅ | ✅ |
 | VyOS                  | ✅  | ✅  | ❌   | ✅ | ❌   |
 
 ## VLAN Connectivity Model
@@ -40,6 +39,8 @@ The VLAN configuration module assumes you're creating a sane design in which:
 * VLAN numbers are globally unique (you're not reusing 802.1q values)
 * Every VLAN is contiguous and might span multiple physical links (please note that VLANs bridged across VXLAN or MPLS are still contiguous)
 * Every VLAN uses a unique IP subnet across all physical links where it's used.
+* On access links, all VLAN-capable devices connected to a link use the same access VLAN.
+* On trunk links, all VLAN-capable devices using native VLAN use the same native VLAN.
 
 It might be possible to build topologies that deviate from these rules, but don't be surprised when the results look weird.
 
@@ -49,8 +50,11 @@ The following parameters can be set globally or per node:
 
 * **vlans**: A dictionary of VLAN definitions (see below)
 * **vlan.mode**: The default VLAN forwarding mode (<!-- **route**, -->**bridge** or **irb**).
+
+The following global parameters are used to set VLAN IDs and VNIs in VLAN definitions:
+
 * **vlan.start_vlan_id**: This global value specifies the first auto-assigned VLAN ID (default: 1000).
-* **vlan.start_vni**: This global value specifies the first auto-assigned VNI (default: 1000).
+* **vlan.start_vni**: This global value specifies the first auto-assigned VNI (default: 100000).
 
 (module-vlan-definition)=
 ## VLAN Definition
@@ -58,7 +62,7 @@ The following parameters can be set globally or per node:
 VLANs are defined in a global- or node-specific **vlans** dictionary, allowing you to create network-wide VLANs or local VLANs.
 
 ```{warning}
-Do not reuse VLAN names when defining node-specific VLANs. There's a subtle interaction between global- and node-specific VLANs.
+Use unique VLAN names when defining node-specific VLANs. There's a subtle interaction between global- and node-specific VLAN definitions.
 ```
 
 The keys of the **vlans** dictionary are VLAN names, the values are VLAN definitions. A VLAN definition could be empty or a dictionary with one or more of these attributes:
@@ -83,9 +87,8 @@ To use a VLAN on a link, add **vlan** dictionary to a link or an interface on a 
 
 * **access** -- the name of access VLAN configured on the link or interface
 * **trunk** -- a list or dictionary of VLANs configured on a trunk port
-
-<!--
 * **native** -- the name of native VLAN configured on a trunk port
+<!--
 * **mode** -- the default VLAN forwarding mode (route/bridge/irb) for this link or interface -- overrides the node- or global forwarding mode
 -->
 
@@ -110,8 +113,8 @@ To keep the VLAN complexity manageable, the VLAN configuration module enforces t
 
 VLAN interfaces <!-- and routed subinterfaces -->are created on-demand based on these rules:
 
-* A VLAN interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node.
-* VLAN subinterfaces are created on VLAN trunks on platforms behaving more like routers than switches (example: Cisco IOS)
+* A VLAN/SVI/BVI interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node.
+* VLAN subinterfaces are created on VLAN trunks on platforms behaving more like routers than switches (example: Cisco IOS). 
 <!-- * A routed subinterface is created on every interface that has a VLAN with **mode** set to *route*.
 * Routed subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*.-->
 
@@ -133,7 +136,7 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 * When a node is attached to a VLAN-enabled link, but does not have a **vlan** interface attribute, the VLAN IP address is assigned to physical interface.
 * When the VLAN forwarding mode is set to *irb*, the node VLAN IP address is assigned to a VLAN interface.
 * No IP address is assigned to the VLAN interface when the VLAN forwarding mode is set to *bridge*.
-* No IP address is assigned to the physical interface that has an **access** VLAN. You can force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
+* No IP address is assigned to the physical interface that has an **access** or **native** VLAN. You can force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
 * IP prefixes are not assigned to the physical interfaces with VLAN trunks. If you want to assign IP addresses to default native VLAN (1), use **role** or **prefix** link attribute.
 <!--
 * When the VLAN forwarding mode is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
