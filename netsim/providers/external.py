@@ -18,7 +18,7 @@ class External(_Provider):
   def augment_node_data(self, node: Box, topology: Box) -> None:
     common.print_verbose('Augmenting node data for External')
     # Cleanup MGMT MAC Address (since it's useless for us)
-    del node.mgmt['mac']
+    node.mgmt.pop('mac',None)
 
   def pre_output_transform(self, topology: Box) -> None:
     # Replace interface names with physical real names, if needed
