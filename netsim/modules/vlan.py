@@ -4,7 +4,7 @@
 import typing
 from box import Box
 
-from . import _Module,_routing
+from . import _Module,_routing,get_effective_module_attribute
 from .. import common
 from .. import data
 from .. import addressing
@@ -278,6 +278,37 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
         common.IncorrectValue,
         'vlan')
       return False
+
+  if 'native' in v_attr:                                          # Do we have a native VLAN defined on the link?
+    if not set.intersection(v_attr.native.set,v_attr.trunk.set):  # Is it included in the VLAN trunk?
+      common.error(
+        f'Native VLAN {v_attr.native.list[0]} used on a link is not in the VLAN trunk definition\n... {link}',
+        common.IncorrectValue,
+        'vlan')
+    else:               
+      for intf in link.interfaces:                                # Now check if every node using native VLAN has it in its trunk
+        if 'vlan' in intf:                                        # VLAN attributes on interface?
+                                                                  # Calculate effective node trunk and native VLAN data
+          node_trunk = get_effective_module_attribute('vlan.trunk',intf=intf,link=link)
+          node_native = get_effective_module_attribute('vlan.native',intf=intf,link=link)
+          if node_native:                                         # Does this node use native VLAN?
+            if not node_trunk:                                    # ... no trunk data for this node, cannot use native VLAN
+              common.error(
+                f'Node {intf.node} is using native VLAN without VLAN trunk\n... {link}',
+                common.IncorrectValue,
+                'vlan')
+            elif not intf.vlan.native in node_trunk:              # ... native VLAN not in trunk, that's not valid
+              common.error(
+                f'Node {intf.node} is using native VLAN that is not defined in its VLAN trunk\n... {link}',
+                common.IncorrectValue,
+                'vlan')
+          else:                                                   # There's native VLAN on this link, but not on this node
+            if isinstance(node_trunk,Box):                        # ... trunk data should be a Box, but mypy doesn't know that ;)
+              if v_attr.native.list[0] in node_trunk:             # ... if this node lists native VLAN in its trunk we have  problem
+                common.error(
+                  f'Native VLAN used on the link is in the VLAN trunk of node {intf.node}, but is not configured as native VLAN\n... {link}',
+                  common.IncorrectValue,
+                  'vlan')
 
   return link_ok
 
