@@ -11,7 +11,7 @@ docker run -d \
  -v "$(pwd)/graphite-default.json":/htdocs/default/default.json \
  -p 8080:80 \
  --name graphite \
- netreplica/graphite:webssh2
+ netreplica/graphite
 ```
 
 After the Docker container has been launched, you can access the Graphite WebGUI from: `http://<LOCAL_IP>:8080/graphite/`.
