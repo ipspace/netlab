@@ -1,5 +1,5 @@
 input:
-- topology/input/vlan-trunk-simple.yml
+- topology/input/vlan-trunk-native.yml
 - package:topology-defaults.yml
 links:
 - bridge: input_1
@@ -74,34 +74,85 @@ links:
     ipv4: 172.16.1.0/24
   type: lan
   vlan_name: blue
-- interfaces:
+- bridge: input_5
+  gateway:
+    ipv4: 172.16.2.2/24
+  interfaces:
   - ifindex: 3
-    node: s1
-    vlan:
-      trunk:
-        blue: {}
-        red: {}
-  - ifindex: 3
+    ipv4: 172.16.2.2/24
     node: s2
     vlan:
-      trunk:
-        blue: {}
-        red: {}
-  left:
-    ifname: GigabitEthernet0/3
-    node: s1
+      access: green
+  - ifindex: 1
+    ipv4: 172.16.2.7/24
+    node: h5
   linkindex: 5
-  name: s1 - s2
   node_count: 2
-  prefix: {}
-  right:
-    ifname: Ethernet3
+  prefix:
+    ipv4: 172.16.2.0/24
+  type: lan
+  vlan_name: green
+- bridge: input_6
+  interfaces:
+  - ifindex: 3
+    ipv4: false
+    ipv6: false
+    node: s1
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  - ifindex: 4
+    ipv4: 172.16.2.2/24
     node: s2
-  type: p2p
+    vlan:
+      native: green
+      trunk:
+        blue: {}
+        green: {}
+        red: {}
+  linkindex: 6
+  node_count: 2
+  prefix:
+    ipv4: 172.16.2.0/24
+  type: lan
   vlan:
     trunk:
       blue: {}
       red: {}
+  vlan_name: green
+- bridge: input_7
+  interfaces:
+  - ifindex: 4
+    ipv4: 172.16.2.1/24
+    node: s1
+    vlan:
+      native: green
+      trunk:
+        blue: {}
+        green: {}
+        red: {}
+  - ifindex: 5
+    ipv4: 172.16.2.2/24
+    node: s2
+    vlan:
+      native: green
+      trunk:
+        blue: {}
+        green: {}
+        red: {}
+  linkindex: 7
+  node_count: 2
+  prefix:
+    ipv4: 172.16.2.0/24
+  type: lan
+  vlan:
+    native: green
+    trunk:
+      blue: {}
+      green: {}
+      red: {}
+  vlan_name: green
 module:
 - vlan
 name: input
@@ -238,6 +289,36 @@ nodes:
       mac: 08-4F-A9-00-00-06
     name: h4
     role: host
+  h5:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 7
+    interfaces:
+    - bridge: input_5
+      gateway:
+        ipv4: 172.16.2.2/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.2.7/24
+      linkindex: 5
+      name: h5 -> [s2,s1]
+      neighbors:
+      - ifname: Vlan1002
+        ipv4: 172.16.2.2/24
+        node: s2
+      - ifname: BVI3
+        ipv4: 172.16.2.1/24
+        node: s1
+      type: lan
+      vlan_name: green
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.107
+      mac: 08-4F-A9-00-00-07
+    name: h5
+    role: host
   s1:
     af:
       ipv4: true
@@ -261,23 +342,46 @@ nodes:
       vlan:
         access: blue
         access_id: 1001
-    - ifindex: 3
+    - bridge: input_6
+      ifindex: 3
       ifname: GigabitEthernet0/3
-      linkindex: 5
-      name: s1 -> s2
+      linkindex: 6
+      name: s1 -> [s2,h5]
       neighbors:
-      - ifname: Ethernet3
+      - ifname: Vlan1002
+        ipv4: 172.16.2.2/24
         node: s2
+      - ifname: eth1
+        ipv4: 172.16.2.7/24
+        node: h5
       subif_index: 2
-      type: p2p
+      type: lan
       vlan:
         trunk:
           blue: {}
           red: {}
         trunk_id:
+        - 1001
+        - 1000
+      vlan_name: green
+    - bridge: input_7
+      ifindex: 4
+      ifname: GigabitEthernet0/4
+      linkindex: 7
+      subif_index: 2
+      type: lan
+      vlan:
+        access_id: 1002
+        native: green
+        trunk:
+          blue: {}
+          green: {}
+          red: {}
+        trunk_id:
         - 1000
         - 1001
-    - ifindex: 4
+        - 1002
+    - ifindex: 5
       ifname: GigabitEthernet0/3.1
       parent_ifindex: 3
       type: vlan_member
@@ -285,7 +389,7 @@ nodes:
       vlan:
         access: blue
         access_id: 1001
-    - ifindex: 5
+    - ifindex: 6
       ifname: GigabitEthernet0/3.2
       parent_ifindex: 3
       type: vlan_member
@@ -293,8 +397,24 @@ nodes:
       vlan:
         access: red
         access_id: 1000
+    - ifindex: 7
+      ifname: GigabitEthernet0/4.1
+      parent_ifindex: 4
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: blue
+        access_id: 1001
+    - ifindex: 8
+      ifname: GigabitEthernet0/4.2
+      parent_ifindex: 4
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
     - bridge_group: 1
-      ifindex: 6
+      ifindex: 9
       ifname: BVI1
       ipv4: 172.16.0.1/24
       name: VLAN red (1000) -> [h1,s2,h3]
@@ -312,7 +432,7 @@ nodes:
       virtual_interface: true
       vlan_name: red
     - bridge_group: 2
-      ifindex: 7
+      ifindex: 10
       ifname: BVI2
       ipv4: 172.16.1.1/24
       name: VLAN blue (1001) -> [h2,s2,h4]
@@ -329,6 +449,21 @@ nodes:
       type: svi
       virtual_interface: true
       vlan_name: blue
+    - bridge_group: 3
+      ifindex: 11
+      ifname: BVI3
+      ipv4: 172.16.2.1/24
+      name: VLAN green (1002) -> [s2,h5]
+      neighbors:
+      - ifname: Vlan1002
+        ipv4: 172.16.2.2/24
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.2.7/24
+        node: h5
+      type: svi
+      virtual_interface: true
+      vlan_name: green
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
@@ -339,7 +474,7 @@ nodes:
     - vlan
     name: s1
     vlan:
-      max_bridge_group: 2
+      max_bridge_group: 3
     vlans:
       blue:
         bridge_group: 2
@@ -347,6 +482,12 @@ nodes:
         prefix:
           ipv4: 172.16.1.0/24
         vni: 101001
+      green:
+        bridge_group: 3
+        id: 1002
+        prefix:
+          ipv4: 172.16.2.0/24
+        vni: 101002
       red:
         bridge_group: 1
         id: 1000
@@ -376,23 +517,48 @@ nodes:
       vlan:
         access: blue
         access_id: 1001
-    - ifindex: 3
+    - bridge: input_5
+      ifindex: 3
       ifname: Ethernet3
       linkindex: 5
-      name: s2 -> s1
-      neighbors:
-      - ifname: GigabitEthernet0/3
-        node: s1
-      type: p2p
+      type: lan
       vlan:
+        access: green
+        access_id: 1002
+    - bridge: input_6
+      ifindex: 4
+      ifname: Ethernet4
+      linkindex: 6
+      type: lan
+      vlan:
+        access_id: 1002
+        native: green
         trunk:
           blue: {}
+          green: {}
+          red: {}
+        trunk_id:
+        - 1001
+        - 1000
+        - 1002
+    - bridge: input_7
+      ifindex: 5
+      ifname: Ethernet5
+      linkindex: 7
+      type: lan
+      vlan:
+        access_id: 1002
+        native: green
+        trunk:
+          blue: {}
+          green: {}
           red: {}
         trunk_id:
         - 1000
         - 1001
+        - 1002
     - bridge_group: 1
-      ifindex: 6
+      ifindex: 10
       ifname: Vlan1000
       ipv4: 172.16.0.2/24
       name: VLAN red (1000) -> [h1,s1,h3]
@@ -410,7 +576,7 @@ nodes:
       virtual_interface: true
       vlan_name: red
     - bridge_group: 2
-      ifindex: 7
+      ifindex: 11
       ifname: Vlan1001
       ipv4: 172.16.1.2/24
       name: VLAN blue (1001) -> [h2,s1,h4]
@@ -427,6 +593,21 @@ nodes:
       type: svi
       virtual_interface: true
       vlan_name: blue
+    - bridge_group: 3
+      ifindex: 12
+      ifname: Vlan1002
+      ipv4: 172.16.2.2/24
+      name: VLAN green (1002) -> [s1,h5]
+      neighbors:
+      - ifname: BVI3
+        ipv4: 172.16.2.1/24
+        node: s1
+      - ifname: eth1
+        ipv4: 172.16.2.7/24
+        node: h5
+      type: svi
+      virtual_interface: true
+      vlan_name: green
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
@@ -437,7 +618,7 @@ nodes:
     - vlan
     name: s2
     vlan:
-      max_bridge_group: 2
+      max_bridge_group: 3
     vlans:
       blue:
         bridge_group: 2
@@ -458,6 +639,22 @@ nodes:
         prefix:
           ipv4: 172.16.1.0/24
         vni: 101001
+      green:
+        bridge_group: 3
+        id: 1002
+        neighbors:
+        - ifname: Vlan1002
+          ipv4: 172.16.2.2/24
+          node: s2
+        - ifname: BVI3
+          ipv4: 172.16.2.1/24
+          node: s1
+        - ifname: eth1
+          ipv4: 172.16.2.7/24
+          node: h5
+        prefix:
+          ipv4: 172.16.2.0/24
+        vni: 101002
       red:
         bridge_group: 1
         id: 1000
@@ -498,6 +695,22 @@ vlans:
     prefix:
       ipv4: 172.16.1.0/24
     vni: 101001
+  green:
+    host_count: 1
+    id: 1002
+    neighbors:
+    - ifname: Vlan1002
+      ipv4: 172.16.2.2/24
+      node: s2
+    - ifname: BVI3
+      ipv4: 172.16.2.1/24
+      node: s1
+    - ifname: eth1
+      ipv4: 172.16.2.7/24
+      node: h5
+    prefix:
+      ipv4: 172.16.2.0/24
+    vni: 101002
   red:
     host_count: 2
     id: 1000

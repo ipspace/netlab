@@ -252,7 +252,6 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
     return False
 
   link_ok = True
-
   for attr in vlan_link_attr.keys():                              # Loop over VLAN attributes
     if not attr in v_attr:                                        # ... not present, skip
       continue
@@ -309,7 +308,9 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
                   f'Native VLAN used on the link is in the VLAN trunk of node {intf.node}, but is not configured as native VLAN\n... {link}',
                   common.IncorrectValue,
                   'vlan')
-
+                continue
+              for af in ('ipv4','ipv6'):                          # Interface is not participating in native VLAN
+                intf[af] = False                                  # ... make sure it's not connected to the native VLAN subnet
   return link_ok
 
 """
