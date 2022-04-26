@@ -10,6 +10,7 @@ from box import Box
 
 # Related modules
 from .. import common
+from ..data import get_from_box
 from ..callback import Callback
 from ..augment.links import IFATTR
 from ..augment import devices
@@ -443,6 +444,37 @@ def copy_node_data_into_interfaces(topology: Box) -> None:
           for intf in n.get('interfaces',[]):                    # .. if so, it would be nice to merge it with interface data
             if isinstance(intf.get(m,{}),dict):                  # .. but only if the interface data allows it
               intf[m] = copy_attr + intf[m]
+
+"""
+get_effective_module_attribute:
+
+Walk through the inheritance chain as supplied by the caller and extract desired module attribute
+"""
+def get_effective_module_attribute(
+    path: str,
+    intf: typing.Optional[Box] = None,
+    link: typing.Optional[Box] = None,
+    node: typing.Optional[Box] = None,
+    topology: typing.Optional[Box] = None,
+    defaults: typing.Optional[Box] = None,
+    merge_dict: bool = True) -> typing.Optional[typing.Any]:
+
+  composite_value: typing.Optional[Box] = None
+  for obj in (intf,link,node,topology,defaults):
+    if obj is None:
+      continue
+    value = get_from_box(obj,path)
+    if not value:
+      continue
+    if not isinstance(value,Box) or not merge_dict:
+      return value
+    if composite_value:
+      composite_value = value + composite_value
+    else:
+      composite_value = value
+
+  return composite_value
+
 
 """
 Callback transformation routines
