@@ -66,6 +66,11 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       mgmt_if = ifname_format % (ifindex_offset - 1)
     node.mgmt.ifname = mgmt_if
 
+  # If the mgmt ipaddress is statically set (IPv4/IPv6)
+  # skip the address set
+  if 'ipv4' in node.mgmt or 'ipv6' in node.mgmt:
+    return
+
   if addrs:
     for af in 'ipv4','ipv6':
       pfx = af + '_pfx'

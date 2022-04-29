@@ -52,6 +52,7 @@ See [lab topology overview](topology-overview.md) for more details.
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks and UDP point-to-point tunnels.
 * [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
 * [Containerlab](https://containerlab.srlinux.dev/)
+* External (*meta* virtualization provider that allows to configure with *netsim-tools* external devices (physical or virtual))
 
 You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings).
 
