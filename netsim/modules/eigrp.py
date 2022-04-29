@@ -13,4 +13,5 @@ class EIGRP(_Module):
       if not _routing.external(intf,'eigrp'):
         _routing.passive(intf,'eigrp')
 
+    _routing.remove_unaddressed_intf(node,'ospf')
     _routing.routing_af(node,'eigrp')
