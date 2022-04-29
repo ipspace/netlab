@@ -124,7 +124,7 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
   ifdata.ifindex = ifindex
-  if ifname_format:
+  if ifname_format and not 'ifname' in ifdata:
     ifdata.ifname = ifname_format % ifindex
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
