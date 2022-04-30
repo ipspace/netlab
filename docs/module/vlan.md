@@ -73,8 +73,9 @@ The keys of the **vlans** dictionary are VLAN names, the values are VLAN definit
 * **vrf** -- the VRF VLAN belongs to
 * **prefix** -- IP prefix assigned to the VLAN. The value of the prefix could be an IPv4 prefix or a dictionary with **ipv4** and **ipv6** keys.
 * **pool** -- addressing pool used to assign IPv4/IPv6 prefixes to the VLAN. VLAN prefixes are allocated from addressing pools before interface address assignments.
+* A VLAN definition can also contain other valid interface-level parameters (for example, OSPF cost).
 
-Empty VLAN definition will get [default values](default-vlan-values) assigned during the topology transformation process.
+VLAN definitions lacking **id** or **vni** attribute get [default VLAN ID and VNI values](default-vlan-values) assigned during the topology transformation process.
 
 (default-vlan-values)=
 ## Default VLAN Values
@@ -82,7 +83,7 @@ Empty VLAN definition will get [default values](default-vlan-values) assigned du
 VLAN definitions without **id** or **vni** attribute will get a VLAN ID or VNI assigned automatically. The first auto-assigned VLAN ID is specified in the **vlan.start_id** global attribute; ID assignment process skips IDs assigned to existing VLANs.
 
 (module-vlan-interface)=
-## Using VRFs on Interfaces and Links
+## Using VLANs on Interfaces and Links
 
 To use a VLAN on a link, add **vlan** dictionary to a link or an interface on a link. The VLAN dictionary may contain the following attributes:
 
@@ -123,7 +124,52 @@ The VLAN **mode** can be set in global- or node **vlans** dictionary or with the
 
 The default VLAN **mode** is specified in global or node **vlan.mode** attribute.
 
-## Physical Interface and VLAN Interface Addressing
+### VLAN Interface Parameters
+
+You can set link- or interface-level parameters within the node **vlans** dictionary to change VLAN interface parameters. 
+
+For example, use the following definitions to set the OSPF cost for the **red** VLAN interface on node **s1**:
+
+```
+vlans:
+  red:
+
+nodes:
+  s1:
+    module: [ ospf,vlan ]
+    vlans:
+      red:
+        ospf.cost: 10
+
+links:
+- s1:
+    vlan.access: red
+  ...
+```
+
+You can also set interface parameters for every VLAN interface connected to a VLAN within global VLAN definition. For example, you could set the OSPF cost for all VLAN interfaces connected to the **red** VLAN:
+
+```
+vlans:
+  red:
+    ospf.cost: 10
+
+nodes:
+  s1:
+    module: [ ospf,vlan ]
+
+links:
+- s1:
+    vlan.access: red
+  ...
+```
+
+
+```{warning}
+Don't try to set VLAN interface parameters on access or trunk links; you might get unexpected results.
+```
+
+### Physical Interface and VLAN Interface Addressing
 
 IPv4 and/or IPv6 prefixes are automatically assigned to VLAN-enabled links:
 
@@ -142,9 +188,4 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 <!--
 * When the VLAN forwarding mode is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
 -->
-
-## Untested Bits
-
-* You should be able to use any module-specific attributes in VLAN definitions (global or node-level). No idea whether that works.
-* **vlan.trunk** dictionary does not support additional link- or node-level attributes yet.
 
