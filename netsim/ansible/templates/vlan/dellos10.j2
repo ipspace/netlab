@@ -1,0 +1,21 @@
+{% for ifdata in interfaces if ifdata.vlan is defined %}
+!
+interface {{ ifdata.ifname }}
+{%   if ifdata.vlan.access_id is defined %}
+ switchport mode access
+ switchport access vlan {{ ifdata.vlan.access_id }}
+{%   endif %}
+{%   if ifdata.vlan.trunk_id is defined %}
+ switchport mode trunk
+
+{%     set vid_list = [] %}
+{%     for vid in ifdata.vlan.trunk_id if ifdata.vlan.access_id is defined and vid != ifdata.vlan.access_id %}
+{{       vid_list.append(vid) }}
+{%     endfor %}
+
+ switchport trunk allowed vlan {{ vid_list|join(",") }}
+{%     if ifdata.vlan.native is defined %}
+ switchport access vlan {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   endif %}
+{% endfor +%}
