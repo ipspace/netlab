@@ -9,6 +9,7 @@ from .. import common
 from .. import data
 from ..data import get_from_box
 from ..augment import devices
+from .. import addressing
 
 vrf_id_set: set
 vrf_last_id: int
@@ -233,6 +234,32 @@ def validate_vrf_route_leaking(node : Box) -> None:
             common.MissingValue,
             'vrf')
 
+def vrf_loopbacks(node : Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  loopback_name = features.vrf.loopback_interface_name
+  if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
+    common.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
+    return
+
+  for vrfname,v in node.vrfs.items():
+    ifdata = Box({
+      'virtual_interface': True,
+      'type': "loopback",
+      'name': f'VRF Loopback {vrfname}',
+      'ifindex': node.interfaces[-1].ifindex + 1,
+      'ifname': loopback_name.format(vrfidx=v.vrfidx),
+      'neighbors': [],
+      'vrf': vrfname,
+    })
+    vrfaddr = addressing.get(topology.pools, ['vrf_loopback'])
+    for af in vrfaddr:
+      if af == 'ipv6':
+        ifdata[af] = addressing.get_addr_mask(vrfaddr[af],1)
+      else:
+        ifdata[af] = str(vrfaddr[af])
+    node.interfaces.append(ifdata)
+  return
+
 class VRF(_Module):
 
   def module_pre_default(self, topology: Box) -> None:
@@ -299,6 +326,9 @@ class VRF(_Module):
         vrfidx = vrfidx + 1
 
       validate_vrf_route_leaking(node)
+
+      # Set additional loopacks (one for each defined VRF)
+      vrf_loopbacks(node, topology)
 
     # Finally, set BGP router ID if we set BGP AS number
     #
