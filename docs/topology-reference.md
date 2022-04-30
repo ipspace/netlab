@@ -34,6 +34,7 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    addressing.md
    modules.md
    plugins.md
+   providers.md
    defaults.md
    extend-attributes.md
 ```

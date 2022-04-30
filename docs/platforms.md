@@ -47,12 +47,12 @@ See [lab topology overview](topology-overview.md) for more details.
 
 ## Supported Virtualization Providers
 
-**netlab create** can generate configuration files for these virtualization providers:
+**netlab create** can generate configuration files for these [virtualization providers](providers.md):
 
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks and UDP point-to-point tunnels.
 * [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
 * [Containerlab](https://containerlab.srlinux.dev/)
-* External (*meta* virtualization provider that allows to configure with *netsim-tools* external devices (physical or virtual))
+* External -- *meta* virtualization provider that allows you to configure external physical or virtual devices with *netsim-tools*
 
 You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings).
 
@@ -74,6 +74,10 @@ You cannot use all supported network devices with all virtualization providers. 
 | Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
 | VyOS                                               |          ✅           |              ❌               |            ❌             |
 | Dell OS10                                          |          ✅           |              ❌               |            ❌             |
+
+**Note:**
+
+* *external* provider can be used with all devices supported by *netsim-tools*.
 
 Configuration files for Virtualbox and KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
 

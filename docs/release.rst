@@ -2,7 +2,8 @@ Release notes
 =============
 
 2022-XX-XX (release 1.2.2)
- * VLAN configuration module]
+ * VLAN configuration module
+ * External topology provider to use *netsim-tools* with hardware labs
  * netlab restart command restarts or reconfigures the lab
  * Use the snapshot file to start a lab
  * Specify NIC model used by *libvirt* virtualization provider
