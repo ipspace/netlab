@@ -75,6 +75,17 @@ links:
   prefix:
     ipv4: 172.16.0.0/24
   type: stub
+- bridge: input_4
+  interfaces:
+  - ifindex: 2
+    ipv4: 172.16.1.2/24
+    node: r2
+    vrf: black
+  linkindex: 4
+  node_count: 1
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: stub
 module:
 - bgp
 - ospf
@@ -133,6 +144,22 @@ nodes:
         node: r3
       type: p2p
       vrf: blue
+    - ifindex: 3
+      ifname: Loopback100
+      ipv4: 10.2.0.1/32
+      name: VRF Loopback red
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: red
+    - ifindex: 4
+      ifname: Loopback101
+      ipv4: 10.2.0.2/32
+      name: VRF Loopback blue
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: blue
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
@@ -146,6 +173,7 @@ nodes:
     name: r1
     vrf:
       as: 65000
+      loopback: true
     vrfs:
       blue:
         af:
@@ -154,6 +182,8 @@ nodes:
         - '65000:3'
         import:
         - '65000:3'
+        networks:
+        - ipv4: 10.2.0.2/32
         ospf:
           active: true
           area: 0.0.0.0
@@ -175,6 +205,17 @@ nodes:
               passive: false
             type: p2p
             vrf: blue
+          - ifindex: 4
+            ifname: Loopback101
+            ipv4: 10.2.0.2/32
+            name: VRF Loopback blue
+            neighbors: []
+            ospf:
+              area: 0.0.0.0
+              passive: false
+            type: loopback
+            virtual_interface: true
+            vrf: blue
           router_id: 10.0.0.1
         rd: '65000:3'
         vrfidx: 101
@@ -192,11 +233,14 @@ nodes:
         - '65000:2'
         import:
         - '65000:2'
+        networks:
+        - ipv4: 10.2.0.1/32
         rd: '65000:2'
         vrfidx: 100
   r2:
     af:
       ipv4: true
+      vpnv4: true
     bgp:
       advertise_loopback: true
       as: 65001
@@ -237,6 +281,26 @@ nodes:
         node: r1
       role: external
       type: p2p
+    - bgp:
+        advertise: true
+      bridge: input_4
+      clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 172.16.1.2/24
+      linkindex: 4
+      neighbors: []
+      type: stub
+      vrf: black
+    - ifindex: 3
+      ifname: Loopback102
+      ipv4: 10.0.0.1/32
+      name: VRF Loopback black
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: black
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
@@ -245,30 +309,38 @@ nodes:
       mac: 08-4F-A9-00-00-02
     module:
     - bgp
+    - vrf
     name: r2
     vrf:
       as: 65000
     vrfs:
       black:
+        af:
+          ipv4: true
         export:
         - '65001:5'
         import:
         - '65303:3'
         loopback:
           ipv4: 10.0.0.1
+        networks:
+        - ipv4: 10.0.0.1/32
         rd: '65001:5'
+        vrfidx: 102
       green:
         export:
         - '65001:3'
         import:
         - '65001:3'
         rd: '65001:3'
+        vrfidx: 100
       red:
         export:
         - '65000:2'
         import:
         - '65000:2'
         rd: '65001:4'
+        vrfidx: 101
   r3:
     af:
       ipv4: true

@@ -3,7 +3,7 @@
 Lab topology transformation code assigns IPv4 and IPv6 subnets (prefixes) to individual links and loopback interfaces from *address pools*. Node addresses are then assigned from the prefixes assigned to individual links.
 
 ```{tip}
-You can assign a static prefix to a link with **‌prefix** link attribute and static IP address to an interface with an **‌ipv4** or **‌ipv6** attribute of node-on-link data. For more details, see [static link addressing](links.md#static-link-addressing).
+You can assign a static prefix to a link with **prefix** link attribute and static IP address to an interface with an **ipv4** or **ipv6** attribute of node-on-link data. For more details, see [static link addressing](links.md#static-link-addressing).
 ```
 
 *netsim-tools* use multiple predefined address pools:
@@ -14,6 +14,7 @@ You can assign a static prefix to a link with **‌prefix** link attribute and s
 * **p2p** pool: IPv4 and IPv6 addresses used on point-to-point links
 * **router_id** pool is used to allocate BGP router IDs in IPv6-only networks.
 * **l2only** pool has no IPv4 or IPv6 addresses. You can use it to create L2-only links. See [layer-2-only pools](#layer-2-only-pools) and *[Using l2only Address Pool](example/addressing-tutorial.md#layer-2-only-links-using-l2only-address-pool)* for details.
+* **vrf_loopback** pool: IPv4 and IPv6 prefixes used on optional VRF loopback interfaces.
 
 You can specify additional address pools, and [use them with the **role** link attribute](links.md#selecting-custom-address-pools).
 
@@ -35,6 +36,9 @@ addressing:
     start: 100
     mac: 08-4F-A9-00-00-00
   l2only:
+  vrf_loopback:
+    ipv4: 10.2.0.0/24
+    prefix: 32
 ```
 
 You can override or augment them in topology **addressing** element. You can also override individual **defaults.addressing** components.

@@ -14,15 +14,15 @@ This configuration module implements the VRF planning and configuration logic an
 (module-vrf-platform-support)=
 VRFs are supported on these platforms:
 
-| Operating system      | VRF<br />config | Route<br />leaking | VRF-aware<br />OSPF | VRF-aware<br />BGP |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS             | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  | ✅  |
-| Dell OS10             | ✅  | ✅  | ✅  | ✅  |
-| Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |
-| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |
-| VyOS                  | ✅  | ✅  | ✅  | ✅  |
+| Operating system      | VRF<br />config | Route<br />leaking | VRF-aware<br />OSPF | VRF-aware<br />BGP | VRF-aware<br />Loopback |
+| --------------------- | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS             | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XE          | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Dell OS10             | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
+| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| VyOS                  | ✅  | ✅  | ✅  | ✅  | ✅  |
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
@@ -33,6 +33,7 @@ VRFs are supported on these platforms:
 The following parameters can be set globally or per node:
 
 * **vrfs**: A dictionary of VRF definitions (see below)
+* **vrf.loopback** (bool): Create loopback interfaces for all VRFs on this node
 * **vrf.as**: The default AS number used in RD/RT values when **bgp.as** is not set. The system default for **vrf.as** is 65000.
 
 (module-vrf-definition)=
@@ -49,10 +50,21 @@ The keys of the **vrfs** dictionary are VRF names, the values are VRF definition
 * **rd** -- route distinguisher (integer or string)
 * **import** -- a list of import route targets
 * **export** -- a list of export route targets
+* **loopback** (bool or prefix) -- Create a loopback interface for this VRF.
 
 Empty VRF definition will get [default RD and RT values](default-vrf-values) assigned during the topology transformation process.
 
-## RD and RT Values
+### Creating VRF Loopback Interfaces
+
+A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loopback** or **vrf.loopback** global or node parameter.
+
+**loopback** parameter in a VRF definition could be:
+
+* A boolean value -- the address of the loopback interface will be allocated from the **vrf_loopback** address pool
+* A string specifying the IPv4 prefix of the loopback interface
+* A dictionary of address families specifying IPv4 and/or IPv6 prefixes to be used on the loopback interface
+
+### RD and RT Values
 
 A route distinguisher could be specified in N:N format (example: 65000:1) or as an integer. AS number specified in **bgp.as** or **vrf.as** will be prepended to an integer RD-value to generate RD value in N:N format.
 
@@ -74,7 +86,7 @@ vrfs:
 ```
 
 (default-vrf-values)=
-## Default RD/RT Values
+### Default RD/RT Values
 
 The following default values are used in VRF definitions missing **rd**, **import** or **export** values (including the corner case of empty VRF definition):
 

@@ -14,10 +14,10 @@ router bgp {{ bgp.as }}
 {%   endif %}
 {%   for af in ['ipv4','ipv6'] if af in vdata.af %}
 {%     for rt in vdata.import %}
-  route-target import vpn-ipv4 {{ rt }}
+  route-target import vpn-{{ af }} {{ rt }}
 {%     endfor %}
 {%     for rt in vdata.export %}
-  route-target export vpn-ipv4 {{ rt }}
+  route-target export vpn-{{ af }} {{ rt }}
 {%     endfor %}
 {%   endfor %}
 {%   for n in vdata.bgp.neighbors|default([]) %}
@@ -26,6 +26,12 @@ router bgp {{ bgp.as }}
 {%     endfor %}
 {%   endfor %}
 {%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.networks|default([]) if af in n %}
+{%       if loop.index == 1 %}
+  address-family {{ af }}
+{%       endif %}
+   network {{ n[af]|ipaddr('0') }}
+{%     endfor %}
 {%     for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
 {%       if loop.index == 1 %}
   address-family {{ af }}

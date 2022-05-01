@@ -2,13 +2,18 @@
 !
 router bgp {{ bgp.as }}
 {% for vname,vdata in vrfs.items() %}
- address-family ipv4 vrf {{ vname }}
+{%   for af in ('ipv4','ipv6') if af in vdata.af %}
+ address-family {{ af }} vrf {{ vname }}
   redistribute connected
-{% if 'ospf' in vdata %}
+{%     if af == 'ipv4' and 'ospf' in vdata %}
   redistribute ospf {{ vdata.vrfidx }}
-{% endif %}
-{%   for n in vdata.bgp.neighbors|default([]) %}
-{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     endif %}
+!
+{%     for n in vdata.networks|default([]) if af in n %}
+{{       bgpcfg.bgp_network(af,n[af]) }}
+{%     endfor %}
+!
+{%     for n in vdata.bgp.neighbors|default([]) if af in n %}
 {{       bgpcfg.neighbor_global(n,n[af]) }}
 {{       bgpcfg.neighbor_af(n,n[af],bgp) }}
 {%     endfor %}

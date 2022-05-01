@@ -20,6 +20,9 @@ addressing:
     start: 100
     mac: 08-4F-A9-00-00-00
   l2only:
+  vrf_loopback:
+    ipv4: 10.2.0.0/24
+    prefix: 32
 
 # Global, node and link attributes
 attributes:
@@ -54,7 +57,7 @@ isis:
   supported_on: [ eos, frr, csr, iosv, nxos, vsrx, srlinux, sros, none ]
   area: 49.0001
   type: level-2
-  transform_after: [ vlan ]
+  transform_after: [ vlan,vrf ]
   attributes:
     global: [ af, area, type, bfd ]
     node: [ af, area, net, type, bfd ]
@@ -63,7 +66,7 @@ isis:
 ospf:
   area: 0.0.0.0
   supported_on: [ arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none, dellos10 ]
-  transform_after: [ vlan ]
+  transform_after: [ vlan,vrf ]
   attributes:
     global: [ af, area, process, reference_bandwidth, bfd ]
     node: [ af, area, process, reference_bandwidth, bfd, router_id ]
@@ -72,7 +75,7 @@ ospf:
 
 eigrp:
   supported_on: [ csr, iosv, nxos ]
-  transform_after: [ vlan ]
+  transform_after: [ vlan,vrf ]
   as: 1
   attributes:
     global: [ af, as ]
@@ -120,11 +123,11 @@ evpn: # Enables the EVPN address family towards BGP peers
 vrf: # Basic VRF support
   supported_on: [ eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue ]
   config_after: [ vlan, ospf, isis, bgp, mpls ]
-  transform_after: [ vlan ]
+  transform_after: [ vlan, bgp ]
   as: 65000
   attributes:
-    global: [ as ]
-    node: [ as ]
+    global: [ as,loopback ]
+    node: [ as,loopback ]
     link: str
     interface: str
     extra:
@@ -280,6 +283,8 @@ devices:
       vlan:
         svi_interface_name: BVI{bvi}
         vlan_subif_name: "{ifname}.{subif_index}"
+      vrf:
+        loopback_interface_name: Loopback{vrfidx}
     external:
       image: none
     graphite.icon: router
@@ -315,6 +320,8 @@ devices:
         ldp: True
         bgp: True
         vpn: True
+      vrf:
+        loopback_interface_name: Loopback{vrfidx}
     libvirt:
       image: cisco/csr1000v
       create:
@@ -386,6 +393,8 @@ devices:
         vpn: True
       vlan:
         svi_interface_name: Vlan{vlan}
+      vrf:
+        loopback_interface_name: Loopback{vrfidx}
     clab:
       interface:
         name: et%d
@@ -699,6 +708,8 @@ devices:
         vpn: True
       vlan:
         svi_interface_name: "br0.{vlan}"
+      vrf:
+        loopback_interface_name: "dum{vrfidx}"
     external:
       image: none
     graphite.icon: router
@@ -709,6 +720,8 @@ devices:
     features:
       vlan:
         svi_interface_name: vlan{vlan}
+      vrf:
+        loopback_interface_name: loopback{vrfidx}
     libvirt:
       image: dell/os10
       create:
