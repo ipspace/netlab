@@ -63,7 +63,8 @@ class Libvirt(_Provider):
       if not brname:
         continue
       try:
-        print(l)
+        if common.DEBUG:
+          print('libvirt post_start_lab: fixing Linux bridge for link {l}')
         result = subprocess.run(['virsh','net-info',brname],capture_output=True,check=True,text=True)
       except:
         common.error('Cannot run net-info for libvirt network %s' % brname, module='libvirt')
