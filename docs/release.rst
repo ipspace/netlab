@@ -1,26 +1,27 @@
 Release notes
 =============
 
-2022-XX-XX (release 1.2.2)
- * VLAN configuration module
- * External topology provider to use *netsim-tools* with hardware labs
- * netlab restart command restarts or reconfigures the lab
- * Use the snapshot file to start a lab
- * Specify NIC model used by *libvirt* virtualization provider
- * Set device type or configuration modules in groups
- * Persistent Linux network provisioning
- * Debian supported by the installation scripts
+2022-05-02 (release 1.2.2)
+  * VLAN configuration module
+  * External topology provider to use *netsim-tools* with hardware labs
+  * VRF loopback interfaces
+  * netlab restart command restarts or reconfigures the lab
+  * Use the snapshot file to start a lab
+  * Specify NIC model used by *libvirt* virtualization provider
+  * Set device type or configuration modules in groups
+  * Persistent Linux network provisioning
+  * Debian supported by the installation scripts
 
- :doc:`More details <release/1.2>`
+  :doc:`More details <release/1.2>`
 
 2022-04-16 (release 1.2.1)
- * Graphite GUI
- * Dell OS10 on *libvirt*
- * VRFs, MPLS, and MPLS/VPN on Mikrotik RouterOS and VyOS
- * Containerlab support for Cumulus NVUE
- * VRF Lite on Cumulus NVUE
+  * Graphite GUI
+  * Dell OS10 on *libvirt*
+  * VRFs, MPLS, and MPLS/VPN on Mikrotik RouterOS and VyOS
+  * Containerlab support for Cumulus NVUE
+  * VRF Lite on Cumulus NVUE
 
- :doc:`More details <release/1.2>`
+  :doc:`More details <release/1.2>`
 
 2022-04-01 (release 1.2.0)
   * VRF definitions and layer-3 VRFs

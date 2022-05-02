@@ -54,6 +54,7 @@ The keys of the **vrfs** dictionary are VRF names, the values are VRF definition
 
 Empty VRF definition will get [default RD and RT values](default-vrf-values) assigned during the topology transformation process.
 
+(vrf-loopback)=
 ### Creating VRF Loopback Interfaces
 
 A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loopback** or **vrf.loopback** global or node parameter.

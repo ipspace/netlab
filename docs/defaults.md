@@ -13,6 +13,7 @@ All system defaults, specified in global **topology-defaults.yml** file (shipped
 * In **defaults** element of the topology file
 * In **topology-defaults.yml** file residing in the same directory as the topology file or in the user's home directory.
 
+(default-device-type)=
 The topology **defaults** value is most commonly used to set default device type; you could also use it to set any other default parameter. For example, the following topology file builds a network of Cisco IOSv devices using a different value for the default IS-IS area:
 
 ```
@@ -25,7 +26,10 @@ defaults:
 ...
 ```
 
-When augmenting default settings, *netsim-tools* use a deep dictionary merge, allowing you to overwrite a single setting deep in the hierarchy without affecting any other related settings. For example, it's possible to replace the default Vagrant box name for a network device type without changing any other device parameter:
+When augmenting default settings, *netsim-tools* use a [deep dictionary merge](defaults-deep-merging), allowing you to overwrite a single setting deep in the hierarchy without affecting any other related settings. 
+
+(default-device-image)=
+For example, it's possible to replace the default Vagrant box name for a network device type without changing any other device parameter:
 
 ```
 ---
@@ -42,6 +46,7 @@ defaults.devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
 defaults.devices.eos.clab.image: cEOS:latest
 ```
 
+(defaults-deep-merging)=
 ## Deep Merging
 
 *netsim-tools* library uses Python Box package to perform recursive merge of configuration dictionaries:

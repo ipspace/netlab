@@ -1,12 +1,12 @@
 # Start Virtual Lab
 
-**netlab up** is a high-level command that uses other **netlab** commands to:
+**netlab up** is a high-level command that:
 
-* Create virtualization provider configuration files and transformed topology snapshot;
-* Create network automation configuration files;
-* Check the virtualization provider installation;
-* Start the virtual lab;
-* Deploy device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag
+* Uses **[netlab create](create.md)** to create virtualization provider configuration file, transformed topology snapshot, and network automation configuration files (Ansible inventory);
+* Checks the [virtualization provider](../providers.md) installation;
+* Starts the virtual lab using the [selected virtualization provider](topology-reference-top-elements);
+* Performs provider-specific initialization (see below)
+* Deploys device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag
 
 You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab using the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
 

@@ -6,18 +6,20 @@ The lab topology is described in a YAML file using a dictionary format. The thre
 * **links** -- [links between the lab devices](links.md)
 * **defaults** -- topology-wide defaults like default device type
 
+(topology-reference-top-elements)=
 Other topology elements include:
 
 * **provider** -- virtualization provider (default: libvirt)
 * **groups** -- optional [groups of nodes](groups.md)
-* **module** -- list of [modules](modules.md) used by this network topology
+* **module** -- default list of [modules](modules.md) used by this network topology. You can use device-level **module** attribute to override this setting for individual nodes.
 * **addressing** -- [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
 * **name** -- topology name (used in bridge names)
+* **plugin** -- list of [plugins](plugins.md) used by this topology.
 
 **Notes:**
 
 * All elements apart from **nodes** are optional -- missing **links** element indicates a topology without inter-node links (just the management interfaces)
-* Default values of **defaults** and **addressing** elements are taken from default settings.
+* Default values of **defaults** and **addressing** elements are taken from [default settings](defaults.md).
 * List of modules is used to specify additional initial configuration elements (example: OSPF routing)
 * Default topology name is the directory name.
 

@@ -1,9 +1,6 @@
 # Nodes (Network Devices)
 
-Network devices (nodes) used in a virtual lab are specified in **nodes** element in the topology file. Nodes can be specified as:
-
-* A list of strings (node names)
-* A dictionary of node names and node attributes
+Network devices (nodes) used in a virtual lab are specified in **nodes** element in the topology file. 
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -12,8 +9,15 @@ Network devices (nodes) used in a virtual lab are specified in **nodes** element
    :backlinks: none
 ```
 
+## Specifying Nodes in Lab Topology
+
+Nodes (lab devices) can be specified as:
+
+* A list of strings (node names)
+* A dictionary of node names and node attributes
+
 (nodes-list-of-strings)=
-## Nodes Specified as a List of Strings 
+### Nodes Specified as a List of Strings 
 
 The easiest way to specify nodes in a virtual lab topology is to list node names as a list of strings:
 
@@ -29,7 +33,7 @@ When using this format you cannot specify the device types or any other node att
 
 The [topology transformation process](dev/transform.md) converts the **nodes** element specified as a list of strings into a dictionary of dictionaries before further processing.
 
-## Dictionary of Nodes
+### Dictionary of Nodes
 
 When you have to specify additional node attributes, or when you're building a lab topology containing multiple device types, specify nodes as a dictionary of node objects (dictionaries). 
 
@@ -55,7 +59,8 @@ nodes:
 
 These node attributes are recognized and used by *netsim-tools*:
 
-* **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device.
+* **device** -- device type (see [supported platforms](platforms.md)). [Default device type](default-device-type) is specified in **defaults.device**.
+* **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are specified in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
 * **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*, for which the host **role** is set in system device defaults.
 * **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU.
 * **id** -- static node identifier[^id] (see below)
@@ -102,9 +107,11 @@ After the initial cleanup, *netsim-tools* topology transformation code augments 
 * Unless the node data contain an **id** attribute, the node **id** is set based on node's position in the **nodes** dictionary[^IDLIST] -- starting with 1 and skipping static **id** used by other nodes.
 * Unless the node is a *host*[^HOST], or has a **loopback** attribute, it's loopback addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.
 * **device** type is copied from **defaults.device** if not already set.
-* Vagrant **box** is set from device data if not specified in the node attributes
-* Device settings **role**, **mtu** and **runtime** are copied into the node data unless you set the corresponding attribute in the topology file.
+* Vagrant **box** (or Docker container name) is set from device data if not specified in the **box** or **image** node attributes
+* Device settings **role**, **mtu** and **runtime** are copied into the node data unless you set the corresponding node attribute in the topology file.
 * Management interface parameters are saved in **mgmt** element. Management interface name (**ifname**) is computed from device data. **mac** address and **ipv4** and **ipv6** addresses are computed from corresponding parameters in *mgmt* pool. You can overwrite any of these parameters (at your own risk) by specifying them in **mgmt** dictionary within node data.
+* Device interfaces created as needed during the link transformation phase and collected in **interfaces** list.
+* [](modules.md) document describes further processing done on configuration module parameters.
 
 [^id]: Node **id** must be an integer between 1 and 250. When using the standard management interface IP addressing (where management IPv4 addresses start with .100), the node **id** should not exceed 150.
 
