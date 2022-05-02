@@ -5,7 +5,9 @@
 * VM/container virtualization: VirtualBox (Windows or MacOS), KVM (Linux) or Docker (Linux)
 * Virtualization API: libvirt (used with KVM on Linux)
 * VM/container orchestration: Vagrant or containerlab
-* Configuration deployment: Ansible 2.9.1 or later
+* Configuration deployment: Ansible 2.9.1[^ANS] or later
+
+[^ANS]: Ansible 2.9 has been tested with Arista EOS, Cisco IOS, IOS-XE and NX-OS, Junos, Cumulus Linux, FRR, generic Linux devices and VyOS. Other devices might require additional Ansible collections; see [caveats](caveats.md) for further details.
 
 ![High-level architecture](high-level-architecture.png)
 
