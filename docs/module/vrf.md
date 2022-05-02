@@ -14,7 +14,7 @@ This configuration module implements the VRF planning and configuration logic an
 (module-vrf-platform-support)=
 VRFs are supported on these platforms:
 
-| Operating system      | VRF<br />config | Route<br />leaking | VRF-aware<br />OSPF | VRF-aware<br />BGP | VRF-aware<br />Loopback |
+| Operating system      | VRF<br />config | Route<br />leaking | VRF-aware<br />OSPF | VRF-aware<br />EBGP | VRF-aware<br />Loopback |
 | --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅  | ✅  | ✅  | ✅  | ✅  |
@@ -26,6 +26,7 @@ VRFs are supported on these platforms:
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
+* IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers
 * On Mikrotik RouterOS BGP configuration/implementation, a BGP VRF instance cannot have the same Router ID of the default one. The current configuration template uses the IP Address of the last interface in the VRF as instance Router ID.
 
 ## Parameters

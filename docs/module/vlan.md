@@ -30,7 +30,7 @@ VLANs are supported on these platforms:
 | --------------------- | :-: | :-: |:-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ❌   | ✅ | ✅ |
-| VyOS                  | ✅  | ✅  | ❌   | ✅ | ❌   |
+| VyOS                  | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 
 ## VLAN Connectivity Model

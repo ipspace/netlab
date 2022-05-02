@@ -5,7 +5,7 @@
 * **[libvirt](labs/libvirt.md)** -- *libvirt* virtualization abstraction layer (tested on top of KVM/QEMU on Ubuntu) orchestrated with Vagrant using *vagrant-libvirt* Vagrant plugin.
 * **[clab](labs/clab.md)** -- Docker containers (tested on Ubuntu) orchestrated with *containerlab*.
 * **[virtualbox](labs/virtualbox.md)** -- VirtualBox virtualization orchestrated with Vagrant using built-in VirtualBox plugin.
-* **external** -- meta-provider use to configure hardware devices.
+* **external** -- meta-provider you can use to configure hardware devices.
 
 (external-virtualization-provider)=
 ## Using External Provider
