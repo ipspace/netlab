@@ -19,16 +19,16 @@ EOM
 # Add sudo / root check - ghostinthenet 20220418
 SUDO=''
 if [ "$UID" != "0" ]; then
- if [ -x "$(command -v sudo)" ]; then
-  SUDO=sudo
- else
-  echo 'Script requires root privileges.'
-  exit 1
- fi
+  if [ -x "$(command -v sudo)" ]; then
+    SUDO=sudo
+  else
+    echo 'Script requires root privileges.'
+    exit 1
+  fi
 fi
 
 if [ ! -z $VIRTUAL_ENV ]; then
-       SUDO=""
+  SUDO=""
 fi
 
 if [[ -z "$FLAG_YES" ]]; then
@@ -36,8 +36,8 @@ if [[ -z "$FLAG_YES" ]]; then
   read -p "Are you sure you want to proceed [y/n] " -n 1 -r
   echo
   if ! [[ $REPLY =~ [Yy] ]]; then
-   echo "Aborting..."
-   exit 1
+    echo "Aborting..."
+    exit 1
   fi
   FLAG_YES="Y"
 fi
