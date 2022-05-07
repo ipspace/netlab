@@ -18,7 +18,7 @@ EOM
 
 # Add sudo / root check - ghostinthenet 20220418
 SUDO=''
-if [ "$UID" != "0" ]; then
+if [ "$UID" != "0" ] && [ -z $VIRTUAL_ENV ]; then
  if [ -x "$(command -v sudo)" ]; then
   SUDO=sudo
  else
