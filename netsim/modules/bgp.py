@@ -15,8 +15,10 @@ from ..augment.links import IFATTR
 def check_bgp_parameters(node: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
-  if not "as" in node.bgp or not isinstance(node.bgp.get('as',{}),int):
+  if not "as" in node.bgp:
     common.error("Node %s has BGP enabled but no AS number specified" % node.name)
+
+  data.must_be_int(parent=node,key='bgp.as',path=f'nodes.{node.name}',min_value=1,max_value=65535,module='bgp')
 
   if "community" in node.bgp:
     bgp_comm = node.bgp.community
@@ -25,17 +27,22 @@ def check_bgp_parameters(node: Box) -> None:
     elif isinstance(bgp_comm,list):
       node.bgp.community = { 'ibgp' : bgp_comm, 'ebgp': bgp_comm }
     elif not(isinstance(bgp_comm,dict)):
-      common.error("bgp.community attribute in node %s should be a string, a list, or a dictionary (%s)" % (node.name,str(bgp_comm)))
+      common.error(
+        f"bgp.community attribute in node {node.name} should be a string, a list, or a dictionary (found: {bgp_comm})",
+        common.IncorrectType,
+        'bgp')
       return
 
     for k in node.bgp.community.keys():
       if not k in ['ibgp','ebgp']:
         common.error("Invalid BGP community setting in node %s: %s" % (node.name,k))
-      if isinstance(node.bgp.community[k],str):
-        node.bgp.community[k] = [ node.bgp.community[k] ]
-      for v in node.bgp.community[k]:
-        if not v in ['standard','extended']:
-          common.error("Invalid BGP community propagation setting for %s sessions in node %s: %s" % (k,node.name,v))
+      else:
+        data.must_be_list(
+          parent=node.bgp.community,
+          path=f'nodes.{node.name}.bgp.community',
+          key=k,
+          valid_values=['standard','extended'],
+          module='bgp')
 
 def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
   return [ n 
