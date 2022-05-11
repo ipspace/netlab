@@ -60,7 +60,7 @@ set -e
 # add-apt-repository has been deprecated, doesn't work on Debian 11 and will be removed from Ubuntu 22
 # changed to new method - ghostinthenet - 20220417
 curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-security.gpg
-$SUDO echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list
+$SUDO sh -c 'echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list'
 $SUDO apt-get update
 $SUDO apt-get install -y $FLAG_QUIET ruby-dev ruby-libvirt vagrant
 set +e
