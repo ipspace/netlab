@@ -2,6 +2,8 @@
 
 The **netlab create** command reads network topology description in YAML format, performs data transformation from high-level data model to devices-and-links data model, and creates virtualization- and automation configuration files needed to set up your lab.
 
+![netlab create functional diagram](create.png)
+
 ## Network Topology Sources
 
 **netlab create** uses these sources of information to build the desired lab topology:
@@ -10,16 +12,25 @@ The **netlab create** command reads network topology description in YAML format,
 * Optional default settings in YAML format (default: `topology-defaults.yml`)
 * Global default settings (`topology-defaults.yml` in *netsim* package directory)
 
+## Data Model Transformation
+
+After reading the network topology, **netlab create** performs a complex data transformation to create device- and link-level data structures fully describing network topology, IP addressing and (optional) routing protocols.
+
+You can influence the data model transformation with optional [configuration modules](../modules.md) and [custom plugins](../plugins.md).
+
 ## Creating Configuration Files
 
-After reading the network topology, **netlab create** performs a complex data transformation to create device- and link-level data structures fully describing network topology, IP addressing and (optional) routing protocols. These data structures are then used to create:
+**netlab create** uses transformed node- and link-level data structures to create:
 
 * Snapshot of the transformed topology in the **netlab.snapshot.yml** file. This file is used by **netlab down** command to find the virtualization provider and link (bridge) names.
 * **Vagrantfile** supporting *[libvirt](../labs/libvirt.md)* or *[virtualbox](../labs/virtualbox.md)* environment
 * **clab.yml** file used by *containerlab*.
 * Ansible inventory[^1], either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
-* YAML or JSON representation of transformed lab topology
 * Various graphs in *graphviz* DOT format
+* YAML or JSON representation of transformed lab topology or parts of the transformed data model
+* Configuration file for *graphite* visualization tool
+
+The _[](netlab-create-output-formats)_ section describes how you can control the output files and their format with CLI parameters. See _[](../outputs/index.md)_ for more details on individual file formats.
 
 [^1]: Or *netsim-devices.yml* file when the `--devices` flag is used
 
@@ -63,6 +74,7 @@ For a complete list of output formats please consult the documentation
 
 For more details on topology file format, please read the [lab topology overview](../topology-overview.md) and [reference documentation](../topology-reference.md).
 
+(netlab-create-output-formats)=
 ## Output Formats
 
 Without specifying the output format(s), **netlab create** creates a provider configuration file (*Vagrantfile* or *clab.yml*) and either [Ansible inventory data](../outputs/ansible.md) (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*) or [*netsim-devices.yml* file](../outputs/devices.md) (if the `--devices` flag was specified).

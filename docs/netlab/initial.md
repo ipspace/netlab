@@ -1,8 +1,10 @@
 # Deploying Initial Device Configurations
 
-**netlab initial** command uses a set of device-specific Jinja2 templates and an internal Ansible playbook to deploy initial device configurations created from expanded inventory data created with **[netlab create](create.md)** command.
+**netlab initial** command uses expanded Ansible inventory data created with **[netlab create](create.md)** command, device-specific Jinja2 templates, and an internal Ansible playbook to deploy initial device configurations.
 
-The Ansible playbook invoked by **netlab initial** command deploys device configurations in two steps:
+![netlab initial functional diagram](initial.png)
+
+The Ansible playbook invoked by **netlab initial** command deploys device configurations in three steps:
 
 * Initial device configurations[^itag]
 * Module-specific device configurations[^mtag]
@@ -12,10 +14,14 @@ The Ansible playbook invoked by **netlab initial** command deploys device config
 [^mtag]: Controlled by `-m` flag or **module** Ansible tag
 [^ctag]: Controlled by `-c` flag or **custom** Ansible tag
 
+Jinja2 templates are used together with **_device_\_config** Ansible modules to configure most devices. In some cases, the configuration task list includes additional tasks[^init]. Some devices (for example, Fortinet firewall) are configured through calls to device-specific Ansible modules. See _[](../caveats.md)_ for more details.
+
+[^init]: Cisco Nexus OS configuration cannot proceed until the Ethernet interfaces are ready -- that can take up to a minute after the VM boot completes. Arista cEOS cannot be configured until its SSH daemon starts.
+
 When run with **-v** parameter, the command displays device configurations before deploying them.
 
 ```{tip}
-**netlab initial** command does not need a topology file (so you don't have to specify one even if you're using a non-default topology name). It's just a thin wrapper around an Ansible playbook which uses Ansible inventory created by **netlab create** or **netlab up** command.
+**netlab initial** command does not need a topology file; It's just a thin wrapper around an Ansible playbook which uses Ansible inventory created by **netlab create** or **netlab up** command. You don't have to specify the topology file name or other **netlab create** CLI parameters you used to tweak the lab topology.
 ```
 
 ## Usage
@@ -77,7 +83,7 @@ More details:
 
 [Custom deployment templates](../groups.md#custom-configuration-templates) are specified in **config** group- or node parameter. `initial-config.ansible` playbook tries to find the target configuration template in user- (current) and system (`netsim/extra`) directories and uses `netlab_device_type` and `ansible_network_os` to allow you to create numerous device-specific configuration templates.
 
-You'll find more details in [](../dev/config/deploy.md).
+You'll find more details in _[](../dev/config/deploy.md)_ contributor documentation.
 
 **netlab initial** command assumes you want to deploy the custom templates in the order you specified them and therefore deploys them on a single device at a time unless you use the `--fast` parameter.
 
