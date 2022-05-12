@@ -2,13 +2,16 @@
 
 **netlab up** is a high-level command that:
 
-* Uses **[netlab create](create.md)** to create virtualization provider configuration file, transformed topology snapshot, and network automation configuration files (Ansible inventory);
+* Uses **[netlab create](create.md)** to create virtualization provider configuration file, transformed topology snapshot, and network automation configuration files (Ansible inventory). You can skip this step with the `--snapshot` flag;
 * Checks the [virtualization provider](../providers.md) installation;
+* Create the required virtual infrastructure (see below)
 * Starts the virtual lab using the [selected virtualization provider](topology-reference-top-elements);
 * Performs provider-specific initialization (see below)
 * Deploys device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag
 
 You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab using the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
+
+![netlab up functional diagram](up.png)
 
 ## Usage
 
@@ -47,6 +50,13 @@ Do not use the `--fast-config` option with custom configuration templates that m
 
 ## Provider-Specific Initialization
 
-When used with *libvirt* provider, **netlab up** creates the *vagrant-libvirt* management network before starting the virtual machines, and sets the `group_fwd_mask` for all Vagrant-created Linux bridges to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
+**netlab up** can execute provider-specific tasks before invoking the orchestration tool (*Vagrant* or *containerlab*) or after the virtual lab has been created
 
-When used with *clab* provider, **netlab up** creates Open vSwitch bridges or standard Linux bridges needed to implement multi-access networks.
+### Tasks executed before the lab is started
+
+* When used with *clab* provider, **netlab up** creates Open vSwitch bridges or standard Linux bridges needed to implement multi-access networks.
+* When used with *libvirt* provider, **netlab up** creates the *vagrant-libvirt* management network
+
+### Tasks executed after the lab creation is completed
+
+* When used with *libvirt* provider, **netlab up** sets the `group_fwd_mask` for all Vagrant-created Linux bridges to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
