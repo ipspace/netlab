@@ -12,7 +12,7 @@ The following features are currently _on the radar_:
 * Routed subinterfaces
 
 ```{warning}
-This module is **experimental** for a reason. The VLAN transformation code is the biggest bowl of spaghetti code in the whole system, and is probably full of bugs. We'll whack them as we create more interesting scenarios, but it will take us a while to get there.
+This module is **experimental** for a reason. The VLAN transformation code is the biggest bowl of spaghetti code in the whole system, and is probably full of bugs. We'll whack them as we create more interesting scenarios, but it will take us a while to get there. See also _[](module-vlan-caveats)_.
 ```
 
 ```eval_rst
@@ -189,3 +189,9 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 * When the VLAN forwarding mode is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
 -->
 
+(module-vlan-caveats)=
+## Known Caveats
+
+If we document them, they're not bugs, right?
+
+* Devices connected to a single-node VLAN will not have VLAN-wide list of neighbors on the interface connected to that node. EBGP sessions that should be configured over that VLAN might be missing.
