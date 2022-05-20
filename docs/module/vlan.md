@@ -32,6 +32,7 @@ VLANs are supported on these platforms:
 | Cisco IOSv            | ✅  | ✅  | ❌   | ✅ | ✅ |
 | VyOS                  | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
+| Nokia SR Linux        | ✅  | ✅  | ❌   | ✅ | ❌ |
 
 ## VLAN Connectivity Model
 
@@ -116,7 +117,7 @@ To keep the VLAN complexity manageable, the VLAN configuration module enforces t
 VLAN interfaces <!-- and routed subinterfaces -->are created on-demand based on these rules:
 
 * A VLAN/SVI/BVI interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node.
-* VLAN subinterfaces are created on VLAN trunks on platforms behaving more like routers than switches (example: Cisco IOS). 
+* VLAN subinterfaces are created on VLAN trunks on platforms behaving more like routers than switches (example: Cisco IOS).
 <!-- * A routed subinterface is created on every interface that has a VLAN with **mode** set to *route*.
 * Routed subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*.-->
 
@@ -126,7 +127,7 @@ The default VLAN **mode** is specified in global or node **vlan.mode** attribute
 
 ### VLAN Interface Parameters
 
-You can set link- or interface-level parameters within the node **vlans** dictionary to change VLAN interface parameters. 
+You can set link- or interface-level parameters within the node **vlans** dictionary to change VLAN interface parameters.
 
 For example, use the following definitions to set the OSPF cost for the **red** VLAN interface on node **s1**:
 
@@ -188,7 +189,6 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 <!--
 * When the VLAN forwarding mode is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
 -->
-
 (module-vlan-caveats)=
 ## Known Caveats
 
