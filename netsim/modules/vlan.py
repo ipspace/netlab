@@ -41,7 +41,7 @@ def init_global_vars() -> None:
   vlan_next = Box({},default_box=True,box_dots=True)
 
 #
-# build_vrf_id_set: given an object (topology or node), create a set of RDs
+# build_vlan_id_set: given an object (topology or node), create a set of VLAN attributes (ID or VNI)
 # that appear in that object.
 #
 def build_vlan_id_set(obj: Box, attr: str, objname: str) -> set:
@@ -393,14 +393,17 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
 """
 get_vlan_data: Get VLAN data structure (node or topology)
 """
-def get_vlan_data(vlan: str, node: Box, topology: Box) -> Box:
-  return topology.vlans[vlan] if vlan in topology.get('vlans',{}) else node.vlans[vlan]
+def get_vlan_data(vlan: str, node: Box, topology: Box) -> typing.Optional[Box]:
+  return get_from_box(topology,f'vlans.{vlan}') or get_from_box(node,f'vlans.{vlan}')
 
 """
 update_vlan_neighbor_list: Build a VLAN-wide list of neighbors
 """
 def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,topology: Box) -> None:
-  vlan_data = get_vlan_data(vlan,node,topology)
+  vlan_data = get_vlan_data(vlan,node,topology)                         # Try to get global or node-level VLAN data
+  if vlan_data is None:                                                 # ... and get out if there's none
+    return
+
   if not 'neighbors' in vlan_data:
     vlan_data.neighbors = []
 
@@ -513,7 +516,10 @@ set_svi_neighbor_list: set SVI neighbor list from VLAN neighbor list
 def set_svi_neighbor_list(node: Box, topology: Box) -> None:
   for ifdata in node.interfaces:
     if 'vlan_name' in ifdata:
-      vlan_data = get_vlan_data(ifdata.vlan_name,node,topology)
+      vlan_data = get_vlan_data(ifdata.vlan_name,node,topology)             # Try to get global or local VLAN data
+      if vlan_data is None:                                                 # Not found?
+        continue                                                            # ... too bad
+
       if not 'host_count' in vlan_data:                                     # Calculate the number of hosts attached to the VLAN
         vlan_data.host_count = len([ n for n in vlan_data.neighbors if topology.nodes[n.node].get('role','') == 'host' ])
 
@@ -624,6 +630,8 @@ class VLAN(_Module):
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if 'vlans' in node:
       for vname in node.vlans.keys():
+        if node.vlans[vname] is None:
+          node.vlans[vname] = {}
         if 'vlans' in topology and vname in topology.vlans:
           for kw in ('prefix','id','vni'):
             if kw in node.vlans[vname]:
