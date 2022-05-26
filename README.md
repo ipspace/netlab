@@ -14,9 +14,9 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release 1.2.2](https://github.com/ipspace/netsim-tools/releases/tag/release_1.2.2).
+The latest release is [release 1.2.3](https://github.com/ipspace/netsim-tools/releases/tag/release_1.2.3).
 
-Release 1.2.1 is pretty stable, if you want to use something even more conservative, go for 1.4.1 release.
+1.2 release train is pretty stable, if you want to use something even more conservative, go for 1.4.1 release.
 
 <!-- [Release 1.1](https://github.com/ipspace/netsim-tools/releases/tag/release_1.1) included major code- and internal data structure changes (see [breaking changes](https://netsim-tools.readthedocs.io/en/latest/release/1.1.html#breaking-changes)). The latest release using old data structures is [release_1.0.6](https://github.com/ipspace/netsim-tools/releases/tag/release_1.0.6).
 -->
