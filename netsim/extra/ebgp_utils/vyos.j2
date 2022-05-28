@@ -1,0 +1,68 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+
+configure
+
+# AllowAS-IN
+{% for n in bgp.neighbors if n.allowas_in is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast allowas-in number {{ n.allowas_in }}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) if n.allowas_in is defined %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.allowas_in %}
+set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast allowas-in number {{ n.allowas_in }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
+
+# AS-Override
+{% for n in bgp.neighbors if n.as_override is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast as-override
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) if n.as_override is defined %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.as_override %}
+set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast as-override
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
+
+# Password
+{% for n in bgp.neighbors if n.password is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+set protocols bgp neighbor {{ n[af] }} password {{ n.password }}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) if n.password is defined %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.password %}
+set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} password {{ n.password }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
+
