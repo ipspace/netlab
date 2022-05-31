@@ -56,7 +56,7 @@ Address pools could be specified:
 
 **Notes:**
 
-* Local defaults file is specified with `--defaults` CLI option (default value: `topology-defaults.yml` in current directory)
+* [Local (or user) defaults file](defaults-user-file) can be overwritten with `--defaults` option of **netlab create** or **netlab up** command.
 * Global defaults file is `topology-defaults.yml` in *netsim* package directory.
 
 Each address pool specification is a dictionary of address pools. Individual address pools are specified with these parameters:

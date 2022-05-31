@@ -16,7 +16,7 @@ If you used a custom container tag, specify it in the topology file, for example
 defaults.devices.eos.clab.image: "ceos:4.27.2F"
 ```
 
-Alternatively, if you want to use the same cEOS image in all your labs, add the following line to `~/topology-defaults.yml` file (replacing `ceos:4.27.2F` with your image tag).
+Alternatively, if you want to use the same cEOS image in all your labs, add the following line to `~/.netlab.yml` file (replacing `ceos:4.27.2F` with your image tag).
 
 ```
 devices.eos.clab.image: "ceos.4.27.2F"
