@@ -169,7 +169,7 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
     inventory_file = 'hosts.yml'
 
   with open(config_file,"w") as output:
-    output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates'))
+    output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates','ansible'))
     output.close()
     if not common.QUIET:
       print("Created Ansible configuration file: %s" % config_file)
