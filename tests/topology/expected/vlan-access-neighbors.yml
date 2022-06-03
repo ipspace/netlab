@@ -1,0 +1,228 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+  as65001:
+    members:
+    - r2
+input:
+- topology/input/vlan-access-neighbors.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ipv4: 172.16.0.1/24
+    node: r1
+  - ifindex: 1
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: red
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan_name: red
+- bridge: input_2
+  interfaces:
+  - ifindex: 1
+    ipv4: 172.16.0.3/24
+    node: r2
+  - ifindex: 2
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: red
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan_name: red
+module:
+- vlan
+- bgp
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - bridge: input_1
+      clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      name: r1 -> [s1]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.0.2/24
+        node: s1
+      type: lan
+      vlan_name: red
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - bgp
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-r2
+    id: 3
+    interfaces:
+    - bridge: input_2
+      clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.0.3/24
+      linkindex: 2
+      name: r2 -> [s1]
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 172.16.0.2/24
+        node: s1
+      type: lan
+      vlan_name: red
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - bgp
+    name: r2
+  s1:
+    af:
+      ipv4: true
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-s1
+    id: 2
+    interfaces:
+    - bridge: input_1
+      clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      linkindex: 1
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge: input_2
+      clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 2
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 3
+      ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      name: VLAN red (1000) -> [r1,r2]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+        node: r2
+      type: svi
+      virtual_interface: true
+      vlan_name: red
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - vlan
+    name: s1
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        host_count: 0
+        id: 1000
+        neighbors:
+        - ifname: Ethernet1
+          ipv4: 172.16.0.1/24
+          node: r1
+        - ifname: Vlan1000
+          ipv4: 172.16.0.2/24
+          node: s1
+        - ifname: Ethernet1
+          ipv4: 172.16.0.3/24
+          node: r2
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+provider: clab

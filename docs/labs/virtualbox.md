@@ -72,4 +72,4 @@ You have to use the following box names when installing or building the Vagrant 
 
 * Arista rarely ships the latest software version as a Vagrant box. You'll usually have to build your own box if you want to have an up-to-date EOS version.
 * Vagrantfile created by **netlab create** or **netlab up** sets up port forwarding for SSH (22), HTTP (80) and NETCONF (830), but the corresponding Ansible inventory contains only **ansible_port** (SSH). You could edit the final inventory by hand, add extra file to `host_vars`, or fix *netsim-tools* code. Should you decide to do the latter, please contact us in advance to discuss the necessary data structures.
-* If you want to add other network devices, build your own Vagrant boxes and modify *topology-defaults.yml* file (see [_adding new virtualization provider for an existing device_](../dev/device-platform.md) for more details). 
+* If you want to add other network devices, build your own Vagrant boxes and modify system *topology-defaults.yml* file or [user defaults](defaults-user-file) (see [_adding new virtualization provider for an existing device_](../dev/device-platform.md) for more details). 

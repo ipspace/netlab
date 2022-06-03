@@ -9,7 +9,7 @@ import os
 import textwrap
 import pathlib
 
-from jinja2 import Environment, PackageLoader, StrictUndefined, make_logging_undefined
+from jinja2 import Environment, PackageLoader, FileSystemLoader, StrictUndefined, make_logging_undefined
 from box import Box,BoxList
 
 LOGGING : bool = False
@@ -96,8 +96,13 @@ def print_yaml(x : typing.Any) -> str:
 def get_moddir() -> pathlib.Path:
   return pathlib.Path(__file__).resolve().parent
 
-def template(j2: str , data: typing.Dict, path: str) -> str:
-  ENV = Environment(loader=PackageLoader('netsim',path), \
+def template(j2: str , data: typing.Dict, path: str, user_template_path: typing.Optional[str] = None) -> str:
+  template_path = [ str(get_moddir()) + "/" + path ]
+  if not user_template_path is None:
+    template_path = [ './' + user_template_path, os.path.expanduser('~/.netlab/'+user_template_path) ] + template_path
+  if DEBUG:
+    print(f"TEMPLATE PATH for {j2}: {template_path}")
+  ENV = Environment(loader=FileSystemLoader(template_path), \
           trim_blocks=True,lstrip_blocks=True, \
           undefined=make_logging_undefined(base=StrictUndefined))
   template = ENV.get_template(j2)

@@ -1,0 +1,41 @@
+!
+router bgp {{ bgp.as }}
+! AllowAS-IN
+{% for n in bgp.neighbors if n.allowas_in is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+ address-family {{ af }}
+  neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+ vrf {{ vname }}
+{%   for n in vdata.bgp.neighbors|default([]) if n.allowas_in is defined %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.allowas_in %}
+   neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
+
+! AS-Override SEEMS NOT SUPPORTED on Arista EOS
+
+! Password
+{% for n in bgp.neighbors if n.password is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+ address-family {{ af }}
+  neighbor {{ n[af] }} password {{ n.password }}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+ vrf {{ vname }}
+{%   for n in vdata.bgp.neighbors|default([]) if n.password is defined %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.password %}
+   neighbor {{ n[af] }} password {{ n.password }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}

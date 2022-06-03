@@ -1,6 +1,12 @@
 Release notes
 =============
 
+2022-05-26 (release 1.2.3)
+  * VLAN support for SR Linux
+  * Bug fixes
+  
+  :doc:`More details <release/1.2>`
+
 2022-05-02 (release 1.2.2)
   * VLAN configuration module
   * External topology provider to use *netsim-tools* with hardware labs

@@ -53,7 +53,7 @@ def include_defaults(topo: Box, fname: str) -> None:
     topo.input.append(fname)
     topo.defaults = defaults + topo.defaults
 
-def load(fname: str , local_defaults: str, sys_defaults: str) ->Box:
+def load(fname: str , local_defaults: str, sys_defaults: str) -> Box:
   topology = read_yaml(fname)
   if topology is None:
     common.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
@@ -72,11 +72,14 @@ def load(fname: str , local_defaults: str, sys_defaults: str) ->Box:
       include_defaults(topology,local_defaults)
     else:
       local_defaults = os.path.dirname(os.path.abspath(fname))+"/topology-defaults.yml"
-      user_defaults  = os.path.expanduser('~/topology-defaults.yml')
       if os.path.isfile(local_defaults):
         include_defaults(topology,local_defaults)
-      elif os.path.isfile(user_defaults):
-        include_defaults(topology,user_defaults)
+
+      for defname in ('~/.netlab.yml','~/topology-defaults.yml'):
+        user_defaults  = os.path.expanduser(defname)
+        if os.path.isfile(user_defaults):
+          include_defaults(topology,user_defaults)
+          break
 
   if sys_defaults and 'global_defaults' in topology.includes:
     include_defaults(topology,sys_defaults)

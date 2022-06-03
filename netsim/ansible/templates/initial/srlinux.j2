@@ -38,7 +38,8 @@ updates:
   val:
 {{  ip_addresses(loopback,False,True)  }}
 
-{% for l in interfaces|default([]) %}
+{% for l in interfaces|default([]) if l.vlan is not defined %}
+{% set if_index = vlans[ l.vlan_name ].id if l.vlan_name is defined else '0' %}
 - path: interface[name={{ l.ifname }}]
   val:
 {% if l.name is defined %}
@@ -49,13 +50,28 @@ updates:
 {% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
    mtu {{ [l.mtu + 14,1500]|max }} # TODO not supported on loopback interfaces
 {% endif %}
+   vlan-tagging: {{ l.type == "svi" }}
    subinterface:
-    index: 0
-{{  ip_addresses(l,True,False) }}
-{% if l.bandwidth is defined %}
- # bandwidth {{ l.bandwidth  }}
+    index: {{ if_index }}
+{%  if if_index != '0' %}
+    vlan:
+     encap:
+{%    if if_index != '1' %}
+      single-tagged:
+       vlan-id: "{{ if_index }}"
+{%    else %}
+      untagged: { }
+{%    endif %}
 {% endif %}
+{{  ip_addresses(l,True,False) }}
 {% endfor %}
+
+{% macro list_interfaces(vrf) %}
+{% for l in interfaces|default([]) if l.vlan is not defined and l.vrf|default('default')==vrf %}
+{% set if_index = vlans[ l.vlan_name ].id if l.vlan_name is defined else '0' %}
+   - name: {{ l.ifname }}.{{ if_index }}
+{% endfor %}
+{% endmacro %}
 
 {# Make sure the default VRF is called 'default' #}
 - path: network-instance[name=default]
@@ -63,6 +79,16 @@ updates:
    type: default
    interface:
    - name: system0.0
-{% for l in interfaces|default([]) %}
-   - name: {{ l.ifname + '.0' }}
+{{ list_interfaces('default') }}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() %}
+- path: network-instance[name={{ vname }}]
+  val:
+   type: ip-vrf
+   # TODO: vdata.rd, vdata.import/export, vdata.af
+   interface:
+{{ list_interfaces(vname) }}
+
 {% endfor %}
+{% endif %}

@@ -12,6 +12,7 @@ All system defaults, specified in global **topology-defaults.yml** file (shipped
 
 * In **defaults** element of the topology file
 * In **topology-defaults.yml** file residing in the same directory as the topology file or in the user's home directory.
+* In **.netlab.yml** file residing in user's home directory
 
 (default-device-type)=
 The topology **defaults** value is most commonly used to set default device type; you could also use it to set any other default parameter. For example, the following topology file builds a network of Cisco IOSv devices using a different value for the default IS-IS area:
@@ -55,11 +56,15 @@ defaults.devices.eos.clab.image: cEOS:latest
 * Whenever a key in the target dictionary is itself a dictionary, and the same key is present in the defaults dictionary, the merge process recurses, resulting in a recursive merge of child dictionaries.
 * Lists and scalar values are not merged.
 
+(defaults-user-file)=
 ## User Settings
 
-*netsim-tools* read system defaults from the system **topology-defaults.yml** and augment them with the settings from **topology-defaults.yml** file in the lab directory or user home directory.
+*netsim-tools* read system defaults from the system **topology-defaults.yml** and augment them with:
 
-For example, to make sure all labs use Arista EOS as the default device type, create the following **topology-defaults.yml** file in your home directory:
+* **topology-defaults.yml** file in the lab directory
+* **.netlab.yml** file in the user home directory.
+
+For example, to make sure all labs use Arista EOS as the default device type, create the following **.netlab.yml** file in your home directory:
 
 ```
 ---
