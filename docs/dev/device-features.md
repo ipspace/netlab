@@ -20,4 +20,5 @@ If you want to add support for a new configuration module (example: MPLS segment
    config/initial.md
    config/ospf.md
    config/bfd.md
+   config/vlan.md
 ```
