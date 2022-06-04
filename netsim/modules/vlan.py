@@ -682,9 +682,10 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     if 'subif_index' in parent_intf:
       parent_intf.subif_index = parent_intf.subif_index + 1
     else:
-      parent_intf.subif_index = 1
+      parent_intf.subif_index = features.vlan.first_subif_id or 1
 
-    intf.ifname = subif_name.format(**parent_intf)
+    ifname_data = intf + parent_intf
+    intf.ifname = subif_name.format(**ifname_data)
     intf.parent_ifindex = parent_intf.ifindex
     intf.virtual_interface = True
     for attr in skip_ifattr:
