@@ -517,18 +517,6 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
     routed_intf = interface_vlan_mode(ifdata,node,topology) == 'route'      # Identify routed VLAN interfaces
     vlan_subif  = routed_intf and ifdata.get('type','') == 'vlan_member'    # ... and VLAN-based subinterfaces
 
-    if routed_intf:                                                         # Routed VLAN access interface, turn it back into native interface
-      for k in ('access','native'):                                         # ... remove access VLAN attributes
-        ifdata.vlan.pop(k,None)
-
-      if not ifdata.vlan:                                                   # ... and VLAN dictionary if there's nothing else left
-        ifdata.pop('vlan',None)
-
-      if not vlan_subif:                                                    # Nothing else to do for a physical routed access VLAN interface
-        continue
-      else:                                                                 # Mark routed VLAN subinterface
-        ifdata.vlan.mode = 'route'
-
     vlan_data = create_node_vlan(node,access_vlan,topology)
     if vlan_data is None:                                                   # pragma: no-cover
       if vlan_subif:                                                        # We should never get here, but at least we can 
@@ -536,9 +524,20 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
           f'Weird: cannot get VLAN data for VLAN {access_vlan} on node {node.name}, aborting')
       continue
 
-    if vlan_subif:                                                          # Set access ID for VLAN subinterface and move on
-      ifdata.vlan.access_id = vlan_data.id
-      continue
+    if routed_intf:                                                         # Routed VLAN access interface, turn it back into native interface
+      for k in ('access','native'):                                         # ... remove access VLAN attributes
+        ifdata.vlan.pop(k,None)
+
+      if not ifdata.vlan:                                                   # ... and VLAN dictionary if there's nothing else left
+        ifdata.pop('vlan',None)
+
+      if vlan_subif:
+        ifdata.vlan.mode = 'route'
+        ifdata.vlan.access_id = vlan_data.id
+
+      vlan_copy = { k:v for (k,v) in vlan_data.items() if not k in svi_skipattr }
+      node.interfaces[ifidx] = vlan_copy + ifdata                           # Merge VLAN data with interface data
+      continue                                                              # Move to next interface
 
     features = devices.get_device_features(node,topology.defaults)
     svi_name = features.vlan.svi_interface_name

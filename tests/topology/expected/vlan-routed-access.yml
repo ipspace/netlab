@@ -1,0 +1,250 @@
+input:
+- topology/input/vlan-routed-access.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ipv4: 172.16.0.1/24
+    node: r1
+    vlan:
+      access: red
+      mode: route
+  - ifindex: 1
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: red
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
+  vlan_name: red
+- bridge: input_2
+  interfaces:
+  - ifindex: 2
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: red
+  - ifindex: 1
+    ipv4: 172.16.0.3/24
+    node: r2
+    vlan:
+      access: red
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
+  vlan_name: red
+module:
+- vlan
+- ospf
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 1
+    interfaces:
+    - bridge: input_1
+      bridge_group: 1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      name: r1 -> [s1,r2]
+      neighbors:
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+      - ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        cost: 10
+        passive: false
+      type: lan
+      vlan:
+        mode: route
+      vlan_name: red
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - vlan
+    - ospf
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        id: 1000
+        ospf:
+          cost: 10
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+  r2:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 3
+    interfaces:
+    - bridge: input_2
+      bridge_group: 1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.0.3/24
+      linkindex: 2
+      mode: route
+      name: r2 -> [r1,s1]
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+      ospf:
+        area: 0.0.0.0
+        cost: 10
+        passive: false
+      type: lan
+      vlan_name: red
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - vlan
+    - ospf
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        id: 1000
+        mode: route
+        ospf:
+          cost: 10
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+  s1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: Ethernet1
+      linkindex: 1
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge: input_2
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 2
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 3
+      ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      name: VLAN red (1000) -> [r1,r2]
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        cost: 10
+        passive: false
+      type: svi
+      virtual_interface: true
+      vlan_name: red
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - vlan
+    - ospf
+    name: s1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        id: 1000
+        ospf:
+          cost: 10
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+ospf:
+  area: 0.0.0.0
+provider: libvirt
+vlans:
+  red:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: GigabitEthernet0/1
+      ipv4: 172.16.0.1/24
+      node: r1
+    - ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      node: s1
+    - ifname: Ethernet1
+      ipv4: 172.16.0.3/24
+      node: r2
+    ospf:
+      cost: 10
+    prefix:
+      ipv4: 172.16.0.0/24
+    vni: 101000
