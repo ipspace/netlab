@@ -41,9 +41,14 @@ VLAN-related interfaces are included in the **node.interfaces** list and are thu
 You have to specify VLAN-related capabilities of your device in `devices.<device>.features.vlan` dictionary in `topology-defaults.yml`. You can set the following parameters:
 
 * **svi_interface_name** -- a template for the VLAN/SVI/BVI interface name. You can use `{vlan}` or `{bvi}` within this string to set the interface name based on VLAN ID or bridge group.
-* **vlan_subif_name** -- name of VLAN subinterfaces for router-like platforms. Use `{ifname}` to get the parent interface name and `{subif_index}` to get subinterface ID.
+* **vlan_subif_name** -- name of VLAN subinterfaces for router-like platforms. Use `{ifname}` to get the parent interface name, `{subif_index}` to get subinterface ID[^SID], and `{vlan.access_id}` to get the VLAN tag[^SUBIF].
 * **routed_subif_name** -- identical to **vlan_subif_name**, but applies only to routed VLAN subinterfaces on switch-like platforms.
+* **first_subif_id** -- subinterface ID of the first subinterface in case your platform uses unusual subinterface names. Defaults to 1.
 * **mixed_trunk** -- set to *True* when a switch-like platform supports a mix of bridged and routed VLANs on a trunk interface.
+
+[^SID]: A counter starting at **first_subif_id**.
+
+[^SUBIF]: You can also use any other attribute from the parent interface, or attributes from the current interface (like `vlan.access_id`) that are not defined on the parent interface.
 
 The following VLAN features have been defined for Cisco IOSv, Arista EOS, VyOS, and Dell OS10:
 
