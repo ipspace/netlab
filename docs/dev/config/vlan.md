@@ -70,7 +70,7 @@ devices:
     features:
       vlan:
         svi_interface_name: "br0.{vlan}"
-        routed_subif_name: "{ifname}.{vlan_id}"
+        routed_subif_name: "{ifname}.{vlan.access_id}"
   dellos10:
     features:
       vlan:
