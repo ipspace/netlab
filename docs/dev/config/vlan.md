@@ -70,6 +70,7 @@ devices:
     features:
       vlan:
         svi_interface_name: "br0.{vlan}"
+        routed_subif_name: "{ifname}.{vlan_id}"
   dellos10:
     features:
       vlan:
@@ -79,7 +80,7 @@ devices:
 **Notes:**
 * Cisco IOSv is a router and uses BVI (bridge group) interface and per-VLAN subinterfaces.
 * Arista EOS is a switch and uses VLAN interfaces. It also supports routed VLAN subinterfaces.
-* VyOS uses a Linux bridge and creates VLAN interface by appending VLAN ID to bridge name.
+* VyOS uses a VLAN-aware Linux bridge and creates VLAN interfaces by appending VLAN ID to bridge name - so it behaves like a switch. It also supports routed VLAN subinterfaces.
 * Dell OS10 is a switch and uses VLAN interfaces. As specified above, it does not support routed VLAN subinterfaces.
 
 ## Interface Configuration
