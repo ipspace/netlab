@@ -793,10 +793,21 @@ class VLAN(_Module):
     if not validate_link_vlan_attributes(link,v_attr,topology):
       return
 
+    svi_skipattr = ['id','vni','mode','pool','prefix']                             # VLAN attributes not copied into link data
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
     if not link_vlan is None:
       routed_vlan = routed_access_vlan(link,topology,link_vlan)
+      vlan_data = get_from_box(topology,f'vlans.{link_vlan}')                      # Get global VLAN data
+      if isinstance(vlan_data,Box):
+        vlan_data = Box({ k:v for (k,v) in vlan_data.items() \
+                                if k not in svi_skipattr })                       # Remove VLAN-specific data
+        fix_vlan_mode_attribute(vlan_data)                                        # ... and turn mode into vlan.mode
+        for (k,v) in vlan_data.items():                                           # Now add the rest to link data
+          if not k in link:                                                       # ... have to do the deep merge manually as
+            link[k] = v                                                           # ... we cannot just replace link data structure
+          elif isinstance(link[k],Box) and isinstance(vlan_data[k],Box):
+            link[k] = vlan_data[k] + link[k]
 
     if routed_vlan:
       link.vlan.mode = 'route'
