@@ -93,6 +93,7 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
     if mode != 'route':
       return False
 
+  #print(f'RAV: routed VLAN')
   return True
 
 #
@@ -433,7 +434,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
 
       if routed_access_vlan(link_data,topology,vname):
         link_data.vlan.mode = 'route'
-        for intf in link.interfaces:
+        for intf in link_data.interfaces:
           intf.vlan.mode = 'route'
       else:
         link_data.prefix = prefix
