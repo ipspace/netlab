@@ -93,6 +93,7 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
     if mode != 'route':
       return False
 
+  #print(f'RAV: routed VLAN')
   return True
 
 #
@@ -363,6 +364,14 @@ def get_link_access_vlan(v_attr: Box) -> typing.Optional[str]:
 
   return None
 
+"""
+fix_vlan_mode_attribute: Given an interface/link data structure, replace 'mode' with 'vlan.mode'
+"""
+def fix_vlan_mode_attribute(data: Box) -> None:
+  if 'mode' in data:
+    data.vlan.mode = data.mode
+    data.pop('mode',None)
+
 
 """
 set_link_vlan_prefix: copy link attributes from VLAN for access/native VLAN links
@@ -415,9 +424,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
       link_data.vlan_name = vname
       link_data.type = 'vlan_member'
       link_data.interfaces = []
-      if 'mode' in link_data:                               # VLAN forwarding mode copied from trunk definition?
-        link_data.vlan.mode = link_data.mode                # ... copy it into vlan.mode
-        link_data.pop('mode',None)
+      fix_vlan_mode_attribute(link_data)
 
       if vname in topology.get('vlans',{}):                 # We need an IP prefix for the VLAN link
         prefix = topology.vlans[vname].prefix               # Hopefully we can get it from the global VLAN pool
@@ -433,7 +440,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
 
       if routed_access_vlan(link_data,topology,vname):
         link_data.vlan.mode = 'route'
-        for intf in link.interfaces:
+        for intf in link_data.interfaces:
           intf.vlan.mode = 'route'
       else:
         link_data.prefix = prefix
@@ -517,18 +524,6 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
     routed_intf = interface_vlan_mode(ifdata,node,topology) == 'route'      # Identify routed VLAN interfaces
     vlan_subif  = routed_intf and ifdata.get('type','') == 'vlan_member'    # ... and VLAN-based subinterfaces
 
-    if routed_intf:                                                         # Routed VLAN access interface, turn it back into native interface
-      for k in ('access','native'):                                         # ... remove access VLAN attributes
-        ifdata.vlan.pop(k,None)
-
-      if not ifdata.vlan:                                                   # ... and VLAN dictionary if there's nothing else left
-        ifdata.pop('vlan',None)
-
-      if not vlan_subif:                                                    # Nothing else to do for a physical routed access VLAN interface
-        continue
-      else:                                                                 # Mark routed VLAN subinterface
-        ifdata.vlan.mode = 'route'
-
     vlan_data = create_node_vlan(node,access_vlan,topology)
     if vlan_data is None:                                                   # pragma: no-cover
       if vlan_subif:                                                        # We should never get here, but at least we can 
@@ -536,9 +531,21 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
           f'Weird: cannot get VLAN data for VLAN {access_vlan} on node {node.name}, aborting')
       continue
 
-    if vlan_subif:                                                          # Set access ID for VLAN subinterface and move on
-      ifdata.vlan.access_id = vlan_data.id
-      continue
+    if routed_intf:                                                         # Routed VLAN access interface, turn it back into native interface
+      for k in ('access','native'):                                         # ... remove access VLAN attributes
+        ifdata.vlan.pop(k,None)
+
+      if not ifdata.vlan:                                                   # ... and VLAN dictionary if there's nothing else left
+        ifdata.pop('vlan',None)
+
+      vlan_copy = { k:v for (k,v) in vlan_data.items() if not k in svi_skipattr and k != 'mode' }
+
+      if vlan_subif:
+        ifdata.vlan.mode = 'route'
+        ifdata.vlan.access_id = vlan_data.id
+
+      node.interfaces[ifidx] = vlan_copy + ifdata                           # Merge VLAN data with interface data
+      continue                                                              # Move to next interface
 
     features = devices.get_device_features(node,topology.defaults)
     svi_name = features.vlan.svi_interface_name
@@ -551,12 +558,15 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
 
     if not access_vlan in vlan_ifmap:                                       # Do we need to create a SVI interface?
       skip_attr = list(skip_ifattr)                                         # Create a local copy of the attribute skip list
-      if vlan_data.get('mode','') == 'bridge':                              # ... and skip IP addresses for bridging-only VLANs
+      vlan_mode = ifdata.vlan.get('mode','') or vlan_data.get('mode','')    # Get VLAN forwarding mode
+      if vlan_mode == 'bridge':                                             # ... and skip IP addresses for bridging-only VLANs
         skip_attr.extend(['ipv4','ipv6'])
       vlan_ifdata = Box(                                                    # Copy non-physical interface attributes into SVI interface
         { k:v for k,v in ifdata.items() if k not in skip_attr },            # ... that will also give us IP addresses
         default_box=True,
         box_dots=True)
+      if vlan_mode:                                                         # Set VLAN forwarding mode for completness' sake
+        vlan_ifdata.vlan.mode = vlan_mode
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
       vlan_ifdata.ifname = svi_name.format(                                 # ... ifindex, ifname, description
                               vlan=vlan_data.id,
@@ -567,6 +577,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       vlan_ifdata.neighbors = []                                            # No neighbors so far
                                                                             # Overwrite interface settings with VLAN settings
       vlan_ifdata = vlan_ifdata + { k:v for k,v in vlan_data.items() if k not in svi_skipattr }
+      fix_vlan_mode_attribute(vlan_ifdata)
       node.interfaces.append(vlan_ifdata)                                   # ... and add SVI interface to list of node interfaces
       vlan_ifmap[access_vlan] = vlan_ifdata
     else:
@@ -682,9 +693,10 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     if 'subif_index' in parent_intf:
       parent_intf.subif_index = parent_intf.subif_index + 1
     else:
-      parent_intf.subif_index = 1
+      parent_intf.subif_index = features.vlan.first_subif_id or 1
 
-    intf.ifname = subif_name.format(**parent_intf)
+    ifname_data = intf + parent_intf
+    intf.ifname = subif_name.format(**ifname_data)
     intf.parent_ifindex = parent_intf.ifindex
     intf.virtual_interface = True
     for attr in skip_ifattr:

@@ -27,7 +27,7 @@ VLANs are supported on these platforms:
 | --------------------- | :-: | :-: |:-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
-| VyOS                  | ✅  | ✅  | ❌   | ✅ | ✅ |
+| VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Nokia SR Linux        | ✅  | ✅  | ❌   | ✅ | ❌ |
 
@@ -92,13 +92,9 @@ You can set VLAN forwarding mode within a global **vlans** definition, within a 
 To use a VLAN on a link, add **vlan** dictionary to a link or an interface on a link. The VLAN dictionary may contain the following attributes:
 
 * **access** -- the name of access VLAN configured on the link or interface
-* **trunk** -- a list or dictionary of VLANs configured on a trunk port
+* **trunk** -- a list or dictionary of VLANs configured on a trunk port -- see [](module-vlan-trunk-attributes) for more details.
 * **native** -- the name of native VLAN configured on a trunk port
 * **mode** -- the default VLAN forwarding mode (route/bridge/irb) for this link or interface -- overrides the node- or global forwarding mode
-
-Use a list of VLANs in a **trunk** attribute when you don't want to change individual VLAN attributes on a link/interface level. Use a **trunk** dictionary when you want to set VLAN forwarding mode for individual VLANs in a trunk[^NMT].
-
-[^NMT]: Some platforms do not support a mix of bridged and routed VLANs on a single physical interface.
 
 ### Access VLAN Restrictions
 
@@ -126,13 +122,13 @@ VLAN interfaces and subinterfaces are created on-demand based on these rules:
 * A routed VLAN subinterface is created on every interface that has a VLAN with **mode** set to *route*.
 * Routed VLAN subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*. There is no difference between routed access VLAN interface and an interface without VLAN configuration.
 
-The VLAN **mode** can be set in global- or node **vlans** dictionary or with the **mode** attribute of interface/link **vlan** dictionary.
+The VLAN **mode** can be set in global- or node **vlans** dictionary or with the **vlan.mode** interface/link attribute.
 
 ### VLAN Interface Parameters
 
-You can set link- or interface-level parameters within the node **vlans** dictionary to change VLAN interface parameters.
+You can change VLAN interface[^VLANIF] parameters within the node **vlans** dictionary. For example, use the following definitions to set the OSPF cost for the **red** VLAN interface on node **s1**:
 
-For example, use the following definitions to set the OSPF cost for the **red** VLAN interface on node **s1**:
+[^VLANIF]: VLAN/SVI/BVI interfaces or router VLAN subinterfaces
 
 ```
 vlans:
@@ -151,7 +147,7 @@ links:
   ...
 ```
 
-You can also set interface parameters for every VLAN interface connected to a VLAN within global VLAN definition. For example, you could set the OSPF cost for all VLAN interfaces connected to the **red** VLAN:
+You can also set interface parameters for every interface connected to a VLAN within global VLAN definition. For example, you could set the OSPF cost for all interfaces connected to the **red** VLAN:
 
 ```
 vlans:
@@ -168,10 +164,37 @@ links:
   ...
 ```
 
+Finally, you can set the parameters of an individual routed VLAN subinterface within the **vlan.trunk** link- or interface- dictionary.
 
 ```{warning}
 Don't try to set VLAN interface parameters on access or trunk links; you might get unexpected results.
 ```
+
+(module-vlan-trunk-attributes)=
+### Modifying Attributes of VLANs in a VLAN Trunk
+
+Use a list of VLANs in a **vlan.trunk** attribute when you don't want to change individual VLAN attributes on a link/interface level. Use a **vlan.trunk** dictionary when you want to set additional parameters for the virtual links created for individual VLAN in the trunk.
+
+You could use this functionality to set VLAN forwarding mode (**vlan.mode**) on individual VLANs in a trunk[^NMT], or to set parameters for a routed VLAN subinterface.
+
+```{warning}
+Use interface- or link attributes within the **‌trunk** dictionary only on routed VLAN subinterfaces. Attributes for VLAN/SVI interfaces should be set within global or node-level **‌vlans** definition.
+```
+
+For example, to set OSPF cost for a routed subinterface for VLAN *red* without changing the OSPF cost for *blue* or *green* VLAN, use this link definition:
+
+```
+links:
+- r1:
+    vlan.trunk:
+      red:
+        vlan.mode: route
+        ospf.cost: 10
+  s1:
+  vlan.trunk: [ red, green, blue ]
+```
+
+[^NMT]: Some platforms do not support a mix of bridged and routed VLANs on a single physical interface.
 
 ### Physical Interface and VLAN Interface Addressing
 
@@ -192,7 +215,7 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 * When a node is attached to a VLAN-enabled link, but does not have a **vlan** interface attribute, the VLAN IP address is assigned to physical interface.
 * When the VLAN forwarding mode is set to *irb*, the node VLAN IP address is assigned to a VLAN interface.
 * No IP address is assigned to the VLAN interface when the VLAN forwarding mode is set to *bridge*.
-* No IP address is assigned to the physical interface that has an **access** or **native** VLAN with **mode** set to *bridge* or *irb*. You can force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
+* No IP address is assigned to the physical interface that has an **access** or **native** VLAN with **mode** set to *bridge* or *irb*. You can try to force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
 * Interfaces with **access** or **native** VLAN that has **mode** set to *route* are treated like regular interfaces and get IP addresses.
 * IP prefixes are not assigned to the physical interfaces with VLAN trunks. If you want to assign IP addresses to default native VLAN (1), use **role** or **prefix** link attribute.
 * When the VLAN forwarding mode of a VLAN in a VLAN trunk is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
@@ -203,5 +226,4 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 If we document them, they're not bugs, right?
 
 * Devices connected to a single-node VLAN will not have VLAN-wide list of neighbors on the interface connected to that node. EBGP sessions that should be configured over that VLAN might be missing.
-* *bridge* forwarding mode might still have a few quirks
 
