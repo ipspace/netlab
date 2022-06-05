@@ -38,9 +38,11 @@ updates:
   val:
 {{  ip_addresses(loopback,False,True)  }}
 
-{% for l in interfaces|default([]) if l.vlan is not defined %}
-{% set if_index = vlans[ l.vlan_name ].id if l.vlan_name is defined else '0' %}
-- path: interface[name={{ l.ifname }}]
+{% for l in interfaces|default([]) if (l.type!='lan' or l.vlan is not defined) %}
+{% set if_name_index = l.ifname.split('.') %}
+{% set if_name = if_name_index[0] %}
+{% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
+- path: interface[name={{ if_name }}]
   val:
 {% if l.name is defined %}
    description: "{{ l.name|replace('->','~')|regex_replace('[\\[\\]]','') }}{{ " ("+l.role+")" if l.role is defined else '' }}"
@@ -50,15 +52,15 @@ updates:
 {% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
    mtu {{ [l.mtu + 14,1500]|max }} # TODO not supported on loopback interfaces
 {% endif %}
-   vlan-tagging: {{ l.type == "svi" }}
+   vlan-tagging: {{ l.type in ["svi","vlan_member"] }}
    subinterface:
     index: {{ if_index }}
-{%  if if_index != '0' %}
+{%  if if_index != '0' and l.type in ["svi","vlan_member"] %}
     vlan:
      encap:
-{%    if if_index != '1' %}
+{%    if if_index != '1' or l.vlan is defined %}
       single-tagged:
-       vlan-id: "{{ if_index }}"
+       vlan-id: "{{ l.vlan.access_id if l.vlan is defined else if_index }}"
 {%    else %}
       untagged: { }
 {%    endif %}
@@ -67,9 +69,11 @@ updates:
 {% endfor %}
 
 {% macro list_interfaces(vrf) %}
-{% for l in interfaces|default([]) if l.vlan is not defined and l.vrf|default('default')==vrf %}
-{% set if_index = vlans[ l.vlan_name ].id if l.vlan_name is defined else '0' %}
-   - name: {{ l.ifname }}.{{ if_index }}
+{% for l in interfaces|default([]) if (l.type!='lan' or l.vlan is not defined) and l.vrf|default('default')==vrf %}
+{% set if_name_index = l.ifname.split('.') %}
+{% set if_name = if_name_index[0] %}
+{% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
+   - name: {{ if_name }}.{{ if_index }}
 {% endfor %}
 {% endmacro %}
 
