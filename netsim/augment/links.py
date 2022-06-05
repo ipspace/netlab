@@ -95,13 +95,13 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 
   return link_list
 
-def get_link_full_attributes(defaults: Box) -> set:
+def get_link_full_attributes(defaults: Box, with_modules: bool = True) -> set:
   attributes = defaults.get('attributes',{})
   user = attributes.get('link',[])
   internal = attributes.get('link_internal',[])
 
   set_attributes = set(user).union(set(internal))
-  if 'module' in defaults:
+  if 'module' in defaults and with_modules:
     set_attributes = set_attributes.union(set(defaults.module))
 
   if 'link_attr' in defaults:
@@ -109,10 +109,10 @@ def get_link_full_attributes(defaults: Box) -> set:
 
   return set_attributes
 
-def get_link_base_attributes(defaults: Box) -> set:
+def get_link_base_attributes(defaults: Box, with_modules: bool = True) -> set:
   attributes = defaults.get('attributes',{})
   no_propagate = attributes.get('link_no_propagate')
-  return get_link_full_attributes(defaults) - set(no_propagate)
+  return get_link_full_attributes(defaults,with_modules) - set(no_propagate)
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
@@ -287,6 +287,8 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> di
 
 def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
   link_attr_base = get_link_base_attributes(defaults)
+  link_attr_nomod = get_link_base_attributes(defaults,False)
+
   if common.DEBUG:     # pragma: no cover (debugging)
     print(f'\nProcess LAN link {link}')
 
@@ -311,7 +313,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         f'{errmsg}\n'+
         common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
 
-    ifaddr_add_module(ifaddr,link,defaults.get('module'))
+    ifaddr_add_module(ifaddr,link,ndict[node].get('module'))
 
     ifaddr = ifaddr + value
     ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
@@ -321,7 +323,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
       n_list = [ link[IFATTR][i].node for i in range(0,len(link[IFATTR])) if i != link_cnt ]
       ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
 
-    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
+    ifdata = interface_data(link=link,link_attr=link_attr_nomod,ifdata=ifaddr)
     node_intf = add_node_interface(ndict[node],ifdata,defaults)
     value.ifindex = node_intf.ifindex
     interfaces.append({ 'node': node, 'data':  node_intf })
@@ -343,6 +345,8 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
 def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
   link_attr_base = get_link_base_attributes(defaults)
+  link_attr_nomod = get_link_base_attributes(defaults,False)
+
   if not defaults:      # pragma: no cover (almost impossible to get there)
     defaults = Box({})
   if common.DEBUG:     # pragma: no cover (debugging)
@@ -381,14 +385,14 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         f'{errmsg}\n'+
         common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
 
-    ifaddr_add_module(ifaddr,link,defaults.get('module'))
+    ifaddr_add_module(ifaddr,link,ndict[node].get('module'))
 
     ifaddr = ifaddr + value
     ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
 #    link[IFATTR][intf_cnt] = value
     link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
 
-    ifdata = interface_data(link=link,link_attr=link_attr_base,ifdata=ifaddr)
+    ifdata = interface_data(link=link,link_attr=link_attr_nomod,ifdata=ifaddr)
     if 'bridge' in link:
       ifdata.bridge = link.bridge
     ifdata.name = link.get("name") or (link[IFATTR][intf_cnt].node + " -> " + link[IFATTR][1-intf_cnt].node)
