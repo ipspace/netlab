@@ -8,11 +8,20 @@ import os
 from box import Box
 
 from .. import common
+from ..data import get_from_box,must_be_list
 from . import _TopologyOutput
 
 def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Optional[str] = '') -> None:
   f.write('%s  "%s" [\n' % (indent,n.name))
-  f.write('%s    label=<%s [%s]<br /><sub>%s</sub>>\n' % (indent,n.name,n.device,n.loopback.ipv4 or n.loopback.ipv6 or ""))
+  node_ip_str = ""
+  if settings.node_address_label:
+    node_ip = n.loopback.ipv4 or n.loopback.ipv6
+    if not node_ip and n.interfaces:
+      node_ip = n.interfaces[0].ipv4 or n.interfaces[0].ipv6
+    if node_ip:
+      node_ip_str = f'<br /><sub>{node_ip}</sub>'
+
+  f.write(f'{indent}    label=<{n.name} [{n.device}]{node_ip_str}>\n')
   f.write('%s    fillcolor="%s"\n' % (indent,settings.colors.get('node','#ff9f01')))
   f.write('%s  ]\n' % indent)
 
@@ -54,14 +63,14 @@ def as_start(f : typing.TextIO, asn: str, label: typing.Optional[str], settings:
   f.write('    fontname=Verdana\n')
   f.write('    margin=%s\n' % settings.margins.get('as',16))
   if label:
-    f.write('    label="%s (AS %s)"\n' % (label,asn))
+    f.write('    label="%s (%s)"\n' % (label,asn.replace('_',' ')))
   else:
-    f.write('    label="AS %s"\n' % asn)
+    f.write('    label="%s"\n' % asn.replace('_',' '))
 
-def graph_bgp_clusters(f : typing.TextIO, bgp: Box, settings: Box) -> None:
-  for asn in bgp.keys():
-    as_start(f,asn,bgp[asn].get('name',None),settings)
-    for n in bgp[asn].nodes.values():
+def graph_clusters(f : typing.TextIO, clusters: Box, settings: Box) -> None:
+  for asn in clusters.keys():
+    as_start(f,asn,clusters[asn].get('name',None),settings)
+    for n in clusters[asn].nodes.values():
       node_with_label(f,n,settings,'  ')
     f.write('  }\n')
 
@@ -70,10 +79,12 @@ def build_maps(topology: Box) -> Box:
   for name,n in topology.nodes.items():
     maps.nodes[name] = n
 
-  if 'module' in topology and 'bgp' in topology.module:
+  if 'bgp' in topology.get('module',[]):
     for name,n in topology.nodes.items():
-      if 'bgp' in n and 'as' in n.bgp:
-        maps.bgp[n.bgp['as']].nodes[n.name] = n
+      bgp_as = get_from_box(n,'bgp.as')
+      if bgp_as:
+        bgp_as = f'AS_{bgp_as}'
+        maps.bgp[bgp_as].nodes[n.name] = n
 
   if 'bgp' in topology and 'as_list' in topology.bgp:
     for (asn,asdata) in topology.bgp.as_list.items():
@@ -82,14 +93,45 @@ def build_maps(topology: Box) -> Box:
 
   return maps
 
+"""
+add_groups -- use topology groups as graph clustering mechanism
+"""
+
+def add_groups(maps: Box, groups: list, topology: Box) -> None:
+  if not 'groups' in topology:
+    return
+
+  placed_hosts = []
+  for g,v in topology.groups.items():
+    if g in groups:
+      for n in v.members:
+        if n in placed_hosts:
+          common.error(
+            f'Cannot create overlapping graph clusters: node {n} is in two groups',
+            common.IncorrectValue,
+            'graph')
+          continue
+        else:
+          maps.groups[g].nodes[n] = topology.nodes[n]
+          placed_hosts.append(n)
+
 def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
   f = common.open_output_file(fname)
   graph_start(f)
 
   maps = build_maps(topology)
 
+  if 'groups' in settings:
+    must_be_list(
+      parent=settings,
+      key='groups',path='defaults.outputs.graph',
+      true_value=list(topology.get('groups',{}).keys()),
+      create_empty=True,
+      module='graph')
+    add_groups(maps,settings.groups,topology)
+    graph_clusters(f,maps.groups,settings)
   if 'bgp' in maps and settings.as_clusters:
-    graph_bgp_clusters(f,maps.bgp,settings)
+    graph_clusters(f,maps.bgp,settings)
   else:
     for name,n in topology.nodes.items():
       node_with_label(f,n,settings)
@@ -140,7 +182,7 @@ def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional
   rr_session = g_format is not None and len(g_format) > 1 and g_format[1] == 'rr'
 
   maps = build_maps(topology)
-  graph_bgp_clusters(f,maps.bgp,settings)
+  graph_clusters(f,maps.bgp,settings)
 
   for name,n in topology.nodes.items():
     if 'bgp' in n:
