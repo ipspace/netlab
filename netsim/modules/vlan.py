@@ -747,6 +747,21 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
         'vlan')
     err_ifmap[parent_intf.ifindex] = True
 
+"""
+cleanup_vlan_name -- remove internal 'vlan_name' attribute from links and interfaces
+"""
+
+def cleanup_vlan_name(topology: Box) -> None:
+  if 'links' in topology:
+    for l in topology.links:
+      if 'vlan_name' in l:
+        l.pop('vlan_name',None)
+
+  for n in topology.nodes.values():
+    for intf in n.interfaces:
+      if 'vlan_name' in intf:
+        intf.pop('vlan_name',None)
+
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
@@ -839,3 +854,5 @@ class VLAN(_Module):
       set_svi_neighbor_list(n,topology)
 
     topology.links = [ link for link in topology.links if link.type != 'vlan_member' ]
+
+    cleanup_vlan_name(topology)
