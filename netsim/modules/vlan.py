@@ -706,7 +706,9 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     else:
       parent_intf.subif_index = features.vlan.first_subif_id or 1
 
-    ifname_data = intf + parent_intf
+    ifname_data = parent_intf + intf                                  # Add parent interface data to subinterface data
+    ifname_data.ifname = parent_intf.ifname                           # ... making sure ifname is coming from parent interface
+
     old_intf = Box({ 'ifname': intf.ifname })                         # Create a fake interface with old interface name
     intf.ifname = subif_name.format(**ifname_data)
     intf.parent_ifindex = parent_intf.ifindex
