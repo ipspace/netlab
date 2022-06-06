@@ -83,13 +83,19 @@ def get_next_vlan_id(k : str) -> int:
 # routed_access_vlan: Given a link with access/native VLAN, check if all nodes on the link use routed VLAN
 #
 def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
-  def_mode = get_from_box(link,'vlan.mode') or get_from_box(topology,f'vlans.{vlan}.mode') or 'irb'
+  def_link  = get_from_box(link,'vlan.mode')
+  def_vlan  = get_from_box(topology,f'vlans.{vlan}.mode')
+  def_global = get_from_box(topology,'vlan.mode') or 'irb'
+
   #print(f'RAV: {link}')
   #print(f'RAV: vlan {vlan} def_mode {def_mode}')
   for intf in link.interfaces:
     mode = get_from_box(intf,'vlan.mode') or \
+           def_link or \
            get_from_box(topology.nodes[intf.node],f'vlans.{vlan}.mode') or \
-           def_mode or 'irb'
+           get_from_box(topology.nodes[intf.node],'vlan.mode') or \
+           def_vlan or \
+           def_global or 'irb'
     if mode != 'route':
       return False
 
@@ -106,7 +112,9 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 
   return get_from_box(intf,'vlan.mode') or \
          get_from_box(node,f'vlans.{vlan}.mode') or \
-         get_from_box(topology,f'vlans.{vlan}.mode') or 'irb'
+         get_from_box(node,'vlan.mode') or \
+         get_from_box(topology,f'vlans.{vlan}.mode') or \
+         get_from_box(topology,'vlan.mode') or 'irb'
 
 #
 # Validate VLAN attributes and set missing attributes:
@@ -433,6 +441,8 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
           intf_data.node = intf.node
+          if 'mode' in intf.vlan and not get_from_box(intf_data,'vlan.mode'):
+            intf_data.vlan.mode = intf.vlan.mode            # vlan.mode is inherited from trunk dictionary or parent interface
           link_data.interfaces.append(intf_data)
           if not prefix:                                    # Still no usable IP prefix? Try to get it from the node VLAN pool
             if vname in topology.nodes[intf.node].get('vlans',{}):

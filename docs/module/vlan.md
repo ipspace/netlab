@@ -84,7 +84,20 @@ VLANs with **mode** set to **bridge** or **irb** are configured as VLAN/SVI inte
 
 VLANs with **mode** set to **route** are configured as routed subinterfaces under the VLAN trunk interface. Access VLAN interfaces with **mode** set to **route** are identical to non-VLAN interfaces.
 
-You can set VLAN forwarding mode within a global **vlans** definition, within a node **vlans** definition, or on individual links or interfaces with **vlan.mode** attribute.
+You can set VLAN forwarding mode within individual links or interfaces with **vlan.mode** attribute, within a node or global **vlans** definition, or with **vlan.mode** node- or global parameter.
+
+The precedence of various **vlan.mode** parameters (from highest to lowest) is as follows:
+
+* Interface **vlan.mode**, potentially inherited from parent interface **vlan.mode** or from parent interface **vlan.trunk** dictionary.
+* Link **vlan.mode**, potentially inherited from parent link **vlan.trunk** dictionary
+* **mode** set in node **vlans** definition
+* Node **vlan.mode** setting[^NVM]
+* **mode** set in global **vlans** definition
+* Global **vlan.mode** setting
+
+The default forwarding mode is **irb**.
+
+[^NVM]: Node setting takes precedence over global VLAN setting to allow you to attach a router to a VLAN trunk without setting too many parameters.
 
 (module-vlan-interface)=
 ## Using VLANs on Interfaces and Links
