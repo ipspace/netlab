@@ -712,6 +712,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     old_intf = Box({ 'ifname': intf.ifname })                         # Create a fake interface with old interface name
     intf.ifname = subif_name.format(**ifname_data)
     intf.parent_ifindex = parent_intf.ifindex
+    intf.parent_ifname = parent_intf.ifname
     intf.virtual_interface = True
     if 'vlan_name' in intf:
       update_vlan_neighbor_list(intf.vlan_name,old_intf,intf,node,topology)
