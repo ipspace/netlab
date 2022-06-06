@@ -30,6 +30,7 @@ VLANs are supported on these platforms:
 | VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Nokia SR Linux        | ✅  | ✅  | ❌   | ✅ | ❌ |
+| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅ | ✅ |
 
 ## VLAN Connectivity Model
 

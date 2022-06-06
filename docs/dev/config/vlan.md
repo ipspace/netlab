@@ -50,7 +50,7 @@ You have to specify VLAN-related capabilities of your device in `devices.<device
 
 [^SUBIF]: You can also use any other attribute from the parent interface, or attributes from the current interface (like `vlan.access_id`) that are not defined on the parent interface.
 
-The following VLAN features have been defined for Cisco IOSv, Arista EOS, VyOS, and Dell OS10:
+The following VLAN features have been defined for Cisco IOSv, Arista EOS, VyOS, Mikrotik RouterOS and Dell OS10:
 
 ```
 devices:
@@ -75,6 +75,11 @@ devices:
     features:
       vlan:
         svi_interface_name: vlan{vlan}
+  routeros:
+    features:
+      vlan:
+        svi_interface_name: bridge{vlan}
+        vlan_subif_name: "{ifname}-{vlan.access_id}"
 ```
 
 **Notes:**
@@ -82,6 +87,7 @@ devices:
 * Arista EOS is a switch and uses VLAN interfaces. It also supports routed VLAN subinterfaces.
 * VyOS uses a VLAN-aware Linux bridge and creates VLAN interfaces by appending VLAN ID to bridge name - so it behaves like a switch. It also supports routed VLAN subinterfaces.
 * Dell OS10 is a switch and uses VLAN interfaces. As specified above, it does not support routed VLAN subinterfaces.
+* Mikrotik RouterOS is a router and uses bridge interface and per-VLAN subinterfaces.
 
 ## Interface Configuration
 
