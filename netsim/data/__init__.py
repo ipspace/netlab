@@ -170,19 +170,17 @@ def must_be_list(
     else:
       return None
 
-  if isinstance(value,list):
-    if not valid_values is None:
-      check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module)
-    return parent[key]
-
   if isinstance(value,bool) and not true_value is None:
     value = true_value if value else []
     parent[key] = value
 
   if isinstance(value,(str,int,float,bool)):
+    parent[key] = [ value ]
+    value = parent[key]
+
+  if isinstance(value,list):
     if not valid_values is None:
       check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module)
-    parent[key] = [ value ]
     return parent[key]
 
   wrong_type_message(path=path, key=key, expected='a scalar or a list', value=value, context=context, module=module)
