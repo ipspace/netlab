@@ -137,7 +137,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     vdata = obj.vlans[vname]
 
     if 'mode' in vdata:                                             # Do we have 'mode' set in the VLAN definition?
-      if not vdata.mode in vlan_mode_kwd:                           # ... check the keyword value 
+      if not vdata.mode in vlan_mode_kwd:                           # ... check the keyword value
         common.error(
           f'Invalid VLAN mode setting {vdata.mode} in VLAN {vname} in {obj_name}',
           common.IncorrectValue,
@@ -217,7 +217,7 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         common.error(
           f'VLAN attribute {attr}{node_error} must be a {a_type.__name__}\n... {link}',
           common.IncorrectValue,
-          'vlan')  
+          'vlan')
         link_ok = False
         continue
 
@@ -311,7 +311,7 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
         f'Native VLAN {v_attr.native.list[0]} used on a link is not in the VLAN trunk definition\n... {link}',
         common.IncorrectValue,
         'vlan')
-    else:               
+    else:
       for intf in link.interfaces:                                # Now check if every node using native VLAN has it in its trunk
         if 'vlan' in intf:                                        # VLAN attributes on interface?
                                                                   # Calculate effective node trunk and native VLAN data
@@ -488,7 +488,7 @@ create_node_vlan: Create a local (node) copy of a VLAN used on an interface
 def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box]:
   if not vlan in node.vlans:                                        # Do we have VLAN defined in the node?
     node.vlans[vlan] = Box(topology.vlans[vlan])                    # ... no, create a copy of the global definition
-    if not node.vlans[vlan]:                                        # pragma: no cover -- we don't have a global definition? 
+    if not node.vlans[vlan]:                                        # pragma: no cover -- we don't have a global definition?
       common.fatal(                                                 # ... this should have been detected way earlier
         f'Unknown VLAN {vlan} used on node {node.name}','vlan')
       return None
@@ -526,7 +526,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
 
     vlan_data = create_node_vlan(node,access_vlan,topology)
     if vlan_data is None:                                                   # pragma: no-cover
-      if vlan_subif:                                                        # We should never get here, but at least we can 
+      if vlan_subif:                                                        # We should never get here, but at least we can
         common.fatal(                                                       # scream before crashing
           f'Weird: cannot get VLAN data for VLAN {access_vlan} on node {node.name}, aborting')
       continue
@@ -570,7 +570,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
       vlan_ifdata.ifname = svi_name.format(                                 # ... ifindex, ifname, description
                               vlan=vlan_data.id,
-                              bvi=vlan_data.bridge_group)
+                              bvi=vlan_data.bridge_group,
+                              ifname=ifdata.ifname)
       vlan_ifdata.name = f'VLAN {access_vlan} ({vlan_data.id})'
       vlan_ifdata.virtual_interface = True                                  # Mark interface as virtual
       vlan_ifdata.type = "svi"
@@ -724,7 +725,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     return
 
   err_ifmap = {}
-  for intf in node.interfaces:                                        
+  for intf in node.interfaces:
     if not intf.get('parent_ifindex') or intf.type != 'vlan_member':  # Skip everything that is not a VLAN subinterface
       continue
 
