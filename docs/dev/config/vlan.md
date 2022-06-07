@@ -2,12 +2,14 @@
 
 This document describes the device data model parameters one should consider when creating a VLAN configuration template. For a wider picture, please see [contributing new devices](../devices.md) document.
 
-Most of the document assumes you already created an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see [Using Ansible Configuration Modules](ospf-ansible-config) section at the bottom of this document.
+This document assumes you're using an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build device configuration, you'll find some guidance in [Using Ansible Configuration Modules](ospf-ansible-config) section of OSPF implementation guide.
 
 VLAN node- and interface data model contains enough information to implement VLANs on a wide variety of platforms, including:
 
 * Switch-like platforms that use a VLAN database, VLAN trunks on physical interfaces, and VLAN/SVI interfaces
 * Router-like platforms that use bridge groups, VLAN subinterfaces on physical interfaces, and BVI/IRB interfaces
+
+You might want to use the VLAN integration test cases in `tests/integration/vlan` directory to test your implementation.
 
 **Notes:**
 
