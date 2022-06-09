@@ -14,6 +14,7 @@ from box import Box
 
 from . import usage
 from .. import augment, common, read_topology
+from .. import __version__
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
@@ -128,12 +129,13 @@ def lab_commands() -> None:
     try:
       mod = importlib.import_module("."+cmd,__name__)
     except Exception as ex:
-      print( f"Error importing .{cmd},{__name__}: {ex}" )
-      pass
+      if 'dev' in __version__:
+        print( f"Error importing .{cmd},{__name__}: {ex}" )
+  
+  if mod:
+    if hasattr(mod,'run'):
+      mod.run(sys.argv[arg_start:])   # type: ignore
+      return
 
-  if mod and hasattr(mod,'run'):
-    mod.run(sys.argv[arg_start:])   # type: ignore
-    return
-
-  print("Invalid CLI command: %s\n\nUse 'netlab usage' to get the list of valid commands" % cmd)
+  print("Invalid netlab command '%s'\nUse 'netlab usage' to get the list of valid commands" % cmd)
   sys.exit(1)

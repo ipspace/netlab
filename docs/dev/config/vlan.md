@@ -6,8 +6,9 @@ This document assumes you're using an Ansible task list that is able to deploy d
 
 VLAN node- and interface data model contains enough information to implement VLANs on a wide variety of platforms, including:
 
-* Switch-like platforms that use a VLAN database, VLAN trunks on physical interfaces, and VLAN/SVI interfaces
-* Router-like platforms that use bridge groups, VLAN subinterfaces on physical interfaces, and BVI/IRB interfaces
+* Switch-like platforms that use a VLAN database, VLAN trunks on physical interfaces, and VLAN/SVI interfaces (example: Dell OS10). Set **vlan.model** attribute to **switch**.
+* Router-like platforms that use bridge groups, VLAN subinterfaces on physical interfaces, and BVI/IRB interfaces (example: Cisco IOSv, Nokia SR Linux, Mikrotik RouterOS). Set **vlan.model** attribute to **router**.
+* Switch-like platforms that support routed ports and VLAN subinterfaces on routed ports (example: Arista EOS, VyOS). Set **vlan.model** attribute to **l3-switch**.
 
 You might want to use the VLAN integration test cases in `tests/integration/vlan` directory to test your implementation.
 
@@ -42,11 +43,11 @@ VLAN-related interfaces are included in the **node.interfaces** list and are thu
 
 You have to specify VLAN-related capabilities of your device in `devices.<device>.features.vlan` dictionary in `topology-defaults.yml`. You can set the following parameters:
 
+* **model** -- describes the way the device implements VLAN interfaces. Valid values are **router**, **switch** or **l3-switch**. See the introductory section of this document for more details.
 * **svi_interface_name** -- a template for the VLAN/SVI/BVI interface name. You can use `{vlan}` or `{bvi}` within this string to set the interface name based on VLAN ID or bridge group.
-* **vlan_subif_name** -- name of VLAN subinterfaces for router-like platforms. Use `{ifname}` to get the parent interface name, `{subif_index}` to get subinterface ID[^SID], and `{vlan.access_id}` to get the VLAN tag[^SUBIF].
-* **routed_subif_name** -- identical to **vlan_subif_name**, but applies only to routed VLAN subinterfaces on switch-like platforms.
+* **subif_name** -- name of VLAN subinterfaces for **router** platforms or routed VLAN subinterface name for **l3-switch** platforms. Use `{ifname}` to get the parent interface name, `{subif_index}` to get subinterface ID[^SID], and `{vlan.access_id}` to get the VLAN tag[^SUBIF].
 * **first_subif_id** -- subinterface ID of the first subinterface in case your platform uses unusual subinterface names. Defaults to 1.
-* **mixed_trunk** -- set to *True* when a switch-like platform supports a mix of bridged and routed VLANs on a trunk interface.
+* **mixed_trunk** -- set to *True* when a **l3-switch** platform supports a mix of bridged and routed VLANs on a trunk interface.
 
 [^SID]: A counter starting at **first_subif_id**.
 
@@ -59,29 +60,38 @@ devices:
   iosv:
     features:
       vlan:
+        model: router
         svi_interface_name: BVI{bvi}
-        vlan_subif_name: "{ifname}.{subif_index}"
+        subif_name: "{ifname}.{subif_index}"
   eos:
     features:
       vlan:
+        model: l3-switch
         svi_interface_name: Vlan{vlan}
-        routed_subif_name: "{ifname}.{subif_index}"
-      vrf:
-        loopback_interface_name: Loopback{vrfidx}
+        subif_name: "{ifname}.{subif_index}"
+  srlinux:
+    features:
+      vlan:
+        model: router
+        svi_interface_name: "{ifname}.{vlan}"
+        subif_name: "{ifname}.{subif_index}"
   vyos:
     features:
       vlan:
+        model: l3-switch
         svi_interface_name: "br0.{vlan}"
-        routed_subif_name: "{ifname}.{vlan.access_id}"
+        subif_name: "{ifname}.{vlan.access_id}"
   dellos10:
     features:
       vlan:
+        model: switch
         svi_interface_name: vlan{vlan}
   routeros:
     features:
       vlan:
+        model: router
         svi_interface_name: bridge{vlan}
-        vlan_subif_name: "{ifname}-{vlan.access_id}"
+        subif_name: "{ifname}-{vlan.access_id}"
 ```
 
 **Notes:**

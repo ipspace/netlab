@@ -675,9 +675,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
   skip_ifattr.extend(topology.defaults.providers.keys())
 
   features = devices.get_device_features(node,topology.defaults)
-  subif_name = features.vlan.vlan_subif_name                      # Does the device need subinterfaces to support VLAN trunks?
-
-  if not subif_name:                                              # No need for VLAN subinterfaces, remove non-routed vlan_member interfaces
+  if 'switch' in features.vlan.model:                             # No need for VLAN subinterfaces, remove non-routed vlan_member interfaces
     node.interfaces = [ intf for intf in node.interfaces \
                           if intf.type != 'vlan_member' or intf.vlan.get('mode','') == 'route' ]
     subif_name = features.vlan.routed_subif_name                  # Just in case: try to get interface name pattern for routed subinterface
@@ -686,7 +684,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     if intf.type != 'vlan_member':
       continue
 
-    if not subif_name:
+    if not 'router' in features.vlan.model and not 'l3-switch' in features.vlan.model:
       #
       # The only way to get here is to have a routed VLAN in a VLAN trunk on a device that
       # does not support VLAN subinterfaces
@@ -694,6 +692,12 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
       common.error(
         f'Routed subinterfaces on VLAN trunks not supported on device type {node.device}\n... node {node.name} vlan {intf.vlan_name}',
         common.IncorrectValue,'vlan')
+      continue
+
+    subif_name = features.vlan.subif_name
+    if not subif_name:                                            # pragma: no-cover -- hope we got device settings right
+      common.fatal(
+        f'Internal error: device {node.device} acts as a VLAN-capable {features.vlan.model} but does not have subinterface name template')
       continue
 
     parent_intf = find_parent_interface(intf,node,topology)
