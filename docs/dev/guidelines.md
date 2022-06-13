@@ -32,5 +32,5 @@ The easiest way to get started is to [add support for a new platform for an exis
    config/ospf.md
    config/bfd.md
    config/vlan.md
+   config/vrf.md
 ```
-

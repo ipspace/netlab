@@ -131,4 +131,5 @@ To add a device that is already supported by *netsim-tools* to a new virtualizat
    config/ospf.md
    config/bfd.md
    config/vlan.md
+   config/vrf.md
 ```
