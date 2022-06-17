@@ -738,7 +738,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
   # We can skip this check if the device supports mixed routed/bridged trunks or if it
   # uses VLAN subinterfaces to implement VLANs.
   #
-  if features.vlan.mixed_trunk or features.vlan.vlan_subif_name:
+  if features.vlan.mixed_trunk:
     return
 
   err_ifmap = {}
