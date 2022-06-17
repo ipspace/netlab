@@ -208,11 +208,11 @@ Additional [configuration modules](module-reference.md) are supported on these d
 | Cisco Nexus OS        | ✅  |   ❌  |  ❌  |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux 5.0 (NVUE) | ❌ |   ❌  |[❗](module/vrf.md#platform-support)| ❌  |   ❌    |  ❌   |
 | Juniper vSRX 3.0      | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ❌   |
-| Mikrotik CHR RouterOS | ✅  |   ❌  | ✅  | ✅   |    ❌    |  ❌   |
-| Nokia SR Linux        | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ❌   |
+| Mikrotik CHR RouterOS | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
+| Nokia SR Linux        | ✅  |  ✅  |  ❌  |  ❌   |    ✅   |  ❌   |
 | Nokia SR OS           | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ✅  |
 | VyOS                  | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
-| Dell OS10             | ✅  |   ❌  | ✅  |   ❌  |    ❌    |  ❌   |
+| Dell OS10             | ✅  |  ✅  | ✅  |   ❌  |    ❌    |  ❌   |
 
 ## IPv6 Support
 
