@@ -13,6 +13,7 @@ The following configuration modules are included in **netsim-tools** distributio
    MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
    module/ospf.md
    module/sr-mpls.md
+   module/vlan.md
    module/vrf.md
 ```
 
@@ -35,5 +36,4 @@ Experimental modules are usually implemented on a small set of devices. We're al
 
    module/evpn.md
    module/srv6.md
-   module/vlan.md
 ```

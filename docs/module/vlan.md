@@ -1,6 +1,6 @@
 # VLANs
 
-The VLAN configuration module implements VLANs and VLAN-related interfaces. The current initial implementation supports:
+The VLAN configuration module implements VLANs and VLAN-related interfaces. The current implementation supports:
 
 * Access VLANs
 * VLAN trunks, including configurable native VLAN
@@ -9,7 +9,7 @@ The VLAN configuration module implements VLANs and VLAN-related interfaces. The 
 * Routed subinterfaces
 
 ```{warning}
-This module is **experimental** for a reason. The VLAN transformation code is the biggest bowl of spaghetti code in the whole system, and is probably full of bugs. We'll whack them as we create more interesting scenarios, but it will take us a while to get there. See also _[](module-vlan-caveats)_.
+The VLAN transformation code is the biggest bowl of spaghetti code in the whole system, and while we squashed many bugs already, you might still find a few. Should you stumble upon one, please submit a [GitHub issue](https://github.com/ipspace/netsim-tools/issues) including your lab topology file. See also _[](module-vlan-caveats)_.
 ```
 
 ```eval_rst
