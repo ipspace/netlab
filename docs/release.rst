@@ -1,6 +1,15 @@
 Release notes
 =============
 
+2022-06-20 (release 1.2.4)
+  * VLAN support for Mikrotik RouterOS and VyOS
+  * Routed VLANs and routed VLAN subinterfaces
+  * ebgp_utils plugin
+  * User-modifiable templates used in Vagrantfile creation
+  * Bug fixes and documentation fixes
+
+  :doc:`More details <release/1.2>`
+
 2022-05-26 (release 1.2.3)
   * VLAN support for SR Linux
   * Bug fixes
