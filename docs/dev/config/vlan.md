@@ -8,7 +8,7 @@ VLAN node- and interface data model contains enough information to implement VLA
 
 * Switch-like platforms that use a VLAN database, VLAN trunks on physical interfaces, and VLAN/SVI interfaces (example: Dell OS10). Set **vlan.model** attribute to **switch**.
 * Router-like platforms that use bridge groups, VLAN subinterfaces on physical interfaces, and BVI/IRB interfaces (example: Cisco IOSv, Nokia SR Linux, Mikrotik RouterOS). Set **vlan.model** attribute to **router**.
-* Switch-like platforms that support routed ports and VLAN subinterfaces on routed ports (example: Arista EOS, VyOS). Set **vlan.model** attribute to **l3-switch**.
+* Switch-like platforms that support both routed and switched ports, or a hybrid approach where some ports can be routed using VLAN subinterfaces, while other ports could be connected to the internal L2/L3 switch (example: Arista EOS, VyOS). Set **vlan.model** attribute to **l3-switch**.
 
 You might want to use the VLAN integration test cases in `tests/integration/vlan` directory to test your implementation.
 
