@@ -1,0 +1,25 @@
+#
+# Create custom configuration in "config" directory
+#
+- set_fact:
+    config_template: "{{ lookup('first_found',params,errors='ignore') }}"
+  tags: [ always ]
+  vars:
+    params:
+      paths:
+      - "{{ lookup('env','PWD') }}"
+      - "../../extra"
+      files:
+      - "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
+      - "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
+      - "{{ custom_config }}"
+      - "{{ custom_config + '.j2' }}"
+
+- fail: msg="Cannot find configuration template {{ custom_config }} for device {{ inventory_hostname }}"
+  when: config_template == ''
+  tags: [ always ]
+
+- template:
+    src: "{{config_template}}"
+    dest: "{{config_dir}}/{{inventory_hostname}}.{{custom_config}}.cfg"
+  delegate_to: localhost

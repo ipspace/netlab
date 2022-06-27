@@ -63,7 +63,7 @@ def run(cli_args: typing.List[str]) -> None:
     rest = ['-t','custom'] + rest
 
   if args.output:
-    rest = ['-e','config='+os.path.abspath(args.output) ]
+    rest = ['-e','config_dir='+os.path.abspath(args.output) ]
 
   if args.fast or os.environ.get('NETSIM_FAST_CONFIG',None):
     rest = ['-e','netsim_strategy=free']

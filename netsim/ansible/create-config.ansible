@@ -4,7 +4,7 @@
   hosts: all
   gather_facts: false
   vars:
-    config: "{{ lookup('env','PWD') }}/config"
+    config_dir: "{{ lookup('env','PWD') }}/config"
   tasks:
   - block:
     - set_fact:
@@ -12,20 +12,33 @@
 
     - name: Create config directory
       file:
-        path: "{{ config }}"
+        path: "{{ config_dir }}"
         state: directory
       run_once: true
 
     - name: Create initial configurations (IP addressing)
       template:
         src: "templates/initial/{{ netlab_device_type }}.j2"
-        dest: "{{config}}/{{inventory_hostname}}.initial.cfg"
-
-    - name: Create module-specific configurations
-      template:
-        src: "templates/{{ item }}/{{ netlab_device_type }}.j2"
-        dest: "{{config}}/{{inventory_hostname}}.{{item}}.cfg"
-      loop: "{{ module | default([]) }}"
-      when: module is defined
-
+        dest: "{{config_dir}}/{{inventory_hostname}}.initial.cfg"
+    
     delegate_to: localhost
+
+- name: Create module-specific configurations
+  hosts: modules
+  tasks:
+  - set_fact:
+      modlist: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
+  - template:
+      src: "templates/{{ item }}/{{ netlab_device_type }}.j2"
+      dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.cfg"
+    loop: "{{ netlab_module|intersect(modlist) }}"
+    delegate_to: localhost
+
+- name: Create custom deployment templates
+  hosts: custom_configs
+  serial: 1
+  tasks:
+  - include_tasks: "tasks/create-custom-config.yml"
+    loop: "{{ config }}"
+    loop_control:
+      loop_var: custom_config
