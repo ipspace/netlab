@@ -8,7 +8,14 @@ This configuration module configures BGP routing process and BGP neighbors on mo
 
 More interesting BGP topologies can be created with [custom plugins](../plugins.md).
 
-Supported BGP features:
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Supported BGP Features
 
 * Multiple autonomous systems
 * Direct (single-hop) EBGP sessions
@@ -252,6 +259,15 @@ nodes:
   r1:
     bgp:
       community: []
+```
+
+## Related Plugins
+
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+
+   ../plugins/ebgp.utils.md
 ```
 
 ## More Examples

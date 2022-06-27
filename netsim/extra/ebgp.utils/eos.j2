@@ -1,0 +1,36 @@
+{% macro ebgp_neighbor(n,af) -%}
+{%   if n.allowas_in is defined %}
+  neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
+{%   endif %}
+{%   if n.as_override is defined %}
+  neighbor {{ n[af] }} as-path remote-as replace out
+{%   endif %}
+{%   if n.password is defined %}
+  neighbor {{ n[af] }} password {{ n.password }}
+{%   endif %}
+{%- endmacro %}
+
+!
+router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{%     if loop.first %}
+ address-family {{ af }}
+{%     endif %}
+{{     ebgp_neighbor(n,af) -}}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+ vrf {{ vname }}
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors if n[af] is defined %}
+{%       if loop.first %}
+ address-family {{ af }}
+{%       endif %}
+{{       ebgp_neighbor(n,af) -}}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}

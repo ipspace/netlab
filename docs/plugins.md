@@ -3,7 +3,7 @@
 *netsim-tools* support dynamically loadable plugins allowing you to implement custom data model transformations without adding nerd knobs to the core topology transformation.
 
 ```{warning}
-This is an experimental feature. A few commonly-used functions are defined in `netsim.api`; performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *netsim-tools* GitHub repository](https://github.com/ipspace/netsim-tools/discussions) before proceeding.
+This is an underdocumented feature. A few commonly-used functions are defined in `netsim.api`; performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *netsim-tools* GitHub repository](https://github.com/ipspace/netsim-tools/discussions) before proceeding.
 ```
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:
@@ -124,3 +124,13 @@ Notes:
   `node.config = node.get('config',[]).append(template)`\
   \
   ... the utility function handles edge cases like missing **config** attribute or duplicate configuration templates.
+
+## Sample Plugins
+
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+
+   plugins/ebgp.utils.md
+```
+
