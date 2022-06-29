@@ -1,0 +1,46 @@
+!
+route-map all
+!
+router bgp {{ bgp.as }}
+{% for vname, vdata in vrfs.items() %}
+  vrf {{ vname }}
+{%   if bgp.router_id|ipv4 %}
+    router-id {{ bgp.router_id }}
+{%   endif %}
+{%   for af in ['ipv4','ipv6'] if vdata.af %}
+!
+    address-family {{ af }} unicast
+      redistribute direct route-map all
+{%     if af == 'ipv4' and 'ospf' in vdata %}
+      redistribute ospf {{ vdata.vrfidx }} route-map all
+{%     endif %}
+{%     for n in vdata.networks|default([]) if af in n %}
+    network {{ n[af]|ipaddr('0') }}
+{%     endfor %}
+!
+{%     for n in vdata.bgp.neighbors|default([]) if af in n %}
+    neighbor {{ n[af] }} remote-as {{ n.as }}
+      description {{ n.name }}
+{%     if n.type == 'ibgp' %}
+      update-source loopback0
+{%     endif %}
+      address-family {{ af }} unicast
+{%       if n.type == 'ibgp' %}
+{%         if bgp.next_hop_self is defined and bgp.next_hop_self %}
+        next-hop-self
+{%         endif %}
+{%         if bgp.rr|default('') and not n.rr|default('') %}
+        route-reflector-client
+{%         endif %}
+{%         if vdata.bgp.community.ibgp|default([]) %}
+        send-community {{ community(bgp.community.ibgp) }}
+{%         endif %}
+{%       else %}
+{%         if vdata.bgp.community.ebgp|default([]) %}
+        send-community {{ community(bgp.community.ebgp) }}
+{%         endif %}
+{%       endif %}
+!
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
