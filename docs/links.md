@@ -23,7 +23,7 @@ The following simple topology file contains typical variants of specifying nodes
 ---
 defaults:
   device: iosv
-  
+
 nodes:
 - r1
 - r2
@@ -51,6 +51,7 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 * **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
 * **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
+* **ifindex** -- optional custom index (per link node), used to generate the port name. Useful to select specific ports to match designs, e.g. with different speeds
 
 [^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
 
@@ -107,7 +108,7 @@ Each link could have a **name** attribute that is copied into interface data and
 
 Given this topology...
 
-``` 
+```
 nodes:
 - r1
 - r2
@@ -204,7 +205,7 @@ These interface address are assigned to the three nodes during the topology tran
 
 ## Selecting Custom Address Pools
 
-The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.md)*). 
+The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.md)*).
 
 Use **role** attribute to specify a custom address pool for a link. For example, the following topology uses unnumbered (core) link between **r1** and **r2**:
 
@@ -325,6 +326,7 @@ Multi-access and stub links are implemented with custom networks (as supported b
 Link data and corresponding node data are heavily augmented by the *netsim-tools* data transformation code. The additional link attributes include:
 
 * Global link ID
+* Link index for each of the attached nodes
 * Link IPv4 and/or IPv6 prefix
 * IPv4 and/or IPv6 addresses of attached nodes
 * Link name (for P2P links)
@@ -398,8 +400,8 @@ Final link data:
 LAN link with two nodes attached to it:
 
 ```
-- r1: 
-  r2: 
+- r1:
+  r2:
   type: lan
 ```
 
@@ -443,7 +445,9 @@ links:
   prefix:
     ipv6: 2001:db8:cafe:1::/64
 - r2:
+   ifindex: 10
   r3:
+   ifindex: 12
   type: lan
 ```
 
@@ -467,17 +471,17 @@ r1:
     remote_id: 2
     remote_ifindex: 1
     type: p2p
-  - ifindex: 2
-    ifname: GigabitEthernet0/2
+  - ifindex: 10
+    ifname: GigabitEthernet0/10
     ipv6: 2001:db8:cafe:1::1/64
     linkindex: 2
     name: r1 -> r3
     neighbors:
-    - ifname: GigabitEthernet0/1
+    - ifname: GigabitEthernet0/12
       ipv6: 2001:db8:cafe:1::2/64
       node: r3
     remote_id: 3
-    remote_ifindex: 1
+    remote_ifindex: 12
     type: p2p
   loopback:
     ipv4: 10.0.0.1/32
@@ -509,13 +513,13 @@ r2:
     remote_ifindex: 1
     type: p2p
   - bridge: X_3
-    ifindex: 2
-    ifname: GigabitEthernet0/2
+    ifindex: 12
+    ifname: GigabitEthernet0/12
     ipv4: 172.16.0.2/24
     linkindex: 3
     name: r2 -> [r3]
     neighbors:
-    - ifname: GigabitEthernet0/2
+    - ifname: GigabitEthernet0/10
       ipv4: 172.16.0.3/24
       node: r3
     type: lan
