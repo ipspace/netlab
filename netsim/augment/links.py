@@ -119,7 +119,8 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if ifindex_offset is None:
     ifindex_offset = 1
 
-  ifindex = len(node.interfaces) + ifindex_offset
+  # Allow user to select a specific interface index per link
+  ifindex = ifdata.get('ifindex',None) or (len(node.interfaces) + ifindex_offset)
 
   ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
