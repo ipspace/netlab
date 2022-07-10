@@ -51,7 +51,10 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 * **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
 * **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
-* **ifindex** -- optional custom index (per link node), used to generate the port name. Useful to select specific ports to match designs, e.g. with different speeds
+
+You can use all link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
+
+* **ifindex** -- optional per-node interface index used to generate the interface/port name. Useful to select specific ports to match typical network designs (example: using high-speed ports for uplinks).
 
 [^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
 
@@ -445,9 +448,9 @@ links:
   prefix:
     ipv6: 2001:db8:cafe:1::/64
 - r2:
-   ifindex: 10
+    ifindex: 10
   r3:
-   ifindex: 12
+    ifindex: 12
   type: lan
 ```
 
