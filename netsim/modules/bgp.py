@@ -58,6 +58,8 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict
     if af in intf:
       if "unnumbered" in ngb and ngb.unnumbered == True:
         ngb[af] = True
+      elif isinstance(intf[af],bool):
+        ngb[af] = intf[af]
       else:
         ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
   return ngb
