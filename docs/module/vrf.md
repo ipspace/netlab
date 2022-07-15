@@ -23,6 +23,7 @@ VRFs are supported on these platforms:
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |  ❌  |
 | VyOS                  | ✅  | ✅  | ✅  | ✅  | ✅  |
+| SR Linux              | ✅  | ❌  | ✅  | ✅  | ✅  |
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
@@ -122,7 +123,7 @@ For example, defining a *red* VRF with node-specific RD...
 ```
 vrfs:
   red:
-  
+
 nodes:
   r1:
     bgp.as: 65001
@@ -161,7 +162,7 @@ Notes:
 (module-vrf-interface)=
 ## Using VRFs on Interfaces and Links
 
-To use a VRF, add **vrf** attribute (global- or node-specific VRF name) to a link or an interface on a link. 
+To use a VRF, add **vrf** attribute (global- or node-specific VRF name) to a link or an interface on a link.
 
 For example, the following topology creates a simple VRF with two hosts attached to it:
 
@@ -170,7 +171,7 @@ module: [ vrf ]
 
 vrfs:
   red:
-  
+
 nodes:
   r1:
     device: eos
@@ -178,7 +179,7 @@ nodes:
     device: linux
   h2:
     device: linux
-    
+
 links:
 - r1:
     vrf: red
