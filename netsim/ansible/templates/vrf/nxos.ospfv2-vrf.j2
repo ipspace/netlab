@@ -1,0 +1,40 @@
+!
+route-map all
+!
+{% set pid = vdata.vrfidx %}
+feature ospf
+{% if vdata.ospf.bfd|default(False) %}
+feature bfd
+{% endif %}
+!
+router ospf {{ pid }}
+ vrf {{ vname }}
+{% if vdata.ospf.router_id|ipv4 %}
+  router-id {{ vdata.ospf.router_id }}
+{% endif %}
+{% if ospf.reference_bandwidth is defined %}
+  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }} Mbps
+{% endif %}
+!
+{% if bgp.as is defined %}
+  redistribute bgp {{ bgp.as }} route-map all
+{% endif %}
+!
+{% for l in vdata.ospf.interfaces|default([]) %}
+interface {{ l.ifname }}
+! {{ l.name|default("") }}
+ ip router ospf {{ pid }} area {{ l.ospf.area }}
+{%   if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
+ ip ospf network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+ ip ospf cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.passive|default(False) %}
+ ip ospf passive-interface
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+ ip ospf bfd
+{%   endif %}
+!
+{% endfor %}

@@ -19,6 +19,7 @@ VRFs are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |  ❌  |

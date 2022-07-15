@@ -14,6 +14,10 @@ ip host {{ k }} {{ v.interfaces[0].ipv4|ipaddr('address') }}
 {%   endif %}
 {% endfor %}
 !
+{% if vrfs is defined %}
+{% include 'nxos.vrf.j2' %}
+!
+{% endif %}
 interface loopback0
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4 }}
@@ -29,8 +33,13 @@ interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
 {% for l in interfaces|default([]) %}
 interface {{ l.ifname }}
  no shutdown
+{% if l.type|default("") != "loopback" %}
  no switchport
  mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
+{% endif %}
+{% if l.vrf is defined %}
+  vrf member {{ l.vrf }}
+{% endif %}
 {% if l.name is defined %}
  description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
 {% elif l.type|default("") == "stub" %}

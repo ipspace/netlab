@@ -205,7 +205,7 @@ Additional [configuration modules](module-reference.md) are supported on these d
 | Arista EOS            | ✅  |  ✅  | ✅  | ✅   |    ✅   |  ❌   |
 | Cisco IOS             | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
 | Cisco IOS XE          | ✅  |   ❌  | ✅  | ✅   |    ✅   |  ❌   |
-| Cisco Nexus OS        | ✅  |   ❌  |  ❌  |  ❌   |    ❌    |  ❌   |
+| Cisco Nexus OS        | ✅  |   ❌  |  ✅  |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux 5.0 (NVUE) | ❌ |   ❌  |[❗](module/vrf.md#platform-support)| ❌  |   ❌    |  ❌   |
 | Juniper vSRX 3.0      | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ❌   |
 | Mikrotik CHR RouterOS | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
