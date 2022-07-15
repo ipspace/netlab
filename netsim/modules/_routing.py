@@ -42,7 +42,7 @@ def routing_af(node: Box, proto: str) -> None:
             f'Routing protocol address family has to be ipv4 and/or ipv6: {proto} on {node.name}',
             common.IncorrectValue,
             proto)
-  
+
   if not 'af' in node[proto]:           # No configured AF attribute, calculate it
     for af in ['ipv4','ipv6']:
       if af in node.loopback:           # Address family enabled on loopback?
@@ -68,7 +68,7 @@ def network_type(
       proto: str,
       allowed: typing.List[str] = ['point-to-point'],
       p2p: str = 'point-to-point') -> typing.Optional[str]:
-  if 'network_type' in intf[proto]:                 # Did the user specify network type? 
+  if 'network_type' in intf[proto]:                 # Did the user specify network type?
     if not intf[proto].network_type:                # ... she did and she wants it gone
       intf.proto.pop('network_type')
     else:

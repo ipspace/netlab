@@ -1,0 +1,49 @@
+{% macro ospf_config(pid,af,vrf,ospf) %}
+- path: network-instance[name={{ vrf|default('default') }}]
+  val:
+   router-id: {{ ospf.router_id }}
+   protocols:
+    ospf:
+     instance:
+     - name: "{{ pid }}"
+       version: {{ 'ospf-v2' if af=='ipv4' else 'ospf-v3' }}
+{%     if af!='ipv4' %}
+       address-family: ipv6-unicast
+{%     endif %}
+       admin-state: enable
+       max-ecmp-paths: 64
+{%     if ospf.reference_bandwidth is defined %}
+       reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
+{%     endif %}
+       area:
+{%     if vrf=='default' %}
+       - area-id: {{ ospf.area }}
+         interface:
+         - interface-name: system0.0
+           passive: True
+{%     endif %}
+{%     for l in ospf.interfaces|default([]) if (l.type!='lan' or l.vlan is not defined) %}
+{%     set ifname = l.ifname if '.' in l.ifname else (l.ifname+'.0') %}
+{%     if 'ospf' not in l %}
+       # OSPF not configured on external interface {{ ifname }}
+       - area-id: {{ ospf.area }}
+         interface:
+         - interface-name: {{ ifname }}
+           admin-state: disable
+           _annotate_admin-state: "Disabled: external interface"
+{%     else %}
+       - area-id: {{ l.ospf.area }}
+         interface:
+         - interface-name: {{ ifname }}
+           passive: {{ ospf.passive | default(False) }}
+{%         if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
+           interface-type: "{{ l.ospf.network_type }}"
+{%         endif %}
+           failure-detection:
+            enable-bfd: {{ l.ospf.bfd|default(False) }}
+{%         if l.ospf.cost is defined %}
+           metric: {{ l.ospf.cost }}
+{%         endif %}
+{%     endif %}
+{%     endfor %}
+{% endmacro %}
