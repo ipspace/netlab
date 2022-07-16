@@ -24,11 +24,13 @@ VRFs are supported on these platforms:
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |  ❌  |
 | VyOS                  | ✅  | ✅  | ✅  | ✅  | ✅  |
+| SR Linux              | ✅  | ✅* | ✅  | ✅  | ✅  |
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
 * IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers
 * On Mikrotik RouterOS BGP configuration/implementation, a BGP VRF instance cannot have the same Router ID of the default one. The current configuration template uses the IP Address of the last interface in the VRF as instance Router ID.
+* (*) On SR Linux, route leaking is supported only in combination with BGP EVPN
 
 ## Parameters
 
@@ -123,7 +125,7 @@ For example, defining a *red* VRF with node-specific RD...
 ```
 vrfs:
   red:
-  
+
 nodes:
   r1:
     bgp.as: 65001
@@ -162,7 +164,7 @@ Notes:
 (module-vrf-interface)=
 ## Using VRFs on Interfaces and Links
 
-To use a VRF, add **vrf** attribute (global- or node-specific VRF name) to a link or an interface on a link. 
+To use a VRF, add **vrf** attribute (global- or node-specific VRF name) to a link or an interface on a link.
 
 For example, the following topology creates a simple VRF with two hosts attached to it:
 
@@ -171,7 +173,7 @@ module: [ vrf ]
 
 vrfs:
   red:
-  
+
 nodes:
   r1:
     device: eos
@@ -179,7 +181,7 @@ nodes:
     device: linux
   h2:
     device: linux
-    
+
 links:
 - r1:
     vrf: red
