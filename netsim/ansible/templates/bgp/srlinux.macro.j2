@@ -1,4 +1,47 @@
-{% macro bgp_config(vrf,as,router_id,bgp) %}
+{% macro bgp_policy(vrf,is_import,communities) %}
+{% set name = vrf + "_" + ('import' if is_import else 'export') %}
+- path: routing-policy/community-set[name={{name}}]
+  val:
+   member:
+{% for c in communities %}
+   - "target:{{c}}"
+{% endfor -%}
+
+- path: routing-policy/policy[name={{name}}]
+  val:
+   statement:
+   - sequence-id: 10
+{%   if is_import %}
+     match:
+      bgp:
+       community-set: "{{ name }}"
+{%   endif %}
+     action:
+{%    if is_import %}
+      accept: { }
+{%    else %}
+      accept:
+       bgp:
+        communities:
+         add: "{{ name }}"
+{%    endif %}
+{% endmacro %}
+
+{% macro bgp_config(vrf,as,router_id,vrf_bgp,vrf_context) %}
+
+{% if 'import' in vrf_context %}
+{% set import_policy = vrf + "_import" %}
+{{ bgp_policy(vrf,1,vrf_context.import) }}
+{% else %}
+{% set import_policy = "accept_all" %}
+{% endif -%}
+
+{% if 'export' in vrf_context %}
+{% set export_policy = vrf + "_export" %}
+{{ bgp_policy(vrf,0,vrf_context.export) }}
+{% else %}
+{% set export_policy = "accept_all" %}
+{% endif -%}
 
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
@@ -15,8 +58,8 @@
 {% for g in ['ibgp-ipv4','ibgp-ipv6','ebgp','ebgp-unnumbered'] %}
    - group-name: {{g}}
      admin-state: enable
-     import-policy: accept_all
-     export-policy: accept_all
+     import-policy: {{ import_policy if 'ebgp' in g else 'accept_all' }}
+     export-policy: {{ export_policy if 'ebgp' in g else 'accept_all' }}
      timers:
       connect-retry: 10
       _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -41,15 +84,15 @@
      transport:
       local-address: {{ loopback[ g[5:] ]|default('')|ipaddr('address') }}
 {%   endif %}
-{%   if bgp.rr|default(0) %}
+{%   if vrf_bgp.rr|default(0) %}
      route-reflector:
-      cluster-id: {{ bgp.rr_cluster_id|default(False) or router_id }}
+      cluster-id: {{ vrf_bgp.rr_cluster_id|default(False) or router_id }}
       client: True
 {%   endif %}
 {%   else %}
 
 {# eBGP #}
-     next-hop-self: {{ bgp.next_hop_self|default(0) }}
+     next-hop-self: {{ bgp.next_hop_self|default(False) }}
 {%   if g == 'ebgp-unnumbered' %}
      local-as:
      - as-number: {{ as }}
@@ -63,7 +106,7 @@
 {% endfor %}
 
 {# Configure BGP address families #}
-{% for af in ['ipv4','ipv6'] if bgp[af]|default(0) %}
+{% for af in ['ipv4','ipv6'] if vrf_bgp[af]|default(0) %}
    {{ af }}-unicast:
     admin-state: enable
     multipath:
@@ -73,7 +116,7 @@
 {# {{     bgp_network(af,loopback[af]) }} #}
 {%   endif %}
 
-{% for l in bgp.interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+{% for l in vrf_bgp.interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
 {# {{     bgp_network(af,l[af]) }} #}
 {%   endfor %}
 {%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
@@ -85,7 +128,7 @@
 {#
   Define IPv4 and IPv6 BGP neighbors
 #}
-{% for n in bgp.neighbors %}
+{% for n in vrf_bgp.neighbors %}
 {% for af in ['ipv4','ipv6'] if n[af] is defined %}
 {% if n[af] is string %}
 - path: network-instance[name={{vrf}}]/protocols/bgp/neighbor[peer-address={{n[af]}}]
@@ -111,7 +154,7 @@
    _annotate_receive-ipv4-check: "Allow IPv4 on IPv6 unnumbered interfaces"
 
 {% set ns = namespace(l=false) %}
-{% for i in interfaces if i.ifindex == n.ifindex %}
+{% for i in vrf_bgp.interfaces if i.ifindex == n.ifindex %}
 {% set ns.l = i %}
 {% endfor %}
 {% set if_name_index = ns.l.ifname.split('.') %}
@@ -133,7 +176,7 @@
    blackhole:
      generate-icmp: True
 
-{% for pfx in bgp.originate|default([]) %}
+{% for pfx in vrf_bgp.originate|default([]) %}
 - path: network-instance[name={{vrf}}]/static-routes/route[prefix={{pfx}}]
   val:
    next-hop-group: blackhole
