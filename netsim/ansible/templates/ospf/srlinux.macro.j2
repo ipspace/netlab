@@ -1,4 +1,4 @@
-{% macro ospf_config(pid,af,vrf,ospf) %}
+{% macro ospf_config(pid,af,vrf,ospf,vrf_interfaces) %}
 - path: network-instance[name={{ vrf|default('default') }}]
   val:
    router-id: {{ ospf.router_id }}
@@ -22,7 +22,7 @@
          - interface-name: system0.0
            passive: True
 {%     endif %}
-{%     for l in ospf.interfaces|default([]) if (l.type!='lan' or l.vlan is not defined) %}
+{%     for l in vrf_interfaces if l.vlan is not defined %}
 {%     set ifname = l.ifname if '.' in l.ifname else (l.ifname+'.0') %}
 {%     if 'ospf' not in l %}
        # OSPF not configured on external interface {{ ifname }}
@@ -38,6 +38,8 @@
            passive: {{ ospf.passive | default(False) }}
 {%         if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
            interface-type: "{{ l.ospf.network_type }}"
+{%         elif l.type=='lan' %}
+           interface-type: broadcast
 {%         endif %}
            failure-detection:
             enable-bfd: {{ l.ospf.bfd|default(False) }}
