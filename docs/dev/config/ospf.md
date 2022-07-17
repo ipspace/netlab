@@ -103,7 +103,7 @@ interface Loopback0
 OSPF interface parameters are specified within the **ospf** dictionary on individual interfaces. That dictionary may contain these parameters:
 
 * **area** -- interface OSPF area (always present)
-* **network_type** -- OSPF network type (optional, allowed values are `point-to-point`, `point-to-multipoint`, `broadcast`, `non-broadcast`)
+* **network_type** -- OSPF network type (optional, use platform default when the value is missing). Allowed values (when specified) are `point-to-point`, `point-to-multipoint`, `broadcast`, `non-broadcast`.
 * **passive** -- interface is a passive OSPF interface (optional)
 * **cost** -- interface cost
 * **bfd** -- BFD is active on the interface (see [](igp-bfd-interaction) and [](igp-bfd-config) for more details).
@@ -175,7 +175,11 @@ router ospf {{ pid }}
 
 ### Limited Network Type Support
 
-Some devices (example: Nexus OS) don't support all OSPF network types. OSPF module checks the validity of **network_type** value, but not the device support -- check **ospf.network_type** value in configuration templates to prevent deployment errors. Nexus OS OSPFv2-only example:
+Some devices (example: Nexus OS) don't support all OSPF network types. OSPF module checks the validity of **network_type** value, but not the device support -- check **ospf.network_type** value in configuration templates to prevent deployment errors.
+
+Please note that the **ospf.network_type** is an optional attribute and might not be present. Use `l.ospf.network_type is defined` or `l.ospf.network_type|default("")` in your template.
+
+Nexus OS OSPFv2-only example:
 
 ```
 {% for l in interfaces if 'ospf' in l %}

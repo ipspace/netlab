@@ -1,8 +1,17 @@
 # OSPF Configuration Module
 
-This configuration module configures OSPFv2 and OSPFv3 routing processes on most supported platforms (see supported features table).
+This configuration module configures OSPFv2 and OSPFv3 routing processes on most supported platforms (see [supported features](#supported-features) and [platform support](#platform-support)).
 
-Supported features:
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Supported Features
+
+Supported OSPF features:
 
 * OSPFv2 and/or OSPFv3 (see platform support table and [address families](routing.md#address-families))
 * Multi-area deployment
@@ -25,6 +34,8 @@ Missing features:
 * A gazillion nerd knobs and IETF quirks
 
 Need one of those? Create a plugin and contribute it.
+
+## Platform Support
 
 The following table describes per-platform support of individual router-level OSPF features:
 
@@ -94,9 +105,11 @@ You can specify most node parameters as global values (top-level topology elemen
 
 * **ospf.cost** -- OSPF cost
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
-* **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**. See also [Default Link Parameters](#default-link-parameters)
+* **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.bfd** -- enable or disable BFD for OSPF on an individual link or interface (boolean value, overrides node **ospf.bfd** setting)
 * **ospf.passive** -- explicitly enable or disable [passive interfaces](routing.md#passive-interfaces)
+
+[^NS]: Some OSPF network types (non-broadcast or point-to-multipoint) are not supported by all platforms.
 
 **Note:** the same parameters can be specified for individual link nodes.
 
@@ -108,12 +121,21 @@ Management interfaces are never added to the OSPF process. They are not in the s
 
 ## Default Link Parameters
 
-Default OSPF network type (unless specified with **ospf-network_type** link/interface attribute) is set based on the number of nodes attached to the link:
+Unless the OSPF network type is specified with the **ospf.network_type**, it's set to **point-to-point** on links with exactly two non-host nodes attached to them, and left unspecified otherwise (implying platform default, which is almost always **broadcast**).
 
-* Two nodes (*P2P* link) ⇒ **point-to-point** network
-* Any other link type ⇒ **broadcast** network
+Stub links (links with exactly one non-host device attached to them), or links with **role: stub** or **role: passive**, are configured as passive OSPF interfaces.
 
-Stub links (links with exactly one device attached to them) are configured as passive OSPF interfaces. See also Using Link Roles (next section).
+## Using Link Roles
+
+Link roles are used together with link types to decide whether to include an interface in an OSPF process, and whether to make an interface passive:
+
+* External links (links with **role: external**) are not included in the OSPF process. 
+* Links with **role** set to **stub** or **passive** are configured as *passive* OSPF interfaces.
+
+**Notes:** 
+
+* Link role could be set by the BGP module -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, making inter-AS links excluded from the OSPF process.
+* Management interfaces are never added to the OSPF process. They are not in the set of device links and thus not considered in the OSPF configuration template.
 
 ## Example
 

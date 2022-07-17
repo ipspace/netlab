@@ -1,8 +1,8 @@
 # IS-IS Configuration Module
 
-This configuration module configures IS-IS routing process on Cisco IOS, Cisco NX-OS, Arista EOS and Junos (tested on vSRX).
+This configuration module configures IS-IS routing process on Cisco IOS, Cisco NX-OS, Arista EOS, Junos (tested on vSRX), Nokia SR OS and Nokia SR Linux.
 
-Supported IS-IS features:
+The module supports the following IS-IS features:
 
 * IPv4 and IPv6
 * IS type (L1 and/or L2)
@@ -11,6 +11,16 @@ Supported IS-IS features:
 * Unnumbered IPv4 interfaces
 * Passive interfaces
 * BFD
+
+
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Platform Support
 
 The following table describes per-platform support of individual IS-IS features:
 
@@ -66,9 +76,9 @@ links:
 
 ## Default Link Parameters
 
-The number of neighbors on an interface is used to set IS-IS network type unless it's specified with **isis.network_type** link or interface attribute. Interfaces with exactly one neighbor (point-to-point links) have IS-IS network type set to **point-to-point** network. 
+The number of neighbors on an interface is used to set IS-IS network type unless it's specified with **isis.network_type** link or interface attribute. Interfaces with exactly one non-host neighbor (point-to-point links) have **isis.network_type** set to **point-to-point**. 
 
-Stub links (links with exactly one device attached to them) or links with **role: stub** or **role: passive** are configured as passive interfaces.
+Stub links (links with exactly one non-host device attached to them), or links with **role: stub** or **role: passive**, are configured as passive interfaces.
 
 ## Using Link Roles
 
