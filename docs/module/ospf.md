@@ -40,7 +40,7 @@ The following table describes per-platform support of individual router-level OS
 | FRR 7.5.0                |   ✅  |            ✅          |   ✅   |  ❌  |
 | Juniper vSRX 3.0         |   ✅  |            ✅          |   ✅   |  ✅  |
 | Mikrotik CHR RouterOS    |   ✅  |            ❌          |   ❌   |  ✅  |
-| Nokia SR Linux           |   ✅  |            ✅          |   ❌   |  ✅  |
+| Nokia SR Linux           |   ✅  |            ✅          |   ✅   |  ✅  |
 | Nokia SR OS              |   ✅  |            ✅          |   ❌   |  ✅  |
 | VyOS                     |   ✅  |            ✅          |   ✅   |  ✅  |
 | Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
@@ -182,7 +182,7 @@ links:
   r3:
 ```
 
-**Interesting details**: 
+**Interesting details**:
 
 * The default value for interface OSPF area is the node OSPF area (specified in configuration template).
 * The default value for node OSPF area is the global OSPF area (default value: 0.0.0.0).
