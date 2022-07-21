@@ -62,9 +62,13 @@ def populate_vlan_id_set(topology: Box) -> None:
   vlan_next['id'] = topology.defaults.vlan.start_vlan_id
   vlan_next['vni'] = topology.defaults.vlan.start_vni
 
+  attr_list = [ 'id' ]
+  if topology.defaults.vlan.auto_vni:
+    attr_list.append('vni')
+
   for n in topology.nodes.values():
     if 'vlans' in n:
-      for k in ('id','vni'):
+      for k in attr_list:
         vlan_ids[k] = vlan_ids[k].union(build_vlan_id_set(n,k,n.name))
 
 def get_next_vlan_id(k : str) -> int:

@@ -48,11 +48,13 @@ It might be possible to build topologies that deviate from these rules, but don'
 
 VLANs are defined in the global or per-node **vlans** dictionary. Global- and node VLAN parameters are merged to get VLAN data for individual nodes.
 
-The following global parameters are used to set VLAN IDs and VNIs in VLAN definitions:
+The following topology default global parameters are used to set VLAN IDs and VNIs in VLAN definitions:
 
-* **vlan.start_vlan_id**: This global value specifies the first auto-assigned VLAN ID (default: 1000).
-* **vlan.start_vni**: This global value specifies the first auto-assigned VNI (default: 100000).
+* **vlan.start_vlan_id**: Specifies the first auto-assigned VLAN ID (default: 1000).
+* **vlan.auto_vni**: Automatically assign VXLAN VNI to all globally-defined VLANs (default: true).
+* **vlan.start_vni**: Specifies the first auto-assigned VNI (default: 100000).
 
+To change these defaults, set **defaults.vlan._value_** parameter(s) in lab topology.
 (module-vlan-definition)=
 ## VLAN Definition
 
