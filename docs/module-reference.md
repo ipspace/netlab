@@ -36,4 +36,5 @@ Experimental modules are usually implemented on a small set of devices. We're al
 
    module/evpn.md
    module/srv6.md
+   module/vxlan.md
 ```
