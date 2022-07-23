@@ -1,0 +1,26 @@
+feature nv overlay
+feature vn-segment-vlan-based
+!
+{% if vlans is defined %}
+{%   for vname,vdata in vlans.items() if vdata.vni is defined %}
+vlan {{ vdata.id }}
+ vn-segment {{ vdata.vni }}
+!
+{%   endfor +%}
+{% endif %}
+!
+interface nve 1
+ source-interface loopback 0
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+ member vni {{ vlan.vni }}
+{%     if vxlan.flooding|default("") == "static" %}
+  ingress-replication protocol static
+{%       for peer in vlan.vtep_list|default([]) %}
+   peer-ip {{ peer }}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+ no shutdown

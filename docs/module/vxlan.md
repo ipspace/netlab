@@ -4,7 +4,7 @@ This configuration module configures VXLAN data plane, VLAN-to-VXLAN mapping, an
 
 The module supports the following features:
 
-* VLAN-to-VXLAN bridging
+* VLAN-to-VXLAN bridging implementing _VLAN-based Service Interface_ as defined in RFC 7432/RFC 8365.
 * Single VXLAN interface per device
 * Default loopback address used as the VTEP IP address
 * Static per-VLAN or per-node ingress replication
@@ -26,6 +26,10 @@ The following table describes per-platform support of individual VXLAN features:
 | Operating system   | VXLAN<br>bridging |
 | ------------------ | :-: |
 | Arista EOS         | ✅  |
+| Cisco Nexus OS     | ✅  |
+
+Notes:
+* Arista EOS and Cisco Nexus OS implement per-VLAN ingress replication lists
 
 ## Global Parameters
 

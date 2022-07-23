@@ -15,6 +15,7 @@ The following configuration modules are included in **netsim-tools** distributio
    module/sr-mpls.md
    module/vlan.md
    module/vrf.md
+   module/vxlan.md
 ```
 
 ## Common Routing Protocol Features
@@ -36,5 +37,4 @@ Experimental modules are usually implemented on a small set of devices. We're al
 
    module/evpn.md
    module/srv6.md
-   module/vxlan.md
 ```
