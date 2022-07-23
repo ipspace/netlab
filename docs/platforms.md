@@ -57,8 +57,9 @@ See [lab topology overview](topology-overview.md) for more details.
 You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings).
 
 (platform-provider-support)=
-| Virtual network device                             | Vagrant<br />Libvirt |   Vagrant<br />Virtualbox    |       Containerlab       |
-| -------------------------------------------------- | :------------------: | :--------------------------: | :----------------------: |
+
+| Virtual network device | Vagrant<br />Libvirt | Vagrant<br />Virtualbox | Containerlab |
+| -------------------------------------------------- | :-: | :-: | :-: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
@@ -200,19 +201,19 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 (platform-module-support)=
 Additional [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
 
-| Operating system      | BFD | VLAN | VRF | MPLS | SR-MPLS | SRv6 |
-| --------------------- | :-: | :--: | :-: | :--: | :-----: | :--: |
-| Arista EOS            | ✅  |  ✅  | ✅  | ✅   |    ✅   |  ❌   |
-| Cisco IOS             | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
-| Cisco IOS XE          | ✅  |   ❌  | ✅  | ✅   |    ✅   |  ❌   |
-| Cisco Nexus OS        | ✅  |   ❌  |  ✅  |  ❌   |    ❌    |  ❌   |
-| Cumulus Linux 5.0 (NVUE) | ❌ |   ❌  |[❗](module/vrf.md#platform-support)| ❌  |   ❌    |  ❌   |
-| Juniper vSRX 3.0      | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ❌   |
-| Mikrotik CHR RouterOS | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
-| Nokia SR Linux        | ✅  |  ✅  |  ❌  |  ❌   |    ✅   |  ❌   |
-| Nokia SR OS           | ✅  |   ❌  |  ❌  |  ❌   |    ✅   |  ✅  |
-| VyOS                  | ✅  |  ✅  | ✅  | ✅   |    ❌    |  ❌   |
-| Dell OS10             | ✅  |  ✅  | ✅  |   ❌  |    ❌    |  ❌   |
+| Operating system      | BFD | VLAN | VRF | VXLAN | MPLS | SR-MPLS | SRv6 |
+| --------------------- | :-: | :--: | :-: | :---: | :--: | :-----: | :--: |
+| Arista EOS            | ✅  |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
+| Cisco IOS             | ✅  |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
+| Cisco IOS XE          | ✅  |   ❌  | ✅  |  ❌   | ✅   |    ✅   |  ❌   |
+| Cisco Nexus OS        | ✅  |  ✅  |  ✅ |  ❌   |  ❌   |    ❌    |  ❌   |
+| Cumulus Linux 5.0 (NVUE) | ❌ |   ❌  |[❗](module/vrf.md#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
+| Juniper vSRX 3.0      | ✅  |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
+| Mikrotik CHR RouterOS | ✅  |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
+| Nokia SR Linux        | ✅  |  ✅  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
+| Nokia SR OS           | ✅  |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ✅  |
+| VyOS                  | ✅  |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
+| Dell OS10             | ✅  |  ✅  | ✅  |  ❌   |   ❌  |    ❌    |  ❌   |
 
 ## IPv6 Support
 

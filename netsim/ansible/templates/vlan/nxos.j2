@@ -1,0 +1,27 @@
+{% if vlans is defined %}
+{%   for vname,vdata in vlans.items() %}
+vlan {{ vdata.id }}
+ name {{ vname }}
+!
+{%   endfor +%}
+{% endif %}
+{% for ifdata in interfaces if ifdata.vlan is defined %}
+!
+interface {{ ifdata.ifname }}
+{%   if ifdata.vlan.trunk_id is defined %}
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan {{ ifdata.vlan.trunk_id|sort|join(",") }}
+{%     if ifdata.vlan.native is defined %}
+ switchport trunk native vlan {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   elif ifdata.vlan.access_id is defined %}
+{%     if ifdata.type == 'vlan_member' %}
+ encapsulation dot1q {{ ifdata.vlan.access_id }}
+{%     else %}
+ switchport
+ switchport mode access
+ switchport access vlan {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   endif %}
+{% endfor +%}
