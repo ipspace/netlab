@@ -65,6 +65,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
+| Cisco ASA                                          |          ✅           |              ❌               |            ❌             |
 | Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Dell OS10                                          |          ✅           |              ❌               |            ❌             |
@@ -90,6 +91,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
 | Cisco CSR 1000v            | csr                |    2 |   4096 | virtio (*libvirt default*) |
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| e1000 |
+| Cisco ASA                  | asa                |    1 |   2048 | virtio (*libvirt default*) |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio (*libvirt default*) |
 | Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio (*libvirt default*) |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
@@ -109,6 +111,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Arista EOS            |          ✅           |           ✅           |
 | Cisco IOS / IOS XE    |          ✅           |           ✅           |
 | Cisco Nexus OS        |          ✅           |           ✅           |
+| Cisco ASA             |          ✅           |           ✅           |
 | Cumulus Linux         |          ✅           |           ✅           |
 | Dell OS10             |          ✅           |           ✅           |
 | Fortinet FortiOS      |          ✅           |           ✅           |
@@ -130,6 +133,7 @@ The following system-wide features are configured on supported network operating
 | Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Cisco ASA             |    ✅     |     ✅      |             ❌             |             ❌              |             ❌              |
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
@@ -150,6 +154,7 @@ The following interface parameters are configured on supported network operating
 | Arista EOS            |            ✅              |            ✅            | ✅ |
 | Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.html#cisco-ios) |
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
+| Cisco ASA             |            ✅              |            ❌            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
 | Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
 | Dell OS10             |            ✅              |            ❌            | ✅ |
@@ -170,6 +175,7 @@ The following interface addresses are supported on various platforms:
 | Arista EOS            |          ✅          |          ✅          |             ✅              |
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
+| Cisco ASA             |          ✅          |          ✅          |             ❌              |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux 5.0 (NVUE) |       ✅          |          ✅          |             ✅              |
 | Dell OS10             |          ✅          |          ✅          |             ❌              |
@@ -196,6 +202,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
+| Cisco ASA             | ❌   |  ❌   |  ❌   | ❌  | ❌  |  ❌  |  ❌  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
 | Dell OS10             | [❗](caveats.html#dell-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
@@ -240,6 +247,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cisco IOS             |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco IOS XE          |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco ASA             |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
