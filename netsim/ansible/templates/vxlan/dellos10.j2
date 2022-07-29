@@ -1,0 +1,18 @@
+nve
+  source-interface loopback 0
+
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+virtual-network {{ vlan.id }}
+  vxlan-vni {{ vlan.vni }}
+{%     if vlan.vtep_list is defined %}
+{%       for remote_vtep in vlan.vtep_list %}
+  remote-vtep {{remote_vtep}}
+{%       endfor %}
+{%     endif %}
+interface vlan {{ vlan.id }}
+  virtual-network {{ vlan.id }}
+  exit
+{%   endfor %}
+{% endif %}
