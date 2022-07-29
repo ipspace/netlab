@@ -1,0 +1,41 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+configure
+
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+
+# Create VXLAN interface
+set interfaces vxlan vxlan{{vlan.vni}} vni {{vlan.vni}}
+{%     if 'ipv4' in loopback %}
+set interfaces vxlan vxlan{{vlan.vni}} source-address {{ loopback.ipv4|ipaddr('address') }}
+{%     endif %}
+# And set UDP port to 4789
+set interfaces vxlan vxlan{{vlan.vni}} port 4789
+
+# Add it to the global bridge
+## NOTE: in the future we may want to switch to one-bridge-per-vni
+##   (still to understand if single bridge can work with EVPN controlled VXLAN)
+set interfaces bridge br0 member interface vxlan{{vlan.vni}} native-vlan {{ vlan.id }}
+
+# Add VTEP Flood list
+{%     if vlan.vtep_list is defined %}
+{%       for remote_vtep in vlan.vtep_list %}
+set interfaces vxlan vxlan{{vlan.vni}} remote {{remote_vtep}}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit

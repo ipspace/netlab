@@ -27,6 +27,8 @@ The following table describes per-platform support of individual VXLAN features:
 | ------------------ | :-: |
 | Arista EOS         | ✅  |
 | Cisco Nexus OS     | ✅  |
+| VyOS               | ✅  |
+| Dell OS10          | ✅  |
 
 Notes:
 * Arista EOS and Cisco Nexus OS implement per-VLAN ingress replication lists
