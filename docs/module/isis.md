@@ -32,9 +32,11 @@ The following table describes per-platform support of individual IS-IS features:
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| VyOS               | ✅  | ✅  | ✅  | ❌  | ✅  | ✅ |
 
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
+* On VyOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address.
 
 ## Global Parameters
 
