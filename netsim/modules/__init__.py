@@ -428,7 +428,7 @@ def sort_module_list(mods: list, mod_params: Box, secondary_sort: str = "config_
 Copy node data into interface data:
 
 For every module configured on a node, merge attributes listed in node_copy list
-from node data to interface data. 
+from node data to interface data.
 
 Example: copy node-level OSPF area into interfaces that don't have explicit area configuration.
 """
@@ -437,8 +437,8 @@ def copy_node_data_into_interfaces(topology: Box) -> None:
   for n in topology.nodes.values():
     for m in n.get('module',[]):                                 # Iterate over node modules
       if topology.defaults[m].attributes.node_copy:              # .. any copyable attributes for this module?
-        copy_attr = Box({ k: v 
-          for k,v in n.get(m,{}).items() 
+        copy_attr = Box({ k: v
+          for k,v in n.get(m,{}).items()
             if k in topology.defaults[m].attributes.node_copy }) # Build a Box of node attributes that could be copied to interfaces
         if copy_attr:                                            # .. anything to copy?
           for intf in n.get('interfaces',[]):                    # .. if so, it would be nice to merge it with interface data

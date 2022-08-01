@@ -99,8 +99,15 @@ class VXLAN(_Module):
     vxlan_domain_list: typing.Dict[str,list] = {}
 
     for name,ndata in topology.nodes.items():
-      if not 'vxlan' in ndata.get('module',[]):                     # Skip nodes without VXLAN module
+      _module = ndata.get('module',[])
+      if not 'vxlan' in _module:                     # Skip nodes without VXLAN module
         continue
+      elif ndata.vxlan.get('require_evpn',False) and not 'evpn' in _module:
+        common.error(
+          f'VXLAN module requires EVPN module on node {name}',
+          common.IncorrectValue,
+          'vxlan')
+
       if not 'vlans' in ndata:                                      # Skip VXLAN-enabled nodes without VLANs
         continue
 
