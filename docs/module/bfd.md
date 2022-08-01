@@ -19,7 +19,7 @@ BFD is supported on these platforms:
 
 **Notes:**
 * Junos configuration template configures BFD timers within routing protocol configuration, not in individual interfaces
-* VyOS configuration template configures BFD times only at global level
+* VyOS configuration template configures BFD timers only at global level
 
 ## Parameters
 
