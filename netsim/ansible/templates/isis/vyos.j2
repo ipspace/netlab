@@ -1,0 +1,46 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+configure
+
+set protocols isis level {{ isis.type }}
+
+set protocols isis dynamic-hostname
+
+{% if isis.net is defined %}
+set protocols isis net '{{ isis.net }}'
+{% elif isis.area is defined %}
+set protocols isis net '{{ "%s.0000.0000.%04d.00" % (isis.area,id) }}'
+{% endif %}
+
+set protocols isis interface dum0
+
+{% for l in interfaces|default([]) if 'isis' in l %}
+set protocols isis interface {{ l.ifname }}
+
+{%   if l.isis.network_type is defined and l.isis.network_type == 'point-to-point' %}
+set protocols isis interface {{ l.ifname }} network point-to-point
+{%   endif %}
+{%   if l.isis.cost is defined or l.isis.metric is defined %}
+set protocols isis interface {{ l.ifname }} metric {{ l.isis.metric|default(l.isis.cost) }}
+{%   endif %}
+{%   if l.isis.passive %}
+set protocols isis interface {{ l.ifname }} passive
+{%   endif %}
+
+{%   if l.isis.bfd.ipv4|default(False) or l.isis.bfd.ipv6|default(False) %}
+set protocols isis interface {{ l.ifname }} bfd profile netsim
+{%   endif %}
+
+{% endfor %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
