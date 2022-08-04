@@ -381,13 +381,31 @@ For every module used by the topology, check is the module has "requires" attrib
 it does, check that everything in that list is also in the topology modules list.
 """
 def check_module_dependencies(topology:  Box) -> None:
+  fcache: dict = {}
+
   for m in topology.get("module",[]):               # Use this format in case we don't use any modules
     mod_def = topology.defaults.get(m,{})           # Get module defaults
     if mod_def:                                     # Are they meaningful?
       if "requires" in mod_def:                     # Do they include list of required modules?
         for rqm in topology.defaults[m].requires:   # Loop over prerequisites
           if not rqm in topology.module:            # Now we can be explicit - we know topology.modules exists
-            common.error("Module %s requires module %s which is not enabled in your topology" % (m,rqm))
+            common.error(
+              f"Module {m} requires module {rqm} which is not enabled in your topology",
+              common.MissingValue,
+              'modules')
+
+      for n in topology.nodes.values():                   # Now iterate over nodes and check device-specific requirements
+        features = fcache.get(n.name) or \
+                     devices.get_device_features(n,topology.defaults)
+        fcache[n.name] = features                         # Get device features and save them in per-node cache
+        if m in features and 'requires' in features[m]:   # Check modules with device-specific requirements
+          for rqm in features[m].requires:                # ... iterate over device-specific module requirements
+            if not rqm in topology.module and \
+               not rqm in n.get('module'):                # ... is required module listed globally or in the node?
+              common.error(
+                f"Module {m} on device {n.device} (node {n.name}) requires {rqm} module",
+                common.IncorrectValue,
+                'modules')
 
 """
 reorder_node_modules:
