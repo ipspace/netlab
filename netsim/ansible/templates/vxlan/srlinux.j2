@@ -1,0 +1,27 @@
+updates:
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+- path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{vlan.id}}]
+  val:
+   type: bridged
+   ingress:
+    vni: {{ vlan.vni }}
+   egress:
+    source-ip: use-system-ipv4-address
+- path: network-instance[name=vlan_{{vname}}]
+  val:
+   vxlan-interface:
+   - name: vxlan0.{{ vlan.id }}
+   protocols:
+    bgp-vpn:
+     bgp-instance:
+     - id: 1
+    bgp-evpn:
+     bgp-instance:
+     - id: 1
+       evi: {{ vlan.vni if vlan.vni < 65536 else (1 + vlan.vni % 65536) }}
+       ecmp: 8
+       vxlan-interface: vxlan0.{{ vlan.id }}
+{%   endfor %}
+{% endif %}

@@ -57,12 +57,15 @@ updates:
    vlan-tagging: {{ l.type in ["svi","vlan_member"] }}
    subinterface:
     index: {{ if_index }}
+{% if l.type == 'svi' and l.vlan.mode == 'bridge' %}
+    type: bridged
+{% endif %}
 {%  if if_index != '0' and l.type in ["svi","vlan_member"] %}
     vlan:
      encap:
-{%    if if_index != '1' or l.vlan is defined %}
+{%    if l.type == 'vlan_member' and l.vlan.access_id is defined %}
       single-tagged:
-       vlan-id: "{{ l.vlan.access_id if l.vlan is defined else if_index }}"
+       vlan-id: "{{ l.vlan.access_id }}"
 {%    else %}
       untagged: { }
 {%    endif %}
@@ -71,7 +74,7 @@ updates:
 {% endfor %}
 
 {% macro list_interfaces(vrf) %}
-{% for l in interfaces|default([]) if (l.type!='lan' or l.vlan is not defined) and l.vrf|default('default')==vrf %}
+{% for l in interfaces|default([]) if (l.type not in ['lan','svi'] or l.vlan is not defined) and l.vrf|default('default')==vrf %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
