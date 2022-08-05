@@ -195,7 +195,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  | ✅  |
 | Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  |
 | Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  |
-| VyOS                  | ✅   |   ❌   |   ❌   | ✅  | ✅  |
+| VyOS                  | ✅   |   ✅   |   ❌   | ✅  | ✅  |
 | Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  |
 
 (platform-module-support)=
@@ -212,8 +212,8 @@ Additional [configuration modules](module-reference.md) are supported on these d
 | Mikrotik CHR RouterOS |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Nokia SR Linux        |  ✅  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
 | Nokia SR OS           |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ✅  |
-| VyOS                  |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
-| Dell OS10             |  ✅  | ✅  |  ❌   |   ❌  |    ❌    |  ❌   |
+| VyOS                  |  ✅  | ✅  |  ✅   | ✅   |    ❌    |  ❌   |
+| Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
 
 ## IPv6 Support
 
@@ -234,5 +234,5 @@ Core functionality of *netsim-tools* and all multi-protocol routing protocol con
 | Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
-| VyOS                  |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
+| VyOS                  |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
