@@ -19,9 +19,7 @@ class EVPN(_Module):
   Add 'evi' attribute (EVPN Instance) to VLANs that have a 'vni' attribute
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    if not 'evpn' in node.get('module',[]): # Skip nodes without EVPN module
-      continue
-    if node.vxlan and node.vxlan.vlans:
+    if node.get('vxlan') and node.vxlan.vlans:
       for vname in node.vxlan.vlans:
         if not 'evi' in node.vlans[vname]:
           # Default EVI range : 1..65535 (16 bit)
