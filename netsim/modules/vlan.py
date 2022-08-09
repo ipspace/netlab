@@ -527,7 +527,11 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
 
   vlan_ifmap: dict = {}
 
-  svi_skipattr = ['id','vni','prefix','pool']                               # VLAN attributes not copied into VLAN interface
+  # VLAN attributes not copied into VLAN interface: we take the global defaults and remove
+  # mode attribute from that list as it's needed to set interface VLAN mode
+  #
+  svi_skipattr = [ k for k in list(topology.defaults.vlan.vlan_no_propagate or []) if k != "mode" ]
+
   iflist_len = len(node.interfaces)
   for ifidx in range(0,iflist_len):
     ifdata = node.interfaces[ifidx]
@@ -834,12 +838,12 @@ class VLAN(_Module):
     if not validate_link_vlan_attributes(link,v_attr,topology):
       return
 
-    svi_skipattr = ['id','vni','mode','pool','prefix']                             # VLAN attributes not copied into link data
+    svi_skipattr = topology.defaults.vlan.vlan_no_propagate or []                 # VLAN attributes not copied into link data
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
     if not link_vlan is None:
       routed_vlan = routed_access_vlan(link,topology,link_vlan)
-      vlan_data = get_from_box(topology,f'vlans.{link_vlan}')                      # Get global VLAN data
+      vlan_data = get_from_box(topology,f'vlans.{link_vlan}')                     # Get global VLAN data
       if isinstance(vlan_data,Box):
         vlan_data = Box({ k:v for (k,v) in vlan_data.items() \
                                 if k not in svi_skipattr })                       # Remove VLAN-specific data
