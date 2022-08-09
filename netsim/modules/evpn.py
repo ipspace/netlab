@@ -3,13 +3,8 @@ import typing
 from . import _Module
 from box import Box
 from .. import common
-from vlan import vlan_link_attr
 
 class EVPN(_Module):
-
-  def module_pre_transform(self, topology: Box) -> None:
-    global vlan_link_attr
-    vlan_link_attr[ 'evi' ] = { 'type' : int, 'vlan': True, 'single': True }
 
   """
   Node pre-transform: set evpn.use_ibgp node attribute based on global setting
@@ -26,10 +21,10 @@ class EVPN(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if node.get('vxlan') and node.vxlan.vlans:
       for vname in node.vxlan.vlans:
-        if not 'evi' in node.vlans[vname]:
+        if not 'evpn' in node.vlans[vname] or not 'evi' in node.vlans[vname].evpn:
           # Default EVI range : 1..65535 (16 bit)
-          node.vlans[vname].evi = node.vlans[vname].id # Set equal to VLAN id
-        elif node.vlans[vname].evi < 1 or node.vlans[vname].evi > 65535:
+          node.vlans[vname].evpn.evi = node.vlans[vname].id # Set equal to VLAN id
+        elif node.vlans[vname].evpn.evi < 1 or node.vlans[vname].evpn.evi > 65535:
           common.error(
             f'Invalid vlan.evi value {node.vlans[vname].evi} for VLAN {vname}',
             common.IncorrectValue,
