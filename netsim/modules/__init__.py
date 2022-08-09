@@ -153,6 +153,7 @@ def get_propagated_global_module_params(module: str, settings: Box,mod_settings:
   no_propagate = list(no_propagate_list)       # ... and global no_propagate list
   if "no_propagate" in mod_settings:
     no_propagate.extend(mod_settings.no_propagate)
+  no_propagate.extend([ k for k in mod_settings.keys() if "no_propagate" in k ])
   for remove_key in no_propagate:
     global_copy.pop(remove_key,None)
   return global_copy
@@ -202,6 +203,8 @@ def adjust_global_modules(topology: Box) -> None:
     default_copy = Box(mod_def)                                 # Got module defaults. Now copy them (we're gonna clobber them)
     no_propagate = list(no_propagate_list)                      # Always remove these default attributes (and make a fresh copy of the list)
     no_propagate.extend(default_copy.get("no_propagate", []))   # ... and whatever the module wishes to be removed
+    no_propagate.extend([ k for k in mod_def.keys() if "no_propagate" in k ])
+                                                                # ... including all attributes with 'no_propagate' in the name
     for remove_key in no_propagate:                             # We got the list of unwanted attributes.
       default_copy.pop(remove_key,None)                         # ... remove them with extreme prejudice
 
