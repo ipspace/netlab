@@ -3,8 +3,13 @@ import typing
 from . import _Module
 from box import Box
 from .. import common
+from vlan import vlan_link_attr
 
 class EVPN(_Module):
+
+  def module_pre_transform(self, topology: Box) -> None:
+    global vlan_link_attr
+    vlan_link_attr[ 'evi' ] = { 'type' : int, 'vlan': True, 'single': True }
 
   """
   Node pre-transform: set evpn.use_ibgp node attribute based on global setting
