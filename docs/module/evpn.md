@@ -7,6 +7,7 @@ The module depends on the BGP module.
 ## Parameters
 
 * global: use_ibgp - whether to enable EVPN for iBGP(True,default) or eBGP neighbors
+* vlans: evpn.evi - EVPN identifier, if not specified the VLAN id is used by default
 
 **Notes:**
 * For iBGP peering (default) any ipv4/ipv6 address families towards iBGP peers are disabled, leaving an EVPN-only session
