@@ -1,0 +1,18 @@
+!
+router bgp {{ bgp.as }}
+ address-family ipv6
+!
+{% for n in bgp.neighbors if n.ipv4 is defined and n['6pe']|default(False) %}
+  neighbor {{ n.ipv4 }} activate 6pe
+{% endfor %}
+!
+! EOS requires 'ipv6 enable' on internal PE interfaces. This is a quick-and-dirty solution
+! that could be significantly improved, but it works
+!
+! The shortened command hack is needed because we're already touching interfaces in LDP section and Ansible
+! can't wrap its head around the idea of configuring an object twice 
+!
+{% for l in interfaces|default([]) if l.type != 'stub' and l.neighbors is defined and not (l.ipv6|default(False)) %}
+interf {{ l.ifname }}
+ ipv6 enable
+{% endfor %}

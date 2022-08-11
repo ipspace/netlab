@@ -5,6 +5,7 @@ MPLS configuration module implements:
 * LDP-based label distribution
 * BGP labeled unicast over IBGP and/or EBGP sessions for IPv4 and IPv6
 * MPLS/VPN vpnv4 and vpnv6 address families for IBGP and EBGP (inter-AS option B) sessions
+* 6PE over IBGP and/or EBGP sessions
 
 Segment routing for MPLS is implemented in a [separate configuration module](sr-mpls.md).
 
@@ -62,11 +63,24 @@ The following table describes per-platform support of individual MPLS label dist
 * VPNv4 and VPNv6 address families are enabled on IPv4 IBGP/EBGP sessions
 * On Mikrotik RouterOS BGP configuration/implementation, adding the VPNv4 AFI will completely overwrite the AFI supported list for the peer with "ip,vpnv4" (current template limitation). Given the general limitations of ROSv6 on IPv6, this should not be such a big problem.
 
+### 6PE
+
+| Operating system      | 6PE |
+| ----------------------| :-: |
+| Arista EOS            | ✅  |
+| Cisco IOS             | ✅  |
+| Cisco IOS XE          | ✅  |
+
+**Notes**
+
+* You cannot enable 6PE and IPv6 BGP-LU on the same node.
+
 ## Configurable Global and Node Parameters
 
 * **mpls.ldp** -- enable LDP on intra-AS links (see [common routing protocol features](routing.md)) for more details. 
 * **mpls.bgp** -- enable BGP Labeled Unicast address families. BGP-LU is disabled by default.
 * **mpls.vpn** -- enable VPNv4 and VPNv6 address families. BGP/MPLS L3VPN is disabled by default.
+* **mpls.6pe** -- enable 6PE on IBGP and/or EBGP sessions (default: IBGP only). 6PE is disabled by default.
 
 LDP is enabled by default on all nodes using **mpls** configuration module, and can be disabled by setting **mpls.ldp** node parameter to *False*.
 
@@ -140,3 +154,8 @@ nodes:
     mpls.vpn.ipv4: [ ibgp, ebgp ]
     mpls.vpn.ipv6: [ ibgp ]
 ```
+
+## Configurable 6PE Parameters
+
+**mpls.6pe** is a global or node parameter that could be a boolean (*True* to enable 6PE on IBGP sessions) or a list of session types (*ibgp* and/or *ebgp*).
+

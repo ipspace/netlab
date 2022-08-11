@@ -21,10 +21,13 @@ DEFAULT_VPN_AF: dict = {
   'ipv6': [ 'ibgp' ]
 }
 
+DEFAULT_6PE_AF: list = [ 'ibgp' ]
+
 FEATURE_NAME: dict = {
   'ldp': 'LDP-based label distribution',
   'bgp': 'BGP Labeled Unicast',
-  'vpn': 'MPLS/VPN'
+  'vpn': 'MPLS/VPN',
+  '6pe': '6PE (IPv6 transport over LDP)'
 }
 
 def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
@@ -109,6 +112,37 @@ def node_adjust_bgplu(node: Box, topology: Box, features: Box) -> None:
       if af in n and af in node.mpls.bgp and n.type in node.mpls.bgp[af]:
         n[af+'_label'] = True
 
+def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
+  if not validate_mpls_bgp_parameter(node,'bgp'):
+    return
+
+  if not 'ipv4' in node.bgp:
+    common.error(
+      f'6PE feature used on {node.name} needs IPv4 address family configured within BGP process',
+      common.IncorrectValue,
+      'mpls')
+    return
+    
+  if 'bgp' in node.mpls and 'ipv6' in node.mpls.bgp:
+    common.error(
+      f'6PE and IPv6 BGP Labeled Unicast cannot be used at the same time on {node.name}',
+      common.IncorrectValue,
+      'mpls')
+    return    
+
+  if not 'neighbors' in node.get('bgp',{}):
+    return
+
+  for n in node.bgp.neighbors:                          # Now iterate over BGP neighbors
+    if 'ipv4' in n and n.type in node.mpls['6pe']:      # Do we have an IPv4 session with the neighbor and 6PE enabled?
+      n['6pe'] = True                                   # ... enable 6PE AF on IPv4 neighbor session
+
+      # If the neighbor is also using 6PE and will enable 6PE on this session
+      # ... then we don't need IPv6 BGP session --> remove it
+      #
+      if n.type in (data.get_from_box(topology.nodes[n.name],'mpls.6pe') or []):
+        n.pop('ipv6',None)
+
 def prune_mplsvpn_af(setting: Box, node: Box) -> None:
   vrf_af :dict = {}
 
@@ -153,6 +187,7 @@ class MPLS(_Module):
 
     data.bool_to_defaults(node.mpls,'bgp',DEFAULT_BGP_LU)
     data.bool_to_defaults(node.mpls,'vpn',DEFAULT_VPN_AF)
+    data.bool_to_defaults(node.mpls,'6pe',DEFAULT_6PE_AF)
     if 'bgp' in node.mpls or 'vpn' in node.mpls:
       if not 'bgp' in node.module:
         common.error(
@@ -183,3 +218,6 @@ class MPLS(_Module):
 
     if 'vpn' in node.mpls:
       node_adjust_mplsvpn(node,topology,features)
+
+    if '6pe' in node.mpls:
+      node_adjust_6pe(node,topology,features)
