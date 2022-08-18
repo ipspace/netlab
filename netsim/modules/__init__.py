@@ -175,20 +175,23 @@ def adjust_global_modules(topology: Box) -> None:
   if not mod_dict:
     return
 
-  """
-  Merge default module parameters with global module parameters
+  topology.module = list(mod_dict.keys())
 
-  A caveat: don't merge key specified in defaults "no_propagate" list --
-  forces us to do a deep copy of global parameters, and then eliminate
-  the ones we don't want.
+"""
+Merge default module parameters with global module parameters
 
-  We couldn't just iterate because we need a deep merge, and we can't remove
-  the no_propagate parameters from the global settings because they might be
-  needed in further transformation code.
-  """
+A caveat: don't merge key specified in defaults "no_propagate" list --
+forces us to do a deep copy of global parameters, and then eliminate
+the ones we don't want.
+
+We couldn't just iterate because we need a deep merge, and we can't remove
+the no_propagate parameters from the global settings because they might be
+needed in further transformation code.
+"""
+
+def merge_global_module_params(topology: Box) -> None:
   global no_propagate_list
 
-  topology.module = list(mod_dict.keys())
   for m in topology.module:                                     # Iterate over all configured modules
     if not m in topology.defaults:                              # Does this module have defaults?
       common.error(
@@ -237,10 +240,14 @@ adjust_modules: somewhat intricate multi-step config module adjustments
 '''
 def adjust_modules(topology: Box) -> None:
   augment_node_module(topology)
-  merge_node_module_params(topology)
   adjust_global_modules(topology)
-  add_module_extra_parameters(topology)
+  if not 'module' in topology:
+    return
+    
   module_transform("init",topology)
+  merge_global_module_params(topology)
+  merge_node_module_params(topology)
+  add_module_extra_parameters(topology)
   check_module_parameters(topology)
   check_module_dependencies(topology)
   module_transform("pre_default",topology)

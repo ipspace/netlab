@@ -127,7 +127,7 @@ def check_valid_values(
   path = f'{path}.{key}' if key else path
   ctxt = f'\n... context: {context}' if context else ''
   common.error(
-    f'attribute {path} has invalid value(s) {value}\n... valid values are: {",".join(expected)}{ctxt}',
+    f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}',
     common.IncorrectValue,
     module or 'topology')
   return False
