@@ -9,6 +9,7 @@ The following configuration modules are included in **netsim-tools** distributio
    module/bfd.md
    module/bgp.md
    module/eigrp.md
+   module/evpn.md
    module/isis.md
    MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
    module/ospf.md
@@ -35,6 +36,5 @@ Experimental modules are usually implemented on a small set of devices. We're al
 .. toctree::
    :maxdepth: 1
 
-   module/evpn.md
    module/srv6.md
 ```

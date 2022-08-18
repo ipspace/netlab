@@ -86,11 +86,16 @@ def build_vtep_list(vlan: Box, node: str, nodes: typing.List[str], topology: Box
 class VXLAN(_Module):
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
+    flooding_values = ['static']
+    for m in ['evpn']:
+      if m in node.module:
+        flooding_values.append(m)
+
     data.must_be_string(
       parent = node.vxlan,
       key = 'flooding',
-      path = 'nodes.{node.name}.vxlan',
-      valid_values = [ 'static' ])
+      path = f'nodes.{node.name}.vxlan',
+      valid_values = flooding_values)
 
   # We need multi-step post-transform node handling, so we have to do that in
   # module_post_transform
