@@ -1,0 +1,32 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+configure
+
+# Configure Generic EVPN Stuff
+set protocols bgp address-family l2vpn-evpn advertise-svi-ip
+set protocols bgp address-family l2vpn-evpn advertise-all-vni
+
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
+set protocols bgp neighbor {{ n.ipv4 }} address-family l2vpn-evpn nexthop-self
+{% endfor %}
+
+# Configure VNI params
+{% if vlans is defined %}
+{%   for v in vlans.values() if v.evpn.evi is defined and v.vni is defined %}
+set protocols bgp address-family l2vpn-evpn vni {{ v.vni }} rd {{ v.evpn.rd }}
+set protocols bgp address-family l2vpn-evpn vni {{ v.vni }} route-target import "{{ v.evpn.import|join(' ') }}"
+set protocols bgp address-family l2vpn-evpn vni {{ v.vni }} route-target export "{{ v.evpn.export|join(' ') }}"
+{%   endfor %}
+{% endif %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
