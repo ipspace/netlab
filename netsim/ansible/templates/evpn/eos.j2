@@ -26,3 +26,22 @@ router bgp {{ bgp.as }}
   vlan {{ v.evpn.vlan_ids|join(',') }}
 {%   endfor %}
 {% endif %}
+{% if vrfs is defined %}
+{%   for n,v in vrfs.items() if v.af is defined %}
+!
+ vrf {{ n }}
+  rd {{ v.rd }}
+  route-target import evpn {{ v.import|join(' ') }}
+  route-target export evpn {{ v.export|join(' ') }}
+  redistribute connected
+{%   endfor %}
+{% endif %}
+{% if vrfs is defined %}
+{%   for n,v in vrfs.items() if v.evpn.transit_vni is defined %}
+{%     if loop.first %}
+!
+interface vxlan 1
+{%     endif %}
+ vxlan vrf {{ n }} vni {{ v.evpn.transit_vni }}
+{%   endfor %}
+{% endif %}

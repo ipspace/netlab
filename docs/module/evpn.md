@@ -4,11 +4,10 @@ This configuration module configures the BGP EVPN address family on Nokia SR OS,
 
 The current implementation of EVPN module supports:
 
-* VXLAN-based transport
+* VXLAN-based transport over IPv4
 * VLAN-Based Service (bridging of a single VLAN within an EVPN Instance)
 * VLAN-Aware Bundle Service (bridging of multiple related VLANs inside a single EVPN Instance)
-
-The EVI (EVPN Instance) value can be set with **evpn.evi** VLAN attribute, RD and RT values (when missing) are computed from EVI or VLAN ID using the rules from Section 7.9 and 7.10 of RFC 7432.
+* Symmetric IRB
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -22,8 +21,8 @@ The EVI (EVPN Instance) value can be set with **evpn.evi** VLAN attribute, RD an
 The following table describes per-platform support of individual VXLAN features:
 
 | Operating system   | VXLAN<br>transport | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
-| ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| ------------------ | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  | ✅  |  ❌  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 | Nokia SR OS        |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
 | FRR                |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
@@ -36,7 +35,7 @@ EVPN module supports three design paradigms:
 * EBGP-only (requires manual configuration of RD/RT values on most platforms)
 
 | Operating system   | IBGP+IGP | EBGP-only | EBGP over<br>IBGP | IPv4<br>transport | IPv6<br>transport |
-| ------------------ | :-: | :-: | :-: |
+| ------------------ | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux     |  ❌  | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS        |  ❌  | ✅  | ✅  | ✅  | ✅  |
@@ -44,21 +43,40 @@ EVPN module supports three design paradigms:
 | VyOS               | ✅  | ✅  | ✅  | ✅  | ✅  |
 
 **Notes:**
-* FRR implement is a control-plane-only implementation that can be used as a route reflector. It enables EVPN over IPv4 and/or IPv6 on configured type(s) of BGP sessions. It's expected that the other end of the session won't negotiate EVPN or IPv4 AF.
+* FRR implementation is a control-plane-only implementation that can be used as a route reflector. It enables EVPN over IPv4 and/or IPv6 on configured type(s) of BGP sessions. It's expected that the other end of the session won't negotiate EVPN or IPv4 AF.
 
 ## Parameters
 
-EVPN module supports these global/node parameters:
+EVPN module supports these default/global/node parameters:
 
-* **evpn.session**: A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
-* **evpn.use_ibgp**: Nokia-only parameter that selects IBGP-over-EBGP (when set to `true`, default behavior) or EBGP-only (when set to `false`) design. Setting this parameter on Nokia devices also disables IBGP IPv4/IPv6 address family.
+* **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
+* **evpn.start_transit_vni** (system default parameter) -- the first symmetric IRB transit VNI
 
-Other EVPN-related parameters are set on **vlans** dictionary. You can set the following parameters for every VLAN using VLAN-Based Service:
+### VLAN-Based Service Parameters
 
-* **evpn.evi**: EVPN Instance identifier. Default: `vlan-id`.
-* **evpn.rd**: EVPN Instance route distinguisher (not checked at the moment). Default: `router-id:vlan-id`
-* **evpn.import** and **evpn.export**: Import and export route targets (not checked at the moment). Default: `bgp-as:vlan-id`
+EVPN-related VLAN parameters are set on **vlans** dictionary. You can set the following parameters for every VLAN using VLAN-Based Service:
 
-The default EVI/RD/RT values are set for [VXLAN-enabled VLANs](vxlan.md#selecting-vxlan-enabled-vlans).
+* **evpn.evi**: EVPN Instance identifier.
+* **evpn.rd**: EVPN Instance route distinguisher (not checked at the moment). Default: 
+* **evpn.import** and **evpn.export**: Import and export route targets (not checked at the moment).
 
-VLAN-Aware Bundle Service uses VRF configuration (and thus requires [VRF configuration module](vrf.md)). All VLANs belonging to a single VRF are configured as a VLAN bundle. [RD and RT values assigned by VRF module](vrf.md#rd-and-rt-values) are used to configure the VLAN bundle; you can set **evpn.evi** VRF parameter to set the EVPN Instance identifier. The default value of VRF EVPN Instance identifier is the VLAN ID of the first VLAN in that VRF.
+EVPN configuration module sets the following default EVI/RD/RT values for [VXLAN-enabled VLANs](vxlan.md#selecting-vxlan-enabled-vlans):
+
+* **evpn.evi**: `vlan-id`
+* **evpn.rd**: `router-id:vlan-id` (according to Section 7.9 of RFC 7432)
+* **evpn.import** and **evpn.export**: `bgp-as:vlan-id` (according to Section 7.10 of RFC 7432 and Section 5.1.2.1 of RFC 8365)
+
+### VLAN-Aware Bundle Service
+
+VLAN-Aware Bundle Service uses VRF configuration (and thus requires [VRF configuration module](vrf.md)). All VLANs belonging to a single VRF are configured as a VLAN bundle. [RD and RT values assigned by VRF module](vrf.md#rd-and-rt-values) are used to configure the VLAN bundle; you can set **evpn.evi** VRF parameter to set the EVPN Instance identifier.
+
+The default value of VRF EVPN Instance identifier is the VLAN ID of the first VLAN in that VRF.
+
+### Integrated Routing and Bridging
+
+IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addresses:
+
+* Asymmetric IRB requires no extra parameters[^NS]
+* Symmetric IRB needs a transit VNI that has to be set with the **evpn.transit_vni** parameter. That parameter could be set to an integer value or to *True* in which case the EVPN configuration module assigns a VNI to the VRF.
+
+[^NS]: Asymmetric IRB is not supported at the moment
