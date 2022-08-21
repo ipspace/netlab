@@ -17,7 +17,7 @@ The following virtual network devices are supported by *netsim-tools*:
 | Mikrotik CHR RouterOS                     | routeros           |
 | Nokia SR Linux                            | srlinux            |
 | Nokia SR OS [❗](caveats.html#nokia-sr-os) | sros               |
-| VyOS                                      | vyos               |
+| VyOS 1.4 [❗](caveats.html#vyos)         | vyos               |
 | Dell OS10                                 | dellos10           |
 
 **Notes:**

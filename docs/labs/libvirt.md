@@ -12,7 +12,6 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Fortinet FortiOS       | fortinet/fortios            |
 | Juniper vSRX 3.0       | juniper/vsrx3               |
-| VyOS                   | vyos/vyos                   |
 | Mikrotik CHR RouterOS  | mikrotik/chr                |
 | Dell OS10              | dell/os10                   |
 
@@ -23,6 +22,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 | Cumulus VX             | CumulusCommunity/cumulus-vx:4.4.0 |
 | Cumulus VX 5.0 (NVUE)            | CumulusCommunity/cumulus-vx:5.0.1 |
 | Generic Linux          | generic/ubuntu2004 |
+| VyOS                   | vyos/current       |
 
 ## Building Your Own Boxes
 
@@ -34,7 +34,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
 * [Juniper vSRX 3.0](vsrx.md)
 * [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
-* [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org)
+* [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
 
 **Notes:**
 

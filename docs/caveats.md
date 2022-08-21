@@ -68,3 +68,12 @@ ansible-galaxy collection install git+https://github.com/nokia/ansible-networkin
 python3 -m pip install grpcio protobuf
 ```
 * OpenConfig support depends on a [pending PR](https://github.com/nokia/ansible-networking-collections/pull/21)
+
+## VyOS
+**netsim-tools** uses VyOS 1.4, which for now is a *rolling release* with daily builds (or custom builds).
+
+This is because the stable release (*1.3*) lacks (or has limitations on) some of the nice features we are using such as MPLS, VRF/L3VPN, EVPN, ...
+
+The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
+
+Additionally, using always the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current), should allow to easily track and react to any configuration syntax change (which anyway is a very rare event). In any case, if you find a mis-alignment between the VyOS config and the **netsim-tools** templates, feel free to *Open an Issue* or *Submit a PR*.
