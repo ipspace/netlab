@@ -51,15 +51,26 @@ def node_vlan_check(node: Box, topology: Box) -> bool:
 # Set VTEP IPv4 address
 #
 def node_set_vtep(node: Box, topology: Box) -> bool:
-  if not 'ipv4' in node.loopback:
+  if topology.defaults.vxlan.use_v6_vtep and not 'ipv6' in node.loopback:
+    common.error(
+      f'VXLAN module needs an IPv6 address on loopback interface of {node.name} - since you want to use IPv6 VTEP',
+      common.IncorrectValue,
+      'vxlan')
+    return False
+
+  if not 'ipv4' in node.loopback and not topology.defaults.vxlan.use_v6_vtep:
     common.error(
       f'VXLAN module needs an IPv4 address on loopback interface of {node.name}',
       common.IncorrectValue,
       'vxlan')
     return False
 
-  vtep_ip = node.loopback.ipv4                                      # Assume we're using primarly loopback as VTEP
-  node.vxlan.vtep = str(netaddr.IPNetwork(vtep_ip).ip)              # ... and convert IPv4 prefix into an IPv4 address
+  vtep_ip = ""
+  if topology.defaults.vxlan.use_v6_vtep:
+    vtep_ip = node.loopback.ipv6
+  else:
+    vtep_ip = node.loopback.ipv4                                      # Assume we're using primarly loopback as VTEP
+  node.vxlan.vtep = str(netaddr.IPNetwork(vtep_ip).ip)              # ... and convert IPv4(v6) prefix into an IPv4(v6) address
   return True
 
 #

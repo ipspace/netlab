@@ -33,12 +33,15 @@ The following table describes per-platform support of individual VXLAN features:
 
 Notes:
 * Arista EOS and Cisco Nexus OS implement per-VLAN ingress replication lists
+* Dell OS10 requires a IPv4 address for VXLAN.
+* Arista EOS seems not able to work with IPv6-only transport.
 
 ## Global Parameters
 
 * **vxlan.domain** -- Ingress replication domain. Optional, default: **global**. Use this parameter when you want to build several isolated bridging domains within your lab.
 * **vxlan.flooding** -- A mechanism used to implement VXLAN flooding. Optional, default: **static**.
 * **vxlan.vlans** -- list of VLANs to be mapped into VXLAN VNIs.  Optional, defaults to all VLANs with **vni** attribute. All VLANs listed in **vxlan.vlans** list must have a **vni** attribute.
+* **use_v6_vtep** -- Use the IPv6 Loopback address as VTEP address. To be used on the devices where you need to explicitly set the local VTEP address, or with *staitc* flooding to generate the flooding list with IPv6 addresses.
 
 The only supported value for **vxlan.flooding** parameter is **static** -- statically configured ingress replication
 
