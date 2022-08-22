@@ -1,0 +1,26 @@
+!
+router bgp {{ bgp.as }}
+!
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
+  neighbor {{ n.ipv4 }}
+    address-family l2vpn evpn
+      activate
+    exit
+{% endfor %}
+
+{% if vlans is defined %}
+evpn
+{%   for v in vlans.values() if v.evpn.evi is defined and v.vni is defined %}
+{%     set import_target = v.evpn.import|join(' ') -%}
+{%     set export_target = v.evpn.export|join(' ') -%}
+  evi {{ v.evpn.evi }}
+    vni {{ v.vni }}
+    rd {{ v.evpn.rd }}
+    route-target {{ v.evpn.import|join(' ') }} import
+    route-target {{ v.evpn.export|join(' ') }} export
+{%     if import_target == export_target %}
+    route-target {{ v.evpn.export|join(' ') }} both
+{%     endif %}
+
+{%   endfor %}
+{% endif %}

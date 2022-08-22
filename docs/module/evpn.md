@@ -27,6 +27,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Nokia SR OS        |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
 | FRR                |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
 | VyOS               |  ✅  |  ✅  |  ❌  |  ❌  |  ✅  |
+| Dell OS 10         |  ✅  |  ✅  |  ❌  |  ❌  |  ❌  |
 
 EVPN module supports three design paradigms:
 
@@ -41,6 +42,7 @@ EVPN module supports three design paradigms:
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | VyOS               | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Dell OS 10         | ✅  | ✅  |  ❌  | ✅  |  ❌  |
 
 **Notes:**
 * Nokia SR Linux supports iBGP EVPN sessions over BGP unnumbered with IPv6 link-local addresses, using IPv4 VXLAN routes with IPv6 next hops
