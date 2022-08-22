@@ -26,7 +26,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 | Nokia SR OS        |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
 | FRR                |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
-| VyOS               |  ✅  |  ✅  |  ❌  |  ❌  |  ❌  |
+| VyOS               |  ✅  |  ✅  |  ❌  |  ❌  |  ✅  |
 
 EVPN module supports three design paradigms:
 
