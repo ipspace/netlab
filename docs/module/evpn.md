@@ -40,7 +40,7 @@ EVPN module supports three design paradigms:
 | Nokia SR Linux     |  ❌  | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS        |  ❌  | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
-| VyOS               | ✅  | ✅  | ❌  | ✅  | ❌  |
+| VyOS               | ✅  | ✅  | ✅  | ✅  | ❌  |
 
 **Notes:**
 * FRR implementation is a control-plane-only implementation that can be used as a route reflector. It enables EVPN over IPv4 and/or IPv6 on configured type(s) of BGP sessions. It's expected that the other end of the session won't negotiate EVPN or IPv4 AF.

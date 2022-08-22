@@ -8,18 +8,22 @@ set protocols bgp neighbor {{ ip }} description '{{ n.name }}'
 {%   if n.type == 'ibgp' %}
 set protocols bgp neighbor {{ ip }} update-source dum0
 {%   endif %}
+
+{%   if n.local_as is defined %}
+set protocols bgp neighbor {{ ip }} local-as {{ n.local_as }} no-prepend replace-as
+{%   endif %}
 {%- endmacro %}
 {#
    Address family BGP neighbor definition
 #}
 {% macro neighbor_af(n,ip,bgp,af) %}
 
-set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast
+set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast soft-reconfiguration inbound
 
 {%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
 set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast nexthop-self
 {%   endif %}
-{%   if bgp.rr|default('') and not n.rr|default('') %}
+{%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
   set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast route-reflector-client
 {%   endif %}
 {%- endmacro -%}
