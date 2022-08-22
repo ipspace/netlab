@@ -48,18 +48,27 @@ def node_vlan_check(node: Box, topology: Box) -> bool:
   return OK
 
 #
-# Set VTEP IPv4 address
+# Set VTEP IPv4/IPv6 address
 #
 def node_set_vtep(node: Box, topology: Box) -> bool:
-  if not 'ipv4' in node.loopback:
+  if topology.defaults.vxlan.use_v6_vtep and not 'ipv6' in node.loopback:
+    common.error(
+      f'You want to use IPv6 VTEP -- VXLAN module needs an IPv6 address on loopback interface of {node.name}',
+      common.IncorrectValue,
+      'vxlan')
+    return False
+
+  if not 'ipv4' in node.loopback and not topology.defaults.vxlan.use_v6_vtep:
     common.error(
       f'VXLAN module needs an IPv4 address on loopback interface of {node.name}',
       common.IncorrectValue,
       'vxlan')
     return False
 
-  vtep_ip = node.loopback.ipv4                                      # Assume we're using primarly loopback as VTEP
-  node.vxlan.vtep = str(netaddr.IPNetwork(vtep_ip).ip)              # ... and convert IPv4 prefix into an IPv4 address
+  vtep_ip = ""
+  vtep_af = 'ipv6' if topology.vxlan.use_v6_vtep else 'ipv4'
+  vtep_ip = node.loopback[vtep_af]
+  node.vxlan.vtep = str(netaddr.IPNetwork(vtep_ip).ip)              # ... and convert IPv4(v6) prefix into an IPv4(v6) address
   return True
 
 #
@@ -102,6 +111,9 @@ class VXLAN(_Module):
   #
   def module_post_transform(self, topology: Box) -> None:
     vxlan_domain_list: typing.Dict[str,list] = {}
+
+    if not 'use_v6_vtep' in topology.vxlan:                         # Copy IPv6 VTEP setting into global parameter
+      topology.vxlan.use_v6_vtep = topology.defaults.vxlan.use_v6_vtep
 
     for name,ndata in topology.nodes.items():
       if not 'vxlan' in ndata.get('module',[]):                     # Skip nodes without VXLAN module
