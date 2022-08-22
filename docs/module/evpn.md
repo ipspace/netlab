@@ -34,7 +34,7 @@ EVPN module supports three design paradigms:
 * IBGP over EBGP (default on Nokia devices)
 * EBGP-only (requires manual configuration of RD/RT values on most platforms)
 
-| Operating system   | IBGP+IGP | EBGP-only | EBGP over<br>IBGP | IPv4<br>transport | IPv6<br>transport |
+| Operating system   | IBGP+IGP | EBGP-only | IBGP over<br>EBGP | IPv4<br>transport | IPv6<br>transport |
 | ------------------ | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux     |  ❌  | ✅  | ✅  | ✅  | ✅  |
