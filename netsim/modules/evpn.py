@@ -166,9 +166,13 @@ class EVPN(_Module):
 
     for vname in vlan_list:
       vlan = node.vlans[vname]
-      if not 'vrf' in vlan:                                       # VLAN-Based Service
+      #
+      # VLAN based service is used for VLANs that are not in a VRF or when the EVPN VLAN-Aware Bundle 
+      # Service is disabled (default)
+      #
+      if not 'vrf' in vlan or not data.get_from_box(node,'evpn.vlan_bundle_service'):
         vlan_based_service(vlan,vname,node,topology)
-      else:                                                       # VLAN-Aware Bundle Service or IRB
-        vlan_aware_bundle_service(vlan,vname,node,topology)       # ... configure VLAN bundle to cope with bridging part of IRB
+      else:
+        vlan_aware_bundle_service(vlan,vname,node,topology)
 
     vrf_irb_setup(node,topology)

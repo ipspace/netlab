@@ -51,6 +51,7 @@ EVPN module supports three design paradigms:
 EVPN module supports these default/global/node parameters:
 
 * **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
+* **evpn.vlan_bundle_service** (global or node parameter): Use VLAN bundle service for VLANs within a VRF (default: `False`)
 * **evpn.start_transit_vni** (system default parameter) -- the first symmetric IRB transit VNI
 
 ### VLAN-Based Service Parameters
@@ -68,6 +69,8 @@ EVPN configuration module sets the following default EVI/RD/RT values for [VXLAN
 * **evpn.import** and **evpn.export**: `bgp-as:vlan-id` (according to Section 7.10 of RFC 7432 and Section 5.1.2.1 of RFC 8365)
 
 ### VLAN-Aware Bundle Service
+
+VLAN-Aware Bundle Service is disabled by default and has to be enabled by setting **evpn.vlan_bundle_service** parameter to _True_. Although that parameter is a global/node parameter, it might not be a good idea to use different settings on different nodes. 
 
 VLAN-Aware Bundle Service uses VRF configuration (and thus requires [VRF configuration module](vrf.md)). All VLANs belonging to a single VRF are configured as a VLAN bundle. [RD and RT values assigned by VRF module](vrf.md#rd-and-rt-values) are used to configure the VLAN bundle; you can set **evpn.evi** VRF parameter to set the EVPN Instance identifier.
 
