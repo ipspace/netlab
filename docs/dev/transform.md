@@ -1,6 +1,6 @@
 # Topology File Transformation
 
-The *netsim-tools* library performs a complex data transformation of the lab topology file to get device-level data that is then used to [create output files](../outputs/index.md) (Ansible inventory, Vagranfile...).
+*netlab* performs a complex data transformation of the lab topology file to get device-level data that is then used to [create output files](../outputs/index.md) (Ansible inventory, Vagranfile...).
 
 The data transformation has three major steps:
 
@@ -12,19 +12,27 @@ The data transformation has three major steps:
 
 * Read topology file
 * Read customer and system [default settings](../defaults.md) (`topology-defaults.yml`) and [merge them](../defaults.md#deep-merging) with the topology file (`netsim.read_topology.load`)
+* Check for presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
+* Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
+* Initialize node groups (`netsim.augment.groups.init_groups`):
+
+	* Check the group data structures
+	* Add group members based on nodes' **group** attribute
+	* Check recursive groups
+	* Copy group **device** and **module** attribute into nodes
+
+* Adjust the list of links -- transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
 * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
 * Execute plugin **init** hook (`netsim.augment.plugin.execute`)
 * Extend **default.attributes** with **default.extra_attributes** (`netsim.augment.topology.extend_attribute_list`)
-* Check for presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 * Adjust global parameters (`netsim.augment.topology.adjust_global_parameters`):
 
   * Set `provider` top-level element
   * Merge provider-specific device and addressing defaults with global defaults
 
 * Load provider plugin (`netsim.providers._Provider.load`)
-* Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.adjust_node_list`)
 * Augment node provider data: set node device type, select VM/container image, copy provider-specific node data into node dictionary (`netsim.augment.nodes.augment_node_provider_data`)
-* Adjust the list of links -- transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
+* Augment node data with global defaults that are not part of configuration modules (example: MTU) (`augment.nodes.augment_node_system_data`)
 * Setup [addressing pools](../addressing.md) (`netsim.addressing.setup`)
 
 ## Global Data Transformation
@@ -32,19 +40,13 @@ The data transformation has three major steps:
 * Execute **pre_transform** plugin hooks (`netsim.augment.plugin.execute`)
 * Execute [**pre_transform** module adjustments](#adjust-global-module-parameters) (`netsim.modules.adjust_modules`)
 * Execute **pre_transform** [node-](#node-level-module-hooks) and [link-level](#link-level-module-hooks) module hooks
-* Adjust node groups (`netsim.augment.groups.adjust_groups`):
-
-	* Validate group data structures
-	* Use node-level **group** parameter to adjust group members
-	* Copy group-level **node_data** settings into all member nodes
-
-* Validate top-level topology elements[^VTE] (`netsim.augment.topology.check_global_elements`)
-
-[^VTE]: Top-level elements have to be validated after the configuration modules have been initialized. See Issue#61 for details.
+* Adjust node groups: copy group-level **node_data** settings into all member nodes (`netsim.augment.groups.adjust_groups`):
+* Validate top-level topology elements (`netsim.augment.topology.check_global_elements`)
 
 ## Node Data Transformation
 
 * Execute **pre_node_transform** plugin hooks (`netsim.augment.plugin.execute`)
+* Execute **pre_node_transform** module hooks (`netsim.modules.pre_node_transform`)
 * Set unique ID for every node
 * Get loopback IP addresses, management MAC address, and management IP addresses (`netsim.augment.nodes.augment_mgmt_if`) from *loopback* and *mgmt* address pools
 * Execute **augment_node_data** provider hook (example: set **hostname** for *containerlab* nodes)
@@ -53,6 +55,7 @@ The data transformation has three major steps:
 ## Link Data Transformation
 
 * Execute **pre_link_transform** plugin hooks (`netsim.augment.plugin.execute`)
+* Execute **pre_link_transform** module hooks (`netsim.modules.pre_link_transform`)
 * Check [link attributes](../links.md#link-attributes) (`netsim.augment.links.check_link_attributes`)
 * Set [link type](../links.md#link-types) based on the number of devices connected to the link (`netsim.augment.links.get_link_type`)
 * [Augment link](../links.md#augmenting-link-data) and [node interface data](../links.md#augmenting-node-data) (`netsim.augment.links.augment_p2p_link` and `netsim.augment.links.augment_lan_link`):
@@ -85,18 +88,29 @@ The data transformation has three major steps:
 ### Adjust Global Module Parameters
 
 * Add global modules to all nodes that do not have a **module** parameter (`augment_node_modules`)
-* Add global module settings (`adjust_global_modules`):
+* Adjust global module settings: add node-specific modules to global list of modules (`adjust_global_modules`)
+* Execute module-level **init** hook
+* Adjust node module parameters (`merge_node_module_params`):
 
-	* Add node-specific modules to global list of modules 
-	* Merge module default settings with topology default settings 
-	* Copy global module settings into topology settings, skipping global module attributes listed in module **no_propagate** attribute.
+  * Add global module parameters to node data
+  * Add device-specific module parameters to node data
+  * Add system default settings to node data
 
+  **Note:** In all cases, skip module attributes listed in module **no_propagate** attribute.
+
+* Adjust global module parameters (`merge_global_module_params`)
+
+	* Copy system default module settings into topology settings, skipping module attributes listed in module **no_propagate** attribute.
+	* Reorder the global list of modules based on **transform_after** module attribute
+
+  **Note:** global module parameters have to be adjusted after node parameters to get the desired node/global/device/default precedence.
+  
+* Enable additional module parameters specified in the lab topology
 * Check global-, node- and link-level module parameters against the list of allowed module attributes (specified under module settings in system defaults) (`check_module_parameters`)
 * Check module dependencies (for example: SR-MPLS module can only be used with IS-IS module) (`check_module_dependencies`)
 * Execute module-level **module_pre_default** hook
 * Execute **node_pre_default** hooks
 * Execute **link_pre_default** hooks
-* Deep merge global-level module settings with node-level settings.
 
 ### Node-Level Module Hooks
 
