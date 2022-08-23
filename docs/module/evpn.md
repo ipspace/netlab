@@ -27,7 +27,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Nokia SR OS        |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
 | FRR                |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
 | VyOS               |  ✅  |  ✅  |  ❌  |  ❌  |  ✅  |
-| Dell OS 10         |  ✅  |  ✅  |  ❌  |  ❌  |  ❌  |
+| Dell OS 10         |  ✅  |  ✅  |  ❌  |  ❌  |  ✅  |
 
 EVPN module supports three design paradigms:
 

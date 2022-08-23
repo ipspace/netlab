@@ -24,3 +24,33 @@ evpn
 
 {%   endfor %}
 {% endif %}
+
+
+{% if vrfs is defined %}
+{%   for n,v in vrfs.items() if v.af is defined %}
+{%     set import_target = v.import|join(' ') -%}
+{%     set export_target = v.export|join(' ') -%}
+{%     set rd_0 = v.rd.split(':')[0] %}
+{%     set rd_1 = v.rd.split(':')[1] %}
+
+evpn
+  vrf {{ n }}
+    rd {{ rd_0|ipaddr('address') }}:{{ rd_1 }}
+    route-target {{ v.import|join(' ') }} import
+    route-target {{ v.export|join(' ') }} export
+{%     if import_target == export_target %}
+    route-target {{ v.export|join(' ') }} both
+{%     endif %}
+    vni {{ v.evpn.transit_vni }}
+    advertise ipv4 connected
+    advertise ipv4 static
+    advertise ipv4 ospf
+    advertise ipv4 bgp
+!
+router bgp {{ bgp.as }}
+  vrf {{ n }}
+    address-family ipv4 unicast
+      redistribute l2vpn evpn
+!
+{%   endfor %}
+{% endif %}
