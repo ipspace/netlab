@@ -1,6 +1,8 @@
 # Installation
 
-*netsim-tools* is a Python3 package that runs on Python 3.7 or later on Windows, MacOS, or Linux. It's a high-level abstraction and orchestration tool that relies on other tools to provide the low-level functionality:
+*netlab* is a Python3 package[^NSL] that runs on Python 3.7 or later on Windows, MacOS, or Linux. It's a high-level abstraction and orchestration tool that relies on other tools to provide the low-level functionality:
+
+[^NSL]: For legacy reasons, the *netlab* Python code resides in *netsim.\** modules.
 
 * VM/container virtualization: VirtualBox (Windows or MacOS), KVM (Linux) or Docker (Linux)
 * Virtualization API: libvirt (used with KVM on Linux)
@@ -11,12 +13,12 @@
 
 ![High-level architecture](high-level-architecture.png)
 
-If you already have an environment that can be used with *netsim-tools*, please proceed directly to *[installing Python package](package)*. Otherwise, you'll have to [select the platform](platform) you want to use and [create your lab environment ](lab)(including *netsim-tools* installation).
+If you already have an environment that can be used with *netlab*, please proceed directly to *[installing Python package](package)*. Otherwise, you'll have to [select the platform](platform) you want to use and [create your lab environment ](lab)(including *netlab* installation).
 
 (platform)=
 ## Selecting the Platform and Low-Level Tools
 
-We have tested *netsim-tools* with:
+We have tested *netlab* with:
 
 * VirtualBox and Vagrant on MacOS. The same combination should also work on Windows 10. Ansible works on MacOS; RedHat claims it works (but is not supported) within Windows Subsystem for Linux (WSL).
 * libvirt/KVM and Vagrant on Ubuntu and Fedora. This combination should work on other Linux distributions.
@@ -54,11 +56,11 @@ You can set up your lab:
 ```
 
 (package)=
-## Installing *netsim-tools* Package
+## Installing *netlab* Package
 
-To install *netsim-tools* on a system that already has the low-level tools installed, use `python3 -m pip install netsim-tools`. The installation process will install all prerequisite Python packages and create the **netlab** command.
+To install *netlab* on a system that already has the low-level tools installed, use `python3 -m pip install netlab`. The installation process will install all prerequisite Python packages and create the **netlab** command.
 
-If you want to get the latest development code or if you want to participate in *netsim-tools* development, [clone the GitHub repository](install/clone.md).
+If you want to get the latest development code or if you want to participate in *netlab* development, [clone the GitHub repository](install/clone.md).
 
 ```eval_rst
 .. toctree::

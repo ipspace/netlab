@@ -65,8 +65,8 @@ def run(cli_args: typing.List[str]) -> None:
   if args.output:
     rest = ['-e','config_dir='+os.path.abspath(args.output) ]
 
-  if args.fast or os.environ.get('NETSIM_FAST_CONFIG',None):
-    rest = ['-e','netsim_strategy=free']
+  if args.fast or os.environ.get('NETLAB_FAST_CONFIG',None):
+    rest = ['-e','netlab_strategy=free']
 
   if args.logging or args.verbose:
     print("Ansible playbook args: %s" % rest)

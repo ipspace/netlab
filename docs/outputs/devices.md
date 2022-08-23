@@ -1,6 +1,6 @@
 # Simple Device Inventory Output Module
 
-*devices* output module creates lab devices inventory as a dictionary of hosts in YAML format (default name: *netsim-devices.yml*).
+*devices* output module creates lab devices inventory as a dictionary of hosts in YAML format (default name: *netlab-devices.yml*).
 
 For every lab device, the *devices* output module:
 
@@ -32,10 +32,10 @@ links:
 - s1-s2
 ```
 
-Resulting *netsim-devices.yml* inventory (created with **[netlab create --devices](../netlab/create.md)**:
+Resulting *netlab-devices.yml* inventory (created with **[netlab create --devices](../netlab/create.md)**:
 
 ```
-# Netsim Devices inventory created from ['topology.yml', 'package:topology-defaults.yml']
+# Netlab Devices inventory created from ['topology.yml', 'package:topology-defaults.yml']
 #
 ---
 s1:

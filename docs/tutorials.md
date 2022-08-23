@@ -1,6 +1,6 @@
 # Getting Started
 
-In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netsim-tools* and all the other software needed to run your labs](install.md).
+In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netlab* and all the other software needed to run your labs](install.md).
 
 ```{tip}
 If you plan to run your lab on MacOS or Windows, use [Vagrant with VirtualBox](labs/virtualbox.md). If you plan to run your lab on a Linux server or VM, use [containerlab](labs/clab.md).
@@ -8,7 +8,7 @@ If you plan to run your lab on MacOS or Windows, use [Vagrant with VirtualBox](l
 
 ![](topo-tutorial.png)
 
-[^NEED_ANS]: Ansible is used to configure network devices and to parse inventory data for **netlab connect** command. You don't need Ansible if you plan to use *netsim-tools* solely to create Vagrantfile.
+[^NEED_ANS]: Ansible is used to configure network devices and to parse inventory data for **netlab connect** command. You don't need Ansible if you plan to use *netlab* solely to create Vagrantfile.
 
 ## Other Options
 
@@ -231,14 +231,14 @@ Using the tools:
 
 Practical examples:
 
-* [Creating BGP Multipath Lab with netsim-tools](https://blog.ipspace.net/2021/11/bgp-multipath-netsim-tools.html) (lab topology using BGP and OSPF)
+* [Creating BGP Multipath Lab with netlab](https://blog.ipspace.net/2021/11/bgp-multipath-netsim-tools.html) (lab topology using BGP and OSPF)
 * [Use Katacoda to test netsim-tools with Containerlab and FRRouting](https://blog.ipspace.net/2021/04/katacoda-netsim-containerlab-frr.html) (using Containerlab)
-* [Building Unnumbered Ethernet Lab with netsim-tools](https://blog.ipspace.net/2021/04/build-unnumbered-lab-netsim-tools.html) (using unnumbered interfaces)
+* [Building Unnumbered Ethernet Lab with netlab](https://blog.ipspace.net/2021/04/build-unnumbered-lab-netsim-tools.html) (using unnumbered interfaces)
 * [Anycast Works Just Fine with MPLS/LDP](https://blog.ipspace.net/2021/11/anycast-mpls.html) (custom configuration templates)
 * [Optimal BGP Path Selection with BGP Additional Paths](https://blog.ipspace.net/2021/12/bgp-multipath-addpath.html) (custom deployment templates)
 * [Building a BGP Anycast Lab](https://blog.ipspace.net/2021/12/bgp-anycast-lab.html) (group-wide node data, auto-generated groups)
 
-[Even more tutorials...](https://blog.ipspace.net/series/netsim.html)
+[Even more tutorials...](https://blog.ipspace.net/series/netlab.html)
 
 ### Configuration Module Examples
 

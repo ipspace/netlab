@@ -1,6 +1,6 @@
 # List of Configuration Modules
 
-The following configuration modules are included in **netsim-tools** distribution:
+The following configuration modules are included in **netlab** distribution:
 
 ```eval_rst
 .. toctree::

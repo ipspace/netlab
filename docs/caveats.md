@@ -7,7 +7,7 @@
 
 ## Cisco Nexus OS
 
-* Nexus OS release 9.3 runs in 6 GB of RAM (*netsim-tools* system default).
+* Nexus OS release 9.3 runs in 6 GB of RAM (*netlab* system default).
 * Nexus OS release 10.1 requires 8 GB of RAM and will fail with a cryptic message claiming it's running on unsupported hardware when it doesn't have enough memory.
 * Nexus OS release 10.2 requires at least 10 GB of RAM and crashes when ran as an 8 GB VM.
 * To change the default amount of memory used by a **nxos** device, set the **defaults.devices.nxos.memory** parameter (in MB)
@@ -15,8 +15,8 @@
 ## Cumulus Linux in ContainerLab
 
 * *containerlab* could run Cumulus Linux as a container or as a micro-VM with *firecracker* (default, requires KVM). To run Cumulus VX as a pure container, add **runtime: docker** parameter to node data.
-* *netsim-tools* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.devices.cumulus.clab.image** parameter (or by editing the `topology-defaults.yml` file included with *netsim-tools*).
-* The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netsim-tools* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
+* *netlab* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.devices.cumulus.clab.image** parameter (or by editing the `topology-defaults.yml` file included with *netlab*).
+* The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 
 ## Fortinet FortiOS
 
@@ -26,7 +26,7 @@
 ## FRR
 
 * *containerlab* FRR containers run FRR release 7.5.0 -- the latest release that survives FRR daemon restart during the initial configuration process.
-* *netsim-tools* don't support FRR running in a Linux VM. Use Cumulus Linux instead.
+* *netlab* does not support FRR running in a Linux VM. Use Cumulus Linux instead.
 
 ## Generic Linux
 
@@ -70,10 +70,11 @@ python3 -m pip install grpcio protobuf
 * OpenConfig support depends on a [pending PR](https://github.com/nokia/ansible-networking-collections/pull/21)
 
 ## VyOS
-**netsim-tools** uses VyOS 1.4, which for now is a *rolling release* with daily builds (or custom builds).
+
+**netlab** uses VyOS 1.4, which for now is a *rolling release* with daily builds (or custom builds).
 
 This is because the stable release (*1.3*) lacks (or has limitations on) some of the nice features we are using such as MPLS, VRF/L3VPN, EVPN, ...
 
 The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 
-Additionally, using always the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current), should allow to easily track and react to any configuration syntax change (which anyway is a very rare event). In any case, if you find a mis-alignment between the VyOS config and the **netsim-tools** templates, feel free to *Open an Issue* or *Submit a PR*.
+Additionally, using always the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current), should allow to easily track and react to any configuration syntax change (which anyway is a very rare event). In any case, if you find a mis-alignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.

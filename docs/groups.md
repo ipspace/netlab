@@ -39,7 +39,7 @@ For example, `netlab config mpls.j2 --limit g1` would deploy configuration templ
 
 ## Custom Configuration Templates
 
-You can building complex labs with functionality that is not yet part of *netsim-tools* with the help of **[netlab config](netlab/config.md)** command that deploys custom configuration template to a set of lab devices. 
+You can building complex labs with functionality that is not yet part of *netlab* with the help of **[netlab config](netlab/config.md)** command that deploys custom configuration template to a set of lab devices. 
 
 To make the deployment of custom configuration template(s) part of a regular lab creating process[^CC], use **config** group attribute that can specify either a single template or a list of templates.
 
@@ -118,7 +118,7 @@ groups:
       http_server: true
 ```
 
-To make the definition a bit more concise, use the hierarchical names supported by *netsim-tools*:
+To make the definition a bit more concise, use the *netlab* hierarchical attribute names:
 
 ```
 defaults.device: cumulus
@@ -287,7 +287,7 @@ groups:
 
 ## Hierarchical Groups
 
-*netsim-tools* release 1.0.6 introduced _hierarchical groups_ -- groups could be members of other groups, for example:
+*netlab* supports _hierarchical groups_ -- groups could be members of other groups, for example:
 
 ```
 nodes: [ a,b,c,d,e,f ]

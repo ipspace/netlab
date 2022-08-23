@@ -1,6 +1,6 @@
 # Topology Defaults
 
-*netsim-tools* have dozens of system defaults that specify:
+*netlab* has dozens of system defaults that specify:
 
 * Default [addressing pools](addressing.md)
 * Default virtualization provider
@@ -8,7 +8,7 @@
 * Virtualization provider defaults (configuration file name, port mappings, provider-specific device defaults...)
 * Device parameters (interface names, image names...)
 
-All system defaults, specified in global **topology-defaults.yml** file (shipped within *netsim* package directory), could be overwritten with topology- or user defaults:
+All system defaults, specified in global **topology-defaults.yml** file (shipped with *netlab* package), could be overwritten with topology- or user defaults:
 
 * In **defaults** element of the topology file
 * In **topology-defaults.yml** file residing in the same directory as the topology file or in the user's home directory.
@@ -27,7 +27,7 @@ defaults:
 ...
 ```
 
-When augmenting default settings, *netsim-tools* use a [deep dictionary merge](defaults-deep-merging), allowing you to overwrite a single setting deep in the hierarchy without affecting any other related settings. 
+When augmenting default settings, *netlab* uses a [deep dictionary merge](defaults-deep-merging), allowing you to overwrite a single setting deep in the hierarchy without affecting any other related settings. 
 
 (default-device-image)=
 For example, it's possible to replace the default Vagrant box name for a network device type without changing any other device parameter:
@@ -50,7 +50,7 @@ defaults.devices.eos.clab.image: cEOS:latest
 (defaults-deep-merging)=
 ## Deep Merging
 
-*netsim-tools* library uses Python Box package to perform recursive merge of configuration dictionaries:
+*netlab* uses Python Box package to perform recursive merge of configuration dictionaries:
 
 * Dictionary keys not present in target dictionary are added from the defaults dictionary;
 * Whenever a key in the target dictionary is itself a dictionary, and the same key is present in the defaults dictionary, the merge process recurses, resulting in a recursive merge of child dictionaries.
@@ -59,7 +59,7 @@ defaults.devices.eos.clab.image: cEOS:latest
 (defaults-user-file)=
 ## User Settings
 
-*netsim-tools* read system defaults from the system **topology-defaults.yml** and augment them with:
+*netlab* reads system defaults from the system **topology-defaults.yml** and augments them with:
 
 * **topology-defaults.yml** file in the lab directory
 * **.netlab.yml** file in the user home directory.

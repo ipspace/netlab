@@ -2,7 +2,7 @@
 
 **netlab clab** performs these *containerlab*-related functions:
 
-* **tarball** -- creates a tar archive that can be used to recreate the lab in a vanilla *containerlab* environment without *netsim-tools*.
+* **tarball** -- creates a tar archive that can be used to recreate the lab in a vanilla *containerlab* environment without *netlab*.
 
 ## netlab clab tarball
 
@@ -12,7 +12,7 @@ The **netlab clab tarball** command requires a running *containerlab* lab and *c
 * Create a new copy of *containerlab* configuration file (*clab.config.yml*) that contains pointers to startup configurations
 * Create a tar archive containing *clab.config.yml* and related device configurations.
 
-You can use the tar archive created by **netlab clab tarball** to recreate the lab in a *containerlab* environment without *netsim-tools*.
+You can use the tar archive created by **netlab clab tarball** to recreate the lab in a *containerlab* environment without *netlab*.
 
 ```
 usage: netlab clab tarball [-h] [-v] [-q] [--config [OUTPUT]] [--cleanup] tarball

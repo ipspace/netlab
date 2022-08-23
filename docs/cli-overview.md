@@ -1,6 +1,6 @@
 # CLI Overview
 
-The following programs, scripts and Ansible playbooks are included with *netsim-tools* and available as a subcommand of **netlab** command.
+The following programs, scripts and Ansible playbooks are included with *netlab* and available as a subcommand of **netlab** command.
 
 ## Creating and Destroying the Lab
 

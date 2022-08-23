@@ -1,6 +1,6 @@
 # Contributing New Devices
 
-Adding new devices to netsim-tools shouldn't be too hard:
+Adding new devices to *netlab* shouldn't be too hard:
 
 * [Figure out the device image to use](#device-images)
 * [Modify system settings](#system-settings) including [Ansible variables](#using-your-device-with-ansible-playbooks)
@@ -19,19 +19,19 @@ Adding new devices to netsim-tools shouldn't be too hard:
 
 ## Device Images
 
-*netsim-tools* supports three virtualization providers: *Vagrant* with *libvirt* and *Virtualbox*, and *containerlab* running Docker container images. 
+*netlab* supports three virtualization providers: *Vagrant* with *libvirt* and *Virtualbox*, and *containerlab* running Docker container images. 
 
 If you can create a Vagrant box for the network device you want to use, or get a Docker container, it makes sense to proceed. Otherwise, yell at your vendor.
 
 In this step, you should have a repeatable *build my box* recipe. It's perfectly understandable that one might have to register at a vendor web site to download a container or a Vagrant box, or the images used to build a Vagrant box. Asking the potential users to "_contact the account team_" is not[^1].
 
-Please publish the recipe (it's OK to add it to *netsim-tools* documentation under *install* directory) before proceeding. We want to have repeatable installation instructions ;)
+Please publish the recipe (it's OK to add it to *netlab* documentation under *install* directory) before proceeding. We want to have repeatable installation instructions ;)
 
 [^1]: That was one of the reasons ArcOS was taken off the list of supported platforms.
 
 ## System Settings
 
-After building a Vagrant box or a container, you have to integrate it with *netsim-tools*. You'll need
+After building a Vagrant box or a container, you have to integrate it with *netlab*. You'll need
 
 * A template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for details.
 * Device parameters within the **devices** section of `netsim/topology-defaults.yml`.
@@ -65,7 +65,7 @@ If you want to use the same device with multiple virtualization providers, you m
 
 ## Configuring the Device
 
-To configure your device (including initial device configuration), you'll have to create an Ansible task list that deploys configuration snippets onto your device. *netsim-tools* rely on merging configuration snippets with existing device configuration, not replacing it.
+To configure your device (including initial device configuration), you'll have to create an Ansible task list that deploys configuration snippets onto your device. *netlab* merges configuration snippets with existing device configuration (instead of building a complete configuration and replacing it).
 
 There are two ways to configure a devices:
 
@@ -92,11 +92,11 @@ Similar to the initial device configuration, create templates supporting [indivi
 
 Use existing configuration templates and module description to figure out which settings your templates should support.
 
-For every configuration module you add, update the module's `supported_on` list in `netsim/topology-defaults.yml` to indicate that the configuration module is supported by the network device. The list of supported devices is used by the **netsim create** command to ensure the final lab topology doesn't contain unsupported/unimplemented module/device combinations.
+For every configuration module you add, update the module's `supported_on` list in `netsim/topology-defaults.yml` to indicate that the configuration module is supported by the network device. The list of supported devices is used by the **netlab create** command to ensure the final lab topology doesn't contain unsupported/unimplemented module/device combinations.
 
 ## Adding an Existing Device to a New Virtualization Provider
 
-To add a device that is already supported by *netsim-tools* to a new virtualization environment follow these steps:
+To add a device that is already supported by *netlab* to a new virtualization environment follow these steps:
 
 * Get or build a Vagrant box or container image.
 * Add the [image/box/container name](device-box.md#adding-new-device-settings) for the new virtualization provider to system settings.

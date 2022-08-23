@@ -1,8 +1,8 @@
 # Supported Platforms
 
-The following virtual network devices are supported by *netsim-tools*:
+*netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)):
 
-| Virtual network device                    | netsim device type |
+| Virtual network device                    | netlab device type |
 | ----------------------------------------- | ------------------ |
 | Arista vEOS                               | eos                |
 | Cisco IOSv                                | iosv               |
@@ -52,7 +52,7 @@ See [lab topology overview](topology-overview.md) for more details.
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks and UDP point-to-point tunnels.
 * [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
 * [Containerlab](https://containerlab.srlinux.dev/)
-* External -- *meta* virtualization provider that allows you to configure external physical or virtual devices with *netsim-tools*
+* External -- *meta* virtualization provider that allows you to configure external physical or virtual devices with *netlab*
 
 You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings).
 
@@ -78,11 +78,11 @@ You cannot use all supported network devices with all virtualization providers. 
 
 **Note:**
 
-* *external* provider can be used with all devices supported by *netsim-tools*.
+* *external* provider can be used with all devices supported by *netlab*.
 
 Configuration files for Virtualbox and KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
 
-| Virtual network device     | netsim device type | CPUs | memory | libvirt NIC model          |
+| Virtual network device     | netlab device type | CPUs | memory | libvirt NIC model          |
 | -------------------------- | ------------------ | ---: | -----: | -------------------------: |
 | Arista vEOS                | eos                |    2 |   2048 | virtio (*libvirt default*) |
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
@@ -99,7 +99,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 
 ## Configuration Deployments
 
-Ansible playbooks included with **netsim-tools** can deploy and collect device configuration on these network operating systems:
+Ansible playbooks included with **netlab** can deploy and collect device configuration on these network operating systems:
 
 | Operating system      | Deploy configuration | Collect configuration |
 | --------------------- | :------------------: | :-------------------: |
@@ -217,7 +217,7 @@ Additional [configuration modules](module-reference.md) are supported on these d
 
 ## IPv6 Support
 
-Core functionality of *netsim-tools* and all multi-protocol routing protocol configuration modules fully supports IPv6. OSPFv3 is not implemented yet.
+Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully supports IPv6. OSPFv3 is implemented only on some platforms.
 
 | Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |

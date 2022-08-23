@@ -8,7 +8,7 @@ Each `-o` parameter specifies an output module, formatting modifiers, and output
 * Some output modules use optional formatting modifiers -- you can specify Ansible inventory format, graph type, or parts of the transformed data structure that you want to see in YAML or JSON format
 * All output formats support optional destination file name. Default file name is either hard-coded in the module or specified in **defaults.outputs** part of lab topology.
 
-The following output modules are included in **netsim-tools** distribution; you can create your own by adding modules to `netsim/outputs` directory:
+The following output modules are included in **netlab** distribution; you can create your own by adding modules to `netsim/outputs` directory:
 
 ```eval_rst
 .. toctree::

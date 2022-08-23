@@ -1,4 +1,4 @@
-# Using Containerlab with *netsim-tools*
+# Using Containerlab with *netlab*
 
 [Containerlab](https://containerlab.srlinux.dev/) is a Linux-based container orchestration system focused on creating virtual network topologies. To use it:
 

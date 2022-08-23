@@ -21,7 +21,7 @@ Graphing routines use **default** topology settings to modify the node- or link 
 * **outputs.graph.groups** -- use the specified list of groups (or all groups when set to *True*) to create graph clusters
 * **outputs.graphs.node_address_labels** -- add node loopback IP addresses or IP addresses of the first interface (for hosts) to node labels.
 
-You could specify these attributes in your topology file, in per-user topology defaults, or in system defaults ([more details](../defaults.md)). You could also specify them with `-s` parameter of **netlab create** command ([more details](../netlab/create.md)). The system defaults in *netsim-tools* release 1.2.4 are included below:
+You could specify these attributes in your topology file, in per-user topology defaults, or in system defaults ([more details](../defaults.md)). You could also specify them with `-s` parameter of **netlab create** command ([more details](../netlab/create.md)). The system defaults in *netlab* release 1.2.4 are included below:
 
 ```
 outputs:

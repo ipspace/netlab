@@ -1,6 +1,6 @@
 # Deploying Device Configurations
 
-Ansible playbooks used by *netsim-tools* deploy configurations through device-specific task lists and templates. When adding a new device type, you'll have to create either a generic _deploy configuration_ task list and a bunch of configuration templates, or a task list for every module supported by the device (plus the initial configuration).
+*netlab* Ansible playbooks deploy configurations through device-specific task lists and templates. When adding a new device type, you'll have to create either a generic _deploy configuration_ task list and a bunch of configuration templates, or a task list for every module supported by the device (plus the initial configuration).
 
 You can also mix-and-match the two approaches. For example, you could have a generic *deploy configuration* task list, but use a separate list of tasks for initial configuration.
 

@@ -1,6 +1,6 @@
 # Custom Plugins
 
-*netsim-tools* support dynamically loadable plugins allowing you to implement custom data model transformations without adding nerd knobs to the core topology transformation.
+*netlab* supports dynamically loadable plugins allowing you to implement custom data model transformations without adding nerd knobs to the core topology transformation.
 
 ```{warning}
 This is an underdocumented feature. A few commonly-used functions are defined in `netsim.api`; performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *netsim-tools* GitHub repository](https://github.com/ipspace/netsim-tools/discussions) before proceeding.
