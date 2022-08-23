@@ -27,7 +27,7 @@
 {%    endif %}
 {% endmacro %}
 
-{% macro bgp_config(vrf,as,router_id,vrf_bgp,vrf_context) %}
+{% macro bgp_config(vrf,_as,router_id,vrf_bgp,vrf_context) %}
 
 {% if 'import' in vrf_context %}
 {% set import_policy = vrf + "_import" %}
@@ -45,7 +45,7 @@
 
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
-   autonomous-system: {{ as }}
+   autonomous-system: {{ _as|string }}
    router-id: {{ router_id }}
    ebgp-default-policy:
     export-reject-all: False
@@ -56,7 +56,8 @@
 #}
    group:
 {% for g in ['ibgp-ipv4','ibgp-ipv6','ebgp','ebgp-unnumbered'] %}
-   - group-name: {{g}}
+{% set _type = g[:4] %}
+   - group-name: {{ g }}
      admin-state: enable
      import-policy: {{ import_policy if 'ebgp' in g else 'accept_all' }}
      export-policy: {{ export_policy if 'ebgp' in g else 'accept_all' }}
@@ -66,20 +67,20 @@
       minimum-advertisement-interval: 1
 
 {# BGP communities #}
-{%   if bgp.community[ g[:4] ]|default([]) %}
-{%   set list = bgp.community[ g[:4] ] %}
+{%   if bgp.community[ _type ]|default([]) %}
+{%   set list = bgp.community[ _type ] %}
      send-community:
-      standard: {{ 'standard' in list or 'both' in list }}
-      large: {{ 'large' in list }}
+      standard: {{ 'True' if 'standard' in list or 'both' in list else 'False' }}
+      large: {{ 'True' if 'large' in list else 'False' }}
 {%   endif %}
 
 {# iBGP #}
 {%   if g in ['ibgp-ipv4','ibgp-ipv6'] %}
-     peer-as: {{ as }}
+     peer-as: {{ _as|string }}
      ipv4-unicast:
-      admin-state: {{ 'enable' if g == 'ibgp-ipv4' else 'disable' }}
+      admin-state: {{ 'enable' if g == 'ibgp-ipv4' and 'ipv4' in bgp.address_families['ibgp'] else 'disable' }}
      ipv6-unicast:
-      admin-state: {{ 'enable' if g == 'ibgp-ipv6' else 'disable' }}
+      admin-state: {{ 'enable' if g == 'ibgp-ipv6' or 'ipv6' in bgp.address_families['ibgp'] else 'disable' }}
 {%   if g[5:] in loopback %}
      transport:
       local-address: {{ loopback[ g[5:] ]|default('')|ipaddr('address') }}
@@ -92,15 +93,20 @@
 {%   else %}
 
 {# eBGP #}
-     next-hop-self: {{ bgp.next_hop_self|default(False) }}
+     next-hop-self: {{ 'True' if bgp.next_hop_self|default(False) else 'False' }}
 {%   if g == 'ebgp-unnumbered' %}
      local-as:
-     - as-number: {{ as }}
+     - as-number: {{ _as|string }}
        prepend-global-as: false
      ipv4-unicast:
       advertise-ipv6-next-hops: true
       receive-ipv6-next-hops: true
+{%   else %}
+     ipv4-unicast:
 {%   endif %}
+      admin-state: {{ 'enable' if 'ipv4' in bgp.address_families['ebgp'] else 'disable' }}
+     ipv6-unicast:
+      admin-state: {{ 'enable' if 'ipv6' in bgp.address_families['ebgp'] else 'disable' }}
 {%   endif %}
 
 {% endfor %}
@@ -136,11 +142,11 @@
    description: {{ n.name }}
    peer-group: {{ 'ebgp' if n.type=='ebgp' else ('ibgp-'+af) }}
 {% if n.type != 'ibgp' %}
-   peer-as: {{ n.as }}
+   peer-as: {{ n.as|string }}
 {% endif %}
 {% if n.local_as is defined %}
    local-as:
-   - as-number: {{ n.local_as }}
+   - as-number: {{ n.local_as|string }}
 {%   if n.type == 'ebgp' %}
      prepend-global-as: False # Don't include iBGP AS in eBGP advertisements
 {%   endif %}
@@ -164,7 +170,7 @@
 - path: network-instance[name={{vrf}}]/protocols/bgp/dynamic-neighbors/interface[interface-name={{if_name}}.{{if_index}}]
   val:
    peer-group: "ebgp-unnumbered"
-   allowed-peer-as: [ {{ n.as }}..{{ n.as }} ]
+   allowed-peer-as: [ {{ n.as|string }}..{{ n.as|string }} ]
 {% endif %}
 {% endif %}
 {% endfor %}
