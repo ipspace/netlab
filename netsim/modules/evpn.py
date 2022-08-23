@@ -7,17 +7,6 @@ from .. import data
 from ..augment import devices
 
 def enable_evpn_af(node: Box, topology: Box) -> None:
-  # evpn.use_ibgp was the old way of saying 'run EVPN over IBGP'
-  #
-  # This parameter has been replaced with evpn.session parameter and will eventually
-  # disappear. In the meantime, 'evpn.use_ibgp' results in 'evpn.session' being
-  # set to 'ibgp'
-  if 'evpn' in node and 'use_ibgp' in node.evpn:
-    data.must_be_bool(
-      node,'evpn.use_ibgp',f'nodes.{node.name}.evpn.use_ibgp',
-      module='evpn')
-    node.evpn.session = ['ibgp'] if node.evpn.use_ibgp else ['ebgp']
-
   bgp_session = data.get_from_box(node,'evpn.session') or []
 
   # Enable EVPN AF on all BGP neighbors with the correct session type

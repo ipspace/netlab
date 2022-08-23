@@ -30,19 +30,20 @@ The following table describes per-platform support of individual VXLAN features:
 
 EVPN module supports three design paradigms:
 
-* IBGP with IGP (default on non-Nokia devices)
-* IBGP over EBGP (default on Nokia devices)
+* IBGP with IGP
+* IBGP over EBGP
 * EBGP-only (requires manual configuration of RD/RT values on most platforms)
 
 | Operating system   | IBGP+IGP | EBGP-only | IBGP over<br>EBGP | IPv4<br>transport | IPv6<br>transport |
 | ------------------ | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  |  ❌  | ✅  |  ❌  |
-| Nokia SR Linux     |  ❌  | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS        |  ❌  | ✅  | ✅  | ✅  | ✅  |
+| Arista EOS         | ✅  | ✅  | ❌  | ✅  | ❌  |
+| Nokia SR Linux     | ✅  | ❌  | ✅  | ✅  | ✅  |
+| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | VyOS               | ✅  | ✅  | ✅  | ✅  | ❌  |
 
 **Notes:**
+* Nokia SR Linux supports iBGP EVPN sessions over BGP unnumbered with IPv6 link-local addresses, using IPv4 VXLAN routes with IPv6 next hops
 * FRR implementation is a control-plane-only implementation that can be used as a route reflector. It enables EVPN over IPv4 and/or IPv6 on configured type(s) of BGP sessions. It's expected that the other end of the session won't negotiate EVPN or IPv4 AF.
 * While VyOS itself supports IPv6 transport for VXLAN, using static flooding with the **vxlan** module, this seems not working with EVPN, where an IPv4 VTEP is always announced by **frr**.
 
