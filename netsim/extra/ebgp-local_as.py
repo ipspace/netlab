@@ -15,6 +15,7 @@
 #
 import typing, netaddr
 from box import Box
+from netsim import common
 
 """
 Adds a custom bgp.underlay_as node attribute
@@ -53,7 +54,7 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
     # eBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create eBGP neighbors; set 'local_as'
     ibgp_as = topology.bgp['as']
-    for l in node.get("interfaces",[]):
+    for l in [ l for l in node.get("interfaces",[]) if l.type == 'p2p' ]:
       node_as = l.bgp.underlay_as if "bgp" in l and "underlay_as" in l.bgp else node.bgp.underlay_as
 
       for ngb_ifdata in l.get("neighbors",[]):
@@ -77,6 +78,8 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
           if "unnumbered" in l:
             extra_data.unnumbered = True
             extra_data.local_if = l.ifname
+          if common.DEBUG:
+            print(f'ebgp-local_as: adding neighbor for node {node.name} peer {neighbor.name} peer_as={peer_as}')
           node.bgp.neighbors.append( ebgp_neighbor(neighbor,peer_as,ngb_ifdata,extra_data) )
 
 def post_transform(topology: Box) -> None:
