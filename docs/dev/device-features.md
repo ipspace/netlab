@@ -1,6 +1,6 @@
 # New Configuration Features for an Existing Device
 
-If you want to fix a configuration template for an existing device supported by *netsim-tools*, find the relevant configuration template ([initial configurations](dev/devices.md#initial-device-configuration), [configuration modules](devices.md#configuration-modules)), fix it, test your changes, and [submit a PR](guidelines.md).
+If you want to fix a configuration template for an existing device supported by *netlab*, find the relevant configuration template ([initial configurations](dev/devices.md#initial-device-configuration), [configuration modules](devices.md#configuration-modules)), fix it, test your changes, and [submit a PR](guidelines.md).
 
 If you want to add support for a new configuration module (example: MPLS segment routing on Nexus OS):
 

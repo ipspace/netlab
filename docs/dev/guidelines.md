@@ -1,6 +1,6 @@
 # Contributor Guidelines
 
-Contributing to *netsim-tools* is as easy as it can get:
+Contributing to *netlab* is as easy as it can get:
 
 * Create a fork of the [GitHub repository](https://github.com/ipspace/netsim-tools).
 * Make the changes.

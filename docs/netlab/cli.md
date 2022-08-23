@@ -1,6 +1,6 @@
 # netlab Command Reference
 
-The **netlab** command is the CLI interface to *netsim-tools* functionality, including data model transformation, Ansible playbooks and device connectivity scripts:
+The **netlab** command is the *netlab* CLI interface. It includes data model transformations, lab creation and deletion, device configurations with Ansible playbooks, and console connectivity scripts.
 
 ## Creating the Lab
 

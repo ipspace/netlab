@@ -33,7 +33,7 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     '-d','--devices',
     dest='devices',
     action='store_true',
-    help='Use netsim-devices.yml as inventory source')
+    help='Use netlab-devices.yml as inventory source')
   parser.add_argument(
     dest='host', action='store',
     help='Device to connect to')
@@ -97,7 +97,7 @@ def run(cli_args: typing.List[str]) -> None:
 
   host_data = Box(host_inventory,box_dots=True,default_box=True)
   host_data.host = args.host
-  connection = host_data.netsim_console_connection or host_data.ansible_connection
+  connection = host_data.netlab_console_connection or host_data.ansible_connection
 
   if connection == 'docker':
     docker_connect(host_data,rest,args.verbose)

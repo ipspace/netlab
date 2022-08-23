@@ -40,7 +40,7 @@ links:
 
 ## Link Attributes
 
-A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netsim-tools* data transformation routines:
+A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netlab* data transformation routines:
 
 * **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **type** -- [link type](#link-types) (lan, p2p, stub)
@@ -233,14 +233,14 @@ links:
 * Link **role** could be used in [configuration modules](modules.md) to influence interface configuration. For example, *core* links could belong to OSPF area 0.
 
 ```{tip}
-You can also use **‌unnumbered** link attribute to get a single unnumbered link. Using an unnumbered pool is recommended when you want to test network-wide addressing changes.
+You can also use **unnumbered** link attribute to get a single unnumbered link. Using an unnumbered pool is recommended when you want to test network-wide addressing changes.
 ```
 
 ## Changing MTU
 
-All devices supported by *netsim-tools* are assumed to use ancient default layer-3 MTU value of 1500 bytes. Most VM-based network devices already use that default; container-based devices have their MTU set to 1500 through system settings.
+All devices supported by *netlab* are assumed to use ancient default layer-3 MTU value of 1500 bytes. Most VM-based network devices already use that default; container-based devices have their MTU set to 1500 through system settings.
 
-Please note that the **mtu** specified by *netsim-tools* is always the layer-3 (IPv4 or IPv6) MTU. The peculiarities of individual device configuration commands are transparently (to the end-user) handled in the device configuration templates.
+Please note that the **mtu** specified by *netlab* is always the layer-3 (IPv4 or IPv6) MTU. The peculiarities of individual device configuration commands are transparently (to the end-user) handled in the device configuration templates.
 
 You can change the **mtu** on an individual interface (probably not a good idea), on a link, for a particular node or device type, or for the whole lab.
 
@@ -326,7 +326,7 @@ Multi-access and stub links are implemented with custom networks (as supported b
 
 ## Augmenting Link Data
 
-Link data and corresponding node data are heavily augmented by the *netsim-tools* data transformation code. The additional link attributes include:
+Link data and corresponding node data are heavily augmented by the *netlab* data transformation code. The additional link attributes include:
 
 * Global link ID
 * Link index for each of the attached nodes

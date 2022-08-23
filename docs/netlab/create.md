@@ -10,7 +10,7 @@ The **netlab create** command reads network topology description in YAML format,
 
 * Network topology in YAML format (default: `topology.yml`)
 * Optional [default settings](../defaults.md) in YAML format
-* Global default settings (`topology-defaults.yml` in *netsim* package directory)
+* Global default settings (`topology-defaults.yml` in *netlab* package)
 
 ## Data Model Transformation
 
@@ -32,7 +32,7 @@ You can influence the data model transformation with optional [configuration mod
 
 The _[](netlab-create-output-formats)_ section describes how you can control the output files and their format with CLI parameters. See _[](../outputs/index.md)_ for more details on individual file formats.
 
-[^1]: Or *netsim-devices.yml* file when the `--devices` flag is used
+[^1]: Or *netlab-devices.yml* file when the `--devices` flag is used
 
 ## Usage
 
@@ -60,7 +60,7 @@ optional arguments:
                         Additional parameters added to topology file
   -o OUTPUT, --output OUTPUT
                         Output format(s): format:option=filename
-  --devices             Create provider configuration file and netsim-devices.yml
+  --devices             Create provider configuration file and netlab-devices.yml
 
 output files created when no output is specified:
 
@@ -77,7 +77,7 @@ For more details on topology file format, please read the [lab topology overview
 (netlab-create-output-formats)=
 ## Output Formats
 
-Without specifying the output format(s), **netlab create** creates a provider configuration file (*Vagrantfile* or *clab.yml*) and either [Ansible inventory data](../outputs/ansible.md) (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*) or [*netsim-devices.yml* file](../outputs/devices.md) (if the `--devices` flag was specified).
+Without specifying the output format(s), **netlab create** creates a provider configuration file (*Vagrantfile* or *clab.yml*) and either [Ansible inventory data](../outputs/ansible.md) (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*) or [*netlab-devices.yml* file](../outputs/devices.md) (if the `--devices` flag was specified).
 
 You could specify one or more output formats with the `-o` CLI parameter. For more details please read the [output formats](../outputs/index.md) part of the documentation.
 

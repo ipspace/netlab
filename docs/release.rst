@@ -18,7 +18,7 @@ Release notes
 
 2022-05-02 (release 1.2.2)
   * VLAN configuration module
-  * External topology provider to use *netsim-tools* with hardware labs
+  * External topology provider to use *netlab* with hardware labs
   * VRF loopback interfaces
   * netlab restart command restarts or reconfigures the lab
   * Use the snapshot file to start a lab
@@ -51,7 +51,7 @@ Release notes
 
 2022-03-09 (release 1.1.4)
   * **netlab clab tarball** create a tar package that can be deployed with *containerlab*
-    without *netsim-tools*
+    without *netlab*
   * Added **tar** and **cleanup** options to **netlab collect**
   * Added **cleanup** option to **netlab down**
   * Support for OSPFv3 on VyOS
@@ -209,7 +209,7 @@ Release notes
 
   :doc:`More details <release/0.7>`
 
-2021-05-24 (`release 0.6.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.6.3>`_)
+2021-05-24 (release 0.6.3)
   * BGP configuration module
   * IS-IS configuration module
   * Segment Routing with MPLS
@@ -220,20 +220,20 @@ Release notes
 
   :doc:`More details <release/0.6>`
 
-2021-04-11 (`release 0.5 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.5>`_)
+2021-04-11 (release 0.5)
   * containerlab support
   * Flexible virtualization provider framework
 
   :doc:`More details <release/0.5>`
 
-2021-03-26 (`release 0.4 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.4>`_)
+2021-03-26 (release 0.4)
   * Unnumbered interfaces
   * Configuration modules framework
   * Baseline OSPF module
 
   :doc:`More details <release/0.4>`
 
-2021-01-24 (`release 0.3 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.3>`_)
+2021-01-24 (release 0.3)
   * Support for multiple virtualization providers
   * Vagrant with VirtualBox
   * EOS and Nexus OS supported on Vagrant/VirtualBox
@@ -241,20 +241,22 @@ Release notes
 
   :doc:`More details <release/0.3>`
 
-2021-01-12 (`release 0.2 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.2>`_)
+2021-01-12 (release 0.2)
    Major refactoring of addressing configuration
 
    * Structured address pools (loopback, lan, p2p)
    * IPv4 and IPv6 support
    * Initial configuration modules updated to work in dual-stack or IPv6-only environments
 
-2021-01-07 (`release 0.11 <https://github.com/ipspace/netsim-tools/releases/tag/release_0.11>`_)
+2021-01-07 (release 0.11)
    Arrcus ArcOS support contributed by Dave Thelen
 
    Refactored configuration gathering -- use explicit **device_facts** modules or platform-specific tasks
    for platforms that don't gather device configuration with fact-gathering module
+
 2020-12-21
    Nexus 9300v support
+
 2020-12-17
    Initial release (IOSv, CSR, EOS)
 

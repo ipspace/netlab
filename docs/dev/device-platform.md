@@ -1,12 +1,12 @@
 # Adding New Virtualization Provider for an Existing Device
 
-If you want to run a network device on a virtualization provider that is not yet supported by *netsim-tools* (example: Fortinet firewall on VirtualBox as of December 2020), you came to the right place.
+If you want to run a network device on a virtualization provider that is not yet supported by *netlab* (example: Fortinet firewall on VirtualBox as of December 2020), you came to the right place.
 
 Here's what you have to do:
 
 * Build a Vagrant box from whatever image your vendor supplies. It's not as hard as it sounds, there are [tons of recipes on codingpackets.com](https://codingpackets.com/blog/tag/vagrant/). If you want to build a container to use with *containerlab*, please refer to [their documentation](https://containerlab.srlinux.dev/).
 * Document the process in a blog post or GitHub gist.
-* Modify the *netsim-tools* settings in netsim/topology-defaults.yml`
+* Modify the *netlab* settings in `netsim/topology-defaults.yml`
 * Update [Supported Platforms](../platforms.md) and box building documentation ([libvirt](../labs/libvirt.md#building-your-own-boxes), [VirtualBox](../labs/virtualbox.md#creating-vagrant-boxes))
 * Hopefully [Submit a PR](guidelines.md)
 * Enjoy!

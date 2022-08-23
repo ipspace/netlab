@@ -45,7 +45,7 @@ Use something similar to the following example as the stub template:
 
 ## Global OSPF Configuration
 
-*netsim-tools* data model assumes a single OSPF process running in the global routing table. Device-wide parameters are set in **ospf** dictionary:
+*netlab* data model assumes a single OSPF process running in the global routing table. Device-wide parameters are set in **ospf** dictionary:
 
 * **ospf.process** -- OSPF process ID (optional)
 * **ospf.router_id** -- OSPF router ID (always present, should be an IPv4 address)

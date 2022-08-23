@@ -1,6 +1,6 @@
 # Custom Attributes
 
-*netsim-tools* [topology file transformation](dev/transform.md) validates most of the global, link, and module attributes to prevent hard-to-find typing errors. Node attributes are not yet checked.
+*netlab* [topology file transformation](dev/transform.md) validates most of the global, link, and module attributes to prevent hard-to-find typing errors. Node attributes are not yet checked.
 
 To extend the lab topology with custom attributes (examples: BGP anycast prefix, DMZ bandwidth, OSPF stub areas...) you have to define the custom attributes (keywords) you want to be recognized.
 

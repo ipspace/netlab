@@ -52,7 +52,7 @@ def create_topology_parse(
 
   if cmd == 'create':
     parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
-    parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netsim-devices.yml')
+    parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netlab-devices.yml')
 
   return parser.parse_args(args)
 

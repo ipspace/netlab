@@ -6,7 +6,7 @@ Lab topology transformation code assigns IPv4 and IPv6 subnets (prefixes) to ind
 You can assign a static prefix to a link with **prefix** link attribute and static IP address to an interface with an **ipv4** or **ipv6** attribute of node-on-link data. For more details, see [static link addressing](links.md#static-link-addressing).
 ```
 
-*netsim-tools* use multiple predefined address pools:
+*netlab* use multiple predefined address pools:
 
 * **mgmt** pool: Management IPv4 and MAC addresses. IPv6 addresses are assigned if specified, but not used at the moment.
 * **loopback** pool: Loopback IPv4 and IPv6 addresses.
@@ -57,7 +57,7 @@ Address pools could be specified:
 **Notes:**
 
 * [Local (or user) defaults file](defaults-user-file) can be overwritten with `--defaults` option of **netlab create** or **netlab up** command.
-* Global defaults file is `topology-defaults.yml` in *netsim* package directory.
+* Global defaults file is `topology-defaults.yml` included in *netlab* package.
 
 Each address pool specification is a dictionary of address pools. Individual address pools are specified with these parameters:
 
@@ -100,7 +100,7 @@ addressing:
 
 ## Unnumbered Interface Support
 
-*netsim-tools* supports unnumbered IPv4 and IPv6 interfaces: 
+*netlab* supports unnumbered IPv4 and IPv6 interfaces: 
 
 * Unnumbered IPv4 interfaces are not supported on all platforms and use *loopback* address as the proxy address of the unnumbered interface.
 * Unnumbered IPv6 interfaces use only LLA IPv6 address -- IPv6 is enabled on an interface, but no static IPv6 address is assigned to it.
@@ -116,7 +116,7 @@ For more details, see *[Unnumbered Interface Example](#unnumbered-interface-exam
 
 An address pool with no attributes is a layer-2-only pool. Links using such a pool have no IPv4/IPv6 prefix, and interfaces attached to such links get no IPv4/IPv6 address assigned from the on-link prefix.
 
-*netsim-tools* has predefined **l2only** pool that you can use to create layer-2-only links, for example: 
+*netlab* has predefined **l2only** pool that you can use to create layer-2-only links, for example: 
 
 ```
 # CLNS lab

@@ -1,6 +1,6 @@
 # Overview
 
-*netsim-tools* are bringing infrastructure-as-code concepts to networking labs. You'll describe your high-level network topology and routing design in a YAML file, and the tools in this repository will
+*netlab* is bringing infrastructure-as-code concepts to networking labs. You'll describe your high-level network topology and routing design in a YAML file, and the tools in this repository will
 
 * Create *Vagrantfile* configuration file for *virtualbox* or *libvirt* environment
 * Create *containerlab* configuration file

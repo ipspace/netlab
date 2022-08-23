@@ -10,7 +10,7 @@ if sys.version_info < (3, 7):
   raise RuntimeError("This package requires Python 3.7+")
 
 setup(
-  name="netsim-tools",
+  name="netlab",
   version=netsim.__version__,
   packages=find_packages(),
   author="Ivan Pepelnjak",

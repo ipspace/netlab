@@ -1,6 +1,6 @@
 # Graphite Topology Output Module
 
-*graphite* output module creates a JSON file that can be used to display the *netsim-tools* lab topology within [Graphite](https://github.com/netreplica/graphite).
+*graphite* output module creates a JSON file that can be used to display the *netlab* lab topology within [Graphite](https://github.com/netreplica/graphite).
 
 By default, the output is created as *graphite-default.json* file, which can be used directly from the Graphite container. When using the *graphite:webssh2* container, you can open SSH sessions with lab devices running in *libvirt* environment directly from the browser, making your lab accessible from an external IP network without routing or port-mapping tricks.
 

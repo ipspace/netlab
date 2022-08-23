@@ -41,7 +41,7 @@ class FatalError(Warning):
 class ErrorAbort(Exception):
   pass
 
-def fatal(text: str, module: str = 'netsim-tools') -> None:
+def fatal(text: str, module: str = 'netlab') -> None:
   global err_count
   err_count = err_count + 1
   if RAISE_ON_ERROR:

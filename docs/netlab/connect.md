@@ -15,18 +15,18 @@ positional arguments:
 optional arguments:
   -h, --help     show this help message and exit
   -v, --verbose  Verbose logging
-  -d, --devices  Use netsim-devices.yml as inventory source
+  -d, --devices  Use netlab-devices.yml as inventory source
 
 The rest of the arguments are passed to SSH or docker exec command
 ```
 
 ## Collecting Inventory Data
 
-When run with `--devices` argument, **netlab connect** reads inventory data from `netsim-devices.yml` file[^1]. You can override the default file name with `NETSIM_DEVICES` environment variable.
+When run with `--devices` argument, **netlab connect** reads inventory data from `netlab-devices.yml` file[^1]. You can override the default file name with `NETLAB_DEVICES` environment variable.
 
 In all other cases, **netlab connect** uses **ansible-inventory** command to fetch device data from Ansible inventory.
 
-[^1]: *netsim-devices.yml* inventory uses Ansible naming convention and contains information very similar to what **ansible-inventory** would return.
+[^1]: *netlab-devices.yml* inventory uses Ansible naming convention and contains information very similar to what **ansible-inventory** would return.
 
 ## Using Inventory Data
 

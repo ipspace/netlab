@@ -1,9 +1,9 @@
 # Automated Tests
 
-*netsim-tools* uses GitHub Workflows CI/CD pipeline, see `.github/workflows/tests.yml` for details. The automated tests executed on every push, pull request or merge include:
+*netlab* uses GitHub Workflows CI/CD pipeline, see `.github/workflows/tests.yml` for details. The automated tests executed on every push, pull request or merge include:
 
-* **mypy** static type checking of all Python code in *netsim* directory
-* Transformation tests ran with **pytest** in *tests* directory
+* **mypy** static type checking of all Python code in `netsim/` directory
+* Transformation tests ran with **pytest** in `tests/` directory
 
 You can run the same tests with the `run-tests.sh` script in *tests* directory. It's highly recommended you run them before creating a pull request, or we'll have to have a discussion before your PR is merged.
 

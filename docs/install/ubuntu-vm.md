@@ -1,6 +1,6 @@
 # Ubuntu VM Installation
 
-If you have a Windows- or MacOS-based computer and would like to use *netsim-tools* with *libvirt*[^1] or run network devices as containers, you'll have to run the whole toolchain needed to create networking labs (netsim-tools ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine. The easiest way to do that is to create a Ubuntu virtual machine and use **netlab install** command within that virtual machine to install the required software packages[^2].
+If you have a Windows- or MacOS-based computer and would like to use *netlab* with *libvirt*[^1] or run network devices as containers, you'll have to run the whole toolchain needed to create networking labs (netlab ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine. The easiest way to do that is to create a Ubuntu virtual machine and use **netlab install** command within that virtual machine to install the required software packages[^2].
 
 ![Running Ubuntu VM on a desktop OS](ubuntu-on-desktop-os.png)
 
@@ -57,7 +57,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     sudo apt-get update
     sudo apt-get install -y python3-pip
-    sudo pip3 install --ignore-installed netsim-tools
+    sudo pip3 install --ignore-installed netlab
     netlab install -y ubuntu ansible libvirt containerlab
   SHELL
 end
@@ -71,12 +71,12 @@ end
 
 * Create a Ubuntu 20.04 virtual machine within your virtualization environment (you'll find plenty of tutorials on the Internet)
 * Log into the virtual machine
-* Execute these commands to download Python3 and install *netsim-tools*, Ansible, vagrant, libvirt, KVM, containerlab, and Docker.
+* Execute these commands to download Python3 and install *netlab*, Ansible, vagrant, libvirt, KVM, containerlab, and Docker.
 
 ```
 sudo apt-get update
 sudo apt-get install -y python3-pip
-sudo pip3 install --ignore-installed netsim-tools
+sudo pip3 install --ignore-installed netlab
 netlab install -y ubuntu ansible libvirt containerlab
 ```
 

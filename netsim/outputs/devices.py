@@ -52,15 +52,15 @@ def write_devices(data: Box, fname: str, fmt: typing.Optional[str]) -> None:
 
   inventory = create(data.nodes,data.get('defaults',{}),addressing)
 
-  header = "# Netsim Devices inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
+  header = "# Netlab Devices inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
 
   write_yaml(inventory,fname,header)
-  print("Created Netsim Devices inventory %s" % fname)
+  print("Created netlab devices inventory %s" % fname)
 
 def read_inventory(host: str, filename: typing.Optional[str] = None) -> typing.Optional[dict]:
-  filename = filename or os.getenv('NETSIM_DEVICES') or 'netsim-devices.yml'
+  filename = filename or os.getenv('NETLAB_DEVICES') or 'netlab-devices.yml'
   if not os.path.isfile(filename):
-    common.fatal('Cannot read netsim device inventory: %s does not exist')
+    common.fatal('Cannot read netlab device inventory: %s does not exist')
     return None
   try:
     data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
@@ -75,7 +75,7 @@ def read_inventory(host: str, filename: typing.Optional[str] = None) -> typing.O
 class DeviceInventory(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
-    hostfile = self.settings.hostfile or 'netsim-devices.yml'
+    hostfile = self.settings.hostfile or 'netlab-devices.yml'
     output_format = None
 
     if hasattr(self,'filenames'):

@@ -1,6 +1,6 @@
 # Virtualization Providers
 
-*netsim-tools* uses third-party orchestration and virtualization tools to create, start, stop, and destroy virtual labs. It supports the following virtualization providers:
+*netlab* uses third-party orchestration and virtualization tools to create, start, stop, and destroy virtual labs. It supports the following virtualization providers:
 
 * **[libvirt](labs/libvirt.md)** -- *libvirt* virtualization abstraction layer (tested on top of KVM/QEMU on Ubuntu) orchestrated with Vagrant using *vagrant-libvirt* Vagrant plugin.
 * **[clab](labs/clab.md)** -- Docker containers (tested on Ubuntu) orchestrated with *containerlab*.
@@ -10,9 +10,9 @@
 (external-virtualization-provider)=
 ## Using External Provider
 
-You can use *netsim-tools* to create addressing plans and device configurations for a hardware lab **as long as the topology file contains an accurate description of the hardware lab**. 
+You can use *netlab* to create addressing plans and device configurations for a hardware lab **as long as the topology file contains an accurate description of the hardware lab**. 
 
-You can use any device supported by *netsim-tools* with the **external** provider, but you might have to customize the lab topology file -- hardware devices might use:
+You can use any device supported by *netlab* with the **external** provider, but you might have to customize the lab topology file -- hardware devices might use:
 
 * Preconfigured management IPv4/IPv6 addresses
 * Interface names different from names used by virtual devices
@@ -36,7 +36,7 @@ nodes:
 
 ### Setting Interface Names
 
-*netsim-tools* create device interface names based on the naming conventions used by virtual devices. If your hardware devices use the same interface names, **and if your lab topology lists links in just the right order** to generate the desired device interface names, you don't have to specify interface names in the lab topology. In most other cases, you REALLY SHOULD specify interface names using **ifname** interface (node-to-link connection) attribute.
+*netlab* creates device interface names based on the naming conventions used by virtual devices. If your hardware devices use the same interface names, **and if your lab topology lists links in just the right order** to generate the desired device interface names, you don't have to specify interface names in the lab topology. In most other cases, you REALLY SHOULD specify interface names using **ifname** interface (node-to-link connection) attribute.
 
 Example:
 
@@ -50,7 +50,7 @@ links:
 
 ### Access Credentials
 
-It's STRONGLY RECOMMENDED to use usernames and passwords hardcoded into *netsim-tools* with hardware devices (see **devices** section of [topology-defaults.yml](https://github.com/ipspace/netsim-tools/blob/master/netsim/topology-defaults.yml) for more details).
+It's STRONGLY RECOMMENDED to use usernames and passwords hardcoded into *netlab* with hardware devices (see **devices** section of [topology-defaults.yml](https://github.com/ipspace/netsim-tools/blob/master/netsim/topology-defaults.yml) for more details).
 
 Access credentials are stored in Ansible group variables and derived from the **group_vars** section of device defaults.
 To change access credentials for a device type, set the `defaults.devices.<device>.group_vars.ansible_user` and `defaults.devices.<device>.group_vars.ansible_ssh_pass` parameters.

@@ -3,7 +3,7 @@ cat <<EOM
 Ansible installation script
 =====================================================================
 This script installs Ansible and related Python3 packages required
-to run netsim-tools Ansible playbooks. The script was tested on
+to run netlab Ansible playbooks. The script was tested on
 Ubuntu 20.04.
 
 The script assumes that you already set up Python3 environment. If

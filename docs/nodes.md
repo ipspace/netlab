@@ -57,7 +57,9 @@ nodes:
 
 ## Node Attributes
 
-These node attributes are recognized and used by *netsim-tools*:
+*netlab* uses the following node attributes[^NC]:
+
+[^NC]: Node attributes are not checked at the moment; you can add extra node attributes as needed.
 
 * **device** -- device type (see [supported platforms](platforms.md)). [Default device type](default-device-type) is specified in **defaults.device**.
 * **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are specified in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
@@ -72,7 +74,7 @@ These node attributes are recognized and used by *netsim-tools*:
 
 ## Provider-Specific Node Attributes
 
-Some node attributes are used only with specific *netsim-tools* virtualization provider. These attributes can be specified at node level as `<provider>.<attribute>`, or as default with `defaults.devices.<device>.<provider>.node.<attribute>`.
+Some node attributes are used only with specific *netlab* virtualization provider. These attributes can be specified at node level as `<provider>.<attribute>`, or as default with `defaults.devices.<device>.<provider>.node.<attribute>`.
 
 ### Libvirt Attributes
 
@@ -102,7 +104,7 @@ nodes:
 
 ## Augmenting Node Data
 
-After the initial cleanup, *netsim-tools* topology transformation code augments node data as follows (bold text indicates attribute names):
+After the initial cleanup, *netlab* topology transformation code augments node data as follows (bold text indicates attribute names):
 
 * Unless the node data contain an **id** attribute, the node **id** is set based on node's position in the **nodes** dictionary[^IDLIST] -- starting with 1 and skipping static **id** used by other nodes.
 * Unless the node is a *host*[^HOST], or has a **loopback** attribute, it's loopback addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.

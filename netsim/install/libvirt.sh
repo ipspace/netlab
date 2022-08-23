@@ -79,7 +79,7 @@ set -e
 if [[ -z "$G" ]]; then
   echo "Add user $USER to libvirt group"
   $SUDO usermod -a -G libvirt $USER
-  echo ".. You might need to log out and log in to start using netsim-tools with libvirt"
+  echo ".. You might need to log out and log in to start using netlab with libvirt"
   echo
 fi
 echo "Create vagrant-libvirt virtual network"

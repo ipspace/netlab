@@ -17,7 +17,7 @@ Initial device configuration is copied from an ISO image created by the installa
 
 ## Notes on Using vSRX Box
 
-The *netsim-tools* Vagrant template for vSRX uses *default\_prefix* libvirt parameter to set the domain (VM) name and uses the VM name to set libvirt vCPU quota.
+The *netlab* Vagrant template for vSRX uses *default\_prefix* libvirt parameter to set the domain (VM) name and uses the VM name to set libvirt vCPU quota.
 
 The template has been tested with Vagrant version 2.2.14. Some earlier versions of Vagrant generated VM names using a slightly different algorithm (the underscore between _default\_prefix_ and VM name was added automatically) and might thus generate an unexpected VM name. To fix that problem remove parts of **vsrx-domain.j2** template:
 
