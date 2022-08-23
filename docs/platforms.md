@@ -196,7 +196,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
 | VyOS                  | ✅   |   ✅   |   ❌   | ✅  | ✅  | ✅  |
-| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
+| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  |
 
 (platform-module-support)=
 Additional [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):

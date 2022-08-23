@@ -1,0 +1,61 @@
+!
+router bgp {{ bgp.as }}
+!
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
+  neighbor {{ n.ipv4 }}
+    address-family l2vpn evpn
+      activate
+
+{%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
+      route-reflector-client
+{%   endif %}
+
+    exit
+{% endfor %}
+
+{% if vlans is defined %}
+evpn
+{%   for v in vlans.values() if v.evpn.evi is defined and v.vni is defined %}
+{%     set import_target = v.evpn.import|join(' ') -%}
+{%     set export_target = v.evpn.export|join(' ') -%}
+  evi {{ v.evpn.evi }}
+    vni {{ v.vni }}
+    rd {{ v.evpn.rd }}
+    route-target {{ v.evpn.import|join(' ') }} import
+    route-target {{ v.evpn.export|join(' ') }} export
+{%     if import_target == export_target %}
+    route-target {{ v.evpn.export|join(' ') }} both
+{%     endif %}
+
+{%   endfor %}
+{% endif %}
+
+
+{% if vrfs is defined %}
+{%   for n,v in vrfs.items() if v.af is defined %}
+{%     set import_target = v.import|join(' ') -%}
+{%     set export_target = v.export|join(' ') -%}
+{%     set rd_0 = v.rd.split(':')[0] %}
+{%     set rd_1 = v.rd.split(':')[1] %}
+
+evpn
+  vrf {{ n }}
+    rd {{ rd_0|ipaddr('address') }}:{{ rd_1 }}
+    route-target {{ v.import|join(' ') }} import
+    route-target {{ v.export|join(' ') }} export
+{%     if import_target == export_target %}
+    route-target {{ v.export|join(' ') }} both
+{%     endif %}
+    vni {{ v.evpn.transit_vni }}
+    advertise ipv4 connected
+    advertise ipv4 static
+    advertise ipv4 ospf
+    advertise ipv4 bgp
+!
+router bgp {{ bgp.as }}
+  vrf {{ n }}
+    address-family ipv4 unicast
+      redistribute l2vpn evpn
+!
+{%   endfor %}
+{% endif %}

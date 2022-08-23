@@ -6,6 +6,11 @@
   neighbor {{ ip }}
     remote-as {{ n.as }}
     description "{{ n.name }}"
+
+{%     if n.local_as is defined %}
+    local-as {{ n.local_as }} no-prepend replace-as
+{%     endif %}
+
 {%     if n.type == 'ibgp' %}
     update-source loopback0
 {%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
@@ -18,8 +23,8 @@
    next-hop-self
  exit
 {%         endfor %}
-
 {%       endif %}
+
 {%       if bgp.rr|default('') and not n.rr|default('') %}
     route-reflector-client
 {%       endif %}
@@ -43,6 +48,7 @@
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
 !
  address-family {{ af }} unicast
+   soft-reconfiguration inbound
    activate
  exit
 {% endfor %}
