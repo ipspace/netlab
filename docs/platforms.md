@@ -181,22 +181,22 @@ The following interface addresses are supported on various platforms:
 (platform-routing-support)=
 Routing protocol [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
 
-| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD |
-| --------------------- | :--: | :---: | :---: | :-: | :-: |
-| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  |
-| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |
-| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |
-| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  |
-| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  |
-| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |
-| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
-| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  |
-| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |
-| Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  | ✅  |
-| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  |
-| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  |
-| VyOS                  | ✅   |   ✅   |   ❌   | ✅  | ✅  |
-| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  |
+| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | EVPN |
+| --------------------- | :--: | :---: | :---: | :-: | :-: | :--: |
+| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
+| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
+| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
+| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
+| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |
+| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |
+| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |
+| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |
+| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |
+| Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
+| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
+| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
+| VyOS                  | ✅   |   ✅   |   ❌   | ✅  | ✅  | ✅  |
+| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
 
 (platform-module-support)=
 Additional [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
