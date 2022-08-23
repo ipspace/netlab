@@ -245,8 +245,8 @@ def adjust_modules(topology: Box) -> None:
     return
     
   module_transform("init",topology)
-  merge_global_module_params(topology)
   merge_node_module_params(topology)
+  merge_global_module_params(topology)
   add_module_extra_parameters(topology)
   check_module_parameters(topology)
   check_module_dependencies(topology)
