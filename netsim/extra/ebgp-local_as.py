@@ -35,6 +35,8 @@ def ebgp_neighbor(n: Box, asn: int, intf: Box, extra_data: dict) -> Box:
     if af in intf:
       if "unnumbered" in ngb and ngb.unnumbered == True:
         ngb[af] = True
+      elif isinstance( intf[af], bool ):
+        ngb[af] = intf[af]
       else:
         ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
   return ngb
