@@ -40,11 +40,8 @@ updates:
   val:
 {{  ip_addresses(loopback,False,True)  }}
 
-{% for l in interfaces|default([]) if (l.type!='lan' or l.vlan is not defined) %}
-{% set if_name_index = l.ifname.split('.') %}
-{% set if_name = if_name_index[0] %}
-{% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
-- path: interface[name={{ if_name }}]
+{% for l in interfaces|default([]) if (l.type=='lan' or l.vlan is not defined) %}
+- path: interface[name={{ l.ifname }}]
   val:
 {% if l.name is defined %}
    description: "{{ l.name|replace('->','~')|regex_replace('[\\[\\]]','') }}{{ " ("+l.role+")" if l.role is defined else '' }}"
@@ -56,11 +53,11 @@ updates:
 {% endif %}
    vlan-tagging: {{ l.type in ["svi","vlan_member"] }}
    subinterface:
-    index: {{ if_index }}
-{% if l.type == 'svi' and l.vlan.mode == 'bridge' %}
-    type: bridged
+    index: {{ l.vlan.access_id }}
+{% if l.vlan is defined %}
+    type: {{ 'bridged' if vlans[ l.vlan.access ].mode in ['bridge','irb'] else 'routed' }}
 {% endif %}
-{%  if if_index != '0' and l.type in ["svi","vlan_member"] %}
+{%  if l.vlan is defined and l.type in ["svi","vlan_member"] %}
     vlan:
      encap:
 {%    if l.type == 'vlan_member' and l.vlan.access_id is defined %}
