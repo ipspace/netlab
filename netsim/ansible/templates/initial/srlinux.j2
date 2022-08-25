@@ -40,7 +40,7 @@ updates:
   val:
 {{  ip_addresses(loopback,False,True)  }}
 
-{% for l in interfaces|default([]) if (l.type in ['lan','vlan_member'] or l.vlan is not defined) %}
+{% for l in interfaces|default([]) if (l.type in ['lan','vlan_member','svi'] or l.vlan is not defined) %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else l.vlan.access_id|default(0) if l.vlan is defined else '0' %}
@@ -58,12 +58,12 @@ updates:
    subinterface:
     index: {{ if_index }}
     description: "{{ if_desc }}"
-{% if l.vlan is defined %}
+{% if l.vlan is defined and l.type in ["vlan_member","lan"] %}
     type: {{ 'bridged' if l.vlan.access is defined and vlans[ l.vlan.access ].mode|default('irb') in ['bridge','irb'] else 'routed' }}
 {%  if l.type in ["vlan_member"] %}
     vlan:
      encap:
-{%    if l.type == 'vlan_member' and l.vlan.access_id is defined %}
+{%    if l.vlan.access_id is defined %}
       single-tagged:
        vlan-id: "{{ l.vlan.access_id }}"
 {%    else %}
