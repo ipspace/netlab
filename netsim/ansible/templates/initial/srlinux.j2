@@ -40,24 +40,27 @@ updates:
   val:
 {{  ip_addresses(loopback,False,True)  }}
 
-{% for l in interfaces|default([]) if (l.type=='lan' or l.vlan is not defined) %}
-- path: interface[name={{ l.ifname }}]
+{% for l in interfaces|default([]) if (l.type in ['lan','vlan_member'] or l.vlan is not defined) %}
+{% set if_name_index = l.ifname.split('.') %}
+{% set if_name = if_name_index[0] %}
+{% set if_index = if_name_index[1] if if_name_index|length > 1 else l.vlan.access_id|default(0) if l.vlan is defined else '0' %}
+{% set vlan = l.vlan.access|default(l.vlan.access_id|default('routed')|string()) if l.vlan is defined else l.ifname %}
+{% set if_desc = l.name|default( "vlan " + vlan )|replace('->','~')|regex_replace('[\\[\\]]','') %}
+- path: interface[name={{ if_name }}]
   val:
-{% if l.name is defined %}
-   description: "{{ l.name|replace('->','~')|regex_replace('[\\[\\]]','') }}{{ " ("+l.role+")" if l.role is defined else '' }}"
-{% elif l.type|default("") == "stub" %}
-   description: "Stub interface"
-{% endif %}
 {% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
    mtu {{ [l.mtu + 14,1500]|max }} # TODO not supported on loopback interfaces
 {% endif %}
-   vlan-tagging: {{ l.type in ["svi","vlan_member"] }}
-   subinterface:
-    index: {{ l.vlan.access_id }}
-{% if l.vlan is defined %}
-    type: {{ 'bridged' if vlans[ l.vlan.access ].mode in ['bridge','irb'] else 'routed' }}
+{% if l.subif_index is not defined %}{# Skip trunk parent interfaces #}
+{% if l.type in ["vlan_member"] %}
+   vlan-tagging: True
 {% endif %}
-{%  if l.vlan is defined and l.type in ["svi","vlan_member"] %}
+   subinterface:
+    index: {{ if_index }}
+    description: "{{ if_desc }}"
+{% if l.vlan is defined %}
+    type: {{ 'bridged' if l.vlan.access is defined and vlans[ l.vlan.access ].mode|default('irb') in ['bridge','irb'] else 'routed' }}
+{%  if l.type in ["vlan_member"] %}
     vlan:
      encap:
 {%    if l.type == 'vlan_member' and l.vlan.access_id is defined %}
@@ -66,12 +69,17 @@ updates:
 {%    else %}
       untagged: { }
 {%    endif %}
+{%  endif %}
 {% endif %}
 {{  ip_addresses(l,True,False) }}
+{% else %}
+   description: "Trunk {{ if_desc }}"
+{% endif %}
 {% endfor %}
 
 {% macro list_interfaces(vrf) %}
-{% for l in interfaces|default([]) if (l.type not in ['lan','svi'] or l.vlan is not defined) and l.vrf|default('default')==vrf %}
+{% for l in interfaces|default([]) if (l.vlan is not defined or l.vlan.mode|default('irb') == 'route') 
+   and l.subif_index is not defined and l.vrf|default('default')==vrf %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}

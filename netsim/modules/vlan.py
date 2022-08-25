@@ -138,6 +138,8 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
         f'Invalid vlan.mode setting {default_fwd_mode} in {obj_name}',
         common.IncorrectValue,
         'vlan')
+  else:
+    default_fwd_mode = get_from_box(topology,'vlan.mode')         # Else get it from the topology level
 
   if not 'vlans' in obj:
     return
@@ -874,6 +876,7 @@ class VLAN(_Module):
         vlan_ifmap = create_svi_interfaces(n,topology)
         map_trunk_vlans(n,topology)
         rename_vlan_subinterfaces(n,topology)
+        validate_vlan_attributes(n,topology) # JvB: propagate 'mode' attribute to per-node VLANs
 
     for n in topology.nodes.values():
       set_svi_neighbor_list(n,topology)
