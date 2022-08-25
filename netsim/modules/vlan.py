@@ -629,10 +629,10 @@ def set_svi_neighbor_list(node: Box, topology: Box) -> None:
         if len(vlan_data.neighbors) == vlan_data.host_count +1:             # ... and there's exactly one non-host attached to the VLAN
           ifdata.role = 'stub'                                              # ... then we have a stub link, mark it for IGP modules
 
-      # JvB: Build a list of neighbors for the parent_interface
-      parent_neighbors = [ n.node for n in node.interfaces[ifdata.parent_ifindex-1].neighbors ]
+      # JvB: Build a list of neighbors for the parent_interface, if available
+      parent_neighbors = [ n.node for n in node.interfaces[ifdata.parent_ifindex-1].neighbors ] if 'parent_ifindex' in ifdata else []
 
-      ifdata.neighbors = [ n for n in vlan_data.neighbors if n.node != node.name and n.node in parent_neighbors ]
+      ifdata.neighbors = [ n for n in vlan_data.neighbors if n.node != node.name and (parent_neighbors==[] or n.node in parent_neighbors) ]
       if ifdata.neighbors:
         if ' -> ' in ifdata.name:
           ifdata.name = ifdata.name.split(' -> ')[0]
