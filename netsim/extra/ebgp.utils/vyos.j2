@@ -43,6 +43,23 @@ set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} address-family {{ af
 {% endfor %}
 {% endif %}
 
+# Default Originate
+{% for n in bgp.neighbors if n.default_originate is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined and n.default_originate %}
+set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast default-originate
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) if n.default_originate is defined %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.default_originate %}
+set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast default-originate
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
+
 # Password
 {% for n in bgp.neighbors if n.password is defined %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}

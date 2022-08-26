@@ -1,4 +1,9 @@
 {% macro ebgp_neighbor(n,af) -%}
+{%   if n.default_originate is defined and n.default_originate|lower == 'always' %}
+  neighbor {{ n[af] }} default-originate always
+{%   elif n.default_originate is defined and n.default_originate %}
+  neighbor {{ n[af] }} default-originate
+{%   endif %}
 {%   if n.allowas_in is defined %}
   neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
 {%   endif %}
@@ -27,7 +32,7 @@ router bgp {{ bgp.as }}
 {%   for af in ['ipv4','ipv6'] %}
 {%     for n in vdata.bgp.neighbors if n[af] is defined %}
 {%       if loop.first %}
- address-family {{ af }}
+   address-family {{ af }}
 {%       endif %}
 {{       ebgp_neighbor(n,af) -}}
 {%     endfor %}
