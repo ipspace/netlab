@@ -13,6 +13,8 @@ fi
 
 # Install Ansible grpc plug-in and its dependencies from github repo
 ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
-python3 -m pip install grpcio protobuf --upgrade
+
+# grpc sources contain generated pb2 file which is not compatible with newer versions of protobuf
+python3 -m pip install grpcio protobuf==3.20.1 --upgrade
 
 exit $?
