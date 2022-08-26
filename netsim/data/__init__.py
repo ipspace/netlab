@@ -37,6 +37,18 @@ def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: 
   return b
 
 #
+# Get a global setting or corresponding system default. Use for attributes that are not propagated or early in the
+# transformation logic when the module attributes haven't been propagated yet
+#
+
+def get_global_parameter(topology: Box, selector: str) -> typing.Optional[typing.Any]:
+  value = get_from_box(topology,selector)
+  if value is None:
+    return get_from_box(topology.defaults,selector)
+  else:
+    return value
+
+#
 # Set a dictionary value specified by a list of keys
 #
 def set_dots(b : dict,k_list : list,v : typing.Any) -> None:

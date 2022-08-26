@@ -8,7 +8,7 @@ from . import _Module,_routing,get_effective_module_attribute
 from .. import common
 from .. import data
 from .. import addressing
-from ..data import get_from_box
+from ..data import get_from_box,get_global_parameter
 from ..augment import devices
 from ..augment import links
 
@@ -125,6 +125,7 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 #
 # * VLAN and VNI
 # * Subnet prefix
+# * VLAN forwarding mode
 #
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   global vlan_ids
@@ -139,7 +140,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
         common.IncorrectValue,
         'vlan')
   else:
-    default_fwd_mode = get_from_box(topology,'vlan.mode')         # Else get it from the topology level
+    default_fwd_mode = get_global_parameter(topology,'vlan.mode') # Else get it from the topology level
 
   if not 'vlans' in obj:
     return
@@ -877,7 +878,6 @@ class VLAN(_Module):
         vlan_ifmap = create_svi_interfaces(n,topology)
         map_trunk_vlans(n,topology)
         rename_vlan_subinterfaces(n,topology)
-        validate_vlan_attributes(n,topology) # JvB: propagate 'mode' attribute to per-node VLANs
 
     for n in topology.nodes.values():
       set_svi_neighbor_list(n,topology)
