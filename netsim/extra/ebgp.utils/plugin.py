@@ -29,8 +29,6 @@ def pre_link_transform(topology: Box) -> None:
                 data.must_be_bool(parent=intf.bgp,key='as_override', path=f'links[{link.linkindex}].{intf.node}.bgp')
                 # allowas_in shall be int (force 1 if True)
                 data.must_be_int(parent=intf.bgp,key='allowas_in', path=f'links[{link.linkindex}].{intf.node}.bgp', true_value=1, min_value=1, max_value=10)
-                # default_originate shall be bool
-                data.must_be_bool(parent=intf.bgp,key='default_originate', path=f'links[{link.linkindex}].{intf.node}.bgp')
         if 'bgp' in link:
             # password
             data.must_be_string(parent=link.bgp,key='password', path=f'links[{link.linkindex}].bgp')

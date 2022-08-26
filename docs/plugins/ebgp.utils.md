@@ -4,7 +4,7 @@ The **ebgp.utils** plugin (contributed by Stefano Sasso) implements several EBGP
 
 * **bgp.allowas_in** is an interface (node-to-link attachment) attribute that takes an integer value between 1 and 10. A *true* value sets it to 1.
 * **bgp.as_override** is an interface (node-to-link attachment) boolean attribute.
-* **bgp.default_originate** is an interface (node-to-link attachment) boolean attribute.
+* **bgp.default_originate** is an interface (node-to-link attachment) attribute (True/False/*always*).
 * **bgp.password** is a link-level string attribute.
 
 The plugin includes Jinja2 templates for Cisco IOS, Arista EOS and VyOS.
@@ -22,26 +22,36 @@ The plugin includes Jinja2 templates for Cisco IOS, Arista EOS and VyOS.
 
 ```
 ---
-provider: clab
-defaults.device: eos
-module: [ bgp ]
+defaults:
+  device: eos
+
+module: [ bgp, vrf ]
 plugin: [ ebgp.utils ]
 
+vrfs:
+  red:
+  blue:
+
 nodes:
-  r1:
-    bgp.as: 65101
-  r2:
-    bgp.as: 65000
-  r3:
-    bgp.as: 65101
+  y1:
+    bgp.as: 65001
+  y2:
+    bgp.as: 65002
 
 links:
-- r1:
-    bgp.allowas_in: True
+- y1:
     bgp.default_originate: True
-  r2:
-- bgp.password: Test
-  r2:
+  y2:
+  bgp.password: TestPassword
+- y1:
+    vrf: red
+  y2:
+    vrf: red
+    bgp.allowas_in: True
+    bgp.default_originate: always
+- y1:
+    vrf: blue
+  y2:
+    vrf: blue
     bgp.as_override: True
-  r3:
 ```
