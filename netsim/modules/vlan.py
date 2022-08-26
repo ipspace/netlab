@@ -138,6 +138,8 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
         f'Invalid vlan.mode setting {default_fwd_mode} in {obj_name}',
         common.IncorrectValue,
         'vlan')
+  else:
+    default_fwd_mode = get_from_box(topology,'vlan.mode')         # Else get it from the topology level
 
   if not 'vlans' in obj:
     return
@@ -579,6 +581,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       vlan_mode = ifdata.vlan.get('mode','') or vlan_data.get('mode','')    # Get VLAN forwarding mode
       if vlan_mode == 'bridge':                                             # ... and skip IP addresses for bridging-only VLANs
         skip_attr.extend(['ipv4','ipv6'])
+        # continue  # JvB: in fact, skip creating SVI for L2-only VLANs
       vlan_ifdata = Box(                                                    # Copy non-physical interface attributes into SVI interface
         { k:v for k,v in ifdata.items() if k not in skip_attr },            # ... that will also give us IP addresses
         default_box=True,
@@ -874,6 +877,7 @@ class VLAN(_Module):
         vlan_ifmap = create_svi_interfaces(n,topology)
         map_trunk_vlans(n,topology)
         rename_vlan_subinterfaces(n,topology)
+        validate_vlan_attributes(n,topology) # JvB: propagate 'mode' attribute to per-node VLANs
 
     for n in topology.nodes.values():
       set_svi_neighbor_list(n,topology)

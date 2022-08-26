@@ -1,9 +1,20 @@
 updates:
-{# Create mac-vrfs for L2 VLANs #}
-{% for l in interfaces|default([]) if (l.type=='lan' and l.vlan is defined) %}
-- path: network-instance[name=vlan_{{l.vlan.access}}]
+{# Create mac-vrfs for L2 VLANs, add IRB interface if any #}
+{% if vlans is defined %}
+{% for vname,vdata in vlans.items() if vdata.mode|default('irb') != 'route' %}
+{% set irb_ifname = "irb0." + vdata.id | string() %}
+- path: network-instance[name=vlan_{{ vname }}]
   val:
    type: mac-vrf
    interface:
+{% for l in interfaces|default([]) %}
+{%  if l.type in ['lan'] and l.vlan is defined and l.vlan.access == vname %}
    - name: {{ l.ifname }}.{{ l.vlan.access_id }}
+{%  elif l.type in ['vlan_member'] and l.vlan is defined and l.vlan.access|default('?') == vname %}
+   - name: {{ l.ifname }}
+{%  elif l.type=='svi' and l.ifname == irb_ifname and (l.vlan is not defined or l.vlan.mode|default('irb') == 'irb') %}
+   - name: {{ l.ifname }}
+{%  endif %}
 {% endfor %}
+{% endfor %}
+{% endif %}
