@@ -12,7 +12,7 @@ The environment is pretty easy to set up:
 
 * [Install Virtualbox](https://www.virtualbox.org/wiki/Downloads) (might require fiddling with BIOS setup on Ubuntu bare-metal installations)
 * [Install Vagrant](https://www.vagrantup.com/docs/installation)
-* Install *netlab* with `pip3 install netlab`
+* Install *netlab* Python package with `pip3 install networklab`
 * [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)[^1] and device-specific requirements.
 * Test the installation with **[netlab test virtualbox](../netlab/test.md)** command
 

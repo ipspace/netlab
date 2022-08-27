@@ -57,7 +57,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     sudo apt-get update
     sudo apt-get install -y python3-pip
-    sudo pip3 install --ignore-installed netlab
+    sudo pip3 install --ignore-installed networklab
     netlab install -y ubuntu ansible libvirt containerlab
   SHELL
 end
@@ -76,7 +76,7 @@ end
 ```
 sudo apt-get update
 sudo apt-get install -y python3-pip
-sudo pip3 install --ignore-installed netlab
+sudo pip3 install --ignore-installed networklab
 netlab install -y ubuntu ansible libvirt containerlab
 ```
 

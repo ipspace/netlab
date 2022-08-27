@@ -19,7 +19,7 @@ To build a Linux environment needed to run network devices as virtual machines o
 
 ## netlab Installation
 
-Install *netlab* package with `sudo python3 -m pip install netlab` or your preferred Python package installation procedure.
+Install Python package with `sudo python3 -m pip install networklab` or your preferred Python package installation procedure.
 
 ## Create *vagrant-libvirt* Virtual Network
 

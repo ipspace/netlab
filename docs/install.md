@@ -56,9 +56,9 @@ You can set up your lab:
 ```
 
 (package)=
-## Installing *netlab* Package
+## Installing Python Package
 
-To install *netlab* on a system that already has the low-level tools installed, use `python3 -m pip install netlab`. The installation process will install all prerequisite Python packages and create the **netlab** command.
+To install *netlab* on a system that already has the low-level tools installed, use `python3 -m pip install networklab`. The installation process will install all prerequisite Python packages and create the **netlab** command.
 
 If you want to get the latest development code or if you want to participate in *netlab* development, [clone the GitHub repository](install/clone.md).
 
