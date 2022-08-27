@@ -1,0 +1,85 @@
+#
+# VRF lite implementation with VLAN trunks
+#
+# * h1 and h2 should be able to ping each other
+# * h3 and h4 should be able to ping each other
+# 
+# A device has to support the following features to pass this test case:
+#
+# * Routed VLAN interfaces
+# * VRFs
+# * OSPF in VRFs
+#
+# 
+#
+# Please note it might take a while for the lab to work due to
+# STP and OSPF setup phase
+#
+groups:
+  routers:
+    members: [ r1,r2,r3 ]
+    module: [ vlan,vrf,ospf ]
+  hosts:
+    device: linux
+    members: [ h1,h2,h3,h4 ]
+
+plugin: [ ebgp-local_as ]
+
+vrfs:
+  red:
+  blue:
+
+vlans:
+  red:
+    mode: route
+    vrf: red
+  blue:
+    mode: route
+    vrf: blue
+  vrf-leak:
+    mode: route
+
+nodes:
+  r1:
+  r2:
+    module: [ vlan,vrf,ospf,bgp ]
+    bgp.as: 65000
+  r3:
+  h1:
+  h2:
+  h3:
+  h4:
+
+links:
+- r1:
+  r2:
+  vlan.trunk: [ red, blue ]
+- r2:
+  r3:
+  vlan.trunk: [ red, blue ]
+- interfaces: # VRF route leaking between red and blue, using eBGP peering
+  - node: r2
+    vrf: red
+    ipv6: True
+    ipv4: False
+    bgp.underlay_as: 65001
+    # vlan.access: vrf-leak
+  - node: r2
+    vrf: blue
+    ipv6: True
+    ipv4: False
+    bgp.underlay_as: 65002
+    # vlan.access: vrf-leak
+  role: external
+- h1:
+  r1:
+    vlan.access: red
+- h3:
+  r1:
+    vlan.access: blue
+- h2:
+  r3:
+    vlan.access: red
+- h4:
+  r3:
+    vlan.access: blue
