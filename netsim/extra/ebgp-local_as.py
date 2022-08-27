@@ -49,7 +49,6 @@ build_ebgp_sessions: augment BGP neighbors with ebgp peers
   different underlay AS
 """
 def build_ebgp_sessions(node: Box, topology: Box) -> None:
-    print( "JvB: build_ebgp_sessions" )
     #
     # eBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create eBGP neighbors; set 'local_as'
