@@ -92,13 +92,13 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
   def_global = get_from_box(topology,'vlan.mode') or 'irb'
 
   #print(f'RAV: {link}')
-  #print(f'RAV: vlan {vlan} def_mode {def_mode}')
+  #print(f'RAV: vlan {vlan} def_mode {def_vlan}')
   for intf in link.interfaces:
     mode = get_from_box(intf,'vlan.mode') or \
            def_link or \
            get_from_box(topology.nodes[intf.node],f'vlans.{vlan}.mode') or \
-           get_from_box(topology.nodes[intf.node],'vlan.mode') or \
            def_vlan or \
+           get_from_box(topology.nodes[intf.node],'vlan.mode') or \
            def_global or 'irb'
     if mode != 'route':
       return False
@@ -116,8 +116,8 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 
   return get_from_box(intf,'vlan.mode') or \
          get_from_box(node,f'vlans.{vlan}.mode') or \
-         get_from_box(node,'vlan.mode') or \
          get_from_box(topology,f'vlans.{vlan}.mode') or \
+         get_from_box(node,'vlan.mode') or \
          get_from_box(topology,'vlan.mode') or 'irb'
 
 #
