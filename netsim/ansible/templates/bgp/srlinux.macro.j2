@@ -124,7 +124,7 @@
 {# {{     bgp_network(af,loopback[af]) }} #}
 {%   endif %}
 
-{% for l in vrf_bgp.interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+{% for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
 {# {{     bgp_network(af,l[af]) }} #}
 {%   endfor %}
 {%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
@@ -155,25 +155,40 @@
 {% endif %}
 {% elif n[af]==True and af=='ipv6' %}
 {# BGP unnumbered for IPv6 LLA #}
+{% set peer_group = "ebgp-unnumbered" + (('-' + n.local_as|string()) if n.local_as is defined else '') %}
 
 - path: network-instance[name={{vrf}}]/ip-forwarding
   val:
    receive-ipv4-check: false
    _annotate_receive-ipv4-check: "Allow IPv4 on IPv6 unnumbered interfaces"
 
-{% set ns = namespace(l=false) %}
-{% for i in vrf_bgp.interfaces|default([]) if i.ifindex == n.ifindex %}
-{% set ns.l = i %}
-{% endfor %}
-{% if ns.l %}
-{% set if_name_index = ns.l.ifname.split('.') %}
+{% for i in interfaces|default([]) if i.ifindex == n.ifindex %}
+{% set if_name_index = i.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
 - path: network-instance[name={{vrf}}]/protocols/bgp/dynamic-neighbors/interface[interface-name={{if_name}}.{{if_index}}]
   val:
-   peer-group: "ebgp-unnumbered"
+   peer-group: "{{ peer_group }}"
    allowed-peer-as: [ {{ n.as }}..{{ n.as }} ]
+
+{% if peer_group != "ebgp-unnumbered" %}
+- path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{peer_group}}]
+  val:
+   admin-state: enable
+   import-policy: accept_all
+   export-policy: accept_all
+   timers:
+    connect-retry: 10
+    _annotate_connect-retry: "Reduce default 120s to 10s"
+    minimum-advertisement-interval: 1
+   local-as:
+   - as-number: {{ n.local_as }}
+     prepend-global-as: false
+   ipv4-unicast:
+     advertise-ipv6-next-hops: true
+     receive-ipv6-next-hops: true
 {% endif %}
+{% endfor %}
 {% endif %}
 {% endfor %}
 {% endfor %}
