@@ -6,7 +6,7 @@
 * Create *containerlab* configuration file
 * Create Ansible inventory and configuration file
 * Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, and BGP routing design
-* Configure IPv4, IPv6, VLANs, VRFs, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), SR-MPLS, or SRv6 on your lab devices.
+* Configure IPv4, IPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
 
 Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
@@ -14,9 +14,7 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release 1.2.4](https://github.com/ipspace/netsim-tools/releases/tag/release_1.2.4).
-
-1.2 release train is pretty stable, if you want to use something even more conservative, go for 1.4.1 release.
+The latest release is [release 1.3](https://github.com/ipspace/netsim-tools/releases/tag/release_1.3), if you want something more stable, consider 1.2 release train.
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 

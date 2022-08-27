@@ -1,6 +1,18 @@
 Release notes
 =============
 
+2022-08-27 (release 1.3)
+  * 'netsim-tools' package renamed to 'networklab'
+  * VXLAN configuration module
+  * EVPN configuration module
+  * 6PE added to MPLS configuration module
+  * IS-IS on VyOS
+  * VLANs and VRFs on Cisco Nexus OS
+  * VRFs on Nokia SR Linux
+  * Default route origination on EBGP sessions
+
+  :doc:`More details <release/1.3>`
+
 2022-06-20 (release 1.2.4)
   * VLAN support for Mikrotik RouterOS and VyOS
   * Routed VLANs and routed VLAN subinterfaces
@@ -264,6 +276,7 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.3.md
    release/1.2.md
    release/1.1.md
    release/1.0.md
