@@ -7,12 +7,12 @@ The *ubuntu* and *libvirt* installation scripts run only on Ubuntu[^U20] and Deb
 ## Usage
 
 ```text
-usage: netlab install [-h] [-v] [-q] [-y] [{ubuntu,containerlab,ansible,libvirt} ...]
+usage: netlab install [-h] [-v] [-q] [-y] [{ubuntu,containerlab,ansible,grpc,libvirt} ...]
 
 Install additional software
 
 positional arguments:
-  {ubuntu,containerlab,ansible,libvirt}
+  {ubuntu,containerlab,ansible,grpc,libvirt}
                         Run the specified installation script
 
 optional arguments:
@@ -28,6 +28,7 @@ optional arguments:
 * *ansible* script uses **pip** to install the latest version of Ansible, networking libraries (*netaddr, paramiko, netmiko*), text parsing libraries (*testfsm, ttp, ntc-templates*), and a few other utility libraries (*jmespath, yamllint, yq*)
 * *libvirt* script installs *libvirt* and supporting libraries/packages, *vagrant*, *vagrant-libvirt* plugin, and creates the *vagrant-libvirt* virtual network.
 * *containerlab* script installs Docker Engine and *containerlab*.
+* *grpc* installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
 
 [^U20]: Tested on Ubuntu 20.04
 
