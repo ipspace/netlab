@@ -50,7 +50,7 @@ links:
 
 ### Access Credentials
 
-It's STRONGLY RECOMMENDED to use usernames and passwords hardcoded into *netlab* with hardware devices (see **devices** section of [topology-defaults.yml](https://github.com/ipspace/netsim-tools/blob/master/netsim/topology-defaults.yml) for more details).
+It's STRONGLY RECOMMENDED to use usernames and passwords hardcoded into *netlab* with hardware devices (see **devices** section of [topology-defaults.yml](https://github.com/ipspace/netlab/blob/master/netsim/topology-defaults.yml) for more details).
 
 Access credentials are stored in Ansible group variables and derived from the **group_vars** section of device defaults.
 To change access credentials for a device type, set the `defaults.devices.<device>.group_vars.ansible_user` and `defaults.devices.<device>.group_vars.ansible_ssh_pass` parameters.

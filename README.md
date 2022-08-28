@@ -14,7 +14,7 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release 1.3](https://github.com/ipspace/netsim-tools/releases/tag/release_1.3), if you want something more stable, consider 1.2 release train.
+The latest release is [release 1.3](https://github.com/ipspace/netlab/releases/tag/release_1.3), if you want something more stable, consider 1.2 release train.
 
 More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
 

@@ -1,7 +1,7 @@
 ipSpace.net Virtual Networking Labs Tool
 =========================================
 
-The `ipSpace.net virtual networking labs tool <https://github.com/ipspace/netsim-tools>`_ will help you be more proficient once you decide to drop GUI-based virtual networking labs and build your labs using CLI and infrastructure-as-code principles.
+The `ipSpace.net virtual networking labs tool <https://github.com/ipspace/netlab>`_ will help you be more proficient once you decide to drop GUI-based virtual networking labs and build your labs using CLI and infrastructure-as-code principles.
 
 *netlab* will help you:
 

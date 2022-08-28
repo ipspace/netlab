@@ -20,6 +20,6 @@ setup(
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
   ],
-  url="https://github.com/ipspace/netsim-tools",
+  url="https://github.com/ipspace/netlab",
   python_requires='>=3.7',  # Due to e.g. 'capture_output' in subprocess.run
 )
