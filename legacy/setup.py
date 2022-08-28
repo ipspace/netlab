@@ -6,12 +6,12 @@ sys.path.append('..')
 
 setup(
   name="netsim-tools",
-  version="1.3",
+  version="1.3-post1",
   packages=[],
   author="Ivan Pepelnjak",
   author_email="ip@ipspace.net",
   description="CLI-based Virtual Networking Lab Abstraction Layer",
-  install_requires=["networklab"],
+  install_requires=["networklab>=1.3"],
   classifiers=[
     "Topic :: Utilities",
     "Programming Language :: Python",
