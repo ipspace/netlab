@@ -335,10 +335,15 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     node_if['data'].neighbors = []
     for remote_if in interfaces:
       if remote_if['node'] != node_if['node'] or remote_if['data'].ifindex != node_if['data'].ifindex:
-        ngh_data = { 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] }
+        ngh_data = Box({ 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] })
         for af in ('ipv4','ipv6'):
           if af in remote_if['data']:
             ngh_data[af] = remote_if['data'][af]
+        
+        # List enabled modules that have interface level attributes; copy those attributes too
+        mods_with_ifattr = Box({ m : True for m in ndict[remote_if['node']].get('module',[]) if defaults[m].attributes.get('interface',None) })
+        ifaddr_add_module(ngh_data,remote_if['data'],mods_with_ifattr)
+
         node_if['data'].neighbors.append(ngh_data)
 
   if common.DEBUG:     # pragma: no cover (debugging)
@@ -417,6 +422,10 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         interfaces[i]['neighbors'][0][af] = interfaces[1-i][af]
       if af in interfaces[i]:
         link[end_names[i]][af] = interfaces[i][af]
+
+    # JvB: copy module specific link attributes like bgp.local_as
+    mods_with_ifattr = Box({ m : True for m in ndict[remote].get('module',[]) if defaults[m].attributes.get('interface',None) })
+    ifaddr_add_module(interfaces[i]['neighbors'][0],interfaces[1-i],mods_with_ifattr)
 
   return link
 

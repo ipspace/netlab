@@ -49,13 +49,12 @@ build_ebgp_sessions: augment BGP neighbors with ebgp peers
   different underlay AS
 """
 def build_ebgp_sessions(node: Box, topology: Box) -> None:
-
     #
     # eBGP sessions - iterate over all links, find adjacent nodes
     # in different AS numbers, and create eBGP neighbors; set 'local_as'
     ibgp_as = topology.bgp['as']
     for l in [ l for l in node.get("interfaces",[]) if l.type == 'p2p' ]:
-      node_as = l.bgp.underlay_as if "bgp" in l and "underlay_as" in l.bgp else node.bgp.underlay_as
+      node_as = l.bgp.underlay_as if "bgp" in l and "underlay_as" in l.bgp else node.bgp.get('underlay_as',None)
 
       for ngb_ifdata in l.get("neighbors",[]):
         ngb_name = ngb_ifdata.node
@@ -80,9 +79,15 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
             extra_data.local_if = l.ifname
           if common.DEBUG:
             print(f'ebgp-local_as: adding neighbor for node {node.name} peer {neighbor.name} peer_as={peer_as}')
-          node.bgp.neighbors.append( ebgp_neighbor(neighbor,peer_as,ngb_ifdata,extra_data) )
+          ebgp_data = ebgp_neighbor(neighbor,peer_as,ngb_ifdata,extra_data)
+          if 'vrf' in l:        # VRF neighbor
+            if not node.vrfs[l.vrf].bgp.neighbors:
+              node.vrfs[l.vrf].bgp.neighbors = []
+            node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
+          else: 
+            node.bgp.neighbors.append(ebgp_data)
 
 def post_transform(topology: Box) -> None:
   for node in topology.nodes.values():
-    if "bgp" in node and "underlay_as" in node.bgp:
+    if "bgp" in node: # and "underlay_as" in node.bgp: Can also be at link level
         build_ebgp_sessions(node,topology)
