@@ -95,7 +95,7 @@ Additional per-node BGP configuration parameters include:
 **Notes:**
 * **bgp.as** parameter *must* be specified for every node using BGP configuration module.
 * The node AS number could be derived from the global **bgp.as_list**, from the default (global) value of **bgp.as** parameter, or specified on the node itself. Explore [simple BGP example](bgp_example/simple.md) to see how you can combine global AS number with node AS number.
-* You could enable BGP configuration module globally using `module: [ bgp ]` as a top-level topology element, or for an individual node using `module: [ bgp ]` within node data. See [Segment Routing with BGP topology](https://github.com/ipspace/netsim-examples/blob/master/routing/sr-mpls-bgp/sr%2Bbgp.yml) for an example.
+* You could enable BGP configuration module globally using `module: [ bgp ]` as a top-level topology element, or for an individual node using `module: [ bgp ]` within node data. See [Segment Routing with BGP topology](https://github.com/ipspace/netlab-examples/blob/master/routing/sr-mpls-bgp/sr%2Bbgp.yml) for an example.
 
 ## Link-Level Parameters
 

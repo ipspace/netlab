@@ -8,7 +8,7 @@ To use VRFs in your networking labs:
 * [Define VRFs](module-vrf-definition) in network topology or within individual nodes
 * [Attach device interfaces to VRFs](module-vrf-interface) with the **vrf** link or interface (node-to-link attachment) attribute.
 
-This document starts with an easy walk through simple VRF designs and gets progressively more complex, ending with overlapping and common services VPNs. Topologies described in this document were tested on Cisco IOSv and Arista vEOS; source files are [available on GitHub](https://github.com/ipspace/netsim-examples/tree/master/VRF).
+This document starts with an easy walk through simple VRF designs and gets progressively more complex, ending with overlapping and common services VPNs. Topologies described in this document were tested on Cisco IOSv and Arista vEOS; source files are [available on GitHub](https://github.com/ipspace/netlab-examples/tree/master/VRF).
 
 ```eval_rst
 .. contents:: Table of Contents

@@ -62,7 +62,7 @@ Links could contain [additional attributes](#custom-attributes-in-link-and-inter
 
 ### Example
 
-The *[IGP metric used in BGP route selection](https://github.com/ipspace/netsim-examples/tree/master/BGP/IGP-metric)* scenario uses the following topology file to define link bandwidth on a backup link (*bandwidth* became a core link attribute in release 0.4):
+The *[IGP metric used in BGP route selection](https://github.com/ipspace/netlab-examples/tree/master/BGP/IGP-metric)* scenario uses the following topology file to define link bandwidth on a backup link:
 
 ```
 defaults:
