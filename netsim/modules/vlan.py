@@ -626,6 +626,9 @@ def set_svi_neighbor_list(node: Box, topology: Box) -> None:
       if vlan_data is None:                                                 # Not found?
         continue                                                            # ... too bad
 
+      if get_from_box(ifdata,'vlan.routed_link'):                           # Don't update neighbors on a routed VLAN link
+        continue
+
       if not 'host_count' in vlan_data:                                     # Calculate the number of hosts attached to the VLAN
         vlan_data.host_count = len([ n for n in vlan_data.neighbors if topology.nodes[n.node].get('role','') == 'host' ])
 
@@ -679,6 +682,19 @@ def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optiona
   return node_iflist[0]
 
 """
+rename_neighbor_interface: rename an interface in node neighbor list
+"""
+def rename_neighbor_interface(node: Box, neighbor_name: str, old_ifname: str, new_ifname: str) -> None:
+  if not 'interfaces' in node:
+    return
+
+  for intf in node.interfaces:
+    if 'neighbors' in intf:
+      for n in intf.neighbors:
+        if n.node == neighbor_name and n.ifname == old_ifname:
+          n.ifname = new_ifname
+
+"""
 rename_vlan_subinterfaces: rename or remove interfaces created from VLAN pseudo-links
 """
 def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
@@ -730,8 +746,15 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     intf.parent_ifindex = parent_intf.ifindex
     intf.parent_ifname = parent_intf.ifname
     intf.virtual_interface = True
-    if 'vlan_name' in intf:
-      update_vlan_neighbor_list(intf.vlan_name,old_intf,intf,node,topology)
+    if 'vlan_name' in intf:                                           # Update VLAN neighbor list if we have the VLAN name
+      link_data = topology.links[intf.linkindex - 1]
+      if not routed_access_vlan(link_data,topology,intf.vlan_name):   # ... and if the VLAN is not a routed access VLAN
+        update_vlan_neighbor_list(intf.vlan_name,old_intf,intf,node,topology)
+      else:
+        intf.vlan.routed_link = True                                  # ... otherwise mark this interface as routed VLAN link
+        if 'neighbors' in intf:                                       # ... and rename peer interfaces in all adjacent nodes
+          for n in intf.neighbors:
+            rename_neighbor_interface(topology.nodes[n.node],node.name,old_intf.ifname,intf.ifname)
 
     for attr in skip_ifattr:
       if attr in intf and not attr in keep_subif_attr:
