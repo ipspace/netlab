@@ -448,12 +448,21 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
           intf_data.node = intf.node
+          intf_data.vlan.access = vname
+          intf_node = topology.nodes[intf.node]
+
           if 'mode' in intf.vlan and not get_from_box(intf_data,'vlan.mode'):
             intf_data.vlan.mode = intf.vlan.mode            # vlan.mode is inherited from trunk dictionary or parent interface
-          link_data.interfaces.append(intf_data)
-          if not prefix:                                    # Still no usable IP prefix? Try to get it from the node VLAN pool
-            if vname in topology.nodes[intf.node].get('vlans',{}):
-              prefix = topology.node[intf.node].vlans[vname].prefix
+
+          if interface_vlan_mode(intf_data,intf_node,topology) == 'bridge':     # Is this VLAN interface in bridge mode?
+            intf_data.ipv4 = False                                              # ... if so, disable addressing on this interface
+            intf_data.ipv6 = False
+          else:
+            if not prefix:                                  # Still no usable IP prefix? Try to get it from the node VLAN pool
+              if vname in intf_node.get('vlans',{}):
+                prefix = topology.node[intf.node].vlans[vname].prefix
+
+          link_data.interfaces.append(intf_data)            # Append the interface to vlan link
 
       if routed_access_vlan(link_data,topology,vname):
         link_data.vlan.mode = 'route'
@@ -814,6 +823,25 @@ def cleanup_vlan_name(topology: Box) -> None:
       if 'vlan_name' in intf:
         intf.pop('vlan_name',None)
 
+"""
+fix_vlan_gateways -- set VLAN-wide gateway IP
+
+The link augmentation code sets gateway IP for hosts connected to physical links. That approach does not work
+for VLAN subnets stretched across multiple physical links. We have to fix that here based on host neighbor list.
+
+Please note that we'll have to fix this code when we implement the first-hop gateway module
+"""
+def fix_vlan_gateways(topology: Box) -> None:
+  for node in topology.nodes.values():
+    if node.get('role') != 'host':                                    # Fix first-hop gateways only for hosts
+      continue
+    for intf in node.get('interfaces',[]):                            # Iterate over all interfaces
+      if not get_from_box(intf,'gateway.ipv4'):                       # ... that don't have an IPv4 gateway
+        for neighbor in intf.get('neighbors',[]):                     # Iterate over all neighbors
+          if 'ipv4' in neighbor:                                      # ... until we find one with a usable IPv4
+            intf.gateway.ipv4 = neighbor.ipv4                         # Set that address as our gateway
+            break                                                     # ... and get out of here
+
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
@@ -888,9 +916,19 @@ class VLAN(_Module):
 
     # Merge link VLAN attributes into interface VLAN attributes to make subsequent steps easier
     if 'vlan' in link:
-      for intf in link.interfaces:
-        if 'vlan' in topology.nodes[intf.node].get('module',[]):
-          intf.vlan = link.vlan + intf.vlan
+      for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
+        intf_node = topology.nodes[intf.node]
+        if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
+          intf.vlan = link.vlan + intf.vlan                                       # ... merge link VLAN attributes with interface attributes
+
+    # Disable IP addressing on access VLAN ports on bridged VLANs
+    if link_vlan:                                                                 # Are we dealing with an access VLAN?
+      for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
+        intf_node = topology.nodes[intf.node]
+        if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
+          if interface_vlan_mode(intf,intf_node,topology) == 'bridge':            # ... that is in bridge mode on the current access VLAN?
+            intf.ipv4 = False                                                     # ... if so, disable addressing on this interface
+            intf.ipv6 = False
 
     if 'trunk' in v_attr:
       create_vlan_links(link,v_attr,topology)
@@ -908,3 +946,4 @@ class VLAN(_Module):
     topology.links = [ link for link in topology.links if link.type != 'vlan_member' ]
 
     cleanup_vlan_name(topology)
+    fix_vlan_gateways(topology)
