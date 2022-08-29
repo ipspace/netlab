@@ -1,0 +1,46 @@
+defaults.device: eos
+
+vrfs:
+  red:
+  blue:
+
+vlans:
+  red:
+    mode: route
+    vrf: red
+  blue:
+    mode: route
+    vrf: blue
+  vrf-leak:
+    mode: route
+
+module: [ vlan, vrf, bgp ]
+plugin: [ ebgp-local_as ]
+nodes:
+  r1:
+    bgp.as: 65100
+  r2:
+    bgp.as: 65000
+  r3:
+    bgp.as: 65101
+
+links:
+- r1:
+  r2:
+  vlan.trunk: [ red, blue ]
+- r2:
+  r3:
+  vlan.trunk: [ red, blue ]
+- interfaces: # VRF route leaking between red and blue, using BGP peering
+  - node: r2
+    vrf: red
+    ipv6: True
+    ipv4: False
+    bgp.local_as: 65001
+    vlan.access: vrf-leak
+  - node: r2
+    vrf: blue
+    ipv6: True
+    ipv4: False
+    bgp.local_as: 65002
+    vlan.access: vrf-leak
