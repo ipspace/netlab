@@ -47,11 +47,15 @@ bgp:
   transform_after: [ vlan ]
   next_hop_self: true
   attributes:
-    global: [ af, as, next_hop_self, rr_cluster_id, rr_list, ebgp_role, as_list, advertise_loopback, advertise_roles, community, address_families ]
-    node: [ af, as, next_hop_self, rr, rr_cluster_id, originate, advertise_loopback, community, router_id, address_families, local_as ]
-    node_copy: [ local_as ]
+    global: [ 
+      af, as, next_hop_self, rr_cluster_id, rr_list, ebgp_role, as_list,
+      advertise_loopback, advertise_roles, community, address_families, replace_real_as ]
+    node: [
+      af, as, next_hop_self, rr, rr_cluster_id, originate, advertise_loopback,
+      community, router_id, address_families, local_as, replace_real_as ]
+    node_copy: [ local_as, replace_real_as ]
     link: [ advertise ]
-    interface: [ local_as ]
+    interface: [ local_as, replace_real_as ]
 
 isis:
   supported_on: [ eos, frr, csr, iosv, nxos, vsrx, srlinux, sros, none, vyos ]
@@ -166,7 +170,7 @@ vxlan: # VXLAN support
   no_propagate: [ use_v6_vtep ]
   use_v6_vtep: false
 
-mpls: # LDP and BGP LU support
+mpls: # LDP, BGP LU, L3VPN and 6PE support
   supported_on: [ eos, iosv, csr, routeros, vyos ]
   config_after: [ vlan, ospf, isis, bgp ]
   transform_after: [ vlan, bgp ]
@@ -287,6 +291,9 @@ devices:
     virtualbox:
       image: cisco/iosv
     features:
+      bgp:
+        local_as: True
+        vrf_local_as: True
       initial:
         ipv4:
           unnumbered: False
@@ -330,6 +337,9 @@ devices:
     node:
       min_mtu: 1500
     features:
+      bgp:
+        local_as: True
+        vrf_local_as: True
       initial:
         ipv4:
           unnumbered: True
@@ -407,6 +417,9 @@ devices:
       ansible_network_os: eos
       ansible_connection: network_cli
     features:
+      bgp:
+        local_as: True
+        vrf_local_as: True
       initial:
         system_mtu: True
         ipv4:
@@ -771,6 +784,9 @@ devices:
     interface_name: ethernet1/1/%d
     mgmt_if: mgmt1/1/1
     features:
+      bgp:
+        local_as: True
+        vrf_local_as: True
       vlan:
         model: switch
         svi_interface_name: virtual-network{vlan}

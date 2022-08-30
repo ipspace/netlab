@@ -11,6 +11,7 @@ from . import _Module,_routing
 from .. import common
 from .. import data
 from ..augment.links import IFATTR
+from ..augment import devices
 
 def check_bgp_parameters(node: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
@@ -44,11 +45,24 @@ def check_bgp_parameters(node: Box) -> None:
           valid_values=['standard','extended'],
           module='bgp')
 
+"""
+find_bgp_rr: find route reflectors in the specified autonomous system
+
+Given an autonomous system and lab topology, return a list of node names that are route reflectors in that AS
+"""
 def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
   return [ n 
     for n in topology.nodes.values() 
       if 'bgp' in n and n.bgp["as"] == bgp_as and n.bgp.get("rr",None) ]
 
+"""
+bgp_neighbor: Create BGP neighbor data structure
+
+* n - neighbor node data
+* intf - neighbor interface data (could be addressing prefix or whatever is in the interface neighbor list)
+* ctype - session type (ibgp or ebgp)
+* extra_data - anything else we might want to pass to the neighbor data structure
+"""
 def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict] = None) -> Box:
   ngb = Box(extra_data or {},default_box=True,box_dots=True)
   ngb.name = n.name
@@ -64,11 +78,157 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict
         ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
   return ngb
 
+"""
+get_neighbor_rr: create extra data for bgp_neighbor function
+
+Returns { rr: him } dict if the neighbor happens to be a RR. That dict will be merged with
+the rest of the neighbor data
+"""
 def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
   if "rr" in n.get("bgp"):
     return { "rr" : n.bgp.rr }
 
   return {}
+
+"""
+build_ibgp_sessions: create IBGP session data structure
+
+* BGP route reflectors need IBGP session with all other nodes in the same AS
+* Other nodes need IBGP sessions with all RRs in the same AS
+"""
+def build_ibgp_sessions(node: Box, topology: Box) -> None:
+  rrlist = find_bgp_rr(node.bgp.get("as"),topology)
+
+  # If we don't have route reflectors, or if the current node is a route
+  # reflector, we need BGP sessions to all other nodes in the same AS
+  if not(rrlist) or node.bgp.get("rr",None):
+    for name,n in topology.nodes.items():
+      if "bgp" in n:
+        if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
+          node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+
+  #
+  # The node is not a route reflector, and we have a non-empty RR list
+  # We need BGP sessions with the route reflectors
+  else:
+    for n in rrlist:
+      if n.name != node.name:
+        node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+
+"""
+build_ebgp_sessions: create EBGP session data structure
+
+* EBGP sessions are established whenever two nodes on the same link have different AS
+* Links matching 'advertise_roles' get 'advertise' attribute set
+"""
+def build_ebgp_sessions(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+
+  #
+  # Iterate over all links, find adjacent nodes
+  # in different AS numbers, and create BGP neighbors
+  for l in node.get("interfaces",[]):
+    node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
+    node_local_as = data.get_from_box(l,'bgp.local_as') or data.get_from_box(node,'bgp.local_as') or node_as
+
+    af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in l ]
+    if not af_list:                                                   # This interface has no usable address
+      continue
+
+    if node_as != node_local_as:
+      if not features.bgp.local_as:
+        common.error(
+          text=f'{node.name} (device {node.device}) does not support BGP local AS (interface {l.name})',
+          category=common.IncorrectValue,
+          module='bgp')
+        continue
+      if l.get('vrf',None) and not features.bgp.vrf_local_as:
+        common.error(
+          text=f'{node.name} (device {node.device}) does not support BGP local AS for EBGP sessions in VRF {l.vrf}',
+          category=common.IncorrectValue,
+          module='bgp')
+        continue
+
+    for ngb_ifdata in l.get("neighbors",[]):
+      af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in ngb_ifdata ]
+      if not af_list:                                                 # Neighbor has no usable address
+        continue
+      #
+      # Get neighbor node data and its true or interface-local AS
+      #
+      ngb_name = ngb_ifdata.node
+      neighbor = topology.nodes[ngb_name]
+      neighbor_real_as = data.get_from_box(neighbor,'bgp.as')
+      neighbor_local_as = data.get_from_box(ngb_ifdata,'bgp.local_as') or data.get_from_box(neighbor,'bgp.local_as') or neighbor_real_as
+
+      if not neighbor_local_as:                                       # Neighbor has no usable BGP AS number, move on
+        continue
+
+      if node_as == neighbor_real_as and node_local_as == neighbor_local_as:
+        continue                                                      # Routers in the same AS + no local-as trickery => nothing to do here
+
+      extra_data = Box({})
+      extra_data.ifindex = l.ifindex
+      if "unnumbered" in l:
+        extra_data.unnumbered = True
+        extra_data.local_if = l.ifname
+
+      for k in ('local_as','replace_real_as'):
+        local_as_data = data.get_from_box(l,f'bgp.{k}') or data.get_from_box(node,f'bgp.{k}')
+        if not local_as_data is None:
+          extra_data[k] = local_as_data
+
+      session_type = 'localas_ibgp' if neighbor_local_as == node_local_as else 'ebgp'
+
+      ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,extra_data)
+      ebgp_data['as'] = neighbor_local_as
+      if 'vrf' in l:        # VRF neighbor
+        if not node.vrfs[l.vrf].bgp.neighbors:
+          node.vrfs[l.vrf].bgp.neighbors = []
+        node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
+      else:                 # Global neighbor
+        node.bgp.neighbors.append(ebgp_data)
+
+"""
+build_bgp_sessions: create BGP session data structure
+
+* Create an empty list of BGP neighbors
+* Create IBGP sessions
+* Create EBGP sessions
+* Set BGP AF flags
+"""
+def build_bgp_sessions(node: Box, topology: Box) -> None:
+  if not data.get_from_box(node,'bgp.as'):                        # Sanity check: do we have usable AS number
+    common.fatal(f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???')
+    return                                                        # ... not really, get out of here
+
+  node.bgp.neighbors = []
+
+  build_ibgp_sessions(node,topology)
+  build_ebgp_sessions(node,topology)
+
+  # Calculate BGP address families
+  #
+  for af in ['ipv4','ipv6']:
+    for n in node.bgp.neighbors:
+      if af in n:
+        node.bgp[af] = True
+        break
+
+"""
+bgp_set_advertise: set bgp.advertise flag on stub links
+"""
+def bgp_set_advertise(node: Box, topology: Box) -> None:
+  stub_roles = data.get_global_parameter(topology,"bgp.advertise_roles")
+  if not stub_roles:
+    return
+
+  for l in node.get("interfaces",[]):
+    if "bgp" in l:
+      if "advertise" in l.bgp:
+        continue
+    if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
+      l.bgp.advertise = True
 
 class BGP(_Module):
 
@@ -206,83 +366,6 @@ class BGP(_Module):
     if len(as_set) > 1 and not link.get("role"):
       link.role = ebgp_role
 
-  """
-  build_bgp_sessions: create BGP session data structure
-
-  * BGP route reflectors need IBGP session with all other nodes in the same AS
-  * Other nodes need IBGP sessions with all RRs in the same AS
-  * EBGP sessions are established whenever two nodes on the same link have different AS
-  * Links matching 'advertise_roles' get 'advertise' attribute set
-  """
-  def build_bgp_sessions(self, node: Box, topology: Box) -> None:
-    rrlist = find_bgp_rr(node.bgp.get("as"),topology)
-    node.bgp.neighbors = []
-
-    # If we don't have route reflectors, or if the current node is a route
-    # reflector, we need BGP sessions to all other nodes in the same AS
-    if not(rrlist) or node.bgp.get("rr",None):
-      for name,n in topology.nodes.items():
-        if "bgp" in n:
-          if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-            node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
-
-    #
-    # The node is not a route reflector, and we have a non-empty RR list
-    # We need BGP sessions with the route reflectors
-    else:
-      for n in rrlist:
-        if n.name != node.name:
-          node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
-
-    #
-    # EBGP sessions - iterate over all links, find adjacent nodes
-    # in different AS numbers, and create BGP neighbors
-    for l in node.get("interfaces",[]):
-      for ngb_ifdata in l.get("neighbors",[]):
-        ngb_name = ngb_ifdata.node
-        neighbor = topology.nodes[ngb_name]
-        if not "bgp" in neighbor:
-          continue
-        if neighbor.bgp.get("as") and neighbor.bgp.get("as") != node.bgp.get("as"):
-          extra_data = Box({})
-          extra_data.ifindex = l.ifindex
-          if "unnumbered" in l:
-            extra_data.unnumbered = True
-            extra_data.local_if = l.ifname
-
-          ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,'ebgp',extra_data)
-          if 'vrf' in l:        # VRF neighbor
-            if not node.vrfs[l.vrf].bgp.neighbors:
-              node.vrfs[l.vrf].bgp.neighbors = []
-            node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
-          else:                 # Global neighbor
-            node.bgp.neighbors.append(ebgp_data)
-
-    # Calculate BGP address families
-    #
-    for af in ['ipv4','ipv6']:
-      for n in node.bgp.neighbors:
-        if af in n:
-          node.bgp[af] = True
-          break
-
-  '''
-  bgp_set_advertise: set bgp.advertise flag on stub links
-  '''
-  def bgp_set_advertise(self, node: Box, topology: Box) -> None:
-    stub_roles = topology.defaults.bgp.get("advertise_roles",None)
-    if 'advertise_roles' in topology.bgp:
-      stub_roles = topology.bgp.get("advertise_roles",None)
-    if stub_roles:
-      for l in node.get("interfaces",[]):
-        if "bgp" in l:
-          if "advertise" in l.bgp:
-            continue
-        if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
-          if not 'bgp' in l:
-            l.bgp = {}
-          l.bgp.advertise = True
-
   #
   # Have to set BGP router IDs and cluster IDs before going into node_post_transform
   #
@@ -325,5 +408,5 @@ class BGP(_Module):
       common.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
       return
     check_bgp_parameters(node)
-    self.build_bgp_sessions(node,topology)
-    self.bgp_set_advertise(node,topology)
+    build_bgp_sessions(node,topology)
+    bgp_set_advertise(node,topology)
