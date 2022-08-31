@@ -1,0 +1,294 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+  sessions:
+    ipv4:
+    - ebgp
+    ipv6:
+    - ibgp
+    - ebgp
+groups:
+  as65000:
+    members:
+    - r1
+    - r2
+  as65100:
+    members:
+    - x1
+input:
+- topology/input/bgp-sessions.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:1::1/64
+    node: r1
+  - ifindex: 1
+    ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:1::2/64
+    node: x1
+  left:
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:1::1/64
+    node: r1
+  linkindex: 1
+  name: r1 - x1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+    ipv6: 2001:db8:1::/64
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:1::2/64
+    node: x1
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:1:1::1/64
+    node: r1
+  - ifindex: 1
+    ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:1:1::2/64
+    node: r2
+  left:
+    ifname: Ethernet2
+    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:1:1::1/64
+    node: r1
+  linkindex: 2
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+    ipv6: 2001:db8:1:1::/64
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:1:1::2/64
+    node: r2
+  type: p2p
+module:
+- bgp
+- ospf
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - as: 65000
+        ipv6: 2001:db8:0:3::1
+        name: r2
+        type: ibgp
+      - as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.2
+        ipv6: 2001:db8:1::2
+        name: x1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+      sessions:
+        ipv4:
+        - ebgp
+        ipv6:
+        - ibgp
+        - ebgp
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      ipv6: 2001:db8:1::1/64
+      linkindex: 1
+      name: r1 -> x1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        ipv6: 2001:db8:1::2/64
+        node: x1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:1:1::1/64
+      linkindex: 2
+      name: r1 -> r2
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.6/30
+        ipv6: 2001:db8:1:1::2/64
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:0:2::1/64
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - bgp
+    - ospf
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+        ipv6: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+  r2:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv6: true
+      neighbors:
+      - as: 65000
+        ipv6: 2001:db8:0:2::1
+        name: r1
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+      sessions:
+        ipv4:
+        - ebgp
+        ipv6:
+        - ibgp
+        - ebgp
+    box: arista/veos
+    device: eos
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.6/30
+      ipv6: 2001:db8:1:1::2/64
+      linkindex: 2
+      name: r2 -> r1
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:1:1::1/64
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.3/32
+      ipv6: 2001:db8:0:3::1/64
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - bgp
+    - ospf
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+        ipv6: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+  x1:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.1
+        ipv6: 2001:db8:1::1
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+      sessions:
+        ipv4:
+        - ebgp
+        ipv6:
+        - ibgp
+        - ebgp
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      ipv6: 2001:db8:1::2/64
+      linkindex: 1
+      name: x1 -> r1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        ipv6: 2001:db8:1::1/64
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:0:1::1/64
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - bgp
+    name: x1
+ospf:
+  area: 0.0.0.0
+provider: libvirt
