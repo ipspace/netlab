@@ -45,6 +45,30 @@ def check_bgp_parameters(node: Box) -> None:
           valid_values=['standard','extended'],
           module='bgp')
 
+BGP_VALID_AF: typing.Final[list] = ['ipv4','ipv6']
+BGP_VALID_SESSION_TYPE: typing.Final[list] = ['ibgp','ebgp','localas_ibgp']
+
+def validate_bgp_sessions(node: Box, sessions: Box) -> bool:
+  OK = True
+  for k in list(sessions.keys()):
+    if not k in BGP_VALID_AF:
+      common.error(
+        f'Invalid address family in bgp.sessions in node {node.name}',
+        common.IncorrectValue,
+        'bgp')
+      OK = False
+    else:
+      if data.must_be_list(
+          parent=sessions,
+          key=k,
+          path=f'nodes.{node.name}.bgp.sessions',
+          true_value=BGP_VALID_SESSION_TYPE,
+          valid_values=BGP_VALID_SESSION_TYPE,
+          module='bgp') is None:
+        OK = False        
+
+  return OK
+
 """
 find_bgp_rr: find route reflectors in the specified autonomous system
 
@@ -63,20 +87,24 @@ bgp_neighbor: Create BGP neighbor data structure
 * ctype - session type (ibgp or ebgp)
 * extra_data - anything else we might want to pass to the neighbor data structure
 """
-def bgp_neighbor(n: Box, intf: Box, ctype: str, extra_data: typing.Optional[dict] = None) -> Box:
+def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typing.Optional[dict] = None) -> typing.Optional[Box]:
   ngb = Box(extra_data or {},default_box=True,box_dots=True)
   ngb.name = n.name
   ngb["as"] = n.bgp.get("as")
   ngb["type"] = ctype
+  af_count = 0
   for af in ["ipv4","ipv6"]:
-    if af in intf:
-      if "unnumbered" in ngb and ngb.unnumbered == True:
-        ngb[af] = True
-      elif isinstance(intf[af],bool):
-        ngb[af] = intf[af]
-      else:
-        ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
-  return ngb
+    if ctype in sessions[af]:
+      if af in intf:
+        af_count = af_count + 1
+        if "unnumbered" in ngb and ngb.unnumbered == True:
+          ngb[af] = True
+        elif isinstance(intf[af],bool):
+          ngb[af] = intf[af]
+        else:
+          ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
+
+  return ngb if af_count > 0 else None
 
 """
 get_neighbor_rr: create extra data for bgp_neighbor function
@@ -96,7 +124,7 @@ build_ibgp_sessions: create IBGP session data structure
 * BGP route reflectors need IBGP session with all other nodes in the same AS
 * Other nodes need IBGP sessions with all RRs in the same AS
 """
-def build_ibgp_sessions(node: Box, topology: Box) -> None:
+def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   rrlist = find_bgp_rr(node.bgp.get("as"),topology)
 
   # If we don't have route reflectors, or if the current node is a route
@@ -105,7 +133,9 @@ def build_ibgp_sessions(node: Box, topology: Box) -> None:
     for name,n in topology.nodes.items():
       if "bgp" in n:
         if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-          node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+          neighbor_data = bgp_neighbor(n,n.loopback,'ibgp',sessions,get_neighbor_rr(n))
+          if not neighbor_data is None:
+            node.bgp.neighbors.append(neighbor_data)
 
   #
   # The node is not a route reflector, and we have a non-empty RR list
@@ -113,7 +143,9 @@ def build_ibgp_sessions(node: Box, topology: Box) -> None:
   else:
     for n in rrlist:
       if n.name != node.name:
-        node.bgp.neighbors.append(bgp_neighbor(n,n.loopback,'ibgp',get_neighbor_rr(n)))
+        neighbor_data = bgp_neighbor(n,n.loopback,'ibgp',sessions,get_neighbor_rr(n))
+        if not neighbor_data is None:
+          node.bgp.neighbors.append(neighbor_data)
 
 """
 build_ebgp_sessions: create EBGP session data structure
@@ -121,7 +153,7 @@ build_ebgp_sessions: create EBGP session data structure
 * EBGP sessions are established whenever two nodes on the same link have different AS
 * Links matching 'advertise_roles' get 'advertise' attribute set
 """
-def build_ebgp_sessions(node: Box, topology: Box) -> None:
+def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
 
   #
@@ -180,14 +212,15 @@ def build_ebgp_sessions(node: Box, topology: Box) -> None:
 
       session_type = 'localas_ibgp' if neighbor_local_as == node_local_as else 'ebgp'
 
-      ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,extra_data)
-      ebgp_data['as'] = neighbor_local_as
-      if 'vrf' in l:        # VRF neighbor
-        if not node.vrfs[l.vrf].bgp.neighbors:
-          node.vrfs[l.vrf].bgp.neighbors = []
-        node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
-      else:                 # Global neighbor
-        node.bgp.neighbors.append(ebgp_data)
+      ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,sessions,extra_data)
+      if not ebgp_data is None:
+        ebgp_data['as'] = neighbor_local_as
+        if 'vrf' in l:        # VRF neighbor
+          if not node.vrfs[l.vrf].bgp.neighbors:
+            node.vrfs[l.vrf].bgp.neighbors = []
+          node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
+        else:                 # Global neighbor
+          node.bgp.neighbors.append(ebgp_data)
 
 """
 build_bgp_sessions: create BGP session data structure
@@ -197,15 +230,24 @@ build_bgp_sessions: create BGP session data structure
 * Create EBGP sessions
 * Set BGP AF flags
 """
+
+BGP_DEFAULT_SESSIONS: typing.Final[dict] = {
+  'ipv4': [ 'ibgp', 'ebgp', 'localas_ibgp' ],
+  'ipv6': [ 'ibgp', 'ebgp', 'localas_ibgp' ]
+}
+
 def build_bgp_sessions(node: Box, topology: Box) -> None:
   if not data.get_from_box(node,'bgp.as'):                        # Sanity check: do we have usable AS number
     common.fatal(f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???')
     return                                                        # ... not really, get out of here
 
   node.bgp.neighbors = []
+  bgp_sessions = node.bgp.get('sessions') or Box(BGP_DEFAULT_SESSIONS)
+  if not validate_bgp_sessions(node,bgp_sessions):
+    return
 
-  build_ibgp_sessions(node,topology)
-  build_ebgp_sessions(node,topology)
+  build_ibgp_sessions(node,bgp_sessions,topology)
+  build_ebgp_sessions(node,bgp_sessions,topology)
 
   # Calculate BGP address families
   #
