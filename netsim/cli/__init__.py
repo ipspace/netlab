@@ -64,7 +64,7 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
 
 # Common topology loader (used by create and down)
 
-def load_topology(args: argparse.Namespace) -> Box:
+def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   common.set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
 
@@ -77,7 +77,7 @@ def load_topology(args: argparse.Namespace) -> Box:
 
 # Snapshot-or-topology loader (used by down)
 
-def load_snapshot_or_topology(args: argparse.Namespace) -> typing.Optional[Box]:
+def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typing.Optional[Box]:
   common.set_logging_flags(args)
   if args.device or args.provider or args.settings:     # If we have -d, -p or -s flag
     if not args.topology:                               # ... then the user wants to use the topology file
@@ -91,6 +91,22 @@ def load_snapshot_or_topology(args: argparse.Namespace) -> typing.Optional[Box]:
   else:
     args.snapshot = args.snapshot or 'netlab.snapshot.yml'
     return read_topology.read_yaml(filename=args.snapshot)
+
+# get_message: get action-specific message from topology file
+#
+
+def get_message(topology: Box, action: str, default_message: bool = False) -> typing.Optional[str]:
+  if not 'message' in topology:
+    return None
+
+  if isinstance(topology.message,str):                      # We have a single message
+    return topology.message if default_message else None    # If the action is OK with getting the default message return it
+
+  if not isinstance(topology.message,Box):                  # Otherwise we should be dealing with a dict
+    common.fatal('topology message should be a string or a dict')
+    return None
+
+  return topology.message.get(action,None)                  # Return action-specific message if it exists
 
 #
 # Main command dispatcher

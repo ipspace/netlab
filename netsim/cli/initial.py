@@ -7,8 +7,9 @@ import typing
 import os
 import argparse
 
-from . import common_parse_args
+from . import common_parse_args,get_message,load_snapshot_or_topology
 from . import ansible
+from box import Box
 
 #
 # CLI parser for 'netlab initial' command
@@ -76,3 +77,8 @@ def run(cli_args: typing.List[str]) -> None:
     print("\nInitial configurations have been created in the %s directory" % args.output)
   else:
     ansible.playbook('initial-config.ansible',rest)
+    topology = load_snapshot_or_topology(Box({},default_box=True,box_dots=True))
+    if topology:
+      message = get_message(topology,'initial',True)
+      if message:
+        print(f"\n\n{message}")

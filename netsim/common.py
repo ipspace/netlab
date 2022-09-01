@@ -125,7 +125,7 @@ def print_verbose(t: typing.Any) -> None:
 #
 # Internal debugging flags (RAISE_ON_ERROR, WARNING) cannot be set with this function
 #
-def set_logging_flags(args: argparse.Namespace) -> None:
+def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
   global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR
   
   if 'verbose' in args and args.verbose:
