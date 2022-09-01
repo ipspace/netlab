@@ -48,12 +48,12 @@ def check_bgp_parameters(node: Box) -> None:
 BGP_VALID_AF: typing.Final[list] = ['ipv4','ipv6']
 BGP_VALID_SESSION_TYPE: typing.Final[list] = ['ibgp','ebgp','localas_ibgp']
 
-def validate_bgp_sessions(node: Box, sessions: Box) -> bool:
+def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
   OK = True
   for k in list(sessions.keys()):
     if not k in BGP_VALID_AF:
       common.error(
-        f'Invalid address family in bgp.sessions in node {node.name}',
+        f'Invalid address family in bgp.{attribute} in node {node.name}',
         common.IncorrectValue,
         'bgp')
       OK = False
@@ -61,7 +61,7 @@ def validate_bgp_sessions(node: Box, sessions: Box) -> bool:
       if data.must_be_list(
           parent=sessions,
           key=k,
-          path=f'nodes.{node.name}.bgp.sessions',
+          path=f'nodes.{node.name}.bgp.{attribute}',
           true_value=BGP_VALID_SESSION_TYPE,
           valid_values=BGP_VALID_SESSION_TYPE,
           module='bgp') is None:
@@ -230,6 +230,19 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           node.bgp.neighbors.append(ebgp_data)
 
 """
+activate_bgp_default_af -- activate default AF on IPv4 and/or IPv6 transport sessions
+
+Based on transport session(s) with a BGP neighbor, local BGP AF, and BGP AF configuration
+parameters, set neighbor.activate.AF flags
+"""
+
+def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
+  for ngb in node.bgp.neighbors:
+    for af in ('ipv4','ipv6'):
+      if af in ngb:
+        ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
+
+"""
 build_bgp_sessions: create BGP session data structure
 
 * Create an empty list of BGP neighbors
@@ -250,7 +263,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
 
   node.bgp.neighbors = []
   bgp_sessions = node.bgp.get('sessions') or Box(BGP_DEFAULT_SESSIONS)
-  if not validate_bgp_sessions(node,bgp_sessions):
+  if not validate_bgp_sessions(node,bgp_sessions,'sessions'):
     return
 
   build_ibgp_sessions(node,bgp_sessions,topology)
@@ -263,6 +276,22 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
       if af in n:
         node.bgp[af] = True
         break
+
+  # Activate default BGP address families
+  features = devices.get_device_features(node,topology.defaults)
+  if 'activate' in node.bgp:
+    if not features.bgp.activate_af:
+      common.error(
+        f'node {node.name} (device {node.device}) does not support configurable activation of default BGP address families',
+        common.IncorrectValue,
+        'bgp')
+      return
+
+  activate = node.bgp.get('activate') or Box(BGP_DEFAULT_SESSIONS)
+  if not validate_bgp_sessions(node,activate,'activate'):
+    return
+
+  activate_bgp_default_af(node,activate,topology)
 
 """
 bgp_set_advertise: set bgp.advertise flag on stub links
