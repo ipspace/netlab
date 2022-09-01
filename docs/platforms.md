@@ -202,7 +202,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
-| Cisco ASA             | ❌   |  ✅   |  ❌   | ❌  | ❌  |  ❌  |  ❌  |
+| Cisco ASA             | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
 | Dell OS10             | [❗](caveats.html#dell-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
@@ -247,7 +247,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cisco IOS             |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco IOS XE          |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
-| Cisco ASA             |          ✅          |   ❌    |    ✅     |         ❌          |        ❌         |    ❌    |
+| Cisco ASA             |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
