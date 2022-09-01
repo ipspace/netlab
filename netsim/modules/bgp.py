@@ -211,6 +211,13 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           extra_data[k] = local_as_data
 
       session_type = 'localas_ibgp' if neighbor_local_as == node_local_as else 'ebgp'
+      if session_type == 'localas_ibgp':
+        if not features.bgp.local_as_ibgp:
+          common.error(
+            text=f'You cannot use BGP local-as to create an IBGP session with {ngb_name} on {node.name} (device {node.device})',
+            category=common.IncorrectValue,
+            module='bgp')
+          continue
 
       ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,sessions,extra_data)
       if not ebgp_data is None:

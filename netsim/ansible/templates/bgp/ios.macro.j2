@@ -8,7 +8,8 @@
 {% macro neighbor_global(n,ip) %}
   neighbor {{ ip }} remote-as {{ n.as }}
 {% if n.local_as is defined %}
-  neighbor {{ ip }} local-as {{ n.local_as }}{% if n.replace_global_as|default(True) %} no-prepend replace-as{% endif +%}
+  neighbor {{ ip }} local-as {{ n.local_as }}{% 
+    if n.replace_global_as|default(True) and n.type != 'localas_ibgp' %} no-prepend replace-as{% endif +%}
 {% endif %}
   neighbor {{ ip }} description {{ n.name }}
 {% if n.type == 'ibgp' %}
@@ -20,14 +21,14 @@
 #}
 {% macro neighbor_af(n,ip,bgp) %}
   neighbor {{ ip }} activate
-{% if n.type == 'ibgp' %}
+{% if 'ibgp' in n.type %}
 {%   if bgp.community.ibgp|default([]) %}
   neighbor {{ ip }} send-community {{ community(bgp.community.ibgp) }}
 {%   endif %}
 {%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
-  neighbor {{ ip }} next-hop-self
+  neighbor {{ ip }} next-hop-self{% if n.type == 'localas_ibgp' %} all{% endif +%}
 {%   endif %}
-{%   if bgp.rr|default('') and not n.rr|default('') %}
+{%   if bgp.rr|default('') and (not n.rr|default('') or n.type == 'localas_ibgp') %}
   neighbor {{ ip }} route-reflector-client
 {%   endif %}
 {% else %}{# EBGP IPv4 neighbor #}
