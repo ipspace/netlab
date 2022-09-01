@@ -30,6 +30,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Cisco IOS          | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Cisco IOS XE       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Cisco ASAv         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | VyOS               | ✅  | ✅  | ✅  | ❌  | ✅  | ✅ |
@@ -37,6 +38,7 @@ The following table describes per-platform support of individual IS-IS features:
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
 * On VyOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address.
+* On Cisco ASA you have to add `isis.network_type: false` on all point-to-point links to devices with other NOS, otherwise the ASA will not recognize the IS-IS packets
 
 ## Global Parameters
 
