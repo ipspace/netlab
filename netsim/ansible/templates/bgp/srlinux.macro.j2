@@ -71,7 +71,7 @@
 
 {% endfor %}
 
-{% macro bgp_peer_group(name,type,import_policy,export_policy,neighbor,transport_ip) %}
+{% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
 - path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
   val:
    admin-state: enable
@@ -110,7 +110,7 @@
   Define IPv4 and IPv6 BGP neighbors
 #}
 {% for n in vrf_bgp.neighbors %}
-{% for af in ['ipv4','ipv6'] if n[af] is defined and n.activate is defined and n.activate[af] %}
+{% for af in ['ipv4','ipv6'] if n[af] is defined and n.activate is defined and af in n.activate and n.activate[af] %}
 
 {% if n[af] is string %}
 {# (Re)create peer group #}
@@ -137,7 +137,7 @@
 {% elif n[af]==True and af=='ipv6' %}
 {# BGP unnumbered for IPv6 LLA #}
 {% set peer_group = "ebgp-unnumbered" + (('-' + n.local_as|string()) if n.local_as is defined else '') %}
-{{ bgp_peer_group(peer_group,'ebgp','accept_all','accept_all',n,None) }}
+{{ bgp_peer_group(peer_group,'ebgp',n,None) }}
 {% if n.local_as is defined %}
    local-as:
    - as-number: {{ n.local_as }}
