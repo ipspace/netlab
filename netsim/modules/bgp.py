@@ -205,7 +205,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         extra_data.unnumbered = True
         extra_data.local_if = l.ifname
 
-      for k in ('local_as','replace_real_as'):
+      for k in ('local_as','replace_global_as'):
         local_as_data = data.get_from_box(l,f'bgp.{k}') or data.get_from_box(node,f'bgp.{k}')
         if not local_as_data is None:
           extra_data[k] = local_as_data

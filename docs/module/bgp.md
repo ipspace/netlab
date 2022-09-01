@@ -112,7 +112,7 @@ Additional per-node BGP configuration parameters include:
 Finally, BGP configuration module supports these advanced node parameters that you probably shouldn't touch without a very good reason:
 
 * **bgp.rr_cluster_id** -- set static route reflector cluster ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
-* **bgp.replace_real_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to disable that functionality and include both autonomous systems in the AS path[^RAS_P].
+* **bgp.replace_global_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to disable that functionality and include both autonomous systems in the AS path[^RAS_P].
 * **bgp.sessions** -- specifies which transport sessions (IPv4 and/or IPv6) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^SESS_DM]. See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
 
 [^SESS_DM]: This parameter influences the data structures built during the data transformation phase and is thus available on all platforms supporting BGP configuration module.
