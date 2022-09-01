@@ -25,6 +25,7 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 * Next-hop-self control on IBGP sessions
 * BGP community propagation
 * IPv4 and IPv6 address families
+* Configurable activation of default address families
 * Configurable link prefix advertisement
 * Additional (dummy) prefix advertisement
 * Changing local autonomous system for individual BGP sessions (*local-as*)
@@ -35,14 +36,14 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 
 [Platforms supporting BGP configuration module](platform-routing-support) support most of the functionality mentioned above. The following features are only supported on a subset of platforms:
 
-| Operating system      | Unnumbered<br />interfaces | local AS |
-| --------------------- | :-: | :-: | 
-| Arista EOS            |  ❌  |  ✅ |
-| Cisco IOS/IOS XE      |  ❌  |  ✅ |
-| Cumulus Linux         |  ✅ |  ❌  |
-| Dell OS10             |  ❌  |  ✅ |
-| FRR 7.5.0             |  ❌  |  ❌  |
-| Nokia SR Linux        |  ✅ |  ✅ |
+| Operating system      | Unnumbered<br />interfaces | local AS | IBGP<br>local AS | Configurable<br>default AF |
+| --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            |  ❌  |  ✅ |  ❌  |  ✅ |
+| Cisco IOS/IOS XE      |  ❌  |  ✅ |  ✅ |  ✅ |
+| Cumulus Linux         |  ✅ |  ❌  |  ❌  |  ❌  |
+| Dell OS10             |  ❌  |  ✅ |  ❌  |  ❌  |
+| FRR 7.5.0             |  ❌  |  ❌  |  ❌  |  ❌  |
+| Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
 
 ## Global BGP Configuration Parameters
 
@@ -113,9 +114,12 @@ Finally, BGP configuration module supports these advanced node parameters that y
 
 * **bgp.rr_cluster_id** -- set static route reflector cluster ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
 * **bgp.replace_global_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to disable that functionality and include both autonomous systems in the AS path[^RAS_P].
-* **bgp.sessions** -- specifies which transport sessions (IPv4 and/or IPv6) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^SESS_DM]. See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
+* **bgp.sessions** (node or global parameter) -- specifies which transport sessions (IPv4 and/or IPv6) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^SESS_DM]. See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
+* **bgp.activate** (node or global parameter) -- specifies which default address families (IPv4 AF on IPv4 session, IPv6 on IPv6 session) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^ACT_CFG]. See *[leaf-spine](https://github.com/ipspace/netlab/blob/dev/tests/integration/bgp/local-as/leaf-spine.yml)* local AS test case for an example.
 
 [^SESS_DM]: This parameter influences the data structures built during the data transformation phase and is thus available on all platforms supporting BGP configuration module.
+
+[^ACT_CFG]: This parameter has to be supported by the device configuration templates and is thus not available on all platforms.
 
 [^RAS_P]: This functionality might not be configurable on all platforms. For example, Arista EOS supports only the **neighbor local-as no-prepend replace-as** command.
 
