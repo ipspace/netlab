@@ -86,7 +86,7 @@ def load(fname: str , local_defaults: str, sys_defaults: str) -> Box:
 
   return topology
 
-def add_cli_args(topo: Box, args: argparse.Namespace) -> None:
+def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
   if args.device:
     topo.defaults.device = args.device
 

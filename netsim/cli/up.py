@@ -18,7 +18,7 @@ from pathlib import Path
 from .. import common
 from . import create
 from . import external_commands
-from . import common_parse_args, load_snapshot_or_topology
+from . import common_parse_args, load_snapshot_or_topology, get_message
 from .. import providers
 from .. import read_topology
 
@@ -87,5 +87,8 @@ def run(cli_args: typing.List[str]) -> None:
 
   if not args.no_config:
     external_commands.deploy_configs(4,"netlab up",args.fast_config)
+    message = get_message(topology,'up',False)
+    if message:
+      print(f"\n\n{message}")
   else:
     print("\nInitial configuration skipped, run 'netlab initial' to configure the devices")
