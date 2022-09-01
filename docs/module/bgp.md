@@ -40,10 +40,10 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS/IOS XE      |  ❌  |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux         |  ✅ |  ❌  |  ❌  |  ❌  |
+| Cumulus Linux         |  ✅  |  ❌ |  ❌  |  ❌  |
 | Dell OS10             |  ❌  |  ✅ |  ❌  |  ❌  |
-| FRR 7.5.0             |  ❌  |  ❌  |  ❌  |  ❌  |
-| Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
+| FRR 7.5.0             |  ❌  |  ❌ |  ❌  |  ❌  |
+| Nokia SR Linux        |  ✅  |  ✅ |  ✅  |  ✅  |
 
 ## Global BGP Configuration Parameters
 

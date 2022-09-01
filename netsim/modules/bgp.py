@@ -208,7 +208,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       for k in ('local_as','replace_global_as'):
         local_as_data = data.get_from_box(l,f'bgp.{k}') or data.get_from_box(node,f'bgp.{k}')
         if not local_as_data is None:
-          extra_data[k] = local_as_data
+          extra_data[k] = local_as_data # This is the local_as to use towards this neighbor (!)
 
       session_type = 'localas_ibgp' if neighbor_local_as == node_local_as else 'ebgp'
       if session_type == 'localas_ibgp':
@@ -239,8 +239,9 @@ parameters, set neighbor.activate.AF flags
 def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
   for ngb in node.bgp.neighbors:
     for af in ('ipv4','ipv6'):
-      if af in ngb:
-        ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
+      # if af in ngb: # JvB allow activation of ipv6 over an ipv4 session, and vice versa
+      #  ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
+      ngb.activate[af] = af in activate and ngb.type in activate[af]
 
 """
 build_bgp_sessions: create BGP session data structure
