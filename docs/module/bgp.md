@@ -38,7 +38,7 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 
 | Operating system      | Unnumbered<br />interfaces | local AS | IBGP<br>local AS | Configurable<br>default AF |
 | --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            |  ❌  |  ✅ |  ❌  |  ✅ |
+| Arista EOS            |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS/IOS XE      |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux         |  ✅ |  ❌  |  ❌  |  ❌  |
 | Dell OS10             |  ❌  |  ✅ |  ❌  |  ❌  |
