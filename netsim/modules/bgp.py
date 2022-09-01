@@ -239,9 +239,10 @@ parameters, set neighbor.activate.AF flags
 def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
   for ngb in node.bgp.neighbors:
     for af in ('ipv4','ipv6'):
-      # if af in ngb: # JvB allow activation of ipv6 over an ipv4 session, and vice versa
-      #  ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
-      ngb.activate[af] = af in activate and ngb.type in activate[af]
+      if af in ngb: # JvB by default, activate ipv4 over ipv4 and/or ipv6 over ipv6
+        ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
+      elif af=='ipv4' and 'ipv6' not in activate and af in activate and ngb.type in activate[af]:
+        ngb.activate[af] = True # but also allow ipv4-over-ipv6-only
 
 """
 build_bgp_sessions: create BGP session data structure
