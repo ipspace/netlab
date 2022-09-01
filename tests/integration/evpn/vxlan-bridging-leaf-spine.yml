@@ -1,8 +1,6 @@
 message: |
   This test case builds a leaf-and-spine fabric with VLAN-over-VXLAN
-  bridging using IBGP-over-EBGP design.
-
-  The leaf switches are doing VLAN/VXLAN encap/decap, the
+  bridging. The leaf switches are doing VLAN/VXLAN encap/decap, the
   spine switches are IP routers running OSPF, BGP, and EVPN.
 
   * h1 and h2 should be able to ping each other
@@ -12,17 +10,18 @@ message: |
   STP learning phase
 
   To change the devices under test, use netlab up -d parameter
-
 groups:
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
-  switches:
-    members: [ spine, leaf1, leaf2 ]
-    module: [ vlan, vxlan, bgp, evpn ]
+  leafs:
+    members: [ l1, l2 ]
+    module: [ vlan,vxlan,ospf,bgp,evpn ]
+  spines:
+    members: [ s1, s2 ]
+    module: [ ospf,bgp,evpn ]
 
-bgp.as: 64999
-bgp.next_hop_self: False            # Required by Arista implementation of IBGP-over-EBGP EVPN design
+bgp.as: 65000
 
 vlans:
   red:
@@ -30,35 +29,30 @@ vlans:
   blue:
     mode: bridge
 
-bgp.activate:
-  ipv4: [ ebgp ]
-
 nodes:
-  spine:
-    bgp:
-      local_as: 65000
-      rr: True
-  leaf1:
-    bgp.local_as: 65001
-  leaf2:
-    bgp.local_as: 65002
   h1:
   h2:
   h3:
   h4:
+  l1:
+  l2:
+  s1:
+  s2:
 
 links:
-- spine-leaf1
-- spine-leaf2
 - h1:
-  leaf1:
+  l1:
     vlan.access: red
 - h2:
-  leaf2:
+  l2:
     vlan.access: red
 - h3:
-  leaf1:
+  l1:
     vlan.access: blue
 - h4:
-  leaf2:
+  l2:
     vlan.access: blue
+- l1-s1
+- l1-s2
+- l2-s1
+- l2-s2
