@@ -45,75 +45,14 @@
 
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
+   admin-state: enable
    autonomous-system: {{ _as }}
    router-id: {{ router_id }}
    ebgp-default-policy:
     export-reject-all: False
     import-reject-all: False
 
-{#
-    Configure BGP Groups
-#}
-   group:
-{% for g in ['ibgp-ipv4','ibgp-ipv6','ebgp','ebgp-unnumbered'] %}
-{% set _type = g[:4] %}
-   - group-name: {{ g }}
-     admin-state: enable
-     import-policy: {{ import_policy if 'ebgp' in g else 'accept_all' }}
-     export-policy: {{ export_policy if 'ebgp' in g else 'accept_all' }}
-     timers:
-      connect-retry: 10
-      _annotate_connect-retry: "Reduce default 120s to 10s"
-      minimum-advertisement-interval: 1
-
-{# BGP communities #}
-{%   if bgp.community[ _type ]|default([]) %}
-{%   set list = bgp.community[ _type ] %}
-     send-community:
-      standard: {{ 'standard' in list or 'both' in list }}
-      large: {{ 'large' in list }}
-{%   endif %}
-
-{# iBGP #}
-{%   if g in ['ibgp-ipv4','ibgp-ipv6'] %}
-     peer-as: {{ _as }}
-     ipv4-unicast:
-      admin-state: {{ 'enable' if g == 'ibgp-ipv4' and 'ipv4' in bgp.address_families['ibgp'] else 'disable' }}
-     ipv6-unicast:
-      admin-state: {{ 'enable' if g == 'ibgp-ipv6' or 'ipv6' in bgp.address_families['ibgp'] else 'disable' }}
-     evpn:
-      admin-state: {{ 'enable' if evpn is defined and 'ibgp' in evpn.session|default([]) else 'disable' }}
-{%   if g[5:] in loopback %}
-     transport:
-      local-address: {{ loopback[ g[5:] ]|default('')|ipaddr('address') }}
-{%   endif %}
-{%   if vrf_bgp.rr|default(0) %}
-     route-reflector:
-      cluster-id: {{ vrf_bgp.rr_cluster_id|default(False) or router_id }}
-      client: True
-{%   endif %}
-{%   else %}
-
-{# eBGP #}
-     next-hop-self: {{ 'True' if bgp.next_hop_self|default(False) else 'False' }}
-{%   if g == 'ebgp-unnumbered' %}
-     local-as:
-     - as-number: {{ bgp.underlay_as|default(_as) }}
-       prepend-global-as: false
-     ipv4-unicast:
-      advertise-ipv6-next-hops: true
-      receive-ipv6-next-hops: true
-{%   else %}
-     ipv4-unicast:
-{%   endif %}
-      admin-state: {{ 'enable' if 'ipv4' in bgp.address_families['ebgp'] else 'disable' }}
-     ipv6-unicast:
-      admin-state: {{ 'enable' if 'ipv6' in bgp.address_families['ebgp'] else 'disable' }}
-{%   endif %}
-
-{% endfor %}
-
-{# Configure BGP address families #}
+{# Configure BGP address families globally #}
 {% for af in ['ipv4','ipv6'] if vrf_bgp[af]|default(0) %}
    {{ af }}-unicast:
     admin-state: enable
@@ -133,29 +72,89 @@
 
 {% endfor %}
 
+{% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
+- path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
+  val:
+   admin-state: enable
+   ipv4-unicast:
+    admin-state: {{ 'enable' if 'ipv4' in neighbor.activate and neighbor.activate['ipv4'] 
+                             or 'ipv6' in neighbor.activate and not neighbor.activate['ipv6'] 
+                    else 'disable' }}
+   ipv6-unicast:
+    admin-state: {{ 'enable' if 'ipv6' in neighbor.activate and neighbor.activate['ipv6'] else 'disable' }}
+{% if 'evpn' in neighbor and neighbor.evpn %}
+   evpn:
+    admin-state: enable # Must have at least 1 address family enabled
+{% endif %}
+   import-policy: {{ import_policy if 'ebgp' in type else 'accept_all' }}
+   export-policy: {{ export_policy if 'ebgp' in type else 'accept_all' }}
+   timers:
+    connect-retry: 10
+    _annotate_connect-retry: "Reduce default 120s to 10s"
+    minimum-advertisement-interval: 1
+{% if vrf_bgp.community[ type ]|default([]) %}
+{% set list = vrf_bgp.community[ type ] %}
+   send-community:
+    standard: {{ 'standard' in list }}
+    large: {{ 'extended' in list }}
+{% endif %}
+{% if transport_ip %}
+   transport:
+    local-address: {{ transport_ip }}
+{% endif %}
+{% if 'ibgp' in type %}
+   next-hop-self: {{ vrf_bgp.next_hop_self|default(False) }}
+   peer-as: {{ neighbor.as }}
+{%  if vrf_bgp.rr|default(0) %}
+   route-reflector:
+    cluster-id: {{ vrf_bgp.rr_cluster_id|default(False) or router_id }}
+    client: True
+{%  endif %}
+{% endif %}
+{% endmacro %}
+
 {#
   Define IPv4 and IPv6 BGP neighbors
 #}
 {% for n in vrf_bgp.neighbors %}
 {% for af in ['ipv4','ipv6'] if n[af] is defined %}
+
 {% if n[af] is string %}
+{# (Re)create peer group #}
+{% set peer_group = 'ebgp' if n.type=='ebgp' else 'ibgp-local-as' if n.type=='localas_ibgp' else ('ibgp-'+af) %}
+{% set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
+{{ bgp_peer_group(peer_group,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip) }}
+
 - path: network-instance[name={{vrf}}]/protocols/bgp/neighbor[peer-address={{n[af]}}]
   val:
    description: {{ n.name }}
-   peer-group: {{ 'ebgp' if n.type=='ebgp' else ('ibgp-'+af) }}
-{% if n.type != 'ibgp' %}
+   peer-group: {{ peer_group }}
+{% if 'ebgp' in n.type %}
    peer-as: {{ n.as }}
+{% elif vrf_bgp.rr|default(False) and n.rr|default(False) %}
+   route-reflector:
+    client: False # Don't reflect routes between ibgp route reflectors
 {% endif %}
 {% if n.local_as is defined %}
    local-as:
    - as-number: {{ n.local_as }}
-{%   if n.type == 'ebgp' %}
-     prepend-global-as: False # Don't include iBGP AS in eBGP advertisements
-{%   endif %}
+     prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
 {% endif %}
-{% elif n[af]==True and af=='ipv6' %}
-{# BGP unnumbered for IPv6 LLA #}
+
+{% elif n[af]==True and af=='ipv6' and n.type == 'ebgp' %}
+{# BGP unnumbered for IPv6 LLA, only supported for EBGP peers #}
 {% set peer_group = "ebgp-unnumbered" + (('-' + n.local_as|string()) if n.local_as is defined else '') %}
+{{ bgp_peer_group(peer_group,'ebgp',n,None) }}
+{% if n.local_as is defined %}
+   local-as:
+   - as-number: {{ n.local_as }}
+     prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP AS in eBGP advertisements
+{% endif %}
+{% if ('ipv4' in n.activate|default([]) and n.activate[ 'ipv4' ]) or ('ipv6' in n.activate|default([]) and not n.activate[ 'ipv6' ]) %}
+   ipv4-unicast:
+     advertise-ipv6-next-hops: true
+     receive-ipv6-next-hops: true
+{% endif %}
 
 - path: network-instance[name={{vrf}}]/ip-forwarding
   val:
@@ -171,23 +170,6 @@
    peer-group: "{{ peer_group }}"
    allowed-peer-as: [ {{ n.as }}..{{ n.as }} ]
 
-{% if peer_group != "ebgp-unnumbered" %}
-- path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{peer_group}}]
-  val:
-   admin-state: enable
-   import-policy: accept_all
-   export-policy: accept_all
-   timers:
-    connect-retry: 10
-    _annotate_connect-retry: "Reduce default 120s to 10s"
-    minimum-advertisement-interval: 1
-   local-as:
-   - as-number: {{ n.local_as }}
-     prepend-global-as: false
-   ipv4-unicast:
-     advertise-ipv6-next-hops: true
-     receive-ipv6-next-hops: true
-{% endif %}
 {% endfor %}
 {% endif %}
 {% endfor %}
