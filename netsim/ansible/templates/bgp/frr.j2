@@ -16,12 +16,13 @@ router bgp {{ bgp.as }}
 !
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined %}
-  neighbor {{ n[af] }} remote-as {{ n.as }}
-  neighbor {{ n[af] }} description {{ n.name }}
+{%     set peer = n[af] if n[af] is string else n.local_if %}
+  neighbor {{ peer }} remote-as {{ n.as }}
+  neighbor {{ peer }} description {{ n.name }}
 {%     if n.type == 'ibgp' %}
-  neighbor {{ n[af] }} update-source lo0
+  neighbor {{ peer }} update-source lo0
 {%     elif n.local_as is defined %}
-  neighbor {{ n[af] }} local-as {{ n.local_as }}
+  neighbor {{ peer }} local-as {{ n.local_as }}
 {%     endif %}
 !
 {%   endfor %}
@@ -42,20 +43,21 @@ router bgp {{ bgp.as }}
 {%   endfor %}
 !
 {%   for n in bgp.neighbors if n[af] is defined and n.activate[af] is defined and n.activate[af] %}
-  neighbor {{ n[af] }} activate
+{%     set peer = n[af] if n[af] is string else n.local_if %}
+  neighbor {{ peer }} activate
 {%     if n.type == 'ibgp' %}
 {%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
-  neighbor {{ n[af] }} next-hop-self
+  neighbor {{ peer }} next-hop-self
 {%       endif %}
 {%       if bgp.rr|default('') and not n.rr|default('') %}
-  neighbor {{ n[af] }} route-reflector-client
+  neighbor {{ peer }} route-reflector-client
 {%       endif %}
 {%       if bgp.community.ibgp|default([]) %}
-  neighbor {{ n[af] }} send-community {{ community(bgp.community.ibgp) }}
+  neighbor {{ peer }} send-community {{ community(bgp.community.ibgp) }}
 {%       endif %}
 {%     else %}
 {%       if bgp.community.ebgp|default([]) %}
-  neighbor {{ n[af] }} send-community {{ community(bgp.community.ebgp) }}
+  neighbor {{ peer }} send-community {{ community(bgp.community.ebgp) }}
 {%       endif %}
 {%     endif %}
 !
