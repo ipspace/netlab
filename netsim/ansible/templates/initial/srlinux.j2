@@ -40,7 +40,7 @@ updates:
   val:
 {{  ip_addresses(loopback,False,True)  }}
 
-{% for l in interfaces|default([]) if (l.type in ['lan','vlan_member','svi'] or l.vlan is not defined) %}
+{% for l in interfaces|default([]) %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else l.vlan.access_id|default(0) if l.vlan is defined else '0' %}
@@ -83,25 +83,27 @@ updates:
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
+- path: network-instance[name={{ vrf }}]
+  val:
+   type: {{ 'default' if vrf=='default' else 'ip-vrf' }}
+   interface:
    - name: {{ if_name }}.{{ if_index }}
 {% endfor %}
 {% endmacro %}
 
-{# Make sure the default VRF is called 'default' #}
+{# Make sure the default VRF is called 'default', and has system0.0 interface #}
 - path: network-instance[name=default]
   val:
    type: default
    interface:
    - name: system0.0
+
 {{ list_interfaces('default') }}
 
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() %}
-- path: network-instance[name={{ vname }}]
-  val:
-   type: ip-vrf
-   # TODO: vdata.rd, vdata.import/export, vdata.af
-   interface:
+
+# TODO: vdata.rd, vdata.import/export, vdata.af
 {{ list_interfaces(vname) }}
 
 {% endfor %}
