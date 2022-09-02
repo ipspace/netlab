@@ -201,7 +201,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 
       extra_data = Box({})
       extra_data.ifindex = l.ifindex
-      if "unnumbered" in l:
+      if "unnumbered" in l or ('ipv6' in l and l.ipv6 == True):
         extra_data.unnumbered = True
         extra_data.local_if = l.ifname
 
