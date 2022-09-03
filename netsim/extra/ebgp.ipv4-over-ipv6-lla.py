@@ -4,7 +4,7 @@
 # Changes:
 # * Sets bgp.activate['ipv4'] = True
 #
-import typing, netaddr
+import typing
 from box import Box
 from netsim import common
 
@@ -14,7 +14,9 @@ activate_ipv4_over_ipv6: Update ebgp neighbors with ipv6 lla to enable ipv4
 def activate_ipv4_over_ipv6(node: Box) -> None:
 
     for n in [n for n in node.bgp.get("neighbors",[]) if 'ipv6' in n and n['ipv6']==True and n.type=='ebgp']:
-      if 'activate' in n and 'ipv4' not in n.activate:
+      if 'activate' in n: # and 'ipv4' not in n.activate:
+        if common.DEBUG:
+          print( f"Enabling ipv4-over-ipv6 address family for node {node.name}" )
         n.activate['ipv4'] = True
 
 def post_transform(topology: Box) -> None:
