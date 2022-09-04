@@ -19,12 +19,14 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 ## Supported BGP Features
 
 * Multiple autonomous systems
+* IPv4 and IPv6 address families
 * Direct (single-hop) EBGP sessions
 * IBGP sessions between loopback interfaces
+* EBGP sessions between auto-generated IPv6 link-local addresses
+* RFC8950-style IPv4 address family on EBGP IPv6 LLA sessions
 * BGP route reflectors
 * Next-hop-self control on IBGP sessions
 * BGP community propagation
-* IPv4 and IPv6 address families
 * Configurable activation of default address families
 * Configurable link prefix advertisement
 * Additional (dummy) prefix advertisement
@@ -36,14 +38,15 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 
 [Platforms supporting BGP configuration module](platform-routing-support) support most of the functionality mentioned above. The following features are only supported on a subset of platforms:
 
-| Operating system      | Unnumbered<br />interfaces | local AS | IBGP<br>local AS | Configurable<br>default AF |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            |  ❌  |  ✅ |  ✅ |  ✅ |
-| Cisco IOS/IOS XE      |  ❌  |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux         |  ✅ |  ❌  |  ❌  |  ✅ |
-| Dell OS10             |  ❌  |  ✅ |  ❌  |  ❌  |
-| FRR 7.5.0             |  ❌  |  ❌  |  ❌  |  ✅ |
-| Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
+| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered<br />IPv4 EBGP sessions | local AS | IBGP<br>local AS | Configurable<br>default AF |
+| --------------------- | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS            |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
+| Cisco IOS/IOS XE      |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
+| Cumulus Linux 4.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
+| Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ❌  |
+| Dell OS10             |  ❌  |  ❌  |  ✅ |  ❌  |  ❌  |
+| FRR 7.5.0             |  ✅ |  ❌  |  ❌  |  ❌  |  ✅ |
+| Nokia SR Linux        |  ✅ |  ✅ |  ✅ |  ❌  |  ❌  |
 
 ## Global BGP Configuration Parameters
 
@@ -222,24 +225,9 @@ See the [Simple BGP Example](bgp_example/simple.md) and [EBGP Data Center Fabric
 
 ### Notes on Unnumbered EBGP Sessions
 
-Unnumbered EBGP sessions are supported on a few platforms. The transformed data model includes **unnumbered** and **ifindex** elements on EBGP neighbors reachable over unnumbered interfaces -- compare a regular EBGP neighbor (R4) with an unnumbered EBGP neighbor (R1):
+Unnumbered EBGP sessions are supported on a few platforms. *netlab* creates an IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv6** interface address or link prefix is set to *True* (IPv6 LLA).
 
-```
-neighbors:
-- as: 65000
-  ifindex: 1
-  ipv4: true
-  ipv6: true
-  local_if: swp1
-  name: r1
-  type: ebgp
-  unnumbered: true
-- as: 65200
-  ifindex: 2
-  ipv4: 10.10.10.2
-  name: r3
-  type: ebgp
-```
+*netlab* can use an IPv6 LLA EBGP session to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *unnumbered EBGP sessions*. *netlab* will enable IPv4 AF over IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
 
 ## IPv6 Support
 

@@ -98,6 +98,7 @@ addressing:
 * Management IP addresses are assigned from 192.168.121.0/24 CIDR block. The first IP address is 192.168.121.101 (*start* offset plus node ID)
 * MAC addresses of management interfaces start with 08-4F-A9. The last byte of the MAC address is the node ID.
 
+(addressing-unnumbered)=
 ## Unnumbered Interface Support
 
 *netlab* supports unnumbered IPv4 and IPv6 interfaces: 
