@@ -103,6 +103,8 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
           ngb[af] = intf[af]
         else:
           ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
+    elif af in intf and isinstance(intf[af],bool):
+      ngb[af] = intf[af] # Support ipv6 ebgp sessions with an ipv4 datapath
 
   return ngb if af_count > 0 else None
 

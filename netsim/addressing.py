@@ -65,6 +65,8 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
   for af in 'ipv4','ipv6':
     if af in pfx:
       if not pfx[af] or 'unnumbered' in pfx:
+        if common.DEBUG:
+          print( f"normalize_prefix: Removing {af} prefix {pfx[af]} from {pfx}" )
         del pfx[af]
 
   return pfx
