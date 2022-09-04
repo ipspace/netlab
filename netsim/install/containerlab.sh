@@ -79,7 +79,7 @@ echo "Install Docker Engine"
 $SUDO apt-get update
 $SUDO apt-get install -y $FLAG_QUIET docker-ce docker-ce-cli containerd.io
 echo "Install containerlab"
-$SUDO bash -c "$(curl -sL https://get-clab.srlinux.dev)"
+$SUDO bash -c "$(curl -sL https://get.containerlab.dev)"
 set +e
 G="$(groups $USER|grep docker)"
 set -e
