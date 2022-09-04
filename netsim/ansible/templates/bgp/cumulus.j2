@@ -14,28 +14,34 @@ router bgp {{ bgp.as }}
   bgp cluster-id {{ bgp.rr_cluster_id }}
 {% endif %}
 !
-{% for n in bgp.neighbors %}
-{%   if n.unnumbered is defined and n.unnumbered is sameas true %}
-{%     if loop.first %}
+{#
+    Create external peer group if we have at least one IPv6 LLA EBGP neighbor
+#}
+{% for n in bgp.neighbors if n.local_if is defined %}
+{%   if loop.first %}
   neighbor external peer-group
   neighbor external remote-as external
-{%     endif %}
+{%   endif %}
+{% endfor %}
+{#
+    Create neighbors
+#}
+{% for n in bgp.neighbors %}
+{%   if n.local_if is defined %}
   neighbor {{ n.local_if }} interface peer-group external
   neighbor {{ n.local_if }} description {{ n.name }}
-{%   else %}
-{%     for af in ['ipv4','ipv6'] %}
-{%       if n[af] is defined %}
+{%   endif %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined and n[af] is string %}
   neighbor {{ n[af] }} remote-as {{ n.as }}
   neighbor {{ n[af] }} description {{ n.name }}
-{%         if n.type == 'ibgp' %}
+{%     if n.type == 'ibgp' %}
   neighbor {{ n[af] }} update-source lo
-{%         endif %}
-{%       endif %}
-{%     endfor %}
-  !
-{%   endif %}
-  !
+{%     endif %}
+{%   endfor %}
 {% endfor %}
+{#
+    Activate neighbors, set AF attributes
+#}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
  address-family {{ af }} unicast
 !
@@ -51,29 +57,23 @@ router bgp {{ bgp.as }}
   network {{ pfx|ipaddr('0') }}
 {%   endfor %}
 !
-{# {%   for n in bgp.neighbors if n[af] is defined %} #}
 {%   for n in bgp.neighbors if n.activate[af] is defined and n.activate[af] %}
-{%     if n.unnumbered is defined and n.unnumbered is sameas true %}
-  neighbor {{ n.local_if }} activate
-{%     else %}
-  neighbor {{ n[af] }} activate
-{%     endif %}
-{%     if n.type == 'ibgp' %}
-{%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
-  neighbor {{ n[af] }} next-hop-self
-{%       endif %}
-{%       if bgp.rr|default('') and not n.rr|default('') %}
-  neighbor {{ n[af] }} route-reflector-client
-{%       endif %}
-{%       if bgp.community.ibgp|default([]) %}
-  neighbor {{ n[af] }} send-community {{ community(bgp.community.ibgp) }}
-{%       endif %}
-{%     else %}
-{%       if bgp.community.ebgp|default([]) %}
-{%         if n.unnumbered is defined and n.unnumbered is sameas true %}
-  neighbor {{ n.local_if }} send-community {{ community(bgp.community.ebgp) }}
-{%         else %}
-  neighbor {{ n[af] }} send-community {{ community(bgp.community.ebgp) }}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('') %}
+{%     if peer %}
+  neighbor {{ peer }} activate
+{%       if n.type == 'ibgp' %}
+{%         if bgp.next_hop_self is defined and bgp.next_hop_self %}
+  neighbor {{ peer }} next-hop-self
+{%         endif %}
+{%         if bgp.rr|default('') and not n.rr|default('') %}
+  neighbor {{ peer }} route-reflector-client
+{%         endif %}
+{%         if bgp.community.ibgp|default([]) %}
+  neighbor {{ peer }} send-community {{ community(bgp.community.ibgp) }}
+{%         endif %}
+{%       else %}
+{%         if bgp.community.ebgp|default([]) %}
+  neighbor {{ peer }} send-community {{ community(bgp.community.ebgp) }}
 {%         endif %}
 {%       endif %}
 {%     endif %}
