@@ -76,12 +76,11 @@
 - path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
   val:
    admin-state: enable
+{% set activate = neighbor.activate if neighbor.activate is defined else { 'ipv4': True, 'ipv6': True } %}
    ipv4-unicast:
-    admin-state: {{ 'enable' if 'ipv4' in neighbor.activate and neighbor.activate['ipv4'] 
-                             or 'ipv6' in neighbor.activate and not neighbor.activate['ipv6'] 
-                    else 'disable' }}
+    admin-state: {{ 'enable' if 'ipv4' in neighbor and neighbor.ipv4 and activate.ipv4|default(False) else 'disable' }}
    ipv6-unicast:
-    admin-state: {{ 'enable' if 'ipv6' in neighbor.activate and neighbor.activate['ipv6'] else 'disable' }}
+    admin-state: {{ 'enable' if 'ipv6' in neighbor and neighbor.ipv6 and activate.ipv6|default(False) else 'disable' }}
 {% if 'evpn' in neighbor and neighbor.evpn %}
    evpn:
     admin-state: enable # Must have at least 1 address family enabled
@@ -168,7 +167,7 @@
 - path: network-instance[name={{vrf}}]/protocols/bgp/dynamic-neighbors/interface[interface-name={{if_name}}.{{if_index}}]
   val:
    peer-group: "{{ peer_group }}"
-   allowed-peer-as: [ {{ n.as }}..{{ n.as }} ]
+   allowed-peer-as: [ {{ n.as }} ]
 
 {% endfor %}
 {% endif %}
@@ -178,12 +177,12 @@
 {#
   Add extra IPv4 prefixes using static blackhole routes, add to export
 #}
+{% for pfx in vrf_bgp.originate|default([]) %}
 - path: network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
   val:
    blackhole:
      generate-icmp: True
 
-{% for pfx in vrf_bgp.originate|default([]) %}
 - path: network-instance[name={{vrf}}]/static-routes/route[prefix={{pfx}}]
   val:
    next-hop-group: blackhole
