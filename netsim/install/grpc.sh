@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check dependencies
+if [[ ! `which ansible-galaxy` ]]; then
+  echo "GRPC packages depend on Ansible (ansible-galaxy), aborting..."
+  exit 1
+fi
+
 if [[ -z "$FLAG_YES" ]]; then
   # Remove implied default of Y - ghostinthenet 20220418
   read -p "Are you sure you want to proceed [y/n] " -n 1 -r
