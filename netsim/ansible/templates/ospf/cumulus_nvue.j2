@@ -13,12 +13,18 @@
 {% if 'router_id' in ospf %}
             router-id: {{ ospf.router_id }}
 {% endif %}
+{% set node_area = ospf.area|default('0.0.0.0') %}
             area:
-              '{{ ospf.area | ipaddr('address') | default('0.0.0.0') }}':
+{% for o_area in interfaces|json_query('[*].ospf.area')|union([node_area])|unique %}
+              '{{ o_area }}':
                 network:
-{% if 'ipv4' in loopback %}
+{%   if o_area == node_area and 'ipv4' in loopback %}
                   {{ loopback.ipv4 }}: {}
-{% endif %}
+{%   endif %}
+{%   for l in interfaces if 'ipv4' in l and l.ipv4 is string and l.ospf.area|default('') == o_area %}
+                  {{ l.ipv4 }}: {}
+{%   endfor %}
+{% endfor %}
 {% for l in interfaces|default([]) if 'ospf' in l %}
 {%   if loop.first %}
     interface:
@@ -26,14 +32,10 @@
       {{ l.ifname }}:
         router:
           ospf:
-            enable: on
-            area: {{ l.ospf.area | ipaddr('address') | default('0.0.0.0') }}
 {%   if l.ospf.cost is defined %}
             cost: {{ l.ospf.cost }}
 {%   endif %}
-{%   if l.ospf.network_type is defined %}
-            network-type: {{ l.ospf.network_type }}
-{%   endif %}
+            network-type: {{ l.ospf.network_type|default('broadcast') }}
 {%   if l.ospf.passive | default(False) %}
             passive: on
 {%   endif %}
