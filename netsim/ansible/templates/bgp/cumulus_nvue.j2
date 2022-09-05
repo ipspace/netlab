@@ -26,50 +26,51 @@
             autonomous-system: {{ bgp.as }}
             neighbor:
 {% for n in bgp.neighbors %}
-{%   if n.unnumbered is defined and n.unnumbered is sameas true %}
-              {{ n.local_if }}
+{%   if n.local_if is defined %}
+              {{ n.local_if }}:
                 type: unnumbered
+                remote-as: {{ n.as }}
                 address-family:
                   ipv4-unicast:
-                    enable: on
+                    enable: {{ 'on' if n.ipv4_rfc8950|default(False) else 'off' }}
                     community-advertise:
                       extended: on
                   ipv6-unicast:
-                    enable: on
+                    enable: {{ 'on' if n.ipv6|default(False) and n.activate.ipv6|default(False) else 'off' }}
                     community-advertise:
                       extended: on
-{%   else %}
-              {{ n.ipv4 }}:
-                remote-as: {{ n.as }}
-{%     for af in ['ipv4','ipv6'] %}
-{%       if loop.first %}
-                address-family:
-{%       endif %}
-{%       if n[af] is defined %}
-                  {{ af }}-unicast:
-                    enable: on
-{%         if n.type == 'ibgp' %}
-                    nexthop-setting: self
-{%           if bgp.rr|default('') and not n.rr|default('') %}
-                    route-reflector-client: on
-{%           endif %}
-{%           if bgp.community.ibgp|default([]) %}
-                    community-advertise:
-{%             for ibgp_community in bgp.community.ibgp %}
-                      {{ ibgp_community.replace("standard","regular") }}: on
-{%             endfor %}
-{%           endif %}
-{%         else %}
-{%           if bgp.community.ebgp|default([]) %}
-                    community-advertise:
-{%             for ebgp_community in bgp.community.ebgp %}
-                      {{ ebgp_community.replace("standard","regular") }}: on
-{%             endfor %}
-{%           endif %}
-{%         endif %}
-{%       endif %}
-{%     endfor %}
 {%   endif %}
+{%   for af in ('ipv4','ipv6') if af in n and n[af] is string %}
+              {{ n[af] }}:
+                remote-as: {{ n.as }}
+                address-family:
+{#     NVUE cannot turn off default IPv4 activation, so we have to implement a fix for IPv6 #}
+{%     if af == 'ipv6' %}
+                  ipv4-unicast:
+                    enable: off
+{%     endif %}
+                  {{ af }}-unicast:
+                    enable: {{ 'on' if n.activate[af]|default(False) else 'off' }}
+{%     if n.type == 'ibgp' %}
+                    nexthop-setting: self
+{%       if bgp.rr|default('') and not n.rr|default('') %}
+                    route-reflector-client: on
+{%       endif %}
+{%       if bgp.community.ibgp|default([]) %}
+                    community-advertise:
+{%         for ibgp_community in bgp.community.ibgp %}
+                      {{ ibgp_community.replace("standard","regular") }}: on
+{%         endfor %}
+{%       endif %}
+{%     else %}
+{%       if bgp.community.ebgp|default([]) %}
+                    community-advertise:
+{%         for ebgp_community in bgp.community.ebgp %}
+                      {{ ebgp_community.replace("standard","regular") }}: on
+{%         endfor %}
+{%       endif %}
+{%     endif %}
+{%   endfor %}
 {% endfor %}
 {% if 'router_id' in bgp %}
             router-id: {{ bgp.router_id }}
