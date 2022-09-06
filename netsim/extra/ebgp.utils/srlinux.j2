@@ -1,7 +1,7 @@
 {% macro ebgp_neighbor(n,af,vrf) -%}
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
-{% if n.type=='ebgp' and 'ipv6' in n and n.ipv6 == True %}
+{% if n.type=='ebgp' and n.ipv6|default(0) == True %}
    group:
    - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
 {% else %}
@@ -9,13 +9,13 @@
    - peer-address: {{ n[af]|ipaddr('address') }}
 {% endif %}
      send-default-route:
-      {{ af }}: {{ n.default_originate|default(False) }}
+      {{ af }}-unicast: {{ n.default_originate|default(False) }}
      as-path-options:
 {%   if n.allowas_in is defined %}
       allow-own-as: {{ n.allowas_in|int }}
 {%   endif %}
       replace-peer-as: {{ True if n.as_override|default(False) else False }}
-{%   if n.password is defined %}
+{%   if n.password is defined and (n.type!='ebgp' or n.ipv6|default('') is string) %}
      authentication:
       keychain: "peer-{{n.name}}"
 
