@@ -1,0 +1,47 @@
+{% macro ebgp_neighbor(n,af,vrf) -%}
+- path: network-instance[name={{vrf}}]/protocols/bgp
+  val:
+{% if n.type=='ebgp' and n.ipv6|default(0) == True %}
+   group:
+   - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
+{% else %}
+   neighbor:
+   - peer-address: {{ n[af]|ipaddr('address') }}
+{% endif %}
+     send-default-route:
+      {{ af }}-unicast: {{ n.default_originate|default(False) }}
+     as-path-options:
+{%   if n.allowas_in is defined %}
+      allow-own-as: {{ n.allowas_in|int }}
+{%   endif %}
+      replace-peer-as: {{ True if n.as_override|default(False) else False }}
+{%   if n.password is defined and (n.type!='ebgp' or n.ipv6|default('') is string) %}
+     authentication:
+      keychain: "peer-{{n.name}}"
+
+- path: system/authentication/keychain[name=peer-{{n.name}}]
+  val:
+   type: tcp-md5
+   key:
+   - index: 0
+     algorithm: md5
+     authentication-key: "{{ n.password }}"
+{%   endif %}
+{%- endmacro %}
+
+updates:
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_neighbor(n,af,'default') -}}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors if n[af] is defined %}
+{{       ebgp_neighbor(n,af,vname) -}}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
