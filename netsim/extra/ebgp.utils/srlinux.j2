@@ -1,7 +1,7 @@
 {% macro ebgp_neighbor(n,af,vrf) -%}
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
-{% if n.type=='ebgp' and n.ipv6|default(0) == True %}
+{% if n.type=='ebgp' and af=='ipv6' and n.ipv6|default(0) == True %}
    group:
    - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
 {% else %}
@@ -35,7 +35,7 @@
 
 updates:
 {% for af in ['ipv4','ipv6'] %}
-{%   for n in bgp.neighbors if n[af] is defined and (n[af] is string or af=='ipv6') %}
+{%   for n in bgp.neighbors if n[af] is defined and (n[af] is string or (af=='ipv6' and n.ipv6)) %}
 {{     ebgp_neighbor(n,af,'default') -}}
 {%   endfor %}
 {% endfor %}
@@ -43,7 +43,7 @@ updates:
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
 {%   for af in ['ipv4','ipv6'] %}
-{%     for n in vdata.bgp.neighbors if n[af] is defined and (n[af] is string or af=='ipv6') %}
+{%     for n in vdata.bgp.neighbors if n[af] is defined and (n[af] is string or (af=='ipv6' and n.ipv6)) %}
 {{       ebgp_neighbor(n,af,vname) -}}
 {%     endfor %}
 {%   endfor %}
