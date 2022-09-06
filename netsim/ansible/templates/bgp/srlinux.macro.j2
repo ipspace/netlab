@@ -1,23 +1,33 @@
 {% macro bgp_policy(vrf,is_import,communities) %}
 {% set name = vrf + "_" + ('import' if is_import else 'export') %}
+
+{% if communities %}
 - path: routing-policy/community-set[name={{name}}]
   val:
    member:
 {% for c in communities %}
    - "target:{{c}}"
 {% endfor -%}
+{% endif %}
 
 - path: routing-policy/policy[name={{name}}]
   val:
+   default-action: 
+    reject: { }
    statement:
    - sequence-id: 10
 {%   if is_import %}
+{%    if communities %}   
      match:
       bgp:
        community-set: "{{ name }}"
+{%    endif %}
+{%   else %}
+     match:
+      prefix-set: "{{ vrf }}_export"
 {%   endif %}
      action:
-{%    if is_import %}
+{%    if is_import or not communities %}
       accept: { }
 {%    else %}
       accept:
@@ -25,6 +35,14 @@
         communities:
          add: "{{ name }}"
 {%    endif %}
+{% endmacro %}
+
+{% macro bgp_export_prefix(vrf,prefix,is_loopback=False) %}
+- path: routing-policy/prefix-set[name={{vrf}}_export]
+  val:
+   prefix:
+   - ip-prefix: {{ prefix|ipaddr('address')|ipsubnet(24,0) if is_loopback else prefix }}
+     mask-length-range: {{ '32..32' if is_loopback else 'exact' }}
 {% endmacro %}
 
 {% macro bgp_config(vrf,_as,router_id,vrf_bgp,vrf_context) %}
@@ -36,12 +54,8 @@
 {% set import_policy = "accept_all" %}
 {% endif -%}
 
-{% if 'export' in vrf_context %}
 {% set export_policy = vrf + "_export" %}
-{{ bgp_policy(vrf,0,vrf_context.export) }}
-{% else %}
-{% set export_policy = "accept_all" %}
-{% endif -%}
+{{ bgp_policy(vrf,0,vrf_context.export|default({})) }}
 
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
@@ -59,17 +73,21 @@
     multipath:
      max-paths-level-1: 64
      max-paths-level-2: 64 # indirect nexthops
-{%   if loopback[af] is defined and bgp.advertise_loopback %}
-{# {{     bgp_network(af,loopback[af]) }} #}
-{%   endif %}
+{% endfor %}
 
-{% for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
-{# {{     bgp_network(af,l[af]) }} #}
-{%   endfor %}
-{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-{# {{     bgp_network(af,pfx) }} #}
-{%   endfor %}
+{# Create route export policies #}
+{% for af in ['ipv4','ipv6'] if vrf_bgp[af]|default(0) %}
+{% if loopback[af] is defined and bgp.advertise_loopback and vrf=='default' %}
+{{ bgp_export_prefix(vrf,loopback[af],True) }}
+{% endif %}
 
+{% for l in interfaces|default([]) if l.bgp.advertise|default(0) and l[af]|default(False) is string and l.vrf|default('default')==vrf %}
+{{ bgp_export_prefix(vrf,l[af]) }}
+{% endfor %}
+
+{% for pfx in vrf_bgp.originate|default([]) if af == 'ipv4' %}
+{{ bgp_export_prefix(vrf,pfx) }}
+{% endfor %}
 {% endfor %}
 
 {% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
@@ -176,7 +194,7 @@
 {% endfor %}
 
 {#
-  Add extra IPv4 prefixes using static blackhole routes, add to export
+  Add extra IPv4 prefixes using static blackhole routes
 #}
 - path: network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
   val:
@@ -187,11 +205,6 @@
 - path: network-instance[name={{vrf}}]/static-routes/route[prefix={{pfx}}]
   val:
    next-hop-group: blackhole
-- path: routing-policy/prefix-set[name=external_routes]
-  val:
-   prefix:
-   - ip-prefix: {{ pfx }}
-     mask-length-range: exact
 {% endfor %}
 
 {% if 'sr' in module|default([]) %}
