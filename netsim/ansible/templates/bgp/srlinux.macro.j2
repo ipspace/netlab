@@ -10,11 +10,30 @@
 {% endfor -%}
 {% endif %}
 
+{% macro accept() %}
+{%    if is_import or not communities %}
+      accept: { }
+{%    else %}
+      accept:
+       bgp:
+        communities:
+         add: "{{ name }}"
+{%    endif %}
+{% endmacro %}
+
 - path: routing-policy/policy[name={{name}}]
   val:
    default-action: 
     reject: { }
    statement:
+{%   if not is_import %}
+   - sequence-id: 5
+     match:
+      protocol: bgp
+      _annotate_protocol: "Accept and propagate prefixes received via BGP"
+     action:
+{{    accept() }}
+{% endif %}
    - sequence-id: 10
 {%   if is_import %}
 {%    if communities %}   
@@ -27,22 +46,15 @@
       prefix-set: "{{ vrf }}_export"
 {%   endif %}
      action:
-{%    if is_import or not communities %}
-      accept: { }
-{%    else %}
-      accept:
-       bgp:
-        communities:
-         add: "{{ name }}"
-{%    endif %}
+{{    accept() }}
 {% endmacro %}
 
-{% macro bgp_export_prefix(vrf,prefix,is_loopback=False) %}
+{% macro bgp_export_prefix(vrf,prefix) %}
 - path: routing-policy/prefix-set[name={{vrf}}_export]
   val:
    prefix:
-   - ip-prefix: {{ prefix|ipaddr('address')|ipsubnet(24,0) if is_loopback else prefix }}
-     mask-length-range: {{ '32..32' if is_loopback else 'exact' }}
+   - ip-prefix: {{ prefix }}
+     mask-length-range: exact
 {% endmacro %}
 
 {% macro bgp_config(vrf,_as,router_id,vrf_bgp,vrf_context) %}
@@ -78,7 +90,7 @@
 {# Create route export policies #}
 {% for af in ['ipv4','ipv6'] if vrf_bgp[af]|default(0) %}
 {% if loopback[af] is defined and bgp.advertise_loopback and vrf=='default' %}
-{{ bgp_export_prefix(vrf,loopback[af],True) }}
+{{ bgp_export_prefix(vrf,loopback[af]) }}
 {% endif %}
 
 {% for l in interfaces|default([]) if l.bgp.advertise|default(0) and l[af]|default(False) is string and l.vrf|default('default')==vrf %}
