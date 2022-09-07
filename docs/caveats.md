@@ -18,6 +18,28 @@
 * *netlab* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.devices.cumulus.clab.image** parameter (or by editing the `topology-defaults.yml` file included with *netlab*).
 * The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 
+(caveats-cumulus-nvue)=
+
+## Cumulus 5.0 with NVUE
+
+You could configure Cumulus Linux 5.0 with configuration templates developed for Cumulus Linux 4.0 (use device type **cumulus** and specify desired device image), or with NVUE.
+
+NVUE has several shortcomings that prevent *netlab* from configuring basic designs like IBGP on top of IGP. Don't be surprised if the labs that work with **cumulus** device don't work with **cumulus_nvue** device, and please create a GitHub issue whenever you find a glitch. We'd love to know (at least) what doesn't work as expected.
+
+To run Cumulus Linux 5.x with **cumulus** device type, add the following lines to your lab topology:
+
+```
+defaults.devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
+defaults.devices.cumulus.libvirt.memory: 2048
+```
+
+Alternatively, you could add the following lines to your `~/.topology-defaults.yml` file:
+
+```
+devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
+devices.cumulus.libvirt.memory: 2048
+```
+
 ## Fortinet FortiOS
 
 * *FortiOS* VM images by default have a 15 day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.

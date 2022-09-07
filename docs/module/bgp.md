@@ -36,17 +36,22 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 
 ## Platform Support
 
-[Platforms supporting BGP configuration module](platform-routing-support) support most of the functionality mentioned above. The following features are only supported on a subset of platforms:
+[Platforms supporting BGP configuration module](platform-routing-support) support most of the functionality mentioned above with the following exceptions:
 
-| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered<br />IPv4 EBGP sessions | local AS | IBGP<br>local AS | Configurable<br>default AF |
+* Cumulus Linux 5.2.0 using NVUE cannot configure IBGP sessions between loopback interfaces. Please [see caveats for more details](caveats-cumulus-nvue).
+
+The following features are only supported on a subset of platforms:
+
+| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered IPv4<br />EBGP sessions | EBGP<br>local AS | IBGP<br>local AS | Configurable<br>default AF |
 | --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS/IOS XE      |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
-| Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ❌  |
+| Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
 | Dell OS10             |  ❌  |  ❌  |  ✅ |  ❌  |  ❌  |
 | FRR 7.5.0             |  ✅ |  ❌  |  ✅  |  ✅  |  ✅ |
 | Nokia SR Linux        |  ✅ |  ❌ |  ✅ |  ✅  |  ✅  |
+
 
 ## Global BGP Configuration Parameters
 
