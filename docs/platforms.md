@@ -8,8 +8,8 @@
 | Cisco IOSv                                | iosv               |
 | Cisco CSR 1000v                           | csr                |
 | Cisco Nexus 9300v                         | nxos               |
-| Cumulus Linux                             | cumulus            |
-| Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue            |
+| Cumulus Linux 4.x/5.x                     | cumulus            |
+| Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue [❗](caveats.html#caveats-cumulus-nvue)           |
 | Fortinet FortiOS [❗](caveats.html#fortinet-fortios) | fortios            |
 | FRR 7.5.0                                 | frr                |
 | Generic Linux host                        | linux              |
