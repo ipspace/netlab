@@ -57,7 +57,6 @@ EVPN module supports these default/global/node parameters:
 * **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
 * **evpn.vlan_bundle_service** (global or node parameter): Use VLAN bundle service for VLANs within a VRF (default: `False`)
 * **evpn.start_transit_vni** (system default parameter) -- the first symmetric IRB transit VNI, range 4096..16777215
-* **evpn.start_transit_evi** (system default parameter) -- the first symmetric IRB transit EVI, range 1..65535
 
 ### VLAN-Based Service Parameters
 
@@ -86,6 +85,6 @@ The default value of VRF EVPN Instance identifier is the VLAN ID of the first VL
 IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addresses:
 
 * Asymmetric IRB requires no extra parameters[^NS]
-* Symmetric IRB needs a transit VNI that has to be set with the **evpn.transit_vni** parameter, and an optional **evpn.transit_evi** parameter. Those parameters could be set to an integer value or to *True* in which case the EVPN configuration module auto-assigns VNI/EVI values to the VRF.
+* Symmetric IRB needs a transit VNI that has to be set with the **evpn.transit_vni** parameter. This parameter could be set to an integer value or to *True* in which case the EVPN configuration module auto-assigns a VNI to the VRF. Note that the EVI value used in this case is currently based on the VRF ID (vrfidx)
 
 [^NS]: Asymmetric IRB is not supported at the moment
