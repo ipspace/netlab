@@ -16,6 +16,7 @@ from .. import addressing
 # Check VXLAN-enabled VLANs
 #
 def node_vlan_check(node: Box, topology: Box) -> bool:
+
   if not node.vxlan.vlans:            # Create a default list of VLANs if needed
     node.vxlan.vlans = [ name for name,value in node.vlans.items() if 'vni' in value ]
 
@@ -35,15 +36,16 @@ def node_vlan_check(node: Box, topology: Box) -> bool:
     # Skip VLAN names that are valid but not used on this node
     if not vname in node.vlans:
       continue
-    if not 'vni' in node.vlans[vname]:
+    # 'None' can happen if vlan module logic hasn't run
+    if node.vlans[vname] is None or not 'vni' in node.vlans[vname]:
       common.error(
-        f'VXLAN-enabled VLAN {vname} in node {node.name} does not have a VNI',
+        f'VXLAN-enabled VLAN {vname} in node {node.name} does not have a VNI - was the "vlan" module applied?',
         common.IncorrectValue,
         'vxlan')
       OK = False
     else:
       vlan_list.append(vname)
-
+ 
   node.vxlan.vlans = vlan_list
   return OK
 
@@ -93,6 +95,23 @@ def build_vtep_list(vlan: Box, node: str, nodes: typing.List[str], topology: Box
   return return_value
 
 class VXLAN(_Module):
+
+  # Pulls in vlans and vrfs used in vxlan.vlans, runs before vlan.node_pre_transform
+  def node_pre_default(self, node: Box, topology: Box) -> None:
+    global_vlans = topology.get('vlans',[])
+    if global_vlans:
+      vxlan_vlans = get_from_box(node,'vxlan.vlans') or get_from_box(topology,'vxlan.vlans')
+      if vxlan_vlans:
+        node.vlans = node.vlans or {}
+        node.vrfs = node.vrfs or {}
+        for vname in vxlan_vlans:
+          if vname not in node.vlans and vname in global_vlans:
+            node.vlans[ vname ] = { }
+            if 'vrf' in global_vlans[vname] and global_vlans[vname].vrf not in node.vrfs:
+              node.vrfs[ global_vlans[vname].vrf ] = { }
+
+        if common.DEBUG:
+          print( f"vxlan: after node_pre_default for {node.name} -> node.vlans={node.vlans} node.vrfs={node.vrfs}" )
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     flooding_values = ['static']
