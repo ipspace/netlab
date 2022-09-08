@@ -1,26 +1,29 @@
-{% macro ip_addresses(intf,ipv6_ra,is_system) %}
+{% macro ip_addresses(name,index,intf,ipv6_ra=True,is_system=False) %}
+- path: interface[name={{name}}]/subinterface[index={{index}}]
+  val:
+   description: {{ intf.name | default( "No description" )|replace('->','~')|regex_replace('[\\[\\]]','') }}
 {% if 'ipv4' in intf and intf.ipv4 is string %}
-    ipv4:
-     address:
-     - ip-prefix: "{{ intf.ipv4 }}"
+   ipv4:
+    address:
+    - ip-prefix: "{{ intf.ipv4 }}"
 {% if not is_system %}
-       primary: [null]
+      primary: [null]
 {% endif %}
 {% endif %}
 {% if 'ipv6' in intf %}
-    ipv6:
+   ipv6:
 {%   if intf.ipv6 is string %}
-     address:
-     - ip-prefix: "{{ intf.ipv6 }}"
+    address:
+    - ip-prefix: "{{ intf.ipv6 }}"
 {%   endif %}
 {% if ipv6_ra %}
-     neighbor-discovery:
-      learn-unsolicited: link-local
-     router-advertisement:
-      router-role:
-       admin-state: enable             # no ipv6 nd suppress-ra
-       # min-advertisement-interval: 5 # Leave at platform default 200..600
-       # max-advertisement-interval: 5
+    neighbor-discovery:
+     learn-unsolicited: link-local
+    router-advertisement:
+     router-role:
+      admin-state: enable             # no ipv6 nd suppress-ra
+      # min-advertisement-interval: 5 # Leave at platform default 200..600
+      # max-advertisement-interval: 5
 {% endif %}
 {% endif %}
 {% endmacro %}
@@ -39,14 +42,13 @@ updates:
    _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
 {% endif %}
 {% endif %}
-- path: interface[name=system0]/subinterface[index=0]
-  val:
-{{  ip_addresses(loopback,False,True)  }}
 
-{% for l in interfaces|default([]) %}
+{{  ip_addresses('system0',0,loopback,False,True)  }}
+
+{% for l in interfaces|default([]) if l.vlan is not defined or l.vlan.mode|default('irb')=='route' %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
-{% set if_index = if_name_index[1] if if_name_index|length > 1 else l.vlan.access_id|default(0) if l.vlan is defined else '0' %}
+{% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
 {% set vlan = l.vlan.access|default(l.vlan.access_id|default('routed')|string()) if l.vlan is defined else l.ifname %}
 {% set if_desc = l.name|default( "vlan " + vlan )|replace('->','~')|regex_replace('[\\[\\]]','') %}
 - path: interface[name={{ if_name }}]
@@ -54,29 +56,14 @@ updates:
 {% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
    mtu {{ [l.mtu + 14,1500]|max }} # TODO not supported on loopback interfaces
 {% endif %}
-{% if l.subif_index is not defined %}{# Skip trunk parent interfaces #}
-{% if l.type in ["vlan_member"] %}
-   vlan-tagging: True
-{% endif %}
+{% if l.subif_index is defined %}{# Trunk parent interfaces #}
+   description: "Trunk {{ if_desc }}"
+{% else %}
    subinterface:
     index: {{ if_index }}
     description: "{{ if_desc }}"
-{% if l.vlan is defined and l.type in ["vlan_member","lan"] %}
-    type: {{ 'bridged' if l.vlan.access is defined and vlans[ l.vlan.access ].mode|default('irb') in ['bridge','irb'] else 'routed' }}
-{%  if l.type in ["vlan_member"] %}
-    vlan:
-     encap:
-{%    if l.vlan.access_id is defined %}
-      single-tagged:
-       vlan-id: "{{ l.vlan.access_id }}"
-{%    else %}
-      untagged: { }
-{%    endif %}
-{%  endif %}
-{% endif %}
-{{  ip_addresses(l,True,False) }}
-{% else %}
-   description: "Trunk {{ if_desc }}"
+
+{{ ip_addresses(if_name,if_index,l) }}
 {% endif %}
 {% endfor %}
 
