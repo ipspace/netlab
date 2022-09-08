@@ -162,6 +162,7 @@ vlan: # VLAN support
 vxlan: # VXLAN support
   supported_on: [ eos, nxos, vyos, dellos10, srlinux ]
   requires: [ vlan ]
+  config_after: [ vrf ] # For platforms that suppport L3 VXLAN, vrfs must be created first
   domain: global
   flooding: static
   attributes:
@@ -516,7 +517,7 @@ devices:
         ipv4:
           unnumbered: True
         ipv6:
-          lla: True      
+          lla: True
       bgp:
         activate_af: True
         ipv6_lla: True
@@ -713,7 +714,7 @@ devices:
           lla: True
       vlan:
         model: router
-        svi_interface_name: "irb0.{vlan}"
+        svi_interface_name: "vlan{vlan}" # Used as mac-vrf name
         subif_name: "{ifname}.{vlan.access_id}"
         mixed_trunk: True
       bgp:
@@ -724,7 +725,9 @@ devices:
         ipv6_lla: True
         rfc8950: True
       vxlan:
-        requires: [ evpn, vrf ]
+        requires: [ evpn ] # vrf for l3 vxlan
+      evpn:
+        irb: True
       ospf:
         unnumbered: False
       isis:
@@ -732,6 +735,9 @@ devices:
           ipv4: False
           ipv6: True
           network: False
+      vrf:
+        loopback_interface_name: "lo0.{vrfidx}"
+        keep_module: True
     external:
       image: none
     graphite.icon: router

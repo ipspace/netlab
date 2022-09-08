@@ -91,6 +91,7 @@ def vrf_transit_vni(topology: Box) -> None:
         common.IncorrectValue,
         'evpn')
       continue
+    vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
 
   vni_start = topology.defaults.evpn.start_transit_vni
   for vrf_name,vrf_data in topology.vrfs.items():               # Second pass: set transit VNI values for VRFs with "transit_vni: True"
@@ -101,6 +102,8 @@ def vrf_transit_vni(topology: Box) -> None:
                     key='evpn.transit_vni',
                     path=f'vrfs.{vrf_name}',
                     module='evpn',
+                    min_value=4096,                             # As recommended by Cisco, outside of VLAN range
+                    max_value=16777215,
                     true_value=vni_start)                       # Make sure evpn.transit_vni is an integer
     if transit_vni == vni_start:                                # If we had to assign the default value, increment the default transit VNI
       vni_start = get_next_vni(vni_start,vni_list)

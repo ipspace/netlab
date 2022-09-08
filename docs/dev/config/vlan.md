@@ -73,7 +73,7 @@ devices:
     features:
       vlan:
         model: router
-        svi_interface_name: "{ifname}.{vlan}"
+        svi_interface_name: "vlan{vlan}"
         subif_name: "{ifname}.{subif_index}"
   vyos:
     features:
