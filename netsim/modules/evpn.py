@@ -66,7 +66,7 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -
   evpn.vlan_ids.append(topology.vlans[vname].id)                    # ... and a VLAN ID to list of EVPN-enabled VLAN tags
 
 """
-Set transit VNI values for symmetrical IRB VRFs
+Set transit VNI/EVI values for symmetrical IRB VRFs
 """
 def get_next_vni(start_vni: int, used_vni_list: typing.List[int]) -> int:
   while True:
@@ -78,21 +78,27 @@ def vrf_transit_vni(topology: Box) -> None:
   if not 'vrfs' in topology:
     return
 
-  vni_list: typing.List[int] = []
-  for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
-    if vrf_data is None:                                        # Skip empty VRF definitions
-      continue
-    vni = data.get_from_box(vrf_data,'evpn.transit_vni')
-    if not isinstance(vni,int):
-      continue
-    if vni in vni_list:
-      common.error(
-        f'VRF {vrf_name} is using the same EVPN transit VNI as another VRF',
-        common.IncorrectValue,
-        'evpn')
-      continue
+  def check_for_duplicates(v: str):
+    vni_list: typing.List[int] = []
+    for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
+      if vrf_data is None:                                        # Skip empty VRF definitions
+        continue
+      vni = data.get_from_box(vrf_data,f'evpn.transit_{v}')
+      if not isinstance(vni,int):
+        continue
+      if vni in vni_list:
+        common.error(
+          f'VRF {vrf_name} is using the same EVPN transit {v} as another VRF',
+          common.IncorrectValue,
+          'evpn')
+        continue
+      vni_list.append( vni )
+    return vni_list
+  vni_list = check_for_duplicates('vni')
+  evi_list = check_for_duplicates('evi')
 
   vni_start = topology.defaults.evpn.start_transit_vni
+  evi_start = topology.defaults.evpn.start_transit_evi
   for vrf_name,vrf_data in topology.vrfs.items():               # Second pass: set transit VNI values for VRFs with "transit_vni: True"
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
@@ -101,16 +107,40 @@ def vrf_transit_vni(topology: Box) -> None:
                     key='evpn.transit_vni',
                     path=f'vrfs.{vrf_name}',
                     module='evpn',
+                    min_value=4096,                             # As recommended by Cisco, outside of VLAN range
+                    max_value=16777215,
                     true_value=vni_start)                       # Make sure evpn.transit_vni is an integer
     if transit_vni == vni_start:                                # If we had to assign the default value, increment the default transit VNI
+      if common.DEBUG:
+        print( f"evpn: Auto-assigning transit VNI {transit_vni} to VRF {vrf_name}" )
       vni_start = get_next_vni(vni_start,vni_list)
+
+    transit_evi = data.must_be_int(
+                    vrf_data,
+                    key='evpn.transit_evi',
+                    path=f'vrfs.{vrf_name}',
+                    module='evpn',
+                    min_value=1,
+                    max_value=65535,
+                    true_value=evi_start)                       # Make sure evpn.transit_evi is an integer
+    if transit_vni and not transit_evi:                         # If transit VNI is set, also configure EVI
+      vrf_data.evpn.transit_evi = transit_evi = evi_start
+    if transit_evi == evi_start:                                # If we had to assign the default value, increment the default transit VNI
+      if common.DEBUG:
+        print( f"evpn: Auto-assigning transit EVI {transit_evi} to VRF {vrf_name}" )
+      evi_start = get_next_vni(evi_start,evi_list)
+
 
 def vrf_irb_setup(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
   for vrf_name,vrf_data in node.get('vrfs',{}).items():
     if not 'af' in vrf_data or not 'evpn' in vrf_data:          # VRF without EVPN data or L3 information is definitely not doing IRB
+      if common.DEBUG:
+        print( f"evpn: Skipping IRB configuration in VRF {vrf_name}; no AF or EVPN defined: {vrf_data}" )
       continue
     if not vrf_name in topology.get('vrfs',{}):                 # Makes no sense to configure IRB for local VRF
+      if common.DEBUG:
+        print( f"evpn: Skipping IRB configuration for local-only VRF {vrf_name}: {vrf_data}" )
       continue
 
     g_vrf = topology.vrfs[vrf_name]                             # Pointer to global VRF data, will come useful in a second
@@ -122,6 +152,8 @@ def vrf_irb_setup(node: Box, topology: Box) -> None:
           'evpn')
         continue
       vrf_data.evpn.transit_vni = g_vrf.evpn.transit_vni        # Make transit VNI is copied into the local VRF
+      if 'transit_evi' in g_vrf.evpn:
+        vrf_data.evpn.transit_evi = g_vrf.evpn.transit_evi      # Also copy transit EVI
       vrf_data.pop('ospf',None)                                 # ... and remove OSPF from EVPN IRB VRF
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
