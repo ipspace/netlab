@@ -1,29 +1,44 @@
-updates:
-{% if vxlan.vlans is defined %}
-{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
-{%     set vlan = vlans[vname] %}
-- path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{vlan.id}}]
+{% macro vxlan_interface(vrf,index,type,vni,evi) %}
+- path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{index}}]
   val:
-   type: bridged
+   type: {{ type }}
    ingress:
-    vni: {{ vlan.vni }}
+    vni: {{ vni }}
    egress:
     source-ip: use-system-ipv4-address
     
-- path: network-instance[name=vlan_{{vname}}]
+- path: network-instance[name={{vrf}}]
   val:
-   type: mac-vrf
+   type: {{ 'mac-vrf' if type=='bridged' else 'ip-vrf' }}
    vxlan-interface:
-   - name: vxlan0.{{ vlan.id }}
+   - name: vxlan0.{{ index }}
    protocols:
     bgp-vpn:
      bgp-instance:
      - id: 1
+       route-target:
+        _annotate: "For compatibility with frr, override auto-derived RT based on EVI {{evi}} with VNI {{vni}}"
+        import-rt: "target:{{ bgp.as }}:{{ vni }}"
+        export-rt: "target:{{ bgp.as }}:{{ vni }}"
     bgp-evpn:
      bgp-instance:
      - id: 1
-       evi: {{ vlan.evpn.evi }}
+       evi: {{ evi }}
        ecmp: 8
-       vxlan-interface: vxlan0.{{ vlan.id }}
+       vxlan-interface: vxlan0.{{ index }}
+{% endmacro %}
+
+updates:
+{% if vlans is defined and vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+{{ vxlan_interface('vlan'+vlan.id|string,vlan.id,'bridged',vlan.vni,vlan.evpn.evi) }}
 {%   endfor %}
+{% endif %}
+
+{# Symmetric IRB interfaces #}
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if 'evpn' in vdata and 'transit_vni' in vdata.evpn and 'transit_evi' in vdata.evpn %}
+{{ vxlan_interface(vname,vdata.vrfidx,'routed',vdata.evpn.transit_vni,vdata.evpn.transit_evi) }}
+{% endfor %}
 {% endif %}
