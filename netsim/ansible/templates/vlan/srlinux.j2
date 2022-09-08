@@ -40,10 +40,18 @@ updates:
   val:
    interface:
    - name: {{ ifname }}.{{ vlan }}
+
+{% if ifname=="irb0" %}
+- path: network-instance[name={{ i.vrf|default('default') }}]
+  val:
+   interface:
+   - name: {{ ifname }}.{{ vlan }}
+{% endif %}
+
 {% endmacro %}
 
 {% for l in interfaces|default([]) if l.vlan is defined %}
-{%  if l.type in ['svi'] and l.vlan.mode|default('irb') != 'bridge' %}
+{%  if l.type in ['svi'] and l.vlan.mode|default('irb') == 'irb' %}
 {%    set vlan = l.ifname[4:]|int %}
 {{    add_interface( l.ifname, "irb0", vlan, l ) }}
 {%  elif l.type in ['lan','vlan_member'] %}
