@@ -78,24 +78,25 @@ def vrf_transit_vni(topology: Box) -> None:
   if not 'vrfs' in topology:
     return
 
-  def check_for_duplicates(v: str):
+  def check_for_duplicates(param: str) -> typing.List[int]:
     vni_list: typing.List[int] = []
     for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
       if vrf_data is None:                                        # Skip empty VRF definitions
         continue
-      vni = data.get_from_box(vrf_data,f'evpn.transit_{v}')
+      vni = data.get_from_box(vrf_data,param)
       if not isinstance(vni,int):
         continue
       if vni in vni_list:
         common.error(
-          f'VRF {vrf_name} is using the same EVPN transit {v} as another VRF',
+          f'VRF {vrf_name} is using the same {param} value as another VRF',
           common.IncorrectValue,
           'evpn')
         continue
       vni_list.append( vni )
     return vni_list
-  vni_list = check_for_duplicates('vni')
-  evi_list = check_for_duplicates('evi')
+
+  vni_list = check_for_duplicates('evpn.transit_vni')
+  evi_list = check_for_duplicates('evpn.transit_evi')
 
   vni_start = topology.defaults.evpn.start_transit_vni
   evi_start = topology.defaults.evpn.start_transit_evi
