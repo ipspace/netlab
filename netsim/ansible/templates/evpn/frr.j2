@@ -8,8 +8,6 @@ router bgp {{ bgp.as }}
   advertise {{ af }} unicast
 {% endfor %}
 
-! Configure explicit Route Targets and RDs per VNI; auto-derived differs
-
 {% for n in bgp.neighbors if n.evpn|default(False) %}
 {%  for af in ['ipv4','ipv6'] if af in n %}
   neighbor {{ n[af] }} activate
@@ -27,21 +25,33 @@ exit
 vrf {{ vname }}
 {% if vdata.evpn.transit_vni is defined %}
  vni {{ vdata.evpn.transit_vni }}
+{% endif %}
  exit-vrf
 
-router bgp {{ bgp.as }}
+router bgp {{ bgp.as }} vrf {{ vname }}
  address-family l2vpn evpn
-  vni {{ vdata.evpn.transit_vni }}
-   rd {{ vdata.rd }}
-   route-target export {{ vdata.export[0] }}
-   route-target import {{ vdata.import[0] }}
-   exit
+{% if vdata.evpn.transit_vni is defined %}
+  ! This sets the L3 VNI RD/RT for this VRF
+  rd {{ vdata.rd }}
+  route-target export {{ vdata.export[0] }}
+  route-target import {{ vdata.import[0] }}
+{% endif %}
+  ! Enable RT5 advertisements
+{% for af in ['ipv4','ipv6'] if af in vdata.af|default([]) and vdata.af[af] %}
+  advertise {{ af }} unicast
+{% endfor %}
+
+  ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+{% for vlan in vlans|default([]) if 'vrf' in vlan and vlan.vrf==vname and 'vni' in vlan and 'evpn' in vlan %}
+  vni {{ vlan.vni }}
+   rd {{ vlan.evpn.rd }}
+   route-target export {{ vlan.evpn.export[0] }}
+   route-target import {{ vlan.evpn.import[0] }}
+  exit
+{% endfor %}
+
  exit-address-family
 exit
-
-{% else %}
- exit-vrf
-{% endif %}
 !
 
 {% endfor %}
