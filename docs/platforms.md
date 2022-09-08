@@ -64,11 +64,11 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
-| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.md#cumulus-linux-in-containerlab) |
-| Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.md#cumulus-linux-in-containerlab) |
+| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
+| Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
-| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.md#frr)   |
-| Generic Linux (Ubuntu/Alpine)[❗](caveats.md#generic-linux) |          ✅           |              ✅               |            ✅             |
+| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
+| Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
 | Mikrotik CHR RouterOS                              |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
@@ -143,7 +143,7 @@ The following interface parameters are configured on supported network operating
 | Operating system      | Interface<br />description | Interface<br />bandwidth | MTU |
 | --------------------- | :------------------------: | :----------------------: | :-: |
 | Arista EOS            |            ✅              |            ✅            | ✅ |
-| Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.md#cisco-ios) |
+| Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.html#cisco-ios) |
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
 | Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
@@ -207,7 +207,7 @@ Additional [configuration modules](module-reference.md) are supported on these d
 | Cisco IOS             |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Cisco IOS XE          |   ❌  | ✅  |  ❌   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
-| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.md#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
+| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.html#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
 | Juniper vSRX 3.0      |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
 | Mikrotik CHR RouterOS |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Nokia SR Linux        |  ✅  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
