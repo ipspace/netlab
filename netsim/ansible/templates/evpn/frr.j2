@@ -1,4 +1,4 @@
-! Could put this in a separate vrf
+! Default vrf
 router bgp {{ bgp.as }}
 
  address-family l2vpn evpn
@@ -7,9 +7,42 @@ router bgp {{ bgp.as }}
 {% for af in ['ipv4','ipv6'] if af in bgp %}
   advertise {{ af }} unicast
 {% endfor %}
+
+! Configure explicit Route Targets and RDs per VNI; auto-derived differs
+
 {% for n in bgp.neighbors if n.evpn|default(False) %}
-{%   for af in ['ipv4','ipv6'] if af in n %}
+{%  for af in ['ipv4','ipv6'] if af in n %}
   neighbor {{ n[af] }} activate
-{%   endfor %}
+{%  endfor %}
 {% endfor %}
-exit-address-family
+
+ exit-address-family
+!
+ 
+exit
+
+! L3 VRF EVPN handling
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if 'evpn' in vdata %}
+vrf {{ vname }}
+{% if vdata.evpn.transit_vni is defined %}
+ vni {{ vdata.evpn.transit_vni }}
+ exit-vrf
+
+router bgp {{ bgp.as }}
+ address-family l2vpn evpn
+  vni {{ vdata.evpn.transit_vni }}
+   rd {{ vdata.rd }}
+   route-target export {{ vdata.export[0] }}
+   route-target import {{ vdata.import[0] }}
+   exit
+ exit-address-family
+exit
+
+{% else %}
+ exit-vrf
+{% endif %}
+!
+
+{% endfor %}
+{% endif %}

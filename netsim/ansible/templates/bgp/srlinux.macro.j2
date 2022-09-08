@@ -21,6 +21,10 @@
 {%    endif %}
 {% endmacro %}
 
+- path: routing-policy/prefix-set[name={{vrf}}_export]
+  val:
+   prefix: [] # Make sure it exists
+
 - path: routing-policy/policy[name={{name}}]
   val:
    default-action: 
@@ -106,12 +110,11 @@
 - path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
   val:
    admin-state: enable
+{% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
    ipv4-unicast:
-    admin-state: {{ 'enable' if 'ipv4' in neighbor.activate and neighbor.activate['ipv4'] 
-                             or 'ipv6' in neighbor.activate and not neighbor.activate['ipv6'] 
-                    else 'disable' }}
+    admin-state: {{ 'enable' if activate.ipv4|default(False) else 'disable' }}
    ipv6-unicast:
-    admin-state: {{ 'enable' if 'ipv6' in neighbor.activate and neighbor.activate['ipv6'] else 'disable' }}
+    admin-state: {{ 'enable' if activate.ipv6|default(False) else 'disable' }}
 {% if 'evpn' in neighbor and neighbor.evpn %}
    evpn:
     admin-state: enable # Must have at least 1 address family enabled
