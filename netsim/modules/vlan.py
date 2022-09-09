@@ -158,7 +158,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
           common.IncorrectValue,
           'vlan')
     else:
-      if default_fwd_mode:                                          # Propagate default VLAN forwarding mode if needed
+      if default_fwd_mode and obj is not topology:                  # Propagate default VLAN forwarding mode if needed
         vdata.mode = default_fwd_mode
 
     if not 'id' in vdata:                                           # When VLAN ID is not defined
@@ -480,6 +480,12 @@ def get_vlan_data(vlan: str, node: Box, topology: Box) -> typing.Optional[Box]:
   return get_from_box(topology,f'vlans.{vlan}') or get_from_box(node,f'vlans.{vlan}')
 
 """
+get_vlan_mode: Get VLAN mode attribute (node or topology), default 'irb'
+"""
+def get_vlan_mode(node: Box, topology: Box) -> str:
+  return get_from_box(node,'vlan.mode') or get_from_box(topology,'vlan.mode') or 'irb'
+
+"""
 update_vlan_neighbor_list: Build a VLAN-wide list of neighbors
 """
 def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,topology: Box) -> None:
@@ -518,6 +524,9 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
       common.fatal(                                                 # ... this should have been detected way earlier
         f'Unknown VLAN {vlan} used on node {node.name}','vlan')
       return None
+
+  if not 'mode' in node.vlans[vlan]:                                # Make sure vlan.mode is set
+    node.vlans[vlan].mode = get_vlan_mode(node,topology)
 
   if not 'bridge_group' in node.vlans[vlan]:                        # Set bridge group in VLAN data
     if not node.vlan.max_bridge_group:                              # ... current counter is in node.vlan dictionary

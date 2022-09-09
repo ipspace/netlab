@@ -1,0 +1,579 @@
+groups:
+  routers:
+    members:
+    - r1
+    - r2
+    - ros
+    module:
+    - ospf
+  switches:
+    members:
+    - s1
+    - s2
+    module:
+    - vlan
+input:
+- topology/input/vlan-router-stick.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    node: s1
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  - ifindex: 1
+    node: s2
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  left:
+    ifname: Ethernet1
+    node: s1
+  linkindex: 1
+  name: s1 - s2
+  node_count: 2
+  prefix: {}
+  right:
+    ifname: Ethernet1
+    node: s2
+  type: p2p
+  vlan:
+    trunk:
+      blue: {}
+      red: {}
+- interfaces:
+  - ifindex: 1
+    node: ros
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  - ifindex: 2
+    node: s2
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  left:
+    ifname: Ethernet1
+    node: ros
+  linkindex: 2
+  name: ros - s2
+  node_count: 2
+  prefix: {}
+  right:
+    ifname: Ethernet2
+    node: s2
+  type: p2p
+  vlan:
+    trunk:
+      blue: {}
+      red: {}
+- bridge: input_3
+  interfaces:
+  - ifindex: 1
+    ipv4: 172.16.0.3/24
+    node: r1
+  - ifindex: 2
+    ipv4: false
+    ipv6: false
+    node: s1
+    vlan:
+      access: red
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+- bridge: input_4
+  interfaces:
+  - ifindex: 1
+    ipv4: 172.16.1.4/24
+    node: r2
+  - ifindex: 3
+    ipv4: false
+    ipv6: false
+    node: s1
+    vlan:
+      access: blue
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: lan
+module:
+- vlan
+- ospf
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 3
+    interfaces:
+    - bridge: input_3
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.0.3/24
+      linkindex: 3
+      name: r1 -> [s1,s2,ros]
+      neighbors:
+      - ifname: Vlan1000
+        node: s1
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s2
+      - ifname: Ethernet1.2
+        ipv4: 172.16.0.5/24
+        node: ros
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: lan
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - ospf
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+  r2:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 4
+    interfaces:
+    - bridge: input_4
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.1.4/24
+      linkindex: 4
+      name: r2 -> [s1,s2,ros]
+      neighbors:
+      - ifname: Vlan1001
+        node: s1
+      - ifname: Vlan1001
+        ipv4: 172.16.1.2/24
+        node: s2
+      - ifname: Ethernet1.1
+        ipv4: 172.16.1.5/24
+        node: ros
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: lan
+    loopback:
+      ipv4: 10.0.0.4/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.104
+      mac: 08-4F-A9-00-00-04
+    module:
+    - ospf
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+  ros:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 5
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      linkindex: 2
+      name: ros -> s2
+      neighbors:
+      - ifname: Ethernet2
+        node: s2
+      subif_index: 2
+      type: p2p
+    - bridge_group: 1
+      ifindex: 2
+      ifname: Ethernet1.1
+      ipv4: 172.16.1.5/24
+      name: ros -> [r2,s1,s2]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.1.4/24
+        node: r2
+      - ifname: Vlan1001
+        node: s1
+      - ifname: Vlan1001
+        ipv4: 172.16.1.2/24
+        node: s2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      parent_ifindex: 1
+      parent_ifname: Ethernet1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1001
+        mode: route
+    - bridge_group: 2
+      ifindex: 3
+      ifname: Ethernet1.2
+      ipv4: 172.16.0.5/24
+      name: ros -> [r1,s1,s2]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+        node: r1
+      - ifname: Vlan1000
+        node: s1
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      parent_ifindex: 1
+      parent_ifname: Ethernet1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1000
+        mode: route
+    loopback:
+      ipv4: 10.0.0.5/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.105
+      mac: 08-4F-A9-00-00-05
+    module:
+    - vlan
+    - ospf
+    name: ros
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.5
+    vlan:
+      max_bridge_group: 2
+      mode: route
+    vlans:
+      blue:
+        bridge_group: 1
+        id: 1001
+        mode: route
+        neighbors:
+        - ifname: Ethernet1
+          ipv4: 172.16.1.4/24
+          node: r2
+        - ifname: Vlan1001
+          node: s1
+        - ifname: Vlan1001
+          ipv4: 172.16.1.2/24
+          node: s2
+        - ifname: Ethernet1.1
+          ipv4: 172.16.1.5/24
+          node: ros
+        prefix:
+          ipv4: 172.16.1.0/24
+        vni: 101001
+      red:
+        bridge_group: 2
+        id: 1000
+        mode: route
+        neighbors:
+        - ifname: Ethernet1
+          ipv4: 172.16.0.3/24
+          node: r1
+        - ifname: Vlan1000
+          node: s1
+        - ifname: Vlan1000
+          ipv4: 172.16.0.2/24
+          node: s2
+        - ifname: Ethernet1.2
+          ipv4: 172.16.0.5/24
+          node: ros
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+  s1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      linkindex: 1
+      name: s1 -> s2
+      neighbors:
+      - ifname: Ethernet1
+        node: s2
+      type: p2p
+      vlan:
+        trunk:
+          blue: {}
+          red: {}
+        trunk_id:
+        - 1000
+        - 1001
+    - bridge: input_3
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 3
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge: input_4
+      ifindex: 3
+      ifname: Ethernet3
+      linkindex: 4
+      type: lan
+      vlan:
+        access: blue
+        access_id: 1001
+    - bridge_group: 1
+      ifindex: 6
+      ifname: Vlan1000
+      name: VLAN red (1000) -> [r1,s2,ros]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+        node: r1
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s2
+      - ifname: Ethernet1.2
+        ipv4: 172.16.0.5/24
+        node: ros
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+    - bridge_group: 2
+      ifindex: 7
+      ifname: Vlan1001
+      name: VLAN blue (1001) -> [r2,s2,ros]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.1.4/24
+        node: r2
+      - ifname: Vlan1001
+        ipv4: 172.16.1.2/24
+        node: s2
+      - ifname: Ethernet1.1
+        ipv4: 172.16.1.5/24
+        node: ros
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - vlan
+    name: s1
+    vlan:
+      max_bridge_group: 2
+      mode: bridge
+    vlans:
+      blue:
+        bridge_group: 2
+        id: 1001
+        mode: bridge
+        prefix:
+          ipv4: 172.16.1.0/24
+        vni: 101001
+      red:
+        bridge_group: 1
+        id: 1000
+        mode: bridge
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+  s2:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      linkindex: 1
+      name: s2 -> s1
+      neighbors:
+      - ifname: Ethernet1
+        node: s1
+      type: p2p
+      vlan:
+        trunk:
+          blue: {}
+          red: {}
+        trunk_id:
+        - 1000
+        - 1001
+    - ifindex: 2
+      ifname: Ethernet2
+      linkindex: 2
+      name: s2 -> ros
+      neighbors:
+      - ifname: Ethernet1
+        node: ros
+      type: p2p
+      vlan:
+        trunk:
+          blue: {}
+          red: {}
+        trunk_id:
+        - 1000
+        - 1001
+    - bridge_group: 1
+      ifindex: 7
+      ifname: Vlan1001
+      ipv4: 172.16.1.2/24
+      name: VLAN blue (1001) -> [r2,s1,ros]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.1.4/24
+        node: r2
+      - ifname: Vlan1001
+        node: s1
+      - ifname: Ethernet1.1
+        ipv4: 172.16.1.5/24
+        node: ros
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    - bridge_group: 2
+      ifindex: 8
+      ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      name: VLAN red (1000) -> [r1,s1,ros]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.0.3/24
+        node: r1
+      - ifname: Vlan1000
+        node: s1
+      - ifname: Ethernet1.2
+        ipv4: 172.16.0.5/24
+        node: ros
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - vlan
+    name: s2
+    vlan:
+      max_bridge_group: 2
+      mode: irb
+    vlans:
+      blue:
+        bridge_group: 1
+        id: 1001
+        mode: irb
+        neighbors:
+        - ifname: Ethernet1
+          ipv4: 172.16.1.4/24
+          node: r2
+        - ifname: Vlan1001
+          node: s1
+        - ifname: Vlan1001
+          ipv4: 172.16.1.2/24
+          node: s2
+        - ifname: Ethernet1.1
+          ipv4: 172.16.1.5/24
+          node: ros
+        prefix:
+          ipv4: 172.16.1.0/24
+        vni: 101001
+      red:
+        bridge_group: 2
+        id: 1000
+        mode: irb
+        neighbors:
+        - ifname: Ethernet1
+          ipv4: 172.16.0.3/24
+          node: r1
+        - ifname: Vlan1000
+          node: s1
+        - ifname: Vlan1000
+          ipv4: 172.16.0.2/24
+          node: s2
+        - ifname: Ethernet1.2
+          ipv4: 172.16.0.5/24
+          node: ros
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+ospf:
+  area: 0.0.0.0
+provider: libvirt
+vlan:
+  mode: irb
+vlans:
+  blue:
+    host_count: 0
+    id: 1001
+    neighbors:
+    - ifname: Ethernet1
+      ipv4: 172.16.1.4/24
+      node: r2
+    - ifname: Vlan1001
+      node: s1
+    - ifname: Vlan1001
+      ipv4: 172.16.1.2/24
+      node: s2
+    - ifname: Ethernet1.1
+      ipv4: 172.16.1.5/24
+      node: ros
+    prefix:
+      ipv4: 172.16.1.0/24
+    vni: 101001
+  red:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: Ethernet1
+      ipv4: 172.16.0.3/24
+      node: r1
+    - ifname: Vlan1000
+      node: s1
+    - ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      node: s2
+    - ifname: Ethernet1.2
+      ipv4: 172.16.0.5/24
+      node: ros
+    prefix:
+      ipv4: 172.16.0.0/24
+    vni: 101000
