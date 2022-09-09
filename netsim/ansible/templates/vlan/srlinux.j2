@@ -12,9 +12,21 @@ updates:
 {% endfor %}
 {% endif %}
 
+{% macro vlan_tag(vid,is_native=False) %}
+     vlan:
+      encap:
+{%     if not is_native %}
+       single-tagged:
+        vlan-id: "{{ vid }}"
+{%     else %}
+{# Untagged only allowed for bridged vlans, routing via irb interface #}
+       untagged: { }
+{%     endif %}
+{% endmacro %}
+
 {% macro add_interface(macvrf,ifname,vlan,i) %}
 {% if i.vlan.trunk_id is defined %}
-{%  set native = i.vlan.native|default('not set') %}
+{%  set native = i.vlan.native|default('*not set*') %}
 {%  for v in i.vlan.trunk %}
 {%   set type = 'bridged' if v==native or vlans[v].mode=='bridge' else 'routed' %}
 - path: interface[name={{ifname}}]
@@ -24,15 +36,8 @@ updates:
    subinterface:
    - index: {{ vlans[v].id }}
      type: {{ type }}
-     vlan:
-      encap:
-{%     if v != native %}
-       single-tagged:
-        vlan-id: "{{ vlans[v].id }}"
-{%     else %}
-       {# Untagged only allowed for bridged vlans, routing via irb interface #}
-       untagged: { }
-{%     endif %}
+     description: "vlan {{v}}"
+{{   vlan_tag( vlans[v].id, v==native ) }}
 
 {% if type == 'bridged' %}
 - path: network-instance[name={{ macvrf }}]
@@ -42,33 +47,37 @@ updates:
 {% endif %}
 {%  endfor %}
 
-{% else %}
+{% elif i.type in ['vlan_member','lan'] %}
 - path: interface[name={{ifname}}]
   val:
+{% if i.type == 'vlan_member' %}
+   vlan-tagging: True
+{% endif %}
    subinterface:
    - index: {{ vlan }}
      description: {{ i.name|default("not provided")|replace('->','~')|regex_replace('[\\[\\]]','') }}
-{%   if ifname!="irb0" and i.parent_ifname is not defined %}
-     type: {{ 'bridged' if i.vlan.mode|default('irb')=='bridge' else 'routed' }}
+{%   if ifname!="irb0" %}
+     type: {{ 'bridged' if i.vlan.mode|default('irb')!='route' else 'routed' }}
 {%   endif %}
+{% if i.type == 'vlan_member' and (i.parent_ifindex is not defined or interfaces[i.parent_ifindex-1].subif_index is defined) %}
+{{   vlan_tag( i.vlan.access_id ) }}
+{% endif %}
+{% endif %}
 
-{% if i.vlan.mode|default('irb') == 'bridge' or ifname=="irb0" %}
+{% if i.vlan.mode|default('irb') != 'route' or ifname=="irb0" %}
 - path: network-instance[name={{ macvrf }}]
   val:
    interface:
    - name: {{ ifname }}.{{ vlan }}
 {% endif %}
-{% if i.vlan.mode|default('irb') != 'bridge' %}
+{% if 'ipv4' in i or 'ipv6' in i %}
 {{  ip_addresses(ifname,vlan,i) }}
 
-{%  if ifname=="irb0" %}
 - path: network-instance[name={{ i.vrf|default('default') }}]
   val:
    type: {{ 'default' if i.vrf|default('default')=='default' else 'ip-vrf' }}
    interface:
    - name: {{ ifname }}.{{ vlan }}
-{%  endif %}
-{% endif %}
 {% endif %}
 {% endmacro %}
 

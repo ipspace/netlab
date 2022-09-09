@@ -1,0 +1,94 @@
+#
+# A single test between 2 devices, with all the various supported vlan use cases between them
+#
+# * Nothing to ping here, this is just to validate node config cases coverage
+#
+groups:
+  switches:
+    members: [ s1,s2 ]
+    module: [ vlan ]
+
+# 5 VLANs, 4 get created (?)
+vlans:
+  bridge:
+    mode: bridge
+    id: 101
+  irb:
+    mode: irb
+    id: 102
+  route:
+    mode: route
+    id: 103
+
+  route2: # Used for routed trunk test case, requires vlan tagging enabled
+    mode: route
+    id: 104
+
+  native-bridge:
+    mode: bridge
+    id: 204
+
+  native-irb:
+    mode: irb
+    id: 205
+
+  # native: mode: route is not allowed
+
+nodes:
+  s1:
+  s2:
+
+links:
+
+- s1: # vlan101 with ethernet-1/1.101 attached, no tagging
+  s2:
+  vlan.access: bridge  # lan interface + svi, no ip
+ 
+- s1: # vlan102 with ethernet-1/2.102 and irb0.102 attached (also in default vrf), no tagging
+  s2:
+  vlan.access: irb     # lan interface + svi with ip
+ 
+- s1:
+  s2:
+  vlan.access: route   # p2p interface with vlan.mode=route, ip
+
+# Case: No native vlan, all variants of modes
+# 1 p2p (with subif_index==count of members, no vlan), 3 vlan_member, 2 svi (bridge+irb, not route)
+- s1:
+  s2:
+  vlan.trunk: [ bridge, irb, route ]
+
+# Case: Routed trunk, 2 routed vlans -> needs vlan tagging. trunk is removed from topology, but vlan_members are there
+- s1:
+  s2:
+  vlan.trunk: [ route, route2 ]
+
+- s1:
+  s2:
+  vlan.trunk: [ bridge, native-bridge ]
+  vlan.native: native-bridge
+
+- s1:
+  s2:
+  vlan.trunk: [ irb, native-bridge ]
+  vlan.native: native-bridge
+
+- s1:
+  s2:
+  vlan.trunk: [ route, native-bridge ]
+  vlan.native: native-bridge
+
+- s1:
+  s2:
+  vlan.trunk: [ bridge, native-irb ]
+  vlan.native: native-irb
+
+- s1:
+  s2:
+  vlan.trunk: [ irb, native-irb ]
+  vlan.native: native-irb
+
+- s1:
+  s2:
+  vlan.trunk: [ route, native-irb ]
+  vlan.native: native-irb

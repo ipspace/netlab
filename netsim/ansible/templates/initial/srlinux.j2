@@ -1,7 +1,7 @@
 {% macro ip_addresses(name,index,intf,ipv6_ra=True,is_system=False) %}
 - path: interface[name={{name}}]/subinterface[index={{index}}]
   val:
-   description: {{ intf.name | default( "No description" )|replace('->','~')|regex_replace('[\\[\\]]','') }}
+   description: {{ intf.name | default( "No description, created in ip_addresses" )|replace('->','~')|regex_replace('[\\[\\]]','') }}
 {% if 'ipv4' in intf and intf.ipv4 is string %}
    ipv4:
     address:
@@ -45,12 +45,11 @@ updates:
 
 {{  ip_addresses('system0',0,loopback,False,True)  }}
 
-{% for l in interfaces|default([]) if l.vlan is not defined %}
+{% for l in interfaces|default([]) if l.vlan is not defined and l.subif_index is not defined %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] if l.type!='stub' else "lo0" %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else '0' %}
-{% set vlan = l.vlan.access|default(l.vlan.access_id|default('routed')|string()) if l.vlan is defined else l.ifname %}
-{% set if_desc = l.name|default( "vlan " + vlan )|replace('->','~')|regex_replace('[\\[\\]]','') %}
+{% set if_desc = l.name|default( l.ifname )|replace('->','~')|regex_replace('[\\[\\]]','') %}
 - path: interface[name={{ if_name }}]
   val:
 {% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
@@ -64,7 +63,7 @@ updates:
 {% endfor %}
 
 {% macro list_interfaces(vrf) %}
-{% for l in interfaces|default([]) if l.vlan is not defined and l.vrf|default('default')==vrf %}
+{% for l in interfaces|default([]) if l.vlan is not defined and l.subif_index is not defined and l.vrf|default('default')==vrf %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] if l.type!='stub' else "lo0" %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else '0' %}
