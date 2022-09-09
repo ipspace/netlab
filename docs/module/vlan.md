@@ -26,7 +26,7 @@ VLANs are supported on these platforms:
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |
 | VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
-| Nokia SR Linux        | ✅  | ✅  | ❌   | ✅ | ❌ |
+| Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅ | ✅ |
 | FRR                   | ✅  | ✅  | ❌  | ✅ | ❌ |
 
