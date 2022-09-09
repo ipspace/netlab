@@ -47,7 +47,7 @@ updates:
 {% endif %}
 {%  endfor %}
 
-{% elif i.type in ['vlan_member','lan'] %}
+{% elif i.type in ['vlan_member','lan','stub'] %}
 - path: interface[name={{ifname}}]
   val:
 {% if i.type == 'vlan_member' %}
@@ -56,7 +56,7 @@ updates:
    subinterface:
    - index: {{ vlan }}
      description: {{ i.name|default("not provided")|replace('->','~')|regex_replace('[\\[\\]]','') }}
-{%   if ifname!="irb0" %}
+{%   if ifname!="irb0" and ifname!="lo0" %}
      type: {{ 'bridged' if i.vlan.mode|default('irb')!='route' else 'routed' }}
 {%   endif %}
 {% if i.type == 'vlan_member' and (i.parent_ifindex is not defined or 
@@ -89,5 +89,7 @@ updates:
 {%  elif l.type in ['lan','vlan_member'] %}
 {%    set vlan = l.vlan.access_id %}
 {{    add_interface( "vlan" + vlan|string, l.parent_ifname|default(l.ifname), vlan, l ) }}
+{%  elif l.type == 'stub' %}
+{{    add_interface( None, "lo0", l.ifindex, l ) }}
 {%  endif %}
 {% endfor %}
