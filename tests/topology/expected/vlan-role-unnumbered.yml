@@ -1,0 +1,148 @@
+groups:
+  fabric:
+    device: srlinux
+    members:
+    - leaf
+    module:
+    - vlan
+input:
+- topology/input/vlan-role-unnumbered.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    node: host
+  - ifindex: 1
+    node: leaf
+    vlan:
+      trunk:
+        vxlan: {}
+  left:
+    ifname: ethernet-1/1
+    node: host
+  linkindex: 1
+  name: host - leaf
+  node_count: 2
+  prefix: {}
+  right:
+    ifname: ethernet-1/1
+    node: leaf
+  type: p2p
+  vlan:
+    trunk:
+      vxlan: {}
+module:
+- vlan
+name: input
+nodes:
+  host:
+    af:
+      ipv4: true
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    hostname: clab-input-host
+    id: 2
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      linkindex: 1
+      name: host -> leaf
+      neighbors:
+      - ifname: ethernet-1/1
+        node: leaf
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    name: host
+  leaf:
+    af:
+      ipv4: true
+      ipv6: true
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    hostname: clab-input-leaf
+    id: 1
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      linkindex: 1
+      name: leaf -> host
+      neighbors:
+      - ifname: ethernet-1/1
+        node: host
+      subif_index: 1
+      type: p2p
+    - ifindex: 2
+      ifname: ethernet-1/1.1000
+      parent_ifindex: 1
+      parent_ifname: ethernet-1/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: vxlan
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 3
+      ifname: vlan1000
+      ipv4: true
+      ipv6: true
+      name: VLAN vxlan (1000)
+      neighbors: []
+      role: fabric
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - vlan
+    name: leaf
+    vlan:
+      max_bridge_group: 1
+      mode: irb
+    vlans:
+      vxlan:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          ipv4: true
+          ipv6: true
+        role: fabric
+        vni: 101000
+provider: clab
+vlan:
+  mode: irb
+vlans:
+  vxlan:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: vlan1000
+      ipv4: true
+      ipv6: true
+      node: leaf
+    prefix:
+      ipv4: true
+      ipv6: true
+    role: fabric
+    vni: 101000
