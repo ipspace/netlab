@@ -885,7 +885,6 @@ class VLAN(_Module):
           node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
 
     validate_vlan_attributes(node,topology)
-    print( f"JvB after validate_vlan_attributes: {node.get('vlans',[])}" )
 
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     if link.get('type','') == 'vlan_member':                                      # Skip VLAN member links, we've been there...
