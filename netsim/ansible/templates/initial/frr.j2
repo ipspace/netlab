@@ -28,13 +28,19 @@ sort /tmp/hosts|uniq >>/etc/hosts
 echo "{{ frr_m }}=yes" >>/etc/frr/daemons
 {%   endfor %}
 {% endfor %}
+
 /usr/lib/frr/frrinit.sh restart
+
 #
-# Add lo0 interface
+# Create loopbacks and stub devices
 #
-if [ ! -e /sys/devices/virtual/net/lo0 ]; then
-  ip link add lo0 type dummy
+{% for i in (interfaces+[{ 'type': 'loopback', 'ifname': 'lo0'}]) if i.type in ['loopback','stub'] %}
+if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
+  ip link add {{ i.ifname }} type dummy
+  ip link set dev {{ i.ifname }} up
 fi
+{% endfor %}
+
 #
 # Add vtysh.conf file
 echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
@@ -68,8 +74,8 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if l.ipv4 is defined and l.ipv4 is string %}
- ip address {{ l.ipv4 }}
+{% if l.ipv4 is defined and (l.ipv4 is string or 'ipv4' in loopback) %}
+ ip address {{ l.ipv4 if l.ipv4 is string else loopback.ipv4 }}
 {% endif %}
 {% if l.ipv6 is defined %}
 {% if l.ipv6 is string %}

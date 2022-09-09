@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+
+{% if vlans is defined %}
+
+# Create VLAN bridges and bring them up. Leave STP running for now
+{% for vname,vdata in vlans.items() %}
+{% set br_name = "vlan" + vdata.id|string %}
+if [ ! -e /sys/devices/virtual/net/{{br_name}} ]; then
+brctl addbr {{ br_name }}
+fi
+# brctl stp {{ br_name }} off
+ip link set up dev {{ br_name }}
+{% endfor %}
+
+# Assumes listing order of interfaces is vlan_members before svi interfaces
+{% for i in interfaces if i.type in ['vlan_member','svi'] %}
+
+{% if i.type=='vlan_member' %}
+{% set vlan_name = i.parent_ifname + "." + i.vlan.access_id|string %}
+ip link add link {{ i.parent_ifname }} name {{ vlan_name }} type vlan id {{ i.vlan.access_id }}
+brctl addif vlan{{ i.vlan.access_id }} {{ vlan_name }}
+ip link set dev {{ vlan_name }} up
+{% else %}
+ip addr flush dev {{ i.ifname }}
+{%  if 'ipv4' in i and (i.ipv4 is string or 'ipv4' in loopback) %}
+ip addr add {{ i.ipv4 if i.ipv4 is string else loopback.ipv4 }} dev {{ i.ifname }}
+{%  endif %}
+{%  if 'ipv6' in i %}
+{%   if i.ipv6 is string %}
+ip addr add {{ i.ipv6 }} dev {{ i.ifname }}
+{%   elif not i.ipv6 %}
+sysctl -w net.ipv6.conf.{{ i.ifname }}.disable_ipv6=1
+{%   endif %}
+{%  endif %}
+{% endif %}
+
+# Note: If the interface is in a vrf, it gets moved later by the vrf module
+{% endfor %}
+
+{% endif %} # if vlans is defined
+
+exit 0

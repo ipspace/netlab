@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+
+{% macro create_vxlan_interface(vni,vlan_id,vrf=None) %}
+ip link add vxlan{{ vni }} type vxlan \
+  id {{ vni }} \
+  dstport 4789 \
+  local {{ vxlan.vtep }} {{ 'nolearning' if vxlan.flooding|default('') == 'evpn' else '' }}
+
+# Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+{% set br_name = "vlan" + vlan_id|string %}
+if [ ! -e /sys/devices/virtual/net/{{br_name}} ]; then
+brctl addbr {{ br_name }}
+ip link set up dev {{ br_name }}
+fi
+brctl addif {{ br_name }} vxlan{{ vni }}
+brctl stp {{ br_name }} off
+ip link set up dev vxlan{{ vni }}
+
+{% if vrf %}
+ip link set {{ br_name }} master {{ vrf }}
+{% endif %}
+{% endmacro %}
+
+# Create L3 VNIs with bridges and add to correct vrf table
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if 'evpn' in vdata and vdata.evpn.transit_vni is defined %}
+{{ create_vxlan_interface(vdata.evpn.transit_vni, vdata.vrfidx, vname) }}
+{% endfor %}
+{% endif %}
+
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+
+# Create VXLAN L2 interface per vni
+{{ create_vxlan_interface(vlan.vni, vlan.id, vlan.vrf|default(None)) }}
+
+# Add VTEP Flood list
+{%     if vlan.vtep_list is defined %}
+{%       for remote_vtep in vlan.vtep_list %}
+ip link set vxlan{{vlan.vni}} type vxlan remote {{ remote_vtep }}
+{%       endfor %}
+{%     endif %}
+
+{%   endfor %}
+{% endif %}
+
+exit $?

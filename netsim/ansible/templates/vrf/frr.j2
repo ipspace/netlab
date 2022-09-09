@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+
+# Create VRF tables
+{% for vname,vdata in vrfs.items() %}
+if [ ! -e /sys/devices/virtual/net/{{vname}} ]; then
+ip link add {{vname}} type vrf table {{ vdata.vrfidx }}
+fi
+ip link set {{vname}} up
+{% endfor %}
+
+# Move interfaces and loopbacks to vrfs
+{% for i in interfaces if i.vrf is defined %}
+{% set dev = "vlan"+i.vlan.access_id|string if i.type=="vlan_member" else i.ifname %}
+ip link set {{ dev }} master {{ i.vrf }}
+{% endfor %}
+
+cat >/tmp/vrf_config <<CONFIG
+{% for vname,vdata in vrfs.items() %}
+{% set vrf_name = vname %}
+vrf {{ vrf_name }}
+ exit-vrf
+!
+
+{% if 'bgp' in vdata %}
+router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vrf_name }}
+{% for af in ['ipv4','ipv6'] if af in vdata.af|default([]) and vdata.af[af] %}
+ address-family {{ af }} unicast
+  redistribute connected
+ exit-address-family
+{% endfor %}
+ exit
+!
+{% endif %}
+
+{% endfor %}
+CONFIG
+
+vtysh -f /tmp/vrf_config
+
+exit $?

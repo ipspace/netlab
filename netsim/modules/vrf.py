@@ -1,7 +1,7 @@
 #
 # VRF module
 #
-import typing
+import typing, re
 from box import Box
 
 from . import _Module,_routing,get_effective_module_attribute
@@ -13,6 +13,12 @@ from .. import addressing
 
 vrf_id_set: set
 vrf_last_id: int
+
+#
+# Regex expression to validate names used in vrfs. No spaces or weird characters, not too long
+# (VRF names are used as device names on Linux, with max 16 characters length)
+#
+VALID_VRF_NAMES = re.compile( r"[a-zA-Z0-9_.-]{1,16}" )
 
 #
 # build_vrf_id_set: given an object (topology or node), create a set of RDs
@@ -65,9 +71,17 @@ def get_next_vrf_id(asn: str) -> str:
   return rd
 
 #
-# Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
+# Check for 'reasonable' VRF names using a regex expression
 #
+def validate_vrf_name(name: str) -> None:
+  if not VALID_VRF_NAMES.fullmatch( name ):
+    common.error(f'VRF name "{name}" does not match the allowed regex expression {VALID_VRF_NAMES.pattern}',
+                 common.IncorrectValue,'vrf')
 
+#
+# Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
+# Also checks for valid naming
+#
 def normalize_vrf_dict(obj: Box, topology: Box) -> None:
   if not 'vrfs' in obj:
     return
@@ -80,6 +94,7 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
     return
 
   for vname in list(obj.vrfs.keys()):
+    validate_vrf_name(vname)
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
     if not isinstance(obj.vrfs[vname],dict):
@@ -283,12 +298,14 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
       else:
         ifdata[af] = str(vrfaddr[af])
       vrfaddr[af] = str(ifdata[af])                                         # Save string copy in vrfaddr, we need it later
+      node.vrfs[vrfname].af[af] = True                                      # Enable the af if not already
 
     if not 'networks' in v:                                                 # List of networks to advertise in VRF BGP instance
       v.networks = []
 
     v.networks.append(vrfaddr)
     node.interfaces.append(ifdata)
+
 
   return
 
@@ -348,8 +365,12 @@ class VRF(_Module):
             node.af[f'vpn{af}'] = True
             node.vrfs[ifdata.vrf].af[f'ip{af}'] = True
 
-    if not vrf_count:                # Remove VRF module from the node if the node has no VRFs
+    if common.DEBUG:
+      print( f"vrf node_post_transform on {node.name}: counted {vrf_count} VRFs on interfaces" )
+    features = devices.get_device_features(node,topology.defaults)
+    if not vrf_count and ('vrf' not in features or not features.vrf.keep_module): # Remove VRF module from the node if the node has no VRFs, unless flag set
       node.module = [ m for m in node.module if m != 'vrf' ]
+      del node.vrfs
     else:
       node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
       vrfidx = 100
@@ -359,7 +380,7 @@ class VRF(_Module):
 
       validate_vrf_route_leaking(node)
 
-      # Set additional loopacks (one for each defined VRF)
+      # Set additional loopbacks (one for each defined VRF)
       vrf_loopbacks(node, topology)
 
     # Finally, set BGP router ID if we set BGP AS number
