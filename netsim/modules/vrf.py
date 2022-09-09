@@ -386,7 +386,7 @@ class VRF(_Module):
     features = devices.get_device_features(node,topology.defaults)
     if not vrf_count and ('vrf' not in features or not features.vrf.keep_module): # Remove VRF module from the node if the node has no VRFs, unless flag set
       node.module = [ m for m in node.module if m != 'vrf' ]
-      del node.vrfs
+      node.pop('vrfs',None)
     else:
       node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
       vrfidx = 100
