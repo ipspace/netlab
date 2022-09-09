@@ -12,6 +12,7 @@ from ..augment import devices
 from .. import addressing
 
 vrf_id_set: set
+vrf_rd_set: set
 vrf_last_id: int
 
 #
@@ -24,20 +25,22 @@ VALID_VRF_NAMES = re.compile( r"[a-zA-Z0-9_.-]{1,16}" )
 # build_vrf_id_set: given an object (topology or node), create a set of RDs
 # that appear in that object.
 #
-def build_vrf_id_set(obj: Box, attr: str) -> set:
+def build_vrf_static_set(obj: Box, attr: str) -> set:
   if 'vrfs' in obj:
     return { v[attr] for v in obj.vrfs.values() if isinstance(v,dict) and attr in v and v[attr] is not None }
   return set()
 
-def populate_vrf_id_set(topology: Box) -> None:
-  global vrf_id_set, vrf_last_id
+def populate_vrf_static_ids(topology: Box) -> None:
+  global vrf_id_set, vrf_rd_set, vrf_last_id
 
-  vrf_id_set = build_vrf_id_set(topology,'rd')
+  vrf_rd_set = build_vrf_static_set(topology,'rd')
+  vrf_id_set = build_vrf_static_set(topology,'id')
   vrf_last_id = 1
 
   for n in topology.nodes.values():
     if 'vrfs' in n:
-      vrf_id_set = vrf_id_set.union(build_vrf_id_set(n,'rd'))
+      vrf_rd_set = vrf_id_set.union(build_vrf_static_set(n,'rd'))
+      vrf_id_set = vrf_id_set.union(build_vrf_static_set(n,'id'))
 
 #
 # Get a usable AS number. Try bgp.as then vrf.as from node and global settings
@@ -60,15 +63,16 @@ def parse_rdrt_value(value: str) -> typing.Optional[typing.List[int]]:
   except Exception as ex:
     return None
 
-def get_next_vrf_id(asn: str) -> str:
-  global vrf_id_set, vrf_last_id
+def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
+  global vrf_id_set, vrf_rd_set, vrf_last_id
 
-  while f'{asn}:{vrf_last_id}' in vrf_id_set:
+  while f'{asn}:{vrf_last_id}' in vrf_rd_set or vrf_last_id in vrf_id_set:
     vrf_last_id = vrf_last_id + 1
 
   rd = f'{asn}:{vrf_last_id}'
-  vrf_id_set.add(rd)
-  return rd
+  vrf_rd_set.add(rd)
+  vrf_id_set.add(vrf_last_id)
+  return (vrf_last_id,rd)
 
 #
 # Check for 'reasonable' VRF names using a regex expression
@@ -131,6 +135,18 @@ def normalize_vrf_ids(topology: Box) -> None:
   for n in topology.nodes.values():
     normalize_vrf_dict(n,topology)
 
+def vrf_needs_id(vrf: Box) -> bool:
+  if 'rd' in vrf and 'id' in vrf:
+    return False
+  return True
+
+def set_vrf_auto_id(vrf: Box, value: typing.Tuple[int,str]) -> None:
+  if not 'id' in vrf:
+    vrf.id = value[0]
+
+  if not 'rd' in vrf:
+    vrf.rd = value[1]
+
 #
 # Get VRF RD value needed for import/export values. 
 #
@@ -169,14 +185,14 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
   obj_name = 'global VRFs' if obj is topology else obj.name
 
   for vname,vdata in obj.vrfs.items():
-    if vdata.get('rd',None) is None:
+    if vrf_needs_id(vdata):
       asn = asn or get_rd_as_number(obj,topology)
       if not asn:
         common.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
           common.MissingValue,
           'vrf')
         return
-      vdata.rd = get_next_vrf_id(asn)
+      set_vrf_auto_id(vdata,get_next_vrf_id(asn))
 
 #
 # Set import/export route targets
@@ -321,7 +337,7 @@ class VRF(_Module):
       return
 
     normalize_vrf_ids(topology)
-    populate_vrf_id_set(topology)
+    populate_vrf_static_ids(topology)
     set_vrf_ids(topology,topology)
     set_import_export_rt(topology,topology)
 
