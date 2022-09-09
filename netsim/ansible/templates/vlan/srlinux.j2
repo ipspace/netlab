@@ -13,6 +13,7 @@ updates:
 {% endif %}
 
 {% macro add_interface(macvrf,ifname,vlan,i) %}
+{% set is_l2 = i.vlan.mode|default('irb') == 'bridge' %}
 - path: interface[name={{ifname}}]
   val:
 {% if i.type in ["vlan_member"] %}
@@ -21,7 +22,7 @@ updates:
    subinterface:
    - index: {{ vlan }}
 {%   if ifname!="irb0" %}
-     type: {{ 'bridged' if i.vlan.mode|default('irb') == 'bridge' else 'routed' }}
+     type: {{ 'bridged' if is_l2 else 'routed' }}
 {%    if i.type in ["vlan_member"] %}
      vlan:
       encap:
@@ -34,19 +35,21 @@ updates:
 {%    endif %}
 {% endif %}
 
-{{ ip_addresses(ifname,vlan,i) }}
-
+{% if is_l2 %}
 - path: network-instance[name={{ macvrf }}]
   val:
    interface:
    - name: {{ ifname }}.{{ vlan }}
+{% else %}
+{{  ip_addresses(ifname,vlan,i) }}
 
-{% if ifname=="irb0" %}
+{%  if ifname=="irb0" %}
 - path: network-instance[name={{ i.vrf|default('default') }}]
   val:
    type: {{ 'default' if i.vrf|default('default')=='default' else 'ip-vrf' }}
    interface:
    - name: {{ ifname }}.{{ vlan }}
+{%  endif %}
 {% endif %}
 
 {% endmacro %}
