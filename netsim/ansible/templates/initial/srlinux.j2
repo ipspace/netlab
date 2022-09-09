@@ -45,7 +45,7 @@ updates:
 
 {{  ip_addresses('system0',0,loopback,False,True)  }}
 
-{% for l in interfaces|default([]) if l.vlan is not defined or l.vlan.mode|default('irb')=='route' %}
+{% for l in interfaces|default([]) if l.vlan is not defined %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] if l.type!='stub' else "lo0" %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else '0' %}
@@ -56,20 +56,15 @@ updates:
 {% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
    mtu {{ [l.mtu + 14,1500]|max }} # TODO not supported on loopback interfaces
 {% endif %}
-{% if l.subif_index is defined %}{# Trunk parent interfaces #}
-   description: "Trunk {{ if_desc }}"
-{% else %}
    subinterface:
     index: {{ if_index }}
     description: "{{ if_desc }}"
 
 {{ ip_addresses(if_name,if_index,l) }}
-{% endif %}
 {% endfor %}
 
 {% macro list_interfaces(vrf) %}
-{% for l in interfaces|default([]) if (l.vlan is not defined or l.vlan.mode|default('irb') == 'route') 
-   and l.subif_index is not defined and l.vrf|default('default')==vrf %}
+{% for l in interfaces|default([]) if l.vlan is not defined and l.vrf|default('default')==vrf %}
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] if l.type!='stub' else "lo0" %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else '0' %}
