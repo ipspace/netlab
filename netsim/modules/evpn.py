@@ -83,7 +83,7 @@ def vrf_transit_vni(topology: Box) -> None:
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
     vni = data.get_from_box(vrf_data,'evpn.transit_vni')
-    if not isinstance(vni,int):
+    if type(vni)!="int":                                        # Note that isinstance(bool_var,int) is True
       continue
     if vni in vni_list:
       common.error(
