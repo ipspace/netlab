@@ -28,7 +28,7 @@ VLANs are supported on these platforms:
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Nokia SR Linux        | ✅  | ✅  | ❌   | ✅ | ❌ |
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅ | ✅ |
-| FRR                   | ✅  | ✅  | ❌  | ✅ | ❌ |
+| FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅ | ✅ |
 
 ## VLAN Connectivity Model
 

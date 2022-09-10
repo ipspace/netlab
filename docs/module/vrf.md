@@ -25,7 +25,7 @@ VRFs are supported on these platforms:
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |  ❌  |
 | VyOS                  | ✅  | ✅  | ✅  | ✅  | ✅  |
 | SR Linux              | ✅  | ✅* | ✅  | ✅  | ✅  |
-| FRR                   | ✅  |  ❌  |  ❌  |  ❌  | ✅  |
+| FRR [❗](../caveats.html#caveats-frr-config) | ✅  |  ❌  | ✅  |  ❌  | ✅  |
 
 **Notes:**
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces
