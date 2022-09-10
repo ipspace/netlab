@@ -405,13 +405,14 @@ def check_module_dependencies(topology:  Box) -> None:
               'modules')
 
       for n in topology.nodes.values():                   # Now iterate over nodes and check device-specific requirements
+        if not m in n.get('module',[]):                   # Is the module we're currently checking used by this node?
+          continue                                        # ... nope, no worries, move on
         features = fcache.get(n.name) or \
                      devices.get_device_features(n,topology.defaults)
         fcache[n.name] = features                         # Get device features and save them in per-node cache
         if m in features and 'requires' in features[m]:   # Check modules with device-specific requirements
           for rqm in features[m].requires:                # ... iterate over device-specific module requirements
-            if not rqm in topology.module and \
-               not rqm in n.get('module'):                # ... is required module listed globally or in the node?
+            if not rqm in n.get('module'):                # ... is required module listed in the node?
               common.error(
                 f"Module {m} on device {n.device} (node {n.name}) requires {rqm} module",
                 common.IncorrectValue,
