@@ -88,7 +88,7 @@ def adjust_link_list(links: list, nodes: Box) -> list:
       link_list.append({ IFATTR: link_intf })
     link_cnt = link_cnt + 1
 
-  if common.DEBUG:
+  if common.debug_active('links'):
     print("Adjusted link list")
     print("=" * 60)
     print(common.print_yaml(link_list))
@@ -190,14 +190,14 @@ def ifaddr_add_module(ifaddr: Box, link: Box, module: Box) -> None:
 #
 
 def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: dict, node_id: int) -> typing.Optional[str]:
-  if common.DEBUG:     # pragma: no cover (debugging)
+  if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f"get_node_link_address for {node.name}:\n"+
           f".. ifdata: {ifdata}\n"+
           f".. node_link_data: {node_link_data}\n"+
           f".. prefix: {prefix}\n"+
           f".. node_id: {node_id}")
   if 'unnumbered' in prefix:          # Special case: old-style unnumbered link
-    if common.DEBUG:     # pragma: no cover (debugging)
+    if common.debug_active('links'):     # pragma: no cover (debugging)
       print(f"... node loopback: {node.loopback}")
     for af in ('ipv4','ipv6'):        # Set AF to True for all address families
       if af in node_link_data:
@@ -257,7 +257,7 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
       node_link_data[af] = str(node_addr)
       ifdata[af] = node_link_data[af]
 
-  if common.DEBUG:     # pragma: no cover (debugging)
+  if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f"get_node_link_address for {node.name} completed:\n"+
           f".. ifdata: {ifdata}\n"+
           f".. node_link_data: {node_link_data}")
@@ -290,13 +290,13 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   link_attr_base = get_link_base_attributes(defaults)
   link_attr_nomod = get_link_base_attributes(defaults,False)
 
-  if common.DEBUG:     # pragma: no cover (debugging)
+  if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f'\nProcess LAN link {link}')
 
   pfx_list = augment_link_prefix(link,['lan'],addr_pools)
   interfaces = []
 
-  if common.DEBUG:     # pragma: no cover (debugging)
+  if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f'... on-link prefixes: {pfx_list}')
 
   link_cnt = 0
@@ -346,7 +346,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
         node_if['data'].neighbors.append(ngh_data)
 
-  if common.DEBUG:     # pragma: no cover (debugging)
+  if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f'Final LAN link data: {link}\n')
 
 def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
@@ -355,7 +355,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
   if not defaults:      # pragma: no cover (almost impossible to get there)
     defaults = Box({})
-  if common.DEBUG:     # pragma: no cover (debugging)
+  if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f'\nProcess P2P link {link}')
   pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools)
 

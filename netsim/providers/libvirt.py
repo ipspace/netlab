@@ -63,7 +63,7 @@ class Libvirt(_Provider):
       if not brname:
         continue
       try:
-        if common.DEBUG:
+        if common.debug_active('libvirt'):
           print('libvirt post_start_lab: fixing Linux bridge for link {l}')
         result = subprocess.run(['virsh','net-info',brname],capture_output=True,check=True,text=True)
       except:

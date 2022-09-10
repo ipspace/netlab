@@ -238,7 +238,7 @@ def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) 
         except StopIteration:
           common.error(
             f'Ran out of {af} prefixes in {p} pool' +
-            (' (use --debug flag to get more details)' if not common.DEBUG else ''),
+            (' (use --debug addr CLI argument to get more details)' if not common.debug_active('addr') else ''),
             common.MissingValue,
             'addressing')
 
@@ -271,7 +271,7 @@ def setup(topo: Box, defaults: Box) -> None:
   common.exit_on_error()
 
 def parse_prefix(prefix: typing.Union[str,dict]) -> typing.Dict:
-  if common.DEBUG:                     # pragma: no cover (debugging printout)
+  if common.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f"parse prefix: {prefix} type={type(prefix)}")
   if not prefix:
     return {}
