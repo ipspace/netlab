@@ -1,0 +1,345 @@
+input:
+- topology/input/vlan-native-routed.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  gateway:
+    ipv4: 172.16.3.1/24
+  interfaces:
+  - ifindex: 1
+    ipv4: 172.16.3.1/24
+    node: r1
+    vlan:
+      mode: route
+      native: pxeboot
+      trunk:
+        blue: {}
+        pxeboot: {}
+        red: {}
+  - ifindex: 1
+    ipv4: 172.16.3.2/24
+    node: r2
+    vlan:
+      mode: route
+      native: pxeboot
+      trunk:
+        blue: {}
+        pxeboot: {}
+        red: {}
+  - ifindex: 1
+    ipv4: 172.16.3.3/24
+    node: h1
+  linkindex: 1
+  node_count: 3
+  prefix:
+    ipv4: 172.16.3.0/24
+  type: lan
+  vlan:
+    mode: route
+    native: pxeboot
+    trunk:
+      blue: {}
+      pxeboot: {}
+      red: {}
+module:
+- vlan
+name: input
+nodes:
+  h1:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 3
+    interfaces:
+    - bridge: input_1
+      gateway:
+        ipv4: 172.16.3.1/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.3.3/24
+      linkindex: 1
+      name: h1 -> [r1,r2]
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.1/24
+        node: r1
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.2/24
+        node: r2
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module: []
+    name: h1
+    role: host
+  r1:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 1
+    interfaces:
+    - bridge: input_1
+      bridge_group: 1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 172.16.3.1/24
+      linkindex: 1
+      name: r1 -> [r2,h1]
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.2/24
+        node: r2
+      - ifname: eth1
+        ipv4: 172.16.3.3/24
+        node: h1
+      subif_index: 2
+      type: lan
+      vlan:
+        mode: route
+        trunk:
+          blue: {}
+          pxeboot: {}
+          red: {}
+        trunk_id:
+        - 1002
+    - ifindex: 2
+      ifname: GigabitEthernet0/1.1
+      parent_ifindex: 1
+      parent_ifname: GigabitEthernet0/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: blue
+        access_id: 1001
+    - ifindex: 3
+      ifname: GigabitEthernet0/1.2
+      parent_ifindex: 1
+      parent_ifname: GigabitEthernet0/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 2
+      ifindex: 4
+      ifname: BVI2
+      ipv4: 172.16.1.1/24
+      name: VLAN blue (1001) -> [r2]
+      neighbors:
+      - ifname: BVI2
+        ipv4: 172.16.1.2/24
+        node: r2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    - bridge_group: 3
+      ifindex: 5
+      ifname: BVI3
+      ipv4: 172.16.0.1/24
+      name: VLAN red (1000) -> [r2]
+      neighbors:
+      - ifname: BVI3
+        ipv4: 172.16.0.2/24
+        node: r2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - vlan
+    name: r1
+    vlan:
+      max_bridge_group: 3
+      mode: irb
+    vlans:
+      blue:
+        bridge_group: 2
+        id: 1001
+        mode: irb
+        prefix:
+          ipv4: 172.16.1.0/24
+        vni: 101001
+      pxeboot:
+        bridge_group: 1
+        id: 1002
+        mode: route
+        prefix:
+          ipv4: 172.16.2.0/24
+        vni: 101002
+      red:
+        bridge_group: 3
+        id: 1000
+        mode: irb
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+  r2:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 2
+    interfaces:
+    - bridge: input_1
+      bridge_group: 1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 172.16.3.2/24
+      linkindex: 1
+      name: r2 -> [r1,h1]
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.1/24
+        node: r1
+      - ifname: eth1
+        ipv4: 172.16.3.3/24
+        node: h1
+      subif_index: 2
+      type: lan
+      vlan:
+        mode: route
+        trunk:
+          blue: {}
+          pxeboot: {}
+          red: {}
+        trunk_id:
+        - 1002
+    - ifindex: 2
+      ifname: GigabitEthernet0/1.1
+      parent_ifindex: 1
+      parent_ifname: GigabitEthernet0/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: blue
+        access_id: 1001
+    - ifindex: 3
+      ifname: GigabitEthernet0/1.2
+      parent_ifindex: 1
+      parent_ifname: GigabitEthernet0/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 2
+      ifindex: 4
+      ifname: BVI2
+      ipv4: 172.16.1.2/24
+      name: VLAN blue (1001) -> [r1]
+      neighbors:
+      - ifname: BVI2
+        ipv4: 172.16.1.1/24
+        node: r1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    - bridge_group: 3
+      ifindex: 5
+      ifname: BVI3
+      ipv4: 172.16.0.2/24
+      name: VLAN red (1000) -> [r1]
+      neighbors:
+      - ifname: BVI3
+        ipv4: 172.16.0.1/24
+        node: r1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - vlan
+    name: r2
+    vlan:
+      max_bridge_group: 3
+      mode: irb
+    vlans:
+      blue:
+        bridge_group: 2
+        id: 1001
+        mode: irb
+        neighbors:
+        - ifname: BVI2
+          ipv4: 172.16.1.2/24
+          node: r2
+        - ifname: BVI2
+          ipv4: 172.16.1.1/24
+          node: r1
+        prefix:
+          ipv4: 172.16.1.0/24
+        vni: 101001
+      pxeboot:
+        bridge_group: 1
+        id: 1002
+        mode: route
+        prefix:
+          ipv4: 172.16.2.0/24
+        vni: 101002
+      red:
+        bridge_group: 3
+        id: 1000
+        mode: irb
+        neighbors:
+        - ifname: BVI3
+          ipv4: 172.16.0.2/24
+          node: r2
+        - ifname: BVI3
+          ipv4: 172.16.0.1/24
+          node: r1
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+provider: libvirt
+vlan:
+  mode: irb
+vlans:
+  blue:
+    host_count: 0
+    id: 1001
+    neighbors:
+    - ifname: BVI2
+      ipv4: 172.16.1.2/24
+      node: r2
+    - ifname: BVI2
+      ipv4: 172.16.1.1/24
+      node: r1
+    prefix:
+      ipv4: 172.16.1.0/24
+    vni: 101001
+  pxeboot:
+    id: 1002
+    mode: route
+    prefix:
+      ipv4: 172.16.2.0/24
+    vni: 101002
+  red:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: BVI3
+      ipv4: 172.16.0.2/24
+      node: r2
+    - ifname: BVI3
+      ipv4: 172.16.0.1/24
+      node: r1
+    prefix:
+      ipv4: 172.16.0.0/24
+    vni: 101000

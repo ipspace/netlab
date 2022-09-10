@@ -91,8 +91,9 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
   def_vlan  = get_from_box(topology,f'vlans.{vlan}.mode')
   def_global = get_from_box(topology,'vlan.mode') or 'irb'
 
-  #print(f'RAV: {link}')
-  #print(f'RAV: vlan {vlan} def_mode {def_vlan}')
+  if common.debug_active('vlan'):
+    print(f'routed_access_vlan: {link}')
+    print(f'... vlan {vlan} def_mode {def_vlan}')
   for intf in link.interfaces:
     mode = get_from_box(intf,'vlan.mode') or \
            def_link or \
@@ -103,7 +104,8 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
     if mode != 'route':
       return False
 
-  #print(f'RAV: routed VLAN')
+  if common.debug_active('vlan'):
+    print(f'... VLAN is routed (returning True)')
   return True
 
 #
@@ -356,6 +358,31 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
   return link_ok
 
 """
+check_native_routed_vlan: verify that all devices attached to a link can support native routed VLAN
+
+This function is called when we're dealing with a link with routed non-tagged VLAN. It needs to check
+whether we're dealing with a native VLAN (as opposed to access VLAN) and if so, iterate through
+the attached nodes to validate whether they support this setup.
+"""
+
+def check_native_routed_vlan(link: Box, v_attr: Box, topology: Box) -> None:
+  if not 'native' in v_attr:                                      # No vlan.native attribute, we're good
+    return
+
+  if not v_attr.native.set:                                       # Native VLAN set is empty, we're good
+    return
+
+  native_vlan = list(v_attr.native.set)[0]
+  for intf in link.interfaces:                                    # Check only nodes VLAN attributes that have native VLAN in their trunk
+    if 'vlan' in intf and native_vlan in intf.vlan.get('trunk',{}):
+      features = devices.get_device_features(topology.nodes[intf.node],topology.defaults)
+      if not features.vlan.native_routed:
+        common.error(
+          f'Node {intf.node} does not support routed native VLANs\n... link {link}',
+          common.IncorrectValue,
+          'vlan')
+
+"""
 copy_vlan_attributes: copy prefix and link type from vlan to link
 """
 def copy_vlan_attributes(vlan: str, vlan_data: Box, link: Box) -> None:
@@ -429,7 +456,11 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
 create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
 """
 def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
-  native_vlan = link.get('vlan_name',None)
+  if common.debug_active('vlan'):
+    print('create VLAN links')
+    print(f'... link {link}')
+    print(f'... v_attr {v_attr}')
+  native_vlan = v_attr.native.list[0] if 'native' in v_attr else None
   for vname in sorted(v_attr.trunk.set):
     if vname != native_vlan:           # Skip native VLAN
       link_data = Box(link.vlan.trunk[vname] or {},default_box=True,box_dots=True)
@@ -902,6 +933,16 @@ class VLAN(_Module):
     if not validate_link_vlan_attributes(link,v_attr,topology):
       return
 
+    # Merge link VLAN attributes into interface VLAN attributes to make subsequent steps easier
+    if 'vlan' in link:
+      for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
+        intf_node = topology.nodes[intf.node]
+        if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
+          intf.vlan = link.vlan + intf.vlan                                       # ... merge link VLAN attributes with interface attributes
+
+    if 'trunk' in v_attr:
+      create_vlan_links(link,v_attr,topology)
+
     svi_skipattr = topology.defaults.vlan.vlan_no_propagate or []                 # VLAN attributes not copied into link data
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
@@ -919,16 +960,13 @@ class VLAN(_Module):
             link[k] = vlan_data[k] + link[k]
 
     if routed_vlan:
+      check_native_routed_vlan(link,v_attr,topology)
       link.vlan.mode = 'route'
+      for intf in link.interfaces:
+        if 'vlan' in intf:
+          intf.vlan.mode = 'route'
     else:
       set_link_vlan_prefix(link,v_attr,topology)
-
-    # Merge link VLAN attributes into interface VLAN attributes to make subsequent steps easier
-    if 'vlan' in link:
-      for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
-        intf_node = topology.nodes[intf.node]
-        if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
-          intf.vlan = link.vlan + intf.vlan                                       # ... merge link VLAN attributes with interface attributes
 
     # Disable IP addressing on access VLAN ports on bridged VLANs
     if link_vlan:                                                                 # Are we dealing with an access VLAN?
@@ -938,9 +976,6 @@ class VLAN(_Module):
           if interface_vlan_mode(intf,intf_node,topology) == 'bridge':            # ... that is in bridge mode on the current access VLAN?
             intf.ipv4 = False                                                     # ... if so, disable addressing on this interface
             intf.ipv6 = False
-
-    if 'trunk' in v_attr:
-      create_vlan_links(link,v_attr,topology)
 
   def module_post_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
