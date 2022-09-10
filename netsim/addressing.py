@@ -73,7 +73,7 @@ def rebuild_prefix(pfx: typing.Union[dict,Box]) -> dict:
   out_pfx = {}
   for af in ('ipv4','ipv6'):
     if af in pfx:
-      out_pfx[af] = str(pfx[af])
+      out_pfx[af] = str(pfx[af]) if not isinstance(pfx[af],bool) else pfx[af]
   return out_pfx
 
 def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
@@ -272,7 +272,7 @@ def setup(topo: Box, defaults: Box) -> None:
 
 def parse_prefix(prefix: typing.Union[str,dict]) -> typing.Dict:
   if common.DEBUG:                     # pragma: no cover (debugging printout)
-    print(f"parse prefix: {prefix}")
+    print(f"parse prefix: {prefix} type={type(prefix)}")
   if not prefix:
     return {}
   supported_af = ['ip','ipv4','ipv6']
