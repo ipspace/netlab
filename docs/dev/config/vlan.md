@@ -48,6 +48,7 @@ You have to specify VLAN-related capabilities of your device in `devices.<device
 * **subif_name** -- name of VLAN subinterfaces for **router** platforms or routed VLAN subinterface name for **l3-switch** platforms. Use `{ifname}` to get the parent interface name, `{subif_index}` to get subinterface ID[^SID], and `{vlan.access_id}` to get the VLAN tag[^SUBIF].
 * **first_subif_id** -- subinterface ID of the first subinterface in case your platform uses unusual subinterface names. Defaults to 1.
 * **mixed_trunk** -- set to *True* when a platform supports a mix of bridged and routed VLANs on a trunk interface, regardless of the platform type -- applicable to **router** and **l3-switch** platforms.
+* **native_routed** -- set to *True* when a platform supports routed native VLAN on a trunk interface (effectively untagged IP + VLAN trunk) -- applicable to **router** and **l3-switch** platforms.
 
 [^SID]: A counter starting at **first_subif_id**.
 
