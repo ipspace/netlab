@@ -3,6 +3,8 @@
 #
 import subprocess
 import typing
+import shutil
+from pathlib import Path
 from box import Box
 
 from . import _Provider
@@ -58,10 +60,25 @@ def destroy_ovs_bridge( brname: str ) -> bool:
       common.error("Error deleting OVS bridge '%s': %s" % (brname,ex), module='clab')
       return False
 
-class Containerlab(_Provider):
+GENERATED_CONFIG_PATH = "clab_files"
 
+class Containerlab(_Provider):
+  
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
+
+    # For any nodes that have templates for custom configuration files, render them and add bindings
+    if 'clab' in node and node.clab.get( 'config_templates', [] ):
+        for file,mapping in node.clab.config_templates.items():
+            hostvar_dir = f"{GENERATED_CONFIG_PATH}/{node.name}"
+            out_file = hostvar_dir + '/' + file
+            Path(hostvar_dir).mkdir(parents=True, exist_ok=True)
+            output = common.open_output_file(out_file )
+            output.write(common.template(file+".j2",node.to_dict(),self.get_template_path()))
+            common.close_output_file(output)
+            print( f"Created node configuration file: {out_file} mapped to {node.name}:{mapping}" )
+            node.clab.binds = node.clab.binds or []
+            node.clab.binds.append( f"{out_file}:{mapping}" )
 
   def pre_start_lab(self, topology: Box) -> None:
     common.print_verbose('pre-start hook for Containerlab - create any bridges')
@@ -78,3 +95,7 @@ class Containerlab(_Provider):
             destroy_ovs_bridge(brname)
         else:
             destroy_linux_bridge(brname)
+
+    # Cleanup any generated custom files
+    shutil.rmtree(GENERATED_CONFIG_PATH)
+
