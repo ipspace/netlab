@@ -13,28 +13,30 @@ ip link set {{vname}} up
 
 # Move interfaces and loopbacks to vrfs
 {% for i in interfaces if i.vrf is defined %}
-{% set dev = "vlan"+i.vlan.access_id|string if i.type=="vlan_member" else i.ifname %}
-ip link set {{ dev }} master {{ i.vrf }}
+ip link set {{ i.ifname }} master {{ i.vrf }}
 {% endfor %}
 
 cat >/tmp/vrf_config <<CONFIG
 {% for vname,vdata in vrfs.items() %}
-{% set vrf_name = vname %}
-vrf {{ vrf_name }}
+vrf {{ vname }}
  exit-vrf
+{% endfor %}
 !
-
-{% if 'bgp' in vdata %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vrf_name }}
-{% for af in ['ipv4','ipv6'] if af in vdata.af|default([]) and vdata.af[af] %}
+{%   for af in ['ipv4','ipv6'] if af in vdata.af|default([]) and vdata.af[af] %}
  address-family {{ af }} unicast
   redistribute connected
  exit-address-family
-{% endfor %}
+{%   endfor %}
  exit
+{% endfor %}
 !
-{% endif %}
-
+{% for vname,vdata in vrfs.items() if vdata.ospf is defined %}
+{%  if vdata.af.ipv4|default(False) %}
+{%    include 'frr.ospfv2-vrf.j2' %}
+{%  endif %}
+!
 {% endfor %}
 CONFIG
 
