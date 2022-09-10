@@ -381,7 +381,7 @@ class VRF(_Module):
             node.af[f'vpn{af}'] = True
             node.vrfs[ifdata.vrf].af[f'ip{af}'] = True
 
-    if common.DEBUG:
+    if common.debug_active('vrf'):
       print( f"vrf node_post_transform on {node.name}: counted {vrf_count} VRFs on interfaces" )
     features = devices.get_device_features(node,topology.defaults)
     if not vrf_count and ('vrf' not in features or not features.vrf.keep_module): # Remove VRF module from the node if the node has no VRFs, unless flag set

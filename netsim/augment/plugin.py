@@ -65,7 +65,7 @@ def init(topology: Box) -> None:
     else:
       common.error(f"Cannot find plugin {pname} in {search_path}",common.IncorrectValue,'plugin')
 
-  if common.DEBUG:
+  if common.debug_active('plugin'):
     print(f'plug INIT: {topology.Plugin}')
 
 def execute(action: str, topology: Box) -> None:
@@ -73,6 +73,8 @@ def execute(action: str, topology: Box) -> None:
     return
 
   for plugin in topology.Plugin:
-  	if hasattr(plugin,action):
-  	  func = getattr(plugin,action)
-  	  func(topology)
+    if hasattr(plugin,action):
+      func = getattr(plugin,action)
+      if common.debug_active('plugin'):
+        print(f'plug INIT: {topology.Plugin}')
+      func(topology)

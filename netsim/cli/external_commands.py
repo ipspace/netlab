@@ -25,7 +25,7 @@ def stringify(cmd : typing.Union[str,list]) -> str:
   return str(cmd)
 
 def run_command(cmd : typing.Union[str,list], check_result : bool = False) -> bool:
-  if common.DEBUG:
+  if common.debug_active('cli'):
     print("Not running: %s" % cmd)
     return True
 

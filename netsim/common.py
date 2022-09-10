@@ -14,7 +14,7 @@ from box import Box,BoxList
 
 LOGGING : bool = False
 VERBOSE : int = 0
-DEBUG : bool = False
+DEBUG : typing.Optional[typing.List[str]] = None
 QUIET : bool = False
 
 RAISE_ON_ERROR : bool = False
@@ -100,7 +100,7 @@ def template(j2: str , data: typing.Dict, path: str, user_template_path: typing.
   template_path = [ str(get_moddir()) + "/" + path ]
   if not user_template_path is None:
     template_path = [ './' + user_template_path, os.path.expanduser('~/.netlab/'+user_template_path) ] + template_path
-  if DEBUG:
+  if debug_active('template'):
     print(f"TEMPLATE PATH for {j2}: {template_path}")
   ENV = Environment(loader=FileSystemLoader(template_path), \
           trim_blocks=True,lstrip_blocks=True, \
@@ -134,8 +134,12 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
   if 'logging' in args and args.logging:
     LOGGING = True
 
-  if 'debug' in args and args.debug:
-    DEBUG = True
+  if 'debug' in args:
+    if args.debug is None:
+      DEBUG = None
+    else:
+      DEBUG = args.debug if args.debug else ['all']
+      print(f'Debugging flags set: {DEBUG}')
 
   if 'quiet' in args and args.quiet:
     QUIET = True
@@ -152,7 +156,7 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
 # There must be a better way of doing it, but this is simple and it works
 #
 def set_flag(
-      debug: typing.Optional[bool] = None,
+      debug: typing.Optional[typing.List[str]] = None,
       quiet: typing.Optional[bool] = None,
       verbose: typing.Optional[int] = None,
       logging: typing.Optional[bool] = None,
@@ -175,3 +179,9 @@ def set_flag(
     'raise_on_error': RAISE_ON_ERROR,
     'warning': WARNING
   }
+
+def debug_active(flag: str) -> bool:
+  if not DEBUG:
+    return False
+
+  return 'all' in DEBUG or flag in DEBUG

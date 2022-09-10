@@ -521,7 +521,7 @@ def module_transform(method: str, topology: Box) -> None:
   for m in topology.get('module',[]):
     if not mod_load.get(m):
       mod_load[m] = _Module.load(m,topology.get(m))
-    if common.DEBUG:
+    if common.debug_active('modules'):
       if hasattr(mod_load[m],f"module_{method}"):
         print(f'Calling module {m} module_{method}')
     mod_load[m].call("module_"+method,topology)
@@ -533,7 +533,7 @@ def node_transform(method: str , topology: Box) -> None:
     for m in n.get('module',[]):
       if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
         mod_load[m] = _Module.load(m,topology.get(m))
-      if common.DEBUG:
+      if common.debug_active('modules'):
         if hasattr(mod_load[m],f"node_{method}"):
           print(f'Calling module {m} node_{method} on node {name}')
       mod_load[m].call("node_"+method,n,topology)
@@ -548,7 +548,7 @@ def link_transform(method: str, topology: Box) -> None:
     for m in mod_list.keys():
       if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
         mod_load[m] = _Module.load(m,topology.get(m))
-      if common.DEBUG:
+      if common.debug_active('modules'):
         if hasattr(mod_load[m],f"link_{method}"):
           print(f'Calling module {m} link_{method} on link {l.name}')
       mod_load[m].call("link_"+method,l,topology)
