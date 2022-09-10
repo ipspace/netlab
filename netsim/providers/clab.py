@@ -97,5 +97,5 @@ class Containerlab(_Provider):
             destroy_linux_bridge(brname)
 
     # Cleanup any generated custom files
-    shutil.rmtree(GENERATED_CONFIG_PATH)
+    shutil.rmtree(GENERATED_CONFIG_PATH,ignore_errors=True)
 
