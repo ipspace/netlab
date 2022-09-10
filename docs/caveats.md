@@ -48,7 +48,6 @@ devices.cumulus.libvirt.memory: 2048
 (caveats-frr-config)=
 ## FRR
 
-* *containerlab* FRR containers run FRR release 7.5.0 -- the latest release that survives FRR daemon restart during the initial configuration process.
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
 
 ## Generic Linux
