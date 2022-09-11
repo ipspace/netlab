@@ -245,7 +245,10 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
     if pools.loopback and n.get('role','') != 'host':
       prefix_list = addressing.get(pools,['loopback'],n.id)
       for af in prefix_list:
-        if not n.loopback[af]:
+        if isinstance(prefix_list[af],bool):
+          if prefix_list[af]:
+            common.fatal( f"Loopback addresses must be valid IP prefixes, not 'True': {prefix_list}" )
+        elif not n.loopback[af]:
           if af == 'ipv6':
             n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
           else:

@@ -270,8 +270,8 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> di
   if 'prefix' in link:
     pfx_list = addressing.parse_prefix(link.prefix)
     if isinstance(link.prefix,str):
-      link.prefix = addressing.rebuild_prefix(pfx_list)
-  elif 'unnumbered' in link:
+      link.prefix = addressing.rebuild_prefix(pfx_list)  # convert str to { ipv4: , ipv6: }
+  elif 'unnumbered' in link:                             # User provided flag in topology
     pfx_list = Box({ 'unnumbered': True })
   else:
     pfx_list = addressing.get(addr_pools,pools)
@@ -281,8 +281,6 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> di
       }
     if not link.prefix:
       link.pop('prefix',None)
-    if pfx_list.get('unnumbered',None):
-      link.unnumbered = True
 
   return pfx_list
 
