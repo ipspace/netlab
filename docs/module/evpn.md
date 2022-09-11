@@ -23,11 +23,11 @@ The following table describes per-platform support of individual VXLAN features:
 | Operating system   | VXLAN<br>transport | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  |  ❌  | ✅  |
-| Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  |  ✅  |
+| Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Nokia SR OS        |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
-| FRR                |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
-| VyOS               |  ✅  |  ✅  |  ❌  |  ❌  |  ✅  |
-| Dell OS 10         |  ✅  |  ✅  |  ❌  |  ❌  |  ✅  |
+| FRR                | ✅  | ✅  |  ❌  |  ❌  | ✅  |
+| VyOS               | ✅  | ✅  |  ❌  |  ❌  | ✅  |
+| Dell OS 10         | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 
 EVPN module supports three design paradigms:
 
