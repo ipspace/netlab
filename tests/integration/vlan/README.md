@@ -1,6 +1,6 @@
 # VLAN integration test cases
 
-This directory contains numerous topologies you can use to test your VLAN implementation. Many topologies use Linux hosts as attached devices, making it possible to run them under most virtualization providers supported by *netsim-tools*.
+This directory contains numerous topologies you can use to test your VLAN implementation. Many topologies use Linux hosts as attached devices, making it possible to run them under most virtualization providers supported by *netlab*.
 
 The virtualization provider and the device under test are not specified in the topology. Start the lab with
 
