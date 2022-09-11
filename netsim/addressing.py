@@ -64,7 +64,7 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
     return Box({ 'ipv4': str(pfx)},default_box=True,box_dots=True)
   for af in 'ipv4','ipv6':
     if af in pfx:
-      if not pfx[af] or 'unnumbered' in pfx:
+      if not pfx[af] or 'unnumbered' in pfx:  # If 'unnumbered' is set, ipv4/ipv6 will be based on loopback afs (per node)
         del pfx[af]
 
   return pfx
