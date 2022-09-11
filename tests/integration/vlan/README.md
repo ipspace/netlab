@@ -31,3 +31,7 @@ The topologies (in increasing order of complexity) implement the following scena
 
 * `vlan-routed-trunk.yml` -- a router-on-a-stick is attached to a VLAN trunk. Make sure the router configuration uses routed subinterfaces and not VLAN interfaces.
 * `vlan-vrf-lite.yml` -- implement VRF lite across three routers using VLAN trunks
+
+### Consolidated VLAN test cases
+
+* `vlan-all-in-one.yml` -- contains all variations of access and trunk vlans in various supported modes, with/without native vlan. Used to test config generation
