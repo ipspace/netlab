@@ -1,0 +1,46 @@
+{% macro community(list) -%}
+{{ "both" if list|length >= 2 else list[0] }}
+{%- endmacro %}
+!
+router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
+ no bgp ebgp-requires-policy
+ no bgp default ipv4-unicast
+{% for n in vdata.bgp.neighbors|default([]) %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+ neighbor {{ n[af] }} remote-as {{ n.as }}
+ neighbor {{ n[af] }} description {{ n.name }}
+{%   endfor %}
+{% endfor %}
+{% for af in ['ipv4','ipv6'] if vdata.af[af]|default(False) %}
+ address-family {{ af }} unicast
+{# VPN import/export is disabled at the moment. If we decide to enable MPLS for FRR, use this code
+  rd vpn export {{ vdata.rd }}
+{%   for rt in vdata.import %}
+  route-target vpn import {{ rt }}
+{%   endfor %}
+{%   for rt in vdata.export %}
+  route-target vpn export {{ rt }}
+{%   endfor %}
+#}
+{# Direct VRF-to-VRF import for local route leaking. Use this or VPN code. #}
+  redistribute connected
+{%   for rt in vdata.import %}
+{%     for exp_name,exp_data in vrfs.items() if rt in exp_data.export and exp_name != vname %}
+  import vrf {{ exp_name }}
+{%     endfor %}
+{%   endfor %}
+{%   if af == 'ipv4' and 'ospf' in vdata %}
+  redistribute ospf
+{%   endif %}
+{%   for n in vdata.networks|default([]) if af in n %}
+  network {{ n[af]|ipaddr('0') }}
+{%   endfor %}
+{%   for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
+  neighbor {{ n[af] }} activate
+{%     if bgp.community.ebgp|default([]) %}
+  neighbor {{ n[af] }} send-community {{ community(bgp.community.ebgp) }}
+{%     endif %}
+{%   endfor %}
+ exit-address-family
+{% endfor %}
+!
