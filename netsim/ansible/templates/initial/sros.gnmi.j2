@@ -23,22 +23,17 @@
 {% elif name!='system' %}
    loopback: [null]
 {% endif %}
-{% if ip_v4|ipv4 or ip_v6|ipv6 %}
 {% if ip_v4|ipv4 %}
 {{ ip_addr('4',ip_v4,name) }}
-{% endif %}
-{% if ip_v6|ipv6 %}
-{{ ip_addr('6',ip_v6,name) }}
-{% endif %}
-{% elif l.unnumbered|default(0)|bool or ip_v4 == True or ip_v6 == True %}
-{% if l.unnumbered|default(0)|bool or ip_v4 == True %}
+{% elif ip_v4 == True %}
    ipv4:
     unnumbered:
      system: [null]
 {% endif %}
-{% if l.unnumbered|default(0)|bool or ip_v6 == True %}
+{% if ip_v6|ipv6 %}
+{{ ip_addr('6',ip_v6,name) }}
+{% elif ip_v6 == True %}
    ipv6: { }
-{% endif %}
 {% endif %}
 {%- endmacro -%}
 
@@ -58,14 +53,14 @@ updates:
   val:
    ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
 {% if loopback.ipv4|default('')|ipv4 or 'ipv6' in loopback %}
-{% set v4 = loopback.ipv4|default('') %}
-{% set v6 = loopback.ipv6|default('') %}
+{% set _v4 = loopback.ipv4|default(False) %}
+{% set _v6 = loopback.ipv6|default(False) %}
 {# The interface name 'system' is special, also used for IP unnumbered #}
-{{ interface("system","system interface",v4,v6,'',loopback) }}
+{{ interface("system","system interface",_v4,_v6,'',loopback) }}
 {% endif %}
 {% for l in interfaces|default([]) %}
-{% set v4 = l.ipv4|default('') %}
-{% set v6 = l.ipv6|default('') %}
+{% set v4 = l.ipv4|default(False) %}
+{% set v6 = l.ipv6|default(False) %}
 {% if l.name is defined %}
 {% set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
 {% elif l.type|default("") == "stub" %}
@@ -86,12 +81,12 @@ updates:
    ethernet:
     mtu: {{ l.mtu + 14 }} # max 9800
 {% endif %}
-{% if v4|ipv4 or v6|ipv6 or l.unnumbered|default(0) or v4==True or v6==True %}
+{% if v4 or v6 %}
 {{ interface('i'+l.ifname,desc,v4,v6,portname) }}
 {% else %}
 - path: configure/port[port-id={{ portname }}]
   val:
    ethernet:
-    mode: access # no IP, assume this is an access port
+    mode: access # no IP, assume this is an access port for now
 {% endif %}
 {% endfor %}
