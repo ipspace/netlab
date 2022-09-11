@@ -79,7 +79,7 @@ class Containerlab(_Provider):
           common.write_template( in_folder, j2, node.to_dict(), out_folder, filename=file )
           print( f"Created node configuration file: {out_folder}/{file} based on {in_folder}/{j2}, mapped to {node.name}:{mapping}" )
           node.clab.binds = node.clab.binds or {}
-          node.clab.binds += { f"{out_folder}/{file}" : mapping }
+          node.clab.binds[ f"{out_folder}/{file}" ] = mapping
         else:
           if common.WARNING:
             print( f"Containerlab warning: Skipping {file}:{mapping}, bind already exists" )
