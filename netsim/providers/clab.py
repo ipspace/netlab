@@ -3,10 +3,12 @@
 #
 import subprocess
 import typing
+import shutil
 from box import Box
 
 from . import _Provider
 from .. import common
+from ..data import get_from_box
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
     return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 }
@@ -58,10 +60,29 @@ def destroy_ovs_bridge( brname: str ) -> bool:
       common.error("Error deleting OVS bridge '%s': %s" % (brname,ex), module='clab')
       return False
 
-class Containerlab(_Provider):
+GENERATED_CONFIG_PATH = "clab_files"
 
+class Containerlab(_Provider):
+  
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
+
+    # For any nodes that have templates for custom configuration files, render them and add bindings
+    mappings = get_from_box(node, 'clab.config_templates')
+    if mappings:
+      cur_binds = get_from_box(node, 'clab.binds') or {}
+      for file,mapping in mappings.items():
+        if isinstance(mapping,str) and mapping not in cur_binds.values():
+          in_folder = f"{ self.get_template_path() }/{node.device}"
+          j2 = f"{file}.j2"
+          out_folder = f"{GENERATED_CONFIG_PATH}/{node.name}"
+          common.write_template( in_folder, j2, node.to_dict(), out_folder, filename=file )
+          print( f"Created node configuration file: {out_folder}/{file} based on {in_folder}/{j2}, mapped to {node.name}:{mapping}" )
+          node.clab.binds = node.clab.binds or {}
+          node.clab.binds[ f"{out_folder}/{file}" ] = mapping
+        else:
+          if common.WARNING:
+            print( f"Containerlab warning: Skipping {file}:{mapping}, malformed mapping or bind already exists" )
 
   def pre_start_lab(self, topology: Box) -> None:
     common.print_verbose('pre-start hook for Containerlab - create any bridges')
@@ -78,3 +99,7 @@ class Containerlab(_Provider):
             destroy_ovs_bridge(brname)
         else:
             destroy_linux_bridge(brname)
+
+    # Cleanup any generated custom files
+    shutil.rmtree(GENERATED_CONFIG_PATH,ignore_errors=True)
+

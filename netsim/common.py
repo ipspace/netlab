@@ -109,6 +109,17 @@ def template(j2: str , data: typing.Dict, path: str, user_template_path: typing.
   return template.render(**data)
 
 #
+# write_template: Applies a custom template (in_folder/j2) and writes it to the given file path (out_folder/filename)
+#
+def write_template(in_folder: str, j2: str, data: typing.Dict, out_folder: str, filename: str) -> None:
+  if debug_active('template'):
+    print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
+  pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
+  out_file = f"{out_folder}/{filename}"
+  with open(out_file,mode='w') as output:
+    output.write(template(j2,data,in_folder))
+
+#
 # Logging and debugging functions
 #
 
