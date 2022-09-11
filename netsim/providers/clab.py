@@ -4,11 +4,11 @@
 import subprocess
 import typing
 import shutil
-from pathlib import Path
 from box import Box
 
 from . import _Provider
 from .. import common
+from ..data import get_from_box,must_be_list
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
     return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 }
@@ -68,17 +68,21 @@ class Containerlab(_Provider):
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
 
     # For any nodes that have templates for custom configuration files, render them and add bindings
-    if 'clab' in node and node.clab.get( 'config_templates', [] ):
-        for file,mapping in node.clab.config_templates.items():
-            hostvar_dir = f"{GENERATED_CONFIG_PATH}/{node.name}"
-            out_file = hostvar_dir + '/' + file
-            Path(hostvar_dir).mkdir(parents=True, exist_ok=True)
-            output = common.open_output_file(out_file )
-            output.write(common.template(file+".j2",node.to_dict(),self.get_template_path()))
-            common.close_output_file(output)
-            print( f"Created node configuration file: {out_file} mapped to {node.name}:{mapping}" )
-            node.clab.binds = node.clab.binds or []
-            node.clab.binds.append( f"{out_file}:{mapping}" )
+    mappings = get_from_box(node, 'clab.config_templates')
+    if mappings:
+      cur_binds = get_from_box(node, 'clab.binds') or {}
+      for file,mapping in mappings.items():
+        if mapping not in cur_binds.values():
+          in_folder = f"{ self.get_template_path() }/{node.device}"
+          j2 = f"{file}.j2"
+          out_folder = f"{GENERATED_CONFIG_PATH}/{node.name}"
+          common.write_template( in_folder, j2, node.to_dict(), out_folder, filename=file )
+          print( f"Created node configuration file: {out_folder}/{file} based on {in_folder}/{j2}, mapped to {node.name}:{mapping}" )
+          node.clab.binds = node.clab.binds or {}
+          node.clab.binds += { f"{out_folder}/{file}" : mapping }
+        else:
+          if common.WARNING:
+            print( f"Containerlab warning: Skipping {file}:{mapping}, bind already exists" )
 
   def pre_start_lab(self, topology: Box) -> None:
     common.print_verbose('pre-start hook for Containerlab - create any bridges')
