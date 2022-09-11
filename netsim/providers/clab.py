@@ -8,7 +8,7 @@ from box import Box
 
 from . import _Provider
 from .. import common
-from ..data import get_from_box,must_be_list
+from ..data import get_from_box
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
     return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 }
