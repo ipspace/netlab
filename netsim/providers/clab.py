@@ -72,7 +72,7 @@ class Containerlab(_Provider):
     if mappings:
       cur_binds = get_from_box(node, 'clab.binds') or {}
       for file,mapping in mappings.items():
-        if mapping not in cur_binds.values():
+        if isinstance(mapping,str) and mapping not in cur_binds.values():
           in_folder = f"{ self.get_template_path() }/{node.device}"
           j2 = f"{file}.j2"
           out_folder = f"{GENERATED_CONFIG_PATH}/{node.name}"
@@ -82,7 +82,7 @@ class Containerlab(_Provider):
           node.clab.binds[ f"{out_folder}/{file}" ] = mapping
         else:
           if common.WARNING:
-            print( f"Containerlab warning: Skipping {file}:{mapping}, bind already exists" )
+            print( f"Containerlab warning: Skipping {file}:{mapping}, malformed mapping or bind already exists" )
 
   def pre_start_lab(self, topology: Box) -> None:
     common.print_verbose('pre-start hook for Containerlab - create any bridges')
