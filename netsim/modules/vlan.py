@@ -362,14 +362,15 @@ whether the native vlan is configured as 'mode: route', and if so whether the de
 def check_native_vlan_routed(link: Box, native_vlan: str, topology: Box) -> None:
   for intf in link.interfaces:
     node = topology.nodes[intf.node]
-    vlan_mode = interface_vlan_mode(native_vlan,intf,node,topology)
-    if vlan_mode == "route":
-      features = devices.get_device_features(node,topology.defaults)
-      if not features.vlan.native_routed:
-        common.error(
-          f'Node {intf.node} does not support routed native VLANs ({native_vlan})\n... link {link}',
-          common.IncorrectValue,
-          'vlan')
+    if 'vlan' in node.get('module',[]):   # Is vlan module used on this node?
+      vlan_mode = interface_vlan_mode(native_vlan,intf,node,topology)
+      if vlan_mode == "route":
+        features = devices.get_device_features(node,topology.defaults)
+        if not features.vlan.native_routed:
+          common.error(
+            f'Node {intf.node} does not support routed native VLANs ({native_vlan})\n... link {link}',
+            common.IncorrectValue,
+            'vlan')
 
 """
 copy_vlan_attributes: copy prefix and link type from vlan to link
