@@ -161,6 +161,13 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   # in different AS numbers, and create BGP neighbors
   for l in node.get("interfaces",[]):
 
+    if 'vrf' in l:        # VRF neighbor
+      vrf_bgp = data.get_from_box(node,f"vrfs.{l.vrf}.bgp")                           # Allow user to set 'bgp: False' within a vrf, per node
+      if vrf_bgp==False or data.get_from_box(topology,f"vrfs.{l.vrf}.bgp")==False:    # or globally per vrf
+        if common.WARNING:
+          print( f"bgp: Not adding ebgp neighbor within vrf {l.vrf}: bgp = False" )
+        continue
+
     node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
     node_local_as = data.get_from_box(l,'bgp.local_as') or data.get_from_box(node,'bgp.local_as') or node_as
 
@@ -250,13 +257,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if not ebgp_data is None:
         ebgp_data['as'] = neighbor_local_as
         if 'vrf' in l:        # VRF neighbor
-
-          vrf_bgp = data.get_from_box(node,f"vrfs.{l.vrf}.bgp")                           # Allow user to set 'bgp: False' within a vrf, per node
-          if vrf_bgp==False or data.get_from_box(topology,f"vrfs.{l.vrf}.bgp")==False:    # or globally per vrf
-            if common.WARNING:
-              print( f"bgp: Not adding ebgp neighbor within vrf {l.vrf}: bgp = False" )
-            continue
-          elif not vrf_bgp or not 'neighbors' in vrf_bgp:
+          if not 'neighbors' in node.vrfs[l.vrf].bgp:
             node.vrfs[l.vrf].bgp.neighbors = []
           node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
         else:                 # Global neighbor
