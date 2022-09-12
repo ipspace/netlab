@@ -160,10 +160,11 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   # Iterate over all links, find adjacent nodes
   # in different AS numbers, and create BGP neighbors
   for l in node.get("interfaces",[]):
+
     node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
     node_local_as = data.get_from_box(l,'bgp.local_as') or data.get_from_box(node,'bgp.local_as') or node_as
 
-    af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in l ]
+    af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in l and l[af] ]
     if not af_list:                                                   # This interface has no usable address
       continue
 
@@ -182,7 +183,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         continue
 
     for ngb_ifdata in l.get("neighbors",[]):
-      af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in ngb_ifdata ]
+      af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in ngb_ifdata and ngb_ifdata[af] ]
       if not af_list:                                                 # Neighbor has no usable address
         continue
       #
@@ -249,7 +250,13 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if not ebgp_data is None:
         ebgp_data['as'] = neighbor_local_as
         if 'vrf' in l:        # VRF neighbor
-          if not node.vrfs[l.vrf].bgp.neighbors:
+
+          vrf_bgp = data.get_from_box(node,f"vrfs.{l.vrf}.bgp")                           # Allow user to set 'bgp: False' within a vrf, per node
+          if vrf_bgp==False or data.get_from_box(topology,f"vrfs.{l.vrf}.bgp")==False:    # or globally per vrf
+            if common.WARNING:
+              print( f"bgp: Not adding ebgp neighbor within vrf {l.vrf}: bgp = False" )
+            continue
+          elif not vrf_bgp or not 'neighbors' in vrf_bgp:
             node.vrfs[l.vrf].bgp.neighbors = []
           node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
         else:                 # Global neighbor
@@ -329,7 +336,10 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
 
   for l in node.get("interfaces",[]):
     if "bgp" in l:
-      if "advertise" in l.bgp:
+      if not isinstance(l.bgp,dict):
+        common.error(f"interface.bgp should be a dictionary, found {l.bgp}", common.IncorrectValue, module='bgp')
+        return
+      elif "advertise" in l.bgp:
         continue
     if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
       l.bgp.advertise = True
@@ -461,11 +471,9 @@ class BGP(_Module):
 
     as_set = {}
     for ifdata in link.get(IFATTR,[]):
-      n = ifdata.node
-      if "bgp" in topology.nodes[n]:
-        node_as = topology.nodes[n].bgp.get("as")
-        if node_as:
-          as_set[node_as] = True
+      node_as = data.get_from_box(topology.nodes[ifdata.node],"bgp.as")
+      if node_as:
+        as_set[node_as] = True
 
     if len(as_set) > 1 and not link.get("role"):
       link.role = ebgp_role
