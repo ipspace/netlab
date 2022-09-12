@@ -251,7 +251,7 @@ Fortinet example (**vdom** variable is set as an Ansible group variable in syste
         - name: "loopback0"
           interface: "loopback0"
 
-- name: Configure OSPF on non ptp interfaces
+- name: Configure OSPF on non p2p interfaces
   fortinet.fortios.fortios_router_ospf:
     vdom: "{{ vdom }}"
     router_ospf:
@@ -259,11 +259,11 @@ Fortinet example (**vdom** variable is set as an Ansible group variable in syste
         - name: "{{ interface.ifname }}"
           interface: "{{ interface.ifname }}"
   with_items: "{{ interfaces }}"
-  when: interface.type != "ptp" and not (interface.role is defined and interface.role == "external")
+  when: interface.type != "p2p" and not (interface.role is defined and interface.role == "external")
   loop_control:
     loop_var: interface
 
-- name: Configure OSPF on ptp interfaces
+- name: Configure OSPF on p2p interfaces
   fortinet.fortios.fortios_router_ospf:
     vdom: "{{ vdom }}"
     router_ospf:
@@ -272,7 +272,7 @@ Fortinet example (**vdom** variable is set as an Ansible group variable in syste
           interface: "{{ interface.ifname }}"
           network_type: "point-to-point"
   with_items: "{{ interfaces }}"
-  when: interface.type == "ptp" and not (interface.role is defined and interface.role == "external")
+  when: interface.type == "p2p" and not (interface.role is defined and interface.role == "external")
   loop_control:
     loop_var: interface
 
