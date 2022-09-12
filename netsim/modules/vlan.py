@@ -109,13 +109,9 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
   return True
 
 #
-# interface_vlan_mode: Given an interface, a node, and topology, find interface VLAN mode
+# interface_vlan_mode: Given a vlan name, an interface, a node, and topology, find its effective VLAN mode
 #
-def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
-  vlan = get_from_box(intf,'vlan.access') or get_from_box(intf,'vlan.native')
-  if not vlan:
-    return 'irb'
-
+def interface_vlan_mode(vlan: str, intf: Box, node: Box, topology: Box) -> str:
   return get_from_box(intf,'vlan.mode') or \
          get_from_box(node,f'vlans.{vlan}.mode') or \
          get_from_box(topology,f'vlans.{vlan}.mode') or \
@@ -358,27 +354,20 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
   return link_ok
 
 """
-check_native_routed_vlan: verify that all devices attached to a link can support native routed VLAN
+check_native_vlan_routed: verify that all devices attached to a trunk can support its native VLAN, checking for routed
 
-This function is called when we're dealing with a link with routed non-tagged VLAN. It needs to check
-whether we're dealing with a native VLAN (as opposed to access VLAN) and if so, iterate through
-the attached nodes to validate whether they support this setup.
+This function is called when we're dealing with a trunk link. It needs to iterate through the attached nodes to validate 
+whether the native vlan is configured as 'mode: route', and if so whether the device supports this configuration
 """
-
-def check_native_routed_vlan(link: Box, v_attr: Box, topology: Box) -> None:
-  if not 'native' in v_attr:                                      # No vlan.native attribute, we're good
-    return
-
-  if not v_attr.native.set:                                       # Native VLAN set is empty, we're good
-    return
-
-  native_vlan = list(v_attr.native.set)[0]
-  for intf in link.interfaces:                                    # Check only nodes VLAN attributes that have native VLAN in their trunk
-    if 'vlan' in intf and native_vlan in intf.vlan.get('trunk',{}):
-      features = devices.get_device_features(topology.nodes[intf.node],topology.defaults)
+def check_native_vlan_routed(link: Box, native_vlan: str, topology: Box) -> None:
+  for intf in link.interfaces:
+    node = topology.nodes[intf.node]
+    vlan_mode = interface_vlan_mode(native_vlan,intf,node,topology)
+    if vlan_mode == "route":
+      features = devices.get_device_features(node,topology.defaults)
       if not features.vlan.native_routed:
         common.error(
-          f'Node {intf.node} does not support routed native VLANs\n... link {link}',
+          f'Node {intf.node} does not support routed native VLANs ({native_vlan})\n... link {link}',
           common.IncorrectValue,
           'vlan')
 
@@ -461,6 +450,11 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
     print(f'... link {link}')
     print(f'... v_attr {v_attr}')
   native_vlan = v_attr.native.list[0] if 'native' in v_attr else None
+
+  # Check for routed native vlan support
+  if native_vlan:
+    check_native_vlan_routed(link,native_vlan,topology)
+
   for vname in sorted(v_attr.trunk.set):
     if vname != native_vlan:           # Skip native VLAN
       link_data = Box(link.vlan.trunk[vname] or {},default_box=True,box_dots=True)
@@ -485,8 +479,8 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
           if 'mode' in intf.vlan and not get_from_box(intf_data,'vlan.mode'):
             intf_data.vlan.mode = intf.vlan.mode            # vlan.mode is inherited from trunk dictionary or parent interface
 
-          if interface_vlan_mode(intf_data,intf_node,topology) == 'bridge':     # Is this VLAN interface in bridge mode?
-            intf_data.ipv4 = False                                              # ... if so, disable addressing on this interface
+          if interface_vlan_mode(vname,intf_data,intf_node,topology) == 'bridge':     # Is this VLAN interface in bridge mode?
+            intf_data.ipv4 = False                                           # ... if so, disable addressing on this interface
             intf_data.ipv6 = False
           else:
             if not prefix:                                  # Still no usable IP prefix? Try to get it from the node VLAN pool
@@ -591,7 +585,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
     if not access_vlan:                                                     # No access VLAN on this interface?
       continue                                                              # ... good, move on
 
-    routed_intf = interface_vlan_mode(ifdata,node,topology) == 'route'      # Identify routed VLAN interfaces
+    routed_intf = interface_vlan_mode(access_vlan,ifdata,node,topology) == 'route' # Identify routed VLAN interfaces
     vlan_subif  = routed_intf and ifdata.get('type','') == 'vlan_member'    # ... and VLAN-based subinterfaces
 
     vlan_data = create_node_vlan(node,access_vlan,topology)
@@ -960,7 +954,6 @@ class VLAN(_Module):
             link[k] = vlan_data[k] + link[k]
 
     if routed_vlan:
-      check_native_routed_vlan(link,v_attr,topology)
       link.vlan.mode = 'route'
       for intf in link.interfaces:
         if 'vlan' in intf:
@@ -973,7 +966,7 @@ class VLAN(_Module):
       for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
         intf_node = topology.nodes[intf.node]
         if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
-          if interface_vlan_mode(intf,intf_node,topology) == 'bridge':            # ... that is in bridge mode on the current access VLAN?
+          if interface_vlan_mode(link_vlan,intf,intf_node,topology) == 'bridge':  # ... that is in bridge mode on the current access VLAN?
             intf.ipv4 = False                                                     # ... if so, disable addressing on this interface
             intf.ipv6 = False
 
