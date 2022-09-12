@@ -163,9 +163,15 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 
     if 'vrf' in l:        # VRF neighbor
       vrf_bgp = data.get_from_box(node,f"vrfs.{l.vrf}.bgp")                           # Allow user to set 'bgp: False' within a vrf, per node
-      if vrf_bgp==False or data.get_from_box(topology,f"vrfs.{l.vrf}.bgp")==False:    # or globally per vrf
+      if vrf_bgp==False:
         if common.WARNING:
-          print( f"bgp: Not adding ebgp neighbor within vrf {l.vrf}: bgp = False" )
+          print( f"bgp: Not adding ebgp neighbor within vrf: bgp = False in local node vrf {l.vrf}" )
+        continue
+      elif vrf_bgp==True:
+        node.vrfs[l.vrf].bgp = {}  # Replace with dict
+      elif vrf_bgp is not defined and data.get_from_box(topology,f"vrfs.{l.vrf}.bgp")==False: # or globally per vrf
+        if common.WARNING:
+          print( f"bgp: Not adding ebgp neighbor within vrf: bgp = False in global vrf {l.vrf}" )
         continue
 
     node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
