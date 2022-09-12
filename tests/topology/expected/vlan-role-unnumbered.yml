@@ -16,6 +16,7 @@ links:
     node: leaf
     vlan:
       trunk:
+        unnumbered-routed: {}
         vxlan: {}
   left:
     ifname: ethernet-1/1
@@ -30,6 +31,7 @@ links:
   type: p2p
   vlan:
     trunk:
+      unnumbered-routed: {}
       vxlan: {}
 module:
 - vlan
@@ -84,9 +86,24 @@ nodes:
       neighbors:
       - ifname: ethernet-1/1
         node: host
-      subif_index: 1
+      subif_index: 2
       type: p2p
-    - ifindex: 2
+    - bridge_group: 1
+      ifindex: 2
+      ifname: ethernet-1/1.1001
+      ipv4: true
+      ipv6: true
+      name: leaf -> []
+      neighbors: []
+      parent_ifindex: 1
+      parent_ifname: ethernet-1/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1001
+        mode: route
+        routed_link: true
+    - ifindex: 3
       ifname: ethernet-1/1.1000
       parent_ifindex: 1
       parent_ifname: ethernet-1/1
@@ -95,8 +112,8 @@ nodes:
       vlan:
         access: vxlan
         access_id: 1000
-    - bridge_group: 1
-      ifindex: 3
+    - bridge_group: 2
+      ifindex: 4
       ifname: irb0.1000
       ipv4: true
       ipv6: true
@@ -117,11 +134,20 @@ nodes:
     - vlan
     name: leaf
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 2
       mode: irb
     vlans:
-      vxlan:
+      unnumbered-routed:
         bridge_group: 1
+        id: 1001
+        mode: route
+        pool: fabric
+        prefix:
+          ipv4: true
+          ipv6: true
+        vni: 101001
+      vxlan:
+        bridge_group: 2
         id: 1000
         mode: irb
         prefix:
@@ -133,6 +159,14 @@ provider: clab
 vlan:
   mode: irb
 vlans:
+  unnumbered-routed:
+    id: 1001
+    mode: route
+    pool: fabric
+    prefix:
+      ipv4: true
+      ipv6: true
+    vni: 101001
   vxlan:
     host_count: 0
     id: 1000
