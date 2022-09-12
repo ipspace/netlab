@@ -499,6 +499,11 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
         link_data.vlan.mode = 'route'
         for intf in link_data.interfaces:
           intf.vlan.mode = 'route'
+
+        # If the prefix is unnumbered, apply it to this routed vlan
+        if addressing.is_unnumbered(prefix):
+          link_data.prefix = prefix
+
       else:
         link_data.prefix = prefix
 
