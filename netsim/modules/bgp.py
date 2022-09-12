@@ -168,7 +168,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           print( f"bgp: Not adding ebgp neighbor within vrf: bgp = False in local node vrf {l.vrf}" )
         continue
       elif vrf_bgp==True:
-        node.vrfs[l.vrf].bgp = {}  # Replace with dict
+        node.vrfs[l.vrf].bgp = { 'neighbors': [] }  # Replace with non-empty dict
       elif not vrf_bgp and data.get_from_box(topology,f"vrfs.{l.vrf}.bgp")==False: # or globally per vrf
         if common.WARNING:
           print( f"bgp: Not adding ebgp neighbor within vrf: bgp = False in global vrf {l.vrf}" )
