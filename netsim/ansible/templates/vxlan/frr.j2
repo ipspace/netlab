@@ -4,17 +4,19 @@ set -e # Exit immediately when any command fails
 #
 
 {% macro create_vxlan_interface(vni,br_name,vrf=None) %}
+if [ ! -e /sys/devices/virtual/net/vxlan{{ vni }} ]; then
 ip link add vxlan{{ vni }} type vxlan \
   id {{ vni }} \
   dstport 4789 \
   local {{ vxlan.vtep }} {{ 'nolearning' if vxlan.flooding|default('') == 'evpn' else '' }}
+fi
 #
 # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-if [ ! -e /sys/devices/virtual/net/{{ br_name}} ]; then
+if [ ! -e /sys/devices/virtual/net/{{br_name}} ]; then
 brctl addbr {{ br_name }}
 ip link set up dev {{ br_name }}
 fi
-brctl addif {{ br_name }} vxlan{{ vni }}
+brctl addif {{ br_name }} vxlan{{ vni }} || true
 brctl stp {{ br_name }} off
 ip link set up dev vxlan{{ vni }}
 {% if vrf %}

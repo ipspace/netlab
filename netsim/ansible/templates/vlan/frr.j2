@@ -3,19 +3,12 @@
 set -e # Exit immediately when any command fails
 #
 {# Create VLAN subinterfaces. No need to set IP addresses, FRR can handle that #}
-{% for i in interfaces if i.type == 'vlan_member' %}
-if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
-  ip link add link {{ i.parent_ifname }} name {{ i.ifname }} type vlan id {{ i.vlan.access_id }}
-  ip link set dev {{ i.ifname }} up
-fi
-{% endfor %}
-
-{# Create VLAN subinterfaces for any native vlans #}
-{% for i in interfaces if i.vlan is defined and i.vlan.native is defined %}
-{% set ifname = i.ifname + ".0" %}
-if [ ! -e /sys/devices/virtual/net/{{ ifname }} ]; then
-  ip link add link {{ i.ifname }} name {{ ifname }} type vlan id 0
-  ip link set dev {{ ifname }} up
+{% for i in interfaces if i.type == 'vlan_member' or (i.vlan is defined and i.vlan.native is defined) %}
+{% set dev = i.ifname + (".0" if i.vlan.native is defined else "") %}
+{% set parent = i.ifname if i.vlan.native is defined else i.parent_ifname %}
+if [ ! -e /sys/devices/virtual/net/{{ dev }} ]; then
+  ip link add link {{ parent }} name {{ dev }} type vlan id {{ 0 if i.vlan.native is defined else i.vlan.access_id }}
+  ip link set dev {{ dev }} up
 fi
 {% endfor %}
 
@@ -39,6 +32,6 @@ fi
 
 {# Add interfaces to VLAN bridges #}
 {% for i in interfaces if i.vlan.access_id is defined and i.vlan.mode|default('') != 'route' %}
-brctl addif vlan{{ i.vlan.access_id }} {{ i.ifname + ('.0' if i.vlan.native is defined else '') }}
+brctl addif vlan{{ i.vlan.access_id }} {{ i.ifname + ('.0' if i.vlan.native is defined else '') }} || true
 {% endfor %}
 exit 0
