@@ -42,6 +42,17 @@ The VLAN configuration module assumes you're creating a sane design in which:
 
 It might be possible to build topologies that deviate from these rules, but don't be surprised when the results look weird.
 
+## Deployment Recommendations
+
+The VLAN module tries to support many different platform-specific VLAN configuration paradigms, and the resulting maze of various bits and pieces might frustrate the unwary. Following these guidelines might help you avoid the frustration:
+
+* Use **route** VLANs only in a router-on-a-stick or multi-hop VRF Lite designs.
+* While it's possible to mix **route** and **irb** VLANs on the same device, the results are not always intuitive. Don't do that -- a device should be a pure router (terminating **route** VLANs) or a layer-3 switch (forwarding within and between **bridge** or **irb** VLANs) but not both.
+* Do not use **mode: route** on access VLANs. Use native IP connectivity.
+* Avoid **mode: route** on native VLANs. Some devices might not like that approach.
+* Don't use link attributes to modify VLANs in a VLAN trunk. Use VLAN attributes.
+* Never combine multiple [forwarding modes](vlan-forwarding-modes) of a single VLAN *within a single node*. Using **route** VLAN mode on a router-on-a-stick and **bridge**/**irb** VLAN mode on attached switch is perfectly fine.
+
 ## Module Parameters
 
 VLANs are defined in the global or per-node **vlans** dictionary. Global- and node VLAN parameters are merged to get VLAN data for individual nodes.
@@ -70,7 +81,7 @@ The keys of the **vlans** dictionary are VLAN names, the values are VLAN definit
 * **mode** -- default VLAN forwarding mode: **route**, **bridge** or **irb**.
 * **prefix** -- IP prefix assigned to the VLAN. The value of the prefix could be an IPv4 prefix or a dictionary with **ipv4** and **ipv6** keys.
 * **pool** -- addressing pool used to assign IPv4/IPv6 prefixes to the VLAN. VLAN prefixes are allocated from addressing pools before interface address assignments.
-* A VLAN definition can also contain other valid interface-level parameters (for example, VRF name or OSPF cost).
+* A VLAN definition can also contain other valid link- or interface-level parameters (including link **role**, VRF name, OSPF cost...).
 
 VLAN definitions lacking **id** or **vni** attribute get [default VLAN ID and VNI values](default-vlan-values) assigned during the topology transformation process.
 
@@ -79,11 +90,12 @@ VLAN definitions lacking **id** or **vni** attribute get [default VLAN ID and VN
 
 VLAN definitions without **id** or **vni** attribute will get a VLAN ID or VNI assigned automatically. The first auto-assigned VLAN ID is specified in the **vlan.start_id** global attribute; ID assignment process skips IDs assigned to existing VLANs.
 
+(vlan-forwarding-modes)=
 ### VLAN Forwarding Modes
 
 VLANs with **mode** set to **bridge** or **irb** are configured as VLAN/SVI interfaces or bridge groups (BVI interfaces or Linux bridge) -- VLAN access or trunk interfaces using the same VLAN are bridged.
 
-VLANs with **mode** set to **route** are configured as routed subinterfaces under the VLAN trunk interface. Access VLAN interfaces with **mode** set to **route** are identical to non-VLAN interfaces.
+VLANs with **mode** set to **route** are configured as routed subinterfaces under the VLAN trunk interface. Use this mode primarily for designs using VLAN trunks to implement router-on-a-stick or [multi-hop VRF](https://github.com/ipspace/netlab-examples/tree/master/VRF/multihop-vrf-lite). Access VLAN interfaces with **mode** set to **route** are identical to non-VLAN interfaces.
 
 You can set VLAN forwarding mode within individual links or interfaces with **vlan.mode** attribute, within a node or global **vlans** definition, or with **vlan.mode** node- or global parameter.
 
