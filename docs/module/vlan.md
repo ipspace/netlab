@@ -210,30 +210,42 @@ links:
 
 [^NMT]: Some platforms do not support a mix of bridged and routed VLANs on a single physical interface.
 
-### Physical Interface and VLAN Interface Addressing
+### VLAN Addressing
 
-IPv4 and/or IPv6 prefixes are automatically assigned to VLAN-enabled links:
+IPv4 and/or IPv6 prefixes are automatically assigned to VLAN-enabled links. A VLAN trunk is decomposed into a number of virtual links (one per VLAN); the VLAN addressing rules are then applied to those virtual links.
 
-* A VLAN is treated like a multi-access link with an IPv4/IPv6 prefix, and gets an addressing prefix assigned from the corresponding address pool if needed.
-* If all nodes connected to an access VLAN interface or a VLAN virtual link (see below) use forwarding mode *route*, the link is treated as a regular link, and gets its IP prefix from the corresponding access pool. You can also specify link prefix with the **prefix** attribute. Nodes attached to that link (or VLAN trunk) get their IP addresses from the link prefix.
+A VLAN is treated like a multi-access link with an IPv4/IPv6 prefix. It can have a static prefix specified with the **prefix** VLAN attribute, or get a prefix allocated from the address pool specified with the **pool** VLAN attribute (default: **lan** pool).
 
-In all other cases (at least one node attached to a VLAN uses VLAN forwarding mode *irb* or *bridge*):
+When at least one node attached to a VLAN-enabled link uses VLAN forwarding mode **irb** or **bridge** for that VLAN, all parts of that VLAN get the VLAN-wide prefix:
 
 * VLAN **prefix** is copied into the link (or virtual link) **prefix**.
 * All nodes connected to a VLAN get their IP addresses from the VLAN **prefix**. Node addresses within a VLAN prefix are calculated with the algorithm used to calculate IP addresses on multi-access links.
 * Whenever a VLAN access interface is attached to a link, the VLAN prefix is used to assign IP addresses to all nodes on that link.
-* A VLAN trunk is decomposed into a number of virtual links (one per VLAN). The above rules are then applied to those virtual links.
+
+The above rule does not apply to *routed* access interfaces or virtual links. A *routed* VLAN link is a link on which all connected nodes that use **vlan** configuration module use forwarding mode **route** for that VLAN.
+
+A unique prefix is assigned to every *routed* VLAN link (access interface or trunk link VLAN member). The prefix cannot be specified with the VLAN **prefix** attribute; use **role** VLAN attribute to specify the address pool to be used for the virtual link[^PR]. You can also specify the link prefix in the **prefix** attribute of an [individual VLAN trunk member](module-vlan-trunk-attributes).
+
+```{note}
+If you want to use unnumbered VLAN member links, set VLAN **‌role** to **‌unnumbered**.
+```
+
+[^PR]: We apologize for the inconsistency. For historic reasons we use **role** attribute on links and **pool** attribute on VLANs. As the pool-specifying attribute is copied from VLAN definition to VLAN virtual link, it has to be the **role** attribute. Before you ask: yes, we plan to fix that.
+
+### Physical Interface and VLAN Interface Addressing
 
 The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfaces:
 
 * When a node is attached to a VLAN-enabled link, but does not have a **vlan** interface attribute, the VLAN IP address is assigned to physical interface.
 * When the VLAN forwarding mode is set to *irb*, the node VLAN IP address is assigned to a VLAN interface.
+* When the VLAN forwarding mode of a VLAN in a VLAN trunk is set to *route*, the node VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
 * No IP address is assigned to the VLAN interface when the VLAN forwarding mode is set to *bridge*.
 * No IP address is assigned to the physical interface that has an **access** or **native** VLAN with **mode** set to *bridge* or *irb*. You can try to force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
-* Interfaces with **access** or **native** VLAN that has **mode** set to *route* are treated like regular interfaces and get IP addresses.
+* Interfaces with **access** or **native** VLAN that has **mode** set to *route* are treated like regular interfaces and get IP addresses. These interfaces will be configured as regular layer-3 interfaces without *access* or *native* VLAN[^PLER].
 * IP prefixes are not assigned to the physical interfaces with VLAN trunks. If you want to assign IP addresses to default native VLAN (1), use **role** or **prefix** link attribute.
-* When the VLAN forwarding mode of a VLAN in a VLAN trunk is set to *route*, the VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
 
+[^PLER]: There is no difference between a regular layer-3 interface and an access VLAN interface that does no bridging and only routes IP packets. The proof is left as an exercise for the reader.
+ 
 (module-vlan-caveats)=
 ## Known Caveats
 

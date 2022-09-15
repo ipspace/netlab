@@ -1,6 +1,6 @@
 groups:
   hosts:
-    device: linux
+    device: frr
     members:
     - h1
     - h2
@@ -11,8 +11,6 @@ input:
 - package:topology-defaults.yml
 links:
 - bridge: input_1
-  gateway:
-    ipv4: 172.16.0.3/24
   interfaces:
   - ifindex: 1
     ipv4: 172.16.0.3/24
@@ -29,8 +27,6 @@ links:
   type: lan
   vrf: red
 - bridge: input_2
-  gateway:
-    ipv4: 172.16.1.4/24
   interfaces:
   - ifindex: 1
     ipv4: 172.16.1.4/24
@@ -47,8 +43,6 @@ links:
   type: lan
   vrf: blue
 - bridge: input_3
-  gateway:
-    ipv4: false
   interfaces:
   - ifindex: 2
     ipv4: false
@@ -58,12 +52,15 @@ links:
       access: green
       mode: bridge
   - ifindex: 1
-    ipv4: 172.16.2.7/24
+    ipv4: true
+    ipv6: true
     node: h3
   linkindex: 3
   node_count: 2
   prefix:
-    ipv4: 172.16.2.0/24
+    ipv4: true
+    ipv6: true
+  role: unnumbered
   type: lan
   vrf: green
 - interfaces:
@@ -90,7 +87,7 @@ links:
   node_count: 2
   prefix: {}
   right:
-    ifname: GigabitEthernet0/3
+    ifname: Ethernet3
     node: s2
   type: p2p
   vlan:
@@ -115,7 +112,7 @@ links:
         green: {}
         red: {}
   left:
-    ifname: GigabitEthernet0/1
+    ifname: eth1
     node: r1
   linkindex: 5
   name: r1 - s1
@@ -147,14 +144,14 @@ links:
         green: {}
         red: {}
   left:
-    ifname: Ethernet1
+    ifname: eth1
     node: r2
   linkindex: 6
   name: r2 - s2
   node_count: 2
   prefix: {}
   right:
-    ifname: GigabitEthernet0/4
+    ifname: Ethernet4
     node: s2
   type: p2p
   vlan:
@@ -170,119 +167,158 @@ nodes:
   h1:
     af:
       ipv4: true
-    box: generic/ubuntu2004
-    device: linux
+    box: frrouting/frr:v8.3.1
+    clab:
+      binds:
+        clab_files/h1/daemons: /etc/frr/daemons
+      config_templates:
+        daemons: /etc/frr/daemons
+      kind: linux
+    device: frr
+    hostname: clab-input-h1
     id: 5
     interfaces:
     - bridge: input_1
-      gateway:
-        ipv4: 172.16.0.3/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.0.5/24
       linkindex: 1
+      mtu: 1500
       name: h1 -> [r1,r2,s1,s2]
       neighbors:
-      - ifname: GigabitEthernet0/1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.1/24
         node: r1
-      - ifname: Ethernet1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.2/24
         node: r2
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: s1
-      - ifname: BVI3
+      - ifname: Vlan1000
         node: s2
       type: lan
+    loopback:
+      ipv4: 10.0.0.5/32
     mgmt:
       ifname: eth0
       ipv4: 192.168.121.105
       mac: 08-4F-A9-00-00-05
     module: []
+    mtu: 1500
     name: h1
-    role: host
   h2:
     af:
       ipv4: true
-    box: generic/ubuntu2004
-    device: linux
+    box: frrouting/frr:v8.3.1
+    clab:
+      binds:
+        clab_files/h2/daemons: /etc/frr/daemons
+      config_templates:
+        daemons: /etc/frr/daemons
+      kind: linux
+    device: frr
+    hostname: clab-input-h2
     id: 6
     interfaces:
     - bridge: input_2
-      gateway:
-        ipv4: 172.16.1.4/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.1.6/24
       linkindex: 2
+      mtu: 1500
       name: h2 -> [r1,r2,s2,s1]
       neighbors:
-      - ifname: GigabitEthernet0/1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.1/24
         node: r1
-      - ifname: Ethernet1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.2/24
         node: r2
-      - ifname: BVI1
+      - ifname: Vlan1001
         ipv4: 172.16.1.4/24
         node: s2
       - ifname: Vlan1001
         ipv4: 172.16.1.3/24
         node: s1
       type: lan
+    loopback:
+      ipv4: 10.0.0.6/32
     mgmt:
       ifname: eth0
       ipv4: 192.168.121.106
       mac: 08-4F-A9-00-00-06
     module: []
+    mtu: 1500
     name: h2
-    role: host
   h3:
     af:
       ipv4: true
-    box: generic/ubuntu2004
-    device: linux
+      ipv6: true
+    box: frrouting/frr:v8.3.1
+    clab:
+      binds:
+        clab_files/h3/daemons: /etc/frr/daemons
+      config_templates:
+        daemons: /etc/frr/daemons
+      kind: linux
+    device: frr
+    hostname: clab-input-h3
     id: 7
     interfaces:
     - bridge: input_3
-      gateway:
-        ipv4: 172.16.2.1/24
       ifindex: 1
       ifname: eth1
-      ipv4: 172.16.2.7/24
+      ipv4: true
+      ipv6: true
       linkindex: 3
+      mtu: 1500
       name: h3 -> [r1,r2,s2,s1]
       neighbors:
-      - ifname: GigabitEthernet0/1.2
-        ipv4: 172.16.2.1/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r1
-      - ifname: Ethernet1.2
-        ipv4: 172.16.2.2/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r2
-      - ifname: BVI2
+      - ifname: Vlan1002
         node: s2
       - ifname: Vlan1002
         node: s1
+      role: unnumbered
       type: lan
+    loopback:
+      ipv4: 10.0.0.7/32
     mgmt:
       ifname: eth0
       ipv4: 192.168.121.107
       mac: 08-4F-A9-00-00-07
     module: []
+    mtu: 1500
     name: h3
-    role: host
   r1:
     af:
       ipv4: true
+      ipv6: true
       vpnv4: true
-    box: cisco/iosv
-    device: iosv
+      vpnv6: true
+    box: frrouting/frr:v8.3.1
+    clab:
+      binds:
+        clab_files/r1/daemons: /etc/frr/daemons
+      config_templates:
+        daemons: /etc/frr/daemons
+      kind: linux
+    device: frr
+    hostname: clab-input-r1
     id: 1
     interfaces:
     - ifindex: 1
-      ifname: GigabitEthernet0/1
+      ifname: eth1
       linkindex: 5
+      mtu: 1500
       name: r1 -> s1
       neighbors:
       - ifname: Ethernet3
@@ -293,14 +329,14 @@ nodes:
         mode: route
     - bridge_group: 1
       ifindex: 2
-      ifname: GigabitEthernet0/1.1
+      ifname: eth1.1001
       ipv4: 172.16.1.1/24
       name: r1 -> [r2,s2,s1,h2]
       neighbors:
-      - ifname: Ethernet1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.2/24
         node: r2
-      - ifname: BVI1
+      - ifname: Vlan1001
         ipv4: 172.16.1.4/24
         node: s2
       - ifname: Vlan1001
@@ -310,7 +346,7 @@ nodes:
         ipv4: 172.16.1.6/24
         node: h2
       parent_ifindex: 1
-      parent_ifname: GigabitEthernet0/1
+      parent_ifname: eth1
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -319,22 +355,26 @@ nodes:
       vrf: blue
     - bridge_group: 2
       ifindex: 3
-      ifname: GigabitEthernet0/1.2
-      ipv4: 172.16.2.1/24
+      ifname: eth1.1002
+      ipv4: true
+      ipv6: true
       name: r1 -> [r2,s2,s1,h3]
       neighbors:
-      - ifname: Ethernet1.2
-        ipv4: 172.16.2.2/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r2
-      - ifname: BVI2
+      - ifname: Vlan1002
         node: s2
       - ifname: Vlan1002
         node: s1
       - ifname: eth1
-        ipv4: 172.16.2.7/24
+        ipv4: true
+        ipv6: true
         node: h3
       parent_ifindex: 1
-      parent_ifname: GigabitEthernet0/1
+      parent_ifname: eth1
+      role: unnumbered
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -343,11 +383,11 @@ nodes:
       vrf: green
     - bridge_group: 3
       ifindex: 4
-      ifname: GigabitEthernet0/1.3
+      ifname: eth1.1000
       ipv4: 172.16.0.1/24
       name: r1 -> [r2,h1,s1,s2]
       neighbors:
-      - ifname: Ethernet1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.2/24
         node: r2
       - ifname: eth1
@@ -356,10 +396,10 @@ nodes:
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: s1
-      - ifname: BVI3
+      - ifname: Vlan1000
         node: s2
       parent_ifindex: 1
-      parent_ifname: GigabitEthernet0/1
+      parent_ifname: eth1
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -369,12 +409,13 @@ nodes:
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
-      ifname: GigabitEthernet0/0
+      ifname: eth0
       ipv4: 192.168.121.101
       mac: 08-4F-A9-00-00-01
     module:
     - vlan
     - vrf
+    mtu: 1500
     name: r1
     vlan:
       max_bridge_group: 3
@@ -393,7 +434,9 @@ nodes:
         id: 1002
         mode: route
         prefix:
-          ipv4: 172.16.2.0/24
+          ipv4: true
+          ipv6: true
+        role: unnumbered
         vni: 101002
         vrf: green
       red:
@@ -420,6 +463,7 @@ nodes:
       green:
         af:
           ipv4: true
+          ipv6: true
         export:
         - '65000:3'
         id: 3
@@ -440,30 +484,40 @@ nodes:
   r2:
     af:
       ipv4: true
+      ipv6: true
       vpnv4: true
-    box: arista/veos
-    device: eos
+      vpnv6: true
+    box: frrouting/frr:v8.3.1
+    clab:
+      binds:
+        clab_files/r2/daemons: /etc/frr/daemons
+      config_templates:
+        daemons: /etc/frr/daemons
+      kind: linux
+    device: frr
+    hostname: clab-input-r2
     id: 2
     interfaces:
     - ifindex: 1
-      ifname: Ethernet1
+      ifname: eth1
       linkindex: 6
+      mtu: 1500
       name: r2 -> s2
       neighbors:
-      - ifname: GigabitEthernet0/4
+      - ifname: Ethernet4
         node: s2
       subif_index: 3
       type: p2p
     - bridge_group: 1
       ifindex: 2
-      ifname: Ethernet1.1
+      ifname: eth1.1001
       ipv4: 172.16.1.2/24
       name: r2 -> [r1,s2,s1,h2]
       neighbors:
-      - ifname: GigabitEthernet0/1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.1/24
         node: r1
-      - ifname: BVI1
+      - ifname: Vlan1001
         ipv4: 172.16.1.4/24
         node: s2
       - ifname: Vlan1001
@@ -473,7 +527,7 @@ nodes:
         ipv4: 172.16.1.6/24
         node: h2
       parent_ifindex: 1
-      parent_ifname: Ethernet1
+      parent_ifname: eth1
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -482,22 +536,26 @@ nodes:
       vrf: blue
     - bridge_group: 2
       ifindex: 3
-      ifname: Ethernet1.2
-      ipv4: 172.16.2.2/24
+      ifname: eth1.1002
+      ipv4: true
+      ipv6: true
       name: r2 -> [r1,s2,s1,h3]
       neighbors:
-      - ifname: GigabitEthernet0/1.2
-        ipv4: 172.16.2.1/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r1
-      - ifname: BVI2
+      - ifname: Vlan1002
         node: s2
       - ifname: Vlan1002
         node: s1
       - ifname: eth1
-        ipv4: 172.16.2.7/24
+        ipv4: true
+        ipv6: true
         node: h3
       parent_ifindex: 1
-      parent_ifname: Ethernet1
+      parent_ifname: eth1
+      role: unnumbered
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -506,11 +564,11 @@ nodes:
       vrf: green
     - bridge_group: 3
       ifindex: 4
-      ifname: Ethernet1.3
+      ifname: eth1.1000
       ipv4: 172.16.0.2/24
       name: r2 -> [r1,h1,s1,s2]
       neighbors:
-      - ifname: GigabitEthernet0/1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.1/24
         node: r1
       - ifname: eth1
@@ -519,10 +577,10 @@ nodes:
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: s1
-      - ifname: BVI3
+      - ifname: Vlan1000
         node: s2
       parent_ifindex: 1
-      parent_ifname: Ethernet1
+      parent_ifname: eth1
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -532,12 +590,13 @@ nodes:
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
-      ifname: Management1
+      ifname: eth0
       ipv4: 192.168.121.102
       mac: 08-4F-A9-00-00-02
     module:
     - vlan
     - vrf
+    mtu: 1500
     name: r2
     vlan:
       max_bridge_group: 3
@@ -556,7 +615,9 @@ nodes:
         id: 1002
         mode: route
         prefix:
-          ipv4: 172.16.2.0/24
+          ipv4: true
+          ipv6: true
+        role: unnumbered
         vni: 101002
         vrf: green
       red:
@@ -583,6 +644,7 @@ nodes:
       green:
         af:
           ipv4: true
+          ipv6: true
         export:
         - '65000:3'
         id: 3
@@ -604,11 +666,18 @@ nodes:
     af:
       ipv4: true
       vpnv4: true
-    box: arista/veos
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
     device: eos
+    hostname: clab-input-s1
     id: 3
     interfaces:
     - bridge: input_1
+      clab:
+        name: et1
       ifindex: 1
       ifname: Ethernet1
       linkindex: 1
@@ -616,12 +685,14 @@ nodes:
       vlan:
         access: red
         access_id: 1000
-    - ifindex: 2
+    - clab:
+        name: et2
+      ifindex: 2
       ifname: Ethernet2
       linkindex: 4
       name: s1 -> s2
       neighbors:
-      - ifname: GigabitEthernet0/3
+      - ifname: Ethernet3
         node: s2
       type: p2p
       vlan:
@@ -633,12 +704,14 @@ nodes:
         - 1000
         - 1002
         - 1001
-    - ifindex: 3
+    - clab:
+        name: et3
+      ifindex: 3
       ifname: Ethernet3
       linkindex: 5
       name: s1 -> r1
       neighbors:
-      - ifname: GigabitEthernet0/1
+      - ifname: eth1
         node: r1
       type: p2p
       vlan:
@@ -656,16 +729,16 @@ nodes:
       ipv4: 172.16.0.3/24
       name: VLAN red (1000) -> [r1,r2,h1,s2]
       neighbors:
-      - ifname: GigabitEthernet0/1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.1/24
         node: r1
-      - ifname: Ethernet1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.2/24
         node: r2
       - ifname: eth1
         ipv4: 172.16.0.5/24
         node: h1
-      - ifname: BVI3
+      - ifname: Vlan1000
         node: s2
       type: svi
       virtual_interface: true
@@ -678,13 +751,13 @@ nodes:
       ipv4: 172.16.1.3/24
       name: VLAN blue (1001) -> [r1,r2,s2,h2]
       neighbors:
-      - ifname: GigabitEthernet0/1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.1/24
         node: r1
-      - ifname: Ethernet1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.2/24
         node: r2
-      - ifname: BVI1
+      - ifname: Vlan1001
         ipv4: 172.16.1.4/24
         node: s2
       - ifname: eth1
@@ -700,17 +773,21 @@ nodes:
       ifname: Vlan1002
       name: VLAN green (1002) -> [r1,r2,s2,h3]
       neighbors:
-      - ifname: GigabitEthernet0/1.2
-        ipv4: 172.16.2.1/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r1
-      - ifname: Ethernet1.2
-        ipv4: 172.16.2.2/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r2
-      - ifname: BVI2
+      - ifname: Vlan1002
         node: s2
       - ifname: eth1
-        ipv4: 172.16.2.7/24
+        ipv4: true
+        ipv6: true
         node: h3
+      role: unnumbered
       type: svi
       virtual_interface: true
       vlan:
@@ -719,7 +796,7 @@ nodes:
     loopback:
       ipv4: 10.0.0.3/32
     mgmt:
-      ifname: Management1
+      ifname: Management0
       ipv4: 192.168.121.103
       mac: 08-4F-A9-00-00-03
     module:
@@ -735,13 +812,13 @@ nodes:
         id: 1001
         mode: irb
         neighbors:
-        - ifname: GigabitEthernet0/1.1
+        - ifname: eth1.1001
           ipv4: 172.16.1.1/24
           node: r1
-        - ifname: Ethernet1.1
+        - ifname: eth1.1001
           ipv4: 172.16.1.2/24
           node: r2
-        - ifname: BVI1
+        - ifname: Vlan1001
           ipv4: 172.16.1.4/24
           node: s2
         - ifname: Vlan1001
@@ -759,7 +836,9 @@ nodes:
         id: 1002
         mode: bridge
         prefix:
-          ipv4: 172.16.2.0/24
+          ipv4: true
+          ipv6: true
+        role: unnumbered
         vni: 101002
         vrf: green
       red:
@@ -767,10 +846,10 @@ nodes:
         id: 1000
         mode: irb
         neighbors:
-        - ifname: GigabitEthernet0/1.3
+        - ifname: eth1.1000
           ipv4: 172.16.0.1/24
           node: r1
-        - ifname: Ethernet1.3
+        - ifname: eth1.1000
           ipv4: 172.16.0.2/24
           node: r2
         - ifname: eth1
@@ -779,7 +858,7 @@ nodes:
         - ifname: Vlan1000
           ipv4: 172.16.0.3/24
           node: s1
-        - ifname: BVI3
+        - ifname: Vlan1000
           node: s2
         prefix:
           ipv4: 172.16.0.0/24
@@ -820,119 +899,86 @@ nodes:
     af:
       ipv4: true
       vpnv4: true
-    box: cisco/iosv
-    device: iosv
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-s2
     id: 4
     interfaces:
     - bridge: input_2
+      clab:
+        name: et1
       ifindex: 1
-      ifname: GigabitEthernet0/1
+      ifname: Ethernet1
       linkindex: 2
       type: lan
       vlan:
         access: blue
         access_id: 1001
     - bridge: input_3
+      clab:
+        name: et2
       ifindex: 2
-      ifname: GigabitEthernet0/2
+      ifname: Ethernet2
       linkindex: 3
       type: lan
       vlan:
         access: green
         access_id: 1002
         mode: bridge
-    - ifindex: 3
-      ifname: GigabitEthernet0/3
+    - clab:
+        name: et3
+      ifindex: 3
+      ifname: Ethernet3
       linkindex: 4
       name: s2 -> s1
       neighbors:
       - ifname: Ethernet2
         node: s1
-      subif_index: 3
       type: p2p
       vlan:
         mode: bridge
-    - ifindex: 4
-      ifname: GigabitEthernet0/4
+        trunk:
+          blue: {}
+          green: {}
+          red: {}
+        trunk_id:
+        - 1000
+        - 1002
+        - 1001
+    - clab:
+        name: et4
+      ifindex: 4
+      ifname: Ethernet4
       linkindex: 6
       name: s2 -> r2
       neighbors:
-      - ifname: Ethernet1
+      - ifname: eth1
         node: r2
-      subif_index: 3
       type: p2p
       vlan:
         mode: bridge
-    - ifindex: 5
-      ifname: GigabitEthernet0/3.1
-      parent_ifindex: 3
-      parent_ifname: GigabitEthernet0/3
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: blue
-        access_id: 1001
-        mode: bridge
-    - ifindex: 6
-      ifname: GigabitEthernet0/3.2
-      parent_ifindex: 3
-      parent_ifname: GigabitEthernet0/3
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: green
-        access_id: 1002
-        mode: bridge
-    - ifindex: 7
-      ifname: GigabitEthernet0/3.3
-      parent_ifindex: 3
-      parent_ifname: GigabitEthernet0/3
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: red
-        access_id: 1000
-        mode: bridge
-    - ifindex: 8
-      ifname: GigabitEthernet0/4.1
-      parent_ifindex: 4
-      parent_ifname: GigabitEthernet0/4
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: blue
-        access_id: 1001
-        mode: bridge
-    - ifindex: 9
-      ifname: GigabitEthernet0/4.2
-      parent_ifindex: 4
-      parent_ifname: GigabitEthernet0/4
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: green
-        access_id: 1002
-        mode: bridge
-    - ifindex: 10
-      ifname: GigabitEthernet0/4.3
-      parent_ifindex: 4
-      parent_ifname: GigabitEthernet0/4
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: red
-        access_id: 1000
-        mode: bridge
+        trunk:
+          blue: {}
+          green: {}
+          red: {}
+        trunk_id:
+        - 1000
+        - 1002
+        - 1001
     - bridge_group: 1
       ifindex: 11
-      ifname: BVI1
+      ifname: Vlan1001
       ipv4: 172.16.1.4/24
       name: VLAN blue (1001) -> [r1,r2,s1,h2]
       neighbors:
-      - ifname: GigabitEthernet0/1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.1/24
         node: r1
-      - ifname: Ethernet1.1
+      - ifname: eth1.1001
         ipv4: 172.16.1.2/24
         node: r2
       - ifname: Vlan1001
@@ -948,20 +994,24 @@ nodes:
       vrf: blue
     - bridge_group: 2
       ifindex: 12
-      ifname: BVI2
+      ifname: Vlan1002
       name: VLAN green (1002) -> [r1,r2,s1,h3]
       neighbors:
-      - ifname: GigabitEthernet0/1.2
-        ipv4: 172.16.2.1/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r1
-      - ifname: Ethernet1.2
-        ipv4: 172.16.2.2/24
+      - ifname: eth1.1002
+        ipv4: true
+        ipv6: true
         node: r2
       - ifname: Vlan1002
         node: s1
       - ifname: eth1
-        ipv4: 172.16.2.7/24
+        ipv4: true
+        ipv6: true
         node: h3
+      role: unnumbered
       type: svi
       virtual_interface: true
       vlan:
@@ -969,13 +1019,13 @@ nodes:
       vrf: green
     - bridge_group: 3
       ifindex: 13
-      ifname: BVI3
+      ifname: Vlan1000
       name: VLAN red (1000) -> [r1,r2,h1,s1]
       neighbors:
-      - ifname: GigabitEthernet0/1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.1/24
         node: r1
-      - ifname: Ethernet1.3
+      - ifname: eth1.1000
         ipv4: 172.16.0.2/24
         node: r2
       - ifname: eth1
@@ -992,7 +1042,7 @@ nodes:
     loopback:
       ipv4: 10.0.0.4/32
     mgmt:
-      ifname: GigabitEthernet0/0
+      ifname: Management0
       ipv4: 192.168.121.104
       mac: 08-4F-A9-00-00-04
     module:
@@ -1008,13 +1058,13 @@ nodes:
         id: 1001
         mode: irb
         neighbors:
-        - ifname: GigabitEthernet0/1.1
+        - ifname: eth1.1001
           ipv4: 172.16.1.1/24
           node: r1
-        - ifname: Ethernet1.1
+        - ifname: eth1.1001
           ipv4: 172.16.1.2/24
           node: r2
-        - ifname: BVI1
+        - ifname: Vlan1001
           ipv4: 172.16.1.4/24
           node: s2
         - ifname: Vlan1001
@@ -1032,21 +1082,26 @@ nodes:
         id: 1002
         mode: route
         neighbors:
-        - ifname: GigabitEthernet0/1.2
-          ipv4: 172.16.2.1/24
+        - ifname: eth1.1002
+          ipv4: true
+          ipv6: true
           node: r1
-        - ifname: Ethernet1.2
-          ipv4: 172.16.2.2/24
+        - ifname: eth1.1002
+          ipv4: true
+          ipv6: true
           node: r2
-        - ifname: BVI2
+        - ifname: Vlan1002
           node: s2
         - ifname: Vlan1002
           node: s1
         - ifname: eth1
-          ipv4: 172.16.2.7/24
+          ipv4: true
+          ipv6: true
           node: h3
         prefix:
-          ipv4: 172.16.2.0/24
+          ipv4: true
+          ipv6: true
+        role: unnumbered
         vni: 101002
         vrf: green
       red:
@@ -1054,10 +1109,10 @@ nodes:
         id: 1000
         mode: irb
         neighbors:
-        - ifname: GigabitEthernet0/1.3
+        - ifname: eth1.1000
           ipv4: 172.16.0.1/24
           node: r1
-        - ifname: Ethernet1.3
+        - ifname: eth1.1000
           ipv4: 172.16.0.2/24
           node: r2
         - ifname: eth1
@@ -1066,7 +1121,7 @@ nodes:
         - ifname: Vlan1000
           ipv4: 172.16.0.3/24
           node: s1
-        - ifname: BVI3
+        - ifname: Vlan1000
           node: s2
         prefix:
           ipv4: 172.16.0.0/24
@@ -1101,21 +1156,21 @@ nodes:
         - '65000:1'
         rd: '65000:1'
         vrfidx: 102
-provider: libvirt
+provider: clab
 vlan:
   mode: irb
 vlans:
   blue:
-    host_count: 1
+    host_count: 0
     id: 1001
     neighbors:
-    - ifname: GigabitEthernet0/1.1
+    - ifname: eth1.1001
       ipv4: 172.16.1.1/24
       node: r1
-    - ifname: Ethernet1.1
+    - ifname: eth1.1001
       ipv4: 172.16.1.2/24
       node: r2
-    - ifname: BVI1
+    - ifname: Vlan1001
       ipv4: 172.16.1.4/24
       node: s2
     - ifname: Vlan1001
@@ -1129,35 +1184,40 @@ vlans:
     vni: 101001
     vrf: blue
   green:
-    host_count: 1
+    host_count: 0
     id: 1002
     mode: route
     neighbors:
-    - ifname: GigabitEthernet0/1.2
-      ipv4: 172.16.2.1/24
+    - ifname: eth1.1002
+      ipv4: true
+      ipv6: true
       node: r1
-    - ifname: Ethernet1.2
-      ipv4: 172.16.2.2/24
+    - ifname: eth1.1002
+      ipv4: true
+      ipv6: true
       node: r2
-    - ifname: BVI2
+    - ifname: Vlan1002
       node: s2
     - ifname: Vlan1002
       node: s1
     - ifname: eth1
-      ipv4: 172.16.2.7/24
+      ipv4: true
+      ipv6: true
       node: h3
     prefix:
-      ipv4: 172.16.2.0/24
+      ipv4: true
+      ipv6: true
+    role: unnumbered
     vni: 101002
     vrf: green
   red:
-    host_count: 1
+    host_count: 0
     id: 1000
     neighbors:
-    - ifname: GigabitEthernet0/1.3
+    - ifname: eth1.1000
       ipv4: 172.16.0.1/24
       node: r1
-    - ifname: Ethernet1.3
+    - ifname: eth1.1000
       ipv4: 172.16.0.2/24
       node: r2
     - ifname: eth1
@@ -1166,7 +1226,7 @@ vlans:
     - ifname: Vlan1000
       ipv4: 172.16.0.3/24
       node: s1
-    - ifname: BVI3
+    - ifname: Vlan1000
       node: s2
     prefix:
       ipv4: 172.16.0.0/24
