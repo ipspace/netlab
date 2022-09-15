@@ -723,6 +723,8 @@ def map_trunk_vlans(node: Box, topology: Box) -> None:
 find_parent_interface: Find the parent interface of a VLAN member subinterface
 """
 def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optional[Box]:
+  if common.debug_active('vlan'):
+    print( f"find_parent_interface node={node.name} intf.parentindex={intf.parentindex} intf.link_ifindex={intf.link_ifindex}" )
 
   link_list = [ l for l in topology.links if l.linkindex == intf.parentindex ]
   if not link_list:
@@ -738,6 +740,8 @@ def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optiona
   if not node_iflist:
     return None
 
+  if common.debug_active('vlan'):
+    print( f"find_parent_interface node={node.name} returns -> node_iflist={node_iflist[0].name}" )
   return node_iflist[0]
 
 """
