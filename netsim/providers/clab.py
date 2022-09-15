@@ -66,23 +66,12 @@ class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
+    self.create_extra_files_mappings(node,topology)
 
-    # For any nodes that have templates for custom configuration files, render them and add bindings
-    mappings = get_from_box(node, 'clab.config_templates')
-    if mappings:
-      cur_binds = get_from_box(node, 'clab.binds') or {}
-      for file,mapping in mappings.items():
-        if isinstance(mapping,str) and mapping not in cur_binds.values():
-          in_folder = f"{ self.get_template_path() }/{node.device}"
-          j2 = f"{file}.j2"
-          out_folder = f"{GENERATED_CONFIG_PATH}/{node.name}"
-          common.write_template( in_folder, j2, node.to_dict(), out_folder, filename=file )
-          print( f"Created node configuration file: {out_folder}/{file} based on {in_folder}/{j2}, mapped to {node.name}:{mapping}" )
-          node.clab.binds = node.clab.binds or {}
-          node.clab.binds[ f"{out_folder}/{file}" ] = mapping
-        else:
-          if common.WARNING:
-            print( f"Containerlab warning: Skipping {file}:{mapping}, malformed mapping or bind already exists" )
+  def post_configuration_create(self, topology: Box) -> None:
+    for n in topology.nodes.values():
+      if get_from_box(n,'clab.binds'):
+        self.create_extra_files(n,topology)
 
   def pre_start_lab(self, topology: Box) -> None:
     common.print_verbose('pre-start hook for Containerlab - create any bridges')
@@ -99,7 +88,3 @@ class Containerlab(_Provider):
             destroy_ovs_bridge(brname)
         else:
             destroy_linux_bridge(brname)
-
-    # Cleanup any generated custom files
-    shutil.rmtree(GENERATED_CONFIG_PATH,ignore_errors=True)
-

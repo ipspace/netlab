@@ -15,6 +15,8 @@ from box import Box
 
 from .. import common
 from ..callback import Callback
+from ..augment import devices
+from ..data import get_from_box
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
@@ -74,6 +76,58 @@ class _Provider(Callback):
         processor_name = str(subprocess.check_output("cat /proc/cpuinfo", shell=True).splitlines()[1].split()[2])
       topology.defaults.processor = processor_name
 
+  def create_extra_files_mappings(
+      self,
+      node: Box,
+      topology: Box,
+      inkey: str = 'config_templates',
+      outkey: str = 'binds') -> None:
+
+    mappings = get_from_box(node,f'{self.provider}.{inkey}')
+    if mappings:
+      cur_binds = get_from_box(node,f'{self.provider}.{outkey}') or {}
+      for file,mapping in mappings.items():
+        if mapping in cur_binds.values():
+          continue
+        if not isinstance(mapping,str):
+          common.error(
+            f"Malformed extra file mapping for {self.provider}.{inkey}.{file} on node {node.name} -- should be string",
+            common.IncorrectType,
+            self.provider)
+          continue
+
+        file_template = f"{ str(common.get_moddir()) }/{ self.get_template_path() }/{node.device}/{file}.j2"
+        if not os.path.exists(file_template):
+          common.error(
+            f"Template missing for extra file {self.provider}.{inkey}.{file} on node {node.name}",
+            common.IncorrectValue,
+            self.provider)
+          continue
+
+        out_folder = f"{self.provider}_files/{node.name}"
+        node[self.provider][outkey][f"{out_folder}/{file}"] = mapping
+
+  def create_extra_files(
+      self,
+      node: Box,
+      topology: Box,
+      inkey: str = 'config_templates',
+      outkey: str = 'binds') -> None:
+
+    binds = get_from_box(node,f'{self.provider}.{outkey}')
+    if not binds:
+      return
+
+    in_folder = f"{ self.get_template_path() }/{node.device}"
+    out_folder = f"{self.provider}_files/{node.name}"
+
+    for file,mapping in binds.items():
+      file_name = file.replace(out_folder+"/","")
+      template_name =  file_name + ".j2"
+      if os.path.exists(f"{ str(common.get_moddir()) }/{in_folder}/{template_name}"):
+        common.write_template( in_folder, template_name, node.to_dict(), out_folder, filename=file_name)
+        print( f"Created {out_folder}/{file_name} from {in_folder}/{template_name}, mapped to {node.name}:{mapping}" )
+
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
     fname = self.get_output_name(fname,topology)
@@ -82,6 +136,7 @@ class _Provider(Callback):
     if fname != '-':
       common.close_output_file(output)
       print("Created provider configuration file: %s" % fname)
+      self.post_configuration_create(topology)
     else:
       output.write("\n")
 
@@ -95,4 +150,7 @@ class _Provider(Callback):
     pass
 
   def post_stop_lab(self, topology: Box) -> None:
+    pass
+
+  def post_configuration_create(self, topology: Box) -> None:
     pass
