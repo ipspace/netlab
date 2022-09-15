@@ -461,7 +461,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
     print(f'create VLAN links: link {link}')
     print(f'... v_attr {v_attr}')
   native_vlan = v_attr.native.list[0] if 'native' in v_attr else None
-  trunk_ifindex = 0
+
   for vname in sorted(v_attr.trunk.set):
     if vname != native_vlan:           # Skip native VLAN
       link_data = Box(link.vlan.trunk[vname] or {},default_box=True,box_dots=True)
@@ -480,6 +480,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
           if k in vdata:
             link_data[k] = vdata[k]
 
+      trunk_ifindex = 0
       for intf in link.interfaces:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
