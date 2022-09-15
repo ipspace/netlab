@@ -721,7 +721,7 @@ find_parent_interface: Find the parent interface of a VLAN member subinterface
 """
 def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optional[Box]:
   if common.debug_active('vlan'):
-    print( f"find_parent_interface node={node.name} intf.parentindex={intf.parentindex} intf.link_ifindex={intf.link_ifindex}" )
+    print( f"find_parent_interface node={node.name} intf.parentindex={intf.parentindex}" )
 
   for i in node.interfaces:
     if i.linkindex == intf.parentindex:
