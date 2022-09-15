@@ -245,8 +245,7 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
           node_link_data[af] = prefix[af]
       else:
         try:
-          base_id = node_id + node_link_data.get('link_ifindex',0)  # Handle case of self-loops
-          index = base_id-1 if af == 'ipv4' and prefix[af].prefixlen==31 else base_id
+          index = node_id-1 if af == 'ipv4' and prefix[af].prefixlen==31 else node_id
           node_addr = netaddr.IPNetwork(prefix[af][index])
         except Exception as ex:
           return(

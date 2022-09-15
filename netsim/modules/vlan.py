@@ -29,7 +29,7 @@ vlan_link_attr: typing.Final[dict] = {
   'trunk' : { 'type' : dict,'vlan': True }
 }
 
-phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','link_ifindex'] # Physical interface attributes
+phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','parent_ifindex'] # Physical interface attributes
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
 
 """
@@ -475,12 +475,12 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
       if vname in topology.get('vlans',{}):                 # We need an IP prefix for the VLAN link
         prefix = topology.vlans[vname].prefix               # Hopefully we can get it from the global VLAN pool
 
+      ifindex = 0
       for intf in link.interfaces:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
           intf_data.node = intf.node
-          if len([ i.node for i in link.interfaces if i.node == intf.node ]) > 1:
-            intf_data.link_ifindex = link.interfaces.index(intf) # For self loops, add index of this subinterface in link.interfaces
+          intf_data.parent_ifindex = ifindex                # Used in find_parent_interface
           intf_data.vlan.access = vname
           intf_node = topology.nodes[intf.node]
 
@@ -496,6 +496,8 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
                 prefix = topology.node[intf.node].vlans[vname].prefix
 
           link_data.interfaces.append(intf_data)            # Append the interface to vlan link
+
+        ifindex = ifindex + 1
 
       if routed_access_vlan(link_data,topology,vname):
         link_data.vlan.mode = 'route'
@@ -715,21 +717,16 @@ def map_trunk_vlans(node: Box, topology: Box) -> None:
 find_parent_interface: Find the parent interface of a VLAN member subinterface
 """
 def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optional[Box]:
+
   link_list = [ l for l in topology.links if l.linkindex == intf.parentindex ]
   if not link_list:
     return None
 
   link = link_list[0]
 
-  # There is a problem with self-looped links - there will be 2 matching interfaces below
-  if 'link_ifindex' in intf:    # To solve, use the link_ifindex populated upon creating of the subif
-    link_intf = link.interfaces[ intf.link_ifindex ]    
-  else:
-    intf_list = [ intf for intf in link.interfaces if intf.node == node.name]
-    if not intf_list:
-      return None
-
-    link_intf = intf_list[0]  # Only takes the first one, in case there are two
+  # There is a problem with self-looped links - there will be 2 matching interfaces on the same link
+  # To solve, use the parent_ifindex populated upon creating the subif (0-based)
+  link_intf = link.interfaces[ intf.parent_ifindex ]
 
   node_iflist = [ intf for intf in node.interfaces if intf.ifindex == link_intf.ifindex]
   if not node_iflist:
