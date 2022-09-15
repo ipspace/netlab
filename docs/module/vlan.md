@@ -52,6 +52,11 @@ The VLAN module tries to support many different platform-specific VLAN configura
 * Avoid **mode: route** on native VLANs. Some devices might not like that approach.
 * Don't use link attributes to modify VLANs in a VLAN trunk. Use VLAN attributes.
 * Never combine multiple [forwarding modes](vlan-forwarding-modes) of a single VLAN *within a single node*. Using **route** VLAN mode on a router-on-a-stick and **bridge**/**irb** VLAN mode on attached switch is perfectly fine.
+* You [REALLY SHOULD NOT](https://www.rfc-editor.org/rfc/rfc6919#section-3) use VLANs on links [connecting a node back to itself](../example/link-definition.md#crazy-scenarios)[^BAD1]. [Routed VLANs](vlan-addressing-routed) might work[^NF], any other VLAN setup on such a link will result in a miserable failure.
+
+[^BAD1]: One of the really bad ideas we had in the past.
+
+[^NF]: But don't expect us to fix bugs you might stumble upon. You've been warned ;)
 
 ## Module Parameters
 
@@ -222,6 +227,7 @@ links:
 
 [^NMT]: Some platforms do not support a mix of bridged and routed VLANs on a single physical interface.
 
+(vlan-addressing)=
 ### VLAN Addressing
 
 IPv4 and/or IPv6 prefixes are automatically assigned to VLAN-enabled links. A VLAN trunk is decomposed into a number of virtual links (one per VLAN); the VLAN addressing rules are then applied to those virtual links.
@@ -234,6 +240,7 @@ When at least one node attached to a VLAN-enabled link uses VLAN forwarding mode
 * All nodes connected to a VLAN get their IP addresses from the VLAN **prefix**. Node addresses within a VLAN prefix are calculated with the algorithm used to calculate IP addresses on multi-access links.
 * Whenever a VLAN access interface is attached to a link, the VLAN prefix is used to assign IP addresses to all nodes on that link.
 
+(vlan-addressing-routed)=
 The above rule does not apply to *routed* access interfaces or virtual links. A *routed* VLAN link is a link on which all connected nodes that use **vlan** configuration module use forwarding mode **route** for that VLAN.
 
 A unique prefix is assigned to every *routed* VLAN link (access interface or trunk link VLAN member). The prefix cannot be specified with the VLAN **prefix** attribute; use **role** VLAN attribute to specify the address pool to be used for the virtual link[^PR]. You can also specify the link prefix in the **prefix** attribute of an [individual VLAN trunk member](module-vlan-trunk-attributes).
