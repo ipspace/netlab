@@ -29,7 +29,7 @@ vlan_link_attr: typing.Final[dict] = {
   'trunk' : { 'type' : dict,'vlan': True }
 }
 
-phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','link_ifindex'] # Physical interface attributes
+phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu'] # Physical interface attributes
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered']             # VLAN attributes to copy to member links
 
@@ -479,12 +479,10 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
           if k in vdata:
             link_data[k] = vdata[k]
 
-      ifindex = 0
       for intf in link.interfaces:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
           intf_data.node = intf.node
-          intf_data.link_ifindex = ifindex                  # Used in find_parent_interface, cannot use 'parentindex' or 'parent_ifindex'
           intf_data.vlan.access = vname
           intf_node = topology.nodes[intf.node]
 
@@ -500,7 +498,6 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
                 prefix = topology.node[intf.node].vlans[vname].prefix
 
           link_data.interfaces.append(intf_data)            # Append the interface to vlan link
-        ifindex = ifindex + 1
 
       if common.debug_active('vlan'):
         print(f'... member link with interfaces: {link_data}')
@@ -726,23 +723,13 @@ def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optiona
   if common.debug_active('vlan'):
     print( f"find_parent_interface node={node.name} intf.parentindex={intf.parentindex} intf.link_ifindex={intf.link_ifindex}" )
 
-  link_list = [ l for l in topology.links if l.linkindex == intf.parentindex ]
-  if not link_list:
-    return None
-
-  link = link_list[0]
-
-  # There is a problem with self-looped links - there will be 2 matching interfaces on the same link
-  # To solve, use the link_ifindex populated upon creating the subif (0-based)
-  link_intf = link.interfaces[ intf.link_ifindex ]
-
-  node_iflist = [ intf for intf in node.interfaces if intf.ifindex == link_intf.ifindex]
-  if not node_iflist:
-    return None
+  for i in node.interfaces:
+    if i.linkindex == intf.parentindex:
+      return i
 
   if common.debug_active('vlan'):
-    print( f"find_parent_interface node={node.name} returns -> node_iflist={node_iflist[0].name}" )
-  return node_iflist[0]
+    print( f"find_parent_interface node={node.name} not found -> returns None" )
+  return None
 
 """
 rename_neighbor_interface: rename an interface in node neighbor list
