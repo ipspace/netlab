@@ -29,7 +29,7 @@ vlan_link_attr: typing.Final[dict] = {
   'trunk' : { 'type' : dict,'vlan': True }
 }
 
-phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','trunk_ifindex'] # Physical interface attributes
+phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','selfloop_ifindex'] # Physical interface attributes
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered']             # VLAN attributes to copy to member links
 
@@ -480,13 +480,13 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
           if k in vdata:
             link_data[k] = vdata[k]
 
-      trunk_ifindex = 0
+      selfloop_ifindex = 0
       for intf in link.interfaces:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
           intf_data.node = intf.node
-          intf_data.trunk_ifindex = trunk_ifindex           # Used in find_parent_interface to disambiguate self-links
-          trunk_ifindex = trunk_ifindex + 1
+          intf_data.selfloop_ifindex = selfloop_ifindex     # Used in find_parent_interface to disambiguate self-links
+          selfloop_ifindex = selfloop_ifindex + 1
           intf_data.vlan.access = vname
           intf_node = topology.nodes[intf.node]
 
@@ -725,11 +725,11 @@ find_parent_interface: Find the parent interface of a VLAN member subinterface
 """
 def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optional[Box]:
   if common.debug_active('vlan'):
-    print( f"find_parent_interface node={node.name} intf.parentindex={intf.parentindex} trunk_ifindex={intf.trunk_ifindex}" )
+    print( f"find_parent_interface node={node.name} intf.parentindex={intf.parentindex} selfloop_ifindex={intf.selfloop_ifindex}" )
 
   candidates = [ i for i in node.interfaces if i.get('linkindex') == intf.parentindex ]
   if candidates:
-    return candidates[ 0 if len(candidates)==1 else intf.trunk_ifindex ]
+    return candidates[ 0 if len(candidates)==1 else intf.selfloop_ifindex ]
 
   if common.debug_active('vlan'):
     print( f"find_parent_interface node={node.name} not found -> returns None" )
