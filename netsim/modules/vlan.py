@@ -31,6 +31,7 @@ vlan_link_attr: typing.Final[dict] = {
 
 phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','parent_ifindex'] # Physical interface attributes
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
+vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered']             # VLAN attributes to copy to member links
 
 """
 init_global_vars: Initialize the VLAN ID pool
@@ -457,8 +458,7 @@ create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
 """
 def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
   if common.debug_active('vlan'):
-    print('create VLAN links')
-    print(f'... link {link}')
+    print(f'create VLAN links: link {link}')
     print(f'... v_attr {v_attr}')
   native_vlan = v_attr.native.list[0] if 'native' in v_attr else None
   for vname in sorted(v_attr.trunk.set):
@@ -473,7 +473,11 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
       fix_vlan_mode_attribute(link_data)
 
       if vname in topology.get('vlans',{}):                 # We need an IP prefix for the VLAN link
-        prefix = topology.vlans[vname].prefix               # Hopefully we can get it from the global VLAN pool
+        vdata = topology.vlans[vname]
+        prefix = vdata.prefix                               # Hopefully we can get it from the global VLAN pool
+        for k in vlan_link_attr_copy:                       # ... also copy other link-related VLAN attributes (role, pool)
+          if k in vdata:
+            link_data[k] = vdata[k]
 
       ifindex = 0
       for intf in link.interfaces:
@@ -496,8 +500,10 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
                 prefix = topology.node[intf.node].vlans[vname].prefix
 
           link_data.interfaces.append(intf_data)            # Append the interface to vlan link
-
         ifindex = ifindex + 1
+
+      if common.debug_active('vlan'):
+        print(f'... member link with interfaces: {link_data}')
 
       if routed_access_vlan(link_data,topology,vname):
         link_data.vlan.mode = 'route'

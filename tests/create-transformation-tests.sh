@@ -9,3 +9,8 @@ set -e
 for file in topology/input/${1:-*}.yml; do
   PYTHONPATH="../" python3 create-transformation-test-case.py -t $file
 done
+#
+# Remove files unnecessarily created by various provider modules
+# (until we fix that)
+#
+rm -fr *files
