@@ -187,7 +187,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
-| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |
+| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |
 | Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |

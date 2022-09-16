@@ -121,15 +121,16 @@ srv6:
 
 evpn: # Enables the EVPN address family towards BGP peers
   requires: [ bgp ]
-  supported_on: [ sros, srlinux, frr, eos, vyos, dellos10 ]
+  supported_on: [ sros, srlinux, frr, eos, vyos, dellos10, cumulus ]
   no_propagate: [ start_transit_vni ]
   transform_after: [ vlan, vxlan, vrf ]
+  config_after: [ vlan, vxlan, vrf ]
   session: [ ibgp ]
   start_transit_vni: 200000
   vlan_bundle_service: False
   attributes:
     global: [ session, start_transit_vni, vlan_bundle_service ]
-    node: [ session, vlan_bundle_service ]
+    node: [ session, vlan_bundle_service, start_transit_vlan ]
     vlans: [ evpn.evi ]
 
 vrf: # Basic VRF support
@@ -635,6 +636,7 @@ devices:
       ansible_ssh_pass: vagrant
       ansible_network_os: cumulus
       ansible_connection: paramiko
+    evpn.start_transit_vlan: 3900
     features:
       initial:
         ipv4:
@@ -653,6 +655,8 @@ devices:
         subif_name: "{ifname}.{vlan.access_id}"
       vrf:
         loopback_interface_name: "lo{vrfidx}"
+      evpn:
+        irb: True
     clab:
       mtu: 1500
       runtime: docker
