@@ -23,18 +23,19 @@ The module requires VLAN module (to set up **vlans** dictionary) and should be u
 
 The following table describes per-platform support of individual VXLAN features:
 
-| Operating system   | VXLAN<br>bridging |
-| ------------------ | :-: |
-| Arista EOS         | ✅  |
-| Cisco Nexus OS     | ✅  |
-| VyOS               | ✅  |
-| Dell OS10          | ✅  |
-| Nokia SR Linux     | ✅  |
+| Operating system   | VXLAN<br>bridging | Per-VLAN<br>replication | IPv6 VTEP |
+| ------------------ | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  |  ❌  |
+| Cisco Nexus OS     | ✅  | ✅  |  ❌  |
+| Cumulus Linux      | ✅  | ✅  |  ❌  |
+| Dell OS10          | ✅  | ✅  |  ❌  |
+| FRR                | ✅  | ✅  |  ❌  |
+| Nokia SR Linux     | ✅  |  ❌  |  ❌  |
+| VyOS               | ✅  | ✅  | ✅  |
 
-Notes:
-* Arista EOS and Cisco Nexus OS implement per-VLAN ingress replication lists
-* Dell OS10 requires a IPv4 address for VXLAN.
-* Arista EOS seems not able to work with IPv6-only transport.
+```{note}
+* Nokia SR Linux needs EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
+```
 
 ## Global Parameters
 
