@@ -1,0 +1,18 @@
+cat >/tmp/vrf_config <<CONFIG
+{% for vname,vdata in vrfs.items() %}
+vrf {{ vname }}
+ exit-vrf
+{% endfor %}
+!
+{% for vname,vdata in vrfs.items() if bgp.as is defined %}
+{%   include 'frr.bgp.j2' +%}
+{% endfor %}
+!
+{% for vname,vdata in vrfs.items() if vdata.ospf is defined %}
+{%  if vdata.af.ipv4|default(False) %}
+{%    include 'frr.ospfv2-vrf.j2' %}
+{%  endif %}
+!
+{% endfor %}
+CONFIG
+vtysh -f /tmp/vrf_config

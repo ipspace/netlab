@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+cat >/etc/network/interfaces.d/70-vrf <<CONFIG
+{% for vname,vdata in vrfs.items() %}
+auto {{ vname }}
+allow-vrf {{ vname }}
+iface {{ vname }}
+    vrf-table {{ 910 + vdata.vrfidx }}{# Cumulus VX VRF table ID has to be between 1001 and 1255 +#}
+#
+{% endfor %}
+{% for i in interfaces if i.vrf is defined %}
+allow-vrf {{ i.ifname }}
+iface {{ i.ifname }}
+    vrf {{ i.vrf }}
+#
+{% endfor %}
+CONFIG
+ifreload --allow vrf
+ifreload --allow vlanintf
+ifreload --allow initial
+#
+{% include "frr.frr-config.j2" +%}
+exit $?

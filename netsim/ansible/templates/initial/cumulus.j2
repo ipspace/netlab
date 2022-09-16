@@ -42,9 +42,11 @@ service lldpd restart
 #
 # Enable FRR modules
 #
-{% set modlist = {'bgp':'bgpd','ospf':'ospfd','isis':'isisd'} %}
+{% set modlist = {'bgp':'bgpd','ospf':['ospfd','ospf6d'],'isis':'isisd','vrf':'bgpd'} %}
 {% for m in module|default([]) if modlist[m] is defined %}
-echo "{{ modlist[m] }}=yes" >>/etc/frr/daemons
+{%   for frr_m in [modlist[m]]|flatten %}
+echo "{{ frr_m }}=yes" >>/etc/frr/daemons
+{%   endfor %}
 {% endfor %}
 systemctl enable frr.service
 systemctl start frr.service
@@ -52,21 +54,33 @@ systemctl reload frr.service
 #
 # Create loopback interface entry
 #
-{% if loopback is defined %}
+
+{%- macro loopback_interface(name,data,create) %}
+allow-initial {{ name }}
+auto {{ name }}
+{% if create %}
+iface {{ name }}
+  pre-up ip link add {{ name }} type dummy
+{% endif %}
+{% if data.ipv4 is defined %}
+iface {{ name }} inet loopback
+  address {{ data.ipv4 }}
+{% endif %}
+{% if data.ipv6 is defined %}
+iface {{ name }} inet6 loopback
+  address {{ data.ipv6 }}
+{% endif %}
+{% endmacro %}
+
 cat >/etc/network/interfaces.d/10-loopback <<CONFIG
-allow-initial lo
-auto lo
-{% if loopback.ipv4 is defined %}
-iface lo inet loopback
-  address {{ loopback.ipv4 }}
+{% if loopback is defined %}
+{{ loopback_interface('lo',loopback,False) }}
 {% endif %}
-{% if loopback.ipv6 is defined %}
-iface lo inet6 loopback
-  address {{ loopback.ipv6 }}
-{% endif %}
+{% for l in interfaces if l.type == 'loopback' %}
+{{ loopback_interface(l.ifname,l,True) }}
+{% endfor %}
 CONFIG
 ifup lo
-{% endif %}
 cat >/etc/network/interfaces.d/11-physical <<CONFIG
 {% for l in interfaces if l.type in ['lan','p2p','stub'] %}
 allow-initial {{ l.ifname }}
