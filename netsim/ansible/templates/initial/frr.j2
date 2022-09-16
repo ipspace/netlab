@@ -60,15 +60,17 @@ hostname {{ inventory_hostname }}
 !
 ipv6 forwarding
 !
+{% if loopback is defined %}
 interface lo0
  no shutdown
-{% if 'ipv4' in loopback %}
+{%  if loopback.ipv4 is defined %}
  ip address {{ loopback.ipv4 }}
-{% endif %}
-{% if 'ipv6' in loopback %}
+{%  endif %}
+{%  if loopback.ipv6 is defined %}
  ipv6 address {{ loopback.ipv6 }}
-{% endif %}
+{%  endif %}
 !
+{% endif %}
 {% for l in interfaces|default([]) %}
 interface {{ l.ifname }}
 ! no shutdown
@@ -77,7 +79,7 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if l.ipv4 is defined and (l.ipv4 is string or 'ipv4' in loopback) %}
+{% if l.ipv4 is defined and (l.ipv4 is string or loopback.ipv4 is defined) %}
  ip address {{ l.ipv4 if l.ipv4 is string else loopback.ipv4 }}
 {% endif %}
 {% if l.ipv6 is defined %}
