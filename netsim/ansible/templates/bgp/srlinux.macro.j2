@@ -1,24 +1,15 @@
-{% macro bgp_policy(vrf,is_import,communities) %}
+{% macro bgp_policy(vrf,is_import,communities,vrf_context) %}
 {% set name = vrf + "_" + ('import' if is_import else 'export') %}
 
-{% if communities %}
-- path: routing-policy/community-set[name={{name}}]
-  val:
-   member:
-{% for c in communities %}
-   - "target:{{c}}"
-{% endfor -%}
-{% endif %}
-
 {% macro accept() %}
-{%    if is_import or not communities %}
+{% if is_import or not communities %}
       accept: { }
-{%    else %}
-      accept:
-       bgp:
-        communities:
-         add: "{{ name }}"
-{%    endif %}
+{% else %}
+      accept: { }
+      # bgp:
+      #  communities:
+      #   add: "{{ name }}"
+{% endif %}
 {% endmacro %}
 
 - path: routing-policy/prefix-set[name={{vrf}}_export]
@@ -30,27 +21,28 @@
    default-action: 
     reject: { }
    statement:
-{%   if not is_import %}
+{% if is_import %}
+{%  for c in communities|default([]) %}
+   - sequence-id: {{ 10 + loop.index }}
+     match:
+      bgp:
+       community-set: "C{{ c|replace(':','_') }}"
+     action:
+{{    accept() }}       
+{%  endfor %}
+{% else %}
    - sequence-id: 5
      match:
       protocol: bgp
       _annotate_protocol: "Accept and propagate prefixes received via BGP"
      action:
 {{    accept() }}
-{% endif %}
    - sequence-id: 10
-{%   if is_import %}
-{%    if communities %}   
-     match:
-      bgp:
-       community-set: "{{ name }}"
-{%    endif %}
-{%   else %}
      match:
       prefix-set: "{{ vrf }}_export"
-{%   endif %}
      action:
 {{    accept() }}
+{% endif %}
 {% endmacro %}
 
 {% macro bgp_export_prefix(vrf,prefix) %}
@@ -65,13 +57,13 @@
 
 {% if 'import' in vrf_context %}
 {% set import_policy = vrf + "_import" %}
-{{ bgp_policy(vrf,1,vrf_context.import) }}
+{{ bgp_policy(vrf,1,vrf_context.import,vrf_context) }}
 {% else %}
 {% set import_policy = "accept_all" %}
 {% endif -%}
 
 {% set export_policy = vrf + "_export" %}
-{{ bgp_policy(vrf,0,vrf_context.export|default({})) }}
+{{ bgp_policy(vrf,0,vrf_context.export|default({}),vrf_context) }}
 
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
@@ -83,7 +75,7 @@
     import-reject-all: False
 
 {# Configure BGP address families globally #}
-{% for af in ['ipv4','ipv6'] if vrf_bgp[af]|default(0) %}
+{% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
    {{ af }}-unicast:
     admin-state: enable
     multipath:
@@ -92,7 +84,7 @@
 {% endfor %}
 
 {# Create route export policies #}
-{% for af in ['ipv4','ipv6'] if vrf_bgp[af]|default(0) %}
+{% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
 {% if loopback[af] is defined and bgp.advertise_loopback and vrf=='default' %}
 {{ bgp_export_prefix(vrf,loopback[af]) }}
 {% endif %}

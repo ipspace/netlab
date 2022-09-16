@@ -19,12 +19,13 @@ updates:
 {% if not (l.vlan.trunk_id is defined and l.vlan.native is not defined) %}{# Skip trunk ports without native vlan #}
    subinterface:
    - index: {{ if_index }}
-{%  if l.type=='vlan_member' or l.vlan.trunk_id is defined %}
+{%  if l.type in ['vlan_member','lan'] or l.vlan.trunk_id is defined %}
 {#   Untagged native vlan only allows type bridged, routing via irb interface #}
      type: {{ 'routed' if l.vlan.mode|default('irb') == 'route' else 'bridged' }}
 {%   if l.name is defined %}
      description: "{{ l.name | replace('->','~')|regex_replace('[\\[\\]]','') }}"
 {%   endif %}
+{%   if l.type=='vlan_member' or l.vlan.trunk_id is defined %}
      vlan:
       encap:
 {%     if l.vlan.native is defined %}
@@ -34,6 +35,7 @@ updates:
        single-tagged:
         vlan-id: "{{ l.vlan.access_id }}"
 {%     endif %}
+{%    endif %}
 {%  endif %}
 
 {%  if l.ipv4 is defined or l.ipv6 is defined %}
@@ -44,9 +46,9 @@ updates:
 {# Create mac-vrf for L2 VLANs, add L2 side of IRB interface if any #}
 {# Use only vlan.id in name, such that svi interfaces (irb0.nnnn) can be associated #}
 {% set vlan_mode = l.vlan.mode|default('irb') %}
-{% if (l.type=='vlan_member' and vlan_mode!='route') or (l.type=='svi' and vlan_mode=='irb') %}
+{% if (l.type in ['vlan_member','lan'] and vlan_mode!='route') or (l.type=='svi' and vlan_mode=='irb') %}
 - path: network-instance[name=vlan{{ if_index }}]
-  val: # {{ l }}
+  val:
    type: mac-vrf
 {% if l.name is defined %}
    description: "{{ l.name | replace('->','~')|regex_replace('[\\[\\]]','') }}"

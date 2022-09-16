@@ -10,7 +10,35 @@ updates:
 {% if 'ospf' in vdata %}
 {{ ospf_config(0,'ipv4' if vdata.af.ipv4|default(0) else 'ipv6',vname,vdata.ospf,vdata.ospf.interfaces)}}
 {% endif %}
+
+{# Create an AS path set for this VRF, if vrf.as is set #}
+{% if vdata.as is defined %}
+- path: routing-policy/as-path-set[name={{vname}}]
+  val:
+   expression: "{{ vdata.as }}"
+{% endif %}
+
+{# Creata a community set with a single member for each imported community #}
+{% if vdata.import|default([]) %}
+{%  for c in vdata.import %}
+- path: routing-policy/community-set[name=C{{ c|replace(':','_') }}]
+  val:
+   member:
+   - "{{c}}" # Single member, else matching is AND
+{% endfor -%}
+{% endif %}
+
+{# Create a single community set for all exported communities, to be added upon import #}
+{% if vdata.export|default([]) %}
+- path: routing-policy/community-set[name={{vname}}_export]
+  val:
+   member:
+{%  for c in vdata.export %}
+   - "{{ c }}"
+{%  endfor %}
+{% endif %}
+
 {% if 'bgp' in vdata %}
-{{ bgp_config(vname,vrf.as,bgp.router_id,vdata.bgp,vdata) }}
+{{ bgp_config(vname,bgp.as,bgp.router_id,vdata.bgp,vdata) }}
 {% endif %}
 {% endfor %}
