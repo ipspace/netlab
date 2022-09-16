@@ -24,11 +24,12 @@ VLANs are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |
-| VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
+| Cumulus Linux         | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
-| Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |
-| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅ | ✅ |
 | FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |
+| VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
 
 ## VLAN Connectivity Model
 

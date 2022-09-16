@@ -27,6 +27,10 @@ mv /tmp/hosts-start /etc/hosts
 {% endif %}
 sort /tmp/hosts|uniq >>/etc/hosts
 #
+# Disable ZTP
+#
+ztp --disable
+#
 # Enable LLDP
 #
 cat <<CONFIG >/etc/lldpd.d/system.conf
@@ -46,26 +50,55 @@ systemctl enable frr.service
 systemctl start frr.service
 systemctl reload frr.service
 #
-# Set Ethernet interface MTU
-{% for l in interfaces|default([]) if l.mtu is defined %}
-ip link set {{ l.ifname }} mtu {{ l.mtu }}
+# Create loopback interface entry
+#
+{% if loopback is defined %}
+cat >/etc/network/interfaces.d/10-loopback <<CONFIG
+allow-initial lo
+auto lo
+{% if loopback.ipv4 is defined %}
+iface lo inet loopback
+  address {{ loopback.ipv4 }}
+{% endif %}
+{% if loopback.ipv6 is defined %}
+iface lo inet6 loopback
+  address {{ loopback.ipv6 }}
+{% endif %}
+CONFIG
+ifup lo
+{% endif %}
+cat >/etc/network/interfaces.d/11-physical <<CONFIG
+{% for l in interfaces if l.type in ['lan','p2p','stub'] %}
+allow-initial {{ l.ifname }}
+auto {{ l.ifname }}
+{%   if l.ipv4 is defined %}
+iface {{ l.ifname }} inet static
+{%     if l.ipv4 == True and loopback.ipv4 is defined %}
+  address {{ loopback.ipv4 }}
+{%     else %}
+  address {{ l.ipv4 }}
+{%     endif %}
+{%   endif %}
+{%   if l.ipv6 is defined and l.ipv6 is string %}
+iface {{ l.ifname }} inet6 static
+  address {{ l.ipv6 }}
+{%   endif %}
+{%   if l.mtu is defined %}
+iface {{ l.ifname }}
+  mtu {{ l.mtu }}
+{%   endif %}
 {% endfor %}
+CONFIG
+ifreload --allow initial
 #
 # Rest of initial configuration done through VTYSH
 #
 cat >/tmp/config <<CONFIG
+{% if af.ipv6 is defined %}
 ipv6 forwarding
-!
-interface lo
- no shutdown
-{% if 'ipv4' in loopback %}
- ip address {{ loopback.ipv4 }}
-{% endif %}
-{% if 'ipv6' in loopback %}
- ipv6 address {{ loopback.ipv6 }}
 {% endif %}
 !
-{% for l in interfaces|default([]) %}
+{% for l in interfaces %}
 interface {{ l.ifname }}
 ! no shutdown
 {% if l.name is defined %}
@@ -73,22 +106,8 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if l.ipv4 is defined %}
-{%   if l.ipv4 == True %}
- ip address {{ loopback.ipv4 }}
-{%   else %}
- ip address {{ l.ipv4 }}
-{%   endif %}
-{% endif %}
-{% if l.ipv6 is defined %}
-{%   if l.ipv6 == True %}
- ip address {{ loopback.ipv6 }}
-{%   else %}
- ipv6 address {{ l.ipv6 }}
-{%   endif %}
  ipv6 nd ra-interval 5
  no ipv6 nd suppress-ra
-{% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
 {% endif %}
