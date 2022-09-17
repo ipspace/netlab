@@ -264,23 +264,34 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
     print
   return None
 
-def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box) -> dict:
-  if 'role' in link:
-    pools = [ link.get('role') ] + pools
-  if 'prefix' in link:
+def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_path: str = 'links') -> dict:
+  if 'prefix' in link:                                    # User specified a static link prefix
     pfx_list = addressing.parse_prefix(link.prefix)
     if isinstance(link.prefix,str):
-      link.prefix = addressing.rebuild_prefix(pfx_list)  # convert str to { ipv4: , ipv6: }
-  elif 'unnumbered' in link:                             # User provided flag in topology
-    pfx_list = Box({ 'unnumbered': True })
+      link.prefix = addressing.rebuild_prefix(pfx_list)   # convert str to prefix dictionary
+    return pfx_list
+
+  if 'unnumbered' in link:                                # User requested an unnumbered link
+    return Box({ 'unnumbered': True })
+
+  if data.must_be_string(link,'pool',link_path):
+    if not link.pool in addr_pools:
+      common.error(
+        f'Unknown address pool {link.pool} used in {link_path}',
+        common.IncorrectValue,
+        'links')
+    pools = [ link.pool ] + pools
   else:
-    pfx_list = addressing.get(addr_pools,pools)
-    link.prefix = {
-        af: pfx_list[af] if isinstance(pfx_list[af],bool) else str(pfx_list[af])
-              for af in ('ipv4','ipv6') if af in pfx_list
-      }
-    if not link.prefix:
-      link.pop('prefix',None)
+    if data.must_be_string(link,'role',link_path):
+      pools = [ link.get('role') ] + pools
+
+  pfx_list = addressing.get(addr_pools,pools)
+  link.prefix = {
+      af: pfx_list[af] if isinstance(pfx_list[af],bool) else str(pfx_list[af])
+            for af in ('ipv4','ipv6') if af in pfx_list
+    }
+  if not link.prefix:
+    link.pop('prefix',None)
 
   return pfx_list
 
@@ -291,7 +302,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
   if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f'\nProcess LAN link {link}')
 
-  pfx_list = augment_link_prefix(link,['lan'],addr_pools)
+  pfx_list = augment_link_prefix(link,['lan'],addr_pools,f'links[{link.linkindex}]')
   interfaces = []
 
   if common.debug_active('links'):     # pragma: no cover (debugging)
@@ -355,7 +366,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     defaults = Box({})
   if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f'\nProcess P2P link {link}')
-  pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools)
+  pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools,f'links[{link.linkindex}]')
 
   end_names = ['left','right']
   link_nodes: typing.List[Box] = []

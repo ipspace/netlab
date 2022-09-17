@@ -47,7 +47,8 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
 * **name** -- link name (used for interface description)
-* **role** -- link role, used to select custom addressing pool or specific configuration module behavior.
+* **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
+* **role** -- link role, used to select specific configuration module behavior. Typical link roles include *stub*, *passive* and *external*. Please read [](module/routing.md) for more details.
 * **bandwidth** -- link bandwidth (used to configure interface bandwidth).
 * **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
 * **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
@@ -210,7 +211,7 @@ These interface address are assigned to the three nodes during the topology tran
 
 The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.md)*).
 
-Use **role** attribute to specify a custom address pool for a link. For example, the following topology uses unnumbered (core) link between **r1** and **r2**:
+Use **pool** attribute to specify a custom address pool for a link. For example, the following topology uses unnumbered (core) link between **r1** and **r2**:
 
 ```
 addressing:
@@ -224,13 +225,8 @@ nodes:
 links:
 - r1:
   r2:
-  role: core
+  pool: core
 ```
-
-**Notes:**
-
-* The name used in **role** attribute does not have to correspond to an IP address pool. In that case, the address pool is selected based on link type.
-* Link **role** could be used in [configuration modules](modules.md) to influence interface configuration. For example, *core* links could belong to OSPF area 0.
 
 ```{tip}
 You can also use **unnumbered** link attribute to get a single unnumbered link. Using an unnumbered pool is recommended when you want to test network-wide addressing changes.

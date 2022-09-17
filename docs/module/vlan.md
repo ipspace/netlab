@@ -87,7 +87,7 @@ The keys of the **vlans** dictionary are VLAN names, the values are VLAN definit
 * **mode** -- default VLAN forwarding mode: **route**, **bridge** or **irb**.
 * **prefix** -- IP prefix assigned to the VLAN. The value of the prefix could be an IPv4 prefix or a dictionary with **ipv4** and **ipv6** keys.
 * **pool** -- addressing pool used to assign IPv4/IPv6 prefixes to the VLAN. VLAN prefixes are allocated from addressing pools before interface address assignments.
-* A VLAN definition can also contain other valid link- or interface-level parameters (including link **role**, VRF name, OSPF cost...).
+* A VLAN definition can also contain other valid link- or interface-level parameters (including link **role**, addressing **pool**, VRF name, OSPF cost...).
 
 VLAN definitions lacking **id** or **vni** attribute get [default VLAN ID and VNI values](default-vlan-values) assigned during the topology transformation process.
 
@@ -244,13 +244,11 @@ When at least one node attached to a VLAN-enabled link uses VLAN forwarding mode
 (vlan-addressing-routed)=
 The above rule does not apply to *routed* access interfaces or virtual links. A *routed* VLAN link is a link on which all connected nodes that use **vlan** configuration module use forwarding mode **route** for that VLAN.
 
-A unique prefix is assigned to every *routed* VLAN link (access interface or trunk link VLAN member). The prefix cannot be specified with the VLAN **prefix** attribute; use **role** VLAN attribute to specify the address pool to be used for the virtual link[^PR]. You can also specify the link prefix in the **prefix** attribute of an [individual VLAN trunk member](module-vlan-trunk-attributes).
+A unique prefix is assigned to every *routed* VLAN link (access interface or trunk link VLAN member). The prefix cannot be specified with the VLAN **prefix** attribute; use **pool** VLAN attribute to specify the address pool to be used for the virtual link. You can also specify the link prefix in the **prefix** attribute of an [individual VLAN trunk member](module-vlan-trunk-attributes).
 
 ```{note}
-If you want to use unnumbered VLAN member links, set VLAN **‌role** to **‌unnumbered**.
+If you want to use unnumbered VLAN member links, set VLAN **pool** to **unnumbered**.
 ```
-
-[^PR]: We apologize for the inconsistency. For historic reasons we use **role** attribute on links and **pool** attribute on VLANs. As the pool-specifying attribute is copied from VLAN definition to VLAN virtual link, it has to be the **role** attribute. Before you ask: yes, we plan to fix that.
 
 ### Physical Interface and VLAN Interface Addressing
 
@@ -262,7 +260,7 @@ The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfac
 * No IP address is assigned to the VLAN interface when the VLAN forwarding mode is set to *bridge*.
 * No IP address is assigned to the physical interface that has an **access** or **native** VLAN with **mode** set to *bridge* or *irb*. You can try to force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
 * Interfaces with **access** or **native** VLAN that has **mode** set to *route* are treated like regular interfaces and get IP addresses. These interfaces will be configured as regular layer-3 interfaces without *access* or *native* VLAN[^PLER].
-* IP prefixes are not assigned to the physical interfaces with VLAN trunks. If you want to assign IP addresses to default native VLAN (1), use **role** or **prefix** link attribute.
+* IP prefixes are not assigned to the physical interfaces with VLAN trunks. If you want to assign IP addresses to default native VLAN (1), use **pool** or **prefix** link attribute.
 
 [^PLER]: There is no difference between a regular layer-3 interface and an access VLAN interface that does no bridging and only routes IP packets. The proof is left as an exercise for the reader.
  

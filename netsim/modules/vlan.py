@@ -31,7 +31,7 @@ vlan_link_attr: typing.Final[dict] = {
 
 phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','_selfloop_ifindex'] # Physical interface attributes
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
-vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered']             # VLAN attributes to copy to member links
+vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
 
 """
 init_global_vars: Initialize the VLAN ID pool
@@ -134,6 +134,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   global vlan_ids
 
   obj_name = 'global VLANs' if obj is topology else obj.name
+  obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
   default_fwd_mode = get_from_box(obj,'vlan.mode')                # Get node-wide VLAN forwarding mode
   if default_fwd_mode:                                            # ... is it set?
     default_fwd_mode = str(default_fwd_mode)                      # Convert it to string so we don't have to deal with weird types
@@ -189,7 +190,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
 
     vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
     vlan_pool.extend(['vlan','lan'])
-    pfx_list = links.augment_link_prefix(vdata,vlan_pool,topology.pools)
+    pfx_list = links.augment_link_prefix(vdata,vlan_pool,topology.pools,f'{obj_path}.{vname}')
     vdata.prefix = addressing.rebuild_prefix(pfx_list)
 
 """
@@ -435,8 +436,9 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
     link_vlan_set = v_attr.native.set
     node_set = v_attr.native.node_set
   elif 'trunk' in v_attr:
-    if not 'role' in link and not 'prefix' in link:   # If the user set prefix or address pool leave it alone
-      link.prefix = {}                                # ... otherwise we need no IP addressing on trunk links without a native VLAN
+    pfx_attr = [ k for k in link.keys() if k in ['role','prefix','pool']]
+    if not pfx_attr:                                  # Did the user specify a static prefix or address pool?
+      link.prefix = {}                                # ... nope, we need no IP addressing on VLAN trunk links
     return
 
   if not link_vlan_set:

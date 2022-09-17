@@ -16,7 +16,7 @@ You can assign a static prefix to a link with **prefix** link attribute and stat
 * **l2only** pool has no IPv4 or IPv6 addresses. You can use it to create L2-only links. See [layer-2-only pools](#layer-2-only-pools) and *[Using l2only Address Pool](example/addressing-tutorial.md#layer-2-only-links-using-l2only-address-pool)* for details.
 * **vrf_loopback** pool: IPv4 and IPv6 prefixes used on optional VRF loopback interfaces.
 
-You can specify additional address pools, and [use them with the **role** link attribute](links.md#selecting-custom-address-pools).
+You can specify additional address pools, and [use them with the **pool** link attribute](links.md#selecting-custom-address-pools).
 
 Default IPv4 address pools are defined in system settings:
 
@@ -54,10 +54,10 @@ Address pools could be specified:
 * In **addressing** or **defaults.addressing** part of topology YAML file
 * In **addressing** part of local or global defaults file.
 
-**Notes:**
-
+```{tip}
 * [Local (or user) defaults file](defaults-user-file) can be overwritten with `--defaults` option of **netlab create** or **netlab up** command.
 * Global defaults file is `topology-defaults.yml` included in *netlab* package.
+```
 
 Each address pool specification is a dictionary of address pools. Individual address pools are specified with these parameters:
 
@@ -128,7 +128,7 @@ links:
 - r1:
   r2:
   r3:
-  role: l2only
+  pool: l2only
 ```
 
 ## Merging Defaults
@@ -195,7 +195,7 @@ links:
 - name: Unnumbered link between R1 and R2
   r1:
   r2:
-  role: core
+  pool: core
 
 - name: LAN link between R1 and R2
   r1:
@@ -218,9 +218,9 @@ links:
     r2:
       ifname: GigabitEthernet2
       ipv4: true
+  pool: core
   remote_id: 2
   remote_ifindex: 2
-  role: core
   type: p2p
   unnumbered: true
 - bridge: X_2
