@@ -1,6 +1,18 @@
 Release notes
 =============
 
+2022-09-17 (release 1.3.1)
+  * VXLAN, VLANs, VRFs, and EVPN implemented on FRR and Cumulus Linux
+  * BGP local-as implemented in the BGP configuration module and supported on Arista EOS, Cisco IOS, Dell OS10, FRR, and Nokia SR Linux.
+  * Configurable BGP transport sessions
+  * Configurable default BGP address families supported on Arista EOS, Cisco IOS, Cumulus Linux, FRR, and Nokia SR Linux.
+  * Select address pools with 'pool' VLAN or link attribute (using 'role' attribute to select an addressing pool is deprecated)
+  * FRR support for IPv6 LLA (unnumbered) BGP sessions
+  * New default VM versions: FRR 8.3.1 and Cumulus Linux 4.4.0 (container), Cumulus Linux (NVUE) 5.2.0 (VM)
+  * Per-VRF BGP router ID on Cisco IOS and Arista EOS
+
+  :doc:`More details <release/1.3>`
+
 2022-08-27 (release 1.3)
   * 'netsim-tools' package renamed to 'networklab'
   * VXLAN configuration module

@@ -4,14 +4,16 @@ from setuptools import setup, find_packages
 
 sys.path.append('..')
 
+version="1.3.1"
+
 setup(
   name="netsim-tools",
-  version="1.3-post2",
+  version=version,
   packages=[],
   author="Ivan Pepelnjak",
   author_email="ip@ipspace.net",
   description="CLI-based Virtual Networking Lab Abstraction Layer",
-  install_requires=["networklab>=1.3.post1"],
+  install_requires=[f"networklab>={version}"],
   classifiers=[
     "Topic :: Utilities",
     "Programming Language :: Python",

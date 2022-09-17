@@ -179,7 +179,9 @@ The following interface addresses are supported on various platforms:
 ## Supported Configuration Modules
 
 (platform-routing-support)=
-Routing protocol [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
+Routing protocol [configuration modules](module-reference.md) are supported on these devices[^NSM]
+
+[^NSM]: Use **[netlab show module-support](netlab/show.md)** command to display the current system settings
 
 | Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | EVPN |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :--: |
@@ -198,8 +200,8 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | VyOS                  | ✅   |   ✅   |   ❌   | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  |
 
-(platform-module-support)=
-Additional [configuration modules](module-reference.md) are supported on these devices (use **[netlab show module-support](netlab/show.md)** command to display the current system settings):
+(platform-dataplane-support)=
+The following data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
 
 | Operating system      | VLAN | VRF | VXLAN | MPLS | SR-MPLS | SRv6 |
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
