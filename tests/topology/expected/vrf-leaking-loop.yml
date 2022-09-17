@@ -1,0 +1,254 @@
+input:
+- topology/input/vrf-leaking-loop.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    name: Global side
+    node: leaf1
+    vlan:
+      trunk:
+        route-leak-to-global-customer1:
+          vrf: global
+        route-leak-to-global-customer2:
+          vrf: global
+  - ifindex: 2
+    name: Customer side
+    node: leaf1
+    vlan:
+      trunk:
+        route-leak-to-global-customer1:
+          vrf: customer1
+        route-leak-to-global-customer2:
+          vrf: customer2
+  left:
+    ifname: ethernet-1/1
+    node: leaf1
+  linkindex: 1
+  name: leaf1 - leaf1
+  node_count: 2
+  prefix: {}
+  right:
+    ifname: ethernet-1/2
+    node: leaf1
+  type: p2p
+  vlan:
+    trunk:
+      route-leak-to-global-customer1: {}
+      route-leak-to-global-customer2: {}
+module:
+- vlan
+- vrf
+name: input
+nodes:
+  leaf1:
+    af:
+      ipv4: true
+      vpnv4: true
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    hostname: clab-input-leaf1
+    id: 1
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      linkindex: 1
+      name: leaf1 -> leaf1
+      neighbors:
+      - ifname: ethernet-1/2
+        node: leaf1
+      subif_index: 2
+      type: p2p
+    - clab:
+        name: e1-2
+      ifindex: 2
+      ifname: ethernet-1/2
+      linkindex: 1
+      name: leaf1 -> leaf1
+      neighbors:
+      - ifname: ethernet-1/1
+        node: leaf1
+      subif_index: 2
+      type: p2p
+    - bridge_group: 1
+      ifindex: 3
+      ifname: ethernet-1/1.1000
+      ipv4: 172.16.2.1/24
+      name: leaf1 -> [leaf1]
+      neighbors:
+      - ifname: ethernet-1/2.1000
+        ipv4: 172.16.2.1/24
+        node: leaf1
+        vrf: customer1
+      parent_ifindex: 1
+      parent_ifname: ethernet-1/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1000
+        mode: route
+        routed_link: true
+      vrf: global
+    - bridge_group: 1
+      ifindex: 4
+      ifname: ethernet-1/2.1000
+      ipv4: 172.16.2.1/24
+      name: leaf1 -> [leaf1]
+      neighbors:
+      - ifname: ethernet-1/1.1000
+        ipv4: 172.16.2.1/24
+        node: leaf1
+        vrf: global
+      parent_ifindex: 2
+      parent_ifname: ethernet-1/2
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1000
+        mode: route
+        routed_link: true
+      vrf: customer1
+    - bridge_group: 2
+      ifindex: 5
+      ifname: ethernet-1/1.1001
+      ipv4: 172.16.3.1/24
+      name: leaf1 -> [leaf1]
+      neighbors:
+      - ifname: ethernet-1/2.1001
+        ipv4: 172.16.3.1/24
+        node: leaf1
+        vrf: customer2
+      parent_ifindex: 1
+      parent_ifname: ethernet-1/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1001
+        mode: route
+        routed_link: true
+      vrf: global
+    - bridge_group: 2
+      ifindex: 6
+      ifname: ethernet-1/2.1001
+      ipv4: 172.16.3.1/24
+      name: leaf1 -> [leaf1]
+      neighbors:
+      - ifname: ethernet-1/1.1001
+        ipv4: 172.16.3.1/24
+        node: leaf1
+        vrf: global
+      parent_ifindex: 2
+      parent_ifname: ethernet-1/2
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1001
+        mode: route
+        routed_link: true
+      vrf: customer2
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - vlan
+    - vrf
+    name: leaf1
+    vlan:
+      max_bridge_group: 2
+      mode: irb
+    vlans:
+      route-leak-to-global-customer1:
+        bridge_group: 1
+        id: 1000
+        mode: route
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+      route-leak-to-global-customer2:
+        bridge_group: 2
+        id: 1001
+        mode: route
+        prefix:
+          ipv4: 172.16.1.0/24
+        vni: 101001
+    vrf:
+      as: 65000
+    vrfs:
+      customer1:
+        af:
+          ipv4: true
+        export:
+        - '65000:2'
+        id: 2
+        import:
+        - '65000:2'
+        rd: '65000:2'
+        vrfidx: 101
+      customer2:
+        af:
+          ipv4: true
+        export:
+        - '65000:3'
+        id: 3
+        import:
+        - '65000:3'
+        rd: '65000:3'
+        vrfidx: 102
+      global:
+        af:
+          ipv4: true
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        rd: '65000:1'
+        vrfidx: 100
+provider: clab
+vlan:
+  mode: irb
+vlans:
+  route-leak-to-global-customer1:
+    id: 1000
+    mode: route
+    prefix:
+      ipv4: 172.16.0.0/24
+    vni: 101000
+  route-leak-to-global-customer2:
+    id: 1001
+    mode: route
+    prefix:
+      ipv4: 172.16.1.0/24
+    vni: 101001
+vrf:
+  as: 65000
+vrfs:
+  customer1:
+    export:
+    - '65000:2'
+    id: 2
+    import:
+    - '65000:2'
+    rd: '65000:2'
+  customer2:
+    export:
+    - '65000:3'
+    id: 3
+    import:
+    - '65000:3'
+    rd: '65000:3'
+  global:
+    export:
+    - '65000:1'
+    id: 1
+    import:
+    - '65000:1'
+    rd: '65000:1'

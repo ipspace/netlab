@@ -1,0 +1,41 @@
+provider: clab
+
+module: [ vrf, vlan ]
+
+vrfs:
+  global: # Global VRF
+
+  customer1:
+
+  customer2:
+
+vlans:
+  route-leak-to-global-customer1:
+    mode: route # mode=irb requires additional fixing
+
+  route-leak-to-global-customer2:
+    mode: route
+
+nodes:
+  leaf1:
+    device: srlinux
+
+links:
+- interfaces:
+  - node: leaf1
+    name: Global side
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk:
+      route-leak-to-global-customer1:
+        vrf: global
+      route-leak-to-global-customer2:
+        vrf: global
+
+  - node: leaf1 # leaf2 for testing
+    name: Customer side
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk:
+      route-leak-to-global-customer1:
+        vrf: customer1
+      route-leak-to-global-customer2:
+        vrf: customer2
