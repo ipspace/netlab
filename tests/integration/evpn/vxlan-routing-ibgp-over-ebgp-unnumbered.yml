@@ -1,0 +1,87 @@
+message: |
+  The devices under test are VLAN-to-VXLAN routers between four different access VLANs
+  and VXLAN VNIs, divided amongst 2 tenants. 
+
+  Control plane: EVPN with iBGP-over-eBGP
+  P2P: BGP unnumbered with RFC8950 (ipv6 next hops for ipv4 prefixes)
+
+  * h1 and h2 should be able to ping each other: docker exec -it clab-evpn-h2 ping 172.16.0.3 -c 2
+  * h3 and h4 should be able to ping each other: docker exec -it clab-evpn-h3 ping 172.16.3.6 -c 2
+  * h1 should not be able to reach h3 or h4    : docker exec -it clab-evpn-h1 ping 172.16.3.6 -c 2
+
+provider: clab
+
+defaults:
+  device: frr
+
+groups:
+  server: # Group naming aligns with Containerlab layout conventions, see https://containerlab.dev/cmd/graph/
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+  
+  leaf:
+    members: [ r1,r2 ]
+    module: [ vlan,vxlan,bgp,vrf,evpn ] # Could use ospf or isis here, instead of ebgp
+
+vrfs:
+  tenant1:
+    evpn.transit_vni: true # enable symmetric irb
+    loopback: True
+
+  tenant2:
+    evpn.transit_vni: true
+    loopback: True
+
+bgp:
+  as: 65000 # EVPN overlay AS
+  activate: # Address families to activate
+    ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only. Remove when using ospf or isis
+
+vlans:
+  red1:
+    mode: irb
+    vrf: tenant1
+
+  blue1:
+    mode: irb
+    vrf: tenant1
+
+  red2:
+    mode: irb
+    vrf: tenant2
+
+  blue2:
+    mode: irb
+    vrf: tenant2
+
+nodes:
+  r1:
+    bgp.local_as: 65001
+
+  r2:
+    bgp.local_as: 65002
+
+  h1:
+  h2:
+  h3:
+  h4:
+
+links:
+- h1:
+  r1:
+    vlan.access: red1
+- h2:
+  r2:
+    vlan.access: blue1
+- h3:
+  r1:
+    vlan.access: red2
+- h4:
+  r2:
+    vlan.access: blue2
+
+- r1:
+  r2:
+  prefix: # Use eBGP unnumbered, remove when using ospf or isis
+    ipv4: True
+    ipv6: True
