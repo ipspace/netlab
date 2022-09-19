@@ -9,6 +9,8 @@
 * Performs provider-specific initialization (see below)
 * Deploys device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag
 
+After the lab has been configured with **netlab initial**, **netlab up** displays the [help **message** defined in the lab topology](topology-reference-top-elements).
+
 You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab using the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
 
 ![netlab up functional diagram](up.png)

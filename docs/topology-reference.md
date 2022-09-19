@@ -15,6 +15,7 @@ Other topology elements include:
 * **addressing** -- [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
 * **name** -- topology name (used in bridge names)
 * **plugin** -- list of [plugins](plugins.md) used by this topology.
+* **message** -- a help message to display after successful **[netlab initial](netlab/initial.md)** or **[netlab up](netlab/up.md)** commands. You can use that message to tell the end-user how to use the lab (example: [VLAN integration test cases](https://github.com/ipspace/netlab/tree/master/tests/integration/vlan)).
 
 **Notes:**
 

@@ -2,6 +2,8 @@
 
 **netlab initial** command uses expanded Ansible inventory data created with **[netlab create](create.md)** command, device-specific Jinja2 templates, and an internal Ansible playbook to deploy initial device configurations.
 
+After a successful completion of the Ansible playbook, **netlab initial** displays the [help **message** defined in the lab topology](topology-reference-top-elements).
+
 ![netlab initial functional diagram](initial.png)
 
 The Ansible playbook invoked by **netlab initial** command deploys device configurations in three steps:
