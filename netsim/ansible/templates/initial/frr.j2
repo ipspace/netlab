@@ -93,6 +93,16 @@ interface {{ l.ifname }}
  bandwidth {{ l.bandwidth  }}
 {% endif %}
 !
+
+{# Configure default gateway route(s) if provided #}
+{% if l.gateway is defined and l.gateway.default|default(False) %}
+{%  for af in ['ipv4','ipv6'] %}
+{%   if l.gateway[af] is defined %}
+ip route {{ '0.0.0.0/0' if af=='ipv4' else '::/0' }} {{ l.gateway[af]|ipaddr('address') }} {{ ('vrf ' + l.vrf) if l.vrf is defined else '' }}
+{%   endif %}
+{%  endfor %}
+{% endif %}
+
 {% endfor %}
 do write
 CONFIG

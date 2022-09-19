@@ -1,5 +1,5 @@
 #
-# VRF module
+# VLAN module
 #
 import typing
 from box import Box
@@ -30,8 +30,8 @@ vlan_link_attr: typing.Final[dict] = {
 }
 
 phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','_selfloop_ifindex'] # Physical interface attributes
-keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
-vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
+keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']         # Keep these attributes on VLAN subinterfaces
+vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool','gateway'] # VLAN attributes to copy to member links
 
 """
 init_global_vars: Initialize the VLAN ID pool
@@ -887,6 +887,8 @@ def fix_vlan_gateways(topology: Box) -> None:
         for neighbor in intf.get('neighbors',[]):                     # Iterate over all neighbors
           if 'ipv4' in neighbor:                                      # ... until we find one with a usable IPv4
             intf.gateway.ipv4 = neighbor.ipv4                         # Set that address as our gateway
+            # Don't set intf.gateway.default = True here, 
+            # iteration order (vlan id) too implicit for users
             break                                                     # ... and get out of here
 
 class VLAN(_Module):

@@ -530,15 +530,14 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
 
   link.pop('host_count',None)
   if not 'gateway' in link:
-    gateway = None
     for ifdata in link[IFATTR]:
       if nodes[ifdata.node].get('role','') != 'host' and 'ipv4' in ifdata:
         link.gateway.ipv4 = ifdata.ipv4
         break
   else:
-    if not isinstance(ifdata.gateway,dict) or not 'ipv4' in ifdata.gateway:  # pragma: no cover
+    if not isinstance(link.gateway,dict) or not ('ipv4' in link.gateway or 'default' in link.gateway):
       common.error(
-        f'Gateway attribute specified on {link} is not a dictionary with ipv4 key',
+        f'Gateway attribute specified on {link} is not a dictionary with "ipv4" and/or "default" key',
         common.IncorrectValue,
         'links')
 
@@ -550,7 +549,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
       for interface in nodes[ifdata.node].interfaces:     # Find the corresponding host interface
         if link.linkindex == interface.linkindex:
           if interface.ifindex == 1:                      # Set the default gateway only on the first host interface
-            interface.gateway = link.gateway
+            interface.gateway = link.gateway + { 'default': True }
 
 """
 Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured
