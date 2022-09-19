@@ -223,13 +223,14 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           continue
 
       if rfc8950:
-        extra_data.ipv4_rfc8950 = True                                # Set unnumbered indicate RFC 8950 IPv4 AF
         if not features.bgp.rfc8950:
           common.error(
             text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over IPv6 LLA EBGP sessions (interface {l.name})',
             category=common.IncorrectValue,
             module='bgp')
           continue
+        extra_data.ipv4_rfc8950 = True                                # Set unnumbered indicate RFC 8950 IPv4 AF
+        l.ipv6_lla = True                                             # Mark the interface as requiring ipv6 lla for bgp unnumbered
 
       for k in ('local_as','replace_global_as'):
         local_as_data = data.get_from_box(l,f'bgp.{k}') or data.get_from_box(node,f'bgp.{k}')

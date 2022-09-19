@@ -1,7 +1,7 @@
-{% macro ip_addresses(name,index,intf,ipv6_ra=True,is_system=False) %}
+{% macro ip_addresses(name,index,intf,is_system=False) %}
 - path: interface[name={{name}}]/subinterface[index={{index}}]
   val:
-   description: {{ intf.name | default( "No description, created in ip_addresses" )|replace('->','~')|regex_replace('[\\[\\]]','') }}
+   description: {{ intf.name | default( "No description" )|replace('->','~')|regex_replace('[\\[\\]]','') }}
 {% if 'ipv4' in intf and intf.ipv4 is string %}
    ipv4:
     address:
@@ -10,13 +10,13 @@
       primary: [null]
 {% endif %}
 {% endif %}
-{% if 'ipv6' in intf %}
+{% if 'ipv6' in intf or 'ipv6_lla' in intf %}
    ipv6:
-{%   if intf.ipv6 is string %}
+{%   if intf.ipv6 is defined and intf.ipv6 is string %}
     address:
     - ip-prefix: "{{ intf.ipv6 }}"
 {%   endif %}
-{% if ipv6_ra %}
+{% if 'ipv6_lla' in intf %}
     neighbor-discovery:
      learn-unsolicited: link-local
     router-advertisement:
@@ -43,7 +43,7 @@ updates:
 {% endif %}
 {% endif %}
 
-{{  ip_addresses('system0',0,loopback,False,True)  }}
+{{  ip_addresses('system0',0,loopback,is_system=True)  }}
 
 {% for l in interfaces|default([]) if l.vlan is not defined and l.subif_index is not defined %}
 {% set if_name_index = l.ifname.split('.') %}
@@ -58,7 +58,6 @@ updates:
    subinterface:
     index: {{ if_index }}
     description: "{{ if_desc }}"
-
 {{ ip_addresses(if_name,if_index,l) }}
 {% endfor %}
 
