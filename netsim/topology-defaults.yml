@@ -134,7 +134,7 @@ evpn: # Enables the EVPN address family towards BGP peers
     vlans: [ evpn.evi ]
 
 vrf: # Basic VRF support
-  supported_on: [ eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos, srlinux, frr, cumulus ]
+  supported_on: [ eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos, srlinux, frr, cumulus, sros ]
   config_after: [ vlan, ospf, isis, bgp, mpls ]
   transform_after: [ vlan, bgp ]
   as: 65000
@@ -147,7 +147,7 @@ vrf: # Basic VRF support
       global: [ vrfs ]
 
 vlan: # VLAN support
-  supported_on: [ eos, iosv, vyos, dellos10, srlinux, none, routeros, nxos, frr, cumulus ]
+  supported_on: [ eos, iosv, vyos, dellos10, srlinux, none, routeros, nxos, frr, cumulus, sros ]
   no_propagate: [ start_vlan_id, start_vni, auto_vni ]
   vlan_no_propagate: [ id, vni, mode, pool, prefix, evpn ]
   start_vlan_id: 1000
@@ -164,7 +164,7 @@ vlan: # VLAN support
       node: [ vlans ]
 
 vxlan: # VXLAN support
-  supported_on: [ eos, nxos, vyos, dellos10, srlinux, frr, cumulus ]
+  supported_on: [ eos, nxos, vyos, dellos10, srlinux, frr, cumulus, sros ]
   requires: [ vlan ]
   config_after: [ vrf ] # For platforms that suppport L3 VXLAN, vrfs must be created first
   domain: global
@@ -804,6 +804,22 @@ devices:
           ipv4: True
           ipv6: True
           network: False # SROS treats the interfaces as point-to-point and forms at most 1 adjacency
+      bgp:
+        local_as: True
+        vrf_local_as: True
+        local_as_ibgp: True
+        activate_af: True
+        ipv6_lla: True
+        rfc8950: False   # Not implemented yet, may be possible
+      vrf:
+        loopback_interface_name: "loopback.{vrfidx}"
+      vlan:
+        model: router
+        svi_interface_name: "irb0.{vlan}"
+        subif_name: "{ifname}.{vlan.access_id}"
+        mixed_trunk: True
+        native_routed: True
+
     clab:
       image: vrnetlab/vr-sros
       node:
