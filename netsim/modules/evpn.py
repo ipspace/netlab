@@ -153,18 +153,24 @@ class EVPN(_Module):
     vlan_list = data.get_from_box(node,'vxlan.vlans') or []       # Get the list of VXLAN-enabled VLANs
     if not vlan_list:
       return                                                      # This could be a route reflector running EVPN
+    elif 'vlan' not in node.get('module',[]):
+      common.error( f"VXLAN-enabled vlans {vlan_list} on node {node.name} require the 'vlan' module", common.MissingValue, 'evpn' )
+      return
 
     _routing.router_id(node,'bgp',topology.pools)                 # Make sure we have a usable router ID
 
     for vname in vlan_list:
-      vlan = node.vlans[vname]
-      #
-      # VLAN based service is used for VLANs that are not in a VRF or when the EVPN VLAN-Aware Bundle 
-      # Service is disabled (default)
-      #
-      if not 'vrf' in vlan or not data.get_from_box(node,'evpn.vlan_bundle_service'):
-        vlan_based_service(vlan,vname,node,topology)
-      else:
-        vlan_aware_bundle_service(vlan,vname,node,topology)
+      if vname in node.vlans:
+        vlan = node.vlans[vname]
+        #
+        # VLAN based service is used for VLANs that are not in a VRF or when the EVPN VLAN-Aware Bundle 
+        # Service is disabled (default)
+        #
+        if not 'vrf' in vlan or not data.get_from_box(node,'evpn.vlan_bundle_service'):
+          vlan_based_service(vlan,vname,node,topology)
+        else:
+          vlan_aware_bundle_service(vlan,vname,node,topology)
+      elif common.debug_active('vlans'):
+        print( f"evpn: Warning - skipping vlan {vname} on {node.name} because it is not in node.vlans: {node.vlans}" )
 
     vrf_irb_setup(node,topology)
