@@ -297,6 +297,9 @@ nodes:
       community: []
 ```
 
+Note that on some platforms (e.g. some Cisco devices) 'standard' may imply 'large', while on others (like Nokia SR OS) they can be configured separately.
+Others (like Nokia SR Linux) may not support the enabling/disabling of 'extended' communities.
+
 ## Related Plugins
 
 ```eval_rst
