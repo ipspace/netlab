@@ -1,6 +1,6 @@
 ---
 
-- name: Check that required plugin exists, use 'ansible-galaxy collection install nokia.grpc' to install it
+- name: Check that required plugin exists, use 'netlab install grpc' to install it
   vars:
     ansible_connection: nokia.grpc.gnmi
   nokia.grpc.gnmi_config:
@@ -25,7 +25,7 @@
 #     uses_route_reflector: "{{ rr != [] }}"
 
 - name: Check if OpenConfig can be used as provisioning method/model (config_template={{config_template}})
-  when: "'ospf' in config_template or 'sr' in module or not sros_use_openconfig|default(true)"
+  when: "'ospf' in config_template or 'sr' in module|default([]) or not sros_use_openconfig|default(true)"
   set_fact:
     sros_provisioning_model: "sros.gnmi"
 
@@ -38,10 +38,15 @@
     src: "{{ template_to_use }}"
     dest: "{{ tempfile_1.path }}"
 
-- name: Check that prepared config from {{template_to_use}} in {{tempfile_1.path}} is valid YAML
+- block:
+  - name: Show generated config from {{template_to_use}} based on {{tempfile_1.path}}
+    debug: msg="{{ cfg }}" verbosity=1
+  
+  - name: Check that prepared config from {{template_to_use}} in {{tempfile_1.path}} is valid YAML
+    debug: msg="{{ cfg | from_yaml }}" verbosity=2
+
   vars:
     cfg: "{{ lookup('file', tempfile_1.path ) }}"
-  debug: msg="{{ cfg | from_yaml }}"
 
 - name: Wait up to 150s for gNMI(TCP {{sros_grpc_port}}) to be ready on {{ ansible_host }}
   local_action:
