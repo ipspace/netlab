@@ -261,7 +261,7 @@ The propagation of BGP communities over IBGP and EBGP sessions is controlled wit
 
 The value of **bgp.community** attribute could be:
 
-* A string: **standard** or **extended** -- only specified communities will be propagated to IBGP and EBGP neighbors. In the following example, R1 propagates standard communities to all its neighbors.
+* A string: **standard** or **extended** or **large** -- only specified communities will be propagated to IBGP and EBGP neighbors. In the following example, R1 propagates standard communities to all its neighbors.
 
 ```
 nodes:
@@ -270,7 +270,7 @@ nodes:
       community: standard
 ```
 
-* A list of strings (**standard** and/or **extended**) -- all communities specified in the list will be propagated to IBGP and EBGP neighbors. Most network operating systems will be configured with **both** configuration keyword if you specify `['standard','extended']` as the value. In the following example, R1 propagates standard and extended communities to all its neighbors.
+* A list of strings (**standard** and/or **extended** and/or **large**) -- all communities specified in the list will be propagated to IBGP and EBGP neighbors. Most network operating systems will be configured with **both** configuration keyword if you specify `['standard','extended']` as the value. In the following example, R1 propagates standard and extended communities to all its neighbors.
 
 ```
 nodes:
@@ -279,12 +279,12 @@ nodes:
       community: [standard, extended]
 ```
 
-* A dictionary with two keys: **ibgp** and **ebgp**. The value of each key could be a string or a list (see above). The following example sets a network-wide default -- send standard and extended communities to IBGP neighbors, and standard communities to EBGP neighbors (this is the global default set in global **topology-defaults.yml** file).
+* A dictionary with two keys: **ibgp** and **ebgp**. The value of each key could be a string or a list (see above). The following example sets a network-wide default -- send standard, extended and large (see RFC8092) communities to IBGP neighbors, and standard communities to EBGP neighbors (this is the global default set in global **topology-defaults.yml** file).
 
 ```
 bgp:
   community: 
-    ibgp: [standard, extended]
+    ibgp: [standard, extended, large]
     ebgp: [standard]
 ```
 

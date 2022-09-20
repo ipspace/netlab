@@ -42,7 +42,7 @@ def check_bgp_parameters(node: Box) -> None:
           parent=node.bgp.community,
           path=f'nodes.{node.name}.bgp.community',
           key=k,
-          valid_values=['standard','extended'],
+          valid_values=['standard','extended','large'], # Support large communities as defined in RFC8092
           module='bgp')
 
 BGP_VALID_AF: typing.Final[list] = ['ipv4','ipv6']
