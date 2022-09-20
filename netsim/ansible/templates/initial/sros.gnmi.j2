@@ -35,17 +35,15 @@
   val:
    admin-state: enable
    description: "{{ desc }} vlan={{vlan}}"
-{% if not l.virtual_interface|default(False) %}
-{%  if port %}
-{%   if l.vrf is defined %}
+{% if port %}
+{%  if l.vrf is defined %}
    sap: 
    - sap-id: "{{ port }}:{{ vlan }}"
-{%   else %}
+{%  else %}
    port: "{{ port }}"
-{%   endif %}
-{%  elif name!='system' %}
-   loopback: {{ True if l.vrf is defined else [null] }}
 {%  endif %}
+{% elif name!='system' and l.type in ['loopback','stub'] %}
+   loopback: {{ True if l.vrf is defined else [null] }}
 {% endif %}
 {% if ip_v4 is string and ip_v4|ipv4 %}
 {{  ip_addr('4',ip_v4,name) }}
@@ -68,6 +66,7 @@
 {% macro port(l,vlan=0,tagged=False,native=False) %}
 {%  set v4 = l.ipv4|default(False) %}
 {%  set v6 = l.ipv6|default(False) %}
+{% set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
 
 {%  if l.name is defined %}
 {%   set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
@@ -75,14 +74,14 @@
 {%   set desc = "Stub interface" %}
 {%  endif %}
 
-{%  set portname = l.ifname %}
-{%  if l.type in ['p2p','lan'] %}
-{%   if 'c' in l.ifname %}
-- path: configure/port[port-id={{l.ifname}}]
+{%  set portname = l.parent_ifname if l.type=='vlan_member' else l.ifname %}
+{%  if l.type in ['p2p','lan','vlan_member'] %}
+{%   if 'c' in portname %}
+- path: configure/port[port-id={{portname}}]
   val:
    connector:
     breakout: "c1-100g"
-{%    set portname = l.ifname + '/1' %}
+{%    set portname = portname + '/1' %}
 - path: configure/port[port-id={{ portname }}]
   val:
 {%   endif %}
@@ -91,7 +90,7 @@
     mtu: {{ l.mtu + 14 }} # max 9800
 {%   endif %}
 # vlan={{vlan}} native={{native}} tagged={{tagged}} l.subif_index={{ l.subif_index|default('?') }}
-{%   if vlan or native or l.subif_index is defined %}
+{%   if (vlan or native) and not in_base %}
     mode: access
 {%   else %}
     mode: network
@@ -102,10 +101,10 @@
 {%  endif %}
 
 {% if v4 or v6 %}
-{%  if l.type not in ['loopback','stub'] %}
-{{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan) }}
+{%  if l.type not in ['loopback','stub','svi'] %}
+{{ interface(l.ifname,desc,v4,v6,l.ifname,l,vlan=vlan) }}
 {%  else %}
-{{ interface(l.ifname if l.type=='loopback' else "stub-"+l.ifname,desc,v4,v6,None,l) }}
+{{ interface("stub-"+l.ifname if l.type=='stub' else l.ifname,desc,v4,v6,None,l) }}
 {%  endif %}
 {% endif %}
 {%- endmacro -%}
