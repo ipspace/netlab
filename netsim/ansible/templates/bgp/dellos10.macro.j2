@@ -17,7 +17,7 @@
 {#
   In Dell OS10, next-hop-self is configured under AF
 #}
-{%         for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+{%         for af in ['ipv4','ipv6'] if bgp[af] is defined and n.activate[af] is defined and n.activate[af] %}
 !
  address-family {{ af }} unicast
    next-hop-self
@@ -45,13 +45,23 @@
 {%       endif %}
 {%     endif %}
 
-{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined and n.activate[af] is defined and n.activate[af] %}
 !
  address-family {{ af }} unicast
    soft-reconfiguration inbound
    activate
  exit
 {% endfor %}
+
+{#
+  And now, **WTF**, since Dell OS10 cannot disable ipv4 AF by default, we need to:
+#}
+{% if n.activate['ipv4'] is not defined or (n.activate['ipv4'] is defined and not n.activate['ipv4']) %}
+!
+ address-family ipv4 unicast
+   no activate
+ exit
+{% endif %}
   
   no shutdown
   exit
