@@ -25,16 +25,24 @@
 {% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
     ipv4: {{ activate.ipv4|default(False) }}
     ipv6: {{ activate.ipv6|default(False) }}
+{% if 'evpn' in neighbor and neighbor.evpn %}
+    evpn: True # Must have at least 1 address family enabled
+{% endif %}
    import:
     policy: ["accept_all"]
    export:
     policy: ["accept_all"]
+
 {% if bgp.community[ type ]|default([]) %}
    send-communities:
-    standard: {{ 'standard' in bgp.community[ type ] }}
-    extended: {{ 'extended' in bgp.community[ type ] }}
+{%  for c in ['standard','extended'] %}
+{%   if not c in bgp.community[ type ] %}
+    {{ c }}: False  # True value not allowed, on by default
+{%   endif %}
+{%  endfor %}
     large: {{ 'large' in bgp.community[ type ] }}
 {% endif %}
+
 {% if transport_ip %}
    local-address: "{{ transport_ip }}"
 {%  if bgp.rr|default('')|bool %}
@@ -64,6 +72,7 @@
    local-as:
     as-number: {{ n.local_as }}
 {%    endif %}
+
 {%   else %}
 {# TODO BGP unnumbered #}
 {%   endif %}
