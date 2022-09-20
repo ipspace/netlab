@@ -86,18 +86,21 @@
   val:
 {%   endif %}
    ethernet:
-{%   if l.mtu is defined and l.mtu <= (9800-14) %}
-    mtu: {{ l.mtu + 14 }} # max 9800
+{%   set eth_header = 14 + (4 if tagged else 0) %}
+{%   if l.mtu is defined and l.mtu <= (9800-eth_header) %}
+    mtu: {{ l.mtu + eth_header }} # max 9800
 {%   endif %}
 # vlan={{vlan}} native={{native}} tagged={{tagged}} l.subif_index={{ l.subif_index|default('?') }}
-{%   if (vlan or native) and not in_base %}
+{%   if l.subif_index is not defined %}
+{%    if (vlan or native) and not in_base %}
     mode: access
-{%   else %}
+{%    else %}
     mode: network
-{%   endif %}
-{%   if tagged %}
-{%    set portname = portname + ':' + vlan|string %}
+{%    endif %}
+{%    if tagged %}
+{%     set portname = portname + ':' + vlan|string %}
     encap-type: dot1q
+{%    endif %}
 {%   endif %}
 {%  endif %}
 
