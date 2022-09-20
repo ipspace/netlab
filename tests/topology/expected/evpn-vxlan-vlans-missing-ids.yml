@@ -1,0 +1,219 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+evpn:
+  session:
+  - ibgp
+  vlan_bundle_service: false
+groups:
+  as65000:
+    members:
+    - r1
+    - r2
+input:
+- topology/input/evpn-vxlan-vlans-missing-ids.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ipv4: 10.1.0.2/30
+    node: r2
+  left:
+    ifname: ethernet-1/1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: ethernet-1/1
+    ipv4: 10.1.0.2/30
+    node: r2
+  type: p2p
+module:
+- vlan
+- bgp
+- vxlan
+- evpn
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        evpn: true
+        ipv4: 10.0.0.2
+        name: r2
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    evpn:
+      session:
+      - ibgp
+      vlan_bundle_service: false
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: ethernet-1/1
+        ipv4: 10.1.0.2/30
+        node: r2
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - vlan
+    - bgp
+    - vxlan
+    - evpn
+    name: r1
+    vlan:
+      mode: irb
+    vlans:
+      non-vxlan-vlan:
+        id: 1001
+        mode: irb
+        prefix:
+          ipv4: 172.16.1.0/24
+        vni: 101001
+      vxlan-vlan:
+        evpn:
+          evi: 1000
+          export:
+          - 65000:1000
+          import:
+          - 65000:1000
+          rd: 10.0.0.1:1000
+        id: 1000
+        mode: irb
+        prefix:
+          ipv4: 172.16.0.0/24
+        vni: 101000
+    vxlan:
+      domain: global
+      flooding: evpn
+      vlans:
+      - vxlan-vlan
+      vtep: 10.0.0.1
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        evpn: true
+        ipv4: 10.0.0.1
+        name: r1
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    evpn:
+      session:
+      - ibgp
+      vlan_bundle_service: false
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: ethernet-1/1
+        ipv4: 10.1.0.1/30
+        node: r1
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - vxlan
+    - bgp
+    - evpn
+    name: r2
+    vxlan:
+      domain: global
+      flooding: evpn
+provider: clab
+vlan:
+  mode: irb
+vlans:
+  non-vxlan-vlan:
+    id: 1001
+    prefix:
+      ipv4: 172.16.1.0/24
+    vni: 101001
+  vxlan-vlan:
+    id: 1000
+    prefix:
+      ipv4: 172.16.0.0/24
+    vni: 101000
+vxlan:
+  domain: global
+  flooding: evpn
+  use_v6_vtep: false
+  vlans:
+  - vxlan-vlan
