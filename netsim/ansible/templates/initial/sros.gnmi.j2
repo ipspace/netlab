@@ -1,3 +1,7 @@
+{% macro if_name(n) -%}
+{{- (('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s' if n[0].isdigit() else '%s')|format(n)).replace(':','_') -}}
+{%- endmacro %}
+
 {% macro ip_addr(v,ip,ifname) %}
 {% set _ip = ip|ipaddr('address') %}
 {% set _pre = ip|ipaddr('prefix') %}
@@ -14,30 +18,34 @@
 {% endmacro %}
 
 {% macro interface(name,desc,ip_v4,ip_v6,port,l,vlan=0) -%}
-{% set base_path = "router[router-name=Base]" if l.vrf is not defined else "service/vprn[service-name="+l.vrf+"]" %}
+{% set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
+{% set service_name = l.vrf if l.vrf is defined else 'default' %}
+{% set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
 
 {# Minimal service config must exist #}
-{% if l.vrf is defined %}
+{% if not in_base %}
 - path: configure/{{ base_path }}
   val:
-   service-id: {{ vrfs[l.vrf].vrfidx }}
+   service-id: {{ vrfs[l.vrf].vrfidx if l.vrf is defined else 1 }}
    customer: "1"
    admin-state: enable
 {% endif %}
 
-- path: configure/{{ base_path }}/interface[interface-name={{name}}]
+- path: configure/{{ base_path }}/interface[interface-name={{if_name(name)}}]
   val:
    admin-state: enable
-   description: "{{ desc }}"
-{% if port %}
-{%  if l.vrf is defined %}
+   description: "{{ desc }} vlan={{vlan}}"
+{% if not l.virtual_interface|default(False) %}
+{%  if port %}
+{%   if l.vrf is defined %}
    sap: 
    - sap-id: "{{ port }}:{{ vlan }}"
-{%  else %}
+{%   else %}
    port: "{{ port }}"
-{%  endif %}
-{% elif name!='system' %}
+{%   endif %}
+{%  elif name!='system' %}
    loopback: {{ True if l.vrf is defined else [null] }}
+{%  endif %}
 {% endif %}
 {% if ip_v4 is string and ip_v4|ipv4 %}
 {{  ip_addr('4',ip_v4,name) }}
@@ -82,7 +90,8 @@
 {%   if l.mtu is defined and l.mtu <= (9800-14) %}
     mtu: {{ l.mtu + 14 }} # max 9800
 {%   endif %}
-{%   if vlan or native %}
+# vlan={{vlan}} native={{native}} tagged={{tagged}} l.subif_index={{ l.subif_index|default('?') }}
+{%   if vlan or native or l.subif_index is defined %}
     mode: access
 {%   else %}
     mode: network
@@ -94,7 +103,7 @@
 
 {% if v4 or v6 %}
 {%  if l.type not in ['loopback','stub'] %}
-{{ interface('i'+l.ifname,desc,v4,v6,portname,l,vlan=vlan) }}
+{{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan) }}
 {%  else %}
 {{ interface(l.ifname if l.type=='loopback' else "stub-"+l.ifname,desc,v4,v6,None,l) }}
 {%  endif %}

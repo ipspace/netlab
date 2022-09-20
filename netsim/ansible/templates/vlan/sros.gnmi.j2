@@ -1,8 +1,9 @@
-{% from "templates/initial/sros.gnmi.j2" import port,interface with context %}
+{% from "templates/initial/sros.gnmi.j2" import if_name,port,interface with context %}
 
 updates:
 {% for l in interfaces|default([]) if l.vlan is defined or l.subif_index is defined %}
-{% set vlan = 0 if l.vlan.native is defined else l.vlan.access_id|default(True) %}
+{% set ifindex = l.ifname.split('.')[1]|int if '.' in l.ifname else 0 %}
+{% set vlan = 0 if l.vlan.native is defined else l.vlan.access_id|default(ifindex) %}
 {% set tagged = l.type=='vlan_member' or l.vlan.trunk_id is defined or l.subif_index is defined %}
 {% set native = l.vlan.native is defined %}
 {{ port(l,vlan=vlan,tagged=tagged,native=native) }}
@@ -10,6 +11,7 @@ updates:
 {#- Create a VPLS service for each L2 VLAN -#}
 {#- Use only vlan.id in name, such that svi interfaces (irb0.nnnn) can be associated -#}
 {% set vlan_mode = l.vlan.mode|default('irb') %}
+
 {% if (l.type in ['vlan_member','lan'] and vlan_mode!='route') %}
 - path: configure/service/vpls[service-name=vlan{{ vlan }}]
   val:
@@ -23,15 +25,15 @@ updates:
    admin-state: enable
 {% endif -%}
 
-{#- Add L3 interfaces to VPRN service or Base routing context -#}
-{%- if l.ipv4 is defined or l.ipv6 is defined %}
-{% set base_path = "router[router-name=Base]" if l.vrf is not defined else "service/vprn[service-name="+l.vrf+"]" %}
-- path: configure/{{ base_path }}
+{#- Connect VPLS to VPRN service or Base routing context if needed, created in initial -#}
+{%- if (l.ipv4 is defined or l.ipv6 is defined) and l.vlan is defined and vlan_mode=='irb' %}
+{% set service_name = l.vrf if l.vrf is defined else 'default' %}
+- path: configure/service/vprn[service-name={{ service_name }}]
   val:
-   admin-state: enable
-   service-id: {{ vrfs[l.vrf].vrfidx if l.vrf is defined else 1 }}
-   customer: "1"
-   # interface:
-   # - interface-name: {{ l.ifname }}
+   interface:
+   - interface-name: {{ if_name(l.ifname) }}
+     vpls:
+     - vpls-name: vlan{{ vlan }}
 {% endif %}
+
 {% endfor %} {# for l in interfaces #}
