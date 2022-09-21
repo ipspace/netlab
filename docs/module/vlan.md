@@ -29,7 +29,7 @@ VLANs are supported on these platforms:
 | FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |
-| Nokia SR OS           | ✅  | ✅  | ✅   | ✅ | ❌ |
+| Nokia SR OS           | ✅  | ✅  | ✅   | ✅ | ✅ |
 | VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
 
 ## VLAN Connectivity Model
