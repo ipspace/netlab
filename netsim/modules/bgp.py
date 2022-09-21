@@ -224,6 +224,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 
       if rfc8950:
         extra_data.ipv4_rfc8950 = True                                # Set unnumbered indicate RFC 8950 IPv4 AF
+        if not 'ipv6' in l:                                           # ... and enable IPv6 on the interface in case a device needs an
+          l.ipv6 = True                                               # ... explicit configuration of IPv6 LLA
         if not features.bgp.rfc8950:
           common.error(
             text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over IPv6 LLA EBGP sessions (interface {l.name})',
