@@ -1,10 +1,15 @@
 {% macro vxlan_interface(vrf,type,vni,evi,rd,rts,is_routed=False) %}
 - path: configure/service/vpls[service-name={{ vrf }}]
   val:
-{% if type=='l3' %}
+{# May get created for first time here, when not referenced from any interfaces #}
    customer: '1'
-   service-id: {{ vni }}
    admin-state: enable
+   service-id: {{ vni if type=='l3' else (vrf[4:]|int + 10000) }} # transit VNI for l3, should not overlap
+
+{% if type=='l3' %}
+   routes:
+     ip-prefix:
+      advertise: True # Symmetric IRB using RT5 prefixes
 {% endif %}
    vxlan:
     instance:
@@ -24,9 +29,6 @@
       admin-state: enable
       ecmp: 8
 {% if is_routed %}
-    routes:
-     ip-prefix:
-      advertise: True
    routed-vpls:
     vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN
 {% endif %}
@@ -60,6 +62,7 @@ updates:
        evpn-tunnel: { }   # Applicable when there are no hosts connected to this backhaul R-VPLS, avoids requiring IP on interface
    bgp-ipvpn:
     mpls:
+     admin-state: enable
      route-distinguisher: {{ vdata.bgp.router_id|default(bgp.router_id) }}:{{ vdata.vrfidx }}
      vrf-target:
       export-community: target:{{ vdata.export[0] }}
