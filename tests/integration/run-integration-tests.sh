@@ -2,7 +2,7 @@
 
 set -e  # Quit on error
 
-DEVICE=${1:srlinux}
+DEVICE=${1:-"srlinux"}
 
 function can_ping() {
  local host=$1
@@ -25,7 +25,7 @@ function cant_ping() {
 
 
 # Runs a bunch of integration test cases, and performs ping checks to validate the setup
-netlab up -d ${DEVICE} -p clab vlan/vlan-bridge-native.yml
+netlab up -d "${DEVICE}" -p clab "vlan/vlan-bridge-native.yml"
 
 can_ping  "vlan-h1" "172.16.0.2"
 can_ping  "vlan-h3" "172.16.1.4"
