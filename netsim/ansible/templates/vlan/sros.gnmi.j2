@@ -10,19 +10,21 @@ updates:
 {{ port(l,vlan=vlan,tagged=tagged,native=native) }}
 
 {#- Create a VPLS service for each L2 VLAN -#}
-{#- Use only vlan.id in name, such that svi interfaces (irb0.nnnn) can be associated -#}
+{#- Use only vlan.id in name, such that svi interfaces (svi.nnnn) can be associated -#}
 {% set vlan_mode = l.vlan.mode|default('irb') %}
 
-{% if (l.type in ['vlan_member','lan'] and vlan_mode!='route') %}
+{% if (l.type in ['vlan_member','lan','svi'] and vlan_mode!='route') %}
 - path: configure/service/vpls[service-name=vlan{{ vlan }}]
   val:
    service-id: {{ vlan+10000 }}
    customer: "1"
 {%  if l.name is defined %}
-   description: "{{ l.name | replace('->','~')|regex_replace('[\\[\\]]','') }}"
+   description: "{{ l.name }}"
 {%  endif %}
+{% if l.type in ['vlan_member','lan'] %}
    sap:
    - sap-id: {{ l.ifname if ':' in l.ifname else (l.ifname+"/1") }}
+{% endif %}
    admin-state: enable
 {% endif -%}
 
