@@ -1,16 +1,19 @@
 {#
   Define a BGP neighbor
 #}
-{% macro neighbor(n,ip,bgp) %}
-set protocols bgp neighbor {{ ip }} remote-as {{ n.as }}
-set protocols bgp neighbor {{ ip }} description '{{ n.name }}'
+{% macro neighbor(n,ip,bgp,af) %}
+
+{%   set peer = ip if ip is string else n.local_if|default('?') %}
+
+set protocols bgp neighbor {{ peer }}{{ ' interface' if peer!=n[af] else '' }} remote-as {{ n.as }}
+set protocols bgp neighbor {{ peer }} description '{{ n.name }}'
  
 {%   if n.type == 'ibgp' %}
-set protocols bgp neighbor {{ ip }} update-source dum0
+set protocols bgp neighbor {{ peer }} update-source dum0
 {%   endif %}
 
 {%   if n.local_as is defined %}
-set protocols bgp neighbor {{ ip }} local-as {{ n.local_as }} no-prepend replace-as
+set protocols bgp neighbor {{ peer }} local-as {{ n.local_as }} no-prepend replace-as
 {%   endif %}
 {%- endmacro %}
 {#
@@ -18,13 +21,15 @@ set protocols bgp neighbor {{ ip }} local-as {{ n.local_as }} no-prepend replace
 #}
 {% macro neighbor_af(n,ip,bgp,af) %}
 
-set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast soft-reconfiguration inbound
+{%   set peer = ip if ip is string else n.local_if|default('?') %}
+
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast soft-reconfiguration inbound
 
 {%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
-set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast nexthop-self
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast nexthop-self
 {%   endif %}
 {%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
-  set protocols bgp neighbor {{ ip }} address-family {{ af }}-unicast route-reflector-client
+  set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-reflector-client
 {%   endif %}
 {%- endmacro -%}
 {#
