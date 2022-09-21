@@ -342,10 +342,17 @@ class VRF(_Module):
     set_import_export_rt(topology,topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
+    # Check if any global vrfs need to be pulled in due to being referenced by a vlan
+    vlan_vrfs = [ vdata.vrf for vname,vdata in node.vlans.items() if 'vlans' in node and 'vrf' in vdata ]
     if not 'vrfs' in node:
-      return
+      if not vlan_vrfs:  # No local vrfs and no vlan references -> exit
+        return
+      node.vrfs = {}     # Prepare to pull in global vrfs
 
-    for vname in node.vrfs.keys():
+    for vname in set(list(node.vrfs.keys()) + vlan_vrfs):  # Filter out duplicates
+      if node.vrfs[vname] is None:
+        node.vrfs[vname] = {}
+
       if 'vrfs' in topology and vname in topology.vrfs:
         node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
 
