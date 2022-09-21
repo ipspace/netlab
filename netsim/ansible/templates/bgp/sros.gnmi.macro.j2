@@ -33,14 +33,15 @@
    export:
     policy: ["accept_all"]
 
-{% if bgp.community[ type ]|default([]) %}
+{% if bgp.community[ type ]|default([])|length < 2 %}
    send-communities:
-{%  for c in ['standard','extended'] %}
-{%   if not c in bgp.community[ type ] %}
-    {{ c }}: False  # True value not allowed, on by default
+{%  for c,vals in {'standard': ['standard','large'],'extended':['extended'] }.items() %}
+{%   if c not in bgp.community[ type ] %}
+{%    for knob in vals %}
+    {{ knob }}: False  # True value not allowed, on by default
+{%    endfor %}
 {%   endif %}
 {%  endfor %}
-    large: {{ 'large' in bgp.community[ type ] }}
 {% endif %}
 
 {% if transport_ip %}
