@@ -5,22 +5,22 @@ set -e  # Quit on error
 DEVICE=${1:srlinux}
 
 function can_ping() {
-	local host=$1
-	local ip=$2
-	docker exec -it clab-${host} ping -c2 $ip
+ local host=$1
+ local ip=$2
+ docker exec -it clab-${host} ping -c2 $ip
 }
 
 function cant_ping() {
-	local host=$1
-	local ip=$2
-	
-	set +e
-	docker exec -it clab-${host} ping -W1 -c2 $ip
-    if [ $? != 1 ]; then
-      echo "Error: ${host} should not be able to ping ${ip}"
-      exit 1
-    fi
-    set -e
+ local host=$1
+ local ip=$2
+
+ set +e
+ docker exec -it clab-${host} ping -W1 -c2 $ip
+ if [ $? != 1 ]; then
+  echo "Error: ${host} should not be able to ping ${ip}"
+  exit 1
+ fi
+ set -e
 }
 
 
