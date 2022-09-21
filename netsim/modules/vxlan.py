@@ -119,6 +119,8 @@ class VXLAN(_Module):
       if not 'vxlan' in ndata.get('module',[]):                     # Skip nodes without VXLAN module
         continue
       if not 'vlans' in ndata:                                      # Skip VXLAN-enabled nodes without VLANs
+        if 'vxlan' in ndata:                                        # ... but make sure there's no vxlan.vlans list left on them
+          ndata.vxlan.pop('vlans',None)
         continue
 
       if not node_vlan_check(ndata,topology):                       # Check VLANs
