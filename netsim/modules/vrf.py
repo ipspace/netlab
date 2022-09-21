@@ -343,7 +343,7 @@ class VRF(_Module):
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     # Check if any global vrfs need to be pulled in due to being referenced by a vlan
-    vlan_vrfs = [ vdata.vrf for vname,vdata in node.vlans.items() if 'vlans' in node and 'vrf' in vdata ]
+    vlan_vrfs = [ vdata.vrf for vname,vdata in node.get('vlans',{}).items() if 'vrf' in vdata ]
     if not 'vrfs' in node:
       if not vlan_vrfs:  # No local vrfs and no vlan references -> exit
         return
@@ -397,7 +397,7 @@ class VRF(_Module):
     else:
       node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
       vrfidx = 100
-      for v in node.vrfs.values():    # We need unique VRF index to create OSPF processes
+      for v in sorted(node.vrfs.values(),key=lambda v: v.id):    # We need unique VRF index to create OSPF processes, assign in sorted order
         v.vrfidx = vrfidx
         vrfidx = vrfidx + 1
 
