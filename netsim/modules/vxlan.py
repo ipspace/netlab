@@ -17,7 +17,7 @@ from .. import addressing
 #
 def node_vlan_check(node: Box, topology: Box) -> bool:
   if not node.vxlan.vlans:            # Create a default list of VLANs if needed
-    node.vxlan.vlans = [ name for name,value in node.vlans.items() if 'vni' in value ]
+    node.vxlan.vlans = [ name for name,value in node.vlans.items() if value and 'vni' in value ]
 
   OK = True
   vlan_list = []
