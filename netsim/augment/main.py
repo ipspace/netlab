@@ -37,7 +37,7 @@ def transform_setup(topology: Box) -> None:
 def transform_data(topology: Box) -> None:
   addressing.setup(topology,topology.defaults)
   augment.plugin.execute('pre_transform',topology)
-  modules.pre_transform(topology)
+  modules.pre_module_transform(topology)
 
   augment.groups.adjust_groups(topology)
   augment.topology.check_global_elements(topology)

@@ -346,6 +346,9 @@ class VRF(_Module):
       return
 
     for vname in node.vrfs.keys():
+      if node.vrfs[vname] is None:
+        node.vrfs[vname] = {}
+
       if 'vrfs' in topology and vname in topology.vrfs:
         node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
 

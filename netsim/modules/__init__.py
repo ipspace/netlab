@@ -40,7 +40,7 @@ pre_transform: executed just before the main data model transformation is starte
 * Call module-specific node transformation code
 * Call module-specific link transformation code
 """
-def pre_transform(topology: Box) -> None:
+def pre_module_transform(topology: Box) -> None:
   adjust_modules(topology)
   common.exit_on_error()
 
@@ -48,26 +48,26 @@ def pre_transform(topology: Box) -> None:
   common.exit_on_error()
 
   module_transform("pre_transform",topology)
-  node_transform("pre_transform",topology)
-  link_transform("pre_transform",topology)
+  # node_transform("pre_transform",topology)
+  # link_transform("pre_transform",topology)
 
 """
 pre_node_transform: executed just before the node data model transformation is started
 
 """
 def pre_node_transform(topology: Box) -> None:
-  module_transform("pre_node_transform",topology)
-  node_transform("pre_node_transform",topology)
-  link_transform("pre_node_transform",topology)
+  # module_transform("pre_node_transform",topology)
+  node_transform("pre_transform",topology)
+  #link_transform("pre_node_transform",topology)
 
 """
 pre_link_transform: executed just before the link data model transformation is started
 
 """
 def pre_link_transform(topology: Box) -> None:
-  module_transform("pre_link_transform",topology)
-  node_transform("pre_link_transform",topology)
-  link_transform("pre_link_transform",topology)
+  # module_transform("pre_link_transform",topology)
+  # node_transform("pre_link_transform",topology)
+  link_transform("pre_transform",topology)
 
 """
 post_transform:
@@ -528,6 +528,8 @@ def module_transform(method: str, topology: Box) -> None:
     if common.debug_active('modules'):
       if hasattr(mod_load[m],f"module_{method}"):
         print(f'Calling module {m} module_{method}')
+      else:
+        print(f'NOT Calling module {m} module_{method}')
     mod_load[m].call("module_"+method,topology)
 
 def node_transform(method: str , topology: Box) -> None:
@@ -540,6 +542,8 @@ def node_transform(method: str , topology: Box) -> None:
       if common.debug_active('modules'):
         if hasattr(mod_load[m],f"node_{method}"):
           print(f'Calling module {m} node_{method} on node {name}')
+        else:
+          print(f'NOT calling module {m} node_{method} on node {name}')
       mod_load[m].call("node_"+method,n,topology)
 
 def link_transform(method: str, topology: Box) -> None:
@@ -555,4 +559,6 @@ def link_transform(method: str, topology: Box) -> None:
       if common.debug_active('modules'):
         if hasattr(mod_load[m],f"link_{method}"):
           print(f'Calling module {m} link_{method} on link {l.name}')
+        else:
+          print(f'NOT Calling module {m} link_{method} on link {l.name}')
       mod_load[m].call("link_"+method,l,topology)

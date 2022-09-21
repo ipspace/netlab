@@ -203,6 +203,7 @@ def copy_group_node_data(topology: Box) -> None:
       for name,ndata in topology.nodes.items():
         if name in g_members:
           for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
+            print( f"JvB copy_group_node_data {k} -> node {name}" )
             if not k in ndata:
               ndata[k] = v
             if isinstance(ndata[k],dict):
