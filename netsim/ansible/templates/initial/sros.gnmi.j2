@@ -17,8 +17,7 @@
 {% endif %}
 {% endmacro %}
 
-{% macro interface(name,desc,ip_v4,ip_v6,port,l,vlan=0) -%}
-{% set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
+{% macro interface(name,desc,ip_v4,ip_v6,port,l,vlan=0,in_base=True) -%}
 {% set service_name = l.vrf if l.vrf is defined else 'default' %}
 {% set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
 
@@ -29,6 +28,7 @@
    service-id: {{ vrfs[l.vrf].vrfidx if l.vrf is defined else 1 }}
    customer: "1"
    admin-state: enable
+   ecmp: 64
 {% endif %}
 
 - path: configure/{{ base_path }}/interface[interface-name={{if_name(name)}}]
@@ -66,7 +66,7 @@
 {% macro port(l,vlan=0,tagged=False,native=False) %}
 {%  set v4 = l.ipv4|default(False) %}
 {%  set v6 = l.ipv6|default(False) %}
-{% set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
+{%  set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
 
 {%  if l.name is defined %}
 {%   set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
@@ -91,24 +91,24 @@
     mtu: {{ l.mtu + eth_header }} # max 9800
 {%   endif %}
 # vlan={{vlan}} native={{native}} tagged={{tagged}} l.subif_index={{ l.subif_index|default('?') }}
-{%   if l.subif_index is not defined %}
-{%    if (vlan or native) and not in_base %}
+{%   if l.vlan.trunk_id is defined or (l.parent_ifindex is defined and interfaces[l.parent_ifindex-1].vlan.trunk_id is defined) %}
+    mode: hybrid # Support mixed trunks by using hybrid ports
+{%   elif (vlan or native) and not in_base %}
     mode: access
-{%    else %}
+{%   else %}
     mode: network
-{%    endif %}
-{%    if tagged %}
+{%   endif %}
+{%   if tagged %}
 {%     set portname = portname + ':' + vlan|string %}
     encap-type: dot1q
-{%    endif %}
 {%   endif %}
 {%  endif %}
 
 {% if v4 or v6 %}
 {%  if l.type not in ['loopback','stub','svi'] %}
-{{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan) }}
+{{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan,in_base=in_base) }}
 {%  else %}
-{{ interface("stub-"+l.ifname if l.type=='stub' else l.ifname,desc,v4,v6,None,l) }}
+{{ interface("stub-"+l.ifname if l.type=='stub' else l.ifname,desc,v4,v6,None,l,in_base=in_base) }}
 {%  endif %}
 {% endif %}
 {%- endmacro -%}
@@ -133,7 +133,7 @@ updates:
 {% set _v4 = loopback.ipv4|default(False) %}
 {% set _v6 = loopback.ipv6|default(False) %}
 {# The interface name 'system' is special, also used for IP unnumbered #}
-{{ interface("system","system interface",_v4,_v6,'',loopback) }}
+{{ interface("system","system interface",_v4,_v6,'',loopback,in_base=True) }}
 {% endif %}
 
 {% for l in (interfaces|default([])) if l.vlan is not defined and l.subif_index is not defined %}
