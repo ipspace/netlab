@@ -52,7 +52,7 @@ The following table describes per-platform support of individual router-level OS
 | Juniper vSRX 3.0         |   ✅  |            ✅          |   ✅   |  ✅  |
 | Mikrotik CHR RouterOS    |   ✅  |            ❌          |   ❌   |  ✅  |
 | Nokia SR Linux           |   ✅  |            ✅          |   ✅   |  ✅  |
-| Nokia SR OS              |   ✅  |            ✅          |   ❌   |  ✅  |
+| Nokia SR OS              |   ✅  |            ✅          |   ✅   |  ✅  |
 | VyOS                     |   ✅  |            ✅          |   ✅   |  ✅  |
 | Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
 

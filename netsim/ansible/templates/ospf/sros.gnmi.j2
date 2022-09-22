@@ -1,14 +1,11 @@
+{% from "templates/initial/sros.gnmi.j2" import if_name with context %}
 {% set pid = ospf.process|default(0) %}
 
-{% macro if_name(n) -%}
-{{- ('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s')|format(n.ifname) -}}
-{%- endmacro %}
-
-updates:
+{% macro ospf_config(af) %}
 - path: configure/router[router-name=Base]
   val:
    router-id: "{{ ospf.router_id }}"
-   ospf:
+   {{ 'ospf3' if af=='ipv6' else 'ospf' }}:
    - ospf-instance: {{ pid }}
 {% if ospf.reference_bandwidth is defined %}
      reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
@@ -22,7 +19,7 @@ updates:
 {% for l in interfaces|default([]) if 'ospf' in l %}
      - area-id: "{{ l.ospf.area }}"
        interface:
-       - interface-name: "{{ if_name(l) }}"
+       - interface-name: "{{ if_name(l.ifname) }}"
          passive: {{ l.ospf.passive }}
 {%       if l.ospf.bfd|default(False) %}
          bfd-liveness: { }
@@ -36,3 +33,12 @@ updates:
          metric: {{ l.ospf.cost }}
 {%       endif %}
 {% endfor %}
+{% endmacro %}
+
+updates:
+{% if ospf.af.ipv4 is defined %}
+{{ ospf_config('ipv4') }}
+{% endif %}
+{% if ospf.af.ipv6 is defined %}
+{{ ospf_config('ipv6') }}
+{% endif %}
