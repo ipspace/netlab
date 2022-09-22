@@ -31,6 +31,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Dell OS10          | ✅  | ✅  |  ❌  |
 | FRR                | ✅  | ✅  |  ❌  |
 | Nokia SR Linux     | ✅  |  ❌  |  ❌  |
+| Nokia SR OS        | ✅  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  | ✅  |
 
 ```{note}

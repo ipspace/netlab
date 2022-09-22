@@ -25,7 +25,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Arista EOS         | ✅  | ✅  | ✅  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
-| Nokia SR OS        |  ❌  |  ❌  |  ❌  |  ❌  |  ❌  |
+| Nokia SR OS        | ✅  | ✅  |  ❌  |  ✅  | ✅  |
 | FRR                | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | VyOS               | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Dell OS 10         | ✅  | ✅  |  ❌  |  ❌  | ✅  |
@@ -89,4 +89,4 @@ IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addr
 * Asymmetric IRB requires no extra parameters[^NS]
 * Symmetric IRB needs a transit VNI that has to be set with the **evpn.transit_vni** parameter. This parameter could be set to an integer value or to *True* in which case the EVPN configuration module auto-assigns a VNI to the VRF. Note that the EVI value used in this case is currently based on the VRF ID (vrfidx)
 
-[^NS]: Asymmetric IRB is not supported at the moment
+[^NS]: Asymmetric IRB is only supported on Nokia SR OS at the moment

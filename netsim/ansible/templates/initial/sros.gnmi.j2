@@ -1,3 +1,7 @@
+{% macro if_name(n) -%}
+{{- (('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s' if n[0].isdigit() else '%s')|format(n)).replace(':','_') -}}
+{%- endmacro %}
+
 {% macro ip_addr(v,ip,ifname) %}
 {% set _ip = ip|ipaddr('address') %}
 {% set _pre = ip|ipaddr('prefix') %}
@@ -13,27 +17,98 @@
 {% endif %}
 {% endmacro %}
 
-{% macro interface(name,desc,ip_v4,ip_v6,port,l) -%}
-- path: configure/router[router-name=Base]/interface[interface-name={{name}}]
+{% macro interface(name,desc,ip_v4,ip_v6,port,l,vlan=0,in_base=True) -%}
+{% set service_name = l.vrf if l.vrf is defined else 'default' %}
+{% set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
+
+{# Minimal service config must exist #}
+{% if not in_base %}
+- path: configure/{{ base_path }}
+  val:
+   service-id: {{ vrfs[l.vrf].vrfidx if l.vrf is defined else 1 }}
+   customer: "1"
+   admin-state: enable
+   ecmp: 64
+{% endif %}
+
+- path: configure/{{ base_path }}/interface[interface-name={{if_name(name)}}]
   val:
    admin-state: enable
-   description: "{{desc}}"
+   description: "{{ desc }} vlan={{vlan}}"
 {% if port %}
-   port: "{{port}}"
-{% elif name!='system' %}
-   loopback: [null]
+{%  if l.vrf is defined %}
+   sap: 
+   - sap-id: "{{ port }}"
+{%  else %}
+   port: "{{ port }}"
+{%  endif %}
+{% elif name!='system' and l.type in ['loopback','stub'] %}
+   loopback: {{ True if l.vrf is defined else [null] }}
 {% endif %}
-{% if ip_v4|ipv4 %}
-{{ ip_addr('4',ip_v4,name) }}
+{% if ip_v4 is string and ip_v4|ipv4 %}
+{{  ip_addr('4',ip_v4,name) }}
 {% elif ip_v4 == True %}
    ipv4:
     unnumbered:
+{%  if l.vrf is defined and loopback.ipv4|default('')|ipv4 %}
+     ip-address: {{ loopback.ipv4|ipaddr('address') }}
+{%  else %}
      system: [null]
+{%  endif %}
 {% endif %}
-{% if ip_v6|ipv6 %}
+{% if ip_v6 is string and ip_v6|ipv6 %}
 {{ ip_addr('6',ip_v6,name) }}
 {% elif ip_v6 == True %}
    ipv6: { }
+{% endif %}
+{%- endmacro -%}
+
+{% macro port(l,vlan=0,tagged=False,native=False) %}
+{%  set v4 = l.ipv4|default(False) %}
+{%  set v6 = l.ipv6|default(False) %}
+{%  set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
+
+{%  if l.name is defined %}
+{%   set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
+{%  elif l.type|default("") == "stub" %}
+{%   set desc = "Stub interface" %}
+{%  endif %}
+
+{%  set portname = l.parent_ifname if l.type=='vlan_member' else l.ifname %}
+{%  if l.type in ['p2p','lan','vlan_member'] %}
+{%   if 'c' in portname %}
+- path: configure/port[port-id={{portname}}]
+  val:
+   connector:
+    breakout: "c1-100g"
+{%    set portname = portname + '/1' %}
+- path: configure/port[port-id={{ portname }}]
+  val:
+{%   endif %}
+   ethernet:
+{%   set eth_header = 14 + (4 if tagged else 0) %}
+{%   if l.mtu is defined and l.mtu <= (9800-eth_header) %}
+    mtu: {{ l.mtu + eth_header }} # max 9800
+{%   endif %}
+{%   if l.vlan.trunk_id is defined or (l.parent_ifindex is defined and interfaces[l.parent_ifindex-1].vlan.trunk_id is defined) %}
+    mode: hybrid # Support mixed trunks by using hybrid ports
+{%   elif not in_base %}
+    mode: access
+{%   else %}
+    mode: network
+{%   endif %}
+{%   if tagged %}
+{%     set portname = portname + ':' + vlan|string %}
+    encap-type: dot1q
+{%   endif %}
+{%  endif %}
+
+{% if v4 or v6 %}
+{%  if l.type not in ['loopback','stub','svi'] %}
+{{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan,in_base=in_base) }}
+{%  else %}
+{{ interface("stub-"+l.ifname if l.type=='stub' else l.ifname,desc,v4,v6,None,l,in_base=in_base) }}
+{%  endif %}
 {% endif %}
 {%- endmacro -%}
 
@@ -52,41 +127,14 @@ updates:
 - path: configure/router[router-name=Base]
   val:
    ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
+
 {% if loopback.ipv4|default('')|ipv4 or 'ipv6' in loopback %}
 {% set _v4 = loopback.ipv4|default(False) %}
 {% set _v6 = loopback.ipv6|default(False) %}
 {# The interface name 'system' is special, also used for IP unnumbered #}
-{{ interface("system","system interface",_v4,_v6,'',loopback) }}
+{{ interface("system","system interface",_v4,_v6,'',loopback,in_base=True) }}
 {% endif %}
-{% for l in interfaces|default([]) %}
-{% set v4 = l.ipv4|default(False) %}
-{% set v6 = l.ipv6|default(False) %}
-{% if l.name is defined %}
-{% set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
-{% elif l.type|default("") == "stub" %}
-{% set desc = "Stub interface" %}
-{% endif %}
-{% if 'c' in l.ifname %}
-- path: configure/port[port-id={{l.ifname}}]
-  val:
-   connector:
-    breakout: "c1-100g"
-{% set portname = l.ifname + '/1' %}
-{% else %}
-{% set portname = l.ifname %}
-{% endif %}
-{% if l.mtu is defined and l.mtu <= (9800-14) %}
-- path: configure/port[port-id={{ portname }}]
-  val:
-   ethernet:
-    mtu: {{ l.mtu + 14 }} # max 9800
-{% endif %}
-{% if v4 or v6 %}
-{{ interface('i'+l.ifname,desc,v4,v6,portname) }}
-{% else %}
-- path: configure/port[port-id={{ portname }}]
-  val:
-   ethernet:
-    mode: access # no IP, assume this is an access port for now
-{% endif %}
+
+{% for l in (interfaces|default([])) if l.vlan is not defined and l.subif_index is not defined %}
+{{  port(l) }}
 {% endfor %}

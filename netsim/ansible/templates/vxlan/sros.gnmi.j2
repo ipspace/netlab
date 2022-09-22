@@ -1,0 +1,74 @@
+{% macro vxlan_interface(vrf,type,vni,evi,rd,rts,is_routed=False) %}
+- path: configure/service/vpls[service-name={{ vrf }}]
+  val:
+{# May get created for first time here, when not referenced from any interfaces #}
+   customer: '1'
+   admin-state: enable
+   service-id: {{ vni if type=='l3' else (vrf[4:]|int + 10000) }} # transit VNI for l3, should not overlap
+
+{% if type=='l3' %}
+   routes:
+     ip-prefix:
+      advertise: True # Symmetric IRB using RT5 prefixes
+{% endif %}
+   vxlan:
+    instance:
+    - vxlan-instance: 1
+      vni: {{ vni }}
+   bgp:
+   - bgp-instance: 1
+     # route-distinguisher: {{ rd }} # Don't configure this, use auto RD
+     route-target:
+      export: "target:{{ rts.export[0] }}"
+      import: "target:{{ rts.import[0] }}"
+   bgp-evpn:
+    evi: {{ evi }}
+    vxlan:
+    - vxlan-instance: 1
+      bgp-instance: 1
+      admin-state: enable
+      ecmp: 8
+{% if is_routed %}
+   routed-vpls:
+    vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN
+{% endif %}
+{% endmacro %}
+
+updates:
+{% if vlans is defined and vxlan.vlans is defined %}
+{%  for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%   set vlan = vlans[vname] %}
+{%   if vlan.evpn is defined %}
+{%    set is_routed = vlan.mode|default('irb') != 'bridge' %}
+{{ vxlan_interface('vlan'+vlan.id|string,'l2',vlan.vni,vlan.evpn.evi,vlan.evpn.rd,vlan.evpn,is_routed) }}
+{%   else %}
+     # TODO non-EVPN VXLAN case
+{%   endif %}
+{%  endfor %}
+{% endif %}
+
+{# Symmetric IRB interfaces, note using VRF ID as transit EVI value #}
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if 'evpn' in vdata and 'transit_vni' in vdata.evpn %}
+{{ vxlan_interface("l3vni-"+vname,'l3',vdata.evpn.transit_vni,vdata.vrfidx,vdata.rd,vdata) }}
+
+{# Add it to the VPRN, enable evpn-tunnel and configure RT #}
+- path: configure/service/vprn[service-name={{ vname }}]
+  val:
+   interface:
+   - interface-name: l3vni-{{ vname }}
+     vpls:
+     - vpls-name: l3vni-{{ vname }}
+       evpn-tunnel: { }   # Applicable when there are no hosts connected to this backhaul R-VPLS, avoids requiring IP on interface
+   bgp-ipvpn:
+    mpls:
+     admin-state: enable
+     route-distinguisher: {{ vdata.bgp.router_id|default(bgp.router_id) }}:{{ vdata.vrfidx }}
+     vrf-target:
+      export-community: target:{{ vdata.export[0] }}
+      import-community: target:{{ vdata.import[0] }}
+     auto-bind-tunnel:
+      resolution: any
+      ecmp: 8
+{% endfor %}
+{% endif %}
