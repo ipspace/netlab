@@ -12,8 +12,6 @@ Adds a custom node.topology attribute to each node, for use by scripts
 """
 def post_transform(topology: Box) -> None:
     sections = topology.defaults.get("topology-data",['vlans','vrfs'])
+    to_include = { s: topology[s] for s in sections if s in topology }
     for ndata in topology.nodes.values():
-      ndata.topology = {}
-      for section in sections:
-        if section in topology:
-          ndata.topology[section] = topology[section]
+      ndata.topology = to_include
