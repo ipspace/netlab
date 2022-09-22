@@ -64,14 +64,17 @@
 {%    set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
 {{    bgp_peer_group(peer_group,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip) }}
 
-- path: configure/{{ path }}/bgp/neighbor[ip-address={{ n[af] }}]
+- path: configure/{{ path }}/bgp
   val:
-   description: "{{ n.name }}"
-   peer-as: {{ n.as }}
-   group: "{{ peer_group }}"
+   neighbor:
+   - ip-address: "{{ n[af] }}"
+     description: "{{ n.name }}"
+     peer-as: {{ n.as }}
+     group: "{{ peer_group }}"
 {%    if n.local_as is defined %}
-   local-as:
-    as-number: {{ n.local_as }}
+     local-as:
+      as-number: {{ n.local_as }}
+      prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
 {%    endif %}
 
 {%   else %}
