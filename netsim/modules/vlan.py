@@ -174,21 +174,23 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
       common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be between 2 and 4094',common.IncorrectValue,'vlan')
       continue
 
-    if not 'vni' in vdata or (isinstance(vdata.vni,bool) and vdata.vni==True):  # When VNI is not defined or set to 'True'
-      vni_default = topology.defaults.vlan.start_vni + vdata.id                 # ... try to build VNI from VLAN ID
-      if not vni_default in vlan_ids.vni:                           # Is the VNI free?
-        vdata.vni = vni_default                                     # ... great, take it
-        vlan_ids.vni.add(vni_default)                               # ... and add it to the list of used VNIs
-      else:                                                         # Too bad, we had such a great idea but it failed
-        vdata.vni = get_next_vlan_id('vni')                         # ... so take the next available VNI
-    if not isinstance(vdata.vni,int):                               # Not done yet, we still have to validate the VNI type and range
-      common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
-      continue
-    elif isinstance(vdata.vni,bool) and vdata.vni==False:           # Allow user to explicitly not assign a VNI using 'False'
-      vdata.pop('vni')
-    elif vdata.vni < 2 or vdata.vni > 16777215:
-      common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be between 2 and 16777215',common.IncorrectValue,'vlan')
-      continue
+    if 'vni' in vdata or topology.defaults.vlan.auto_vni:             # Honor global topology.defaults.vlan.auto_vni=False if set
+      if (not 'vni' in vdata) or \
+         (isinstance(vdata.vni,bool) and vdata.vni==True):            # When VNI is not defined or set to 'True'
+        vni_default = topology.defaults.vlan.start_vni + vdata.id     # ... try to build VNI from VLAN ID
+        if not vni_default in vlan_ids.vni:                           # Is the VNI free?
+          vdata.vni = vni_default                                     # ... great, take it
+          vlan_ids.vni.add(vni_default)                               # ... and add it to the list of used VNIs
+        else:                                                         # Too bad, we had such a great idea but it failed
+          vdata.vni = get_next_vlan_id('vni')                         # ... so take the next available VNI
+      if not isinstance(vdata.vni,int):                               # Not done yet, we still have to validate the VNI type and range
+        common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
+        continue
+      elif isinstance(vdata.vni,bool) and vdata.vni==False:           # Allow user to explicitly not assign a VNI using 'False'
+        vdata.pop('vni')
+      elif vdata.vni < 2 or vdata.vni > 16777215:
+        common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be between 2 and 16777215',common.IncorrectValue,'vlan')
+        continue
 
     vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
     vlan_pool.extend(['vlan','lan'])

@@ -60,7 +60,7 @@ All global parameters can also be used as node parameters.
 You can select VLANs that should be extended with VXLAN transport in two ways:
 
 * Specify a list of VLAN names in **vxlan.vlans** global- or node-level parameters. VLANs specified in that list must be valid VLAN names but do not have to be present on every node.
-* Select VLANs based on the presence of **vni** attribute. Use a 'False' value to avoid allocating a **vni** to a given VLAN
+* Select VLANs based on the presence of **vni** attribute. Use 'True' to force auto-assignment, 'False' to avoid allocating a **vni** to a given VLAN
 
 You can set the **vni** attribute for individual VLANs, or have it assigned automatically. By default, all global VLANs get a **vni** attribute, and are thus extended over VXLAN transport. This behavior is controlled with **defaults.vlan.auto_vni** global default.
 
