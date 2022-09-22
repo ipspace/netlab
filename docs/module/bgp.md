@@ -48,11 +48,11 @@ The following features are only supported on a subset of platforms:
 | Cisco IOS/IOS XE      |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
-| Dell OS10             |  ❌  |  ❌  |  ✅ |  ❌  |  ✅  |
+| Dell OS10             |  ✅  |  ✅  |  ✅ |  ❌  |  ✅  |
 | FRR 7.5.0             |  ✅ |  ❌  |  ✅  |  ✅  |  ✅ |
 | Nokia SR Linux        |  ✅ |  ❌ |  ✅ |  ✅  |  ✅  |
 | Nokia SR OS           |  ❌ |  ❌ |  ✅ |  ✅  |  ✅  |
-| VyOS                  |  ❌  |  ❌  |  ✅ |  ❌  |  ✅  |
+| VyOS                  |  ✅  |  ✅  |  ✅ |  ❌  |  ✅  |
 
 ## Global BGP Configuration Parameters
 

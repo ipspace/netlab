@@ -86,11 +86,11 @@
 {# Create route export policies #}
 {% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
 {% if loopback[af] is defined and bgp.advertise_loopback and vrf=='default' %}
-{{ bgp_export_prefix(vrf,loopback[af]) }}
+{{ bgp_export_prefix(vrf,loopback[af]|ipaddr('address')|ipaddr('host')) }}
 {% endif %}
 
 {% for l in interfaces|default([]) if l.bgp.advertise|default(0) and l[af]|default(False) is string and l.vrf|default('default')==vrf %}
-{{ bgp_export_prefix(vrf,l[af]|ipaddr('address')|ipaddr('host')) }}
+{{ bgp_export_prefix(vrf,l[af]|ipaddr('subnet')) }}
 {% endfor %}
 
 {% for pfx in vrf_bgp.originate|default([]) if af == 'ipv4' %}
@@ -123,14 +123,14 @@
     standard: {{ 'standard' in list }}
     large: {{ 'extended' in list }}
 {% endif %}
-{% if transport_ip %}
-   transport:
-    local-address: {{ transport_ip }}
-{% endif %}
 {% if 'ibgp' in type %}
    next-hop-self: {{ vrf_bgp.next_hop_self|default(False) }}
    peer-as: {{ neighbor.as }}
+   transport:
+    local-address: {{ transport_ip }}
 {%  if vrf_bgp.rr|default(0) %}
+    passive-mode: True
+    _annotate_passive-mode: "Improve robustness during startup"
    route-reflector:
     cluster-id: {{ vrf_bgp.rr_cluster_id|default(False) or router_id }}
     client: True
@@ -150,20 +150,25 @@
 {% set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
 {{ bgp_peer_group(peer_group,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip) }}
 
-- path: network-instance[name={{vrf}}]/protocols/bgp/neighbor[peer-address={{n[af]}}]
+- path: network-instance[name={{vrf}}]/protocols/bgp
   val:
-   description: {{ n.name }}
-   peer-group: {{ peer_group }}
+   neighbor:
+   - peer-address: "{{ n[af] }}"
+     description: {{ n.name }}
+     peer-group: {{ peer_group }}
 {% if 'ebgp' in n.type %}
-   peer-as: {{ n.as }}
+     peer-as: {{ n.as }}
 {% elif vrf_bgp.rr|default(False) and n.rr|default(False) %}
-   route-reflector:
-    client: False # Don't reflect routes between ibgp route reflectors
+     route-reflector:
+      client: False # Don't reflect routes between ibgp route reflectors
+     transport:
+      passive-mode: False
+      _annotate_passive-mode: "Connect actively to other Route Reflectors"
 {% endif %}
 {% if n.local_as is defined %}
-   local-as:
-   - as-number: {{ n.local_as }}
-     prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
+     local-as:
+     - as-number: {{ n.local_as }}
+       prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
 {% endif %}
 
 {% elif n[af]==True and af=='ipv6' and n.type == 'ebgp' %}

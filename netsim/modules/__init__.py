@@ -94,8 +94,8 @@ def augment_node_module(topology: Box) -> None:
     if not 'module' in n and n.get('role') != 'host' and devices.get_device_attribute(n,'role',topology.defaults) != 'host':
       n.module = module
 
-# Check whether the modules defined on individual nodes are valid
-# and supported
+# Check whether the modules defined on individual nodes are valid module names
+# and supported by the node device type
 #
 def check_supported_node_devices(topology: Box) -> None:
   for name,n in topology.nodes.items():
@@ -396,13 +396,13 @@ def check_module_dependencies(topology:  Box) -> None:
   for m in topology.get("module",[]):               # Use this format in case we don't use any modules
     mod_def = topology.defaults.get(m,{})           # Get module defaults
     if mod_def:                                     # Are they meaningful?
-      if "requires" in mod_def:                     # Do they include list of required modules?
-        for rqm in topology.defaults[m].requires:   # Loop over prerequisites
-          if not rqm in topology.module:            # Now we can be explicit - we know topology.modules exists
-            common.error(
-              f"Module {m} requires module {rqm} which is not enabled in your topology",
-              common.MissingValue,
-              'modules')
+      mod_requires = topology.defaults[m].get('requires',[])
+      for rqm in mod_requires:                      # Loop over prerequisite modules
+        if not rqm in topology.module:              # Now we can be explicit - we know topology.modules exists
+          common.error(
+            f"Module {m} requires module {rqm} which is not enabled in your topology",
+            common.MissingValue,
+            'modules')
 
       for n in topology.nodes.values():                   # Now iterate over nodes and check device-specific requirements
         if not m in n.get('module',[]):                   # Is the module we're currently checking used by this node?
@@ -410,13 +410,16 @@ def check_module_dependencies(topology:  Box) -> None:
         features = fcache.get(n.name) or \
                      devices.get_device_features(n,topology.defaults)
         fcache[n.name] = features                         # Get device features and save them in per-node cache
-        if m in features and 'requires' in features[m]:   # Check modules with device-specific requirements
-          for rqm in features[m].requires:                # ... iterate over device-specific module requirements
-            if not rqm in n.get('module'):                # ... is required module listed in the node?
-              common.error(
-                f"Module {m} on device {n.device} (node {n.name}) requires {rqm} module",
-                common.IncorrectValue,
-                'modules')
+        if m in features:                                 # If the module has device feature flags, add device requirements to global ones
+          node_requires = mod_requires + features[m].get('requires',[])
+        else:
+          node_requires = mod_requires                    # ... otherwise use global module requirements
+        for rqm in node_requires:                         # Iterate over module requirements for this node (global + device-specific)
+          if not rqm in n.get('module'):                  # ... is required module listed in the node?
+            common.error(
+              f"Module {m} on device {n.device} (node {n.name}) requires {rqm} module",
+              common.IncorrectValue,
+              'modules')
 
 """
 reorder_node_modules:

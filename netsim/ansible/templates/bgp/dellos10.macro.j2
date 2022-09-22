@@ -1,10 +1,18 @@
 {#
   Define a BGP neighbor
 #}
-{% macro neighbor(n,ip,bgp) %}
+{% macro neighbor(n,ip,bgp,af) %}
+{%   set peer = ip if ip is string else 'interface ' + n.local_if|default('?') %}
 !
-  neighbor {{ ip }}
+  neighbor {{ peer }}
+{%   if peer!=n[af] %}
+! This is an unnumbered eBGP session
+! WTF Remote-AS configuration not supported for unnumbered peer
+    inherit template unnumbered_ebgp inherit-type ebgp
+{%   else %}
     remote-as {{ n.as }}
+{%   endif %}
+    
     description "{{ n.name }}"
 
 {%     if n.local_as is defined %}
