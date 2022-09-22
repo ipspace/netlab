@@ -42,7 +42,7 @@ The following table describes per-platform support of individual VXLAN features:
 
 * **vxlan.domain** -- Ingress replication domain. Optional, default: **global**. Use this parameter when you want to build several isolated bridging domains within your lab.
 * **vxlan.flooding** -- A mechanism used to implement VXLAN flooding. Optional, default: **static**.
-* **vxlan.vlans** -- list of VLANs to be mapped into VXLAN VNIs.  Optional, defaults to all VLANs with **vni** attribute. All VLANs listed in **vxlan.vlans** list must have a **vni** attribute.
+* **vxlan.vlans** -- list of VLANs to be mapped into VXLAN VNIs.  Optional, defaults to all VLANs with numeric **vni** attribute. All VLANs listed in **vxlan.vlans** list must have a **vni** attribute.
 * **vxlan.use_v6_vtep** -- Use the IPv6 Loopback address as VTEP address. To be used on the devices where you need to explicitly set the local VTEP address, or with *static* flooding to generate the flooding list with IPv6 addresses.
 
 The only supported value for **vxlan.flooding** parameter is **static** -- statically configured ingress replication
@@ -60,7 +60,7 @@ All global parameters can also be used as node parameters.
 You can select VLANs that should be extended with VXLAN transport in two ways:
 
 * Specify a list of VLAN names in **vxlan.vlans** global- or node-level parameters. VLANs specified in that list must be valid VLAN names but do not have to be present on every node.
-* Select VLANs based on the presence of **vni** attribute.
+* Select VLANs based on the presence of **vni** attribute. Use a 'False' value to avoid allocating a **vni** to a given VLAN
 
 You can set the **vni** attribute for individual VLANs, or have it assigned automatically. By default, all global VLANs get a **vni** attribute, and are thus extended over VXLAN transport. This behavior is controlled with **defaults.vlan.auto_vni** global default.
 
