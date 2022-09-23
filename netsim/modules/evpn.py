@@ -78,12 +78,14 @@ def vrf_transit_vni(topology: Box) -> None:
   if not 'vrfs' in topology:
     return
 
+  from .vlan import is_vlan_id_used
+
   vni_list: typing.List[int] = []
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
     vni = data.get_from_box(vrf_data,'evpn.transit_vni')
-    if not isinstance(vni,int) or type(vni)!="int":             # Note that isinstance(bool_var,int) is True
+    if not isinstance(vni,int) or isinstance(vni,bool):         # Note that isinstance(bool_var,int) is True
       continue
     if vni in vni_list:
       common.error(
@@ -91,6 +93,12 @@ def vrf_transit_vni(topology: Box) -> None:
         common.IncorrectValue,
         'evpn')
       continue
+    elif is_vlan_id_used(vni,'vni'):
+      common.error(
+        f'VRF {vrf_name} is using an EVPN transit VNI that is also used as L2 VNI {vni}',
+        common.IncorrectValue,
+        'evpn')
+      continue  
     vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
 
   vni_start = topology.defaults.evpn.start_transit_vni
@@ -117,7 +125,7 @@ def vrf_irb_setup(node: Box, topology: Box) -> None:
       continue
 
     g_vrf = topology.vrfs[vrf_name]                             # Pointer to global VRF data, will come useful in a second
-    if 'transit_vni' in g_vrf.get('evpn',{}):                   # Transit VNI in global VRF => symmetrical IRB
+    if data.get_from_box(g_vrf,'evpn.transit_vni'):             # Transit VNI in global VRF => symmetrical IRB
       if not features.evpn.irb:                                 # ... does this device support IRB?
         common.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
