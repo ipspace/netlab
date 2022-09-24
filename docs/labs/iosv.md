@@ -6,6 +6,10 @@ Cisco IOSv is supported by the **netlab libvirt package** command. To build a IO
 * Copy the IOSv disk image (.vmdk file) into that directory
 * Execute **netlab libvirt package iosv _virtual-disk-file-name_** and follow the instructions
 
+```{warning}
+The **‌netlab libvirt package ios** command has been tested on Ubuntu 20.04 LTS and might not work on later Ubuntu versions or other Linux distros.
+```
+
 ## Initial Device Configuration
 
 During the box-building process (inspired by [this recipe](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/)) you'll have to copy-paste initial device configuration. **netlab libvirt config iosv** command displays the build recipe:
