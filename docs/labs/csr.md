@@ -8,6 +8,8 @@ Cisco CSR 1000v is supported by the **netlab libvirt package** command. To build
 
 ```{warning}
 You MUST have a CSR disk image that expects to be configured through the serial interface for this procedure to work. If all you have is an image that expects a graphics card, the [original recipe on codingpackets.com](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/) might still work for you.
+
+The **‌netlab libvirt package ios** command has been tested on Ubuntu 20.04 LTS and might not work on later Ubuntu versions or other Linux distros.
 ```
 
 ## Initial Device Configuration

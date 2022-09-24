@@ -6,6 +6,10 @@ Arista EOS is supported by the **netlab libvirt package** command. To build an A
 * Download vEOS disk image (.vmdk or .qcow2 file) into that directory
 * Execute **netlab libvirt package eos _virtual-disk-file-name_** and follow the instructions
 
+```{warning}
+The **‌netlab libvirt package eos** command has been tested on Ubuntu 20.04 LTS and might not work on later Ubuntu versions or other Linux distros.
+```
+
 ## Initial Device Configuration
 
 During the box-building process (inspired by the [step-by-step instructions by Brad Searle](https://codingpackets.com/blog/arista-veos-vagrant-libvirt-box-install/)) you'll have to copy-paste initial device configuration. **netlab libvirt config eos** command displays the build recipe:

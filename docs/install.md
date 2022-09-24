@@ -55,6 +55,19 @@ You can set up your lab:
 * Don't use VirtualBox on Linux. As you won't need a GUI to interact with the network devices we see no reason to do that when there are better alternatives (KVM+libvirt).
 ```
 
+## Building Vagrant Boxes
+
+You might have to build Vagrant boxes for your network devices if you decide to use [*libvirt* with KVM on a Linux system](labs/libvirt.md). *netlab* includes build recipes for the following devices:
+
+* [](labs/eos.md)
+* [](labs/iosv.md)
+* [](labs/csr.md)
+* [](labs/nxos.md)
+* [](labs/dellos10.md)
+* [](labs/vsrx.md)
+
+Vendors offer [more Vagrant boxes for the VirtualBox environment](labs/virtualbox.md); some of them also offer [Docker containers you can use with *containerlab*](labs/clab.md).
+
 (package)=
 ## Installing Python Package
 
