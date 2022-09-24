@@ -81,6 +81,7 @@ def post_transform(topology: Box) -> None:
   module_transform("post_transform",topology)
   node_transform("post_transform",topology)
   link_transform("post_transform",topology)
+  module_transform("post_transform_cleanup",topology) # JvB: added to cleanup data model after all transformations are done
   reorder_node_modules(topology)               # Make sure modules are configured in dependency order (#86)
 
 # Set default list of modules for nodes without specific module list
@@ -352,9 +353,9 @@ def check_module_parameters(topology: Box) -> None:
                   common.IncorrectValue,
                   'modules')
           else:
-            if type(intf[m]).__name__ != str(mod_attr[m].interface):
+            if type(intf[m]).__name__ not in mod_attr[m].interface:
               common.error(
-                f"Node {n} has invalid value type for attribute {k} for module {m} on link {l}, expected {mod_attr[m].interface}",
+                f"Node {n} has invalid value type '{type(intf[m]).__name__}' for module {m} on link {l}, expected {mod_attr[m].interface}",
                 common.IncorrectValue,
                 'modules')
 

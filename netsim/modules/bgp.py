@@ -156,10 +156,28 @@ build_ebgp_sessions: create EBGP session data structure
 def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
 
+  # Check whether bgp is disabled (False) at local or global vrf level
+  def vrf_bgp_disabled(n: Box, vrf: str) -> bool:
+    for key in (f"vrfs.{vrf}.bgp","vrf.bgp"):
+      for obj in (n,topology):
+        bgp_obj = data.get_from_box(obj,key)
+        if bgp_obj is False:
+          return True
+        elif bgp_obj:
+          return False
+    return False
+
   #
   # Iterate over all links, find adjacent nodes
   # in different AS numbers, and create BGP neighbors
   for l in node.get("interfaces",[]):
+
+    # Allow user to disable bgp for specific interfaces or vrfs
+    if data.get_from_box(l,'bgp') is False:
+      continue
+    elif l.get('vrf',None) and vrf_bgp_disabled(node,l.vrf):
+      continue
+
     node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
     node_local_as = data.get_from_box(l,'bgp.local_as') or data.get_from_box(node,'bgp.local_as') or node_as
 
@@ -185,11 +203,21 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in ngb_ifdata ]
       if not af_list:                                                 # Neighbor has no usable address
         continue
+
+      if ngb_ifdata.get('bgp',None) is False:                         # Neighbor has bgp disabled on interface
+        ngb_ifdata.pop('bgp')                                         # clean it up
+        continue
+
       #
       # Get neighbor node data and its true or interface-local AS
       #
       ngb_name = ngb_ifdata.node
       neighbor = topology.nodes[ngb_name]
+
+      # Check if neighbor is using a vrf with bgp disabled
+      if ngb_ifdata.get('vrf',None) and vrf_bgp_disabled(neighbor,ngb_ifdata.vrf):
+        continue
+
       neighbor_real_as = data.get_from_box(neighbor,'bgp.as')
       neighbor_local_as = data.get_from_box(ngb_ifdata,'bgp.local_as') or data.get_from_box(neighbor,'bgp.local_as') or neighbor_real_as
 
@@ -331,7 +359,10 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
 
   for l in node.get("interfaces",[]):
     if "bgp" in l:
-      if "advertise" in l.bgp:
+      if l.bgp is False:          # Cleanup bgp:False flags
+        l.pop('bgp')
+        continue
+      elif "advertise" in l.bgp:
         continue
     if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
       l.bgp.advertise = True
@@ -516,3 +547,21 @@ class BGP(_Module):
     check_bgp_parameters(node)
     build_bgp_sessions(node,topology)
     bgp_set_advertise(node,topology)
+
+  #
+  # Cleanup any bgp: False flags from vrfs, to avoid tripping template logic
+  #
+  def module_post_transform_cleanup(self, topology: Box) -> None:
+  
+    def cleanup(obj: typing.Dict[typing.Any,typing.Any] ) -> None:
+      for k,v in list(obj.items()):
+        if k=='bgp' and v is False:
+          obj.pop('bgp')
+        elif isinstance(v,dict):
+          cleanup(v)
+        elif isinstance(v,list):
+          for i in v:
+            if isinstance(i,dict):
+              cleanup(i)
+
+    cleanup(topology)
