@@ -56,10 +56,12 @@ def docker_connect(data: Box, rest: typing.List[str], verbose: bool = False) -> 
   args = ['docker','exec','-it',host,shell,'-il']
   if rest:
     sys.stderr.write("Connecting to container %s, executing %s\n" % (host," ".join(rest)))
-    args.extend(['-c','"'+' '.join(rest)+'"'])
+    args.extend(['-c',' '.join(rest)])
   else:
     sys.stderr.write("Connecting to container %s, starting bash\n" % host)
   sys.stderr.flush()
+  if verbose:
+    print("Executing: %s" % args)
   subprocess.run(args)
 
 def ssh_connect(data: Box, rest: typing.List[str], verbose: bool = False) -> None:
@@ -88,6 +90,7 @@ def ssh_connect(data: Box, rest: typing.List[str], verbose: bool = False) -> Non
 
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = connect_parse(cli_args)
+  rest = [ f'"{arg}"' if " " in arg else arg for arg in rest ]      # Quote arguments with whitespaces
   inventory_source = 'devices' if args.devices else 'ansible'
 
   host_inventory = get_inventory_data(args.host,inventory_source)
