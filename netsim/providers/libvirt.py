@@ -13,6 +13,18 @@ from . import _Provider
 LIBVIRT_MANAGEMENT_NETWORK_NAME = "vagrant-libvirt"
 LIBVIRT_MANAGEMENT_NETWORK_FILE = "templates/provider/libvirt/vagrant-libvirt.xml"
 
+def create_vagrant_network() -> None:
+  try:
+    result = subprocess.run(['virsh','net-info',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
+    if result.returncode == 1:
+      # When ret code is 1, the network is missing
+      common.print_verbose('creating missing %s network' % LIBVIRT_MANAGEMENT_NETWORK_NAME)
+      net_template_xml = pathlib.Path(__file__).parent.parent.joinpath(LIBVIRT_MANAGEMENT_NETWORK_FILE).resolve()
+      result2 = subprocess.run(['virsh','net-define',net_template_xml],capture_output=True,check=True,text=True)
+  except subprocess.CalledProcessError as e:
+    common.error('Exception in net handling for libvirt network %s: [%s] %s' % (LIBVIRT_MANAGEMENT_NETWORK_NAME, e.returncode, e.stderr), module='libvirt')
+  return
+
 class Libvirt(_Provider):
 
   def transform_node_images(self, topology: Box) -> None:
@@ -45,16 +57,7 @@ class Libvirt(_Provider):
     # Starting from vagrant-libvirt 0.7.0, the destroy actions deletes all the networking
     #  including the "vagrant-libvirt" management network.
     #  Let's re-create it if missing!
-    try:
-      result = subprocess.run(['virsh','net-info',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
-      if result.returncode == 1:
-        # When ret code is 1, the network is missing
-        common.print_verbose('creating missing %s network' % LIBVIRT_MANAGEMENT_NETWORK_NAME)
-        net_template_xml = pathlib.Path(__file__).parent.parent.joinpath(LIBVIRT_MANAGEMENT_NETWORK_FILE).resolve()
-        result2 = subprocess.run(['virsh','net-define',net_template_xml],capture_output=True,check=True,text=True)
-    except subprocess.CalledProcessError as e:
-      common.error('Exception in net handling for libvirt network %s: [%s] %s' % (LIBVIRT_MANAGEMENT_NETWORK_NAME, e.returncode, e.stderr), module='libvirt')
-    return
+    create_vagrant_network()
 
   def post_start_lab(self, topology: Box) -> None:
     common.print_verbose('libvirt lab has started, fixing Linux bridges')

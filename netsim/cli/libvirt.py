@@ -17,6 +17,7 @@ from box import Box
 from .. import common
 from .. import read_topology
 from . import external_commands
+from ..providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
 
 def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   devs = [ k for k in settings.devices.keys() if settings.devices[k].libvirt.create or settings.devices[k].libvirt.create_template ]
@@ -73,6 +74,13 @@ def vm_cleanup(name: str) -> None:
     subprocess.run(f"virsh undefine {name}".split(" "))
   except Exception as ex:
     print(f"Cannot undefine {name}: {ex}")
+
+def start_vagrant_network() -> None:
+  create_vagrant_network()
+  try:
+    result = subprocess.run(['virsh','net-start',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
+  except:
+    pass
 
 def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
@@ -211,6 +219,7 @@ best not to damage the original virtual disk).
     common.fatal('Aborting...')
 
   vm_cleanup('vm_box')
+  start_vagrant_network()
   if not 'disk' in skip:
     lp_create_vm_disk(args)
   if not 'iso' in skip:
