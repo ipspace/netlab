@@ -30,11 +30,12 @@ Installation steps:
 * Install [Vagrant](https://www.vagrantup.com/docs/installation)
 * Install [Vagrant VMware provider](https://www.vagrantup.com/docs/providers/vmware) if you're using VMware Workstation/Fusion.
 * Create an empty directory. Create **Vagrantfile** with the following content in that directory. Change the **memory**/**memsize** or **cpus**/**numvcpus** settings to fit your hardware.
+* Change the Vagrant box from `generic/ubuntu2004` to `bento/ubuntu-20.04` if the generic Ubuntu box is not available for your Vagrant provider.
 
 ```
 Vagrant.configure("2") do |config|
-#  config.vm.box = "ubuntu/focal64"
-  config.vm.box = "bento/ubuntu-20.04"
+  config.vm.box = "generic/ubuntu2004"
+#  config.vm.box = "bento/ubuntu-20.04"
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = "8192"
