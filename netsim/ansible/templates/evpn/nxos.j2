@@ -1,0 +1,59 @@
+nv overlay evpn
+!
+router bgp {{ bgp.as }}
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
+  neighbor {{ n.ipv4 }}
+    address-family l2vpn evpn
+      send-community both
+{%   if bgp.rr|default('') and not n.rr|default('') %}
+      route-reflector-client
+{%   endif %}
+!
+{% endfor %}
+{% if vlans is defined and 'vxlan' in module %}
+evpn
+{%   for v in vlans.values() if v.evpn.evi is defined %}
+  vni {{ v.vni }} l2
+    rd {{ v.evpn.rd }}
+    route-target import {{ v.evpn.import|join(' ') }}
+    route-target export {{ v.evpn.export|join(' ') }}
+!
+{%   endfor %}
+{% endif %}
+{% if vrfs is defined %}
+{%   for n,v in vrfs.items() if v.evpn.transit_vni is defined %}
+!
+vrf context {{ n }}
+  vni {{ v.evpn.transit_vni }}
+{%     for af in ('ipv4','ipv6') if v.af[af] is defined %}
+  address-family {{ af }} unicast
+    route-target import {{ v.import|join(' ') }} evpn
+    route-target export {{ v.export|join(' ') }} evpn
+{%     endfor %}
+{%   endfor %}
+{%   for n,v in vrfs.items() if v.evpn.transit_vni is defined %}
+!
+{%     set vlan=evpn.start_transit_vlan + v.vrfidx %}
+vlan {{ vlan }}
+  no shutdown
+  name VRF_{{ n }}_L3VNI
+  vn-segment {{ v.evpn.transit_vni }}
+!
+interface Vlan{{ vlan }}
+  no shutdown
+  vrf member {{ n }}
+  no ip redirects
+  no ipv6 redirects
+  ip forward
+  ipv6 address use-link-local-only
+{%   endfor %}
+{% endif %}
+{% if 'vxlan' in module %}
+interface nve 1
+  host-reachability protocol bgp
+  global ingress-replication protocol bgp
+{%   for n,v in vrfs.items() if v.evpn.transit_vni is defined %}
+  member vni {{ v.evpn.transit_vni }} associate-vrf
+{%   endfor %}
+!
+{% endif %}

@@ -23,6 +23,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Operating system   | VXLAN<br>transport | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  |  ❌  | ✅  |
+| Cisco Nexus OS     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Nokia SR OS        | ✅  | ✅  |  ❌  |  ✅  | ✅  |
@@ -36,15 +37,16 @@ EVPN module supports three design paradigms:
 * IBGP over EBGP
 * EBGP-only (requires manual configuration of RD/RT values on most platforms)
 
-| Operating system   | IBGP+IGP | EBGP-only | IBGP over<br>EBGP | IPv4 BGP<br>transport | IPv6 BGP<br>transport |
-| ------------------ | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ❌  | ✅  | ❌  |
-| Cumulus Linux      | ✅  | ✅  | ❌  | ✅  | ❌  |
-| Dell OS 10         | ✅  | ✅  | ✅  | ✅  | ❌  |
-| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR Linux     | ✅  | ❌  | ✅  | ✅  | ✅  |
-| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| VyOS               | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Operating system   | IBGP+IGP | BGP RR | EBGP-only | IBGP over<br>EBGP | IPv4 BGP<br>transport | IPv6 BGP<br>transport |
+| ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ❌   | ❌   | ❌   | ✅  | ❌   |
+| Cisco Nexus OS     | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
+| Cumulus Linux      | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
+| Dell OS 10         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌   |
+| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR Linux     | ✅  | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
+| VyOS               | ✅  | ✅  | ✅  | ✅  | ✅  | ❌   |
 
 ```{note}
 * Nokia SR Linux supports iBGP EVPN sessions over BGP unnumbered with IPv6 link-local addresses, using IPv4 VXLAN routes with IPv6 next hops
