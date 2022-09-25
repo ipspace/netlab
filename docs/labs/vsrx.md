@@ -6,6 +6,11 @@ Juniper vSRX 3.0 is supported by the **netlab libvirt package** command. To buil
 * Download vSRX 3.0 disk image (.qcow2 file) into that directory
 * Execute **netlab libvirt package vsrx _virtual-disk-file-name_** and follow the instructions
 
+```{warning}
+* The **‌netlab libvirt package vsrx** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
+* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
+```
+
 ## Preparing the Box Configuration
 
 Initial device configuration is copied from an ISO image created by the installation process. You'll have to save it and shut down the VM. **netlab libvirt config vsrx** command displays the build recipe (based on the [recipe published by Brad Searle](https://codingpackets.com/blog/juniper-vsrx3-0-vagrant-libvirt-box-install/)):

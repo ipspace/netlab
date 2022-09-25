@@ -7,9 +7,9 @@ Cisco CSR 1000v is supported by the **netlab libvirt package** command. To build
 * Execute **netlab libvirt package csr _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
-You MUST have a CSR disk image that expects to be configured through the serial interface for this procedure to work. If all you have is an image that expects a graphics card, the [original recipe on codingpackets.com](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/) might still work for you.
-
-The **‌netlab libvirt package ios** command has been tested on Ubuntu 20.04 LTS and might not work on later Ubuntu versions or other Linux distros.
+* You MUST have a CSR disk image that expects to be configured through the serial interface for this procedure to work. If all you have is an image that expects a graphics card, the [original recipe on codingpackets.com](https://codingpackets.com/blog/cisco-iosv-vagrant-libvirt-box-install/) might still work for you.
+* The **‌netlab libvirt package csr** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
+* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
 ```
 
 ## Initial Device Configuration
