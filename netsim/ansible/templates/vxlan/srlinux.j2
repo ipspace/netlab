@@ -16,8 +16,9 @@
     bgp-vpn:
      bgp-instance:
      - id: 1
-       route-distinguisher:
-        rd: "{{ rd }}"
+       # route-distinguisher:
+       # rd: "{{ rd }}"
+       _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '{{ rd }}'"
        route-target:
         _annotate: "For compatibility with frr, override auto-derived RT based on EVI {{evi}} with VNI {{vni}}"
         import-rt: "target:{{ rts.import[0] }}"
@@ -42,5 +43,28 @@ updates:
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if 'evpn' in vdata and 'transit_vni' in vdata.evpn %}
 {{ vxlan_interface(vname,vdata.vrfidx,'routed',vdata.evpn.transit_vni,vdata.vrfidx,vdata.rd,vdata) }}
+
+{# Enable RT5 host routes for all irb interfaces in these vrfs, to deal with silent hosts and avoid suboptimal routing #}
+{% for i in interfaces if i.vrf|default('')==vname and i.type=='svi' and i.vlan.mode|default('irb')=='irb' %}
+- path: /interface[name=irb0]/subinterface[index={{ i.ifname.split('.')[1] }}]
+  val:
+{% for ip,arpnd in [('ipv4','arp'),('ipv6','neighbor-discovery')] %}
+{%  if ip in i %}
+   {{ ip }}:
+     {{ arpnd }}:
+       learn-unsolicited: True
+       evpn:
+        advertise: # Type of ARP/ND entries to be advertised
+        - route-type: dynamic
+        # - route-type: static
+       host-route: # Creation of host routes in ip-vrf route table
+        populate:
+        - route-type: dynamic
+        # - route-type: static
+        # - route-type: evpn # not for entries learned through EVPN
+{%  endif %}
+{% endfor %}
+{% endfor %}
+
 {% endfor %}
 {% endif %}
