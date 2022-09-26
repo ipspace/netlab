@@ -7,8 +7,8 @@ from box import Box
 from . import _Module,_routing,get_effective_module_attribute
 from .. import common
 from .. import data
-from ..data import get_from_box
-from ..augment import devices
+from ..data import get_from_box,must_be_dict
+from ..augment import devices,groups
 from .. import addressing
 
 vrf_id_set: set
@@ -333,6 +333,9 @@ class VRF(_Module):
         topology.defaults.attributes[attr_set].append('vrfs')
 
   def module_pre_transform(self, topology: Box) -> None:
+    if 'groups' in topology:
+      groups.export_group_node_data(topology,'vrfs','vrf',copy_keys=['rd','export','import'])
+
     if not 'vrfs' in topology:
       return
 
@@ -364,13 +367,19 @@ class VRF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     vrf_count = 0
+
+    if 'vrfs' in node:                                                  # Pull in global VRF data for VRFs mentioned in groups.node_data
+      for vname in node.vrfs.keys():
+        if vname in topology.get('vrfs',{}):                            # Is this a global VRF?
+          node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]    # ... yes, merge the data
+
     for ifdata in node.interfaces:
       if 'vrf' in ifdata:
         vrf_count = vrf_count + 1
         if 'vrfs' in topology and ifdata.vrf in topology.vrfs:
           node.vrfs[ifdata.vrf] = topology.vrfs[ifdata.vrf] + node.vrfs[ifdata.vrf]
 
-        if not node.vrfs[ifdata.vrf]:
+        if not node.vrfs.get(ifdata.vrf,None):
           common.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
             common.MissingValue,
@@ -397,7 +406,18 @@ class VRF(_Module):
     else:
       node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
       vrfidx = 100
-      for v in sorted(node.vrfs.values(),key=lambda v: v.id):    # We need unique VRF index to create OSPF processes, assign in sorted order
+
+      # Check that all VRFs have a well-defined data structure (should be at this point, unless someone used groups.node_data)
+      for k,v in node.vrfs.items():
+        if v is None or not 'id' in v:
+          common.error(
+            f"Found invalid VRF {k} on node {node.name}. Did you mention it only in groups.node_data? You can't do that.",
+            common.IncorrectValue,
+            'vrf')
+          common.exit_on_error()
+
+      # We need unique VRF index to create OSPF processes, assign in order sorted by VRF ID "for consistency"
+      for v in sorted(node.vrfs.values(),key=lambda v: v.id):
         v.vrfidx = vrfidx
         vrfidx = vrfidx + 1
 

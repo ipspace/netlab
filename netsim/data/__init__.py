@@ -152,6 +152,8 @@ def check_valid_values(
 #
 # must_be_int: make sure a dictionary value is an integer. Throw an error otherwise.
 #
+# must_be_dict: make sure a dictionary value is another dictionary. Throw an error otherwise.
+#
 # Input arguments:
 #   parent - the parent dictionary of the attribute we want to listify
 #            (a pointer to the element would be even better, but Python)
@@ -196,6 +198,34 @@ def must_be_list(
     return parent[key]
 
   wrong_type_message(path=path, key=key, expected='a scalar or a list', value=value, context=context, module=module)
+  return None
+
+def must_be_dict(
+      parent: Box,                                      # Parent object
+      key: str,                                         # Key within the parent object, may include dots.
+      path: str,                                        # Path to parent object, used in error messages
+      create_empty: bool = True,                        # Do we want to create an empty list if needed?
+      true_value: typing.Optional[dict] = None,         # Value to use to replace _true_, set _false_ to []
+      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
+      module:     typing.Optional[str] = None,          # Module name to display in error messages
+                ) -> typing.Optional[list]:
+
+  value = get_from_box(parent,key)
+  if value is None:
+    if create_empty:
+      set_dots(parent,key.split('.'),{})
+      return parent[key]
+    else:
+      return None
+
+  if isinstance(value,bool) and not true_value is None:
+    value = true_value if value else {}
+    parent[key] = value
+
+  if isinstance(value,dict):
+    return parent[key]
+
+  wrong_type_message(path=path, key=key, expected='a dictionary', value=value, context=context, module=module)
   return None
 
 def must_be_string(

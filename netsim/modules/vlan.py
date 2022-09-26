@@ -9,7 +9,7 @@ from .. import common
 from .. import data
 from .. import addressing
 from ..data import get_from_box,get_global_parameter
-from ..augment import devices
+from ..augment import devices,groups
 from ..augment import links
 
 # Global variables -- would love to be without them, but the alternatives
@@ -906,10 +906,23 @@ def fix_vlan_gateways(topology: Box) -> None:
             intf.gateway.ipv4 = neighbor.ipv4                         # Set that address as our gateway
             break                                                     # ... and get out of here
 
+"""
+populate_node_vlan_data -- merge topology VLANs into node VLANs that were copied from groups.node_data
+"""
+def populate_node_vlan_data(n: Box, topology: Box) -> None:
+  if 'vlans' in n:                                                          # Copy topology VLAN data into node VLAN data
+    for vname in n.vlans.keys():                                            # ... to cope with nodes that had VLANs defined
+      if vname in topology.get('vlans',{}):                                 # ... through groups.node_data
+        topo_data = Box(topology.vlans[vname])                              # Create a copy of topology VLAN
+        topo_data.pop('neighbors',None)                                     # ... and remove neighbors
+        n.vlans[vname] = topo_data + n.vlans[vname]                         # ... now merge with the VLAN data
+
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
     init_global_vars()
+    if 'groups' in topology:
+      groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
     if get_from_box(topology,'vlan.mode'):
       if topology.vlan.mode not in vlan_mode_kwd:     # pragma: no cover
         common.error(
@@ -1004,6 +1017,7 @@ class VLAN(_Module):
   def module_post_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
       if 'vlan' in n.get('module',[]):
+        populate_node_vlan_data(n,topology)
         vlan_ifmap = create_svi_interfaces(n,topology)
         map_trunk_vlans(n,topology)
         rename_vlan_subinterfaces(n,topology)

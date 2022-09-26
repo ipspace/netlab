@@ -166,6 +166,44 @@ groups:
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
 
+### Using Group Node Data with VRFs and VLANs
+
+VRFs and VLANs mentioned in **node_data.vrfs** or **node_data.vlans** will be defined as global (topology-wide) VRFs/VLANs. The VLAN ID/VNI or VRF RT/RD values will be copied from **node_data.vlans**/**node_data.vrfs** into global **vlans**/**vrfs**. As every VLAN  needs a unique ID/VNI (likewise for VRF RT/RD), you cannot define different ID/VNI or RT/RD values for the same VLAN/VRF in different groups.
+
+Example:
+
+```
+module: [ vlan,ospf ]
+
+groups:
+  g1:
+    members: [ r1, r2 ]
+    node_data:
+      vlans:
+        red:
+          ospf.cost: 10
+        blue:
+          ospf.cost: 20
+
+nodes: [r1, r2]
+
+links:
+- r1:
+  r2:
+  vlan.trunk: [ red, blue ]
+```
+
+The above topology will:
+
+* Create topology-wide *red* and *blue* VLANs.
+* Auto-assign VLAN ID and VNI to those VLANs.
+* Copy **node_data.vlans** into R1 and R2 (setting OSPF cost for VLAN interfaces)
+* Merge the global **vlans** definitions into **nodes.r1.vlans** and **nodes.r2.vlans**, ensuring the VLANs on R1 and R2 have the correct VLAN ID/VNI.
+
+```{tip}
+As the **node_data** is copied into all nodes in a group, you'll get all VLANs/VRFs mentioned in **node_data** defined on all group members regardless of whether they actually use those VLANs/VRFs.
+```
+
 ## Setting Device Type or List of Modules in Groups
 
 Node device type (**device** attribute[^DVTRANS]) or the list of configuration modules (**module** attribute[^MDTRANS]) cannot be set within group **node_data**. Use **device** or **module** attribute at the group level to set them.
