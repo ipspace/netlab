@@ -28,6 +28,7 @@
 - name: Generated gNMI config based on {{ config_template }}
   debug:
    msg: "SRL config: {{ lookup('file', tempfile_1.path ) }}"
+   verbosity: 1
 
 # - block:
 #   - name: Copy CLI configuration to SRL node {{ ansible_host }} using SCP
@@ -55,6 +56,8 @@
   # - debug: var=hostvars
 - name: Update SRL {{ netsim_action }} node configuration (gNMI SET template={{config_template}},CA={{ansible_root_certificates_file}})
   when: d!=[] or (u!=[] and u!="") or r!=[]
+  until: gnmi_set_result is success
+  retries: 2 # Add robustness, downside is that this hides error messages
   vars:
     ansible_port: "{{ srlinux_grpc_port }}" # Uses gNMI over TLS to this port
     ansible_connection: nokia.grpc.gnmi
@@ -78,7 +81,7 @@
   register: gnmi_set_result
   tags: [ print_action, always ]
 
-- debug: var=gnmi_set_result
+- debug: var=gnmi_set_result verbosity=1
 
 - local_action:
     module: file
