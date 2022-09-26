@@ -166,6 +166,8 @@ groups:
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
 
+Note that modifying attributes for global vlans or vrfs through node_data is currently not supported; an error is reported to the user instead.
+
 ## Setting Device Type or List of Modules in Groups
 
 Node device type (**device** attribute[^DVTRANS]) or the list of configuration modules (**module** attribute[^MDTRANS]) cannot be set within group **node_data**. Use **device** or **module** attribute at the group level to set them.

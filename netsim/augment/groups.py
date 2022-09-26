@@ -203,6 +203,16 @@ def copy_group_node_data(topology: Box) -> None:
       for name,ndata in topology.nodes.items():
         if name in g_members:
           for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
+
+            # Check for modification of vrf or vlan attributes via node_data, currently not working
+            if k in ['vrfs','vlans'] and v is not None:
+              for vname,vdata in v.items():
+                if vdata and vname in topology[k]:
+                  common.error(
+                    f'Modifying global {k} attributes via node_data from group {grp} into node {ndata.name} is currently not supported',
+                    common.IncorrectValue,
+                    'groups')
+
             if not k in ndata:
               ndata[k] = v
             if isinstance(ndata[k],dict):
