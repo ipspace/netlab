@@ -181,6 +181,21 @@ def copy_group_device_module(topology: Box) -> None:
           'groups')
 
 '''
+Utility function: merge group value into node value. Deals with scalars and dicts
+'''
+def merge_node_data(ndata: Box, k: str, v: typing.Any, node_name: str, group_name: str) -> None:
+  if not k in ndata:
+    ndata[k] = v
+  if isinstance(ndata[k],dict):
+    if isinstance(v,dict):
+      ndata[k] = ndata[k] + v
+    else:
+      common.error(
+        f'Cannot merge non-dictionary node_data {k} from group {group_name} into node {node_name}',
+        common.IncorrectValue,
+        'groups')
+
+'''
 Copy node data from group into group members
 '''
 def copy_group_node_data(topology: Box) -> None:
@@ -203,16 +218,46 @@ def copy_group_node_data(topology: Box) -> None:
       for name,ndata in topology.nodes.items():
         if name in g_members:
           for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
-            if not k in ndata:
-              ndata[k] = v
-            if isinstance(ndata[k],dict):
-              if isinstance(v,dict):
-                ndata[k] = ndata[k] + v
-              else:
-                common.error(
-                  f'Cannot merge non-dictionary node_data {k} from group {grp} into node {ndata.name}',
-                  common.IncorrectValue,
-                  'groups')
+            merge_node_data(ndata,k,v,ndata.name,grp)
+
+'''
+Export node_data from groups to topology
+
+Used to create module-specific data structures in pre_transform hook before the
+node data is populated from groups.node_data
+
+Inputs:
+* data structure name ('vrfs' or 'vlans')
+* module name ('vrf' or 'vlan') -- used in error messages
+* copy_keys: attributes that should be copied to topology-level data structure
+* unique_keys: attributes that must be unique (set to copy_keys when empty)
+'''
+def export_group_node_data(
+      topology: Box,
+      key: str,
+      module: str,
+      copy_keys: typing.List[str] = [],
+      unique_keys: typing.List[str] = []) -> None:
+
+  if not unique_keys:
+    unique_keys = copy_keys
+  for gname,gdata in topology.groups.items():
+    #
+    # Find groups with node_data dictionaries
+    if data.must_be_dict(gdata,f'node_data.{key}',f'groups.{gname}',module=module,create_empty=False):
+      for obj_name in gdata.node_data[key].keys():
+        if not obj_name in topology[key] or topology[key][obj_name] is None:
+          topology[key][obj_name] = {}
+        for attr in unique_keys:
+          if attr in topology[key][obj_name] and attr in gdata.node_data[key][obj_name] and \
+             topology[key][obj_name][attr] != gdata.node_data[key][obj_name][attr]:     # Unique key present on both ends and not equal
+            common.error(
+              f'Cannot redefine {key} attribute {attr} for {key}.{obj_name} from node_data in group {gname}',
+              common.IncorrectValue,
+              module)
+        for attr in copy_keys:
+          if attr in gdata.node_data[key][obj_name] and attr not in topology[key][obj_name]:
+            topology[key][obj_name][attr] = gdata.node_data[key][obj_name][attr]
 
 #
 # init_groups:

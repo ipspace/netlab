@@ -1,0 +1,279 @@
+groups:
+  g1:
+    members:
+    - r1
+    - r2
+    node_data:
+      vrf:
+        loopback: true
+      vrfs:
+        blue:
+          ospf:
+            area: 2
+        red:
+          ospf:
+            area: 1
+          rd: '65101:11'
+input:
+- topology/input/group-data-vrf.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ipv4: 10.1.0.2/30
+    node: r2
+  left:
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: r2
+  type: p2p
+  vrf: red
+module:
+- ospf
+- vrf
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      vpnv4: true
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: r2
+        vrf: red
+      type: p2p
+      vrf: red
+    - ifindex: 2
+      ifname: Loopback101
+      ipv4: 10.2.0.1/32
+      name: VRF Loopback red
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: red
+    - ifindex: 3
+      ifname: Loopback100
+      ipv4: 10.2.0.2/32
+      name: VRF Loopback blue
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: blue
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - ospf
+    - vrf
+    name: r1
+    vrf:
+      as: 65000
+      loopback: true
+    vrfs:
+      blue:
+        af:
+          ipv4: true
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        networks:
+        - ipv4: 10.2.0.2/32
+        rd: '65000:1'
+        vrfidx: 100
+      red:
+        af:
+          ipv4: true
+        export:
+        - '65101:11'
+        id: 2
+        import:
+        - '65101:11'
+        networks:
+        - ipv4: 10.2.0.1/32
+        ospf:
+          active: true
+          area: 1
+          interfaces:
+          - ifindex: 1
+            ifname: Ethernet1
+            ipv4: 10.1.0.1/30
+            linkindex: 1
+            name: r1 -> r2
+            neighbors:
+            - ifname: Ethernet1
+              ipv4: 10.1.0.2/30
+              node: r2
+              vrf: red
+            ospf:
+              area: 0.0.0.0
+              network_type: point-to-point
+              passive: false
+            type: p2p
+            vrf: red
+          - ifindex: 2
+            ifname: Loopback101
+            ipv4: 10.2.0.1/32
+            name: VRF Loopback red
+            neighbors: []
+            ospf:
+              area: 1
+              passive: false
+            type: loopback
+            virtual_interface: true
+            vrf: red
+          router_id: 10.0.0.1
+        rd: '65101:11'
+        vrfidx: 101
+  r2:
+    af:
+      ipv4: true
+      vpnv4: true
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: r1
+        vrf: red
+      type: p2p
+      vrf: red
+    - ifindex: 2
+      ifname: Loopback101
+      ipv4: 10.2.0.3/32
+      name: VRF Loopback red
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: red
+    - ifindex: 3
+      ifname: Loopback100
+      ipv4: 10.2.0.4/32
+      name: VRF Loopback blue
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: blue
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - ospf
+    - vrf
+    name: r2
+    vrf:
+      as: 65000
+      loopback: true
+    vrfs:
+      blue:
+        af:
+          ipv4: true
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        networks:
+        - ipv4: 10.2.0.4/32
+        rd: '65000:1'
+        vrfidx: 100
+      red:
+        af:
+          ipv4: true
+        export:
+        - '65101:11'
+        id: 2
+        import:
+        - '65101:11'
+        networks:
+        - ipv4: 10.2.0.3/32
+        ospf:
+          active: true
+          area: 1
+          interfaces:
+          - ifindex: 1
+            ifname: Ethernet1
+            ipv4: 10.1.0.2/30
+            linkindex: 1
+            name: r2 -> r1
+            neighbors:
+            - ifname: Ethernet1
+              ipv4: 10.1.0.1/30
+              node: r1
+              vrf: red
+            ospf:
+              area: 0.0.0.0
+              network_type: point-to-point
+              passive: false
+            type: p2p
+            vrf: red
+          - ifindex: 2
+            ifname: Loopback101
+            ipv4: 10.2.0.3/32
+            name: VRF Loopback red
+            neighbors: []
+            ospf:
+              area: 1
+              passive: false
+            type: loopback
+            virtual_interface: true
+            vrf: red
+          router_id: 10.0.0.2
+        rd: '65101:11'
+        vrfidx: 101
+ospf:
+  area: 0.0.0.0
+provider: libvirt
+vrf:
+  as: 65000
+vrfs:
+  blue:
+    export:
+    - '65000:1'
+    id: 1
+    import:
+    - '65000:1'
+    rd: '65000:1'
+  red:
+    export:
+    - '65101:11'
+    id: 2
+    import:
+    - '65101:11'
+    rd: '65101:11'

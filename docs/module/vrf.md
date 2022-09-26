@@ -61,6 +61,17 @@ The keys of the **vrfs** dictionary are VRF names, the values are VRF definition
 
 Empty VRF definition will get [default RD and RT values](default-vrf-values) assigned during the topology transformation process.
 
+### Additional VRF Parameters
+
+You can also set these parameters to influence routing protocols running within a VRF.
+
+* **ospf.active** -- start an OSPF instance within a VRF even when there are no viable OSPF neighbors on VRF interfaces
+* **ospf.area** -- default OSPF area for VRF OSPF process (default: node **ospf.area**). This area is configured on OSPF loopback interfaces.
+* **bgp.router_id** -- per-VRF BGP router ID. Needed for inter-VRF EBGP sessions configured between interfaces of the same device.[^ELB]
+* **ospf.router_id** -- per-VRF OSPF router ID. Probably needed for the same reasons as **bgp.router_id**.
+
+[^ELB]: That's how some people implement inter-VRF route leaking. You don't want to know the details ;)
+
 (vrf-loopback)=
 ### Creating VRF Loopback Interfaces
 

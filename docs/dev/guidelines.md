@@ -35,3 +35,11 @@ The easiest way to get started is to [add support for a new platform for an exis
    config/vlan.md
    config/vrf.md
 ```
+
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+   :caption: Advanced Topics
+
+   groups-pre-transform.md
+```
