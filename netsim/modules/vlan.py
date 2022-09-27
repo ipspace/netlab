@@ -14,9 +14,8 @@ from ..augment import links
 
 # Global variables -- would love to be without them, but the alternatives
 # are even messier
-#
-vlan_ids: Box
-vlan_next: Box
+vlan_ids = Box({},default_box=True,box_dots=True)
+vlan_next = Box({},default_box=True,box_dots=True)
 
 # Static lists of keywords
 #
@@ -32,14 +31,6 @@ vlan_link_attr: typing.Final[dict] = {
 phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','_selfloop_ifindex'] # Physical interface attributes
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
-
-"""
-init_global_vars: Initialize the VLAN ID pool
-"""
-def init_global_vars() -> None:
-  global vlan_ids, vlan_next
-  vlan_ids = Box({},default_box=True,box_dots=True)
-  vlan_next = Box({},default_box=True,box_dots=True)
 
 #
 # build_vlan_id_set: given an object (topology or node), create a set of VLAN attributes (ID or VNI)
@@ -920,7 +911,7 @@ def populate_node_vlan_data(n: Box, topology: Box) -> None:
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
-    init_global_vars()
+    # init_global_vars()
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
     if get_from_box(topology,'vlan.mode'):
