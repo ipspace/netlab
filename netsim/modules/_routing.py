@@ -188,10 +188,13 @@ def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
 #
 # remove_unaddressed_intf -- remove all interfaces without IPv4 or IPv6 address from IGP
 #
+# This routing should be called BEFORE build_vrf_interface_list to ensure the interfaces without any usable
+# L3 address are not copied into VRF interface list
+#
 
 def remove_unaddressed_intf(node: Box, proto: str) -> None:
   for intf in node.interfaces:
-    if proto in intf and not 'vrf' in intf:                                 # Scan global interfaces, VRF interfaces have already been handled
+    if proto in intf:
       if not any(af in intf for af in ('ipv4','ipv6','unnumbered')):        # Do we have at least some addressing on the interface?
         intf.pop(proto,None)                                                # Nope, no need to run IGP on that interface
 #

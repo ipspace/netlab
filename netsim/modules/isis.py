@@ -53,8 +53,8 @@ class ISIS(_Module):
     # * Enable BFD
     # * Remove ISIS module if there are no IS-IS enabled global interfaces
     #
+    _routing.remove_unaddressed_intf(node,'isis')
     _routing.remove_vrf_interfaces(node,'isis')
     _routing.routing_af(node,'isis')
     bfd.multiprotocol_bfd_link_state(node,'isis')
-    _routing.remove_unaddressed_intf(node,'ospf')
     _routing.remove_unused_igp(node,'isis')
