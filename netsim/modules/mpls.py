@@ -43,9 +43,11 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
   _routing.router_id(node,'ldp',topology.pools)
 
   for intf in node.get('interfaces',[]):
-    intf_ldp = data.get_from_box(intf,'mpls.ldp')
+    if not 'ipv4' in intf:
+      continue                                                    # Cannot run MPLS LDP on non-IPv4 interface
+    intf_ldp = data.get_from_box(intf,'mpls.ldp')                 # ... get interface LDP status (if set)
     if 'vrf' in intf:
-      if not intf_ldp:
+      if not intf_ldp:                                            # ... VRF LDP must be enabled on individual interfaces (MPLS CSC)
         continue
       if not features.mpls.csc:
         common.error(
