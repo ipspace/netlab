@@ -167,7 +167,7 @@ def remove_vrf_interfaces(node: Box, proto: str) -> None:
 #
 def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
   for l in node.interfaces:
-    if proto in l and 'vrf' in l:
+    if proto in l and 'vrf' in l and ('ipv4' in l or 'ipv6' in l):
       if not 'interfaces' in node.vrfs[l.vrf][proto]:                       # Start with an empty interface list
         node.vrfs[l.vrf][proto].interfaces = []
       if not 'active' in node.vrfs[l.vrf][proto]:                           # Assume there are no IGP neighbors in this VRF
