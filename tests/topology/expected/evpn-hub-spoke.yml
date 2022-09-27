@@ -1,0 +1,226 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+evpn:
+  session:
+  - ibgp
+  vlan_bundle_service: false
+groups:
+  as65000:
+    members:
+    - r1
+    - r2
+input:
+- topology/input/evpn-hub-spoke.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ipv4: 10.1.0.1/30
+    node: r1
+    vrf: hub
+  - ifindex: 1
+    ipv4: 10.1.0.2/30
+    node: r2
+    vrf: spoke
+  left:
+    ifname: ethernet-1/1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: r1 - r2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: ethernet-1/1
+    ipv4: 10.1.0.2/30
+    node: r2
+  type: p2p
+module:
+- bgp
+- vrf
+- evpn
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        evpn: true
+        ipv4: 10.0.0.2
+        name: r2
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    evpn:
+      session:
+      - ibgp
+      vlan_bundle_service: false
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: ethernet-1/1
+        ipv4: 10.1.0.2/30
+        node: r2
+        vrf: spoke
+      type: p2p
+      vrf: hub
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - bgp
+    - vrf
+    - evpn
+    name: r1
+    vrf:
+      as: 65000
+    vrfs:
+      hub:
+        af:
+          ipv4: true
+        evpn:
+          transit_vni: 200000
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:2'
+        rd: '65000:1'
+        vrfidx: 100
+  r2:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        evpn: true
+        ipv4: 10.0.0.1
+        name: r1
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: ghcr.io/nokia/srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    device: srlinux
+    evpn:
+      session:
+      - ibgp
+      vlan_bundle_service: false
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: ethernet-1/1
+        ipv4: 10.1.0.1/30
+        node: r1
+        vrf: hub
+      type: p2p
+      vrf: spoke
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - bgp
+    - vrf
+    - evpn
+    name: r2
+    vrf:
+      as: 65000
+    vrfs:
+      spoke:
+        af:
+          ipv4: true
+        evpn:
+          transit_vni: 200001
+        export:
+        - '65000:2'
+        id: 2
+        import:
+        - '65000:1'
+        rd: '65000:2'
+        vrfidx: 100
+provider: clab
+vrf:
+  as: 65000
+vrfs:
+  hub:
+    evpn:
+      transit_vni: 200000
+    export:
+    - '65000:1'
+    id: 1
+    import:
+    - '65000:2'
+    rd: '65000:1'
+  spoke:
+    evpn:
+      transit_vni: 200001
+    export:
+    - '65000:2'
+    id: 2
+    import:
+    - '65000:1'
+    rd: '65000:2'

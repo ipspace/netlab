@@ -34,7 +34,7 @@ keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Ke
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
 
 """
-init_global_vars: Initialize the VLAN ID pool
+init_global_vars: (Re)initialize the VLAN ID pool
 """
 def init_global_vars() -> None:
   global vlan_ids, vlan_next
@@ -1029,3 +1029,5 @@ class VLAN(_Module):
 
     cleanup_vlan_name(topology)
     fix_vlan_gateways(topology)
+
+init_global_vars()        # Make sure these are initialized also for topologies that do not include the vlan module
