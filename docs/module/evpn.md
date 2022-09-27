@@ -88,7 +88,12 @@ The default value of VRF EVPN Instance identifier is the VLAN ID of the first VL
 
 IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addresses:
 
-* Asymmetric IRB requires no extra parameters[^NS]
+* Asymmetric IRB requires no extra parameters[^NS]; note that every vlan must be present on every node for this model to work (not done automatically)
 * Symmetric IRB needs a transit VNI that has to be set with the **evpn.transit_vni** parameter. This parameter could be set to an integer value or to *True* in which case the EVPN configuration module auto-assigns a VNI to the VRF. Note that the EVI value used in this case is currently based on the VRF ID (vrfidx)
 
 [^NS]: Asymmetric IRB is only supported on Nokia SR OS at the moment
+
+### Advanced topologies with duplicate EVPN transit VNIs
+
+In some cases, users may want to implement advanced topologies that use the same **evpn.transit_vni** parameter for different VRFs.
+By default, the evpn module enforces globally unique transit VNIs; set **evpn.enforce_unique_transit_vni** to _False_ to skip this check.

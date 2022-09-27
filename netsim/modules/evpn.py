@@ -87,7 +87,7 @@ def vrf_transit_vni(topology: Box) -> None:
     vni = data.get_from_box(vrf_data,'evpn.transit_vni')
     if not isinstance(vni,int) or isinstance(vni,bool):         # Note that isinstance(bool_var,int) is True
       continue
-    if vni in vni_list:
+    if vni in vni_list and data.get_from_box(topology,'evpn.enforce_unique_transit_vni',True):
       common.error(
         f'VRF {vrf_name} is using the same EVPN transit VNI as another VRF',
         common.IncorrectValue,
