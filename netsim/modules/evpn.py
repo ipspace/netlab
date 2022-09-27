@@ -80,26 +80,38 @@ def vrf_transit_vni(topology: Box) -> None:
 
   from .vlan import is_vlan_id_used
 
-  vni_list: typing.List[int] = []
+  vni_dict: typing.Dict[int,dict] = {}                          # vni -> first vrf that uses it
+
+  def import_export(vrf:dict) -> typing.Optional[typing.Tuple[str,str]]:
+    if 'import' in vrf and 'export' in vrf:
+      return ( vrf['import'][0], vrf['export'][0] )
+    return None
+
+  def is_hub_spoke(vrf1:dict,vrf2:dict) -> bool:
+    i1 = import_export(vrf1)
+    i2 = import_export(vrf2)
+    return i1 and i2 and i1[0]==i2[1] and i1[1]==i2[0]
+
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
     vni = data.get_from_box(vrf_data,'evpn.transit_vni')
     if not isinstance(vni,int) or isinstance(vni,bool):         # Note that isinstance(bool_var,int) is True
       continue
-    if vni in vni_list:
-      common.error(
-        f'VRF {vrf_name} is using the same EVPN transit VNI as another VRF',
-        common.IncorrectValue,
-        'evpn')
+    if vni in vni_dict:
+      if not is_hub_spoke(vrf_data,vni_dict[vni]):              # Allow for hub/spoke topologies
+        common.error(
+         f'VRF {vrf_name} is using the same EVPN transit VNI({vni}) as another VRF and is not a hub/spoke construct',
+         common.IncorrectValue,
+         'evpn')
       continue
     elif is_vlan_id_used(vni,'vni'):
       common.error(
         f'VRF {vrf_name} is using an EVPN transit VNI that is also used as L2 VNI {vni}',
         common.IncorrectValue,
         'evpn')
-      continue  
-    vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
+      continue
+    vni_dict[vni] = vrf_data                                    # Insert it to detect duplicates elsewhere
 
   vni_start = topology.defaults.evpn.start_transit_vni
   for vrf_name,vrf_data in topology.vrfs.items():               # Second pass: set transit VNI values for VRFs with "transit_vni: True"
@@ -114,7 +126,7 @@ def vrf_transit_vni(topology: Box) -> None:
                     max_value=16777215,
                     true_value=vni_start)                       # Make sure evpn.transit_vni is an integer
     if transit_vni == vni_start:                                # If we had to assign the default value, increment the default transit VNI
-      vni_start = get_next_vni(vni_start,vni_list)
+      vni_start = get_next_vni(vni_start,list(vni_dict.keys()))
 
 def vrf_irb_setup(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
