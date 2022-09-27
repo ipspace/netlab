@@ -88,7 +88,12 @@ The default value of VRF EVPN Instance identifier is the VLAN ID of the first VL
 
 IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addresses:
 
-* Asymmetric IRB requires no extra parameters[^NS]
+* Asymmetric IRB requires no extra parameters[^NS], but requires instantiating all vxlan-enabled vlans on all devices
 * Symmetric IRB needs a transit VNI that has to be set with the **evpn.transit_vni** parameter. This parameter could be set to an integer value or to *True* in which case the EVPN configuration module auto-assigns a VNI to the VRF. Note that the EVI value used in this case is currently based on the VRF ID (vrfidx)
 
 [^NS]: Asymmetric IRB is only supported on Nokia SR OS at the moment
+
+### Hub/Spoke topologies for symmetric IRB
+
+In an EVPN service topology with a common services VRF, it is possible to create a hub/spoke topology in which a 'hub' VRF imports routes from a 'spoke' VRF, and vice versa. This construct is supported, but requires manual allocation of the same **evpn.transit_vni** for both the 'hub' and the 'spoke' VRF.
+Furthermore, the first import/export entries must be mirrored (i.e. hub.export[0]==spoke.import[0] and hub.import[0]==spoke.export[0])
