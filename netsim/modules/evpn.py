@@ -90,7 +90,7 @@ def vrf_transit_vni(topology: Box) -> None:
   def is_hub_spoke(vrf1:dict,vrf2:dict) -> bool:
     i1 = import_export(vrf1)
     i2 = import_export(vrf2)
-    return i1 and i2 and i1[0]==i2[1] and i1[1]==i2[0]
+    return i1 is not None and i2 is not None and i1[0]==i2[1] and i1[1]==i2[0]
 
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
     if vrf_data is None:                                        # Skip empty VRF definitions
