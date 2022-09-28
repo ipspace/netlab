@@ -53,10 +53,13 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -
       'evpn')
     return
 
+  if not topology.vrfs[vrf_name].evpn:
+    topology.vrfs[vrf_name].evpn = {}                               # Make sure the global VRF EVPN attribute is a dictionary
   g_evpn = topology.vrfs[vrf_name].evpn
   if not 'evi' in g_evpn:                                           # If needed, set EVI attribute for the global VRF
-    g_evpn.evi = topology.vlans[vname].id                           # ... to VLAN ID
+    g_evpn.evi = topology.vlans[vname].id                           # ... to first VLAN ID encountered (lowest when auto-assigned)
 
+  data.must_be_dict(node.vrfs[vrf_name],'evpn',f'nodes.{node.name}.vrfs.{vrf_name}',create_empty=True)
   evpn = node.vrfs[vrf_name].evpn                                   # Now set VRF EVPN parameters for node VRF
   evpn.evi = g_evpn.evi                                             # Copy EVI from global VRF
   for k in ('vlans','vlan_ids'):
@@ -84,8 +87,9 @@ def vrf_transit_vni(topology: Box) -> None:
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
+    data.must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
     vni = data.get_from_box(vrf_data,'evpn.transit_vni')
-    if not isinstance(vni,int) or isinstance(vni,bool):         # Note that isinstance(bool_var,int) is True
+    if not data.is_true_int(vni):                               # Skip non-integer values, no need to check them at this time
       continue
     if vni in vni_list:
       common.error(
