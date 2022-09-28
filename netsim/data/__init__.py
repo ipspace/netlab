@@ -365,3 +365,10 @@ def validate_list_elements(data: list, values: list, path: str) -> bool:
     common.fatal(f'{path} should be a list')
     return False
   return all(item in values for item in data)
+
+"""
+is_true_int: work around the Python stupidity of bools being ints
+"""
+
+def is_true_int(data: typing.Any) -> bool:
+  return isinstance(data,int) and not isinstance(data,bool)
