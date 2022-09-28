@@ -1,0 +1,30 @@
+
+{#
+# First of all define all switching VLANs (mode!=route)
+#}
+
+{% for vlan,vdata in vlans.items() if vdata.mode != 'route' %}
+/interface/bridge/vlan add bridge=switch vlan-ids={{vdata.id}} tagged=switch
+{% endfor %}
+
+{% for ifdata in interfaces|default([]) if ifdata.vlan is defined and ifdata.type is defined and ifdata.type != 'vlan_member' and not ifdata.virtual_interface|default(False) %}
+
+{% if ifdata.vlan.access_id is defined %}
+/interface/bridge/port add bridge=switch interface={{ ifdata.ifname }} pvid={{ ifdata.vlan.access_id }}
+
+{#
+# add untagged port to the vlan
+#}
+/interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids={{ ifdata.vlan.access_id }}]],"{{ ifdata.ifname }}") [find vlan-ids={{ ifdata.vlan.access_id }}]
+
+{% else %}
+/interface/bridge/port add bridge=switch interface={{ ifdata.ifname }}
+{% endif %}
+
+{%   if ifdata.vlan.trunk_id is defined %}
+{%     for vid in ifdata.vlan.trunk_id %}
+/interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids={{ vid }}]],"{{ ifdata.ifname }}") [find vlan-ids={{ vid }}]
+{%     endfor %}
+{%   endif %}
+
+{% endfor %}
