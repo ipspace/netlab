@@ -2,7 +2,7 @@
 # Generic data model manipulation and validation routines
 #
 
-import typing
+import typing,typing_extensions
 from box import Box
 from .. import common
 
@@ -370,5 +370,5 @@ def validate_list_elements(data: list, values: list, path: str) -> bool:
 is_true_int: work around the Python stupidity of bools being ints
 """
 
-def is_true_int(data: typing.Any) -> bool:
+def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
   return isinstance(data,int) and not isinstance(data,bool)

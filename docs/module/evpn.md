@@ -25,7 +25,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Arista EOS         | ✅  | ✅  | ✅  |  ❌  | ✅  |
 | Cisco Nexus OS     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  | ✅  |  ❌  |  ❌  | ✅  |
-| Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
+| Nokia SR Linux     | ✅  | ✅  |  ✅  |  ✅  | ✅  |
 | Nokia SR OS        | ✅  | ✅  |  ❌  |  ✅  | ✅  |
 | FRR                | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | VyOS               | ✅  | ✅  |  ❌  |  ❌  | ✅  |
@@ -80,9 +80,9 @@ EVPN configuration module sets the following default EVI/RD/RT values for [VXLAN
 
 VLAN-Aware Bundle Service is disabled by default and has to be enabled by setting **evpn.vlan_bundle_service** parameter to _True_. Although that parameter is a global/node parameter, it might not be a good idea to use different settings on different nodes. 
 
-VLAN-Aware Bundle Service uses VRF configuration (and thus requires [VRF configuration module](vrf.md)). All VLANs belonging to a single VRF are configured as a VLAN bundle. [RD and RT values assigned by VRF module](vrf.md#rd-and-rt-values) are used to configure the VLAN bundle; you can set **evpn.evi** VRF parameter to set the EVPN Instance identifier.
+VLAN-Aware Bundle Service uses VRF configuration (and thus requires [VRF configuration module](vrf.md)). All VLANs belonging to a single VRF are configured as a VLAN bundle, modeled as a single EVPN Instance. [RD and RT values assigned by VRF module](vrf.md#rd-and-rt-values) are used to configure the VLAN bundle; you can set **evpn.evi** VRF parameter to set the EVPN Instance identifier
 
-The default value of VRF EVPN Instance identifier is the VLAN ID of the first VLAN in that VRF.
+The default value of VRF EVPN Instance identifier is the VLAN ID of the first VLAN referencing that VRF (typically lowest when auto-generated)
 
 ### Integrated Routing and Bridging
 
