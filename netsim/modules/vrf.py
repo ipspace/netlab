@@ -7,13 +7,9 @@ from box import Box
 from . import _Module,_routing,get_effective_module_attribute
 from .. import common
 from .. import data
-from ..data import get_from_box,must_be_dict
+from ..data import get_from_box,must_be_dict,global_vars
 from ..augment import devices,groups
 from .. import addressing
-
-vrf_id_set: set
-vrf_rd_set: set
-vrf_last_id: int
 
 #
 # Regex expression to validate names used in vrfs. No spaces or weird characters, not too long
@@ -31,16 +27,16 @@ def build_vrf_static_set(obj: Box, attr: str) -> set:
   return set()
 
 def populate_vrf_static_ids(topology: Box) -> None:
-  global vrf_id_set, vrf_rd_set, vrf_last_id
+  vrf_data = global_vars.get('vrf')
 
-  vrf_rd_set = build_vrf_static_set(topology,'rd')
-  vrf_id_set = build_vrf_static_set(topology,'id')
-  vrf_last_id = 1
+  vrf_data.rd_set = build_vrf_static_set(topology,'rd')
+  vrf_data.id_set = build_vrf_static_set(topology,'id')
+  vrf_data.last_id = 1
 
   for n in topology.nodes.values():
     if 'vrfs' in n:
-      vrf_rd_set = vrf_id_set.union(build_vrf_static_set(n,'rd'))
-      vrf_id_set = vrf_id_set.union(build_vrf_static_set(n,'id'))
+      vrf_data.rd_set = vrf_data.rd_set.union(build_vrf_static_set(n,'rd'))
+      vrf_data.id_set = vrf_data.id_set.union(build_vrf_static_set(n,'id'))
 
 #
 # Get a usable AS number. Try bgp.as then vrf.as from node and global settings
@@ -64,15 +60,15 @@ def parse_rdrt_value(value: str) -> typing.Optional[typing.List[int]]:
     return None
 
 def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
-  global vrf_id_set, vrf_rd_set, vrf_last_id
+  vrf_data = global_vars.get('vrf')
 
-  while f'{asn}:{vrf_last_id}' in vrf_rd_set or vrf_last_id in vrf_id_set:
-    vrf_last_id = vrf_last_id + 1
+  while f'{asn}:{vrf_data.last_id}' in vrf_data.rd_set or vrf_data.last_id in vrf_data.id_set:
+    vrf_data.last_id = vrf_data.last_id + 1
 
-  rd = f'{asn}:{vrf_last_id}'
-  vrf_rd_set.add(rd)
-  vrf_id_set.add(vrf_last_id)
-  return (vrf_last_id,rd)
+  rd = f'{asn}:{vrf_data.last_id}'
+  vrf_data.rd_set.add(rd)
+  vrf_data.id_set.add(vrf_data.last_id)
+  return (vrf_data.last_id,rd)
 
 #
 # Check for 'reasonable' VRF names using a regex expression
