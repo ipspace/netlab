@@ -53,10 +53,14 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -
       'evpn')
     return
 
+  if topology.vrfs[vrf_name].evpn is None:                          # Provided by user -> can be None
+    topology.vrfs[vrf_name].evpn = {}
   g_evpn = topology.vrfs[vrf_name].evpn
   if not 'evi' in g_evpn:                                           # If needed, set EVI attribute for the global VRF
     g_evpn.evi = topology.vlans[vname].id                           # ... to VLAN ID
 
+  if node.vrfs[vrf_name].evpn is None:                              # Normalize to non-None
+    node.vrfs[vrf_name].evpn = {}
   evpn = node.vrfs[vrf_name].evpn                                   # Now set VRF EVPN parameters for node VRF
   evpn.evi = g_evpn.evi                                             # Copy EVI from global VRF
   for k in ('vlans','vlan_ids'):

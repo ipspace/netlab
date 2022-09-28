@@ -25,7 +25,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Arista EOS         | ✅  | ✅  | ✅  |  ❌  | ✅  |
 | Cisco Nexus OS     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  | ✅  |  ❌  |  ❌  | ✅  |
-| Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
+| Nokia SR Linux     | ✅  | ✅  |  ✅  |  ✅  | ✅  |
 | Nokia SR OS        | ✅  | ✅  |  ❌  |  ✅  | ✅  |
 | FRR                | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | VyOS               | ✅  | ✅  |  ❌  |  ❌  | ✅  |
