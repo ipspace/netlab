@@ -1,5 +1,5 @@
 {#
- Enables the EVPN address family for eBGP or iBGP peers (ipv4 for now)
+ Enables the EVPN address family for eBGP or iBGP peers (using ipv4 loopbacks)
 
  Assumes bgp.as == AS used for EVPN
 #}
@@ -12,11 +12,14 @@ updates:
    - group-name: {{ 'ibgp-ipv4' if type=='ibgp' else 'ebgp' }} # Could create a dedicated group for EVPN only?
      evpn:
       admin-state: enable
-{% if bgp.rr|default(0) %}
-     next-hop-self: False
-{% endif %}
+     export-policy: accept_all
+     import-policy: accept_all
    evpn:
     rapid-update: True
+{% if 'vxlan' not in module and type=='ebgp' %}
+    inter-as-vpn: True
+    _annotate_inter-as-vpn: "VXLAN module disabled, assuming the intent is to pass on any EVPN routes to eBGP peers"
+{% endif %}
    route-advertisement:
     rapid-withdrawal: True
 

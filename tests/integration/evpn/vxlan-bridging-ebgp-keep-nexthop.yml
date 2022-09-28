@@ -1,0 +1,86 @@
+message: |
+  The devices under test are VLAN-to-VXLAN leaves using eBGP(v4) with EVPN via a pair of spines
+  Reference: EVPN Using EBGP without an Additional IGP
+  https://www.ipspace.net/Data_Center_BGP/BGP_in_EVPN-Based_Data_Center_Fabrics
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3
+
+  The next hop on EVPN routes from leaf1 should not be changed by the eBGP spines
+
+groups:
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+  spines:
+    members: [ s1, s2 ]
+    module: [ vlan,bgp,evpn ]  # Note: no VXLAN, just forwarding IP packets
+  leaves:
+    members: [ l1, l2, l3, l4 ]
+    module: [ vlan,vxlan,bgp,evpn ]
+
+# Proposed data model extension for use in generated RT values
+evpn.as: 65000
+
+bgp:
+  as_list:
+    65000:
+      members: [s1,s2]
+    65001:
+      members: [l1]
+    65002:
+      members: [l2]
+    65003:
+      members: [l3]
+    65004:
+      members: [l4]
+
+
+bgp.sessions:
+  ipv4: [ ebgp ]  # Only eBGP v4, no iBGP sessions or v6
+  ipv6: []
+
+evpn.session: [ ebgp ] # Default: [ ibgp ]
+
+vlans:
+  red:
+    mode: bridge
+  blue:
+    mode: bridge
+
+nodes:
+  h1:
+  h2:
+  h3:
+  h4:
+  s1:
+  s2:
+
+  l1:
+  l2:
+  l3:
+  l4:
+
+links:
+- h1:
+  l1:
+    vlan.access: red
+- h2:
+  l2:
+    vlan.access: red
+- h3:
+  l3:
+    vlan.access: blue
+- h4:
+  l4:
+    vlan.access: blue
+
+- s1-l1
+- s1-l2
+- s1-l3
+- s1-l4
+- s2-l1
+- s2-l2
+- s2-l3
+- s2-l4

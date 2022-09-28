@@ -28,7 +28,8 @@ def vlan_based_service(vlan: Box, vname: str, node: Box, topology: Box) -> None:
     evpn.rd = f'{node.bgp.router_id}:{vlan.id}'
   for rt in ('import','export'):                                    # Default RT value
     if not rt in evpn:                                              # ... BGP ASN:vlan ID
-      evpn[rt] = [ f"{node.bgp['as']}:{vlan.id}" ]
+      _as = data.get_from_box(topology,"evpn.as") or node.bgp['as'] # Use global evpn.as if set
+      evpn[rt] = [ f"{_as}:{vlan.id}" ]
 
 def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -> None:
   vrf_name = vlan.vrf
