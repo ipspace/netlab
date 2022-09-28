@@ -39,7 +39,7 @@ EVPN module supports three design paradigms:
 
 | Operating system   | IBGP+IGP | BGP RR | EBGP-only | IBGP over<br>EBGP | IPv4 BGP<br>transport | IPv6 BGP<br>transport |
 | ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ❌   | ❌   | ❌   | ✅  | ❌   |
+| Arista EOS         | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
 | Cisco Nexus OS     | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
 | Cumulus Linux      | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
 | Dell OS 10         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌   |
