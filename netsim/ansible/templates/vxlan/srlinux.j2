@@ -1,4 +1,4 @@
-{% macro vxlan_interface(vrf,index,type,vni,evi,rd,rts) %}
+{% macro vxlan_interface(vrf,index,type,vni,evi,rd,rts,bundle=False) %}
 - path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{index}}]
   val:
    type: {{ type }}
@@ -29,13 +29,23 @@
        evi: {{ evi }}
        ecmp: 8
        vxlan-interface: vxlan0.{{ index }}
+{%     if bundle %}
+       routes:
+        bridge-table:
+         vlan-aware-bundle-eth-tag: {{ index }}
+{%     endif %}
 {% endmacro %}
 
 updates:
 {% if vlans is defined and vxlan.vlans is defined %}
 {%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
 {%     set vlan = vlans[vname] %}
+{%     if evpn.vlan_bundle_service|default(False) %}
+{%      set vrf = vrfs[vlan.vrf] %}
+{{ vxlan_interface('vlan'+vlan.id|string,vlan.id,'bridged',vlan.vni,vlan.evpn.evi,vrf.rd,vrf,bundle=True) }}
+{%     else %}
 {{ vxlan_interface('vlan'+vlan.id|string,vlan.id,'bridged',vlan.vni,vlan.evpn.evi,vlan.evpn.rd,vlan.evpn) }}
+{%     endif %}
 {%   endfor %}
 {% endif %}
 

@@ -7,7 +7,7 @@ router bgp {{ bgp.as }}
 {% endfor %}
 
 ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-{% for vlan in (vlans|default({})).values() if 'vni' in vlan and 'evpn' in vlan %}
+{% for vlan in (vlans|default({})).values() if 'vni' in vlan and 'evpn' in vlan and 'rd' in vlan.evpn %}
   vni {{ vlan.vni }}
    rd {{ vlan.evpn.rd }}
    route-target export {{ vlan.evpn.export[0] }}
@@ -35,7 +35,7 @@ exit
 {% for vname,vdata in vrfs.items() if 'evpn' in vdata %}
 vrf {{ vname }}
 {% if vdata.evpn.transit_vni is defined %}
- vni {{ vdata.evpn.transit_vni }}
+ vni {{ vdata.evpn.transit_vni }} {{ 'prefix-routes-only' if vdata.evpn.prefix_routes_only|default(False) else '' }}
 {% endif %}
  exit-vrf
 

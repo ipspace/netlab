@@ -16,14 +16,17 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
       bn.evpn = True
 
-def vlan_based_service(vlan: Box, vname: str, node: Box, topology: Box) -> None:
+def set_vlan_evi(vlan: Box, vname: str, node: Box) -> None:
   evpn  = vlan.evpn
-  epath = f'nodes.{node.name}.vlans.{vname}.evpn'
   evpn.evi = evpn.evi or vlan.id                                    # Default EVI value: VLAN ID
   data.must_be_int(
-    evpn,'evi',epath,
+    evpn,'evi',f'nodes.{node.name}.vlans.{vname}.evpn',
     module='evpn',
     min_value=1,max_value=65535)                                    # Check EVI data type in range
+
+def vlan_based_service(vlan: Box, vname: str, node: Box, topology: Box) -> None:
+  evpn  = vlan.evpn
+  set_vlan_evi(vlan,vname,node)
   if not 'rd' in evpn:                                              # Default RD value
     evpn.rd = f'{node.bgp.router_id}:{vlan.id}'
   for rt in ('import','export'):                                    # Default RT value
@@ -46,19 +49,19 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -
       'evpn')
     return
 
-  if 'evpn' in node.vlans[vname]:                                   # VLAN that is part of a bundle cannot have EVI/RT/RD attributes
-    common.error(
-      f'VLAN {vname} on node {node.name} is part of a VLAN bundle {vrf_name} and cannot have EVPN-related attributes',
-      common.IncorrectValue,
-      'evpn')
-    return
+  if 'evpn' in node.vlans[vname]:                                   # VLAN that is part of a bundle cannot have RT/RD attributes
+    if 'rd' in node.vlans[vname].evpn or 'rt' in node.vlans[vname].evpn:
+      common.error(
+        f'VLAN {vname} on node {node.name} is part of a VLAN bundle {vrf_name} and cannot have EVPN-related RT/RD attributes',
+        common.IncorrectValue,
+        'evpn')
+      return
 
-  g_evpn = topology.vrfs[vrf_name].evpn
-  if not 'evi' in g_evpn:                                           # If needed, set EVI attribute for the global VRF
-    g_evpn.evi = topology.vlans[vname].id                           # ... to VLAN ID
+  set_vlan_evi(vlan,vname,node)                                     # Set EVI per VLAN, for platforms that need it
 
+  if node.vrfs[vrf_name].evpn is None:
+    node.vrfs[vrf_name].evpn = {}
   evpn = node.vrfs[vrf_name].evpn                                   # Now set VRF EVPN parameters for node VRF
-  evpn.evi = g_evpn.evi                                             # Copy EVI from global VRF
   for k in ('vlans','vlan_ids'):
     if not k in evpn:                                               # Is this the first EVPN-enabled VLAN in this VRF?
       evpn[k] = []                                                  # ... create an empty list of VLANs
