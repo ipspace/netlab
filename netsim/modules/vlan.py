@@ -7,16 +7,11 @@ from box import Box
 from . import _Module,_routing,get_effective_module_attribute
 from .. import common
 from .. import data
+from ..data import global_vars
 from .. import addressing
 from ..data import get_from_box,get_global_parameter
 from ..augment import devices,groups
 from ..augment import links
-
-# Global variables -- would love to be without them, but the alternatives
-# are even messier
-#
-vlan_ids: Box
-vlan_next: Box
 
 # Static lists of keywords
 #
@@ -33,14 +28,6 @@ phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','lin
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
 
-"""
-init_global_vars: Initialize the VLAN ID pool
-"""
-def init_global_vars() -> None:
-  global vlan_ids, vlan_next
-  vlan_ids = Box({},default_box=True,box_dots=True)
-  vlan_next = Box({},default_box=True,box_dots=True)
-
 #
 # build_vlan_id_set: given an object (topology or node), create a set of VLAN attributes (ID or VNI)
 # that appear in that object.
@@ -55,7 +42,8 @@ def build_vlan_id_set(obj: Box, attr: str, objname: str) -> set:
   return set()
 
 def populate_vlan_id_set(topology: Box) -> None:
-  global vlan_ids, vlan_next
+  vlan_ids = global_vars.get('vlan_ids')
+  vlan_next = global_vars.get('vlan_next')
 
   for k in ('id','vni'):
     vlan_ids[k] = build_vlan_id_set(topology,k,'topology')
@@ -73,7 +61,8 @@ def populate_vlan_id_set(topology: Box) -> None:
         vlan_ids[k] = vlan_ids[k].union(build_vlan_id_set(n,k,n.name))
 
 def get_next_vlan_id(k : str) -> int:
-  global vlan_ids,vlan_next
+  vlan_ids = global_vars.get('vlan_ids')
+  vlan_next = global_vars.get('vlan_next')
 
   if k not in vlan_ids or k not in vlan_next:   # pragma: no cover
     common.fatal(f'Invalid attribute {k} in get_next_vlan_id call')
@@ -89,7 +78,8 @@ def get_next_vlan_id(k : str) -> int:
 # from modules needing this functionality
 #
 def is_vlan_id_used(vlan_id: int, namespace: str) -> bool:
-  global vlan_ids
+  vlan_ids = global_vars.get('vlan_ids')
+
   return vlan_id in vlan_ids[namespace]
 
 #
@@ -139,7 +129,7 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 # * VLAN forwarding mode
 #
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
-  global vlan_ids
+  vlan_ids = global_vars.get('vlan_ids')
 
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
@@ -920,7 +910,6 @@ def populate_node_vlan_data(n: Box, topology: Box) -> None:
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
-    init_global_vars()
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
     if get_from_box(topology,'vlan.mode'):
