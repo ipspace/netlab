@@ -105,6 +105,8 @@ def vrf_transit_vni(topology: Box) -> None:
   for vrf_name,vrf_data in topology.vrfs.items():               # Second pass: set transit VNI values for VRFs with "transit_vni: True"
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
+    if isinstance(data.get_from_box(vrf_data,'evpn.transit_vni'),str):
+      continue                                                  # Skip transit_vni string values (will be checked in third pass)
     transit_vni = data.must_be_int(
                     vrf_data,
                     key='evpn.transit_vni',
@@ -115,6 +117,27 @@ def vrf_transit_vni(topology: Box) -> None:
                     true_value=vni_start)                       # Make sure evpn.transit_vni is an integer
     if transit_vni == vni_start:                                # If we had to assign the default value, increment the default transit VNI
       vni_start = get_next_vni(vni_start,vni_list)
+
+  for vrf_name,vrf_data in topology.vrfs.items():               # Third pass: set shared VNI values across VRFs
+    if vrf_data is None:                                        # Skip empty VRF definitions
+      continue
+    transit_vni = data.get_from_box(vrf_data,'evpn.transit_vni')
+    if not isinstance(transit_vni,str):                         # Skip if transit_vni is not a string
+      continue
+    if not transit_vni in topology.vrfs:                        # Does transit VNI refer to a valid VRF name?
+      common.error(
+        f'evpn.transit_vni "{transit_vni}" in VRF {vrf_name} does not refer to a valid VRF',
+        common.IncorrectValue,
+        'evpn')
+      continue
+    foreign_vni = data.get_from_box(topology.vrfs,f'{transit_vni}.evpn.transit_vni')
+    if not data.is_true_int(foreign_vni):
+      common.error(
+        f'evpn.transit_vni "{transit_vni}" in VRF {vrf_name} refers to a VRF that does not have a valid evpn.transit_vni',
+        common.IncorrectValue,
+        'evpn')
+      continue
+    vrf_data.evpn_transit_vni = foreign_vni
 
 def vrf_irb_setup(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
