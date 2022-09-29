@@ -529,10 +529,12 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
     return
 
   link.pop('host_count',None)
+  if common.debug_active('links'):
+    print(f'Set DGW for {link}')
   if not 'gateway' in link:
     gateway = None
     for ifdata in link[IFATTR]:
-      if nodes[ifdata.node].get('role','') != 'host' and 'ipv4' in ifdata:
+      if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
         link.gateway.ipv4 = ifdata.ipv4
         break
   else:
@@ -543,7 +545,12 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
         'links')
 
   if not 'gateway' in link:         # Didn't find a usable gateway, exit
+    if common.debug_active('links'):
+      print('... not found')
     return
+
+  if common.debug_active('links'):
+    print(f'... DGW: {link.gateway}')
 
   for ifdata in link[IFATTR]:                             # Copy link gateway to all hosts attached to the link
     if nodes[ifdata.node].get('role','') == 'host':       # Set gateway only for hosts
