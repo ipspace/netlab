@@ -367,31 +367,6 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
   return link_ok
 
 """
-check_native_routed_vlan: verify that all devices attached to a link can support native routed VLAN
-
-This function is called when we're dealing with a link with routed non-tagged VLAN. It needs to check
-whether we're dealing with a native VLAN (as opposed to access VLAN) and if so, iterate through
-the attached nodes to validate whether they support this setup.
-"""
-
-def check_native_routed_vlan(link: Box, v_attr: Box, topology: Box) -> None:
-  if not 'native' in v_attr:                                      # No vlan.native attribute, we're good
-    return
-
-  if not v_attr.native.set:                                       # Native VLAN set is empty, we're good
-    return
-
-  native_vlan = list(v_attr.native.set)[0]
-  for intf in link.interfaces:                                    # Check only nodes VLAN attributes that have native VLAN in their trunk
-    if 'vlan' in intf and native_vlan in intf.vlan.get('trunk',{}):
-      features = devices.get_device_features(topology.nodes[intf.node],topology.defaults)
-      if not features.vlan.native_routed:
-        common.error(
-          f'Node {intf.node} does not support routed native VLANs\n... link {link}',
-          common.IncorrectValue,
-          'vlan')
-
-"""
 copy_vlan_attributes: copy prefix and link type from vlan to link
 """
 def copy_vlan_attributes(vlan: str, vlan_data: Box, link: Box) -> None:
@@ -607,7 +582,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
   iflist_len = len(node.interfaces)
   for ifidx in range(0,iflist_len):
     ifdata = node.interfaces[ifidx]
-    access_vlan = get_from_box(ifdata,'vlan.access') or get_from_box(ifdata,'vlan.native')
+    native_vlan = get_from_box(ifdata,'vlan.native')
+    access_vlan = get_from_box(ifdata,'vlan.access') or native_vlan
     if not access_vlan:                                                     # No access VLAN on this interface?
       continue                                                              # ... good, move on
 
@@ -633,6 +609,10 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       if vlan_subif:
         ifdata.vlan.mode = 'route'
         ifdata.vlan.access_id = vlan_data.id
+      else:
+        ifdata._vlan_mode = 'route'                                         # Flags we need to clean up up the routed native VLAN mess
+        if native_vlan:                                                     # ... we can't use the vlan.* attributes as they might get removed
+          ifdata._vlan_native = native_vlan
 
       node.interfaces[ifidx] = vlan_copy + ifdata                           # Merge VLAN data with interface data
       continue                                                              # Move to next interface
@@ -758,6 +738,17 @@ def rename_neighbor_interface(node: Box, neighbor_name: str, old_ifname: str, ne
           n.ifname = new_ifname
 
 """
+Utility function: remove_vlan_from_trunk -- we need it to unify routed VLANs and routed native VLAN cases
+"""
+def remove_vlan_from_trunk(parent_intf: Box, vlan_id: int) -> None:
+  parent_intf.vlan.trunk_id = [ vlan for vlan in parent_intf.vlan.trunk_id if vlan != vlan_id ]
+  if not parent_intf.vlan.trunk_id:                               # Nothing left?
+    parent_intf.vlan.pop('trunk_id',None)                         # ... remove all trunk-related attributes from parent interface
+    parent_intf.vlan.pop('trunk',None)
+    if not parent_intf.vlan:                                      # And remove the VLAN dictionary if it's no longer needed
+      parent_intf.pop('vlan',None)
+
+"""
 rename_vlan_subinterfaces: rename or remove interfaces created from VLAN pseudo-links
 """
 def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
@@ -824,18 +815,47 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
         intf.pop(attr,None)
 
     if intf.vlan.access_id in parent_intf.vlan.get('trunk_id',[]):    # Remove subinterface VLAN from parent interface trunk list
-      parent_intf.vlan.trunk_id = [ vlan for vlan in parent_intf.vlan.trunk_id if vlan != intf.vlan.access_id ]
-      if not parent_intf.vlan.trunk_id:                               # Nothing left?
-        parent_intf.vlan.pop('trunk_id',None)                         # ... remove all trunk-related attributes from parent interface
-        parent_intf.vlan.pop('trunk',None)
-        if not parent_intf.vlan:                                      # And remove the VLAN dictionary if it's no longer needed
-          parent_intf.pop('vlan',None)
+      remove_vlan_from_trunk(parent_intf,intf.vlan.access_id)
 
-  # Final check: mixed bridged/routed trunks
-  #
-  # We can skip this check if the device supports mixed routed/bridged trunks or if it
-  # uses VLAN subinterfaces to implement VLANs.
-  #
+"""
+If we have a routed native VLAN, and there are no other bridged VLANs left
+in the VLAN trunk, we don't need a trunk at all.
+
+We are pretty late in the process, so we have to identify a native VLAN in
+a roundabout way: vlan_name is set to the native VLAN name, and there's still
+vlan.trunk_id on the link.
+
+The check for routed VLAN is also roundabout: if we have an IPv4 or IPv6 address
+on the interface, then we can assume it's a routed VLAN.
+"""
+def cleanup_routed_native_vlan(node: Box, topology: Box) -> None:
+  for intf in node.interfaces:
+    if not '_vlan_native' in intf:                                  # Skip interfaces without native VLAN
+      continue
+
+    if intf._vlan_mode != 'route':                                  # Nothing to do if the native VLAN is not routed
+      continue
+
+    features = devices.get_device_features(node,topology.defaults)
+    if not features.vlan.native_routed:
+      common.error(
+        f'Node {node.name} device {node.device} does not support native routed VLANs (vlan {intf._vlan_native} interface {intf.name})',
+        common.IncorrectValue,
+        'vlan')
+
+    vlan_id = node.vlans.get(intf._vlan_native,{}).id
+    if vlan_id:
+      remove_vlan_from_trunk(intf,vlan_id)
+
+"""
+After cleaning up the VLAN trunks as much as possible, it's time to check
+whether we're dealing with a mixed bridged/routed trunk.
+
+We can skip this check if the device supports mixed routed/bridged trunks or if it
+uses VLAN subinterfaces to implement VLANs.
+"""
+def check_mixed_trunks(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
   if features.vlan.mixed_trunk:
     return
 
@@ -988,7 +1008,6 @@ class VLAN(_Module):
             link[k] = vlan_data[k] + link[k]
 
     if routed_vlan:
-      check_native_routed_vlan(link,v_attr,topology)
       link.vlan.mode = 'route'
       for intf in link.interfaces:
         if 'vlan' in intf:
@@ -1012,6 +1031,8 @@ class VLAN(_Module):
         vlan_ifmap = create_svi_interfaces(n,topology)
         map_trunk_vlans(n,topology)
         rename_vlan_subinterfaces(n,topology)
+        cleanup_routed_native_vlan(n,topology)
+        check_mixed_trunks(n,topology)
 
     for n in topology.nodes.values():
       set_svi_neighbor_list(n,topology)
