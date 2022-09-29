@@ -1,0 +1,66 @@
+#
+# Incomplete topology focused on the various ways to configure anycast gateways
+#
+defaults.device: srlinux
+provider: clab
+
+addressing:
+  anycast-pool:
+    ipv4: 10.10.0.0/20
+    prefix: 24
+    anycast_gateway: 10  # .10 of every ipv4/ipv6 subnet
+
+  anycast-pool2:
+    ipv4: 10.20.0.0/20
+    prefix: 24
+    anycast_gateway: True  # Default: last of every ipv4/ipv6 subnet
+
+groups:
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+  switches:
+    members: [ s1,s2 ]
+    module: [ vlan,vrf ] # subset of modules reqauired
+
+vrfs:
+  tenant:
+
+vlans:
+  red:
+    vrf: tenant
+    pool: anycast-pool
+  blue:
+    vrf: tenant
+    prefix:
+      ipv4: 192.168.0.0/24
+      ipv6: 2001:1::/64
+      anycast_gateway_ipv4: 192.168.0.100  # ipv4 only, specified as address
+  green:
+    vrf: tenant        # Anycast gateway disabled on interface
+    pool: anycast-pool2
+
+nodes:
+  h1:
+  h2:
+  h3:
+  h4:
+  s1:
+  s2:
+
+links:
+- h1:
+  s1:
+    vlan.access: red
+- h2:
+  s2:
+    vlan.access: red
+- h3:
+  s1:
+    vlan.access: blue
+- h4:
+  s2:
+    vlan.access: green
+    anycast_gateway: False # Can add True/False to accept/ignore value from pool or vlan
+- s1:
+  s2:

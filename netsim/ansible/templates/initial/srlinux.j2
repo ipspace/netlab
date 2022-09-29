@@ -6,17 +6,27 @@
    ipv4:
     address:
     - ip-prefix: "{{ intf.ipv4 }}"
-{% if not is_system %}
+{%  if not is_system %}
       primary: [null]
-{% endif %}
+{%  endif %}
+{%  if 'anycast_gateway_ipv4' in intf %}
+    - ip-prefix: "{{ intf.anycast_gateway_ipv4 }}"
+      anycast-gw: True
+{%  endif %}
 {% endif %}
 {% if 'ipv6' in intf %}
    ipv6:
-{%   if intf.ipv6 is string %}
+{%  if intf.ipv6 is string or 'anycast_gateway_ipv6' in intf %}
     address:
+    - ip-prefix: "{{ intf.anycast_gateway_ipv6|default(intf.ipv6) }}"
+{%   if 'anycast_gateway_ipv6' in intf %}
+      anycast-gw: True
+{%    if intf.ipv6 is string %}
     - ip-prefix: "{{ intf.ipv6 }}"
+{%    endif %}
 {%   endif %}
-{% if ipv6_ra %}
+{%  endif %}
+{%  if ipv6_ra %}
     neighbor-discovery:
      learn-unsolicited: link-local
     router-advertisement:
@@ -25,7 +35,10 @@
       min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
       _annotate_min-advertisement-interval: "Reduced from platform default 200s"
       max-advertisement-interval: 5
+{%  endif %}
 {% endif %}
+{% if 'anycast_gateway_ipv4' in intf or 'anycast_gateway_ipv6' in intf %}
+   anycast-gw: { }
 {% endif %}
 {% endmacro %}
 

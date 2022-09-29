@@ -207,6 +207,18 @@ def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: 
         node_link_data[af] = True
     return None
 
+  # node 'anycast_gateway' feature checked afterwards - could check upfront
+  if node.get('role','') != 'host':
+    disable = node_link_data.pop('anycast_gateway',True) is False
+    for af in ('ipv4','ipv6'):
+      attr = f'anycast_gateway_{af}'
+      if attr in prefix and not disable:
+        if af not in prefix:
+          return (f'Node {node.name} is using anycast_gateway for {af} which is not enabled on link')
+        ip = prefix[attr]
+        ifdata[attr] = str( prefix[af][ip] if isinstance(ip,int) else ip  )
+        node_link_data[attr] = ifdata[attr]  # Include it in the interface data
+
   for af in ('ipv4','ipv6'):
     node_addr = None
     if af in node_link_data:                  # static IP address or host index
@@ -288,7 +300,7 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_p
   pfx_list = addressing.get(addr_pools,pools)
   link.prefix = {
       af: pfx_list[af] if isinstance(pfx_list[af],bool) else str(pfx_list[af])
-            for af in ('ipv4','ipv6') if af in pfx_list
+          for af in ('ipv4','ipv6') if af in pfx_list
     }
   if not link.prefix:
     link.pop('prefix',None)
@@ -342,17 +354,19 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
   for node_if in interfaces:
     node_if['data'].neighbors = []
+    is_host = ndict[node_if['node']].get('role','') == 'host'
     for remote_if in interfaces:
       if remote_if['node'] != node_if['node'] or remote_if['data'].ifindex != node_if['data'].ifindex:
         ngh_data = Box({ 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] })
         for af in ('ipv4','ipv6'):
           if af in remote_if['data']:
-            ngh_data[af] = remote_if['data'][af]
-        
+            gw = f"anycast_gateway_{af}"  # For hosts pick anycast gateway if set
+            ip = gw if is_host and gw in remote_if['data'] else af
+            ngh_data[af] = remote_if['data'][ip]
+
         # List enabled modules that have interface level attributes; copy those attributes too
         mods_with_ifattr = Box({ m : True for m in ndict[remote_if['node']].get('module',[]) if defaults[m].attributes.get('interface',None) })
         ifaddr_add_module(ngh_data,remote_if['data'],mods_with_ifattr)
-
         node_if['data'].neighbors.append(ngh_data)
 
   if common.debug_active('links'):     # pragma: no cover (debugging)
@@ -424,9 +438,9 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     remote = link_nodes[1-i].name
     interfaces[i]['neighbors'] = [{
         'node': remote,
-        'ifname': interfaces[1-i]['ifname']
+        'ifname': interfaces[1-i]['ifname'],
       }]
-    for af in ('ipv4','ipv6'):
+    for af in ('ipv4','ipv6'):  # No anycast-gateway support on p2p links
       if af in interfaces[1-i]:
         interfaces[i]['neighbors'][0][af] = interfaces[1-i][af]
       if af in interfaces[i]:
@@ -523,6 +537,13 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
             f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
             common.IncorrectValue,
             'interfaces')
+      if 'anycast_gateway_ipv4' in ifdata or 'anycast_gateway_ipv6' in ifdata:
+        if not features.initial.anycast_gateway:
+          common.error(
+            f'Device {ndata.device} does not support anycast_gateway IP used on\n'+
+            f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
+            common.IncorrectValue,
+            'interfaces')
 
 def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'host_count' in link:      # No hosts attached to the link, get out
@@ -532,10 +553,11 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if common.debug_active('links'):
     print(f'Set DGW for {link}')
   if not 'gateway' in link:
-    gateway = None
+
     for ifdata in link[IFATTR]:
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
-        link.gateway.ipv4 = ifdata.ipv4
+        # If anycast gateway is available, pick that
+        link.gateway.ipv4 = ifdata.get('anycast_gateway_ipv4') or ifdata.ipv4
         break
   else:
     if not isinstance(ifdata.gateway,dict) or not 'ipv4' in ifdata.gateway:  # pragma: no cover
