@@ -892,9 +892,11 @@ def fix_vlan_gateways(topology: Box) -> None:
     for intf in node.get('interfaces',[]):                            # Iterate over all interfaces
       if not get_from_box(intf,'gateway.ipv4'):                       # ... that don't have an IPv4 gateway
         for neighbor in intf.get('neighbors',[]):                     # Iterate over all neighbors
-          if 'ipv4' in neighbor:                                      # ... until we find one with a usable IPv4
-            intf.gateway.ipv4 = neighbor.ipv4                         # Set that address as our gateway
-            break                                                     # ... and get out of here
+          if neighbor.get('ipv4',False):                              # ... until we find one with a usable IPv4
+            n_node = topology.nodes[neighbor.node]
+            if n_node.get('role') != 'host':                          # ... that is not another host
+              intf.gateway.ipv4 = neighbor.ipv4                       # Set that address as our gateway
+              break                                                   # ... and get out of here
 
 """
 populate_node_vlan_data -- merge topology VLANs into node VLANs that were copied from groups.node_data
