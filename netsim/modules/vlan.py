@@ -1005,7 +1005,7 @@ class VLAN(_Module):
             intf.ipv4 = False                                                     # ... if so, disable addressing on this interface
             intf.ipv6 = False
 
-  def module_post_transform(self, topology: Box) -> None:
+  def module_post_link_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
       if 'vlan' in n.get('module',[]):
         populate_node_vlan_data(n,topology)

@@ -69,45 +69,69 @@ links:
   role: external
   type: p2p
 - interfaces:
+  - ifindex: 3
+    ipv4: 10.1.0.9/30
+    node: pe1
   - ifindex: 2
-    ipv4: 10.1.0.9/30
-    node: pe2
-    vrf: blue
-  - ifindex: 1
     ipv4: 10.1.0.10/30
-    node: r3
-  left:
-    ifname: Ethernet2
-    ipv4: 10.1.0.9/30
     node: pe2
+  left:
+    ifname: Ethernet3
+    ipv4: 10.1.0.9/30
+    node: pe1
   linkindex: 3
-  name: pe2 - r3
+  name: pe1 - pe2
   node_count: 2
   prefix:
     ipv4: 10.1.0.8/30
   right:
-    ifname: Ethernet1
+    ifname: Ethernet2
     ipv4: 10.1.0.10/30
+    node: pe2
+  type: p2p
+  vrf: blue
+- interfaces:
+  - ifindex: 3
+    ipv4: 10.1.0.13/30
+    node: pe2
+    vrf: blue
+  - ifindex: 1
+    ipv4: 10.1.0.14/30
+    node: r3
+    ospf:
+      area: 0.0.0.1
+  left:
+    ifname: Ethernet3
+    ipv4: 10.1.0.13/30
+    node: pe2
+  linkindex: 4
+  name: pe2 - r3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  right:
+    ifname: Ethernet1
+    ipv4: 10.1.0.14/30
     node: r3
   type: p2p
-- bridge: input_4
+- bridge: input_5
   interfaces:
   - ifindex: 2
     ipv4: 172.16.0.4/24
     node: r3
     vrf: yellow
-  linkindex: 4
+  linkindex: 5
   node_count: 1
   prefix:
     ipv4: 172.16.0.0/24
   type: stub
-- bridge: input_5
+- bridge: input_6
   interfaces:
   - ifindex: 3
     ipv4: 172.16.1.4/24
     node: r3
     vrf: brown
-  linkindex: 5
+  linkindex: 6
   node_count: 1
   prefix:
     ipv4: 172.16.1.0/24
@@ -180,6 +204,28 @@ nodes:
       role: external
       type: p2p
       vrf: red
+    - clab:
+        name: et3
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: pe1 -> pe2
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.10/30
+        node: pe2
+        vrf: blue
+      type: p2p
+      vrf: blue
+    - ifindex: 4
+      ifname: Loopback101
+      ipv4: 10.2.0.1/32
+      name: VRF Loopback blue
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: blue
     isis:
       af:
         ipv4: true
@@ -193,12 +239,60 @@ nodes:
       mac: 08-4F-A9-00-00-01
     module:
     - bgp
+    - ospf
     - isis
     - vrf
     name: pe1
     vrf:
       as: 65000
     vrfs:
+      blue:
+        af:
+          ipv4: true
+        export:
+        - '65000:3'
+        id: 3
+        import:
+        - '65000:3'
+        loopback: true
+        networks:
+        - ipv4: 10.2.0.1/32
+        ospf:
+          active: true
+          area: 0.0.0.2
+          interfaces:
+          - clab:
+              name: et3
+            ifindex: 3
+            ifname: Ethernet3
+            ipv4: 10.1.0.9/30
+            linkindex: 3
+            name: pe1 -> pe2
+            neighbors:
+            - ifname: Ethernet2
+              ipv4: 10.1.0.10/30
+              node: pe2
+              vrf: blue
+            ospf:
+              area: 0.0.0.2
+              network_type: point-to-point
+              passive: false
+            type: p2p
+            vrf: blue
+          - ifindex: 4
+            ifname: Loopback101
+            ipv4: 10.2.0.1/32
+            name: VRF Loopback blue
+            neighbors: []
+            ospf:
+              area: 0.0.0.2
+              passive: false
+            type: loopback
+            virtual_interface: true
+            vrf: blue
+          router_id: 10.0.0.1
+        rd: '65000:3'
+        vrfidx: 101
       red:
         af:
           ipv4: true
@@ -267,18 +361,32 @@ nodes:
         name: et2
       ifindex: 2
       ifname: Ethernet2
-      ipv4: 10.1.0.9/30
+      ipv4: 10.1.0.10/30
       linkindex: 3
+      name: pe2 -> pe1
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 10.1.0.9/30
+        node: pe1
+        vrf: blue
+      type: p2p
+      vrf: blue
+    - clab:
+        name: et3
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 10.1.0.13/30
+      linkindex: 4
       name: pe2 -> r3
       neighbors:
       - ifname: Ethernet1
-        ipv4: 10.1.0.10/30
+        ipv4: 10.1.0.14/30
         node: r3
       type: p2p
       vrf: blue
-    - ifindex: 3
+    - ifindex: 4
       ifname: Loopback100
-      ipv4: 10.2.0.1/32
+      ipv4: 10.2.0.2/32
       name: VRF Loopback blue
       neighbors: []
       type: loopback
@@ -313,36 +421,55 @@ nodes:
         id: 3
         import:
         - '65000:3'
+        loopback: true
         networks:
-        - ipv4: 10.2.0.1/32
+        - ipv4: 10.2.0.2/32
         ospf:
           active: true
-          area: 0.0.0.0
+          area: 0.0.0.1
           interfaces:
           - clab:
               name: et2
             ifindex: 2
             ifname: Ethernet2
-            ipv4: 10.1.0.9/30
+            ipv4: 10.1.0.10/30
             linkindex: 3
-            name: pe2 -> r3
+            name: pe2 -> pe1
             neighbors:
-            - ifname: Ethernet1
-              ipv4: 10.1.0.10/30
-              node: r3
+            - ifname: Ethernet3
+              ipv4: 10.1.0.9/30
+              node: pe1
+              vrf: blue
             ospf:
-              area: 0.0.0.0
+              area: 0.0.0.1
               network_type: point-to-point
               passive: false
             type: p2p
             vrf: blue
-          - ifindex: 3
+          - clab:
+              name: et3
+            ifindex: 3
+            ifname: Ethernet3
+            ipv4: 10.1.0.13/30
+            linkindex: 4
+            name: pe2 -> r3
+            neighbors:
+            - ifname: Ethernet1
+              ipv4: 10.1.0.14/30
+              node: r3
+            ospf:
+              area: 0.0.0.1
+              network_type: point-to-point
+              passive: false
+            type: p2p
+            vrf: blue
+          - ifindex: 4
             ifname: Loopback100
-            ipv4: 10.2.0.1/32
+            ipv4: 10.2.0.2/32
             name: VRF Loopback blue
             neighbors: []
             ospf:
-              area: 0.0.0.0
+              area: 0.0.0.1
               passive: false
             type: loopback
             virtual_interface: true
@@ -424,36 +551,36 @@ nodes:
         name: et1
       ifindex: 1
       ifname: Ethernet1
-      ipv4: 10.1.0.10/30
-      linkindex: 3
+      ipv4: 10.1.0.14/30
+      linkindex: 4
       name: r3 -> pe2
       neighbors:
-      - ifname: Ethernet2
-        ipv4: 10.1.0.9/30
+      - ifname: Ethernet3
+        ipv4: 10.1.0.13/30
         node: pe2
         vrf: blue
       ospf:
-        area: 0.0.0.0
+        area: 0.0.0.1
         network_type: point-to-point
         passive: false
       type: p2p
-    - bridge: input_4
+    - bridge: input_5
       clab:
         name: et2
       ifindex: 2
       ifname: Ethernet2
       ipv4: 172.16.0.4/24
-      linkindex: 4
+      linkindex: 5
       neighbors: []
       type: stub
       vrf: yellow
-    - bridge: input_5
+    - bridge: input_6
       clab:
         name: et3
       ifindex: 3
       ifname: Ethernet3
       ipv4: 172.16.1.4/24
-      linkindex: 5
+      linkindex: 6
       neighbors: []
       type: stub
       vrf: brown
@@ -487,13 +614,13 @@ nodes:
           active: true
           area: 0.0.0.0
           interfaces:
-          - bridge: input_5
+          - bridge: input_6
             clab:
               name: et3
             ifindex: 3
             ifname: Ethernet3
             ipv4: 172.16.1.4/24
-            linkindex: 5
+            linkindex: 6
             neighbors: []
             ospf:
               area: 0.0.0.0
@@ -525,6 +652,9 @@ vrfs:
     id: 3
     import:
     - '65000:3'
+    loopback: true
+    ospf:
+      area: 0.0.0.2
     rd: '65000:3'
   red:
     export:

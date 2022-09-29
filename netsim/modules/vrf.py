@@ -361,26 +361,42 @@ class VRF(_Module):
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     pass
 
+  #
+  # The post-link-transform hook must normalize VRF data and pull global VRF data into
+  # nodes so we can use the node VRF data in copy_node_data_into_interfaces module function
+  #
+  # We have to iterate over all VRF interfaces, validate VRF names (which was previously done
+  # in post-transform hook), and populate node VRF data (moved from post-transform hook)
+  #
+  def node_post_link_transform(self, node: Box, topology: Box) -> None:
+    for ifdata in node.interfaces:
+      if not 'vrf' in ifdata:                                           # Check only VRF interfaces
+        continue
+
+      vrf_data_path = f'vrfs.{ifdata.vrf}'
+      if not get_from_box(topology,vrf_data_path) and not get_from_box(node,vrf_data_path):
+        common.error(
+          f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
+          common.MissingValue,
+          'vrf')
+        continue
+
+      if not ifdata.vrf in node.vrfs:                                   # Local VRF not present, mark as required
+        node.vrfs[ifdata.vrf] = {}
+
+    if not 'vrfs' in node:
+      return
+
+    for vname in node.vrfs.keys():
+      if vname in topology.get('vrfs',{}):                              # Carefully check for global VRF
+        node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]      # ... and do the data merge
+
   def node_post_transform(self, node: Box, topology: Box) -> None:
     vrf_count = 0
-
-    if 'vrfs' in node:                                                  # Pull in global VRF data for VRFs mentioned in groups.node_data
-      for vname in node.vrfs.keys():
-        if vname in topology.get('vrfs',{}):                            # Is this a global VRF?
-          node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]    # ... yes, merge the data
 
     for ifdata in node.interfaces:
       if 'vrf' in ifdata:
         vrf_count = vrf_count + 1
-        if 'vrfs' in topology and ifdata.vrf in topology.vrfs:
-          node.vrfs[ifdata.vrf] = topology.vrfs[ifdata.vrf] + node.vrfs[ifdata.vrf]
-
-        if not node.vrfs.get(ifdata.vrf,None):
-          common.error(
-            f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
-            common.MissingValue,
-            'vrf')
-          continue
         if not node.vrfs[ifdata.vrf].rd:
           common.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} does not have a usable RD',

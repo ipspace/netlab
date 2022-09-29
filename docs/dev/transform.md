@@ -50,7 +50,7 @@ The data transformation has three major steps:
 * Set unique ID for every node
 * Get loopback IP addresses, management MAC address, and management IP addresses (`netsim.augment.nodes.augment_mgmt_if`) from *loopback* and *mgmt* address pools
 * Execute **augment_node_data** provider hook (example: set **hostname** for *containerlab* nodes)
-* Execute **post_node_transform** plugin hooks 
+* Execute **post_node_transform** plugin and module hooks
 
 ## Link Data Transformation
 
@@ -66,13 +66,14 @@ The data transformation has three major steps:
   * Copy link-level configuration module data into node interface data (example: OSPF area)
   * Create interface data for all nodes connected to the link ([details](../links.md#augmenting-node-data)).
 
-* Execute **post_link_transform** plugin hooks
+* Execute **post_link_transform** plugin and module hooks
 
 ## Final Steps and Cleanup
 
 * Execute **post_transform** module functions (`netsim.modules.post_transform`):
 
   * Check whether the lab devices support modules configured on them (`netsim.modules.check_supported_node_devices`)
+  * Merge select node data into interface data (`netsim.modules.copy_node_data_into_interfaces`) -- this is how interfaces get default `ospf.area` from the node.
   * Execute **post_transform** [node-level module hook](#node-level-module-hooks)
   * Execute **post_transform** [link-level module hook](#link-level-module-hooks)
   * Sort node module lists in order of module dependencies -- a module dependent on another module will be configured after it (`netsim.modules.reorder_node_modules`)
