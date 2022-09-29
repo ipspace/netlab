@@ -52,7 +52,7 @@ def pre_transform(topology: Box) -> None:
   link_transform("pre_transform",topology)
 
 """
-pre_node_transform: executed just before the node data model transformation is started
+pre/post_node_transform: executed just before/after the node data model transformation is started
 
 """
 def pre_node_transform(topology: Box) -> None:
@@ -60,14 +60,24 @@ def pre_node_transform(topology: Box) -> None:
   node_transform("pre_node_transform",topology)
   link_transform("pre_node_transform",topology)
 
+def post_node_transform(topology: Box) -> None:
+  module_transform("post_node_transform",topology)
+  node_transform("post_node_transform",topology)
+  link_transform("post_node_transform",topology)
+
 """
-pre_link_transform: executed just before the link data model transformation is started
+pre/post_link_transform: executed just before/after the link data model transformation is started
 
 """
 def pre_link_transform(topology: Box) -> None:
   module_transform("pre_link_transform",topology)
   node_transform("pre_link_transform",topology)
   link_transform("pre_link_transform",topology)
+
+def post_link_transform(topology: Box) -> None:
+  module_transform("post_link_transform",topology)
+  node_transform("post_link_transform",topology)
+  link_transform("post_link_transform",topology)
 
 """
 post_transform:
@@ -468,14 +478,26 @@ Example: copy node-level OSPF area into interfaces that don't have explicit area
 def copy_node_data_into_interfaces(topology: Box) -> None:
   for n in topology.nodes.values():
     for m in n.get('module',[]):                                 # Iterate over node modules
-      if topology.defaults[m].attributes.node_copy:              # .. any copyable attributes for this module?
-        copy_attr = Box({ k: v
-          for k,v in n.get(m,{}).items()
-            if k in topology.defaults[m].attributes.node_copy }) # Build a Box of node attributes that could be copied to interfaces
-        if copy_attr:                                            # .. anything to copy?
-          for intf in n.get('interfaces',[]):                    # .. if so, it would be nice to merge it with interface data
-            if isinstance(intf.get(m,{}),dict):                  # .. but only if the interface data allows it
-              intf[m] = copy_attr + intf[m]
+      mod_attr = topology.defaults[m].attributes                 # ... get a pointer to module attributes to make code easier to read
+      if not mod_attr.node_copy:                                 # Any copyable attributes for this module?
+        continue                                                 # ... nope, get out of here
+
+      copy_attr = Box({ k: v
+        for k,v in n.get(m,{}).items()
+          if k in mod_attr.node_copy })                          # Build a Box of node attributes that could be copied to interfaces
+
+      for intf in n.get('interfaces',[]):                        # We might have some work to do, iterate over all interfaces
+        if not isinstance(intf.get(m,{}),dict):                  # ... if the interface module data is not a dict, we can't merge
+          continue
+        if 'vrf' in intf and mod_attr.vrf_aware:                 # Do we have to deal with VRF-aware attributes?
+          vrf_attr = Box({ k: v
+            for k,v in n.vrfs[intf.vrf].get(m,{}).items()
+              if k in mod_attr.vrf_aware })                      # Build a Box of VRF attributes that could be copied to interfaces
+        else:
+          vrf_attr = Box({})                                     # ... otherwise set VRF attributes to an empty box
+
+        if copy_attr or vrf_attr:                                # ... modify interface data only if we have something to merge
+          intf[m] = copy_attr + vrf_attr + intf[m]
 
 """
 get_effective_module_attribute:
@@ -522,6 +544,9 @@ mod_load: typing.Dict = {}
 def module_transform(method: str, topology: Box) -> None:
   global mod_load
 
+  if common.debug_active('modules'):
+    print(f'Processing module_{method} hooks')
+
   for m in topology.get('module',[]):
     if not mod_load.get(m):
       mod_load[m] = _Module.load(m,topology.get(m))
@@ -532,6 +557,9 @@ def module_transform(method: str, topology: Box) -> None:
 
 def node_transform(method: str , topology: Box) -> None:
   global mod_load
+
+  if common.debug_active('modules'):
+    print(f'Processing node_{method} hooks')
 
   for name,n in topology.nodes.items():
     for m in n.get('module',[]):
@@ -544,6 +572,9 @@ def node_transform(method: str , topology: Box) -> None:
 
 def link_transform(method: str, topology: Box) -> None:
   global mod_load
+
+  if common.debug_active('modules'):
+    print(f'Processing link_{method} hooks')
 
   for l in topology.get("links",[]):
     mod_list: typing.Dict = {}

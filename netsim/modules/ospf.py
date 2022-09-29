@@ -16,9 +16,11 @@ class OSPF(_Module):
     features = devices.get_device_features(node,topology.defaults)
 
     _routing.router_id(node,'ospf',topology.pools)
+    #
+    # Initial cleanup
     for intf in node.get('interfaces',[]):
-      if not _routing.external(intf,'ospf'):
-        _routing.passive(intf,'ospf')
+      if not _routing.external(intf,'ospf'):                # Remove external interfaces from OSPF process
+        _routing.passive(intf,'ospf')                       # Set passive flag on other OSPF interfaces
         err = _routing.network_type(intf,'ospf',['point-to-point','point-to-multipoint','broadcast','non-broadcast'])
         if err:
           common.error(f'{err}\n... node {node.name} link {intf}')
