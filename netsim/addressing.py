@@ -58,14 +58,21 @@ from . import common
 from . import data
 
 def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
+
+  # Normalize IP addr strings, e.g. 2001:001::/48 becomes 2001:1::/48
+  def normalize_ip(ip:typing.Union[str,bool]) -> typing.Union[str,bool]:
+    return str(netaddr.IPNetwork(ip)) if isinstance(ip,str) else ip
+
   if not pfx:
     return Box({},default_box=True,box_dots=True)
   if not isinstance(pfx,dict):
-    return Box({ 'ipv4': str(pfx)},default_box=True,box_dots=True)
+    return Box({ 'ipv4': normalize_ip(pfx) },default_box=True,box_dots=True)
   for af in 'ipv4','ipv6':
     if af in pfx:
       if not pfx[af] or 'unnumbered' in pfx:  # If 'unnumbered' is set, ipv4/ipv6 will be based on loopback afs (per node)
         del pfx[af]
+      else:
+        pfx[af] = normalize_ip(pfx[af])
 
   return pfx
 
@@ -125,6 +132,9 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
         if not isinstance(pfx[k],bool):
           try:
             network = netaddr.IPNetwork(pfx[k])
+            if str(network.cidr) != pfx[k]:
+              common.error( f"pool '{pool}' is using an invalid prefix {pfx[k]} with host bits set ({str(network.cidr)})",
+                            category=common.IncorrectValue, module='addressing')
             addrs[pool][k+'_pfx'] = network
           except:
             common.error(
