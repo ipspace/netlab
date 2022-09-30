@@ -10,11 +10,17 @@ VLAN node- and interface data model contains enough information to implement VLA
 * Router-like platforms that use bridge groups, VLAN subinterfaces on physical interfaces, and BVI/IRB interfaces (example: Cisco IOSv, Nokia SR Linux, Mikrotik RouterOS). Set **vlan.model** attribute to **router**.
 * Switch-like platforms that support both routed and switched ports, or a hybrid approach where some ports can be routed using VLAN subinterfaces, while other ports could be connected to the internal L2/L3 switch (example: Arista EOS, VyOS). Set **vlan.model** attribute to **l3-switch**.
 
-You might want to use the VLAN integration test cases in `tests/integration/vlan` directory to test your implementation.
+The following blog posts might help if the above bullets managed to totally confuse you:
+
+* [Router Interfaces and Switch Ports](https://blog.ipspace.net/2022/09/interfaces-ports.html)
+* [How Routers Became Bridges](https://blog.ipspace.net/2022/09/routers-bridges-crb-irb.html)
+* [VLAN Interfaces and Subinterfaces](https://blog.ipspace.net/2022/09/vlan-interfaces.html)
+
+Finally, it's highly recommended to run all relevant VLAN integration test cases in `tests/integration/vlan` directory to test your implementation.
 
 **Notes:**
 
-* The device configuration template (in Jinja2 format) should be stored in `netsim/templates/vlan/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
+* The device configuration template (in Jinja2 format) should be stored in `netsim/templates/vlan/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details).
 * Most of the data model attributes are optional. Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
 
 ```eval_rst
@@ -48,7 +54,7 @@ You have to specify VLAN-related capabilities of your device in `devices.<device
 * **subif_name** -- name of VLAN subinterfaces for **router** platforms or routed VLAN subinterface name for **l3-switch** platforms. Use `{ifname}` to get the parent interface name, `{subif_index}` to get subinterface ID[^SID], and `{vlan.access_id}` to get the VLAN tag[^SUBIF].
 * **first_subif_id** -- subinterface ID of the first subinterface in case your platform uses unusual subinterface names. Defaults to 1.
 * **mixed_trunk** -- set to *True* when a platform supports a mix of bridged and routed VLANs on a trunk interface, regardless of the platform type -- applicable to **router** and **l3-switch** platforms. Set this flag only if your platform passes the `vlan-mixed-trunk.yml` integration test case.
-* **native_routed** -- set to *True* when a platform supports routed native VLAN on a trunk interface with bridged VLANs (effectively untagged IP + VLAN trunk) -- applicable to **router** and **l3-switch** platforms. Set this flag only if your platform passes the `vlan-mixed-native.yml` integration test case.
+* **native_routed** -- set to *True* when a platform supports routed native VLAN on a routed interface -- applicable to **router** and **l3-switch** platforms. Set this flag only if your platform passes the `vlan-routed-native.yml` integration test case.
 
 [^SID]: A counter starting at **first_subif_id**.
 
@@ -170,13 +176,15 @@ Based on the capabilities of your platform, you might have to configure:
 * VLAN access interfaces
 * VLAN trunks
 * Native VLAN
-* VLAN encapsulation on a VLAN- or routed subinterface
+* VLAN encapsulation on a VLAN- or routed subinterface[^RIF]
+
+[^RIF]: A routed (sub)interface is an interface that receives and routes IPv4/IPv6 packets sent to the device MAC address. It does not bridge other packets but drops them.
 
 You can use the following interface VLAN parameters to configure VLANs:
 
-* A trunk VLAN interface has **vlan.trunk_id** list that contains the list of VLANs on that trunk.
-* A trunk VLAN interface might have a native VLAN. Its 802.1q tag is specified in **vlan.access_id** attribute, its name in **vlan.native** attribute. The native VLAN 802.1q tag is also included in **vlan.trunk_id**
-* An access VLAN interface has **vlan.access_id** attribute that contains the 802.1 VLAN tag. You can also use **vlan.access** attribute to get VLAN name.
+* A (switched) trunk VLAN interface has **vlan.trunk_id** list that contains the list of VLANs on that trunk. A pure routed physical interface will not have a **vlan.trunk_id** list -- the VLANs terminated on the interface are configured as subinterfaces.
+* A trunk VLAN interface might have a native VLAN. Its 802.1q tag is specified in **vlan.access_id** attribute, its name in **vlan.native** attribute. The native VLAN 802.1q tag is also included in **vlan.trunk_id**. A routed interface will not have **vlan.native** or **vlan.access_id** attribute -- there is no need for extra configuration when all you want to do is to route untagged IP packets.
+* An access VLAN interface has **vlan.access_id** attribute that contains the 802.1 VLAN tag. You can also use **vlan.access** attribute to get VLAN name. A routed interface will not have **vlan.access** or **vlan.access_id** attribute because it's routing untagged IP packets.
 * A routed VLAN subinterface has VLAN 802.1q tag in **vlan.access_id** attribute. There is no **vlan.access** or **vlan.native** attribute.
 * Use **type** to differentiate between a VLAN access physical interface and a routed VLAN subinterface -- routed subinterfaces have **type** set to *vlan_member*
 
@@ -224,9 +232,10 @@ interface {{ ifdata.ifname }}
 
 Alternatively, you could check for:
 
-* **vlan.trunk_id** ➜ trunk interface
-* **vlan.access** ➜ access interface
+* **vlan.trunk_id** ➜ trunk VLAN interface
+* **vlan.access** ➜ access VLAN interface
 * **vlan.access_id** but no **vlan.access** ➜ routed subinterface
+* Anything else ➜ regular IP interface
 
 ### Router-Like Platforms
 
