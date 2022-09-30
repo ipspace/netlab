@@ -10,12 +10,13 @@ BFD is supported on these platforms:
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
+| Dell OS10             |  ❌  | ✅  | ❌  |
 | Juniper vSRX 3.0      | ❗  | ✅  | ✅  |
-| Mikrotik CHR RouterOS |  ❌  | ✅  | ✅  |
+| Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |
+| Mikrotik RouterOS 7   |  ❌  | ❌  | ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
 | VyOS                  | ✅❗ | ✅  | ✅  |
-| Dell OS10             |  ❌  | ✅  | ❌  |
 
 **Notes:**
 * Junos configuration template configures BFD timers within routing protocol configuration, not in individual interfaces

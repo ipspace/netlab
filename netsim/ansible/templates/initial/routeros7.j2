@@ -1,0 +1,56 @@
+
+/system identity set name="{{ inventory_hostname }}"
+
+/interface bridge add name=loopback protocol-mode=none
+
+{#
+# Add additional loopbacks
+#}
+{% for l in interfaces if l.type == 'loopback' %}
+/interface bridge add name={{l.ifname}} protocol-mode=none
+{% endfor %}
+
+{% if 'ipv4' in loopback %}
+/ip address add interface=loopback address={{ loopback.ipv4 }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+/ipv6 address add interface=loopback address={{ loopback.ipv6 }}
+{% endif %}
+
+{% if vlans is defined %}
+{% include 'routeros7.vlan.j2' %}
+{% endif %}
+
+{% if vrfs is defined %}
+{% include 'routeros7.vrf.j2' %}
+{% endif %}
+
+{% for l in interfaces|default([]) %}
+
+{% if l.name is defined %}
+/interface ethernet set comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}" {{ l.ifname }}
+{% elif l.type|default("") == "stub" %}
+/interface ethernet set comment="Stub interface" {{ l.ifname }}
+{% endif %}
+
+{% if l.mtu is defined %}
+/interface ethernet set mtu={{ l.mtu }} {{ l.ifname }}
+{% endif %}
+
+{#
+# Add same interface comment also to the IP Address, for better troubleshooting
+# Only supported in IPv4, for now.
+#}
+{% if 'ipv4' in l %}
+/ip address add interface={{ l.ifname }} address={{ l.ipv4 }}
+{%   if l.name is defined %}
+/ip address set [find where interface={{ l.ifname }}] comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}"
+{%   endif %}
+{% endif %}
+{% if 'ipv6' in l %}
+/ipv6 address add interface={{ l.ifname }} address={{ l.ipv6 }}
+{% endif %}
+
+{% endfor %}
+
+/ip neighbor discovery-settings set discover-interface-list=all

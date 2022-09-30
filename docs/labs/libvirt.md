@@ -10,10 +10,11 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco IOSv             | cisco/iosv                  |
 | Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
+| Dell OS10              | dell/os10                   |
 | Fortinet FortiOS       | fortinet/fortios            |
 | Juniper vSRX 3.0       | juniper/vsrx3               |
-| Mikrotik CHR RouterOS  | mikrotik/chr                |
-| Dell OS10              | dell/os10                   |
+| Mikrotik RouterOS 6    | mikrotik/chr                |
+| Mikrotik RouterOS 7    | mikrotik/chr7               |
 
 The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
 
@@ -39,7 +40,7 @@ However, we recommend to periodically download the updated box for:
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
 * [Juniper vSRX 3.0](vsrx.md)
-* [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
+* [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
 
 **Notes:**
@@ -58,5 +59,6 @@ However, we recommend to periodically download the updated box for:
    iosv.md
    nxos.md
    vsrx.md
+   routeros7.md
 ..
 ```

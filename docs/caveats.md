@@ -70,9 +70,18 @@ Generic Linux device is an IP host that does not support IP forwarding or IP rou
 
 * LLDP on Generic Linux is started in Ubuntu VMs but not in Alpine containers.
 
-## Mikrotik CHR RouterOS
+## Mikrotik RouterOS 6
 
+* In runs with the *CHR* image.
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
+
+## Mikrotik RouterOS 7
+
+* In runs with the *CHR* image.
+* LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
+* At the time of the build, testing is being performed with releases **7.5** (claimed as *stable*) and **7.6beta8**. On both of them:
+  * MPLS dataplane seems to have issues when using *virtio* networking, while the LDP and VPNv4 control plane work fine. With *e1000* everything works fine.
+  * BGP-based route leaking is working on the control plane, but not on the dataplane.
 
 ## Nokia SR Linux
 * Only supported on top of *Containerlab*

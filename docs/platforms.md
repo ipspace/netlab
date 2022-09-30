@@ -10,15 +10,16 @@
 | Cisco Nexus 9300v                         | nxos               |
 | Cumulus Linux 4.x/5.x                     | cumulus            |
 | Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue [❗](caveats.html#caveats-cumulus-nvue)           |
+| Dell OS10                                 | dellos10           |
 | Fortinet FortiOS [❗](caveats.html#fortinet-fortios) | fortios            |
 | FRR 7.5.0                                 | frr                |
 | Generic Linux host                        | linux              |
 | Juniper vSRX 3.0                          | vsrx               |
-| Mikrotik CHR RouterOS                     | routeros           |
+| Mikrotik RouterOS 6 (CHR)                 | routeros           |
+| Mikrotik RouterOS 7 (CHR) [❗](caveats.html#mikrotik-routeros-7) | routeros7           |
 | Nokia SR Linux                            | srlinux            |
 | Nokia SR OS [❗](caveats.html#nokia-sr-os) | sros               |
 | VyOS 1.4 [❗](caveats.html#vyos)         | vyos               |
-| Dell OS10                                 | dellos10           |
 
 **Notes:**
 
@@ -66,15 +67,16 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
 | Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
+| Dell OS10                                          |          ✅           |              ❌               |            ❌             |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
 | FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
 | Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
-| Mikrotik CHR RouterOS                              |          ✅           |              ❌               |            ❌             |
+| Mikrotik RouterOS 6                                |          ✅           |              ❌               |            ❌             |
+| Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
 | Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
 | VyOS                                               |          ✅           |              ❌               |            ❌             |
-| Dell OS10                                          |          ✅           |              ❌               |            ❌             |
 
 **Note:**
 
@@ -90,12 +92,13 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| e1000 |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio (*libvirt default*) |
 | Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio (*libvirt default*) |
+| Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
 | Fortinet FortiOS           | fortios            |    1 |   1024 | virtio (*libvirt default*) |
 | Generic Linux host         | linux              |    1 |   1024 | virtio (*libvirt default*) |
 | Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio (*libvirt default*) |
-| Mikrotik CHR RouterOS      | routeros           |    1 |    256 | virtio (*libvirt default*) |
+| Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio (*libvirt default*) |
+| Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000                      |
 | VyOS                       | vyos               |    2 |   1024 | virtio (*libvirt default*) |
-| Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
 
 ## Configuration Deployments
 
@@ -107,15 +110,16 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Cisco IOS / IOS XE    |          ✅           |           ✅           |
 | Cisco Nexus OS        |          ✅           |           ✅           |
 | Cumulus Linux         |          ✅           |           ✅           |
+| Dell OS10             |          ✅           |           ✅           |
 | Fortinet FortiOS      |          ✅           |           ✅           |
 | FRR container         |          ✅           |           ❌           |
 | Generic Linux         |          ✅           |           ❌           |
 | Juniper vSRX 3.0      |          ✅           |           ✅           |
-| Mikrotik CHR RouterOS |          ✅           |           ✅           |
+| Mikrotik RouterOS 6   |          ✅           |           ✅           |
+| Mikrotik RouterOS 7   |          ✅           |           ✅           |
 | Nokia SR Linux        |          ✅           |           ✅           |
 | Nokia SR OS           |          ✅           |           ✅           |
 | VyOS                  |          ✅           |           ✅           |
-| Dell OS10             |          ✅           |           ✅           |
 
 ## Initial Device Configurations
 
@@ -128,15 +132,16 @@ The following system-wide features are configured on supported network operating
 | Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | FRR 7.5.0             |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
 | Juniper vSRX 3.0      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
+| Mikrotik RouterOS 6   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
+| Mikrotik RouterOS 7   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
 | Nokia SR Linux        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Nokia SR OS           |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Mikrotik CHR RouterOS |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-chr-routeros) |             ✅              |             ✅              |
-| Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
@@ -147,15 +152,16 @@ The following interface parameters are configured on supported network operating
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
 | Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
+| Dell OS10             |            ✅              |            ❌            | ✅ |
 | Fortinet FortiOS      |            ✅              |            ✅            | ❌ |
 | FRR 7.5.0             |            ✅              |            ✅            | ✅ |
 | Generic Linux         |            ❌              |            ❌            | ✅ |
 | Juniper vSRX 3.0      |            ✅              |            ✅            | ✅ |
-| Mikrotik CHR RouterOS |            ✅              |            ❌            | ✅ |
+| Mikrotik RouterOS 6   |            ✅              |            ❌            | ✅ |
+| Mikrotik RouterOS 7   |            ✅              |            ❌            | ✅ |
 | Nokia SR Linux        |            ✅              |            ❌            | ❌ |
 | Nokia SR OS           |            ✅              |            ❌            | ❌ |
 | VyOS                  |            ✅              |            ❌            | ✅ |
-| Dell OS10             |            ✅              |            ❌            | ✅ |
 
 The following interface addresses are supported on various platforms:
 
@@ -166,15 +172,16 @@ The following interface addresses are supported on various platforms:
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux 5.0 (NVUE) |       ✅          |          ✅          |             ✅              |
+| Dell OS10             |          ✅          |          ✅          |             ❌              |
 | Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |
 | FRR 7.5.0             |          ✅          |          ✅          |             ❌              |
 | Generic Linux         |          ✅          |          ✅          |             ❌              |
 | Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |
-| Mikrotik CHR RouterOS |          ✅          |          ✅          |             ❌              |
+| Mikrotik RouterOS 6   |          ✅          |          ✅          |             ❌              |
+| Mikrotik RouterOS 7   |          ✅          |          ✅          |             ❌              |
 | Nokia SR Linux        |          ✅          |          ✅          |             ❌              |
 | Nokia SR OS           |          ✅          |          ✅          |             ✅              |
 | VyOS                  |          ✅          |          ✅          |             ❌              |
-| Dell OS10             |          ✅          |          ✅          |             ❌              |
 
 ## Supported Configuration Modules
 
@@ -191,14 +198,15 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |
+| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  |
 | Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |
 | Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |
-| Mikrotik CHR RouterOS | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
+| Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
+| Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
 | VyOS                  | ✅   |   ✅   |   ❌   | ✅  | ✅  | ✅  |
-| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  |
 
 (platform-dataplane-support)=
 The following data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
@@ -211,12 +219,13 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.html#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
+| Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
 | Juniper vSRX 3.0      |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
-| Mikrotik CHR RouterOS |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
+| Mikrotik RouterOS 6   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
+| Mikrotik RouterOS 7   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Nokia SR Linux        |  ✅  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
 | Nokia SR OS           |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ✅  |
 | VyOS                  |  ✅  | ✅  |  ✅   | ✅   |    ❌    |  ❌   |
-| Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
 
 ## IPv6 Support
 
@@ -230,12 +239,13 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | FRR 7.5.0             |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
-| Mikrotik CHR RouterOS |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| Mikrotik RouterOS 6   |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
+| Mikrotik RouterOS 7   |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | VyOS                  |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
-| Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |

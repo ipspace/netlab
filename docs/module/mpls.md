@@ -27,7 +27,8 @@ The following table describes per-platform support of individual MPLS label dist
 | Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOS             |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOS XE          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Mikrotik CHR RouterOS |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 
 **Notes:**
@@ -41,7 +42,8 @@ The following table describes per-platform support of individual MPLS label dist
 | Arista EOS            |   ✅   |    ❌   |    ✅    |
 | Cisco IOS             |   ✅   |    ✅   |    ❌    |
 | Cisco IOS XE          |   ✅   |    ✅   |    ❌    |
-| Mikrotik CHR RouterOS |   ❌   |    ❌   |    ❌    |
+| Mikrotik RouterOS 6   |   ❌   |    ❌   |    ❌    |
+| Mikrotik RouterOS 7   |   ❌   |    ❌   |    ❌    |
 | VyOS                  |   ❌   |    ❌   |    ❌    |
 
 **Notes**
@@ -56,7 +58,8 @@ The following table describes per-platform support of individual MPLS label dist
 | Arista EOS            |   ✅  |   ✅  |
 | Cisco IOS             |   ✅  |   ✅  |
 | Cisco IOS XE          |   ✅  |   ✅  |
-| Mikrotik CHR RouterOS |   ✅  |   ❌  |
+| Mikrotik RouterOS 6   |   ✅  |   ❌  |
+| Mikrotik RouterOS 7   |   ✅  |   ❌  |
 | VyOS                  |   ✅  |   ✅  |
 
 **Notes**
