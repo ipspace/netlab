@@ -1,10 +1,10 @@
 {% set pid = ospf.process|default(1) %}
-feature ospf
+feature ospfv3
 {% if ospf.bfd|default(False) %}
 feature bfd
 {% endif %}
 !
-router ospf {{ pid }}
+router ospfv3 {{ pid }}
 {% if ospf.router_id|ipv4 %}
  router-id {{ ospf.router_id }}
 {% endif %}
@@ -12,26 +12,26 @@ router ospf {{ pid }}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }} Mbps
 {% endif %}
 !
-{% if 'ipv4' in loopback %}
+{% if 'ipv6' in loopback %}
 interface loopback0
- ip router ospf {{ pid }} area {{ ospf.area }}
+ ipv6 router ospfv3 {{ pid }} area {{ ospf.area }}
 !
 {% endif %}
-{% for l in interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
+{% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
- ip router ospf {{ pid }} area {{ l.ospf.area }}
+ ipv6 router ospfv3 {{ pid }} area {{ l.ospf.area }}
 {%   if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
- ip ospf network {{ l.ospf.network_type }}
+ ospfv3 network {{ l.ospf.network_type }}
 {%   endif %}
 {%   if l.ospf.cost is defined %}
- ip ospf cost {{ l.ospf.cost }}
+ ospfv3 cost {{ l.ospf.cost }}
 {%   endif %}
 {%   if l.ospf.passive|default(False) %}
- ip ospf passive-interface
+ ospfv3 passive-interface
 {%   endif %}
 {%   if l.ospf.bfd|default(False) %}
- ip ospf bfd
+ ospfv3 bfd
 {%   endif %}
 !
 {% endfor %}

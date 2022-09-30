@@ -44,7 +44,7 @@ The following table describes per-platform support of individual router-level OS
 | Arista EOS               |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco IOS                |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco IOS XE             |   ✅  |            ✅          |   ✅   |  ✅  |
-| Cisco Nexus OS           |   ✅  |            ✅          |   ❌   |  ✅  |
+| Cisco Nexus OS           |   ✅  |            ✅          |   ✅  |  ✅  |
 | Cumulus Linux            |   ✅  |            ✅          |   ✅  |  ❌  |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅          |   ❌   |  ❌  |
 | Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
