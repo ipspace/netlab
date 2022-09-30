@@ -2,12 +2,13 @@
 
 The following parameters are supported by most routing protocol modules:
 
-* [Router ID](router_id)
-* [Address families](af)
-* [Passive interfaces](passive)
-* [External interfaces](external)
+* [](routing_router_id)
+* [](routing_af)
+* [](routing_passive)
+* [](routing_external)
+* [](routing_disable)
 
-(router_id)=
+(routing_router_id)=
 ## Router ID
 
 Router ID is configured with **router_id** node parameter (applies to all routing protocols) or with **_protocol_.router_id** node parameter (applies to the selected routing protocol). Router ID can be configured as an IPv4 address or as an integer.
@@ -32,7 +33,7 @@ nodes:
 * OSPFv2/OSPFv3 router ID for R2 is 10.0.0.2. BGP router ID for R2 is 10.0.1.2
 * Node ID for R3 is 3 (the third node in the **nodes** dictionary). Router ID for R3 is taken from the loopback interface (10.0.0.3 unless you changed the **loopback** address pool) or from the **router_id** address pool (10.0.0.3).
 
-(Af)=
+(routing_af)=
 ## Address Families
 
 Configuration modules for all IGP routing protocols that support multiple address families (IS-IS, EIGRP) or multiple protocol instances (OSPFv2, OSPFv3) support **_protocol_.af** global- or node-level module parameter. The **af** parameter can be a list- or a dictionary of address families.
@@ -70,7 +71,7 @@ The following IS-IS address families are configured on individual routers:
 * **R4**: The **isis.af** parameter is set to an empty value, and is therefore calculated from the address families.
 * **R5**: IPv6 only (global default)
 
-(passive)=
+(routing_passive)=
 ## Passive Interfaces
 
 An interface is configured as a *passive* interface (when supported by the routing protocol implementation) if:
@@ -78,6 +79,8 @@ An interface is configured as a *passive* interface (when supported by the routi
 * The link **type** is set to **stub**, or
 * The link **role** is set to **stub** or **passive**, or
 * **_protocol_.passive** parameter is set to True on a link or interface.
+
+This parameter applies to IGP protocols.
 
 **Example:**
 
@@ -108,7 +111,7 @@ links:
 * The fourth link is a transit link, but the **ospf.passive** value is set on R2  interface ⇨ regular interface on R1, passive interface on R2
 * The last link has **stub** role, but the **ospf.passive** value is set to *False* on R2 interface ⇨ passive interface on R1, regular interface on R2.
 
-(external)=
+(routing_external)=
 ## External Interfaces
 
 Links with **role: external** are not included in the IGP routing processes. The  **external** role can be set with a link parameter or by the BGP module.
@@ -116,3 +119,24 @@ Links with **role: external** are not included in the IGP routing processes. The
 BGP module sets link role specified in **defaults.bgp.ebgp_role** on links connecting devices with different AS numbers. The system default value of that parameter is **external**, making inter-AS links excluded from the IGP processes.
 
 If you want to include external subnets into your IGP (and disable BGP **next_hop_self** processing), set **defaults.bgp.ebgp_role** to **passive**.
+
+(routing_disable)=
+## Disabling a Routing Protocol on a Link/Interface
+
+IGP protocols are usually configured on all internal interfaces (see [](routing_external) for more details). You can disable an IGP protocol on a link or an individual interface with **_protocol_: False** attribute, for example:
+
+```
+module: [ ospf ]
+
+nodes:
+  r1:
+  r2:
+
+links:
+- r1:
+  r2:
+  ospf: False       # Disable OSPF on R1 and R2 interfaces
+- r1:
+    ospf: False     # Disable OSPF on R1 interface
+  r2:               # OSPF is still enabled on R2 interface
+```
