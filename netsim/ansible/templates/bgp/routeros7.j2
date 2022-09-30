@@ -1,0 +1,39 @@
+{% import "routeros7.macro.j2" as bgpcfg %}
+
+/routing/bgp/template set default as={{ bgp.as }} output.network=bgp-networks
+
+{% if bgp.router_id|ipv4 %}
+/routing/bgp/template set default router-id={{ bgp.router_id }}
+{% endif %}
+
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     bgpcfg.neighbor(n,n[af],bgp,'default') }}
+{%   endfor %}
+{% endfor %}
+
+{# Set networks to announce #}
+{% for af in ['ipv4','ipv6'] %}
+{%   if bgp[af] is defined %}
+
+{%     if loopback[af] is defined and bgp.advertise_loopback %}
+{{       bgpcfg.bgp_network(af,loopback[af]) }}
+{%     endif %}
+
+{%     for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+{{       bgpcfg.bgp_network(af,l[af]) }}
+{%     endfor %}
+
+{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{{       bgpcfg.bgp_network(af,pfx) }}
+{%     endfor %}
+
+{%   endif %}
+{% endfor %}
+
+{#
+  Add extra IPv4 prefixes
+#}
+{% for pfx in bgp.originate|default([]) %}
+/ip route add blackhole dst-address={{ pfx|ipaddr('0') }}
+{% endfor %}

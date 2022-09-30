@@ -27,7 +27,8 @@ VLANs are supported on these platforms:
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Mikrotik RouterOS 6   | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |
 | Nokia SR OS           | ✅  | ✅  | ✅   | ✅ | ✅ |
 | VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |

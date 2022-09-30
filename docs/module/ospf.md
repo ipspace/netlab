@@ -47,14 +47,15 @@ The following table describes per-platform support of individual router-level OS
 | Cisco Nexus OS           |   ✅  |            ✅          |   ❌   |  ✅  |
 | Cumulus Linux            |   ✅  |            ✅          |   ❌   |  ❌  |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅          |   ❌   |  ❌  |
+| Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
 | Fortinet FortiOS         |   ❗  |            ✅          |   ❌   |  ❌  |
 | FRR 7.5.0                |   ✅  |            ✅          |   ✅   |  ❌  |
 | Juniper vSRX 3.0         |   ✅  |            ✅          |   ✅   |  ✅  |
-| Mikrotik CHR RouterOS    |   ✅  |            ❌          |   ❌   |  ✅  |
+| Mikrotik RouterOS 6      |   ✅  |            ❌          |   ❌   |  ✅  |
+| Mikrotik RouterOS 7      |   ✅  |            ❌          |   ✅   |  ❌  |
 | Nokia SR Linux           |   ✅  |            ✅          |   ✅   |  ✅  |
 | Nokia SR OS              |   ✅  |            ✅          |   ✅   |  ✅  |
 | VyOS                     |   ✅  |            ✅          |   ✅   |  ✅  |
-| Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
 
 **Notes:**
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
@@ -70,14 +71,15 @@ The following table documents the interface-level OSPF features:
 | Cisco Nexus OS           |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cumulus Linux            |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |         ✅        |             ✅            |            ✅           |
+| Dell OS10                |   ✅  |         ✅        |             ❌            |            ✅           |
 | Fortinet FortiOS         |   ✅  |         ❗        |             ✅            |            ✅           |
 | FRR 7.5.0                |   ✅  |         ✅        |             ✅            |            ❗           |
 | Juniper vSRX 3.0         |   ✅  |         ✅        |             ✅            |            ✅           |
-| Mikrotik CHR RouterOS    |   ✅  |         ✅        |             ❌            |            ✅           |
+| Mikrotik RouterOS 6      |   ✅  |         ✅        |             ❌            |            ✅           |
+| Mikrotik RouterOS 7      |   ✅  |         ✅        |             ❌            |            ✅           |
 | Nokia SR Linux           |   ✅  |         ✅        |             ❌            |            ✅           |
 | Nokia SR OS              |   ✅  |         ✅        |             ✅            |            ✅           |
 | VyOS                     |   ✅  |         ✅        |             ❌            |            ✅           |
-| Dell OS10                |   ✅  |         ✅        |             ❌            |            ✅           |
 
 Notes:
 * Arista EOS, Cisco Nexus OS, SR Linux and Dell OS10 support point-to-point and broadcast network types. Other network types will not be configured.

@@ -23,10 +23,11 @@ VRFs are supported on these platforms:
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | Dell OS10             | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Mikrotik CHR RouterOS | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| VyOS                  | ✅  | ✅  | ✅  | ✅  | ✅  |
-| SR Linux              | ✅  | ✅  | ✅  | ✅  | ✅  |
 | FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Mikrotik RouterOS 6 | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| Mikrotik RouterOS 7 | ✅  | ✅  | ✅  | ✅  |  ✅  |
+| SR Linux              | ✅  | ✅  | ✅  | ✅  | ✅  |
+| VyOS                  | ✅  | ✅  | ✅  | ✅  | ✅  |
 
 ```{note}
 * IS-IS cannot be run within a VRF, but the IS-IS configuration module is VRF-aware -- it will not try to configure IS-IS routing on VRF interfaces

@@ -1,0 +1,59 @@
+{% set KW_NETWORK_TYPE = {'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma','broadcast': 'broadcast' } %}
+
+{% set area = ospf.area|default("0.0.0.0") %}
+
+{% if ospf_router_id|ipv4 %}
+/routing/ospf/instance add name={{instance}} version={{ospf_version}} router-id={{ ospf_router_id }} vrf={{ospf_vrf|default('main')}}
+{% endif %}
+
+{#
+  Create AREA list. If default area != 0.0.0.0, append to list
+#}
+{% set area_list = [] %}
+{#
+  For each link, check defined area.
+#}
+{% for l in ospf_interfaces|default([]) if l.ospf.area is defined %}
+{{ area_list.append(l.ospf.area) }}
+{% endfor %}
+
+{#
+  For each unique area, add to area configuration
+#}
+{% for a_def in area_list|unique %}
+/routing/ospf/area add instance={{instance}} name="{{ospf_vrf|default('main')}}_{{ospf_version}}_{{ a_def }}" area-id={{ a_def }}
+{% endfor %}
+
+{% if ospf_main_vrf is defined and ospf_main_vrf %}
+/routing/ospf/interface-template add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }} and instance={{instance}}] interface=loopback passive
+{% endif %}
+
+{% for l in ospf_interfaces|default([]) if 'ospf' in l and ospf_afi_check in l %}
+
+{%   if "external" in l.role|default("") %}
+## OSPF not configured on external interface {{ l.ifname }}
+{%   else %}
+
+{% set ospf_intf_params=[] %}
+
+{%     if l.ospf.passive|default(False) %}
+{{ ospf_intf_params.append('passive') }}
+{%     endif %}
+
+{%     if l.ospf.network_type is defined %}
+{{ ospf_intf_params.append('type='+KW_NETWORK_TYPE[l.ospf.network_type]) }}
+{%     endif %}
+
+{%     if l.ospf.cost is defined %}
+{{ ospf_intf_params.append('cost='+l.ospf.cost|string) }}
+{%     endif %}
+
+{%     if l.ospf.bfd|default(False) %}
+## BFD Currently not supported in ROS7 for OSPF
+{%     endif %}
+
+/routing/ospf/interface-template add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }} and instance={{instance}}] interface={{ l.ifname }} {{ ospf_intf_params|join(' ') }}
+
+{%   endif %}
+
+{% endfor %}

@@ -25,11 +25,11 @@ The following table describes per-platform support of individual VXLAN features:
 | Arista EOS         | ✅  | ✅  | ✅  |  ❌  | ✅  |
 | Cisco Nexus OS     | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  | ✅  |  ❌  |  ❌  | ✅  |
+| Dell OS 10         | ✅  | ✅  |  ❌  |  ❌  | ✅  |
+| FRR                | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |  ✅  |  ✅  | ✅  |
 | Nokia SR OS        | ✅  | ✅  |  ❌  |  ✅  | ✅  |
-| FRR                | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 | VyOS               | ✅  | ✅  |  ❌  |  ❌  | ✅  |
-| Dell OS 10         | ✅  | ✅  |  ❌  |  ❌  | ✅  |
 
 EVPN module supports three design paradigms:
 

@@ -65,6 +65,7 @@ You might have to build Vagrant boxes for your network devices if you decide to 
 * [](labs/nxos.md)
 * [](labs/dellos10.md)
 * [](labs/vsrx.md)
+* [](labs/routeros7.md)
 
 Vendors offer [more Vagrant boxes for the VirtualBox environment](labs/virtualbox.md); some of them also offer [Docker containers you can use with *containerlab*](labs/clab.md).
 
