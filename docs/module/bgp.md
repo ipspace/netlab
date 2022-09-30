@@ -119,6 +119,7 @@ Additional per-node BGP configuration parameters include:
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
 * **bgp.router_id** -- set static router ID. Default **router_id** is taken from the IPv4 address of the loopback interface or from the **router_id** address pool if there's no usable IPv4 address on the loopback interface.
 
+(bgp-advanced-node)=
 Finally, BGP configuration module supports these advanced node parameters that you probably shouldn't touch without a very good reason:
 
 * **bgp.rr_cluster_id** -- set static route reflector cluster ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
@@ -138,6 +139,8 @@ You can also use these link-level parameters to influence the BGP prefix adverti
 
 * **bgp.advertise** -- The link prefix will be configured with the **network** statement within the BGP process.
 
+You can also [disable all EBGP sessions on a link](routing_disable).
+
 See [examples](#more-examples) for sample usage guidelines.
 
 ## Interface-Level Parameters
@@ -151,6 +154,8 @@ links:
   r2:
     bgp.local_as: 65101
 ```
+
+You can also [disable all EBGP sessions on an interface](routing_disable).
 
 ## Advertised BGP Prefixes
 
