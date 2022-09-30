@@ -1,6 +1,17 @@
 Release notes
 =============
 
+2022-10-01 (release 1.3.2)
+  * Mikrotik RouterOS version 7 support by Stefano Sasso, including IPv4, IPv6, VLANs, VRFs, OSPFv2, OSPFv3, BGP, MPLS, MPLS/VPN
+  * Nokia SR OS support for VLAN, VXLAN, EVPN, VRF, and OSPFv3 by Jeroen van Bemmel
+  * OSPFv3 on Cumulus Linux and Nexus OS
+  * EVPN (bridging and symmetric IRB) on Nexus OS
+  * EVPN VLAN bundle service on SR Linux
+  * EVPN transit VNI shared between VRFs
+  * Define VLAN and VRF parameters in groups
+
+  :doc:`More details <release/1.3>`
+
 2022-09-17 (release 1.3.1)
   * VXLAN, VLANs, VRFs, and EVPN implemented on FRR and Cumulus Linux
   * BGP local-as implemented in the BGP configuration module and supported on Arista EOS, Cisco IOS, Dell OS10, FRR, and Nokia SR Linux.
