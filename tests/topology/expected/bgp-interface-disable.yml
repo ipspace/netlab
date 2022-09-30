@@ -1,0 +1,241 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+  as65101:
+    members:
+    - r2
+input:
+- topology/input/bgp-interface-disable.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ipv4: 10.1.0.2/30
+    node: r2
+  left:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 1
+  name: Regular EBGP
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  right:
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.2/30
+    node: r2
+  role: external
+  type: p2p
+- bgp: false
+  interfaces:
+  - ifindex: 2
+    ipv4: 10.1.0.5/30
+    node: r1
+  - ifindex: 2
+    ipv4: 10.1.0.6/30
+    node: r2
+  left:
+    ifname: GigabitEthernet0/2
+    ipv4: 10.1.0.5/30
+    node: r1
+  linkindex: 2
+  name: No EBGP sesion
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  right:
+    ifname: GigabitEthernet0/2
+    ipv4: 10.1.0.6/30
+    node: r2
+  role: external
+  type: p2p
+- interfaces:
+  - bgp: false
+    ifindex: 3
+    ipv4: 10.1.0.9/30
+    node: r1
+  - ifindex: 3
+    ipv4: 10.1.0.10/30
+    node: r2
+  left:
+    ifname: GigabitEthernet0/3
+    ipv4: 10.1.0.9/30
+    node: r1
+  linkindex: 3
+  name: No EBGP session on R1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  right:
+    ifname: GigabitEthernet0/3
+    ipv4: 10.1.0.10/30
+    node: r2
+  role: external
+  type: p2p
+module:
+- bgp
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: r2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: cisco/iosv
+    device: iosv
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: Regular EBGP
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.2/30
+        node: r2
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: No EBGP sesion
+      neighbors:
+      - bgp: false
+        ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.6/30
+        node: r2
+      role: external
+      type: p2p
+    - ifindex: 3
+      ifname: GigabitEthernet0/3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: No EBGP session on R1
+      neighbors:
+      - ifname: GigabitEthernet0/3
+        ipv4: 10.1.0.10/30
+        node: r2
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - bgp
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65101
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 3
+        ipv4: 10.1.0.9
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: cisco/iosv
+    device: iosv
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: Regular EBGP
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.1/30
+        node: r1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: No EBGP sesion
+      neighbors:
+      - bgp: false
+        ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.5/30
+        node: r1
+      role: external
+      type: p2p
+    - ifindex: 3
+      ifname: GigabitEthernet0/3
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: No EBGP session on R1
+      neighbors:
+      - bgp: false
+        ifname: GigabitEthernet0/3
+        ipv4: 10.1.0.9/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - bgp
+    name: r2
+provider: libvirt

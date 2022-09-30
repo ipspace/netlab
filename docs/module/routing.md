@@ -140,3 +140,28 @@ links:
     ospf: False     # Disable OSPF on R1 interface
   r2:               # OSPF is still enabled on R2 interface
 ```
+
+You can also disable EBGP sessions on a link or an individual interface with **bgp: False** attribute, for example:
+
+```
+module: [ bgp ]
+
+defaults.device: iosv
+
+nodes:
+  r1:
+    bgp.as: 65000
+  r2:
+    bgp.as: 65101
+
+links:
+- r1:
+  r2:
+  name: Regular EBGP
+- r1:
+  r2:
+  bgp: False
+  name: No EBGP sesion
+```
+
+You cannot influence IBGP sessions with interface- or link attributes; you have to use [advanced BGP node parameters](bgp-advanced-node).

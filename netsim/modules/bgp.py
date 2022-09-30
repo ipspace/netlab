@@ -160,6 +160,10 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   # Iterate over all links, find adjacent nodes
   # in different AS numbers, and create BGP neighbors
   for l in node.get("interfaces",[]):
+    if 'bgp' in l and l.bgp is False:
+      l.pop('bgp',None)                                               # Cleanup the flag
+      continue                                                        # ... and skip interfaces with 'bgp: False'
+
     node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
     node_local_as = data.get_from_box(l,'bgp.local_as') or data.get_from_box(node,'bgp.local_as') or node_as
 
@@ -271,6 +275,47 @@ def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
         ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
 
 """
+Build BGP route reflector clusters
+
+Iterate over all ASNs in the lab, and for route reflectors that don't have rr_cluster_id
+defined, find an AS-wide cluster ID: the lowest BGP router ID of all route reflectors
+(members of rr_list) that don't have rr_cluster_id set (because those obviously want to be left alone)
+"""
+def build_bgp_rr_clusters(topology: Box) -> None:
+  # Build a list of autonomous systems in the lab
+  as_list = set( n.bgp['as'] for n in topology.nodes.values() if 'bgp' in n and 'as' in n.bgp )
+
+  for asn in as_list:
+    rrlist = find_bgp_rr(asn,topology)
+    if not rrlist:                        # No BGP route reflectors in this ASN
+      continue
+
+    # Build a list of RR cluster candidates: router IDs of route reflectors that don't
+    # have an explicit rr_cluster_id
+    #
+    # The shared cluster ID will be the minimum value from that list
+    #
+    rr_cluster_candidates = [n.bgp.router_id for n in rrlist if not 'rr_cluster_id' in n.bgp]
+    rr_cluster_id = None
+    if rr_cluster_candidates:
+      rr_cluster_id = min(rr_cluster_candidates)
+
+    # Now iterate over the route reflectors and either set the shared cluster ID
+    # or validate that the static cluster ID is an IPv4 address
+    #
+    for n in rrlist:
+      if not 'rr_cluster_id' in n.bgp:
+        n.bgp.rr_cluster_id = rr_cluster_id or n.bgp.router_id
+      elif n.bgp.rr_cluster_id:
+        try:
+          n.bgp.rr_cluster_id = str(netaddr.IPAddress(n.bgp.rr_cluster_id).ipv4())
+        except Exception as ex:
+          common.error(
+            f'BGP cluster ID {n.bgp.rr_cluster_id} configured on node {n.name} cannot be converted into an IPv4 address',
+            common.IncorrectValue,
+            'bgp')
+
+"""
 build_bgp_sessions: create BGP session data structure
 
 * Create an empty list of BGP neighbors
@@ -331,10 +376,12 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
 
   for l in node.get("interfaces",[]):
     if "bgp" in l:
-      if "advertise" in l.bgp:
+      if l.bgp is False:                    # Skip interfaces on which we don't want to run BGP
+        continue
+      if "advertise" in l.bgp:              # Skip interfaces that already have the 'advertise' flag
         continue
     if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
-      l.bgp.advertise = True
+      l.bgp.advertise = True                # ... otherwise figure out whether to advertise the subnet
 
 class BGP(_Module):
 
@@ -480,31 +527,7 @@ class BGP(_Module):
       if 'bgp' in n:
         _routing.router_id(n,'bgp',topology.pools)
 
-    # Build a list of autonomous systems in the lab
-    as_list = set( n.bgp['as'] for n in topology.nodes.values() if 'bgp' in n and 'as' in n.bgp )
-
-    # Iterate over all ASNs in the lab, and for route reflectors that don't have rr_cluster_id
-    # defined, find an AS-wide cluster ID: the lowest BGP router ID of all route reflectors
-    # (members of rr_list) that don't have rr_cluster_id set (because those obviously want to be left alone)
-    #
-    for asn in as_list:
-      rrlist = find_bgp_rr(asn,topology)
-      if rrlist:
-        rr_cluster_candidates = [n.bgp.router_id for n in rrlist if not 'rr_cluster_id' in n.bgp]
-        rr_cluster_id = None
-        if rr_cluster_candidates:
-          rr_cluster_id = min(rr_cluster_candidates)
-        for n in rrlist:
-          if not 'rr_cluster_id' in n.bgp:
-            n.bgp.rr_cluster_id = rr_cluster_id or n.bgp.router_id
-          elif n.bgp.rr_cluster_id:
-            try:
-              n.bgp.rr_cluster_id = str(netaddr.IPAddress(n.bgp.rr_cluster_id).ipv4())
-            except Exception as ex:
-              common.error(
-                f'BGP cluster ID {n.bgp.rr_cluster_id} configured on node {n.name} cannot be converted into an IPv4 address',
-                common.IncorrectValue,
-                'bgp')
+    build_bgp_rr_clusters(topology)
 
   #
   # Execute the rest of node post-transform code, including setting up the BGP session table
