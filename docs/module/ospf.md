@@ -45,7 +45,7 @@ The following table describes per-platform support of individual router-level OS
 | Cisco IOS                |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco IOS XE             |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco Nexus OS           |   ✅  |            ✅          |   ❌   |  ✅  |
-| Cumulus Linux            |   ✅  |            ✅          |   ❌   |  ❌  |
+| Cumulus Linux            |   ✅  |            ✅          |   ✅  |  ❌  |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅          |   ❌   |  ❌  |
 | Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
 | Fortinet FortiOS         |   ❗  |            ✅          |   ❌   |  ❌  |
@@ -208,7 +208,7 @@ links:
 
 **Interesting details**:
 
-* The default value for interface OSPF area is the node OSPF area (specified in configuration template).
+* The default value for interface OSPF area is the node OSPF area
 * The default value for node OSPF area is the global OSPF area (default value: 0.0.0.0).
 * Due to the propagation of default values, the OSPF area for R2-R3 link would be area 0 on R2 and area 1 on R3. The OSPF area thus needs to be specified within link definition, or within an individual node connected to a link.
 
