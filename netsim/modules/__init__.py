@@ -362,9 +362,9 @@ def check_module_parameters(topology: Box) -> None:
                   common.IncorrectValue,
                   'modules')
           else:
-            if type(intf[m]).__name__ != str(mod_attr[m].interface):
+            if type(intf[m]).__name__ != str(mod_attr[m].interface) and not (intf[m] is False):
               common.error(
-                f"Node {n} has invalid value type for attribute {k} for module {m} on link {l}, expected {mod_attr[m].interface}",
+                f"Node {n} has invalid value type for module {m} on link {l}, expected {mod_attr[m].interface}",
                 common.IncorrectValue,
                 'modules')
 
