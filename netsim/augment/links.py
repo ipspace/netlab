@@ -368,7 +368,7 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     print(f'\nProcess P2P link {link}')
   pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools,f'links[{link.linkindex}]')
 
-  end_names = ['left','right']
+  end_names = ['a','b']
   link_nodes: typing.List[Box] = []
   interfaces: typing.List[Box] = []
 
@@ -419,8 +419,6 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     link.name = link_nodes[0].name + " - " + link_nodes[1].name
 
   for i in range(0,2):
-    link[end_names[i]] = { 'node': link_nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
-
     remote = link_nodes[1-i].name
     interfaces[i]['neighbors'] = [{
         'node': remote,
@@ -429,8 +427,6 @@ def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     for af in ('ipv4','ipv6'):
       if af in interfaces[1-i]:
         interfaces[i]['neighbors'][0][af] = interfaces[1-i][af]
-      if af in interfaces[i]:
-        link[end_names[i]][af] = interfaces[i][af]
 
     # JvB: copy module specific link attributes like bgp.local_as
     mods_with_ifattr = Box({ m : True for m in ndict[remote].get('module',[]) if defaults[m].attributes.get('interface',None) })
