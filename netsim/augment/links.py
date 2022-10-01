@@ -370,7 +370,7 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
         intf[af] = str(intf_pfx)                # ... and save modified/validated interface IP address
       except Exception as ex:
         common.error(
-          f'Cannot parse {af} address {intf.af} for node {intf.node}'+common.extra_data_printout(str(ex)),
+          f'Cannot parse {af} address {intf.af} for node {intf.node}\n'+common.extra_data_printout(str(ex)),
           common.IncorrectValue,
           'links')
         return False
@@ -395,7 +395,7 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
     return True
   except Exception as ex:
     common.error(
-      f'Cannot assign host index {node_id} in {af} from prefix {str(pfx)} to node {intf.node}' + \
+      f'Cannot assign host index {node_id} in {af} from prefix {str(pfx)} to node {intf.node}\n' + \
           common.extra_data_printout(str(ex)),
       common.IncorrectValue,
       'links')
@@ -500,17 +500,51 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       allocation_policy = 'unnumbered'
       pfx_net = pfx_list[af]
     else:
-      pfx_net = netaddr.IPNetwork(pfx_list[af])
-      allocation_policy = get_prefix_IPAM_policy(link,pfx_net,ndict)
+      try:                                            # Parse the AF prefix
+        pfx_net = netaddr.IPNetwork(pfx_list[af])
+      except Exception as ex:                         # Report an error and move on if it cannot be parsed
+        common.error(
+          f'Cannot parse {af} prefix {pfx_list[af]} on link#{link.linkindex}\n' + \
+            common.extra_data_printout(f'{ex}') + '\n' + \
+            common.extra_data_printout(f'{link}'),
+          common.IncorrectValue,
+          'links')
+        continue
 
-    if allocation_policy == 'error':
+      allocation_policy = get_prefix_IPAM_policy(link,pfx_net,ndict)      # get IPAM policy based on prefix and link size
+
+    if allocation_policy == 'error':                                      # Something went wrong, cannot assing IP addresses
       common.error(
         f'Cannot use {af} prefix {pfx_list[af]} to address {len(link.interfaces)} nodes on link#{link.linkindex}',
         common.IncorrectValue,
         'links')
       continue
 
-    IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)
+    IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)               # execute IPAM policy to get AF addresses on interfaces
+
+"""
+Calculate interface description:
+
+* Link name (if exists)
+* Stub link (on a link with a single node)
+* A -> B when a link has two nodes
+* A -> [ B,C,D ] when a link has more than two nodes
+"""
+def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
+  if 'name' in link:
+    ifdata.name = link.name
+    return
+
+  node_name = link.interfaces[ifcnt].node
+  if len(link.interfaces) == 1:
+    ifdata.name = f'{node_name} -> stub'
+    return
+
+  n_list = [ link.interfaces[i].node for i in range(0,len(link.interfaces)) if i != ifcnt ]
+  if len(n_list) == 1:
+    ifdata.name = f'{node_name} -> {n_list[0]}'
+  else:
+    ifdata.name = f'{node_name} -> [{",".join(list(n_list))}]'
 
 def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
   link_attr_base = get_link_base_attributes(defaults)
@@ -547,10 +581,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
     ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
     link.interfaces[link_cnt] = value
 
-    if link.type != "stub":
-      n_list = [ link.interfaces[i].node for i in range(0,len(link.interfaces)) if i != link_cnt ]
-      ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
-
+    set_interface_name(ifaddr,link,link_cnt)
     ifdata = interface_data(link=link,link_attr=link_attr_nomod,ifdata=ifaddr)
     node_intf = add_node_interface(ndict[node],ifdata,defaults)
     value.ifindex = node_intf.ifindex
@@ -575,83 +606,6 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
 
   if common.debug_active('links'):     # pragma: no cover (debugging)
     print(f'Final LAN link data: {link}\n')
-
-def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
-  link_attr_base = get_link_base_attributes(defaults)
-  link_attr_nomod = get_link_base_attributes(defaults,False)
-
-  if not defaults:      # pragma: no cover (almost impossible to get there)
-    defaults = Box({})
-  if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'\nProcess P2P link {link}')
-##  pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools,f'links[{link.linkindex}]')
-  pfx_list = link.get('prefix',{})
-
-  end_names = ['a','b']
-  link_nodes: typing.List[Box] = []
-  interfaces: typing.List[Box] = []
-
-  if len(link.interfaces) > len(end_names): # pragma: no cover (this error is reported earlier)
-    common.fatal(f"Internal error: Too many nodes specified on a P2P link {link}",'links')
-    return None
-
-  link.interfaces = sorted(link.interfaces,key=lambda v: v.node)       # Keep nodes sorted in alphabetic order for historic reasons
-  value: Box
-  for intf_cnt,value in enumerate(link.interfaces):
-    node = value.node
-    ecount = len(link_nodes)
-    ifaddr = Box({},default_box=True,box_dots=True)
-    if link.get('unnumbered',None):
-      ifaddr.unnumbered = True
-
-    if not isinstance(value,dict):        # pragma: no cover -- caught earlier in adjust_interface_list
-      common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
-      return None
-
-    errmsg = get_node_link_address(
-      node=ndict[node],
-      ifdata=ifaddr,
-      node_link_data=value,
-      prefix=pfx_list,
-      node_id=ecount+1)
-    if errmsg:
-      common.error(
-        f'{errmsg}\n'+
-        common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
-
-    ifaddr_add_module(ifaddr,link,ndict[node].get('module'))
-
-    ifaddr = ifaddr + value
-    ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
-#    link[IFATTR][intf_cnt] = value
-    link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
-
-    ifdata = interface_data(link=link,link_attr=link_attr_nomod,ifdata=ifaddr)
-    if 'bridge' in link:
-      ifdata.bridge = link.bridge
-    ifdata.name = link.get("name") or (link.interfaces[intf_cnt].node + " -> " + link.interfaces[1-intf_cnt].node)
-    dict_2_update = add_node_interface(ndict[node],ifdata,defaults)
-    value.ifindex = dict_2_update.ifindex
-    interfaces.append(dict_2_update)
-
-  if not 'name' in link:
-    link.name = link_nodes[0].name + " - " + link_nodes[1].name
-
-  for i in range(0,2):
-    remote = link_nodes[1-i].name
-    interfaces[i]['neighbors'] = [{
-        'node': remote,
-        'ifname': interfaces[1-i]['ifname']
-      }]
-    for af in ('ipv4','ipv6'):
-      if af in interfaces[1-i]:
-        interfaces[i]['neighbors'][0][af] = interfaces[1-i][af]
-
-    # JvB: copy module specific link attributes like bgp.local_as
-    mods_with_ifattr = Box({ m : True for m in ndict[remote].get('module',[]) if defaults[m].attributes.get('interface',None) })
-    ifaddr_add_module(interfaces[i]['neighbors'][0],interfaces[1-i],mods_with_ifattr)
-
-  return link
 
 def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
   ok = True
@@ -827,10 +781,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     link_default_pools = ['p2p','lan'] if link.type == 'p2p' else ['lan']
     assign_link_prefix(link,link_default_pools,pools,f'links[{link.linkindex}]')
     assign_interface_addresses(link,pools,nodes,defaults)
-    if link.type == 'p2p':
-      augment_p2p_link(link,pools,nodes,defaults=defaults)
-    else:
-      augment_lan_link(link,pools,nodes,defaults=defaults)
+    augment_lan_link(link,pools,nodes,defaults=defaults)
 
     cleanup_link_interface_AF_entries(link)
     set_default_gateway(link,nodes)
