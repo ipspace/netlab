@@ -467,6 +467,17 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
 
   return
 
+def set_link_bridge_name(link: Box, defaults: Box) -> None:
+  if link.type in ['p2p','loopback','vlan_member']:                   # No need for bridge names on P2P links, loopbacks and virtual links
+    return
+  if not 'bridge' in link:
+    link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex)   # max 15 chars on Linux
+  elif len(link['bridge']) > 15:
+    common.error(
+      f'Bridge name {link["bridge"]} has more than 15 characters',
+      common.IncorrectValue,
+      'interfaces')
+
 def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
   link_type = data.get('type')
@@ -593,16 +604,10 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     if not check_link_type(data=link):
       continue
 
+    set_link_bridge_name(link,defaults)
     if link.type == 'p2p':
       augment_p2p_link(link,pools,nodes,defaults=defaults)
     else:
-      if not 'bridge' in link:
-        link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex) # max 15 chars on Linux
-      elif len(link['bridge']) > 15:
-        common.error(
-            f'Bridge name {link["bridge"]} has more than 15 characters',
-            common.IncorrectValue,
-            'interfaces')
       augment_lan_link(link,pools,nodes,defaults=defaults)
 
     set_default_gateway(link,nodes)
