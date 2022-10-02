@@ -4,7 +4,7 @@
 import typing, re
 from box import Box
 
-from . import _Module,_routing,get_effective_module_attribute
+from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from .. import common
 from .. import data
 from ..data import get_from_box,must_be_dict,global_vars
@@ -17,26 +17,16 @@ from .. import addressing
 #
 VALID_VRF_NAMES = re.compile( r"[a-zA-Z0-9_.-]{1,16}" )
 
-#
-# build_vrf_id_set: given an object (topology or node), create a set of RDs
-# that appear in that object.
-#
-def build_vrf_static_set(obj: Box, attr: str) -> set:
-  if 'vrfs' in obj:
-    return { v[attr] for v in obj.vrfs.values() if isinstance(v,dict) and attr in v and v[attr] is not None }
-  return set()
-
 def populate_vrf_static_ids(topology: Box) -> None:
-  vrf_data = global_vars.get('vrf')
+  for k in ('id','rd'):
+    _dataplane.create_id_set(f'vrf_{k}')
+    _dataplane.extend_id_set(f'vrf_{k}',_dataplane.build_id_set(topology,'vrfs',k,'topology'))
 
-  vrf_data.rd_set = build_vrf_static_set(topology,'rd')
-  vrf_data.id_set = build_vrf_static_set(topology,'id')
-  vrf_data.last_id = 1
+  _dataplane.set_id_counter('vrf_id',1,4095)
 
   for n in topology.nodes.values():
-    if 'vrfs' in n:
-      vrf_data.rd_set = vrf_data.rd_set.union(build_vrf_static_set(n,'rd'))
-      vrf_data.id_set = vrf_data.id_set.union(build_vrf_static_set(n,'id'))
+    for k in ('id','rd'):
+      _dataplane.extend_id_set(f'vrf_{k}',_dataplane.build_id_set(n,'vrfs',k,f'nodes.{n.name}'))
 
 #
 # Get a usable AS number. Try bgp.as then vrf.as from node and global settings
@@ -60,15 +50,17 @@ def parse_rdrt_value(value: str) -> typing.Optional[typing.List[int]]:
     return None
 
 def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
-  vrf_data = global_vars.get('vrf')
+  rd_set = _dataplane.get_id_set('vrf_rd')
+  id_set = _dataplane.get_id_set('vrf_rd')
+  while True:
+    vrf_id = _dataplane.get_next_id('vrf_id')
+    if not f'{asn}:{vrf_id}' in rd_set:
+      break
 
-  while f'{asn}:{vrf_data.last_id}' in vrf_data.rd_set or vrf_data.last_id in vrf_data.id_set:
-    vrf_data.last_id = vrf_data.last_id + 1
-
-  rd = f'{asn}:{vrf_data.last_id}'
-  vrf_data.rd_set.add(rd)
-  vrf_data.id_set.add(vrf_data.last_id)
-  return (vrf_data.last_id,rd)
+  rd = f'{asn}:{vrf_id}'
+  rd_set.add(rd)
+  id_set.add(vrf_id)
+  return (vrf_id,rd)
 
 #
 # Check for 'reasonable' VRF names using a regex expression
