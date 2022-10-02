@@ -1,10 +1,10 @@
 #
-# VRF module
+# VLAN configuration module
 #
 import typing
 from box import Box
 
-from . import _Module,_routing,get_effective_module_attribute
+from . import _Module,_routing,get_effective_module_attribute,_dataplane
 from .. import common
 from .. import data
 from ..data import global_vars
@@ -28,59 +28,29 @@ phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','lin
 keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
 
-#
-# build_vlan_id_set: given an object (topology or node), create a set of VLAN attributes (ID or VNI)
-# that appear in that object.
-#
-def build_vlan_id_set(obj: Box, attr: str, objname: str) -> set:
-  if 'vlans' in obj:
-    if not isinstance(obj.vlans,dict):    # pragma: no cover
-      common.fatal(f'Found a "vlans" setting that is not a dictionary in {objname}','vlan')
-      return set()
-
-    return { v[attr] for v in obj.vlans.values() if isinstance(v,dict) and attr in v and v[attr] is not None and not isinstance(v[attr],bool) }
-  return set()
-
 def populate_vlan_id_set(topology: Box) -> None:
-  vlan_ids = global_vars.get('vlan_ids')
-  vlan_next = global_vars.get('vlan_next')
-
   for k in ('id','vni'):
-    vlan_ids[k] = build_vlan_id_set(topology,k,'topology')
+    _dataplane.create_id_set(k)
+    _dataplane.extend_id_set(k,_dataplane.build_id_set(topology,'vlans',k,'topology'))
 
-  vlan_next['id'] = topology.defaults.vlan.start_vlan_id
-  vlan_next['vni'] = topology.defaults.vlan.start_vni
+  _dataplane.set_id_counter('id',topology.defaults.vlan.start_vlan_id,4094)
+  _dataplane.set_id_counter('vni',topology.defaults.vlan.start_vni,16777215)
 
-  attr_list = [ 'id' ]
+  attr_list = ['id']
   if topology.defaults.vlan.auto_vni:
     attr_list.append('vni')
 
   for n in topology.nodes.values():
-    if 'vlans' in n:
-      for k in attr_list:
-        vlan_ids[k] = vlan_ids[k].union(build_vlan_id_set(n,k,n.name))
-
-def get_next_vlan_id(k : str) -> int:
-  vlan_ids = global_vars.get('vlan_ids')
-  vlan_next = global_vars.get('vlan_next')
-
-  if k not in vlan_ids or k not in vlan_next:   # pragma: no cover
-    common.fatal(f'Invalid attribute {k} in get_next_vlan_id call')
-
-  while vlan_next[k] in vlan_ids[k]:
-    vlan_next[k] = vlan_next[k] + 1
-
-  vlan_ids[k].add(vlan_next[k])
-  return vlan_next[k]
+    for k in attr_list:
+      _dataplane.extend_id_set(k,_dataplane.build_id_set(n,'vlans',k,f'nodes.{n.name}'))
 
 #
 # Define a utility function to check whether a VLAN ID or VNI is used to hide internal data structures
 # from modules needing this functionality
 #
 def is_vlan_id_used(vlan_id: int, namespace: str) -> bool:
-  vlan_ids = global_vars.get('vlan_ids')
-
-  return vlan_id in vlan_ids[namespace]
+  id_set = _dataplane.get_id_set(namespace)
+  return vlan_id in id_set
 
 #
 # routed_access_vlan: Given a link with access/native VLAN, check if all nodes on the link use routed VLAN
@@ -129,7 +99,7 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 # * VLAN forwarding mode
 #
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
-  vlan_ids = global_vars.get('vlan_ids')
+  vni_ids = _dataplane.get_id_set('vni')
 
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
@@ -164,7 +134,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
         vdata.mode = default_fwd_mode
 
     if not 'id' in vdata:                                           # When VLAN ID is not defined
-      vdata.id = get_next_vlan_id('id')                             # ... take the next free VLAN ID from the list
+      vdata.id = _dataplane.get_next_id('id')                       # ... take the next free VLAN ID from the list
     if not isinstance(vdata.id,int):                                # Now validate the heck out of VLAN ID
       common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
       continue
@@ -189,11 +159,11 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
 
     if assign_vni:                                                  # So far we either have a valid VNI or know whether to auto-assign it
       vni_default = topology.defaults.vlan.start_vni + vdata.id     # ... try to build VNI from VLAN ID
-      if not is_vlan_id_used(vni_default,'vni'):                    # Is the VNI free?
+      if not vni_default in vni_ids:                                # Is the VNI free?
         vdata.vni = vni_default                                     # ... great, take it
-        vlan_ids.vni.add(vni_default)                               # ... and add it to the list of used VNIs
+        vni_ids.add(vni_default)                                    # ... and add it to the list of used VNIs
       else:                                                         # Too bad, we had such a great idea but it failed
-        vdata.vni = get_next_vlan_id('vni')                         # ... so take the next available VNI
+        vdata.vni = _dataplane.get_next_id('vni')                   # ... so take the next available VNI
 
     vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
     vlan_pool.extend(['vlan','lan'])
