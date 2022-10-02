@@ -18,45 +18,95 @@ register_static_vni -- register all static VNIs
 def register_static_vni(topology: Box) -> None:
   _dataplane.create_id_set('vni')
   _dataplane.extend_id_set('vni',_dataplane.build_id_set(topology,'vlans','vni','topology'))
-  _dataplane.set_id_counter('vni',topology.defaults.vlan.start_vni,16777215)
+  _dataplane.set_id_counter('vni',topology.defaults.vxlan.start_vni,16777215)
 
   for n in topology.nodes.values():
     _dataplane.extend_id_set('vni',_dataplane.build_id_set(n,'vlans','vni',f'nodes.{n.name}'))
 
-#
-# Check VXLAN-enabled VLANs
-#
-def node_vlan_check(node: Box, topology: Box) -> bool:
-  if not node.vxlan.vlans:            # Create a default list of VLANs if needed
-    node.vxlan.vlans = [ name for name,value in node.vlans.items() if 'vni' in value ]
 
-  OK = True
-  vlan_list = []
-  for vname in node.vxlan.vlans:
-    #
-    # Report error for unknown VLAN names in VLAN list (they are not defined globally or on the node)
-    if not vname in node.vlans and not vname in topology.get('vlans',{}):
-      common.error(
-        f'Unknown VLAN {vname} is specified in the list of VXLAN-enabled VLANs in node {node.name}',
-        common.IncorrectValue,
-        'vxlan')
-      OK = False
-      continue
-    #
-    # Skip VLAN names that are valid but not used on this node
-    if not vname in node.vlans:
-      continue
-    if not 'vni' in node.vlans[vname]:
-      common.error(
-        f'VXLAN-enabled VLAN {vname} in node {node.name} does not have a VNI',
-        common.IncorrectValue,
-        'vxlan')
-      OK = False
-    else:
-      vlan_list.append(vname)
+"""
+validate_vxlan_list
 
-  node.vxlan.vlans = vlan_list
-  return OK
+* Create vxlan.vlans list with all known VLANs if the attribute is missing
+* validate that the vxlan.vlans list is a list with valid local or global VLAN names
+
+Inputs:
+* toponode: Topology or node
+* obj_path: object path (topology or nodes.x)
+* topology: pointer to topology so we can access global VLANs
+"""
+def validate_vxlan_list(toponode: Box, obj_path: str, topology: Box) -> None:
+  vxlan_vlans = data.must_be_list(
+                      parent=toponode,
+                      key='vxlan.vlans',
+                      path=obj_path,
+                      module='vxlan',
+                      create_empty=False)                           # If the attribute is there, it must be a list
+  if not vxlan_vlans:
+    if not 'vlans' in toponode:                                     # If there are no local VLANs, we don't need the default value
+      return
+    toponode.vxlan.vlans = list(toponode.vlans.keys())
+    vxlan_vlans = toponode.vxlan.vlans                              # Default initial value = all VLANs defined in this object
+
+  if not vxlan_vlans:                                               # Still empty? Nothing to do then...
+    return
+
+  for vname in vxlan_vlans:                                         # Now check whether the VLAN names are valid
+    if vname in toponode.get('vlans',{}):                           # ... but very carefully, we don't want to create extra boxes
+      continue
+    if vname in topology.get('vlans',{}):                           # ... global name is also OK
+      continue
+    common.error(
+      f'vxlan.vlans refers to invalid VLAN {vname} in {obj_path}',
+      common.IncorrectValue,
+      'vxlan')
+
+"""
+assign_vni -- Assign VNIs to VLANs listed in vxlan.vlans (or all VLANs if vxlan.vlans is missing)
+
+Inputs:
+* toponode: Topology or node
+* obj_path: object path (topology or nodes.x)
+* topology: pointer to topology so we can access global VLANs
+"""
+def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
+  vxlan_vlans = get_from_box(toponode,'vxlan.vlans')
+  if not vxlan_vlans:                                               # No VXLAN-enabled VLANs in the current data object ==> nothing to do
+    return
+
+  vni_ids = _dataplane.get_id_set('vni')
+  for vname in vxlan_vlans:
+    vlan_data = toponode.vlans[vname]
+    vpath = f'{obj_path}.vlans.{vname}'
+    if vname in topology.get('vlans',{}) and toponode != topology:
+      if 'vni' in topology.vlans[vname] and 'vni' in vlan_data:
+        common.error(
+          f'Cannot define VXLAN VNI for a global VLAN {vname} within node {toponode.name} VLAN data',
+          common.IncorrectType,
+          'vxlan')
+      continue
+
+    if 'vni' in vlan_data:
+      if vlan_data.vni is False:                                  # Explicit request not to assign a VNI
+        continue
+      elif vlan_data.vni is True:                                 # Explicit request to assign VNI, pass through
+        pass
+      else:                                                       # Otherwise check that VNI is an int
+        data.must_be_int(
+          parent=vlan_data,
+          key='vni',
+          path=vpath,
+          min_value=2,
+          max_value=16777215,
+          module='vxlan')
+        continue
+
+    vni_default = topology.defaults.vxlan.start_vni + vlan_data.id  # ... try to build VNI from VLAN ID
+    if not vni_default in vni_ids:                                  # Is the VNI free?
+      vlan_data.vni = vni_default                                   # ... great, take it
+      vni_ids.add(vni_default)                                      # ... and add it to the list of used VNIs
+    else:                                                           # Too bad, we had such a great idea but it failed
+      vlan_data.vni = _dataplane.get_next_id('vni')                 # ... so take the next available VNI
 
 #
 # Set VTEP IPv4/IPv6 address
@@ -105,6 +155,9 @@ def build_vtep_list(vlan: Box, node: str, nodes: typing.List[str], topology: Box
 
 class VXLAN(_Module):
 
+  def module_pre_transform(self, topology: Box) -> None:
+    register_static_vni(topology)
+
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     flooding_values = ['static']
     for m in ['evpn']:
@@ -116,6 +169,13 @@ class VXLAN(_Module):
       key = 'flooding',
       path = f'nodes.{node.name}.vxlan',
       valid_values = flooding_values)
+
+  def module_post_node_transform(self, topology: Box) -> None:
+    validate_vxlan_list(topology,'topology',topology)
+    assign_vni(topology,'topology',topology)
+    for n in topology.nodes.values():
+      validate_vxlan_list(n,f'nodes.{n.name}',topology)
+      assign_vni(n,f'nodes.{n.name}',topology)
 
   # We need multi-step post-transform node handling, so we have to do that in
   # module_post_transform
@@ -134,8 +194,9 @@ class VXLAN(_Module):
           ndata.vxlan.pop('vlans',None)
         continue
 
-      if not node_vlan_check(ndata,topology):                       # Check VLANs
-        continue
+      # Build the final per-node VXLAN list -- all VLANs with VNI attribute are VXLAN-enabled in one way or another
+      #
+      ndata.vxlan.vlans = [ vname for vname,vdata in ndata.vlans.items() if 'vni' in vdata and vdata.vni ]
       if not node_set_vtep(ndata,topology):                         # Set VTEP IP address
         continue
 
