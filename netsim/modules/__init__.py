@@ -12,7 +12,6 @@ from box import Box
 from .. import common
 from ..data import get_from_box
 from ..callback import Callback
-from ..augment.links import IFATTR
 from ..augment import devices
 
 # List of attributes we don't want propagated from defaults to global/node
@@ -578,7 +577,7 @@ def link_transform(method: str, topology: Box) -> None:
 
   for l in topology.get("links",[]):
     mod_list: typing.Dict = {}
-    for node_data in l.get(IFATTR,[]):
+    for node_data in l.get('interfaces',[]):
       mod_list.update({ m: None for m in topology.nodes[node_data.node].get("module",[]) })
     for m in mod_list.keys():
       if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)

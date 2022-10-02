@@ -223,10 +223,10 @@ def get_nth_subnet(n: int, subnet: netaddr.IPNetwork.subnet, cache_list: list) -
     cache_list.append(next(subnet))
   return cache_list[n-1]
 
-def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) -> typing.Dict:
-  prefixes: typing.Dict = {}
+def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) -> Box:
+  prefixes = Box({})
   if pools[p].get('unnumbered'):
-    return { 'unnumbered': True }
+    return Box({ 'unnumbered': True })
   for af in list(pools[p]):
     if not 'cache' in af:
       if isinstance(pools[p][af],bool):
@@ -254,14 +254,14 @@ def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) 
 
   return prefixes
 
-def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typing.Optional[int] = None) -> typing.Dict:
+def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typing.Optional[int] = None) -> Box:
   if not pool_list:
     pool_list = ['lan']                   # pragma: no cover
   p = get_pool(pools,pool_list)
   if p:
     return get_pool_prefix(pools,p,n)
   else:
-    return {}                             # pragma: no cover -- can't figure out how to get here
+    return Box({})                        # pragma: no cover -- can't figure out how to get here
 
 def setup(topo: Box, defaults: Box) -> None:
   data.null_to_string(topo.addressing)
@@ -280,33 +280,38 @@ def setup(topo: Box, defaults: Box) -> None:
 
   common.exit_on_error()
 
-def parse_prefix(prefix: typing.Union[str,dict]) -> typing.Dict:
+def parse_prefix(prefix: typing.Union[str,dict]) -> Box:
   if common.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f"parse prefix: {prefix} type={type(prefix)}")
+
+  empty_box = Box({})
   if not prefix:
-    return {}
+    return empty_box
   supported_af = ['ip','ipv4','ipv6']
-  prefix_list: typing.Dict = {}
-  if isinstance(prefix,dict):
-    for af,pfx in prefix.items():
-      if not af in supported_af:
-        common.error( \
-          'Unknown address family %s in prefix %s' % (af,prefix), \
-          category=common.IncorrectValue,module='addressing')
-      else:
-        if isinstance(pfx,bool):
-          prefix_list[af] = pfx
-        else:
-          try:
-            prefix_list[af] = netaddr.IPNetwork(pfx)
-          except Exception as ex:
-            common.error(f'Cannot parse {af} prefix: {prefix}\n... {ex}',common.IncorrectValue,'addressing')
-            return {}
-          if str(prefix_list[af]) != str(prefix_list[af].cidr):
-            common.error(f'{af} prefix contains host bits: {prefix}',common.IncorrectValue,'addressing')
-    return prefix_list
-  else:
-    return { 'ipv4' : netaddr.IPNetwork(prefix) }
+  prefix_list = Box({})
+  if not isinstance(prefix,dict):
+    return Box({ 'ipv4' : netaddr.IPNetwork(prefix) })
+
+  for af,pfx in prefix.items():
+    if not af in supported_af:
+      common.error( \
+        'Unknown address family %s in prefix %s' % (af,prefix), \
+        category=common.IncorrectValue,module='addressing')
+      continue
+
+    if isinstance(pfx,bool):
+      prefix_list[af] = pfx
+      continue
+
+    try:
+      prefix_list[af] = netaddr.IPNetwork(pfx)
+    except Exception as ex:
+      common.error(f'Cannot parse {af} prefix: {prefix}\n... {ex}',common.IncorrectValue,'addressing')
+      return empty_box
+    if str(prefix_list[af]) != str(prefix_list[af].cidr):
+      common.error(f'{af} prefix contains host bits: {prefix}',common.IncorrectValue,'addressing')    
+
+  return prefix_list
 
 def get_addr_mask(pfx: netaddr.IPNetwork, host: int) -> str:
   host_ip = netaddr.IPNetwork(pfx[host])
