@@ -13,8 +13,6 @@ from .. import data
 from .. import addressing
 from . import devices
 
-IFATTR: str = 'interfaces'          # Just in case we decide to call it something else not 'interfaces'
-
 def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
   link_intf = []
   for n in iflist:                      # Sanity check of interface data
@@ -40,8 +38,18 @@ def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
 
   return link_intf
 
+"""
+Normalize the list of links:
+
+* Dictionary with 'interfaces' key ==> no change
+* Dictionary without 'interfaces' ==> extract nodes into 'interfaces', keep other keys
+* List ==> create a dictionary with 'interfaces' element
+* String ==> split into list, create a dictionary with 'interfaces' element
+
+REFACTOR!!!
+"""
+
 def adjust_link_list(links: list, nodes: Box) -> list:
-  global IFATTR
   link_list: list = []
 
   if not(links):
@@ -49,32 +57,32 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 
   link_cnt = 0
   for l in links:
-    if isinstance(l,dict) and IFATTR in l:               # a dictionary with 'interfaces' element
+    if isinstance(l,dict) and 'interfaces' in l:                # a dictionary with 'interfaces' element
       l = Box(l,default_box=True,box_dots=True)
-      data.must_be_list(l,IFATTR,f'link[{link_cnt}]')    # ... check it's a list and move on
-      l[IFATTR] = adjust_interface_list(l[IFATTR],l,nodes)
+      data.must_be_list(l,'interfaces',f'link[{link_cnt}]')     # ... check it's a list and move on
+      l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
       link_list.append(l)
-    elif isinstance(l,dict):                             # a dictionary without 'interfaces' element
-      link_data = {}                                     # ... split it into link attributes
-      link_intf = []                                     # ... and a list of nodes
+    elif isinstance(l,dict):                                    # a dictionary without 'interfaces' element
+      link_data = Box({},default_box=True,box_dots=True)        # ... split it into link attributes
+      link_intf = []                                            # ... and a list of nodes
       for (k,v) in l.items():
-        if k in nodes:                                   # Node name -> interface list
+        if k in nodes:                                          # Node name -> interface list
           if not v:
             v = Box({},default_box=True,box_dots=True)
-          if not isinstance(v,dict):                     # Interface data must be a dictionary
+          if not isinstance(v,dict):                            # Interface data must be a dictionary
             common.error(
               f'Interface data {v} for node {k} on link {l} must be a dictionary',
               common.IncorrectValue,
               'links')
             continue
-          v['node'] = k                                  # ... add 'node' to the interface so we know what node it belongs to
+          v['node'] = k                                         # ... add 'node' to the interface so we know what node it belongs to
           link_intf.append(v)
         else:
-          link_data[k] = v                  # ... otherwise copy key/value pair to link data
-      link_data[IFATTR] = link_intf         # Add revised interface data to link data
-      link_list.append(link_data)           # ... and move on
+          link_data[k] = v                                      # ... otherwise copy key/value pair to link data
+      link_data.interfaces = link_intf                          # Add revised interface data to link data
+      link_list.append(link_data)                               # ... and move on
     elif isinstance(l,list):
-      link_list.append(Box({ IFATTR: adjust_interface_list(l,l,nodes) },default_box=True,box_dots=True))
+      link_list.append(Box({ 'interfaces': adjust_interface_list(l,l,nodes) },default_box=True,box_dots=True))
     else:                                   # Assuming the link value is a string, split
       link_intf = []
       for n in l.split('-'):                # ... split it into a list of nodes
@@ -85,7 +93,7 @@ def adjust_link_list(links: list, nodes: Box) -> list:
             f'Link string {l} refers to an unknown node {n}',
             common.IncorrectValue,
             'links')
-      link_list.append({ IFATTR: link_intf })
+      link_list.append({ 'interfaces': link_intf })
     link_cnt = link_cnt + 1
 
   if common.debug_active('links'):
@@ -95,6 +103,9 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 
   return link_list
 
+"""
+Get a maximized set of link attributes, including internal attributes and all modules
+"""
 def get_link_full_attributes(defaults: Box, with_modules: bool = True) -> set:
   attributes = defaults.get('attributes',{})
   user = attributes.get('link',[])
@@ -109,11 +120,24 @@ def get_link_full_attributes(defaults: Box, with_modules: bool = True) -> set:
 
   return set_attributes
 
+"""
+Get the link attributes that have to be propagated to interfaces: full set
+of attributes minus the 'no_propagate' attributes 
+"""
 def get_link_base_attributes(defaults: Box, with_modules: bool = True) -> set:
   attributes = defaults.get('attributes',{})
   no_propagate = attributes.get('link_no_propagate')
   return get_link_full_attributes(defaults,with_modules) - set(no_propagate)
 
+"""
+Add interface data structure to a node:
+
+* Add node-specific interface index
+* Create interface name
+* Add provider-specific interface data
+* Cleanup 'af: False' entries
+* Handle interface/node/system MTU
+"""
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
   if ifindex_offset is None:
@@ -156,8 +180,11 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   # return len(node.links)
   return node.interfaces[-1]
 
-# Add common interface data to node ifaddr structure
-#
+"""
+Add link attributes (specified in link_attr set) to interface data structure
+
+Also used to merge interface data structure with neighbor data structure when building neighbor list
+"""
 def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
   for k in link_attr:
     if k in link:
@@ -167,104 +194,21 @@ def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
         ifdata[k] = link[k] + ifdata[k]
   return ifdata
 
-#
-# Add module-specific data to node ifaddr structure
-#
-# Iterate over modules, for every matching key in link definition
-# copy the value into node ifaddr
-#
-def ifaddr_add_module(ifaddr: Box, link: Box, module: Box) -> None:
-  if module:
-    for m in module:
-      if m in link:
-        ifaddr[m] = link[m]
+"""
+Assign a prefix (IPv4+IPv6) to a link:
 
-#
-# get_node_link_address: calculate on-link address for the specified node
-#
-# node: node data collected so far
-# ifaddr: interface data collected so far
-# node_link_data: existing node-on-link data
-# prefix: link prefix (ipv4, ipv6, unnumbered)
-# node_id: desired address within the subnet
-#
+* If the prefix is already defined, validate it
+* If the link is unnumbered, return 'unnumbered' prefix
+* Otherwise allocate prefix from a pool
 
-def get_node_link_address(node: Box, ifdata: Box, node_link_data: dict, prefix: dict, node_id: int) -> typing.Optional[str]:
-  if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f"get_node_link_address for {node.name}:\n"+
-          f".. ifdata: {ifdata}\n"+
-          f".. node_link_data: {node_link_data}\n"+
-          f".. prefix: {prefix}\n"+
-          f".. node_id: {node_id}")
-  if 'unnumbered' in prefix:          # Special case: old-style unnumbered link
-    if common.debug_active('links'):     # pragma: no cover (debugging)
-      print(f"... node loopback: {node.loopback}")
-    for af in ('ipv4','ipv6'):        # Set AF to True for all address families
-      if af in node_link_data:
-        return(f'{af} address ignored for node {node.name} on a fully-unnumbered link')
-      if af in node.loopback:         # ... present on node loopback interface
-        ifdata[af] = True
-        node_link_data[af] = True
-    return None
+Allocating pool prefix:
 
-  for af in ('ipv4','ipv6'):
-    node_addr = None
-    if af in node_link_data:                  # static IP address or host index
-      if isinstance(node_link_data[af],bool): # unnumbered node, leave it alone
-        continue
-      if isinstance(node_link_data[af],int):  # host portion of IP address specified as an integer
-        if af in prefix:
-          if isinstance(prefix[af],bool):
-            return(f'Node {node.name} is using host index for {af} on an unnumbered link')
-          try:
-            node_addr = netaddr.IPNetwork(prefix[af][node_link_data[af]])
-            node_addr.prefixlen = prefix[af].prefixlen
-          except Exception as ex:
-            return(
-              f'Cannot assign host index {node_link_data[af]} in {af} from prefix {prefix[af]} to node {node.name}\n'+
-              f'... {ex}')
-        else:
-          return(f'Node {node.name} is using host index {node_link_data[af]} for {af} on a link that does not have {af} prefix')
-      else:                                  # static IP address
-        try:
-          node_addr = netaddr.IPNetwork(node_link_data[af])
-        except:
-          return(f'Invalid {af} link address {node_link_data[af]} for node {node.name}')
-        if '/' not in node_link_data[af] and af in prefix:
-          node_addr.prefixlen = prefix[af].prefixlen
-        if str(node_addr) == str(node_addr.cidr):        # Check whether the node address includes a host portion
-          lb = not(':' in str(node_addr)) \
-                 and node_addr.prefixlen == 32           # Exception#1: IPv4/32
-          lb = lb or node_addr.prefixlen == 128          # Exception#2: IPv6/128
-          if not lb:
-            return(f'Static node address {node_link_data[af]} for node {node.name} does not include a host portion')
-    elif af in prefix:
-      if isinstance(prefix[af],bool):        # New-style unnumbered link
-        if prefix[af]:                       # Copy only True value into interface data
-          ifdata[af] = prefix[af]            # ... to ensure AF presence in ifdata indicates protocol-on-interface
-          node_link_data[af] = prefix[af]
-      else:
-        try:
-          index = node_id-1 if af == 'ipv4' and prefix[af].prefixlen==31 else node_id
-          node_addr = netaddr.IPNetwork(prefix[af][index])
-        except Exception as ex:
-          return(
-            f'Cannot assign {af} address from prefix {prefix[af]} to node {node.name} with ID {node.id}\n'+
-            f'... {ex}')
-        node_addr.prefixlen = prefix[af].prefixlen
+* Use addressing pool specified in link.pool
+* Otherwise, if link.role is set, add that to a list of pool candidates
+* Allocate a prefix from the first available candidate pool
+"""
 
-    if node_addr:
-      node_link_data[af] = str(node_addr)
-      ifdata[af] = node_link_data[af]
-
-  if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f"get_node_link_address for {node.name} completed:\n"+
-          f".. ifdata: {ifdata}\n"+
-          f".. node_link_data: {node_link_data}")
-    print
-  return None
-
-def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_path: str = 'links') -> dict:
+def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_path: str = 'links') -> Box:
   if 'prefix' in link:                                    # User specified a static link prefix
     pfx_list = addressing.parse_prefix(link.prefix)
     if isinstance(link.prefix,str):
@@ -272,7 +216,8 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_p
     return pfx_list
 
   if 'unnumbered' in link:                                # User requested an unnumbered link
-    return Box({ 'unnumbered': True })
+    link.prefix = Box({ 'unnumbered': True })
+    return link.prefix
 
   if data.must_be_string(link,'pool',link_path):
     if not link.pool in addr_pools:
@@ -288,155 +233,287 @@ def augment_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_p
   pfx_list = addressing.get(addr_pools,pools)
   link.prefix = {
       af: pfx_list[af] if isinstance(pfx_list[af],bool) else str(pfx_list[af])
-            for af in ('ipv4','ipv6') if af in pfx_list
+            for af in ('ipv4','ipv6','unnumbered') if af in pfx_list
     }
   if not link.prefix:
     link.pop('prefix',None)
 
   return pfx_list
 
-def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
-  link_attr_base = get_link_base_attributes(defaults)
-  link_attr_nomod = get_link_base_attributes(defaults,False)
+"""
+Get IPAM policy for link/prefix
 
-  if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'\nProcess LAN link {link}')
+* If the prefix is a bool ==> unnumbered
+* If the link is a P2P link ==> p2p (for backward compatibility)
+* If the prefix is large enough ==> id_based
+* Otherwise use sequential policy
 
-  pfx_list = augment_link_prefix(link,['lan'],addr_pools,f'links[{link.linkindex}]')
-  interfaces = []
+Return 'error' if the prefix size is too small
+"""
+def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool], ndict: Box) -> str:
+  if isinstance(pfx,bool):
+    return 'unnumbered'
+  if link.type == 'p2p':
+    return 'p2p' if pfx.first != pfx.last else 'error'
 
-  if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'... on-link prefixes: {pfx_list}')
+  pfx_size = pfx.last - pfx.first + 1
+  if pfx_size > 2:
+    pfx_size = pfx_size - 2
 
-  link_cnt = 0
-  for value in link[IFATTR]:
-    node = value.node
-    ifaddr = Box({},default_box=True)
-    errmsg = get_node_link_address(
-      node=ndict[node],
-      ifdata=ifaddr,
-      node_link_data=value,
-      prefix=pfx_list,
-      node_id=ndict[node].id)
-    if errmsg:
+  max_id = max([ ndict[intf.node].id for intf in link.interfaces if intf.node in ndict ])
+  if max_id < pfx_size:
+    return 'id_based'
+  if len(link.interfaces) < pfx_size:
+    return 'sequential'
+
+  return 'error'
+
+"""
+Set an interface address based on the link prefix and interface sequential number (could be node.id or counter)
+"""
+def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: int) -> bool:
+  if af in intf:                                # Check static interface addresses
+    if isinstance(intf[af],bool):               # unnumbered or unaddressed node, leave it alone
+      return True
+
+    if isinstance(intf[af],int):                # host portion of IP address specified as an integer
+      node_id = intf[af]
+    elif isinstance(intf[af],str):              # static address specified on the interface
+      try:
+        intf_pfx = netaddr.IPNetwork(intf[af])  # Try to parse the interface IP address
+        if not '/' in intf[af]:
+          intf_pfx.prefixlen = pfx.prefixlen    # If it lacks a prefix, add link prefix
+        intf[af] = str(intf_pfx)                # ... and save modified/validated interface IP address
+      except Exception as ex:
+        common.error(
+          f'Cannot parse {af} address {intf.af} for node {intf.node}\n'+common.extra_data_printout(str(ex)),
+          common.IncorrectValue,
+          'links')
+        return False
+
+      if str(intf_pfx) != str(intf_pfx.cidr):   # Does the IP address have host bits -- is it different from its CIDR subnet?
+        return True                             # That's it -- the user knows what she's doing
+
+      if intf_pfx.last <= intf_pfx.first + 1:   # Are we dealing with special prefix (loopback or /31)
+        return True                             # ... then it's OK not to have host bits
+
       common.error(
-        f'{errmsg}\n'+
-        common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
+        f'Address {intf.af} for node {intf.node} does not contain host bits',
+        common.IncorrectValue,
+        'links')
+      return False
 
-    ifaddr_add_module(ifaddr,link,ndict[node].get('module'))
+  # No static interface address, or static address specified as relative node_id
+  try:
+    node_addr = netaddr.IPNetwork(pfx[node_id])
+    node_addr.prefixlen = pfx.prefixlen
+    intf[af] = str(node_addr)
+    return True
+  except Exception as ex:
+    common.error(
+      f'Cannot assign host index {node_id} in {af} from prefix {str(pfx)} to node {intf.node}\n' + \
+          common.extra_data_printout(str(ex)),
+      common.IncorrectValue,
+      'links')
 
-    ifaddr = ifaddr + value
-    ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
-    link[IFATTR][link_cnt] = value
+  return False
 
-    if link.type != "stub":
-      n_list = [ link[IFATTR][i].node for i in range(0,len(link[IFATTR])) if i != link_cnt ]
-      ifaddr.name = link.get("name") or (node + " -> [" + ",".join(list(n_list))+"]")
+"""
+Unnumbered AF IPAM -- set interface address to 'True'
 
-    ifdata = interface_data(link=link,link_attr=link_attr_nomod,ifdata=ifaddr)
-    node_intf = add_node_interface(ndict[node],ifdata,defaults)
-    value.ifindex = node_intf.ifindex
-    interfaces.append({ 'node': node, 'data':  node_intf })
-
-    link_cnt = link_cnt + 1
-
-  for node_if in interfaces:
-    node_if['data'].neighbors = []
-    for remote_if in interfaces:
-      if remote_if['node'] != node_if['node'] or remote_if['data'].ifindex != node_if['data'].ifindex:
-        ngh_data = Box({ 'ifname': remote_if['data'].ifname, 'node': remote_if['node'] })
-        for af in ('ipv4','ipv6'):
-          if af in remote_if['data']:
-            ngh_data[af] = remote_if['data'][af]
-        
-        # List enabled modules that have interface level attributes; copy those attributes too
-        mods_with_ifattr = Box({ m : True for m in ndict[remote_if['node']].get('module',[]) if defaults[m].attributes.get('interface',None) })
-        ifaddr_add_module(ngh_data,remote_if['data'],mods_with_ifattr)
-
-        node_if['data'].neighbors.append(ngh_data)
-
-  if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'Final LAN link data: {link}\n')
-
-def augment_p2p_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> typing.Optional[Box]:
-  link_attr_base = get_link_base_attributes(defaults)
-  link_attr_nomod = get_link_base_attributes(defaults,False)
-
-  if not defaults:      # pragma: no cover (almost impossible to get there)
-    defaults = Box({})
-  if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'\nProcess P2P link {link}')
-  pfx_list = augment_link_prefix(link,['p2p','lan'],addr_pools,f'links[{link.linkindex}]')
-
-  end_names = ['left','right']
-  link_nodes: typing.List[Box] = []
-  interfaces: typing.List[Box] = []
-
-  if len(link[IFATTR]) > len(end_names): # pragma: no cover (this error is reported earlier)
-    common.fatal(f"Internal error: Too many nodes specified on a P2P link {link}",'links')
-    return None
-
-  link[IFATTR] = sorted(link[IFATTR],key=lambda v: v.node)       # Keep nodes sorted in alphabetic order for historic reasons
-  value: Box
-  for intf_cnt,value in enumerate(link[IFATTR]):
-    node = value.node
-    ecount = len(link_nodes)
-    ifaddr = Box({},default_box=True,box_dots=True)
-    if link.get('unnumbered',None):
-      ifaddr.unnumbered = True
-
-    if not isinstance(value,dict):        # pragma: no cover -- caught earlier in adjust_interface_list
-      common.error(f'Attributes for node {node} on link {link} must be a dictionary',common.IncorrectValue,'links')
-      return None
-
-    errmsg = get_node_link_address(
-      node=ndict[node],
-      ifdata=ifaddr,
-      node_link_data=value,
-      prefix=pfx_list,
-      node_id=ecount+1)
-    if errmsg:
+If the interface address is set, validate that it's a valid address (can't be int)
+"""
+def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) -> None:
+  for intf in link.interfaces:
+    if not af in intf:            # No static address, set it to link bool value or use loopback AF presence for old-style unnumbereds
+      intf[af] = pfx if isinstance(pfx,bool) else bool(data.get_from_box(ndict[intf.node],f'loopback.{af}'))
+    elif data.is_true_int(intf[af]):
       common.error(
-        f'{errmsg}\n'+
-        common.extra_data_printout(f'link data: {link}'),common.IncorrectValue,'links')
+        f'Node {intf.node} is using host index {intf[af]} for {af} on an unnumbered link',
+        common.IncorrectValue,
+        'links')
 
-    ifaddr_add_module(ifaddr,link,ndict[node].get('module'))
+def IPAM_sequential(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
+  start = 1 if pfx.last != pfx.first + 1 else 0
+  for count,intf in enumerate(link.interfaces):
+    set_interface_address(intf,af,pfx,count+start)
 
-    ifaddr = ifaddr + value
-    ifaddr.pop('node',None)               # Remove the 'node' attribute from interface data -- now we know where it belongs
-#    link[IFATTR][intf_cnt] = value
-    link_nodes.append(Box({ 'name': node, 'link': value, 'ifaddr': ifaddr }))
+def IPAM_p2p(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
+  start = 1 if pfx.last != pfx.first + 1 else 0
+  for count,intf in enumerate(sorted(link.interfaces, key=lambda intf: intf.node)):
+    set_interface_address(intf,af,pfx,count+start)
 
-    ifdata = interface_data(link=link,link_attr=link_attr_nomod,ifdata=ifaddr)
-    if 'bridge' in link:
-      ifdata.bridge = link.bridge
-    ifdata.name = link.get("name") or (link[IFATTR][intf_cnt].node + " -> " + link[IFATTR][1-intf_cnt].node)
-    dict_2_update = add_node_interface(ndict[node],ifdata,defaults)
-    value.ifindex = dict_2_update.ifindex
-    interfaces.append(dict_2_update)
+def IPAM_id_based(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
+  for intf in link.interfaces:
+    set_interface_address(intf,af,pfx,ndict[intf.node].id)
 
-  if not 'name' in link:
-    link.name = link_nodes[0].name + " - " + link_nodes[1].name
+IPAM_dispatch: typing.Final[dict] = { 
+    'unnumbered': IPAM_unnumbered,
+    'p2p': IPAM_p2p,
+    'sequential': IPAM_sequential,
+    'id_based': IPAM_id_based
+  }
 
-  for i in range(0,2):
-    link[end_names[i]] = { 'node': link_nodes[i]['name'],'ifname': interfaces[i].get('ifname') }
+"""
+Assign addresses to all interfaces on a link
 
-    remote = link_nodes[1-i].name
-    interfaces[i]['neighbors'] = [{
-        'node': remote,
-        'ifname': interfaces[1-i]['ifname']
-      }]
+* Skip if the link has no usable prefix (l2only link)
+* Use IPAM_unnumbered on old-style unnumbered links
+* Figure out allocation policies (based on link type, prefix size, number of interfaces)
+* Execute selected IPAM routing
+"""
+def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults: Box) -> None:
+  global IPAM_dispatch
+  pfx_list = link.get('prefix',None)
+  if not pfx_list:
+    return
+
+  if 'unnumbered' in pfx_list:                        # Deal with unnumbered links first
     for af in ('ipv4','ipv6'):
-      if af in interfaces[1-i]:
-        interfaces[i]['neighbors'][0][af] = interfaces[1-i][af]
-      if af in interfaces[i]:
-        link[end_names[i]][af] = interfaces[i][af]
+      pfx_list.pop(af)                                # Remove AF prefix from unnumbered link
+      IPAM_unnumbered(link,af,None,ndict)
 
-    # JvB: copy module specific link attributes like bgp.local_as
-    mods_with_ifattr = Box({ m : True for m in ndict[remote].get('module',[]) if defaults[m].attributes.get('interface',None) })
-    ifaddr_add_module(interfaces[i]['neighbors'][0],interfaces[1-i],mods_with_ifattr)
+    link.pop('prefix')
+    return
 
-  return link
+  for af in ('ipv4','ipv6'):
+    if not af in pfx_list:                            # Skip address families not used on the link
+      continue
+
+    if isinstance(pfx_list[af],bool):                 # Unnumbered AF
+      allocation_policy = 'unnumbered'
+      pfx_net = pfx_list[af]
+    else:
+      try:                                            # Parse the AF prefix
+        pfx_net = netaddr.IPNetwork(pfx_list[af])
+      except Exception as ex:                         # Report an error and move on if it cannot be parsed
+        common.error(
+          f'Cannot parse {af} prefix {pfx_list[af]} on link#{link.linkindex}\n' + \
+            common.extra_data_printout(f'{ex}') + '\n' + \
+            common.extra_data_printout(f'{link}'),
+          common.IncorrectValue,
+          'links')
+        continue
+
+      allocation_policy = get_prefix_IPAM_policy(link,pfx_net,ndict)      # get IPAM policy based on prefix and link size
+
+    if allocation_policy == 'error':                                      # Something went wrong, cannot assing IP addresses
+      common.error(
+        f'Cannot use {af} prefix {pfx_list[af]} to address {len(link.interfaces)} nodes on link#{link.linkindex}',
+        common.IncorrectValue,
+        'links')
+      continue
+
+    IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)               # execute IPAM policy to get AF addresses on interfaces
+
+"""
+cleanup 'af: False' entries from interfaces
+"""
+def cleanup_link_interface_AF_entries(link: Box) -> None:
+  for af in ('ipv4','ipv6'):                    # Iterate over address families
+    for intf in link.interfaces:                # ... and link interfaces
+      if not af in intf:                        # Nothing to check
+        continue
+
+      if intf[af] is False:                     # Address set to false makes no sense ==> remove
+        intf.pop(af,None)
+        continue
+
+      if isinstance(intf[af],bool):             # Address set to true. Unnumbered, move on
+        continue
+
+      if data.is_true_int(intf[af]):            # Unprocessed int. Must be node index on an unnumbered link ==> error
+        common.error(
+          f'Interface ID for node {intf.node} did not result in a usable address on link#{link.linkindex}\n' + \
+            common.extra_data_printout(f'{link}'),
+          common.IncorrectType,
+          'links')
+        continue
+
+      if not '/' in intf[af]:                   # Subnet mask is unknown
+        common.error(
+          f'Unknown subnet mask for {af} address {intf[af]} used by node {intf.node} on link#{link.linkindex}\n' + \
+            common.extra_data_printout(f'{link}'),
+          common.IncorrectType,
+          'links')
+        continue
+
+"""
+Calculate interface description:
+
+* Link name (if exists)
+* Stub link (on a link with a single node)
+* A -> B when a link has two nodes
+* A -> [ B,C,D ] when a link has more than two nodes
+"""
+def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
+  if 'name' in link:
+    ifdata.name = link.name
+    return
+
+  node_name = link.interfaces[ifcnt].node
+  if len(link.interfaces) == 1:
+    ifdata.name = f'{node_name} -> stub'
+    return
+
+  n_list = [ link.interfaces[i].node for i in range(0,len(link.interfaces)) if i != ifcnt ]
+  if len(n_list) == 1:
+    ifdata.name = f'{node_name} -> {n_list[0]}'
+  else:
+    ifdata.name = f'{node_name} -> [{",".join(list(n_list))}]'
+
+"""
+Create node interfaces from link interfaces
+"""
+def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
+  link_attr_base = get_link_base_attributes(defaults)
+  link_attr_nomod = get_link_base_attributes(defaults,False)
+
+  if common.debug_active('links'):     # pragma: no cover (debugging)
+    print(f'\nCreate node interfaces: {link}')
+
+  interfaces = []
+  for (intf_cnt,value) in enumerate(link.interfaces):
+    node = value.node
+    #
+    # Create node interface data from interfaces attributes augmented with link attributes
+    # and node-relevant link module attributes
+    ifdata = interface_data(
+                link=link,
+                link_attr=link_attr_nomod.union(ndict[node].get('module',[])),
+                ifdata=Box(value))
+    set_interface_name(ifdata,link,intf_cnt)
+    ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
+    node_intf = add_node_interface(ndict[node],ifdata,defaults)   # Attach new interface to its node
+    value.ifindex = node_intf.ifindex                             # Save ifindex and ifname in link interface data
+    value.ifname  = node_intf.ifname                              # ... needed for things like Graph output module that works with links
+    interfaces.append({ 'node': node, 'data': node_intf })        # Save newly-created interface for the next step
+                                                                  # ... must use dict not Box as Box creates a copy of the data structure
+
+  if common.debug_active('links'):     # pragma: no cover (debugging)
+    print(f'... LAN link data: {link}\n')
+
+  # Second phase: build neighbor list from list of newly-created interfaces
+  for node_if in interfaces:
+    ifdata = node_if['data']                                      # Get a pointer to interface data
+    ifdata.neighbors = []
+    for remote_if in interfaces:                                  # Iterate over all interfaces created from this link
+      if remote_if is node_if:                                    # ... and skip the current interface
+        continue
+      remote_node = remote_if['node']                             # Remote node name in a handier format
+      remote_ifdata = remote_if['data']                           # ... and a pointer to remote interface data
+      ngh_data = Box({ 'ifname': remote_ifdata.ifname, 'node': remote_node })
+      #
+      # Find relevant modules that have interface attributes
+      mods_with_attr = set([ m for m in ndict[remote_node].get('module',[])
+                              if defaults[m].attributes.get('interface',None) ])
+      #
+      # Merge neighbor module data + AF with baseline neighbor data
+      ngh_data = interface_data(
+                   link=remote_ifdata,
+                   link_attr=mods_with_attr.union(['ipv4','ipv6']),
+                   ifdata=ngh_data)
+      ifdata.neighbors.append(ngh_data)
 
 def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
   ok = True
@@ -448,11 +525,11 @@ def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
   return ok
 
 def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
-  node_cnt = len(link[IFATTR])      # Set the number of attached nodes (used in many places further on)
+  node_cnt = len(link.interfaces)   # Set the number of attached nodes (used in many places further on)
   link['node_count'] = node_cnt
 
   host_count = 0                    # Count the number of hosts attached to the link
-  for ifdata in link[IFATTR]:
+  for ifdata in link.interfaces:
     if nodes[ifdata.node].get('role','') == 'host':
       host_count = host_count + 1
 
@@ -470,6 +547,17 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
     link.type = 'lan'
 
   return
+
+def set_link_bridge_name(link: Box, defaults: Box) -> None:
+  if link.type in ['p2p','loopback','vlan_member']:                   # No need for bridge names on P2P links, loopbacks and virtual links
+    return
+  if not 'bridge' in link:
+    link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex)   # max 15 chars on Linux
+  elif len(link['bridge']) > 15:
+    common.error(
+      f'Bridge name {link["bridge"]} has more than 15 characters',
+      common.IncorrectValue,
+      'interfaces')
 
 def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
@@ -533,7 +621,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
     print(f'Set DGW for {link}')
   if not 'gateway' in link:
     gateway = None
-    for ifdata in link[IFATTR]:
+    for ifdata in link.interfaces:
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
         link.gateway.ipv4 = ifdata.ipv4
         break
@@ -552,7 +640,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if common.debug_active('links'):
     print(f'... DGW: {link.gateway}')
 
-  for ifdata in link[IFATTR]:                             # Copy link gateway to all hosts attached to the link
+  for ifdata in link.interfaces:                          # Copy link gateway to all hosts attached to the link
     if nodes[ifdata.node].get('role','') == 'host':       # Set gateway only for hosts
       for interface in nodes[ifdata.node].interfaces:     # Find the corresponding host interface
         if link.linkindex == interface.linkindex:
@@ -597,18 +685,13 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     if not check_link_type(data=link):
       continue
 
-    if link.type == 'p2p':
-      augment_p2p_link(link,pools,nodes,defaults=defaults)
-    else:
-      if not 'bridge' in link:
-        link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex) # max 15 chars on Linux
-      elif len(link['bridge']) > 15:
-        common.error(
-            f'Bridge name {link["bridge"]} has more than 15 characters',
-            common.IncorrectValue,
-            'interfaces')
-      augment_lan_link(link,pools,nodes,defaults=defaults)
+    set_link_bridge_name(link,defaults)
+    link_default_pools = ['p2p','lan'] if link.type == 'p2p' else ['lan']
+    assign_link_prefix(link,link_default_pools,pools,f'links[{link.linkindex}]')
+    assign_interface_addresses(link,pools,nodes,defaults)
+    create_node_interfaces(link,pools,nodes,defaults=defaults)
 
+    cleanup_link_interface_AF_entries(link)
     set_default_gateway(link,nodes)
 
   interface_feature_check(nodes,defaults)
