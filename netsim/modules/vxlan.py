@@ -5,12 +5,23 @@ import typing
 from box import Box
 import netaddr
 
-from . import _Module,get_effective_module_attribute
+from . import _Module,get_effective_module_attribute,_dataplane
 from .. import common
 from .. import data
 from ..data import get_from_box
 from ..augment import devices
 from .. import addressing
+
+"""
+register_static_vni -- register all static VNIs
+"""
+def register_static_vni(topology: Box) -> None:
+  _dataplane.create_id_set('vni')
+  _dataplane.extend_id_set('vni',_dataplane.build_id_set(topology,'vlans','vni','topology'))
+  _dataplane.set_id_counter('vni',topology.defaults.vlan.start_vni,16777215)
+
+  for n in topology.nodes.values():
+    _dataplane.extend_id_set('vni',_dataplane.build_id_set(n,'vlans','vni',f'nodes.{n.name}'))
 
 #
 # Check VXLAN-enabled VLANs

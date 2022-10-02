@@ -29,28 +29,12 @@ keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Ke
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
 
 def populate_vlan_id_set(topology: Box) -> None:
-  for k in ('id','vni'):
-    _dataplane.create_id_set(k)
-    _dataplane.extend_id_set(k,_dataplane.build_id_set(topology,'vlans',k,'topology'))
-
-  _dataplane.set_id_counter('id',topology.defaults.vlan.start_vlan_id,4094)
-  _dataplane.set_id_counter('vni',topology.defaults.vlan.start_vni,16777215)
-
-  attr_list = ['id']
-  if topology.defaults.vlan.auto_vni:
-    attr_list.append('vni')
+  _dataplane.create_id_set('vlan_id')
+  _dataplane.extend_id_set('vlan_id',_dataplane.build_id_set(topology,'vlans','id','topology'))
+  _dataplane.set_id_counter('vlan_id',topology.defaults.vlan.start_vlan_id,4094)
 
   for n in topology.nodes.values():
-    for k in attr_list:
-      _dataplane.extend_id_set(k,_dataplane.build_id_set(n,'vlans',k,f'nodes.{n.name}'))
-
-#
-# Define a utility function to check whether a VLAN ID or VNI is used to hide internal data structures
-# from modules needing this functionality
-#
-def is_vlan_id_used(vlan_id: int, namespace: str) -> bool:
-  id_set = _dataplane.get_id_set(namespace)
-  return vlan_id in id_set
+    _dataplane.extend_id_set('vlan_id',_dataplane.build_id_set(n,'vlans','id',f'nodes.{n.name}'))
 
 #
 # routed_access_vlan: Given a link with access/native VLAN, check if all nodes on the link use routed VLAN
@@ -134,7 +118,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
         vdata.mode = default_fwd_mode
 
     if not 'id' in vdata:                                           # When VLAN ID is not defined
-      vdata.id = _dataplane.get_next_id('id')                       # ... take the next free VLAN ID from the list
+      vdata.id = _dataplane.get_next_id('vlan_id')                  # ... take the next free VLAN ID from the list
     if not isinstance(vdata.id,int):                                # Now validate the heck out of VLAN ID
       common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
       continue
