@@ -196,7 +196,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
 
     vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
     vlan_pool.extend(['vlan','lan'])
-    pfx_list = links.augment_link_prefix(vdata,vlan_pool,topology.pools,f'{obj_path}.{vname}')
+    pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,f'{obj_path}.{vname}')
     vdata.prefix = addressing.rebuild_prefix(pfx_list)
 
 """

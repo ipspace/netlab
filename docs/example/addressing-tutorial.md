@@ -2,7 +2,7 @@
 
 IP Address Management (IPAM) is one of the most interesting *netlab* features -- it allows you to create full-blown fully configured networking labs without spending a millisecond  on IP addressing scheme, assigning IP addresses to nodes and interfaces, or configuring them on network devices.
 
-This document starts with an easy walk through simple addressing schemes, gets progressively more complex, and ends with crazy scenarios like stretched subnets (eventually, we're not there yet).
+This document starts with an easy walk through simple addressing schemes, gets progressively more complex, and ends with crazy scenarios like stretched subnets.
 
 ```eval_rst
 .. contents:: Table of Contents
