@@ -103,6 +103,9 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 
   return link_list
 
+"""
+Get a maximized set of link attributes, including internal attributes and all modules
+"""
 def get_link_full_attributes(defaults: Box, with_modules: bool = True) -> set:
   attributes = defaults.get('attributes',{})
   user = attributes.get('link',[])
@@ -117,11 +120,24 @@ def get_link_full_attributes(defaults: Box, with_modules: bool = True) -> set:
 
   return set_attributes
 
+"""
+Get the link attributes that have to be propagated to interfaces: full set
+of attributes minus the 'no_propagate' attributes 
+"""
 def get_link_base_attributes(defaults: Box, with_modules: bool = True) -> set:
   attributes = defaults.get('attributes',{})
   no_propagate = attributes.get('link_no_propagate')
   return get_link_full_attributes(defaults,with_modules) - set(no_propagate)
 
+"""
+Add interface data structure to a node:
+
+* Add node-specific interface index
+* Create interface name
+* Add provider-specific interface data
+* Cleanup 'af: False' entries
+* Handle interface/node/system MTU
+"""
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
   if ifindex_offset is None:
@@ -164,8 +180,11 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   # return len(node.links)
   return node.interfaces[-1]
 
-# Add common interface data to node ifaddr structure
-#
+"""
+Add link attributes (specified in link_attr set) to interface data structure
+
+Also used to merge interface data structure with neighbor data structure when building neighbor list
+"""
 def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
   for k in link_attr:
     if k in link:
@@ -478,9 +497,8 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
   for node_if in interfaces:
     ifdata = node_if['data']                                      # Get a pointer to interface data
     ifdata.neighbors = []
-    node_if['__me'] = True                                        # Set 'that's me' flag so we know which interface to skip
     for remote_if in interfaces:                                  # Iterate over all interfaces created from this link
-      if '__me' in remote_if:                                     # ... and skip the current interface
+      if remote_if is node_if:                                    # ... and skip the current interface
         continue
       remote_node = remote_if['node']                             # Remote node name in a handier format
       remote_ifdata = remote_if['data']                           # ... and a pointer to remote interface data
@@ -496,8 +514,6 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
                    link_attr=mods_with_attr.union(['ipv4','ipv6']),
                    ifdata=ngh_data)
       ifdata.neighbors.append(ngh_data)
-
-    node_if.pop('__me',None)                                      # Remove 'that's me' flag
 
 def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
   ok = True
