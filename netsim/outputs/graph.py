@@ -37,11 +37,11 @@ def edge_label(f : typing.TextIO, direction: str, data: Box) -> None:
     f.write(' %slabel="%s"' % (direction,addr))
 
 def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
-  f.write(' "%s" -- "%s"' % (l.left.node, l.right.node))
+  f.write(f' "{l.interfaces[0].node}" -- "{l.interfaces[1].node}"')
   f.write(' [')
   if labels:
-    edge_label(f,'tail',l[l.left.node])
-    edge_label(f,'head',l[l.right.node])
+    edge_label(f,'tail',l.interfaces[0])
+    edge_label(f,'head',l.interfaces[1])
   f.write(' ]\n')
 
 def edge_node_net(f : typing.TextIO, l: Box, k: str, labels: typing.Optional[bool] = False) -> None:

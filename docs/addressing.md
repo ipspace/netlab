@@ -207,22 +207,23 @@ The topology results in the following Ansible inventory data for R1 (please note
 
 ```
 ---
+af:
+  ipv4: true
 box: cisco/csr1000v
-links:
+device: csr
+id: 1
+interfaces:
 - ifindex: 2
   ifname: GigabitEthernet2
   ipv4: true
   linkindex: 1
   name: Unnumbered link between R1 and R2
   neighbors:
-    r2:
-      ifname: GigabitEthernet2
-      ipv4: true
+  - ifname: GigabitEthernet2
+    ipv4: true
+    node: r2
   pool: core
-  remote_id: 2
-  remote_ifindex: 2
   type: p2p
-  unnumbered: true
 - bridge: X_2
   ifindex: 3
   ifname: GigabitEthernet3
@@ -230,9 +231,9 @@ links:
   linkindex: 2
   name: LAN link between R1 and R2
   neighbors:
-    r2:
-      ifname: GigabitEthernet3
-      ipv4: 172.16.0.2/24
+  - ifname: GigabitEthernet3
+    ipv4: 172.16.0.2/24
+    node: r2
   type: lan
 loopback:
   ipv4: 10.0.0.1/32
@@ -240,4 +241,5 @@ mgmt:
   ifname: GigabitEthernet1
   ipv4: 192.168.121.101
   mac: 08-4F-A9-00-00-01
+name: r1
 ```

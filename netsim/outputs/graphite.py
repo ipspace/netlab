@@ -103,10 +103,10 @@ def links_items(topology: Box) -> list:
         if l.type == "p2p":
             r.append(
                 {
-                    "source": l.left.node,
-                    "source_endpoint": short_ifname(l.left.ifname),
-                    "target": l.right.node,
-                    "target_endpoint": short_ifname(l.right.ifname)
+                    "source": l.interfaces[0].node,
+                    "source_endpoint": short_ifname(l.interfaces[0].ifname),
+                    "target": l.interfaces[1].node,
+                    "target_endpoint": short_ifname(l.interfaces[1].ifname)
                 }
             )
         elif l.type == "lan" or l.type == "stub":
