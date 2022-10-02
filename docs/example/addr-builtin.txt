@@ -34,6 +34,12 @@ vrf_loopback:
 * **router_id** address pool is used to allocate BGP and OSPFv3 router IDs in IPv6-only networks.
 * **vrf_loopback** address pool is used for optional VRF loopback interfaces.
 
+[^STUB]: Links with a single non-host node attached to them or links that have **type: stub** attribute.
+
+[^LAN]: Links with more than two non-host nodes attached to them or links that have **type: lan** attribute.
+
+[^P2P]: Links with exactly two non-host nodes and no hosts attached to them
+
 ### Loopback Addresses
 
 Let's start with the simplest possible process: assigning IP addresses to loopback interfaces. We'll use the following lab topology to make it a bit more interesting:
@@ -135,7 +141,9 @@ nodes:
 
 ### Stub Links
 
-Stub links[^STUB] get their IP prefixes from the **lan** address pool[^POOL]. To get an IP address for a node on a stub link, *netlab* combines link prefix with node ID.
+Stub links[^STUB] get their IP prefixes from the **lan** address pool[^POOL]. To get an IP address for a node on a stub link, *netlab* combines link prefix with node ID (see also: [lan links](addressing-tutorial-lan-links)).
+
+[^POOL]: You can also specify the pool to use with **pool** link attribute; we'll cover that a bit later.
 
 Imagine the simplest possible lab topology: one device and one link:
 
@@ -207,7 +215,9 @@ You could argue that a network device should always have a .1 IP address on a st
 
 ### Point-to-Point Links
 
-Point to point links get their prefixes from the **p2p** pool -- unless you changed default settings, you'll get /30 IPv4 prefix from 10.1.0.0/16 address space on every P2P link.
+Point to point links get their prefixes from the **p2p** pool -- unless you changed default settings, you'll get /30 IPv4 prefix from 10.1.0.0/16 address space on every P2P link[^P31].
+
+[^P31]: You can also use /31 IPv4 prefixes to number P2P links.
 
 IP address assignment on a point-to-point link does not use node identifiers. Nodes attached to a P2P link are sorted alphabetically, then the .1 address is assigned to the first node and .2 address to the second node. The same process is used for IPv6 addresses even though you get a /64 prefix assigned to every P2P link. You know the reason: it was easier to do consistent address allocation across address families.
 
@@ -219,7 +229,7 @@ links:
 - r1-r2
 ```
 
-Here's the resulting link data structure. It contains the **interfaces** (as expected), but also **left** and **right** nodes in case you want to look at the link from that perspective:
+Here's the resulting link data structure:
 
 ```
 links:
@@ -228,23 +238,15 @@ links:
     node: r1
   - ipv4: 10.1.0.2/30
     node: r2
-  left:
-    ifname: eth1
-    ipv4: 10.1.0.1/30
-    node: r1
   linkindex: 1
   name: r1 - r2
   node_count: 2
   prefix:
     ipv4: 10.1.0.0/30
-  right:
-    ifname: eth1
-    ipv4: 10.1.0.2/30
-    node: r2
   type: p2p
 ```
 
-The interface data structure in individual nodes has more attributes: it contains a list of **neighbors**, as well as the remote node ID and interface index (that might come useful in configuration templates).
+The interface data structure in individual nodes has more attributes: it contains a list of **neighbors** (that might come useful in configuration templates or when generating EBGP sessions).
 
 ```
 nodes:
@@ -262,14 +264,17 @@ nodes:
           - ifname: eth1
             ipv4: 10.1.0.2/30
             node: r2
-        remote_id: 2
-        remote_ifindex: 1
         type: p2p
 ```
 
+(addressing-tutorial-lan-links)=
 ### LAN Links
 
-Multi-access (LAN) links are exactly like [stub links](#stub-links), but they have more nodes attached to them. Prefixes are allocated from the **lan** pool; node IP addresses are calculated from link prefix and node ID.
+Multi-access (LAN) links are exactly like [stub links](#stub-links), but they have more non-host nodes attached to them. Prefixes are allocated from the **lan** pool or the pool specified in the **pool** attribute.
+
+On LAN links with large-enough prefix to accommodate the highest **id** of all nodes attached to a link, *netlab* combines link prefix and node **id** to get the interface IP address.
+
+If the LAN prefix is not large enough (example: /29 prefix in a large lab), *netlab* allocates sequential IP addresses to interfaces attached to the link (based on their position in the link data structure).
 
 The simplest possible lab topology to illustrate how LAN links work contains three nodes and a single link:
 
@@ -323,12 +328,41 @@ nodes:
         type: lan
 ```
 
-If you read the [loopback interfaces](#loopback-addresses) and [stub links](#stub-links) sections, you know you can change node IDs. If you skipped those sections, you might want to read them now.
+If you read the [loopback interfaces](#loopback-addresses) and [stub links](#stub-links) sections, you know you can change node IDs[^RTN]. Let's change the node IDs in our lab and use a small static prefix on the LAN link to see how sequential address allocation works:
 
-[^STUB]: Links with a single node attached to them or links that have **type: stub** attribute.
+```
+nodes:
+  r1:
+    id: 42
+  r2:
+    id: 17
+  r3:
+    id: 1
+links:
+- r1:
+  r2:
+  r3:
+  prefix.ipv4: 10.42.0.0/27
+```
 
-[^LAN]: Links with more than two nodes attached to them or links that have **type: lan** attribute.
+Here's the interface data structure on R1 created from the above topology. As you can see, *netlab* allocated sequential IP address to R1 and its neighbors (R2 and R3):
 
-[^P2P]: Links with exactly two nodes attached to them
+```
+interfaces:
+- bridge: X_1
+  ifindex: 1
+  ifname: GigabitEthernet0/1
+  ipv4: 10.42.0.1/27
+  linkindex: 1
+  name: r1 -> [r2,r3]
+  neighbors:
+  - ifname: GigabitEthernet0/1
+    ipv4: 10.42.0.2/27
+    node: r2
+  - ifname: GigabitEthernet0/1
+    ipv4: 10.42.0.3/27
+    node: r3
+  type: lan
+```
 
-[^POOL]: You can also specify the pool to use with **pool** link attribute; we'll cover that a bit later.
+[^RTN]: If you skipped those sections, you might want to read them now.

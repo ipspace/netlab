@@ -10,7 +10,6 @@ import netaddr
 from . import _Module,_routing
 from .. import common
 from .. import data
-from ..augment.links import IFATTR
 from ..augment import devices
 
 def check_bgp_parameters(node: Box) -> None:
@@ -509,7 +508,7 @@ class BGP(_Module):
       return
 
     as_set = {}
-    for ifdata in link.get(IFATTR,[]):
+    for ifdata in link.get('interfaces',[]):
       n = ifdata.node
       if "bgp" in topology.nodes[n]:
         node_as = topology.nodes[n].bgp.get("as")
