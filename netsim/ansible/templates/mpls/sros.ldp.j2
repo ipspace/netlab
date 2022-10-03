@@ -1,0 +1,28 @@
+{% from "templates/initial/sros.j2" import if_name with context %}
+
+updates:
+- path: configure/router[router-name=Base]
+  val:
+   mpls:
+    admin-state: enable
+   rsvp:
+    admin-state: enable
+    interface:
+    - interface-name: system
+      admin-state: enable
+   ldp:
+    admin-state: enable
+    implicit-null-label: {{ not ldp.explicit_null|default(False) }}
+{%  for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
+{%   if loop.first %}
+    interface-parameters:
+     interface:
+{%   endif %}
+     - ip-int-name: "{{ if_name(l.ifname) }}"
+       admin-state: enable
+{%   for af in ('ipv4','ipv6') if af in l %}
+       {{ af }}:
+        admin-state: enable
+        transport-address: system
+{%   endfor %}
+{%  endfor %}
