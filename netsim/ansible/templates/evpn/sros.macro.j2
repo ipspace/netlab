@@ -1,0 +1,29 @@
+{% macro mpls_l3vnis(transport,l3_id=None) %}
+
+{# Symmetric IRB interfaces, note using VRF ID + 10000 as transit EVI value #}
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if 'evpn' in vdata and (not l3_id or l3_id in vdata.evpn) %}
+{{ transport("l3vni-"+vname,'l3',vdata.evpn[l3_id] if l3_id else None,vdata.id + 10000,vdata.rd,vdata,is_routed=True) }}
+
+{# Add it to the VPRN, enable evpn-tunnel; configure vrf-target RT #}
+- path: configure/service/vprn[service-name={{ vname }}]
+  val:
+   interface:
+   - interface-name: l3vni-{{ vname }}
+     vpls:
+     - vpls-name: l3vni-{{ vname }}
+{% if 'ipv6' in vdata.af %}
+       ipv6: { }
+{% endif %}
+       evpn-tunnel: { }   # Applicable when there are no hosts connected to this backhaul R-VPLS, avoids requiring IP on interface
+   bgp-ipvpn:
+    mpls:
+     admin-state: enable
+     route-distinguisher: {{ vdata.bgp.router_id|default(bgp.router_id) }}:{{ vdata.vrfidx }}
+     vrf-target:
+      export-community: target:{{ vdata.export[0] }}
+      import-community: target:{{ vdata.import[0] }}
+
+{% endfor %}
+{% endif %}
+{% endmacro %}

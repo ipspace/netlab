@@ -1,0 +1,50 @@
+#
+# See https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE14991AAAFTQZZA01_V1_7450%20ESS%207750%20SR%207950%20XRS%20Advanced%20Configuration%20Guide%20for%20Releases%20up%20to%2021.5.R2-Part%20II.pdf
+# EVPN for MPLS Tunnels in Routed VPLS
+#
+{% from "templates/evpn/sros.macro.j2" import mpls_l3vnis with context %}
+
+{% macro mpls_evpn_service(vrf,type,label,evi,rd,evpn,is_routed=False) %}
+- path: configure/service/vpls[service-name={{ vrf }}]
+  val:
+{# May get created for first time here, when not referenced from any interfaces #}
+   customer: '1'
+   admin-state: enable
+   service-id: {{ evi }} # transit EVI for l3, should not overlap
+{% if is_routed %}
+   routed-vpls:
+    evpn-mpls-ecmp: True
+{% endif %}
+   bgp:
+   - bgp-instance: 1
+     # route-distinguisher: {{ rd }} # Don't configure this, use auto RD
+     route-target:
+      export: "target:{{ evpn.export[0] }}"
+      import: "target:{{ evpn.import[0] }}"
+   bgp-evpn:
+    evi: {{ evi }}
+{% if type=='l3' %}
+    routes:
+     ip-prefix:
+      advertise: True # Symmetric IRB using RT5 prefixes
+     mac-ip:
+      advertise: False
+{% endif %}
+    mpls:
+    - bgp-instance: 1
+      admin-state: enable
+      ingress-replication-bum-label: True
+      ecmp: 8
+      auto-bind-tunnel:
+       resolution: any
+       ecmp: 8
+
+{% endmacro %}
+
+{% for vname,vdata in vlans.items() if vname in evpn.vlans|default([]) and vdata.evpn.transport|default('vxlan')=='mpls' %}
+{%  set is_routed = vlan.mode|default('irb') != 'bridge' %}
+{{ mpls_evpn_service('vlan'+vdata.id|string,'l2', None, vdata.evpn.evi, vdata.evpn.rd, vdata.evpn, is_routed) }}
+{% endfor %}
+
+{# Symmetric IRB interfaces, note using VRF ID as transit EVI value #}
+{{ mpls_l3vnis( mpls_evpn_service, l3_id=None ) }}
