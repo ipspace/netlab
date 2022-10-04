@@ -585,5 +585,5 @@ def link_transform(method: str, topology: Box) -> None:
         mod_load[m] = _Module.load(m,topology.get(m))
       if common.debug_active('modules'):
         if hasattr(mod_load[m],f"link_{method}"):
-          print(f'Calling module {m} link_{method} on link {l.name}')
+          print(f'Calling module {m} link_{method} on link {l.get("name","unnamed")}')
       mod_load[m].call("link_"+method,l,topology)
