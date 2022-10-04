@@ -47,6 +47,10 @@ def extend_id_set(name: str, add_set: set) -> set:
 	idset.update(add_set)
 	return idset
 
+def is_id_used(name: str, value: typing.Any) -> bool:
+	idset = get_id_set(name)
+	return value in idset
+
 def set_id_counter(name: str, start: int, max_value: int = 4096) -> int:
 	idvar = global_vars.get(f'{name}_id')
 	idvar.next = start
