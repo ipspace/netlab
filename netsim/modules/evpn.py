@@ -6,6 +6,9 @@ from .. import common
 from .. import data
 from ..augment import devices
 
+# Supported transports, in order of preference/default
+SUPPORTED_TRANSPORTS = [ 'vxlan', 'mpls' ]
+
 def enable_evpn_af(node: Box, topology: Box) -> None:
   bgp_session = data.get_from_box(node,'evpn.session') or []
 
@@ -16,7 +19,64 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
       bn.evpn = True
 
+#
+# Check EVPN-enabled VLANs
+#
+def node_vlan_check(node: Box, topology: Box) -> bool:
+  if not node.evpn.vlans:            # Create a default list of VLANs if needed
+    node.evpn.vlans = [ name for name,value in node.vlans.items() if 'evpn' in value or 'vni' in value ]
+
+  OK = True
+  vlan_list = []
+  for vname in node.evpn.vlans:
+    #
+    # Report error for unknown VLAN names in VLAN list (they are not defined globally or on the node)
+    if not vname in node.vlans and not vname in topology.get('vlans',{}):
+      common.error(
+        f'Unknown VLAN {vname} is specified in the list of EVPN-enabled VLANs in node {node.name}',
+        common.IncorrectValue,'evpn')
+      OK = False
+      continue
+    #
+    # Skip VLAN names that are valid but not used on this node
+    if not vname in node.vlans:
+      continue
+
+    # Normalize vlans by adding EVPN if not already, convert None to dict
+    if not node.vlans[vname].evpn:
+      node.vlans[vname].evpn = {}
+    vlan_list.append(vname)
+
+  node.evpn.vlans = vlan_list
+  return OK
+
+"""
+Set EVPN transport parameter for (bundled) VLAN, validate supported values
+"""
+def set_transport(obj: Box, node: Box) -> None:
+  # Don't use mpls transport if user only defined vxlan.vlans
+  enabled = [m for m in node.get('module',[]) if m in SUPPORTED_TRANSPORTS and
+             (data.get_from_box(node,f"{m}.vlans") or data.get_from_box(node,"evpn.vlans")) ]
+  if not 'transport' in obj:
+    for t in SUPPORTED_TRANSPORTS:
+      if t in enabled:
+        obj.transport = t
+        return
+    common.error(
+      f'No supported EVPN transports ({SUPPORTED_TRANSPORTS}) enabled on node {node.name}: {enabled}',
+      common.MissingValue,'evpn')
+  elif obj.transport not in SUPPORTED_TRANSPORTS:
+    common.error(
+      f'Unsuppported EVPN transport {obj.transport} on node {node.name}',
+      common.IncorrectValue,'evpn')
+  elif obj.transport not in enabled:
+    common.error(
+      f'EVPN transport module {obj.transport} not enabled on node {node.name}',
+      common.MissingValue,'evpn')
+
 def vlan_based_service(vlan: Box, vname: str, node: Box, topology: Box) -> None:
+  if not vlan.evpn:
+    vlan.evpn = {}
   evpn  = vlan.evpn
   epath = f'nodes.{node.name}.vlans.{vname}.evpn'
   evpn.evi = evpn.evi or vlan.id                                    # Default EVI value: VLAN ID
@@ -29,6 +89,7 @@ def vlan_based_service(vlan: Box, vname: str, node: Box, topology: Box) -> None:
   for rt in ('import','export'):                                    # Default RT value
     if not rt in evpn:                                              # ... BGP ASN:vlan ID
       evpn[rt] = [ f"{node.bgp['as']}:{vlan.id}" ]
+  set_transport(evpn,node)
 
 def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -> None:
   vrf_name = vlan.vrf
@@ -58,10 +119,10 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -
   g_evpn = topology.vrfs[vrf_name].evpn
   if not 'evi' in g_evpn:                                           # If needed, set EVI attribute for the global VRF
     g_evpn.evi = topology.vlans[vname].id                           # ... to first VLAN ID encountered (lowest when auto-assigned)
-
   data.must_be_dict(node.vrfs[vrf_name],'evpn',f'nodes.{node.name}.vrfs.{vrf_name}',create_empty=True)
   evpn = node.vrfs[vrf_name].evpn                                   # Now set VRF EVPN parameters for node VRF
   evpn.evi = g_evpn.evi                                             # Copy EVI from global VRF
+  set_transport(evpn,node)
   for k in ('vlans','vlan_ids'):
     if not k in evpn:                                               # Is this the first EVPN-enabled VLAN in this VRF?
       evpn[k] = []                                                  # ... create an empty list of VLANs
@@ -124,7 +185,7 @@ def vrf_transit_vni(topology: Box) -> None:
         f'VRF {vrf_name} is using an EVPN transit VNI that is also used as L2 VNI {vni}',
         common.IncorrectValue,
         'evpn')
-      continue  
+      continue
     vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
 
   vni_start = topology.defaults.evpn.start_transit_vni
@@ -174,14 +235,16 @@ def vrf_irb_setup(node: Box, topology: Box) -> None:
       continue
 
     g_vrf = topology.vrfs[vrf_name]                             # Pointer to global VRF data, will come useful in a second
-    if data.get_from_box(g_vrf,'evpn.transit_vni'):             # Transit VNI in global VRF => symmetrical IRB
+    if (data.get_from_box(g_vrf,'evpn.transit_vni') or          # Transit VNI in global VRF => symmetrical IRB
+        data.get_from_box(g_vrf,'evpn.mode','symmetric_irb')=='symmetric_irb'):
       if not features.evpn.irb:                                 # ... does this device support IRB?
         common.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
           common.IncorrectValue,
           'evpn')
         continue
-      vrf_data.evpn.transit_vni = g_vrf.evpn.transit_vni        # Make transit VNI is copied into the local VRF
+      if 'transit_vni' in g_vrf.evpn:
+        vrf_data.evpn.transit_vni = g_vrf.evpn.transit_vni      # Make transit VNI is copied into the local VRF
       vrf_data.pop('ospf',None)                                 # ... and remove OSPF from EVPN IRB VRF
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
@@ -202,6 +265,16 @@ class EVPN(_Module):
   def module_post_node_transform(self, topology: Box) -> None:
     vrf_transit_vni(topology)
 
+  def module_post_transform(self, topology: Box) -> None:
+    for name,ndata in topology.nodes.items():
+      if not 'evpn' in ndata.get('module',[]):        # Skip nodes without EVPN module
+        continue
+      if not 'vlans' in ndata:                        # Skip EVPN-enabled nodes without VLANs ( e.g. RR )
+        if 'evpn' in ndata:                           # ... but make sure there's no evpn.vlans list left on them
+          ndata.evpn.pop('vlans',None)
+        continue
+      node_vlan_check(ndata,topology)
+
   """
   Node post-transform: runs after VXLAN module
 
@@ -210,7 +283,7 @@ class EVPN(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     enable_evpn_af(node,topology)
 
-    vlan_list = data.get_from_box(node,'vxlan.vlans') or []       # Get the list of VXLAN-enabled VLANs
+    vlan_list = data.get_from_box(node,'evpn.vlans') or data.get_from_box(node,'vxlan.vlans') # Get the list of VXLAN-enabled VLANs
     if not vlan_list:
       return                                                      # This could be a route reflector running EVPN
 
@@ -219,7 +292,7 @@ class EVPN(_Module):
     for vname in vlan_list:
       vlan = node.vlans[vname]
       #
-      # VLAN based service is used for VLANs that are not in a VRF or when the EVPN VLAN-Aware Bundle 
+      # VLAN based service is used for VLANs that are not in a VRF or when the EVPN VLAN-Aware Bundle
       # Service is disabled (default)
       #
       if not 'vrf' in vlan or not data.get_from_box(node,'evpn.vlan_bundle_service'):
