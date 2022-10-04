@@ -38,16 +38,22 @@ The following table describes per-platform support of individual VXLAN features:
 * Nokia SR Linux needs EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 ```
 
-## Global Parameters
+## Global and Node Parameters
 
-* **vxlan.domain** -- Ingress replication domain. Optional, default: **global**. Use this parameter when you want to build several isolated bridging domains within your lab.
-* **vxlan.flooding** -- A mechanism used to implement VXLAN flooding. Optional, default: **static**.
-* **vxlan.vlans** -- list of VLANs to be mapped into VXLAN VNIs.  Optional, defaults to all VLANs with numeric **vni** attribute. All VLANs listed in **vxlan.vlans** list must have a **vni** attribute.
-* **vxlan.use_v6_vtep** -- Use the IPv6 Loopback address as VTEP address. To be used on the devices where you need to explicitly set the local VTEP address, or with *static* flooding to generate the flooding list with IPv6 addresses.
+* **vxlan.domain** (node or global) -- Ingress replication domain. Optional, default: **global**. Use this parameter when you want to build several isolated bridging domains within your lab.
+* **vxlan.flooding** (node or global) -- A mechanism used to implement VXLAN flooding. Optional, default: **static**.
+* **vxlan.vlans** (node or global) -- list of VLANs to be mapped into VXLAN VNIs.  When missing, defaults to all VLANs.
+* **vxlan.use_v6_vtep** (global) -- Use the IPv6 Loopback address as VTEP address. To be used on the devices where you need to explicitly set the local VTEP address, or with *static* flooding to generate the flooding list with IPv6 addresses.
 
 The only supported value for **vxlan.flooding** parameter is **static** -- statically configured ingress replication
 
-All global parameters can also be used as node parameters.
+## Module Parameters
+
+The following default parameters influence VNI assignment:
+
+* **vxlan.start_vni**: Specifies the first auto-assigned VNI (default: 100000).
+
+To change the module defaults, set **defaults.vxlan._value_** parameter(s) in lab topology.
 
 ## Default Behavior
 
@@ -57,12 +63,17 @@ All global parameters can also be used as node parameters.
 
 ## Selecting VXLAN-enabled VLANs
 
-You can select VLANs that should be extended with VXLAN transport in two ways:
+Global VLANs that should be extended with VXLAN transport are specified in **vxlan.vlans** global- or node-level list. When that parameter is missing, all VLANs use VXLAN transport.
 
-* Specify a list of VLAN names in **vxlan.vlans** global- or node-level parameters. VLANs specified in that list must be valid VLAN names but do not have to be present on every node.
-* Select VLANs based on the presence of **vni** attribute. Use 'True' to force auto-assignment, 'False' to avoid allocating a **vni** to a given VLAN
+VLANs specified in the **vxlan.vlans** list must be valid VLAN names, but do not have to be present on every node.
 
-You can set the **vni** attribute for individual VLANs, or have it assigned automatically. By default, all global VLANs get a **vni** attribute, and are thus extended over VXLAN transport. This behavior is controlled with **defaults.vlan.auto_vni** global default.
+You can also enable a VLAN for VXLAN transport by setting **vni** VLAN parameter to an integer value.
+
+## Auto-Assign VNI
+
+All VLANs specified in the **vxlan.vlans** list will get a **vni** attribute. To disable the auto-assignment for individual VLANs, set **vni** VLAN parameter to an integer value (static VNI) or *False* (no VNI).
+
+For every VLAN, the VXLAN configuration module tries to use `vxlan.start_vni + vlan.id` as the VLAN VNI, and reverts to sequentially-allocated values when that VNI is already in use.
 
 ## Building Ingress Replication Lists
 
