@@ -2,10 +2,33 @@
 {% set pid = ospf.process|default(0) %}
 
 {% macro ospf_config(af) %}
+{% set ospfv = 'ospf3' if af=='ipv6' else 'ospf' %}
+
+{% macro ospf_interface(l) %}
+- path: configure/router[router-name=Base]/{{ospfv}}[ospf-instance={{pid}}]
+  val:
+   area:
+   - area-id: "{{ l.ospf.area }}"
+     interface:
+     - interface-name: "{{ if_name(l.ifname) }}"
+       passive: {{ l.ospf.passive }}
+{%  if l.ospf.bfd|default(False) %}
+       bfd-liveness: { }
+{%  endif %}
+       # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+{# TODO: Add support for multi-area adjacencies and 'secondary' interface-type #}
+{%  if l.ospf.network_type|default("") in ["broadcast","non-broadcast","point-to-point"] %}
+       interface-type: "{{ l.ospf.network_type }}"
+{%  endif %}
+{%  if l.ospf.cost is defined %}
+       metric: {{ l.ospf.cost }}
+{%  endif %}
+{% endmacro %}
+
 - path: configure/router[router-name=Base]
   val:
    router-id: "{{ ospf.router_id }}"
-   {{ 'ospf3' if af=='ipv6' else 'ospf' }}:
+   {{ ospfv }}:
    - ospf-instance: {{ pid }}
 {% if ospf.reference_bandwidth is defined %}
      reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
@@ -17,21 +40,7 @@
        - interface-name: "system"
          passive: True
 {% for l in interfaces|default([]) if 'ospf' in l %}
-     - area-id: "{{ l.ospf.area }}"
-       interface:
-       - interface-name: "{{ if_name(l.ifname) }}"
-         passive: {{ l.ospf.passive }}
-{%       if l.ospf.bfd|default(False) %}
-         bfd-liveness: { }
-{%       endif %}
-         # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-{# TODO: Add support for multi-area adjacencies and 'secondary' interface-type #}
-{%       if l.ospf.network_type|default("") in ["broadcast","non-broadcast","point-to-point"] %}
-         interface-type: "{{ l.ospf.network_type }}"
-{%       endif %}
-{%       if l.ospf.cost is defined %}
-         metric: {{ l.ospf.cost }}
-{%       endif %}
+{{ ospf_interface(l)}}
 {% endfor %}
 {% endmacro %}
 
