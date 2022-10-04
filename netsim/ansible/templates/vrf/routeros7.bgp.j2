@@ -9,14 +9,14 @@
 {#
     Create BGP template/instance
 #}
-/routing/bgp/template add name={{ vname }} as={{ bgp.as }} output.network=bgp-networks-{{ vname }} vrf={{ vname }} routing-table={{ vname }} output.redistribute=connected,bgp,copy
+/routing/bgp/template add name=vrf_{{ vname }} as={{ bgp.as }} output.network=bgp-networks-{{ vname }} vrf={{ vname }} routing-table={{ vname }} output.redistribute=connected,bgp,copy
 
 {% if bgp.router_id|ipv4 %}
-/routing/bgp/template set {{ vname }} router-id={{ bgp.router_id }}
+/routing/bgp/template set vrf_{{ vname }} router-id={{ bgp.router_id }}
 {% endif %}
 
 {% if 'ospf' in vdata %}
-/routing/bgp/template set {{ vname }} output.redistribute=([get {{ vname }} output.redistribute],"ospf")
+/routing/bgp/template set vrf_{{ vname }} output.redistribute=([get vrf_{{ vname }} output.redistribute],"ospf")
 {% endif %}
 
 {#
@@ -24,7 +24,7 @@
 #}
 {%   for n in vdata.bgp.neighbors|default([]) %}
 {%     for af in ['ipv4'] if n[af] is defined %}
-{{       bgpcfg.neighbor(n,n[af],vdata.bgp,vname) }}
+{{       bgpcfg.neighbor(n,n[af],vdata.bgp,'vrf_'+vname) }}
 {%     endfor %}
 {%   endfor %}
 
