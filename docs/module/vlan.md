@@ -63,19 +63,18 @@ The VLAN module tries to support many different platform-specific VLAN configura
 
 ## Module Parameters
 
-VLANs are defined in the global or per-node **vlans** dictionary. Global- and node VLAN parameters are merged to get VLAN data for individual nodes.
-
-The following topology default global parameters are used to set VLAN IDs and VNIs in VLAN definitions:
+The following default parameters are used to when assigning VLAN IDs:
 
 * **vlan.start_vlan_id**: Specifies the first auto-assigned VLAN ID (default: 1000).
-* **vlan.auto_vni**: Automatically assign VXLAN VNI to all globally-defined VLANs (default: true).
-* **vlan.start_vni**: Specifies the first auto-assigned VNI (default: 100000).
 
 To change these defaults, set **defaults.vlan._value_** parameter(s) in lab topology.
+
 (module-vlan-definition)=
 ## VLAN Definition
 
 VLANs are defined in a global- or node-specific **vlans** dictionary, allowing you to create network-wide VLANs or local VLANs.
+
+Global- and node VLAN parameters are merged to get final VLAN data for individual nodes, allowing you to override global VLAN parameters on individual nodes.
 
 ```{warning}
 Use unique VLAN names when defining node-specific VLANs. There's a subtle interaction between global- and node-specific VLAN definitions.
@@ -84,19 +83,19 @@ Use unique VLAN names when defining node-specific VLANs. There's a subtle intera
 The keys of the **vlans** dictionary are VLAN names, the values are VLAN definitions. A VLAN definition could be empty or a dictionary with one or more of these attributes:
 
 * **id** -- 802.1q VLAN tag
-* **vni** -- VXLAN VNI
+* **vni** -- VXLAN VNI (managed by [VXLAN configuration module](vxlan.md))
 * **vrf** -- the VRF VLAN belongs to
 * **mode** -- default VLAN forwarding mode: **route**, **bridge** or **irb**.
 * **prefix** -- IP prefix assigned to the VLAN. The value of the prefix could be an IPv4 prefix or a dictionary with **ipv4** and **ipv6** keys.
 * **pool** -- addressing pool used to assign IPv4/IPv6 prefixes to the VLAN. VLAN prefixes are allocated from addressing pools before interface address assignments.
 * A VLAN definition can also contain other valid link- or interface-level parameters (including link **role**, addressing **pool**, VRF name, OSPF cost...).
 
-VLAN definitions lacking **id** or **vni** attribute get [default VLAN ID and VNI values](default-vlan-values) assigned during the topology transformation process.
+VLAN definitions lacking **id** attribute get [default VLAN ID](default-vlan-values) assigned during the topology transformation process.
 
 (default-vlan-values)=
 ### Default VLAN Values
 
-VLAN definitions without **id** or **vni** attribute will get a VLAN ID or VNI assigned automatically. The first auto-assigned VLAN ID is specified in the **vlan.start_id** global attribute; ID assignment process skips IDs assigned to existing VLANs.
+VLAN definitions without **id** attribute will get a VLAN ID assigned automatically. The first auto-assigned VLAN ID is specified in the **vlan.start_id** global attribute; ID assignment process skips IDs assigned to existing VLANs.
 
 (vlan-forwarding-modes)=
 ### VLAN Forwarding Modes
