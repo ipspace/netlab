@@ -13,8 +13,8 @@ The **transform_after** settings cause the hooks to be called in the VLAN -> VRF
 
 ## pre_validate (future)
 
-* VLAN module ensures the **vlans** dictionaries (global + nodes) has no *None* values
-* VRF module ensures the **vrfs** dictionaries (global + nodes) has no *None* values
+* VLAN module ensures the **vlans** dictionaries (global + nodes) has no *None* values and sensible names
+* VRF module ensures the **vrfs** dictionaries (global + nodes) has no *None* values and sensible names
 
 The pre_validate hooks are called based on topology attributes, not based on **module** settings.
 
@@ -53,7 +53,7 @@ Module:
 Node:
 * Pull global VRFs that are needed by node VLANs into nodes
 * Normalize VRF IDs and collect static ID/RD settings
-* Auto-assign VRF ID/RD and import/export RT
+* Auto-assign VRF ID/RD and import/export RT (based on some global AS)
 
 ### VXLAN
 
@@ -75,8 +75,14 @@ Module:
 * Assign VNIs to VLANs in **vxlan.vlans** list
 
 ### EVPN
-
+* Create default **evpn.vrfs** list when missing
+* Create default **evpn.vlans** list when missing
 * Assign VNIs to VRFs with **evpn.transit_vni** set to *True* or string (another VRF) value
+* Make sure **evpn.transport** is set for EVPN VLANs and (bundle) VRFs
+
+Create VLAN- and VRF services:
+* Assign EVPN RD/RT to EVPN-enabled VLANs and -bundles (with RT based on some global AS, not per node AS)
+* Assign **evpn.evi** to EVPN-enabled VRFs
 
 ## post_link_transform
 
@@ -121,6 +127,8 @@ Module:
 ### EVPN
 
 Node:
-* Create VLAN-based service (from VLANs)
-* Create VLAN bundles (from VLANs in VRFs)
-* Create symmetric IRB (from VRFs)
+* Enable EVPN address family
+* Check VRF IRB setup against device features
+* Copy global EVPN lists into node data (if needed)
+* Trim **evpn.vlans** and **evpn.vrfs** to refer only to VLANs and VRFs present on this node
+* Set **bgp.router_id:evpn.evi** RD on EVPN-enabled VLANs and VRFs
