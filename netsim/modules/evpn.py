@@ -235,16 +235,17 @@ def vrf_irb_setup(node: Box, topology: Box) -> None:
       continue
 
     g_vrf = topology.vrfs[vrf_name]                             # Pointer to global VRF data, will come useful in a second
-    if (data.get_from_box(g_vrf,'evpn.transit_vni') or          # Transit VNI in global VRF => symmetrical IRB
-        data.get_from_box(g_vrf,'evpn.mode','symmetric_irb')=='symmetric_irb'):
+    transit_vni = data.get_from_box(g_vrf,'evpn.transit_vni')
+    evpn_mode = data.get_from_box(g_vrf,'evpn.mode') or 'symmetric_irb'
+    if (transit_vni or evpn_mode=='symmetric_irb'):             # Transit VNI in global VRF => symmetrical IRB
       if not features.evpn.irb:                                 # ... does this device support IRB?
         common.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
           common.IncorrectValue,
           'evpn')
         continue
-      if 'transit_vni' in g_vrf.evpn:
-        vrf_data.evpn.transit_vni = g_vrf.evpn.transit_vni      # Make transit VNI is copied into the local VRF
+      if transit_vni:
+        vrf_data.evpn.transit_vni = transit_vni                 # Make transit VNI is copied into the local VRF
       vrf_data.pop('ospf',None)                                 # ... and remove OSPF from EVPN IRB VRF
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
