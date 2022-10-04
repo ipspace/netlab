@@ -1,6 +1,6 @@
 import typing
 
-from . import _Module,_routing
+from . import _Module,_routing,_dataplane
 from box import Box
 from .. import common
 from .. import data
@@ -69,6 +69,31 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, node: Box, topology: Box) -
   evpn.vlan_ids.append(topology.vlans[vname].id)                    # ... and a VLAN ID to list of EVPN-enabled VLAN tags
 
 """
+Validate transit VNI values and register them with the VNI set
+"""
+def register_static_transit_vni(topology: Box) -> None:
+  vni_set = _dataplane.get_id_set('vni')
+  for vrf_name,vrf_data in topology.get('vrfs',{}).items():
+    if vrf_data is None:
+      continue
+    data.must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
+
+    transit_vni = data.get_from_box(vrf_data,'evpn.transit_vni')
+    if data.is_true_int(transit_vni):
+      vni_set.add(transit_vni)
+
+  for n in topology.nodes.values():
+    if not 'vrfs' in n:
+      continue
+
+    for vrf_name,vrf_data in n.vrfs.items():
+      if data.get_from_box(vrf_data,'evpn.transit_vni'):
+        common.error(
+          f'evpn.transit_vni can be specified only on global VRFs (found in {vrf_name} on {n.name}',
+          common.IncorrectValue,
+          'evpn')
+
+"""
 Set transit VNI values for symmetrical IRB VRFs
 """
 def get_next_vni(start_vni: int, used_vni_list: typing.List[int]) -> int:
@@ -81,13 +106,10 @@ def vrf_transit_vni(topology: Box) -> None:
   if not 'vrfs' in topology:
     return
 
-  from .vlan import is_vlan_id_used
-
   vni_list: typing.List[int] = []
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
-    data.must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
     vni = data.get_from_box(vrf_data,'evpn.transit_vni')
     if not data.is_true_int(vni):                               # Skip non-integer values, no need to check them at this time
       continue
@@ -97,7 +119,7 @@ def vrf_transit_vni(topology: Box) -> None:
         common.IncorrectValue,
         'evpn')
       continue
-    elif is_vlan_id_used(vni,'vni'):
+    elif _dataplane.is_id_used('vni',vni):
       common.error(
         f'VRF {vrf_name} is using an EVPN transit VNI that is also used as L2 VNI {vni}',
         common.IncorrectValue,
@@ -175,6 +197,9 @@ class EVPN(_Module):
     topology.defaults.vxlan.flooding = 'evpn'
 
   def module_pre_transform(self, topology: Box) -> None:
+    register_static_transit_vni(topology)
+
+  def module_post_node_transform(self, topology: Box) -> None:
     vrf_transit_vni(topology)
 
   """
