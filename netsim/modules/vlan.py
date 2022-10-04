@@ -29,28 +29,12 @@ keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Ke
 vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
 
 def populate_vlan_id_set(topology: Box) -> None:
-  for k in ('id','vni'):
-    _dataplane.create_id_set(k)
-    _dataplane.extend_id_set(k,_dataplane.build_id_set(topology,'vlans',k,'topology'))
-
-  _dataplane.set_id_counter('id',topology.defaults.vlan.start_vlan_id,4094)
-  _dataplane.set_id_counter('vni',topology.defaults.vlan.start_vni,16777215)
-
-  attr_list = ['id']
-  if topology.defaults.vlan.auto_vni:
-    attr_list.append('vni')
+  _dataplane.create_id_set('vlan_id')
+  _dataplane.extend_id_set('vlan_id',_dataplane.build_id_set(topology,'vlans','id','topology'))
+  _dataplane.set_id_counter('vlan_id',topology.defaults.vlan.start_vlan_id,4094)
 
   for n in topology.nodes.values():
-    for k in attr_list:
-      _dataplane.extend_id_set(k,_dataplane.build_id_set(n,'vlans',k,f'nodes.{n.name}'))
-
-#
-# Define a utility function to check whether a VLAN ID or VNI is used to hide internal data structures
-# from modules needing this functionality
-#
-def is_vlan_id_used(vlan_id: int, namespace: str) -> bool:
-  id_set = _dataplane.get_id_set(namespace)
-  return vlan_id in id_set
+    _dataplane.extend_id_set('vlan_id',_dataplane.build_id_set(n,'vlans','id',f'nodes.{n.name}'))
 
 #
 # routed_access_vlan: Given a link with access/native VLAN, check if all nodes on the link use routed VLAN
@@ -99,8 +83,6 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 # * VLAN forwarding mode
 #
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
-  vni_ids = _dataplane.get_id_set('vni')
-
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
   default_fwd_mode = get_from_box(obj,'vlan.mode')                # Get node-wide VLAN forwarding mode
@@ -134,36 +116,13 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
         vdata.mode = default_fwd_mode
 
     if not 'id' in vdata:                                           # When VLAN ID is not defined
-      vdata.id = _dataplane.get_next_id('id')                       # ... take the next free VLAN ID from the list
+      vdata.id = _dataplane.get_next_id('vlan_id')                  # ... take the next free VLAN ID from the list
     if not isinstance(vdata.id,int):                                # Now validate the heck out of VLAN ID
       common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
       continue
     if vdata.id < 2 or vdata.id > 4094:
       common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be between 2 and 4094',common.IncorrectValue,'vlan')
       continue
-
-    # Assign VNI only when topology.defaults.vlan.auto_vni is set and there's no VNI in VLAN data
-    #
-    assign_vni = topology.defaults.vlan.auto_vni and not 'vni' in vdata
-    if 'vni' in vdata:
-      if vdata.vni is True:                                         # VNI auto-assignment requested
-        assign_vni = True
-      elif vdata.vni is False:                                      # Explicit request not to assign a VNI
-        vdata.pop('vni')
-      elif not isinstance(vdata.vni,int):                           # VNI is not bool, validate that it's int and in correct range
-        common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
-        continue
-      elif vdata.vni < 2 or vdata.vni > 16777215:
-        common.error(f'VNI {vdata.vni} for VLAN {vname} in {obj_name} must be between 2 and 16777215',common.IncorrectValue,'vlan')
-        continue
-
-    if assign_vni:                                                  # So far we either have a valid VNI or know whether to auto-assign it
-      vni_default = topology.defaults.vlan.start_vni + vdata.id     # ... try to build VNI from VLAN ID
-      if not vni_default in vni_ids:                                # Is the VNI free?
-        vdata.vni = vni_default                                     # ... great, take it
-        vni_ids.add(vni_default)                                    # ... and add it to the list of used VNIs
-      else:                                                         # Too bad, we had such a great idea but it failed
-        vdata.vni = _dataplane.get_next_id('vni')                   # ... so take the next available VNI
 
     vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
     vlan_pool.extend(['vlan','lan'])
