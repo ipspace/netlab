@@ -10,6 +10,7 @@ The Callback class defines two methods:
 import importlib
 import inspect
 import typing
+import sys
 
 from . import common
 
@@ -29,8 +30,7 @@ class Callback():
       return None
 
     except (ImportError, AttributeError):
-      if common.VERBOSE:
-        print("Failed to load specific module")
+      print( f"Failed to load specific module: {sys.exc_info()[1]}")
       return None
 
   def call(self, name: str, *args: typing.Any, **kwargs: typing.Any) -> None:
