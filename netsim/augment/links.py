@@ -122,7 +122,7 @@ def get_link_full_attributes(defaults: Box, with_modules: bool = True) -> set:
 
 """
 Get the link attributes that have to be propagated to interfaces: full set
-of attributes minus the 'no_propagate' attributes 
+of attributes minus the 'no_propagate' attributes
 """
 def get_link_base_attributes(defaults: Box, with_modules: bool = True) -> set:
   attributes = defaults.get('attributes',{})
@@ -347,7 +347,7 @@ def IPAM_id_based(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> Non
   for intf in link.interfaces:
     set_interface_address(intf,af,pfx,ndict[intf.node].id)
 
-IPAM_dispatch: typing.Final[dict] = { 
+IPAM_dispatch: typing.Final[dict] = {
     'unnumbered': IPAM_unnumbered,
     'p2p': IPAM_p2p,
     'sequential': IPAM_sequential,
@@ -405,6 +405,16 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       continue
 
     IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)               # execute IPAM policy to get AF addresses on interfaces
+
+  if 'anycast_gateway_ipv4' in pfx_list or 'anycast_gateway_ipv6' in pfx_list:
+    for i in link.interfaces:
+      if ndict[i.node].get('role','') != 'host':
+        disable = i.pop('anycast_gateway',True) is False
+        if not disable:
+          for af in ('ipv4','ipv6'):
+            attr = f'anycast_gateway_{af}'
+            if attr in pfx_list and af in i:
+              i[attr] = pfx_list[attr]
 
 """
 cleanup 'af: False' entries from interfaces
@@ -497,6 +507,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
   for node_if in interfaces:
     ifdata = node_if['data']                                      # Get a pointer to interface data
     ifdata.neighbors = []
+    is_host = ndict[node_if['node']].get('role','') == 'host'     # Check if the node is a host
     for remote_if in interfaces:                                  # Iterate over all interfaces created from this link
       if remote_if is node_if:                                    # ... and skip the current interface
         continue
@@ -513,6 +524,13 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
                    link=remote_ifdata,
                    link_attr=mods_with_attr.union(['ipv4','ipv6']),
                    ifdata=ngh_data)
+
+      # For hosts, pick anycast gateway if available
+      if is_host:
+        for af in ('ipv4','ipv6'):
+          anycast_gw = f"anycast_gateway_{af}"
+          if anycast_gw in remote_ifdata:
+            ngh_data[af] = remote_ifdata[anycast_gw]
       ifdata.neighbors.append(ngh_data)
 
 def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
@@ -611,6 +629,13 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
             f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
             common.IncorrectValue,
             'interfaces')
+      if 'anycast_gateway_ipv4' in ifdata or 'anycast_gateway_ipv6' in ifdata:
+        if not features.initial.anycast_gateway:
+          common.error(
+            f'Device {ndata.device} does not support anycast_gateway IP used on\n'+
+            f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
+            common.IncorrectValue,
+            'interfaces')
 
 def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'host_count' in link:      # No hosts attached to the link, get out
@@ -620,10 +645,10 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if common.debug_active('links'):
     print(f'Set DGW for {link}')
   if not 'gateway' in link:
-    gateway = None
     for ifdata in link.interfaces:
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
-        link.gateway.ipv4 = ifdata.ipv4
+        # If anycast gateway is available, pick that
+        link.gateway.ipv4 = ifdata.get('anycast_gateway_ipv4',None) or ifdata.ipv4
         break
   else:
     if not isinstance(ifdata.gateway,dict) or not 'ipv4' in ifdata.gateway:  # pragma: no cover
