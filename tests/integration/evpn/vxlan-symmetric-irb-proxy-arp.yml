@@ -1,0 +1,59 @@
+message: |
+  The devices under test are layer-3 switches running VXLAN/EVPN with
+  symmetric IRB, using eBGP. Hosts are in three VLANs, all in one VRF.
+  The *proxy-arp* plugin is enabled to add proxy ARP functionality
+
+  All hosts should be able to ping each other.
+
+plugin: [proxy-arp]
+
+groups:
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+  switches:
+    members: [ s1,s2 ]
+    module: [ vlan,vxlan,ospf,bgp,evpn,vrf ]
+
+bgp.as: 65000
+
+vrfs:
+  tenant:
+    evpn.transit_vni: True
+    proxy_arp: True # Enable proxy ARP on all interfaces that are part of this vrf
+
+vlans:
+  red:
+    vrf: tenant
+  blue:
+    vrf: tenant
+  green:
+    vrf: tenant
+
+nodes:
+  h1:
+  h2:
+  h3:
+  h4:
+  s1:
+    # evpn.as: 65001
+    bgp.local_as: 65001
+  s2:
+    # evpn.as: 65002
+    bgp.local_as: 65002
+
+links:
+- h1:
+  s1:
+    vlan.access: red
+- h2:
+  s2:
+    vlan.access: red
+- h3:
+  s1:
+    vlan.access: blue
+- h4:
+  s2:
+    vlan.access: green
+- s1:
+  s2:
