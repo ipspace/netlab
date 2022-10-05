@@ -15,11 +15,11 @@ class SRV6(_Module):
       locator = netaddr.IPNetwork( f'{topology.defaults.srv6.locator}:{node.id:x}::/64' )
 
       if 'ipv6' not in node.loopback:
-          common.error( f"SRv6 requires an ipv6 loopback address on node {node.name}",
-                        common.MissingValue, 'srv6' )
-      elif locator.overlaps( netaddr.IPNetwork(node.loopback.ipv6) ):
-          common.error( f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} overlaps with locator {locator}",
-                        common.IncorrectValue, 'srv6' )
+        common.error( f"SRv6 requires an ipv6 loopback address on node {node.name}",
+                      common.MissingValue, 'srv6' )
+      elif netaddr.IPNetwork(node.loopback.ipv6) in locator:
+        common.error( f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} overlaps with locator {locator}",
+                      common.IncorrectValue, 'srv6' )
 
       node.srv6.locator = str( locator )
 
