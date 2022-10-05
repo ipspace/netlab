@@ -17,7 +17,7 @@ class SRV6(_Module):
       if 'ipv6' not in node.loopback:
           common.error( f"SRv6 requires an ipv6 loopback address on node {node.name}",
                         common.MissingValue, 'srv6' )
-      elif locator.overlaps( ipaddr.IPNetwork(node.loopback.ipv6) ):
+      elif locator.overlaps( netaddr.IPNetwork(node.loopback.ipv6) ):
           common.error( f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} overlaps with locator {locator}",
                         common.IncorrectValue, 'srv6' )
 
