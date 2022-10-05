@@ -1,0 +1,24 @@
+#
+# See https://documentation.nokia.com/srlinux/22-6/SR_Linux_Book_Files/pdf/EVPN-VXLAN_Guide_22.6.pdf
+# section 7.7 Layer 3 proxy-ARP/ND
+
+updates:
+{% for l in interfaces if 'proxy_arp' in l %}
+{% set if_name_index = l.ifname.split('.') %}
+{% set if_name = if_name_index[0] if l.type!='stub' else "lo0" %}
+{% set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else l.vlan.access_id|default(0) -%}
+- path: interface[name={{if_name}}]
+  val:
+   subinterface:
+   - index: {{ if_index }}
+{%   if 'ipv4' in l %}
+     ipv4:
+      arp:
+       proxy-arp: True
+{%   endif %}
+{%   if 'ipv6' in l %}
+     ipv6:
+      neighbor-discovery:
+       proxy-nd: True
+{%   endif %}
+{% endfor %}
