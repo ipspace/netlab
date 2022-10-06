@@ -65,7 +65,7 @@ def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
           true_value=BGP_VALID_SESSION_TYPE,
           valid_values=BGP_VALID_SESSION_TYPE,
           module='bgp') is None:
-        OK = False        
+        OK = False
 
   return OK
 
@@ -75,8 +75,8 @@ find_bgp_rr: find route reflectors in the specified autonomous system
 Given an autonomous system and lab topology, return a list of node names that are route reflectors in that AS
 """
 def find_bgp_rr(bgp_as: int, topology: Box) -> typing.List[Box]:
-  return [ n 
-    for n in topology.nodes.values() 
+  return [ n
+    for n in topology.nodes.values()
       if 'bgp' in n and n.bgp["as"] == bgp_as and n.bgp.get("rr",None) ]
 
 """
@@ -202,6 +202,13 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 
       if node_as == neighbor_real_as and node_local_as == neighbor_local_as:
         continue                                                      # Routers in the same AS + no local-as trickery => nothing to do here
+
+      if node.bgp.get("rr",None) and not features.bgp.rr_with_ebgp_peers:
+        common.error(
+          text=f'{node.name} (device {node.device}) does not support Route Reflection in combination with EBGP sessions',
+          category=common.IncorrectValue,
+          module='bgp')
+        continue
 
       extra_data = Box({})
       extra_data.ifindex = l.ifindex
