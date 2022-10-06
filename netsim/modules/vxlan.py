@@ -36,30 +36,14 @@ Inputs:
 * topology: pointer to topology so we can access global VLANs
 """
 def validate_vxlan_list(toponode: Box, obj_path: str, topology: Box) -> None:
-  vxlan_vlans = data.must_be_list(
-                      parent=toponode,
-                      key='vxlan.vlans',
-                      path=obj_path,
-                      module='vxlan',
-                      create_empty=False)                           # If the attribute is there, it must be a list
-  if not vxlan_vlans:
-    if not 'vlans' in toponode:                                     # If there are no local VLANs, we don't need the default value
-      return
-    toponode.vxlan.vlans = list(toponode.vlans.keys())
-    vxlan_vlans = toponode.vxlan.vlans                              # Default initial value = all VLANs defined in this object
-
-  if not vxlan_vlans:                                               # Still empty? Nothing to do then...
-    return
-
-  for vname in vxlan_vlans:                                         # Now check whether the VLAN names are valid
-    if vname in toponode.get('vlans',{}):                           # ... but very carefully, we don't want to create extra boxes
-      continue
-    if vname in topology.get('vlans',{}):                           # ... global name is also OK
-      continue
-    common.error(
-      f'vxlan.vlans refers to invalid VLAN {vname} in {obj_path}',
-      common.IncorrectValue,
-      'vxlan')
+  _dataplane.validate_object_reference_list(
+    parent=toponode if not toponode is topology else None,
+    parent_path=obj_path,
+    topology=topology, 
+    list_name='vxlan.vlans',
+    reference_dictionary='vlans',
+    reference_name='VLAN',
+    module='vxlan')
 
 """
 assign_vni -- Assign VNIs to VLANs listed in vxlan.vlans (or all VLANs if vxlan.vlans is missing)
