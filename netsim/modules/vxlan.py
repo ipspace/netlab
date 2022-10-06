@@ -30,10 +30,7 @@ validate_vxlan_list
 * Create vxlan.vlans list with all known VLANs if the attribute is missing
 * validate that the vxlan.vlans list is a list with valid local or global VLAN names
 
-Inputs:
-* toponode: Topology or node
-* obj_path: object path (topology or nodes.x)
-* topology: pointer to topology so we can access global VLANs
+The heavy lifting is done in a shared _dataplane function
 """
 def validate_vxlan_list(toponode: Box, obj_path: str, topology: Box) -> None:
   _dataplane.validate_object_reference_list(

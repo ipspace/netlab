@@ -114,6 +114,7 @@ def validate_object_reference_list(
 			reference_name: str,
 			parent_path: str = 'topology',
 			create_default: bool = True,
+			default_filter: typing.Callable = lambda x: True,
 			merge_topology: bool = True,
 			module: str = 'dataplane') -> bool:
 
@@ -133,7 +134,8 @@ def validate_object_reference_list(
     if not create_default:																					# Do we need a default value for the list?
     	return True
 
-    ref_list = list(parent[reference_dictionary].keys())						# Create the default list based on local objects
+    # Create the default list based on local objects
+    ref_list = [ k for k,v in parent[reference_dictionary].items() if default_filter(v) ]
     if merge_topology:																							# Do we need to merge the object default list with topology value?
       topo_ref_list = get_from_box(topology,list_name)			        # ... get global list
       if not topo_ref_list is None:
