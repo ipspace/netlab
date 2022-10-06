@@ -5,7 +5,25 @@ import typing
 from box import Box
 
 from .. import common
-from ..data import global_vars,get_from_box
+from ..data import global_vars,get_from_box,must_be_list,set_dots
+
+"""
+The ID Set routines provide a common interface to identifiers that can be auto-assigned or static:
+
+Creating and updating the ID set:
+* build_id_set -- create the set of static identifiers
+* get_id_set -- get a set of already-allocated identifiers
+* create_id_set -- create a global variable storing the identifier set and auto-assign sequence number
+* extend_id_set -- extend an existing ID set with a set of static identifiers
+
+Querying ID set:
+* is_id_used -- check whether an ID is in the specified ID set. Consumers of this library often work
+  directly with the set returned by get_id_set instead of calling this function
+
+Auto-assign sequence numbers
+* set_id_counter -- create an auto-assign counter for an ID set, specifying initial and maximum value
+* get_next_id -- given a namespace (ID set, auto-assign counter), create next unused identifier
+"""
 
 """
 build_id_set: given an object (topology or node) and a data structure within the object,
@@ -69,3 +87,75 @@ def get_next_id(name: str) -> int:
 		idvar.next = idvar.next + 1
 		if idvar.next > idvar.max:
 			common.fatal(f'Ran out of {name} values, next value would be greater than {idvar.max}')
+
+"""
+validate_object_reference_list
+
+Validate that a list of references is valid. Create a list of all available references if there
+is no list in the parent object.
+
+Input:
+* parent -- node or other parent object (topology if missing)
+* parent_path -- path to display in error messages
+* topology -- lab topology
+* list_name -- name of reference list (example: vxlan.vlans)
+* reference_dictionary -- name of dictionary with objects list_name references (example: vlans)
+* reference_name -- name of objects in reference_dictionary (example: VLAN)
+* create_default -- do we have to create a default list
+* merge_topology -- do we have to merge topology-level list with local default list
+* module -- calling module (used in error messages)
+"""
+
+def validate_object_reference_list(
+			parent: typing.Optional[Box],
+			topology: Box,
+			list_name: str,
+			reference_dictionary: str,
+			reference_name: str,
+			parent_path: str = 'topology',
+			create_default: bool = True,
+			merge_topology: bool = True,
+			module: str = 'dataplane') -> bool:
+
+  if parent is None:
+    parent = topology
+
+  ref_list = must_be_list(
+                parent=parent,
+                key=list_name,
+                path=parent_path,
+                module=module,
+                create_empty=False)                           	# If the attribute is there, it must be a list
+
+  if not ref_list:
+    if not reference_dictionary in parent:                          # If there are no local objects, we don't need the default value
+      return True
+    if not create_default:																					# Do we need a default value for the list?
+    	return True
+
+    ref_list = list(parent[reference_dictionary].keys())						# Create the default list based on local objects
+    if merge_topology:																							# Do we need to merge the object default list with topology value?
+      topo_ref_list = get_from_box(topology,list_name)			        # ... get global list
+      if not topo_ref_list is None:
+        for k in topo_ref_list:																 			# ... now carefully append global list to local one retaining element order
+          if not k in ref_list:																			# ... of course we could use dirty one-line tricks, but why should we?
+            ref_list.append(k)
+
+    if not ref_list:																								# Still nothing to do? OK, get out of here
+      return True
+
+    set_dots(parent,list_name.split('.'),ref_list)
+
+  list_ok = True
+  for obj_name in ref_list:                                         # Now check whether the names of reference objects are valid
+    if obj_name in parent.get(reference_dictionary,{}):             # ... but very carefully, we don't want to create extra boxes
+      continue
+    if obj_name in topology.get(reference_dictionary,{}):           # ... global name is also OK
+      continue
+    common.error(
+      f'{list_name} refers to invalid {reference_name} {obj_name} in {parent_path}',
+      common.IncorrectValue,
+      module)
+    list_ok = False
+
+  return list_ok
