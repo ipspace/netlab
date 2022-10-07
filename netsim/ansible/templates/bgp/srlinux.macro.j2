@@ -18,7 +18,7 @@
 
 - path: routing-policy/policy[name={{name}}]
   val:
-   default-action: 
+   default-action:
     reject: { }
    statement:
 {% if is_import %}
@@ -28,7 +28,7 @@
       bgp:
        community-set: "C{{ c|replace(':','_') }}"
      action:
-{{    accept() }}       
+{{    accept() }}
 {%  endfor %}
 {% else %}
    - sequence-id: 5
@@ -100,23 +100,27 @@
 {% endfor %}
 {% endfor %}
 
-{% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
-- path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
-  val:
-   admin-state: enable
+{% macro bgp_families(neighbor,ipv4=True,ipv6=True) %}
 {% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
    ipv4-unicast:
-    admin-state: {{ 'enable' if activate.ipv4|default(False) else 'disable' }}
+    admin-state: {{ 'enable' if activate.ipv4|default(False) and ipv4 else 'disable' }}
 {% if neighbor.ipv4_rfc8950|default(False) %}
     advertise-ipv6-next-hops: True
     receive-ipv6-next-hops: True
 {% endif %}
    ipv6-unicast:
-    admin-state: {{ 'enable' if activate.ipv6|default(False) else 'disable' }}
+    admin-state: {{ 'enable' if activate.ipv6|default(False) and ipv6 else 'disable' }}
 {% if 'evpn' in neighbor and neighbor.evpn %}
    evpn:
     admin-state: enable # Must have at least 1 address family enabled
 {% endif %}
+{% endmacro %}
+
+{% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
+- path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
+  val:
+   admin-state: enable
+{{ bgp_families(neighbor) }}
    timers:
     connect-retry: 10
     _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -161,6 +165,7 @@
    - peer-address: "{{ n[af] }}"
      description: {{ n.name }}
      peer-group: {{ peer_group }}
+  {{ bgp_families(n,ipv4=(af=='ipv4' or 'ipv4' not in n),ipv6=(af=='ipv6')) | indent(2) }}
 {% if 'ebgp' in n.type %}
      peer-as: {{ n.as }}
 {% elif vrf_bgp.rr|default(False) and n.rr|default(False) %}
