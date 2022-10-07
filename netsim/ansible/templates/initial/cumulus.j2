@@ -26,10 +26,30 @@ cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
 mv /tmp/hosts-start /etc/hosts
 {% endif %}
 sort /tmp/hosts|uniq >>/etc/hosts
+{% if clab.kind is not defined %}
+{# no need to disable ZTP in a container #}
 #
 # Disable ZTP
 #
 ztp --disable
+{% else %}
+{# Disable DHCP on management interface #}
+cat >/etc/network/interfaces <<CONFIG
+auto lo
+iface lo inet loopback
+
+auto mgmt
+iface mgmt
+    vrf-table auto
+
+auto eth0
+iface eth0 inet static
+    address {{ mgmt.ipv4 }}
+    vrf mgmt
+
+source /etc/network/interfaces.d/*.intf
+CONFIG
+{% endif %}
 #
 # Enable LLDP
 #
@@ -56,7 +76,6 @@ systemctl reload frr.service
 #
 
 {%- macro loopback_interface(name,data,create) %}
-allow-initial {{ name }}
 auto {{ name }}
 {% if create %}
 iface {{ name }}
@@ -83,7 +102,6 @@ CONFIG
 ifup lo
 cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
 {% for l in interfaces if l.type in ['lan','p2p','stub'] %}
-allow-initial {{ l.ifname }}
 auto {{ l.ifname }}
 {%   if l.ipv4 is defined %}
 iface {{ l.ifname }} inet static
@@ -103,7 +121,7 @@ iface {{ l.ifname }}
 {%   endif %}
 {% endfor %}
 CONFIG
-ifreload --allow initial
+ifreload -a
 #
 # For whatever crazy reason, I had to enable IPv6 in containers
 #

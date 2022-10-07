@@ -9,7 +9,6 @@ cat >/etc/network/interfaces.d/65-evpn-vxlan.intf <<CONFIG
 {%   set vni=vdata.evpn.transit_vni %}
 {%   set vlan=evpn.start_transit_vlan + vdata.vrfidx %}
 auto tvni-{{ vni }}
-allow-vxlan tvni-{{ vni }}
 iface tvni-{{ vni }}
     vxlan-id {{ vni }}
     vxlan-learning no
@@ -20,7 +19,6 @@ iface tvni-{{ vni }}
 {%   set vni=vdata.evpn.transit_vni %}
 {%   set vlan=evpn.start_transit_vlan + vdata.vrfidx %}
 {%   if loop.first %}
-allow-vxlan bridge
 iface bridge
 {%   endif %}
     bridge-vids {{ vlan }}
@@ -29,7 +27,6 @@ iface bridge
 #
 {% for vname,vdata in vrfs.items() if vdata.evpn.transit_vni is defined %}
 {%   set vlan=evpn.start_transit_vlan + vdata.vrfidx %}
-allow-vxlan vlan{{ vlan }}
 iface vlan{{ vlan }}
     vrf {{ vname }}
     vlan-id {{ vlan }}
@@ -37,8 +34,7 @@ iface vlan{{ vlan }}
 #
 {% endfor %}
 CONFIG
-ifreload --allow vxlan
-ifreload --allow vlanbridge
+ifreload -a
 #
 {% endif %}
 cat >/tmp/evpn_config <<CONFIG

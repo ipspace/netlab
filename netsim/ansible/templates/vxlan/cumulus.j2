@@ -6,7 +6,6 @@ set -e
 {%- macro create_vxlan_interface(vlan,vrf=None) %}
 #
 auto vni-{{ vlan.vni }}
-allow-vxlan vni-{{ vlan.vni }}
 iface vni-{{ vlan.vni }}
     bridge-access {{ vlan.id }}
     vxlan-id {{ vlan.vni }}
@@ -17,7 +16,6 @@ iface vni-{{ vlan.vni }}
 #
 cat >/etc/network/interfaces.d/60-vxlan.intf <<CONFIG
 {% if vxlan.vlans is defined %}
-allow-vxlan lo
 iface lo inet loopback
     vxlan-local-tunnelip {{ vxlan.vtep }}
 #
@@ -31,12 +29,10 @@ iface lo inet loopback
 {%     endif %}
 {%   endfor %}
 #
-allow-vxlan bridge
 iface bridge
 {%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
     bridge-ports vni-{{ vlans[vname].vni }}
 {%   endfor %}
 {% endif %}
 CONFIG
-ifreload --allow vxlan
-ifreload --allow vlanbridge
+ifreload -a
