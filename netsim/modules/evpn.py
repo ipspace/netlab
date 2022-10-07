@@ -36,7 +36,7 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
     reference_name='VLAN',
     create_default=create,
     merge_topology=False,
-    default_filter=lambda v: 'evpn' in v and 'transit_vni' in v.evpn and v.evpn.transit_vni,
+    default_filter=lambda v: False if not isinstance(v,Box) else data.get_from_box(v,'evpn.transit_vni'),
     module='evpn')
 
 def enable_evpn_af(node: Box, topology: Box) -> None:
@@ -104,6 +104,7 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
   if not 'evi' in evpn:                                             # If needed, set EVI attribute for the global VRF
     evpn.evi = vrf.id                                               # ... to the VRF ID
 
+  vlan.evpn.evi = evpn.evi
   for k in ('vlans','vlan_ids'):
     if not k in evpn:                                               # Is this the first EVPN-enabled VLAN in this VRF?
       evpn[k] = []                                                  # ... create an empty list of VLANs
@@ -228,7 +229,6 @@ def vrf_irb_setup(topology: Box) -> None:
     
     if not 'evi' in vrf_data.evpn:
       vrf_data.evpn.evi = vrf_data.id
-    vrf_data.pop('ospf',None)                                   # Remove OSPF from EVPN IRB VRF
 
 """
 Copy global evpn.vlans, evpn.vrfs, and evpn.transport into node evpn data structures.
@@ -282,6 +282,9 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
     return
 
   for vrf_name,vrf_data in node.get('vrfs',{}).items():
+    if not vrf_data.get('af',None):                             # Cannot do IRB without L3 addresses ;)
+      continue
+
     if data.get_from_box(vrf_data,'evpn.transit_vni'):          
       if not features.evpn.irb:                                 # ... does this device support IRB?
         common.error(
@@ -289,6 +292,8 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
           common.IncorrectValue,
           'evpn')
         continue
+
+      vrf_data.pop('ospf',None)                                 # Remove OSPF from EVPN IRB VRF
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
         common.error(
