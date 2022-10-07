@@ -51,13 +51,15 @@ ip link set {{ l.ifname }} mtu {{ l.mtu }}
 #
 {% for ifdata in interfaces|default([]) if ifdata.gateway is defined %}
 {%   for name,pool in pools.items()|default({}) %}
-{%     for af,pfx in pool.items() if af == 'ipv4' and
-         name not in ['mgmt','router_id'] and pfx is string and
-         pfx|ipaddr('network') != ifdata.gateway.ipv4|ipaddr('network') %}
+{%     for af,pfx in pool.items() if af == 'ipv4' %}
+# {{ name }} prefix: {{ pfx }} local subnet: {{ ifdata.gateway.ipv4|ipaddr('subnet') }}
+{%       if name not in ['mgmt','router_id'] and pfx is string and
+            pfx != ifdata.gateway.ipv4|ipaddr('subnet') %}
 set +e
 ip route del {{ pfx }} 2>/dev/null
 set -e
 ip route add {{ pfx }} via {{ ifdata.gateway.ipv4|ipaddr('address') }}
+{%       endif %}
 {%     endfor %}
 {%   endfor %}
 {% endfor  %}
