@@ -18,7 +18,7 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
   _dataplane.validate_object_reference_list(
     parent=toponode if not toponode is topology else None,
     parent_path=obj_path,
-    topology=topology, 
+    topology=topology,
     list_name='evpn.vlans',
     reference_dictionary='vlans',
     reference_name='VLAN',
@@ -30,7 +30,7 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
   _dataplane.validate_object_reference_list(
     parent=toponode if not toponode is topology else None,
     parent_path=obj_path,
-    topology=topology, 
+    topology=topology,
     list_name='evpn.vrfs',
     reference_dictionary='vrfs',
     reference_name='VLAN',
@@ -73,8 +73,8 @@ def vlan_based_service(vlan: Box, vname: str, topology: Box) -> None:
     module='evpn',
     min_value=1,max_value=65535)                                    # Check EVI data type in range
   for rt in ('import','export'):                                    # Default RT value
-    if not rt in evpn:                                              # ... BGP ASN:vlan ID
-      evpn[rt] = [ f"{asn}:{vlan.id}" ]
+    if not rt in evpn:                                              # ... BGP ASN:evi (== vlan ID)
+      evpn[rt] = [ f"{asn}:{evpn.evi}" ]
 
 def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
   vrf_name = vlan.vrf
@@ -177,10 +177,12 @@ def vrf_transit_vni(topology: Box) -> None:
         f'VRF {vrf_name} is using an EVPN transit VNI that is also used as L2 VNI {vni}',
         common.IncorrectValue,
         'evpn')
-      continue  
+      continue
     vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
 
   if vni_error:                                                 # Found serious errors, makes no sense to continue
+    return
+  elif evpn_transport != 'vxlan':                               # No need to assign transit VNI values
     return
 
   vni_start = topology.defaults.evpn.start_transit_vni
@@ -225,7 +227,7 @@ def vrf_irb_setup(topology: Box) -> None:
   for vrf_name,vrf_data in topology.get('vrfs',{}).items():
     if not 'evpn' in vrf_data:                                  # VRF without EVPN data is definitely not doing IRB
       continue
-    
+
     if not 'evi' in vrf_data.evpn:
       vrf_data.evpn.evi = vrf_data.id
     vrf_data.pop('ospf',None)                                   # Remove OSPF from EVPN IRB VRF
@@ -282,7 +284,7 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
     return
 
   for vrf_name,vrf_data in node.get('vrfs',{}).items():
-    if data.get_from_box(vrf_data,'evpn.transit_vni'):          
+    if data.get_from_box(vrf_data,'evpn.transit_vni'):
       if not features.evpn.irb:                                 # ... does this device support IRB?
         common.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
