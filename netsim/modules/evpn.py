@@ -9,8 +9,10 @@ from ..augment import devices
 """
 validate_evpn_list
 
-* Create vxlan.vlans list with all known VLANs if the attribute is missing
-* validate that the vxlan.vlans list is a list with valid local or global VLAN names
+* If missing, create evpn.vlans list with all VLANs with 'vni' attribute
+* Validate that the evpn.vlans list is a list with valid local or global VLAN names
+* If missing, create evpn.vrfs list with all VRFs with 'evpn.transit_vni' attribute
+* Validate that the evpn.vrfs list is a list with valid local or global VRF names
 
 The heavy lifting is done in a shared _dataplane function
 """
@@ -74,7 +76,7 @@ def vlan_based_service(vlan: Box, vname: str, topology: Box) -> None:
     min_value=1,max_value=65535)                                    # Check EVI data type in range
   for rt in ('import','export'):                                    # Default RT value
     if not rt in evpn:                                              # ... BGP ASN:vlan ID
-      evpn[rt] = [ f"{asn}:{vlan.id}" ]
+      evpn[rt] = [ f"{asn}:{evpn.evi}" ]
 
 def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
   vrf_name = vlan.vrf
@@ -149,8 +151,9 @@ def vrf_transit_vni(topology: Box) -> None:
   if not 'vrfs' in topology:
     return
 
-  vni_list: typing.List[int] = []
-  vni_error = False
+  vni_list: typing.List[int] = []                               # List of static transit VNIs
+  vni_error = False                                             # "A horrible error" flag that causes abort after the first loop
+  vni_count = 0                                                 # Number of VRFs with evpn.transit_vni
   evpn_transport = data.get_from_box(topology,'evpn.transport') or 'vxlan'
 
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
@@ -165,6 +168,8 @@ def vrf_transit_vni(topology: Box) -> None:
       vni_error = True
       continue
 
+    if not vni is None:
+      vni_count = vni_count + 1                                 # Count number of VRFs with evpn.transit_vni attribute
     if not data.is_true_int(vni):                               # Skip non-integer values, no need to check them at this time
       continue
     if vni in vni_list:
@@ -182,6 +187,8 @@ def vrf_transit_vni(topology: Box) -> None:
     vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
 
   if vni_error:                                                 # Found serious errors, makes no sense to continue
+    return
+  if not vni_count:                                             # No VRF found with evpn.transit_vni, no need to waste further CPU cycles
     return
 
   vni_start = topology.defaults.evpn.start_transit_vni
