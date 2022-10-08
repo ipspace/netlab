@@ -18,3 +18,12 @@ Symmetric IRB:
 * `vxlan-symmetric-irb.yml` -- Combination of VLAN bridging and VRF with symmetric IRB. VLANs are present on a subset of switches, making RT5 prefixes mandatory for full connectivity.
 * `vxlan-symmetric-irb-leaf-pairs.yml` -- Larger topology spreading the hosts across four leafs.
 
+## MPLS Transport
+
+The following test cases can be used to test various EVPN/MPLS services. The common functionality like route reflectors is tested with VXLAN transport:
+
+* `mpls-bridging.yml` -- VLAN-Based Service (bridging)
+* `mpls-vlan-bundle.yml` -- VLAN-Aware Bundle Service (bridging of tagged Ethernet packets)
+* `mpls-symmetric-irb.yml` -- Symmetric IRB (IP forwarding to RT5 IPv4 prefixes)
+
+
