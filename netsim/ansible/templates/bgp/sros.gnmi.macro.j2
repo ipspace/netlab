@@ -35,7 +35,7 @@
    import:
     policy: ["accept_all"]
    export:
-    policy: ["accept_all"]
+    policy: [ "{{ 'next-hop-self-ebgp-routes-only' if 'ibgp' in type and bgp.next_hop_self|default(False) else 'accept_all' }}" ]
 
 {% if bgp.community[ type ]|default([])|length < 2 %}
    send-communities:
@@ -47,14 +47,11 @@
 {%   endif %}
 {%  endfor %}
 {% endif %}
-
 {% if transport_ip %}
    local-address: "{{ transport_ip }}"
 {%  if bgp.rr|default('')|bool %}
    cluster:
     cluster-id: "{{ bgp.rr_cluster_id|default(False) or vrf_bgp.router_id|default(bgp.router_id) }}"
-{%  elif bgp.next_hop_self|default(false) %}
-   next-hop-self: True
 {%  endif %}
 {% endif %}
 {% endmacro %}
