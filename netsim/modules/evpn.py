@@ -285,15 +285,14 @@ Check whether VXLAN IRB mode is supported by the device
 def check_node_vrf_irb(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
   evpn_transport = data.get_from_box(node,'evpn.transport') or 'vxlan'
-  if evpn_transport != 'vxlan':                                 # Perform IRB checks only for VXLAN transport
-    return
 
   for vrf_name,vrf_data in node.get('vrfs',{}).items():
     if not vrf_data.get('af',None):                             # Cannot do IRB without L3 addresses ;)
       continue
 
-    if data.get_from_box(vrf_data,'evpn.transit_vni'):          
-      if not features.evpn.irb:                                 # ... does this device support IRB?
+    symmetric_irb = data.get_from_box(vrf_data,'evpn.transit_vni') or evpn_transport == 'mpls'
+    if symmetric_irb:
+      if not features.evpn.irb and evpn_transport == 'vxlan':   # ... does this device support IRB?
         common.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
           common.IncorrectValue,
