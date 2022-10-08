@@ -303,12 +303,14 @@ def check_module_parameters(topology: Box) -> None:
       if mod_attr[m] and m in n:         # Does the current module have a list of attributes?
                                          # ...Does node have module attribute?
         for k in n[m].keys():            # Iterate over node-level module-specific attributes
-          if not k in mod_attr[m].node:  # If the name of an attribute is not in the list of allowed
-                                         # ...node-level attributes report error
-            common.error(
-              f"Node {name}: invalid attribute {k} for module {m}",
-              common.IncorrectValue,
-              'module')
+          if k in mod_attr[m].node:      # ... allowed attribute, move on
+            continue
+          if k.startswith('_'):          # ... internal attribute, move on
+            continue
+          common.error(
+            f"Node {name}: invalid attribute {k} for module {m}",
+            common.IncorrectValue,
+            'module')
 
   for g in topology.get('groups',{}):                    # Inspect node_data in groups
     if 'node_data' in topology.groups[g]:
@@ -354,12 +356,14 @@ def check_module_parameters(topology: Box) -> None:
           #
           if isinstance(intf[m],Box) and isinstance(mod_attr[m].link,list):
             for k in intf[m].keys():              # Iterate over node link-level module-specific attributes
-              if not k in mod_attr[m].interface:  # If the name of an attribute is not in the list of allowed
-                                                  # ... interface attributes report error
-                common.error(
-                  f"Node {n} has invalid attribute {k} for module {m} on link {l}",
-                  common.IncorrectValue,
-                  'modules')
+              if k in mod_attr[m].interface:      # Move on if the name of an attribute is in the list of allowed interface attributes
+                continue
+              if k.startswith('_'):               # ... also skip internal attributes
+                continue
+              common.error(
+                f"Node {n} has invalid attribute {k} for module {m} on link {l}",
+                common.IncorrectValue,
+                'modules')
           else:
             if type(intf[m]).__name__ != str(mod_attr[m].interface) and not (intf[m] is False):
               common.error(

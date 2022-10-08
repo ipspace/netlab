@@ -128,16 +128,16 @@ srv6:
 evpn: # Enables the EVPN address family towards BGP peers
   requires: [ bgp ]
   supported_on: [ sros, srlinux, frr, eos, vyos, dellos10, cumulus, nxos ]
-  no_propagate: [ start_transit_vni ]
+  no_propagate: [ start_transit_vni, transport, vlan_bundle_service, as ]
   transform_after: [ vlan, vxlan, vrf ]
   config_after: [ vlan, vxlan, vrf ]
   session: [ ibgp ]
   start_transit_vni: 200000
   vlan_bundle_service: False
   attributes:
-    global: [ session, start_transit_vni, vlan_bundle_service ]
-    node: [ session, vlan_bundle_service, start_transit_vlan ]
-    vlans: [ evpn.evi ]
+    global: [ session, start_transit_vni, vlan_bundle_service, transport, vlans, vrfs, as ]
+    node: [ session, vlans, vrfs ]
+    vlans: [ evi,rd,import,export ]
 
 vrf: # Basic VRF support
   supported_on: [ eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos, srlinux, frr, cumulus, sros, routeros7 ]
@@ -171,6 +171,7 @@ vxlan: # VXLAN support
   supported_on: [ eos, nxos, vyos, dellos10, srlinux, frr, cumulus, sros ]
   requires: [ vlan ]
   config_after: [ vrf ] # For platforms that suppport L3 VXLAN, vrfs must be created first
+  transform_after: [ vlan, vrf ]
   domain: global
   flooding: static
   start_vni: 100000
@@ -398,7 +399,7 @@ devices:
       ansible_connection: network_cli
     bfd:           # NXOS requires lower default timer values
       min_rx: 500
-    evpn.start_transit_vlan: 3800
+    evpn._start_transit_vlan: 3800
     features:
       initial:
         ipv4:
@@ -649,7 +650,7 @@ devices:
       ansible_ssh_pass: vagrant
       ansible_network_os: cumulus
       ansible_connection: paramiko
-    evpn.start_transit_vlan: 3900
+    evpn._start_transit_vlan: 3900
     features:
       initial:
         ipv4:
