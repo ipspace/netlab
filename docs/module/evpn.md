@@ -18,18 +18,28 @@ The current implementation of EVPN module supports:
 
 ## Platform Support
 
-The following table describes per-platform support of individual VXLAN features:
+The following table describes per-platform support of individual EVPN/VXLAN features:
 
-| Operating system   | VXLAN<br>transport | MPLS<br>transport |VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
-| ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  |  ❌  | ✅  | ✅  |  ❌  | ✅  |
-| Cisco Nexus OS     | ✅  |  ❌  | ✅  |  ❌  |  ❌  | ✅  |
-| Cumulus Linux      | ✅  |  ❌  | ✅  |  ❌  |  ❌  | ✅  |
-| Dell OS 10         | ✅  |  ❌  | ✅  |  ❌  |  ❌  | ✅  |
-| FRR                | ✅  |  ❌  | ✅  |  ❌  |  ❌  | ✅  |
-| Nokia SR Linux     | ✅  |  ❌  | ✅  |  ✅ | ✅  | ✅  |
-| Nokia SR OS        | ✅  |  ❌  | ✅  |  ❌  | ✅  | ✅  |
-| VyOS               | ✅  |  ❌  | ✅  |  ❌  |  ❌  | ✅  |
+| Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
+| ------------------ | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  |  ❌  | ✅  |
+| Cisco Nexus OS     | ✅  |  ❌  |  ❌  | ✅  |
+| Cumulus Linux      | ✅  |  ❌  |  ❌  | ✅  |
+| Dell OS 10         | ✅  |  ❌  |  ❌  | ✅  |
+| FRR                | ✅  |  ❌  |  ❌  | ✅  |
+| Nokia SR Linux     | ✅  |  ✅ | ✅  | ✅  |
+| Nokia SR OS        | ✅  |  ❌  | ✅  | ✅  |
+| VyOS               | ✅  |  ❌  |  ❌  | ✅  |
+
+The following table describes per-platform support of individual EVPN/MPLS features:
+
+| Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
+| ------------------ | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  |  ❌  |  ❌  |
+
+```{note}
+* Arista EOS requires anycast gateway for EVPN/MPLS symmetric IRB configuration. Anycast gateway is not yet supported by _netlab_.
+```
 
 EVPN module supports three design paradigms:
 
