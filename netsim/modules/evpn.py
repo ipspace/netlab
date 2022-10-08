@@ -351,7 +351,7 @@ class EVPN(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     enable_evpn_af(node,topology)
     _routing.router_id(node,'bgp',topology.pools)                 # Make sure we have a usable router ID
-    check_node_vrf_irb(node,topology)
     copy_global_evpn_lists(node,topology)
+    check_node_vrf_irb(node,topology)
     trim_node_evpn_lists(node)
     set_local_evpn_rd(node)
