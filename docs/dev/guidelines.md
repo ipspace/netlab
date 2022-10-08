@@ -43,4 +43,5 @@ The easiest way to get started is to [add support for a new platform for an exis
 
    groups-pre-transform.md
    vlan-vrf-vxlan-evpn-transform.md
+   quirks.md
 ```
