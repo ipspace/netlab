@@ -11,6 +11,7 @@ from .. import addressing
 from .. import augment
 from ..providers import _Provider
 from .. import modules
+from .. import quirks
 from ..data import global_vars
 
 def transform_setup(topology: Box) -> None:
@@ -66,6 +67,9 @@ def transform_data(topology: Box) -> None:
   topology.Provider.call("post_transform",topology)
   common.exit_on_error()
 
+  quirks.process_quirks(topology)
+  common.exit_on_error()
+  
   topology.pop('Plugin',None)
   del topology.pools
   del topology.Provider
