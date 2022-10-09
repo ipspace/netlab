@@ -3,7 +3,7 @@
 set -e # Exit immediately when any command fails
 #
 
-{% macro create_vxlan_interface(vni,br_name,vrf=None) %}
+{% macro create_vxlan_interface(vni,br_name,vrf=None,mtu=1500) %}
 ip link add vxlan{{ vni }} type vxlan \
   id {{ vni }} \
   dstport 4789 \
@@ -16,16 +16,20 @@ ip link set up dev {{ br_name }}
 fi
 brctl addif {{ br_name }} vxlan{{ vni }}
 brctl stp {{ br_name }} off
+ip link set mtu {{ mtu }} dev vxlan{{ vni }}
 ip link set up dev vxlan{{ vni }}
 {% if vrf %}
 ip link set {{ br_name }} master {{ vrf }}
 {% endif %}
 {% endmacro %}
 
+# Determine max MTU used on interfaces, to configure VXLAN interface
+{% set max_mtu = ([1500]+interfaces|selectattr('mtu','defined')|map(attribute='mtu'))|max %}
+
 # Create L3 VNIs with bridges and add to correct vrf table
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if 'evpn' in vdata and vdata.evpn.transit_vni is defined %}
-{{ create_vxlan_interface(vdata.evpn.transit_vni, "tvni-"+vdata.vrfidx|string,vname) }}
+{{ create_vxlan_interface(vdata.evpn.transit_vni, "tvni-"+vdata.vrfidx|string,vname,max_mtu) }}
 {% endfor %}
 {% endif %}
 
@@ -33,7 +37,7 @@ ip link set {{ br_name }} master {{ vrf }}
 {%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
 {%     set vlan = vlans[vname] %}
 # Create VXLAN L2 interface per vni
-{{ create_vxlan_interface(vlan.vni, "vlan" + vlan.id|string,None) }}
+{{ create_vxlan_interface(vlan.vni, "vlan" + vlan.id|string,None,max_mtu) }}
 {%     if vlan.vtep_list is defined %}
 {%       for remote_vtep in vlan.vtep_list %}
 ip link set vxlan{{vlan.vni}} type vxlan remote {{ remote_vtep }}
