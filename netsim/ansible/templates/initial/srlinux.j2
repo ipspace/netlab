@@ -53,10 +53,13 @@ updates:
 {% set if_desc = l.name|default( l.ifname )|replace('->','~')|regex_replace('[\\[\\]]','') %}
 - path: interface[name={{ if_name }}]
   val:
-{% if l.mtu is defined %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-   mtu {{ [l.mtu + 14,1500]|max }} # TODO not supported on loopback interfaces
+{% if l.mtu is defined and l.type!='loopback' %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+   mtu: {{ [l.mtu + 14,1500]|max }}
 {% endif %}
    subinterface:
+{% if l.mtu is defined and l.type!='loopback' %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+    ip-mtu: {{ l.mtu }}
+{% endif %}
     index: {{ if_index }}
     description: "{{ if_desc }}"
 
