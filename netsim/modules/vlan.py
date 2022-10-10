@@ -566,7 +566,6 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
 """
 create_svi_interfaces: for every physical interface with access VLAN, create an SVI interface
 """
-
 def create_svi_interfaces(node: Box, topology: Box) -> dict:
   global phy_ifattr
   skip_ifattr = list(phy_ifattr)

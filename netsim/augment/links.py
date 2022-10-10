@@ -120,7 +120,7 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     ifindex_offset = 1
 
   # Allow user to select a specific interface index per link
-  ifindex = ifdata.get('ifindex',None) or (len(node.interfaces) + ifindex_offset)
+  ifindex = ifdata.get('ifindex',None) or (len(node.interfaces)-1 + ifindex_offset)
 
   ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
@@ -348,7 +348,7 @@ def augment_lan_link(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> 
         for af in ('ipv4','ipv6'):
           if af in remote_if['data']:
             ngh_data[af] = remote_if['data'][af]
-        
+
         # List enabled modules that have interface level attributes; copy those attributes too
         mods_with_ifattr = Box({ m : True for m in ndict[remote_if['node']].get('module',[]) if defaults[m].attributes.get('interface',None) })
         ifaddr_add_module(ngh_data,remote_if['data'],mods_with_ifattr)

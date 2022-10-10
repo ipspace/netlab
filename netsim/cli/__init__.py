@@ -148,7 +148,7 @@ def lab_commands() -> None:
     except Exception as ex:
       if 'dev' in __version__:
         print( f"Error importing .{cmd},{__name__}: {ex}" )
-  
+
   if mod:
     if hasattr(mod,'run'):
       mod.run(sys.argv[arg_start:])   # type: ignore

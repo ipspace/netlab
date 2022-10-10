@@ -253,7 +253,7 @@ def adjust_modules(topology: Box) -> None:
   adjust_global_modules(topology)
   if not 'module' in topology:
     return
-    
+
   module_transform("init",topology)
   merge_node_module_params(topology)
   merge_global_module_params(topology)
@@ -477,6 +477,11 @@ Example: copy node-level OSPF area into interfaces that don't have explicit area
 
 def copy_node_data_into_interfaces(topology: Box) -> None:
   for n in topology.nodes.values():
+
+    # Remove internal loopback interface
+    n.interfaces.pop(0)
+    del n._loopback
+
     for m in n.get('module',[]):                                 # Iterate over node modules
       mod_attr = topology.defaults[m].attributes                 # ... get a pointer to module attributes to make code easier to read
       if not mod_attr.node_copy:                                 # Any copyable attributes for this module?

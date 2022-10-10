@@ -45,7 +45,8 @@ def create_node_dict(nodes: Box) -> Box:
     else:
       ndata['name'] = name
 
-    ndata.interfaces = ndata.interfaces or []   # Make sure node.interfaces is always defined
+    ndata._loopback = ndata._loopback + { 'type': 'loopback', 'ifname': 'loopback', 'ifindex': 0 }  # Make sure each node has a defined loopback interface
+    ndata.interfaces = ndata.interfaces or [ndata._loopback]   # Make sure node.interfaces is always defined
     node_dict[name] = ndata
 
   common.exit_on_error()
