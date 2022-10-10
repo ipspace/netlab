@@ -97,7 +97,7 @@ Lab topology could contain *stub*, *p2p* and *lan* links. The link type could be
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address, the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address is the [node ID](nodes.md#augmenting-node-data)
+* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the largest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links). 
 * Stub links are treated exactly like LAN links.
 
 ## Link Names

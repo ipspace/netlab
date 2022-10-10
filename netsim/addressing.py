@@ -76,8 +76,8 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
 
   return pfx
 
-def rebuild_prefix(pfx: typing.Union[dict,Box]) -> dict:
-  out_pfx = {}
+def rebuild_prefix(pfx: typing.Union[dict,Box]) -> Box:
+  out_pfx = Box({})
   for af in ('ipv4','ipv6'):
     if af in pfx:
       out_pfx[af] = str(pfx[af]) if not isinstance(pfx[af],bool) else pfx[af]
@@ -263,7 +263,12 @@ def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typi
   else:
     return Box({})                        # pragma: no cover -- can't figure out how to get here
 
+prefix_attributes: typing.List[str] = []
+
 def setup(topo: Box, defaults: Box) -> None:
+  global prefix_attributes
+
+  prefix_attributes = topo.defaults.attributes.prefix
   data.null_to_string(topo.addressing)
   addrs = setup_pools(defaults.addressing + topo.addressing,defaults)
 
@@ -280,20 +285,38 @@ def setup(topo: Box, defaults: Box) -> None:
 
   common.exit_on_error()
 
-def parse_prefix(prefix: typing.Union[str,dict]) -> Box:
+def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
+  global prefix_attributes
+
   if common.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f"parse prefix: {prefix} type={type(prefix)}")
 
   empty_box = Box({})
   if not prefix:
     return empty_box
-  supported_af = ['ip','ipv4','ipv6']
+
+  supported_af = ['ipv4','ipv6']
   prefix_list = Box({})
   if not isinstance(prefix,dict):
     return Box({ 'ipv4' : netaddr.IPNetwork(prefix) })
 
+  if 'ip' in prefix:                                  # Deal with legacy 'ip' address family -- rename it to ipv4
+    if 'ipv4' in prefix:
+      common.error( \
+        f'Cannot have IP and IPv4 address families in prefix {prefix}',
+        category=common.IncorrectValue,
+        module='addressing')
+      return empty_box
+
+    prefix.ipv4 = prefix.ip
+    prefix.pop('ip',None)
+
   for af,pfx in prefix.items():
-    if not af in supported_af:
+    if not af in supported_af:                        # Are we dealing with an address family prefix?
+      if af in prefix_attributes:                     # ... no, is it a known prefix attribute?
+        prefix_list[af] = pfx
+        continue
+
       common.error( \
         'Unknown address family %s in prefix %s' % (af,prefix), \
         category=common.IncorrectValue,module='addressing')
