@@ -78,7 +78,13 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
         if not addrs.get('start'):
           common.fatal("Start offset missing in management address pool for AF %s" % af)
         if not af in node.mgmt:
-          node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
+          try:
+            node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
+          except Exception as ex:
+            common.error(
+              f'Cannot assign management address from prefix {str(addrs[pfx])} (starting at {addrs.start}) to node with ID {node.id}',
+              common.IncorrectValue,
+              'nodes')
 
     if addrs.mac_eui and not 'mac' in node.mgmt:
       addrs.mac_eui[5] = node.id
