@@ -395,7 +395,10 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
           'links')
         continue
 
-      allocation_policy = get_prefix_IPAM_policy(link,pfx_net,ndict)      # get IPAM policy based on prefix and link size
+      if 'allocation' in pfx_list:
+        allocation_policy = pfx_list.allocation
+      else:
+        allocation_policy = get_prefix_IPAM_policy(link,pfx_net,ndict)    # get IPAM policy based on prefix and link size
 
     if allocation_policy == 'error':                                      # Something went wrong, cannot assing IP addresses
       common.error(
