@@ -220,15 +220,18 @@
 {#
   Add extra IPv4 prefixes using static blackhole routes
 #}
+{% for pfx in vrf_bgp.originate|default([]) %}
+{% if loop.first %}
 - path: network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
   val:
    blackhole:
      generate-icmp: True
-
-{% for pfx in vrf_bgp.originate|default([]) %}
-- path: network-instance[name={{vrf}}]/static-routes/route[prefix={{pfx}}]
+{% endif %}
+- path: network-instance[name={{vrf}}]/static-routes
   val:
-   next-hop-group: blackhole
+   route:
+   - prefix: "{{ pfx }}"
+     next-hop-group: blackhole
 {% endfor %}
 
 {% if 'sr' in module|default([]) %}
