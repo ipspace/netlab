@@ -296,6 +296,10 @@ def validate_attributes(
       extra_attributes: typing.Optional[list] = None    # List of dynamic attributes (needed to validate node provider settings)
         ) -> None: 
 
+
+  #
+  # Part 1: set up default values
+  #
   global list_of_modules
 
   if attributes is None:
@@ -307,12 +311,57 @@ def validate_attributes(
   if not list_of_modules:
     list_of_modules = [ m for m in topology.defaults.keys() if 'supported_on' in topology.defaults[m] ]
 
+  #
+  # Part 2: Build the list of valid attributes
+  #
+  # It could be that the list of attributes tells us data should be of certain type
+  # Deal with that as well (although in an awkward way that should be improved)
+  #
   valid = []
   for atlist in attr_list:                              # Build a list of all valid (global) attributes for the object
-    valid.extend(attributes.get(atlist,[]))
+    add_attr = attributes.get(atlist,[])                # Attributes to add to the list
+    if isinstance(add_attr,list):                       # Are we dealing with a fixed-type attribute?
+      valid.extend(add_attr)                            # ... nope, add to list of attributes and move on
+      continue
 
+    if valid:                                           # Have we already collected something?
+      common.fatal(
+        f'Internal error: Cannot add {add_attr} attributes to {valid} for {data_name} {data_path}')
+      return                                            # ... bad karma, inconsistent validation requirements
+
+    if not isinstance(add_attr,str):                    # Looking good so far, but the thing we got that's not a list should be a string
+      common.fatal(
+        f'Internal error: Expected string or dict for {add_attr} attributes to {valid} for {data_name} {data_path}')
+      return                                            # ... dang, someone messed up. Abort, abort, abort...
+
+    data_type = type(data).__name__
+    if data_type == add_attr:                 # OK, we have a match
+      return
+
+    common.error(
+      f'{data_path} should be {add_attr}, found {data_type} instead',
+      common.IncorrectType,
+      'validate')
+
+  # Augment collected attributes with whatever caller things is legal
+  #
   if not extra_attributes is None:                      # Extend the attribute list with dynamic attributes
     valid.extend(extra_attributes)
+
+  # Part 3 -- validate attributes
+  #
+  # * Anything starting with "_" is OK (internal attributes)
+  # * Known attributes for object we're checking are OK
+  # * Module attributes are OK, but have to be checked recursively
+  # * Attributes from modules not used by the current object are NOT OK
+  # * Anything else is clearly an error
+  #
+  if not isinstance(data,Box):
+    common.error(
+      f'Cannot validate attributes in {data_path} -- that should have been a dictionary, found {type(data).__name__}',
+      common.IncorrectType,
+      'validate')
+    return
 
   for k in data.keys():
     if k.startswith('_'):                               # Skip internal attributes
