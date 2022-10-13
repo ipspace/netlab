@@ -19,18 +19,31 @@ from . import data
 #
 # Read YAML from file, package file, or string
 #
+read_cache: dict = {}
+
 def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
+  global read_cache
   if string is not None:
     try:
       yaml_data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False)
+      return yaml_data
     except:                                                                    # pragma: no cover -- can't get here unless there's a package error
       common.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
+      return None
   elif filename is None:
     common.fatal("read_yaml: have no idea what to do") # pragma: no cover -- sanity check
-  elif "package:" in filename:
+    return None
+
+  if filename in read_cache:
+    return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
+
+  if "package:" in filename:
     package = '.'.join(__name__.split('.')[:-1])
     with resources.open_text(package,filename.replace("package:","")) as fid:
-      return read_yaml(string=fid.read())
+      pkg_data = read_yaml(string=fid.read())
+      if not pkg_data is None:
+        read_cache[filename] = Box(pkg_data)
+      return pkg_data
   else:
     if not os.path.isfile(filename):
       if common.LOGGING or common.VERBOSE:
@@ -38,6 +51,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
       return None
     try:
       yaml_data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
+      read_cache[filename] = Box(yaml_data)
     except:
       common.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
 
