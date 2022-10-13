@@ -125,6 +125,12 @@ def register_static_transit_vni(topology: Box) -> None:
 
     transit_vni = data.get_from_box(vrf_data,'evpn.transit_vni')
     if data.is_true_int(transit_vni):
+      if transit_vni in vni_set:
+        common.error(
+          f'transit VNI {transit_vni} for VRF {vrf_name} is already used elsewhere',
+          common.IncorrectValue,
+          'evpn')
+        continue
       vni_set.add(transit_vni)
 
   for n in topology.nodes.values():
