@@ -35,6 +35,7 @@ def transform_setup(topology: Box) -> None:
 
   augment.nodes.augment_node_provider_data(topology)
   augment.nodes.augment_node_system_data(topology)
+  modules.pre_default(topology)
   common.exit_on_error()
 
 def transform_data(topology: Box) -> None:
