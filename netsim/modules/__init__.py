@@ -308,19 +308,19 @@ def check_module_parameters(topology: Box) -> None:
                 common.IncorrectValue,
                 'module')
 
-  for name,n in topology.nodes.items():  # Inspect all nodes
-    for m in n.get("module",[]):         # Iterate over all node modules
-      if mod_attr[m] and m in n:         # Does the current module have a list of attributes?
-                                         # ...Does node have module attribute?
-        for k in n[m].keys():            # Iterate over node-level module-specific attributes
-          if k in mod_attr[m].node:      # ... allowed attribute, move on
-            continue
-          if k.startswith('_'):          # ... internal attribute, move on
-            continue
-          common.error(
-            f"Node {name}: invalid attribute {k} for module {m}",
-            common.IncorrectValue,
-            'module')
+#  for name,n in topology.nodes.items():  # Inspect all nodes
+#    for m in n.get("module",[]):         # Iterate over all node modules
+#      if mod_attr[m] and m in n:         # Does the current module have a list of attributes?
+#                                         # ...Does node have module attribute?
+#        for k in n[m].keys():            # Iterate over node-level module-specific attributes
+#          if k in mod_attr[m].node:      # ... allowed attribute, move on
+#            continue
+#          if k.startswith('_'):          # ... internal attribute, move on
+#            continue
+#          common.error(
+#            f"Node {name}: invalid attribute {k} for module {m}",
+#            common.IncorrectValue,
+#            'module')
 
   for g in topology.get('groups',{}):                    # Inspect node_data in groups
     if 'node_data' in topology.groups[g]:

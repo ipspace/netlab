@@ -38,6 +38,8 @@ def transform_setup(topology: Box) -> None:
   modules.pre_default(topology)
   common.exit_on_error()
 
+  augment.nodes.validate(topology)
+
 def transform_data(topology: Box) -> None:
   addressing.setup(topology,topology.defaults)
   augment.plugin.execute('pre_transform',topology)
