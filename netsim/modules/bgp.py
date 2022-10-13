@@ -10,6 +10,7 @@ import netaddr
 from . import _Module,_routing
 from .. import common
 from .. import data
+from ..data.validate import must_be_int,must_be_list
 from ..augment import devices
 
 def check_bgp_parameters(node: Box) -> None:
@@ -18,7 +19,7 @@ def check_bgp_parameters(node: Box) -> None:
   if not "as" in node.bgp:
     common.error("Node %s has BGP enabled but no AS number specified" % node.name)
 
-  data.must_be_int(parent=node,key='bgp.as',path=f'nodes.{node.name}',min_value=1,max_value=65535,module='bgp')
+  must_be_int(parent=node,key='bgp.as',path=f'nodes.{node.name}',min_value=1,max_value=65535,module='bgp')
 
   if "community" in node.bgp:
     bgp_comm = node.bgp.community
@@ -37,7 +38,7 @@ def check_bgp_parameters(node: Box) -> None:
       if not k in ['ibgp','ebgp']:
         common.error("Invalid BGP community setting in node %s: %s" % (node.name,k))
       else:
-        data.must_be_list(
+        must_be_list(
           parent=node.bgp.community,
           path=f'nodes.{node.name}.bgp.community',
           key=k,
@@ -57,7 +58,7 @@ def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
         'bgp')
       OK = False
     else:
-      if data.must_be_list(
+      if must_be_list(
           parent=sessions,
           key=k,
           path=f'nodes.{node.name}.bgp.{attribute}',
@@ -418,7 +419,7 @@ class BGP(_Module):
           common.IncorrectValue)
         continue
 
-      data.must_be_list(as_data,'members',f'bgp.as_list.{asn}')
+      must_be_list(as_data,'members',f'bgp.as_list.{asn}')
       for n in as_data.members:
         if not n in topology.nodes:
           common.error(

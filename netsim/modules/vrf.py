@@ -7,7 +7,8 @@ from box import Box
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from .. import common
 from .. import data
-from ..data import get_from_box,must_be_dict,global_vars
+from ..data import get_from_box,global_vars
+from ..data.validate import must_be_list
 from ..augment import devices,groups
 from .. import addressing
 
@@ -199,7 +200,7 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
         vdata[rtname] = [ vdata.rd ]
         continue
 
-      data.must_be_list(vdata,rtname,f'{obj_id}.{vname}')
+      must_be_list(vdata,rtname,f'{obj_id}.{vname}')
 
       rtlist = []     # The final parsed and looked-up list of RT values
       for rtvalue in vdata[rtname]:

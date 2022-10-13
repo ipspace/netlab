@@ -4,6 +4,7 @@ from . import _Module,_routing,_dataplane
 from box import Box
 from .. import common
 from .. import data
+from ..data.validate import must_be_int,must_be_dict,must_be_string
 from ..augment import devices
 
 """
@@ -70,7 +71,7 @@ def vlan_based_service(vlan: Box, vname: str, topology: Box) -> None:
   epath = f'vlans.{vname}.evpn'
   evpn.evi = evpn.evi or vlan.id                                    # Default EVI value: VLAN ID
   asn = get_usable_evpn_asn(topology)
-  data.must_be_int(
+  must_be_int(
     evpn,'evi',epath,
     module='evpn',
     min_value=1,max_value=65535)                                    # Check EVI data type in range
@@ -96,11 +97,11 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
 
   vlan.evpn.bundle = vlan.vrf                                       # Set a 'we are in a bundle' flag
   vrf = topology.vrfs[vrf_name]
-  data.must_be_dict(
-         parent=vrf,
-         key='evpn',
-         path=f'vrfs.{vrf_name}',
-         create_empty=True)
+  must_be_dict(
+    parent=vrf,
+    key='evpn',
+    path=f'vrfs.{vrf_name}',
+    create_empty=True)
 
   evpn = vrf.evpn
   if not 'evi' in evpn:                                             # If needed, set EVI attribute for the global VRF
@@ -121,7 +122,7 @@ def register_static_transit_vni(topology: Box) -> None:
   for vrf_name,vrf_data in topology.get('vrfs',{}).items():
     if vrf_data is None:
       continue
-    data.must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
+    must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
 
     transit_vni = data.get_from_box(vrf_data,'evpn.transit_vni')
     if data.is_true_int(transit_vni):
@@ -197,7 +198,7 @@ def vrf_transit_vni(topology: Box) -> None:
       continue
     if isinstance(data.get_from_box(vrf_data,'evpn.transit_vni'),str):
       continue                                                  # Skip transit_vni string values (will be checked in third pass)
-    transit_vni = data.must_be_int(
+    transit_vni = must_be_int(
                     vrf_data,
                     key='evpn.transit_vni',
                     path=f'vrfs.{vrf_name}',
@@ -315,12 +316,12 @@ class EVPN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
     register_static_transit_vni(topology)
-    data.must_be_string(
-           parent=topology,
-           key='evpn.transport',
-           path='topology',
-           valid_values=['vxlan','mpls'],
-           module='evpn')
+    must_be_string(
+      parent=topology,
+      key='evpn.transport',
+      path='topology',
+      valid_values=['vxlan','mpls'],
+      module='evpn')
 
   def module_post_node_transform(self, topology: Box) -> None:
     validate_evpn_lists(topology,'topology',topology,create=True)

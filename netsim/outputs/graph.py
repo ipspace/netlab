@@ -8,7 +8,8 @@ import os
 from box import Box
 
 from .. import common
-from ..data import get_from_box,must_be_list
+from ..data import get_from_box
+from ..data.validate import must_be_list
 from . import _TopologyOutput
 
 def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Optional[str] = '') -> None:
