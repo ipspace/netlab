@@ -177,12 +177,6 @@ def vrf_transit_vni(topology: Box) -> None:
         f'VRF {vrf_name} is using the same EVPN transit VNI as another VRF',
         common.IncorrectValue,
         'evpn')
-      continue
-    elif _dataplane.is_id_used('vni',vni):
-      common.error(
-        f'VRF {vrf_name} is using an EVPN transit VNI that is also used as L2 VNI {vni}',
-        common.IncorrectValue,
-        'evpn')
       continue  
     vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
 
