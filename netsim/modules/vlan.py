@@ -114,7 +114,6 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
   vlan = get_from_box(intf,'vlan.access') or get_from_box(intf,'vlan.native')
   if not vlan:
     return 'irb'
-
   return get_from_box(intf,'vlan.mode') or \
          get_from_box(node,f'vlans.{vlan}.mode') or \
          get_from_box(node,'vlan.mode') or \
