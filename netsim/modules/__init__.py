@@ -16,7 +16,7 @@ from ..augment import devices
 
 # List of attributes we don't want propagated from defaults to global/node
 #
-no_propagate_list = ["attributes","extra_attributes","requires","supported_on","no_propagate","config_after","transform_after"]
+no_propagate_list = ["attributes","extra_attributes","requires","supported_on","no_propagate","config_after","transform_after","can_be_empty"]
 
 class _Module(Callback):
 
@@ -262,7 +262,7 @@ def adjust_modules(topology: Box) -> None:
   adjust_global_modules(topology)
   if not 'module' in topology:
     return
-    
+
   module_transform("init",topology)
   merge_node_module_params(topology)
   merge_global_module_params(topology)

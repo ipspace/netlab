@@ -294,7 +294,7 @@ def validate_attributes(
       module_source: typing.Optional[str] = None,       # Where did we get the list of modules?
       attributes: typing.Optional[Box] = None,          # Where to get valid attributes from
       extra_attributes: typing.Optional[list] = None    # List of dynamic attributes (needed to validate node provider settings)
-        ) -> None: 
+        ) -> None:
 
 
   #
@@ -371,6 +371,8 @@ def validate_attributes(
       continue
 
     if k in modules:                                    # For module attributes, perform recursive check
+      if data[k] is None and 'can_be_empty' in topology.defaults[k]: # Allow empty dict like 'evpn:'
+        continue
       validate_attributes(
         data=data[k],
         topology=topology,
