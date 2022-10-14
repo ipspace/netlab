@@ -12,11 +12,13 @@ from box import Box
 from .. import common
 from .. import addressing
 from . import devices
+from ..data.validate import validate_attributes
 
-#
-# Starting with release 1.1, the nodes data structure is a dictionary. Convert
-# lists of dictionaries or lists of strings into a unified dictionary structure
-#
+"""
+Node data structure is a dictionary. Convert lists of dictionaries (now obsolete)
+Or lists of strings into a unified dictionary structure
+"""
+
 def create_node_dict(nodes: Box) -> Box:
   if isinstance(nodes,dict):
     node_dict = nodes
@@ -50,6 +52,22 @@ def create_node_dict(nodes: Box) -> Box:
 
   common.exit_on_error()
   return node_dict
+
+"""
+Validate node attributes
+"""
+def validate(topology: Box) -> None:
+  for n_name,n_data in topology.nodes.items():
+    provider = devices.get_provider(n_data,topology)
+    validate_attributes(
+      data=n_data,                                    # Validate node data
+      topology=topology,
+      data_path=f'nodes.{n_name}',                    # Topology path to node name
+      data_name=f'node',
+      attr_list=['node'],                             # We're checking node attributes
+      modules=n_data.get('module',[]),                # ... against node modules
+      module='nodes',                                 # Function is called from 'nodes' module
+      extra_attributes = [ provider ])                # Allow provider-specific settings (not checked at the moment)
 
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:

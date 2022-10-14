@@ -9,6 +9,7 @@ from . import _Module,get_effective_module_attribute,_dataplane
 from .. import common
 from .. import data
 from ..data import get_from_box
+from ..data.validate import must_be_int,must_be_string
 from ..augment import devices
 from .. import addressing
 
@@ -73,7 +74,7 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
       elif vlan_data.vni is True:                                 # Explicit request to assign VNI, pass through
         pass
       else:                                                       # Otherwise check that VNI is an int
-        data.must_be_int(
+        must_be_int(
           parent=vlan_data,
           key='vni',
           path=vpath,
@@ -145,7 +146,7 @@ class VXLAN(_Module):
       if m in node.module:
         flooding_values.append(m)
 
-    data.must_be_string(
+    must_be_string(
       parent = node.vxlan,
       key = 'flooding',
       path = f'nodes.{node.name}.vxlan',

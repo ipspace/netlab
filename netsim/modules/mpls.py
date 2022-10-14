@@ -9,6 +9,7 @@ from . import _Module,_routing
 from .. import common
 from ..common import AF_LIST,BGP_SESSIONS
 from .. import data
+from ..data.validate import must_be_bool,must_be_list,validate_list_elements
 from ..augment import devices
 
 DEFAULT_BGP_LU: dict = {
@@ -69,7 +70,7 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
 def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
   if isinstance(node.mpls[feature],list):
     session_list = node.mpls[feature]
-    if not data.validate_list_elements(session_list,BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}'):
+    if not validate_list_elements(session_list,BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}'):
       common.error(
         f'Invalid BGP session type in nodes.{node.name}.mpls.{feature} parameter',
         common.IncorrectValue,
@@ -84,10 +85,10 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
       if not af in node.mpls[feature]:
         continue
 
-      if data.must_be_list(node.mpls[feature],af,f'nodes.{node.name}.mpls.{feature}') is None:
+      if must_be_list(node.mpls[feature],af,f'nodes.{node.name}.mpls.{feature}') is None:
         return False
 
-      if not data.validate_list_elements(node.mpls[feature][af],BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}.{af}'):
+      if not validate_list_elements(node.mpls[feature][af],BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}.{af}'):
         common.error(
           f'Invalid BGP session type in nodes.{node.name}.mpls.{feature}.{af} parameter',
           common.IncorrectValue,
@@ -180,7 +181,7 @@ class MPLS(_Module):
 
     data.bool_to_defaults(node.mpls,'ldp',{})
     if 'ldp' in node.mpls:
-      data.must_be_bool(node.mpls.ldp,'disable_unlabeled',f'nodes.{node.name}.mpls.ldp')
+      must_be_bool(node.mpls.ldp,'disable_unlabeled',f'nodes.{node.name}.mpls.ldp')
       if not any(m in ['ospf','isis','eigrp'] for m in node.module):
         common.error(
           f'You cannot enable LDP on node {node.name} without an IGP',
