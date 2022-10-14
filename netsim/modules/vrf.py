@@ -7,7 +7,8 @@ from box import Box
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from .. import common
 from .. import data
-from ..data import get_from_box,must_be_dict,global_vars
+from ..data import get_from_box,global_vars
+from ..data.validate import must_be_list,must_be_dict,validate_attributes
 from ..augment import devices,groups
 from .. import addressing
 
@@ -199,7 +200,7 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
         vdata[rtname] = [ vdata.rd ]
         continue
 
-      data.must_be_list(vdata,rtname,f'{obj_id}.{vname}')
+      must_be_list(vdata,rtname,f'{obj_id}.{vname}')
 
       rtlist = []     # The final parsed and looked-up list of RT values
       for rtvalue in vdata[rtname]:
@@ -324,8 +325,32 @@ class VRF(_Module):
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vrfs','vrf',copy_keys=['rd','export','import'])
 
-    if not 'vrfs' in topology:
+    if not must_be_dict(
+        parent=topology,
+        key='vrfs',
+        path='topology',
+        create_empty=False,
+        module='vrf'):                                # Check that we're dealing with a VRF dictionary and return if there's none
       return
+
+    for vname in topology.vrfs.keys():
+      must_be_dict(
+        parent=topology,
+        key=f'vrfs.{vname}',
+        path='topology',
+        create_empty=True,
+        module='vrf')
+
+      vdata = topology.vrfs[vname]
+      validate_attributes(
+        data=vdata,                                     # Validate global VRF data
+        topology=topology,
+        data_path=f'vrfs.{vname}',                      # Path to global VRF definition
+        data_name=f'VRF',
+        attr_list=['vrf','link'],                       # We're checking VLAN and link attributes
+        modules=topology.get('module',[]),              # ... against global modules
+        module_source='topology',
+        module='vrf')                                   # Function is called from 'vrf' module
 
     normalize_vrf_ids(topology)
     populate_vrf_static_ids(topology)
@@ -340,9 +365,27 @@ class VRF(_Module):
         return
       node.vrfs = {}     # Prepare to pull in global vrfs
 
+    if not must_be_dict(
+        parent=node,
+        key='vrfs',
+        path=f'nodes.{node.name}',
+        create_empty=False,
+        module='vrf'):                                # Check that we're dealing with a VRF dictionary and return if there's none
+      return
+
     for vname in set(list(node.vrfs.keys()) + vlan_vrfs):  # Filter out duplicates
       if node.vrfs[vname] is None:
         node.vrfs[vname] = {}
+
+      validate_attributes(
+        data=node.vrfs[vname],                        # Validate node VRF data
+        topology=topology,
+        data_path=f'nodes.{node.name}.vrfs.{vname}',  # Path to node VRF definition
+        data_name=f'VRF',
+        attr_list=['vrf','link'],                     # We're checking VLAN and link attributes
+        modules=node.get('module',[]),                # ... against node modules
+        module_source=f'nodes.{node.name}',
+        module='vrf')                                 # Function is called from 'vrf' module
 
       if 'vrfs' in topology and vname in topology.vrfs:
         node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]

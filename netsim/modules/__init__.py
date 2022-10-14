@@ -33,6 +33,19 @@ class _Module(Callback):
       return _Module(data)
 
 """
+pre_default: execute before any validation checks to set up any data structures that might affect other modules
+"""
+def pre_default(topology: Box) -> None:
+  adjust_modules(topology)
+  common.exit_on_error()
+
+  module_transform("pre_default",topology)
+  node_transform("pre_default",topology)
+  link_transform("pre_default",topology)
+  if 'module' in topology:
+    topology.defaults.module = topology.module
+
+"""
 pre_transform: executed just before the main data model transformation is started
 
 * Adjust global and node data structures
@@ -40,10 +53,7 @@ pre_transform: executed just before the main data model transformation is starte
 * Call module-specific link transformation code
 """
 def pre_transform(topology: Box) -> None:
-  adjust_modules(topology)
-  common.exit_on_error()
-
-  check_module_parameters(topology)
+  module_validate(topology)
   common.exit_on_error()
 
   module_transform("pre_transform",topology)
@@ -257,13 +267,13 @@ def adjust_modules(topology: Box) -> None:
   merge_node_module_params(topology)
   merge_global_module_params(topology)
   add_module_extra_parameters(topology)
+
+"""
+Validate module parameters and dependencies
+"""
+def module_validate(topology: Box) -> None:
   check_module_parameters(topology)
   check_module_dependencies(topology)
-  module_transform("pre_default",topology)
-  node_transform("pre_default",topology)
-  link_transform("pre_default",topology)
-  if 'module' in topology:
-    topology.defaults.module = topology.module
 
 """
 check_module_parameters:
@@ -298,19 +308,19 @@ def check_module_parameters(topology: Box) -> None:
                 common.IncorrectValue,
                 'module')
 
-  for name,n in topology.nodes.items():  # Inspect all nodes
-    for m in n.get("module",[]):         # Iterate over all node modules
-      if mod_attr[m] and m in n:         # Does the current module have a list of attributes?
-                                         # ...Does node have module attribute?
-        for k in n[m].keys():            # Iterate over node-level module-specific attributes
-          if k in mod_attr[m].node:      # ... allowed attribute, move on
-            continue
-          if k.startswith('_'):          # ... internal attribute, move on
-            continue
-          common.error(
-            f"Node {name}: invalid attribute {k} for module {m}",
-            common.IncorrectValue,
-            'module')
+#  for name,n in topology.nodes.items():  # Inspect all nodes
+#    for m in n.get("module",[]):         # Iterate over all node modules
+#      if mod_attr[m] and m in n:         # Does the current module have a list of attributes?
+#                                         # ...Does node have module attribute?
+#        for k in n[m].keys():            # Iterate over node-level module-specific attributes
+#          if k in mod_attr[m].node:      # ... allowed attribute, move on
+#            continue
+#          if k.startswith('_'):          # ... internal attribute, move on
+#            continue
+#          common.error(
+#            f"Node {name}: invalid attribute {k} for module {m}",
+#            common.IncorrectValue,
+#            'module')
 
   for g in topology.get('groups',{}):                    # Inspect node_data in groups
     if 'node_data' in topology.groups[g]:
