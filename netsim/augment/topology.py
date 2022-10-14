@@ -12,6 +12,7 @@ from box import Box
 
 from .. import common
 from .. import data
+from ..data.validate import must_be_list
 
 #
 # Extend link/node/global attribute lists with extra attributes
@@ -30,7 +31,7 @@ def extend_attribute_list(settings: Box, attribute_path: str = 'topology.default
           common.IncorrectValue,
           'topology')
 
-    data.must_be_list(                               # Make sure the extension is a list so it's safe to iterate over
+    must_be_list(                                      # Make sure the extension is a list so it's safe to iterate over
       parent = settings.extra_attributes,
       key = k,
       path = f'{attribute_path}.extra_attributes.{k}')
@@ -71,7 +72,7 @@ def check_required_elements(topology: Box) -> None:
     topology.name = topo_name
 
   if 'module' in topology:
-    data.must_be_list(topology,'module','')
+    must_be_list(topology,'module','')
     topology.defaults.module = topology.module
 
   topology.defaults.name = topology.name

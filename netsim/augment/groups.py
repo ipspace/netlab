@@ -10,6 +10,7 @@ from box import Box
 
 from .. import common
 from .. import data
+from ..data.validate import must_be_dict,must_be_list,must_be_string
 from . import nodes
 
 group_attr = [ 'members','vars','config','node_data','device','module' ]
@@ -82,10 +83,10 @@ def check_group_data_structure(topology: Box) -> None:
 
     for attr in ('config','module'):
       if attr in gdata:
-        data.must_be_list(gdata,attr,f'groups.{grp}')
+        must_be_list(gdata,attr,f'groups.{grp}')
 
     for attr in ('device'):
-      data.must_be_string(gdata,attr,f'groups.{grp}')
+      must_be_string(gdata,attr,f'groups.{grp}')
 
     for k in gdata.keys():
       if not k in group_attr:
@@ -244,7 +245,7 @@ def export_group_node_data(
   for gname,gdata in topology.groups.items():
     #
     # Find groups with node_data dictionaries
-    if data.must_be_dict(gdata,f'node_data.{key}',f'groups.{gname}',module=module,create_empty=False):
+    if must_be_dict(gdata,f'node_data.{key}',f'groups.{gname}',module=module,create_empty=False):
       for obj_name in gdata.node_data[key].keys():
         if gdata.node_data[key][obj_name] is None:
           gdata.node_data[key][obj_name] = {}
@@ -321,11 +322,11 @@ def node_config_templates(topology: Box) -> None:
     if not 'config' in topology.groups[group_name]:
       continue
 
-    data.must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
+    must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
     g_members = group_members(topology,group_name)
     for name,ndata in topology.nodes.items():
       if name in g_members or group_name == 'all':
-        if not data.must_be_list(ndata,'config',f'nodes.{name}') is None:
+        if not must_be_list(ndata,'config',f'nodes.{name}') is None:
           ndata.config = topology.groups[group_name].config + ndata.config
 
   '''

@@ -5,7 +5,8 @@ import typing
 from box import Box
 
 from .. import common
-from ..data import global_vars,get_from_box,must_be_list,set_dots
+from ..data import global_vars,get_from_box,set_dots
+from ..data.validate import must_be_list
 
 """
 The ID Set routines provide a common interface to identifiers that can be auto-assigned or static:

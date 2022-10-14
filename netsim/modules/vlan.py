@@ -7,9 +7,9 @@ from box import Box
 from . import _Module,_routing,get_effective_module_attribute,_dataplane
 from .. import common
 from .. import data
-from ..data import global_vars
+from ..data import global_vars,get_from_box,get_global_parameter
+from ..data.validate import validate_attributes
 from .. import addressing
-from ..data import get_from_box,get_global_parameter
 from ..augment import devices,groups
 from ..augment import links
 
@@ -103,6 +103,15 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
       obj.vlans[vname] = Box({},default_box=True,box_dots=True)
 
     vdata = obj.vlans[vname]
+    validate_attributes(
+      data=vdata,                                     # Validate node data
+      topology=topology,
+      data_path=f'{obj_path}.{vname}',                # Topology path to VLAN attributes
+      data_name=f'VLAN',
+      attr_list=['vlan','link'],                      # We're checking VLAN and link attributes
+      modules=obj.get('module',[]),                   # ... against object modules (node or topology)
+      module_source='topology' if obj is topology else f'nodes.{obj.name}',
+      module='vlans')                                 # Function is called from 'vlans' module
 
     if 'mode' in vdata:                                             # Do we have 'mode' set in the VLAN definition?
       if not vdata.mode in vlan_mode_kwd:                           # ... check the keyword value
