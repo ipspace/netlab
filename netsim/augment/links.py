@@ -10,6 +10,7 @@ from box import Box
 # Related modules
 from .. import common
 from .. import data
+from ..data.validate import must_be_string,must_be_list
 from .. import addressing
 from . import devices
 
@@ -59,7 +60,7 @@ def adjust_link_list(links: list, nodes: Box) -> list:
   for l in links:
     if isinstance(l,dict) and 'interfaces' in l:                # a dictionary with 'interfaces' element
       l = Box(l,default_box=True,box_dots=True)
-      data.must_be_list(l,'interfaces',f'link[{link_cnt}]')     # ... check it's a list and move on
+      must_be_list(l,'interfaces',f'link[{link_cnt}]')          # ... check it's a list and move on
       l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
       link_list.append(l)
     elif isinstance(l,dict):                                    # a dictionary without 'interfaces' element
@@ -219,7 +220,7 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
     link.prefix = Box({ 'unnumbered': True })
     return link.prefix
 
-  if data.must_be_string(link,'pool',link_path):
+  if must_be_string(link,'pool',link_path):
     if not link.pool in addr_pools:
       common.error(
         f'Unknown address pool {link.pool} used in {link_path}',
@@ -227,7 +228,7 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
         'links')
     pools = [ link.pool ] + pools
   else:
-    if data.must_be_string(link,'role',link_path):
+    if must_be_string(link,'role',link_path):
       pools = [ link.get('role') ] + pools
 
   pfx_list = addressing.get(addr_pools,pools)

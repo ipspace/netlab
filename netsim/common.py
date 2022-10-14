@@ -32,6 +32,9 @@ class MissingValue(Warning):
 class IncorrectValue(Warning):
   pass
 
+class IncorrectAttr(Warning):
+  pass
+
 class IncorrectType(Warning):
   pass
 
