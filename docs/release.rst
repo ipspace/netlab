@@ -1,6 +1,12 @@
 Release notes
 =============
 
+XXXX-XX-XX (release 1.4)
+  * EVPN MPLS transport on Arista EOS and Nokia SR Linux
+  * Tighter control of VXLAN-enabled and EVPN-controlled VLANs and VRFs
+
+  :doc:`More details <release/1.4>`
+
 2022-10-01 (release 1.3.2)
   * Mikrotik RouterOS version 7 support by Stefano Sasso, including IPv4, IPv6, VLANs, VRFs, OSPFv2, OSPFv3, BGP, MPLS, MPLS/VPN
   * Nokia SR OS support for VLAN, VXLAN, EVPN, VRF, and OSPFv3 by Jeroen van Bemmel
@@ -299,6 +305,7 @@ Release notes
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.4.md
    release/1.3.md
    release/1.2.md
    release/1.1.md
