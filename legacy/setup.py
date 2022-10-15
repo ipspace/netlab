@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 sys.path.append('..')
 
-version="1.3.2"
+version="1.3.3"
 
 setup(
   name="netsim-tools",
@@ -25,3 +25,16 @@ setup(
   url="https://github.com/ipspace/netlab",
   python_requires='>=3.7',  # Due to e.g. 'capture_output' in subprocess.run
 )
+
+print("""
+=======================================================================
+                          WARNING WARNING WARNING
+=======================================================================
+netsim-tools has been renamed to netlab in August 2022.
+
+The Python package netsim-tools has been renamed to networklab and is
+installed as a dependency of netsim-tools every time you install or
+upgrade netsim-tools, but we won't keep that dependency active foreer.
+
+Please stop using netsim-tools package and use networklab package.
+""")
