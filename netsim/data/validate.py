@@ -288,10 +288,17 @@ def get_valid_attributes(
         ) -> typing.Union[str,list]:
 
   valid = []
-  for atlist in attr_list:                              # Build a list of all valid (global) attributes for the object
+  for idx,atlist in enumerate(attr_list):               # Build a list of all valid (global) attributes for the object
     add_attr = attributes.get(atlist,[])                # Attributes to add to the list
     if isinstance(add_attr,list):                       # Are we dealing with a fixed-type attribute?
+      no_propagate = f'{atlist}_no_propagate'           # No-propagate list excluded only for non-first attribute category
+      if idx and no_propagate in attributes:
+        add_attr = [ k for k in add_attr if not k in attributes[no_propagate] ]
       valid.extend(add_attr)                            # ... nope, add to list of attributes and move on
+
+      internal_atlist = f'{atlist}_internal'            # Internal object attributes (used by links)
+      if internal_atlist in attributes:                 # Add internal attributes if they exist
+        valid.extend(attributes[internal_atlist])
       continue
 
     if valid:                                           # Have we already collected something?
@@ -312,6 +319,23 @@ def get_valid_attributes(
     valid.extend(extra_attributes)
 
   return valid
+
+"""
+validate_module_can_be_false: Check whether module attributes for an object can be 'false'
+"""
+def validate_module_can_be_false(
+      attributes: Box,                                  # Attribute definition
+      attr_list: typing.List[str]                       # List of valid attributes (example: ['node'] or ['link','interface'])
+        ) -> bool:
+
+  if not 'can_be_false' in attributes:
+    return False
+
+  for a in attr_list:                                   # Can at least one attribute category be false?
+    if a in attributes.can_be_false:
+      return True                                       # OK, we can accept False value
+
+  return False                                          # No such category found, reject the idea of accepting False values
 
 """
 validate_attributes -- validate object attributes
@@ -394,6 +418,8 @@ def validate_attributes(
       continue
 
     if k in modules:                                    # For module attributes, perform recursive check
+      if data[k] is False and validate_module_can_be_false(attributes,attr_list):
+        continue                                        # Some objects accept 'attribute: false' syntax (example: links)
       fixed_data = validate_attributes(
         data=data[k],
         topology=topology,
