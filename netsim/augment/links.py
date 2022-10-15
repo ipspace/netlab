@@ -10,7 +10,7 @@ from box import Box
 # Related modules
 from .. import common
 from .. import data
-from ..data.validate import must_be_string,must_be_list
+from ..data.validate import must_be_string,must_be_list,must_be_dict,validate_attributes
 from .. import addressing
 from . import devices
 
@@ -47,7 +47,6 @@ Normalize the list of links:
 * List ==> create a dictionary with 'interfaces' element
 * String ==> split into list, create a dictionary with 'interfaces' element
 
-REFACTOR!!!
 """
 
 def adjust_link_list(links: list, nodes: Box) -> list:
@@ -60,26 +59,22 @@ def adjust_link_list(links: list, nodes: Box) -> list:
   for l in links:
     if isinstance(l,dict) and 'interfaces' in l:                # a dictionary with 'interfaces' element
       l = Box(l,default_box=True,box_dots=True)
-      must_be_list(l,'interfaces',f'link[{link_cnt}]')          # ... check it's a list and move on
+      must_be_list(l,'interfaces',f'link[{link_cnt}]',module='links')
       l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
       link_list.append(l)
-    elif isinstance(l,dict):                                    # a dictionary without 'interfaces' element
+      continue
+
+    if isinstance(l,Box):                                       # a dictionary without 'interfaces' element
       link_data = Box({},default_box=True,box_dots=True)        # ... split it into link attributes
       link_intf = []                                            # ... and a list of nodes
-      for (k,v) in l.items():
+      for k in l.keys():
         if k in nodes:                                          # Node name -> interface list
-          if not v:
-            v = Box({},default_box=True,box_dots=True)
-          if not isinstance(v,dict):                            # Interface data must be a dictionary
-            common.error(
-              f'Interface data {v} for node {k} on link {l} must be a dictionary',
-              common.IncorrectValue,
-              'links')
-            continue
-          v['node'] = k                                         # ... add 'node' to the interface so we know what node it belongs to
-          link_intf.append(v)
+          must_be_dict(l,k,f'link[{link_cnt}]',create_empty=True)
+          if isinstance(l[k],dict):
+            l[k].node = k
+            link_intf.append(l[k])
         else:
-          link_data[k] = v                                      # ... otherwise copy key/value pair to link data
+          link_data[k] = l[k]                                   # ... otherwise copy key/value pair to link data
       link_data.interfaces = link_intf                          # Add revised interface data to link data
       link_list.append(link_data)                               # ... and move on
     elif isinstance(l,list):
