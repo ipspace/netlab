@@ -280,3 +280,21 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     topology.Provider.call("augment_node_data",n,topology)
+
+'''
+Remove ghost nodes from topology
+'''
+def ghost_buster(topology: Box) -> Box:
+  common.print_verbose('Cleaning topology from ghost nodes')
+  # Create a copy of topology
+  topo_copy = Box(topology,default_box=True,box_dots=True)
+  nodes_to_delete = []
+  
+  for node in topo_copy.nodes:
+    if topo_copy.nodes[node].get('ghost', False):
+      common.print_verbose(" -> removing '%s' since it's a ghost node" % node)
+      nodes_to_delete.append(node)
+  for node in nodes_to_delete:
+    del topo_copy.nodes[node]
+  
+  return topo_copy
