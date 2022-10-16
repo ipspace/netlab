@@ -192,7 +192,8 @@ class AnsibleInventory(_TopologyOutput):
     if self.format:
       output_format = self.format[0]
     
-    # Creates a "ghost clean" topology after transformation
+    # Creates a "ghost clean" topology
+    # (AKA, remove unmanaged devices)
     ansible_topology = nodes.ghost_buster(topology)
 
     ansible_inventory(ansible_topology,hostfile,output_format)

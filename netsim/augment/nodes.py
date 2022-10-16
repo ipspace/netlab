@@ -283,16 +283,17 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
 '''
 Remove ghost nodes from topology
+ (AKA, remove unmanaged devices)
 '''
 def ghost_buster(topology: Box) -> Box:
-  common.print_verbose('Cleaning topology from ghost nodes')
+  common.print_verbose('Cleaning topology from unmanaged devices')
   # Create a copy of topology
   topo_copy = Box(topology,default_box=True,box_dots=True)
   nodes_to_delete = []
   
   for node in topo_copy.nodes:
-    if topo_copy.nodes[node].get('ghost', False):
-      common.print_verbose(" -> removing '%s' since it's a ghost node" % node)
+    if topo_copy.nodes[node].get('unmanaged', False):
+      common.print_verbose(" -> removing '%s' since it's an unmanaged device" % node)
       nodes_to_delete.append(node)
   for node in nodes_to_delete:
     del topo_copy.nodes[node]
