@@ -110,7 +110,7 @@ After the initial cleanup, *netlab* topology transformation code augments node d
 * Unless the node is a *host*[^HOST], or has a **loopback** attribute, it's loopback addresses are fetched from *loopback* [address pool](addressing.md). IPv4 loopback addresses are commonly using node **id** as the last octet. IPv6 loopback addresses are commonly using node **id** as the last byte in the IPv6 prefix.
 * **device** type is copied from **defaults.device** if not already set.
 * Vagrant **box** (or Docker container name) is set from device data if not specified in the **box** or **image** node attributes
-* Device settings **role**, **mtu** and **runtime** are copied into the node data unless you set the corresponding node attribute in the topology file.
+* Device settings **role** and **mtu** are copied into the node data unless you set the corresponding node attribute in the topology file.
 * Management interface parameters are saved in **mgmt** element. Management interface name (**ifname**) is computed from device data. **mac** address and **ipv4** and **ipv6** addresses are computed from corresponding parameters in *mgmt* pool. You can overwrite any of these parameters (at your own risk) by specifying them in **mgmt** dictionary within node data.
 * Device interfaces created as needed during the link transformation phase and collected in **interfaces** list.
 * [](modules.md) document describes further processing done on configuration module parameters.

@@ -28,7 +28,7 @@ You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in
 
 ## LAN bridges
 
-For multi-access network topologies, **[netlab up](../netlab/up.md)** command automatically creates additional standard Linux bridges. 
+For multi-access network topologies, **[netlab up](../netlab/up.md)** command automatically creates additional standard Linux bridges.
 
 You might want to use Open vSwitch bridges instead of standard Linux bridges (OVS interferes less with layer-2 protocols). After installing OVS, set **defaults.providers.clab.bridge_type** to **ovs-bridge**, for example:
 
@@ -51,4 +51,16 @@ links: [ s1-s2, s2-s3 ]
 
    ceos.md
 ..
+```
+
+## Container runtime support
+Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**.
+The runtime to use can be configured globally or per node, for example:
+
+```
+provider: clab
+defaults.providers.clab.runtime: podman
+nodes:
+ s1:
+  clab.runtime: ignite
 ```
