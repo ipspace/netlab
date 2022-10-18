@@ -15,7 +15,7 @@ def transformation_results_yaml(topology):
   for k in ignore:
     topology.pop(k,None)
 
-  if 'unmanaged' in k:
+  if 'unmanaged' in ignore:
     topology = ghost_buster(topology)
 
   return topology.to_yaml()
