@@ -58,7 +58,7 @@ Validate node attributes
 """
 def validate(topology: Box) -> None:
   for n_name,n_data in topology.nodes.items():
-    provider = devices.get_provider(n_data,topology)
+    providers = list(topology.defaults.providers.keys())
     validate_attributes(
       data=n_data,                                    # Validate node data
       topology=topology,
@@ -67,7 +67,7 @@ def validate(topology: Box) -> None:
       attr_list=['node'],                             # We're checking node attributes
       modules=n_data.get('module',[]),                # ... against node modules
       module='nodes',                                 # Function is called from 'nodes' module
-      extra_attributes = [ provider ])                # Allow provider-specific settings (not checked at the moment)
+      extra_attributes = providers)                   # Allow provider-specific settings (not checked at the moment)
 
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:
