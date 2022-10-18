@@ -69,6 +69,7 @@ nodes:
 * **loopback** -- static loopback addresses. Must be a dictionary with **ipv4** and/or **ipv6** attributes.
 * **memory** -- memory allocated to the VM lab device. Not applicable for container-based devices.
 * **cpu** -- virtual CPU cores allocated to the VM lab device. Not applicable for container-based devices.
+* **unmanaged** -- whether this node should me managed/handled by *netlab* or not (useful for integrating *netlab* topologies with additional external devices which should not be configured by *netlab* itself).
 
 [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
 

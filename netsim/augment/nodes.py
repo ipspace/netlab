@@ -280,3 +280,15 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     topology.Provider.call("augment_node_data",n,topology)
+
+'''
+Return a copy of the topology (leaving original topology unchanged) with unmanaged devices removed
+'''
+def ghost_buster(topology: Box) -> Box:
+  common.print_verbose('Removing unmanaged devices from topology')
+  # Create a copy of topology
+  topo_copy = Box(topology,default_box=True,box_dots=True)
+  
+  # Remove all nodes with "unmanaged" flag set
+  topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not v.get('unmanaged',False) }  
+  return topo_copy
