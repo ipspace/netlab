@@ -488,6 +488,9 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
       common.fatal(                                                 # ... this should have been detected way earlier
         f'Unknown VLAN {vlan} used on node {node.name}','vlan')
       return None
+    for m in list(node.vlans[vlan].keys()):                         # Remove irrelevant module parameters
+      if not m in node.module and m in topology.module:             # ... it's safe to use direct references, everyone is using VLAN module
+        node.vlans[vlan].pop(m,None)
 
   if not 'mode' in node.vlans[vlan]:                                # Make sure vlan.mode is set
     node.vlans[vlan].mode = get_vlan_mode(node,topology)

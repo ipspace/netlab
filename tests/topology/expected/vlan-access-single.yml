@@ -18,6 +18,8 @@ links:
       access: red
   linkindex: 1
   node_count: 2
+  ospf:
+    cost: 25
   prefix:
     allocation: id_based
     ipv4: 172.16.0.0/24
@@ -58,14 +60,40 @@ links:
       access: red
   - ifindex: 1
     ifname: eth1
-    ipv4: 172.16.0.4/24
+    ipv4: 172.16.0.5/24
     node: h2
   linkindex: 3
   node_count: 2
+  ospf:
+    cost: 25
   prefix:
     allocation: id_based
     ipv4: 172.16.0.0/24
   type: lan
+- bridge: input_4
+  interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: red
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.0.4/24
+    node: s3
+    vlan:
+      access: red
+  linkindex: 4
+  node_count: 2
+  ospf:
+    cost: 25
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
 module:
 - vlan
 - ospf
@@ -89,7 +117,7 @@ nodes:
       ipv4: 172.16.0.1/24
       linkindex: 1
       mtu: 1500
-      name: h1 -> [s1,s2,h2]
+      name: h1 -> [s1,s2,s3,h2]
       neighbors:
       - ifname: Vlan1000
         ipv4: 172.16.0.2/24
@@ -97,8 +125,11 @@ nodes:
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: s2
-      - ifname: eth1
+      - ifname: Vlan1000
         ipv4: 172.16.0.4/24
+        node: s3
+      - ifname: eth1
+        ipv4: 172.16.0.5/24
         node: h2
       type: lan
     mgmt:
@@ -116,17 +147,17 @@ nodes:
       kind: linux
     device: linux
     hostname: clab-input-h2
-    id: 4
+    id: 5
     interfaces:
     - bridge: input_3
       gateway:
         ipv4: 172.16.0.3/24
       ifindex: 1
       ifname: eth1
-      ipv4: 172.16.0.4/24
+      ipv4: 172.16.0.5/24
       linkindex: 3
       mtu: 1500
-      name: h2 -> [h1,s1,s2]
+      name: h2 -> [h1,s1,s2,s3]
       neighbors:
       - ifname: eth1
         ipv4: 172.16.0.1/24
@@ -137,11 +168,14 @@ nodes:
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: s2
+      - ifname: Vlan1000
+        ipv4: 172.16.0.4/24
+        node: s3
       type: lan
     mgmt:
       ifname: eth0
-      ipv4: 192.168.121.104
-      mac: 08-4F-A9-00-00-04
+      ipv4: 192.168.121.105
+      mac: 08-4F-A9-00-00-05
     mtu: 1500
     name: h2
     role: host
@@ -177,11 +211,21 @@ nodes:
       vlan:
         access: red
         access_id: 1000
-    - bridge_group: 1
+    - bridge: input_4
+      clab:
+        name: et3
       ifindex: 3
+      ifname: Ethernet3
+      linkindex: 4
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 4
       ifname: Vlan1000
       ipv4: 172.16.0.2/24
-      name: VLAN red (1000) -> [h1,s2,h2]
+      name: VLAN red (1000) -> [h1,s2,s3,h2]
       neighbors:
       - ifname: eth1
         ipv4: 172.16.0.1/24
@@ -189,8 +233,11 @@ nodes:
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: s2
-      - ifname: eth1
+      - ifname: Vlan1000
         ipv4: 172.16.0.4/24
+        node: s3
+      - ifname: eth1
+        ipv4: 172.16.0.5/24
         node: h2
       ospf:
         area: 0.0.0.0
@@ -263,7 +310,7 @@ nodes:
       ifindex: 3
       ifname: Vlan1000
       ipv4: 172.16.0.3/24
-      name: VLAN red (1000) -> [h1,s1,h2]
+      name: VLAN red (1000) -> [h1,s1,s3,h2]
       neighbors:
       - ifname: eth1
         ipv4: 172.16.0.1/24
@@ -271,8 +318,11 @@ nodes:
       - ifname: Vlan1000
         ipv4: 172.16.0.2/24
         node: s1
-      - ifname: eth1
+      - ifname: Vlan1000
         ipv4: 172.16.0.4/24
+        node: s3
+      - ifname: eth1
+        ipv4: 172.16.0.5/24
         node: h2
       ospf:
         area: 0.0.0.0
@@ -309,6 +359,85 @@ nodes:
         prefix:
           allocation: id_based
           ipv4: 172.16.0.0/24
+  s3:
+    af:
+      ipv4: true
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-s3
+    id: 4
+    interfaces:
+    - bridge: input_4
+      clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      linkindex: 4
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 2
+      ifname: Vlan1000
+      ipv4: 172.16.0.4/24
+      name: VLAN red (1000) -> [h1,s1,s2,h2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.1/24
+        node: h1
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+      - ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.0.5/24
+        node: h2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.4/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.104
+      mac: 08-4F-A9-00-00-04
+    module:
+    - vlan
+    name: s3
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        neighbors:
+        - ifname: eth1
+          ipv4: 172.16.0.1/24
+          node: h1
+        - ifname: Vlan1000
+          ipv4: 172.16.0.2/24
+          node: s1
+        - ifname: Vlan1000
+          ipv4: 172.16.0.3/24
+          node: s2
+        - ifname: Vlan1000
+          ipv4: 172.16.0.4/24
+          node: s3
+        - ifname: eth1
+          ipv4: 172.16.0.5/24
+          node: h2
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
 ospf:
   area: 0.0.0.0
 provider: clab
@@ -326,9 +455,14 @@ vlans:
     - ifname: Vlan1000
       ipv4: 172.16.0.3/24
       node: s2
-    - ifname: eth1
+    - ifname: Vlan1000
       ipv4: 172.16.0.4/24
+      node: s3
+    - ifname: eth1
+      ipv4: 172.16.0.5/24
       node: h2
+    ospf:
+      cost: 25
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24
