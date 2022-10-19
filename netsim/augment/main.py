@@ -56,6 +56,8 @@ def transform_data(topology: Box) -> None:
   modules.post_node_transform(topology)
 
   if 'links' in topology:
+    augment.links.validate(topology)
+    common.exit_on_error()
     augment.plugin.execute('pre_link_transform',topology)
     modules.pre_link_transform(topology)
     augment.links.transform(topology.links,topology.defaults,topology.nodes,topology.pools)
