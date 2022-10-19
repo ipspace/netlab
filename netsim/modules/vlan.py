@@ -24,10 +24,6 @@ vlan_link_attr: typing.Final[dict] = {
   'trunk' : { 'type' : dict,'vlan': True }
 }
 
-phy_ifattr: typing.Final[list] = ['bridge','ifindex','parentindex','ifname','linkindex','type','vlan','mtu','_selfloop_ifindex'] # Physical interface attributes
-keep_subif_attr: typing.Final[list] = ['vlan','ifindex','ifname','type']    # Keep these attributes on VLAN subinterfaces
-vlan_link_attr_copy: typing.Final[list] = ['role','unnumbered','pool']      # VLAN attributes to copy to member links
-
 def populate_vlan_id_set(topology: Box) -> None:
   _dataplane.create_id_set('vlan_id')
   _dataplane.extend_id_set('vlan_id',_dataplane.build_id_set(topology,'vlans','id','topology'))
@@ -396,12 +392,15 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
       link_data.interfaces = []
       fix_vlan_mode_attribute(link_data)
 
-      if vname in topology.get('vlans',{}):                 # We need an IP prefix for the VLAN link
+      prefix = None
+      if vname in topology.get('vlans',{}):
         vdata = topology.vlans[vname]
-        prefix = vdata.prefix                               # Hopefully we can get it from the global VLAN pool
-        for k in vlan_link_attr_copy:                       # ... also copy other link-related VLAN attributes (role, pool)
-          if k in vdata:
-            link_data[k] = vdata[k]
+        prefix = vdata.get('prefix',None)
+        for k in vdata.keys():                              # Copy list-related VLAN attributes
+          if k in topology.defaults.vlan.attributes.vlan_no_propagate:
+            continue
+
+          link_data[k] = vdata[k]
 
       selfloop_ifindex = 0
       for intf in link.interfaces:
@@ -489,6 +488,9 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
       common.fatal(                                                 # ... this should have been detected way earlier
         f'Unknown VLAN {vlan} used on node {node.name}','vlan')
       return None
+    for m in list(node.vlans[vlan].keys()):                         # Remove irrelevant module parameters
+      if not m in node.module and m in topology.module:             # ... it's safe to use direct references, everyone is using VLAN module
+        node.vlans[vlan].pop(m,None)
 
   if not 'mode' in node.vlans[vlan]:                                # Make sure vlan.mode is set
     node.vlans[vlan].mode = get_vlan_mode(node,topology)
@@ -507,8 +509,7 @@ create_svi_interfaces: for every physical interface with access VLAN, create an 
 """
 
 def create_svi_interfaces(node: Box, topology: Box) -> dict:
-  global phy_ifattr
-  skip_ifattr = list(phy_ifattr)
+  skip_ifattr = list(topology.defaults.vlan.attributes.phy_ifattr)
   skip_ifattr.extend(topology.defaults.providers.keys())
 
   vlan_ifmap: dict = {}
@@ -516,7 +517,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
   # VLAN attributes not copied into VLAN interface: we take the global defaults and remove
   # mode attribute from that list as it's needed to set interface VLAN mode
   #
-  svi_skipattr = [ k for k in list(topology.defaults.vlan.vlan_no_propagate or []) if k != "mode" ]
+  svi_skipattr = [ k for k in list(topology.defaults.vlan.attributes.vlan_no_propagate or []) if k != "mode" ]
 
   iflist_len = len(node.interfaces)
   for ifidx in range(0,iflist_len):
@@ -691,9 +692,9 @@ def remove_vlan_from_trunk(parent_intf: Box, vlan_id: int) -> None:
 rename_vlan_subinterfaces: rename or remove interfaces created from VLAN pseudo-links
 """
 def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
-  global phy_ifattr
-  skip_ifattr = list(phy_ifattr)
+  skip_ifattr = list(topology.defaults.vlan.attributes.phy_ifattr)
   skip_ifattr.extend(topology.defaults.providers.keys())
+  keep_subif_attr = topology.defaults.vlan.attributes.keep_subif
 
   features = devices.get_device_features(node,topology.defaults)
   if 'switch' in features.vlan.model:                             # No need for VLAN subinterfaces, remove non-routed vlan_member interfaces
@@ -930,7 +931,7 @@ class VLAN(_Module):
     if 'trunk' in v_attr:
       create_vlan_links(link,v_attr,topology)
 
-    svi_skipattr = topology.defaults.vlan.vlan_no_propagate or []                 # VLAN attributes not copied into link data
+    svi_skipattr = topology.defaults.vlan.attributes.vlan_no_propagate or []      # VLAN attributes not copied into link data
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
     if not link_vlan is None:
@@ -938,7 +939,8 @@ class VLAN(_Module):
       vlan_data = get_from_box(topology,f'vlans.{link_vlan}')                     # Get global VLAN data
       if isinstance(vlan_data,Box):
         vlan_data = Box({ k:v for (k,v) in vlan_data.items() \
-                                if k not in svi_skipattr })                       # Remove VLAN-specific data
+                                if k not in svi_skipattr },
+                        default_box=True,box_dots=True)                           # Remove VLAN-specific data
         fix_vlan_mode_attribute(vlan_data)                                        # ... and turn mode into vlan.mode
         for (k,v) in vlan_data.items():                                           # Now add the rest to link data
           if not k in link:                                                       # ... have to do the deep merge manually as
