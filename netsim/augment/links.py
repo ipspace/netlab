@@ -487,7 +487,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
     # and node-relevant link module attributes
     ifdata = interface_data(
                 link=link,
-                link_attr=link_attr_propagate.union(ndict[node].get('module',[])),
+                link_attr=link_attr_propagate.union(ndict[node].get('module',[])) - set(defaults.attributes.link_module_no_propagate),
                 ifdata=Box(value))
     set_interface_name(ifdata,link,intf_cnt)
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
