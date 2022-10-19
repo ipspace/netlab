@@ -275,6 +275,69 @@ def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
   return isinstance(data,int) and not isinstance(data,bool)
 
 """
+get_valid_attributes
+
+Given an attribute dictionary, list of valid attribute categories, and extra attributes, return a list
+of valid attributes, or a string (type name) if the first attribute source in the list is a string
+"""
+
+def get_valid_attributes(
+      attributes: Box,                                  # Where to get valid attributes from
+      attr_list: typing.List[str],                      # List of valid attributes (example: ['node'] or ['link','interface'])
+      extra_attributes: typing.Optional[list] = None    # List of dynamic attributes (needed to validate node provider settings)
+        ) -> typing.Union[str,list]:
+
+  valid = []
+  for idx,atlist in enumerate(attr_list):               # Build a list of all valid (global) attributes for the object
+    add_attr = attributes.get(atlist,[])                # Attributes to add to the list
+    if isinstance(add_attr,list):                       # Are we dealing with a fixed-type attribute?
+      no_propagate = f'{atlist}_no_propagate'           # No-propagate list excluded only for non-first attribute category
+      if idx and no_propagate in attributes:
+        add_attr = [ k for k in add_attr if not k in attributes[no_propagate] ]
+      valid.extend(add_attr)                            # ... nope, add to list of attributes and move on
+
+      internal_atlist = f'{atlist}_internal'            # Internal object attributes (used by links)
+      if internal_atlist in attributes:                 # Add internal attributes if they exist
+        valid.extend(attributes[internal_atlist])
+      continue
+
+    if valid:                                           # Have we already collected something?
+      common.fatal(
+        f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
+        f'... attributes: {attributes}')
+      return []                                         # ... bad karma, inconsistent validation requirements
+
+    if not isinstance(add_attr,str):                    # Looking good so far, but the thing we got that's not a list should be a string
+      common.fatal(
+        f'Internal error: Expected string or list for {atlist} attributes\n' +
+        f'... attributes: {attributes}')
+      return []                                         # ... dang, someone messed up. Abort, abort, abort...
+
+    return add_attr
+
+  if not extra_attributes is None:                      # Extend the attribute list with dynamic attributes
+    valid.extend(extra_attributes)
+
+  return valid
+
+"""
+validate_module_can_be_false: Check whether module attributes for an object can be 'false'
+"""
+def validate_module_can_be_false(
+      attributes: Box,                                  # Attribute definition
+      attr_list: typing.List[str]                       # List of valid attributes (example: ['node'] or ['link','interface'])
+        ) -> bool:
+
+  if not 'can_be_false' in attributes:
+    return False
+
+  for a in attr_list:                                   # Can at least one attribute category be false?
+    if a in attributes.can_be_false:
+      return True                                       # OK, we can accept False value
+
+  return False                                          # No such category found, reject the idea of accepting False values
+
+"""
 validate_attributes -- validate object attributes
 
 Iterate over all keys in the 'data' dictionary and check whether they're valid global attributes
@@ -318,36 +381,17 @@ def validate_attributes(
   # It could be that the list of attributes tells us data should be of certain type
   # Deal with that as well (although in an awkward way that should be improved)
   #
-  valid = []
-  for atlist in attr_list:                              # Build a list of all valid (global) attributes for the object
-    add_attr = attributes.get(atlist,[])                # Attributes to add to the list
-    if isinstance(add_attr,list):                       # Are we dealing with a fixed-type attribute?
-      valid.extend(add_attr)                            # ... nope, add to list of attributes and move on
-      continue
-
-    if valid:                                           # Have we already collected something?
-      common.fatal(
-        f'Internal error: Cannot add {add_attr} attributes to {valid} for {data_name} {data_path}')
-      return                                            # ... bad karma, inconsistent validation requirements
-
-    if not isinstance(add_attr,str):                    # Looking good so far, but the thing we got that's not a list should be a string
-      common.fatal(
-        f'Internal error: Expected string or dict for {add_attr} attributes to {valid} for {data_name} {data_path}')
-      return data                                       # ... dang, someone messed up. Abort, abort, abort...
-
+  valid = get_valid_attributes(attributes,attr_list,extra_attributes)
+  if isinstance(valid,str):                   # Validate data that is not a dictionary
     data_type = type(data).__name__
-    if data_type == add_attr:                 # OK, we have a match
+    if data_type == valid:                    # OK, we have a match
       return data
 
     common.error(
-      f'{data_path} should be {add_attr}, found {data_type} instead',
+      f'{data_path} should be {valid}, found {data_type} instead',
       common.IncorrectType,
       'validate')
-
-  # Augment collected attributes with whatever caller things is legal
-  #
-  if not extra_attributes is None:                      # Extend the attribute list with dynamic attributes
-    valid.extend(extra_attributes)
+    return data
 
   # Part 3 -- validate attributes
   #
@@ -374,6 +418,8 @@ def validate_attributes(
       continue
 
     if k in modules:                                    # For module attributes, perform recursive check
+      if data[k] is False and validate_module_can_be_false(attributes,attr_list):
+        continue                                        # Some objects accept 'attribute: false' syntax (example: links)
       fixed_data = validate_attributes(
         data=data[k],
         topology=topology,
