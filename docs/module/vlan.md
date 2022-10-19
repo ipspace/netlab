@@ -150,12 +150,15 @@ VLAN configuration module enforces these rules:
 
 VLAN interfaces and subinterfaces are created on-demand based on these rules:
 
-* A VLAN/SVI/BVI interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node.
+* A VLAN/SVI/BVI interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node's physical interface.
+* A VLAN/SVI/BVI interface is also created for every VLAN with **mode** set to *irb* present in node's **vlans** dictionary[^VVR].
 * VLAN subinterfaces are created on VLAN trunks on platforms behaving more like routers than switches (example: Cisco IOS).
 * A routed VLAN subinterface is created on every interface that has a VLAN with **mode** set to *route*.
 * Routed VLAN subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*. There is no difference between routed access VLAN interface and an interface without VLAN configuration.
 
 The VLAN **mode** can be set in global- or node **vlans** dictionary or with the **vlan.mode** interface/link attribute.
+
+[^VVR]: You can use this functionality to implement VXLAN-to-VXLAN routing in a router-on-a-stick design or asymmetric IRB.
 
 ### VLAN Interface Parameters
 
