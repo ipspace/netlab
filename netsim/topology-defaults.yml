@@ -28,20 +28,22 @@ addressing:
 attributes:
   global: [ addressing,defaults,groups,links,module,name,nodes,plugin,provider ]
   internal: [ input,includes,pools,Provider,Plugin,message ]
+  can_be_false: [ link,interface ]
   link: [ bandwidth,bridge,name,prefix,role,pool,type,unnumbered,interfaces,mtu,gateway,vlan_name ]
   link_internal: [ linkindex,parentindex ]
   link_no_propagate: [ prefix,interfaces,gateway ]
+  interface: [ node, ipv4, ipv6, ifindex ]
   node: [ 
     name,interfaces,module,device,box,id,loopback,
     config,group,role,mtu,runtime,provider,cpu,memory,unmanaged ]
   prefix: [ ipv4, ipv6, allocation ]
-  vlan: [ id, vni, mode ]
+  vlan: [ id, vni, mode,prefix ]
   vrf: [ rd, import, export, id, loopback ]
 
 # Built-in module defaults
 #
 bgp:
-  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none, dellos10, routeros7 ]
+  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none, dellos10, routeros7, none ]
   ebgp_role: external
   advertise_roles: [ stub ]
   advertise_loopback: True
@@ -64,7 +66,7 @@ bgp:
     interface: [ local_as, replace_global_as ]
 
 isis:
-  supported_on: [ eos, frr, csr, iosv, nxos, vsrx, srlinux, sros, none, vyos ]
+  supported_on: [ eos, frr, csr, iosv, nxos, vsrx, srlinux, sros, vyos, none ]
   area: 49.0001
   type: level-2
   transform_after: [ vlan,vrf ]
@@ -76,7 +78,9 @@ isis:
 
 ospf:
   area: 0.0.0.0
-  supported_on: [ arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none, dellos10, routeros7 ]
+  supported_on: [ 
+    arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros, 
+    srlinux, sros, dellos10, routeros7, none ]
   transform_after: [ vlan,vrf ]
   config_after: [ vlan ]
   attributes:
@@ -88,7 +92,7 @@ ospf:
     link: [ cost, area, bfd, network_type, passive ]
 
 eigrp:
-  supported_on: [ csr, iosv, nxos ]
+  supported_on: [ csr, iosv, nxos, none ]
   transform_after: [ vlan,vrf ]
   config_after: [ vlan ]
   as: 1
@@ -98,7 +102,7 @@ eigrp:
     link: [ passive ]
 
 bfd: # see RFC5880
-  supported_on: [ srlinux, sros, iosv, csr, nxos, eos, vyos ]
+  supported_on: [ srlinux, sros, iosv, csr, nxos, eos, vyos, none ]
   min_echo_rx: 0      # Echo function, 0=disabled by default
   multiplier: 3       # Detection time multiplier, number of packets lost before down
   attributes:
@@ -108,7 +112,7 @@ bfd: # see RFC5880
 
 sr:
   requires: [ isis ]
-  supported_on: [ csr, eos, srlinux, sros, vsrx ]
+  supported_on: [ csr, eos, srlinux, sros, vsrx, none ]
   transform_after: [ vlan ]
   attributes:
     global: [ srgb_range_start, srgb_range_size, ipv6_sid_offset ]
@@ -116,7 +120,7 @@ sr:
 
 srv6:
   requires: [ isis ]
-  supported_on: [ sros ]
+  supported_on: [ sros, none ]
   transform_after: [ vlan ]
   locator: 2001:db8:aaaa # 2001:db8::/32 see RFC 6890 – Documentation Set
   address_families: [ ipv4, ipv6 ]
@@ -129,7 +133,7 @@ srv6:
 
 evpn: # Enables the EVPN address family towards BGP peers
   requires: [ bgp ]
-  supported_on: [ sros, srlinux, frr, eos, vyos, dellos10, cumulus, nxos ]
+  supported_on: [ sros, srlinux, frr, eos, vyos, dellos10, cumulus, nxos, none ]
   no_propagate: [ start_transit_vni, transport, vlan_bundle_service, as ]
   transform_after: [ vlan, vxlan, vrf ]
   config_after: [ vlan, vxlan, vrf ]
@@ -143,7 +147,7 @@ evpn: # Enables the EVPN address family towards BGP peers
     vrf: [ transit_vni ]
 
 vrf: # Basic VRF support
-  supported_on: [ eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos, srlinux, frr, cumulus, sros, routeros7 ]
+  supported_on: [ eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos, srlinux, frr, cumulus, sros, routeros7, none ]
   config_after: [ vlan, ospf, isis, bgp, mpls ]
   transform_after: [ vlan, bgp ]
   as: 65000
@@ -156,7 +160,7 @@ vrf: # Basic VRF support
       global: [ vrfs ]
 
 vlan: # VLAN support
-  supported_on: [ eos, iosv, vyos, dellos10, srlinux, none, routeros, nxos, frr, cumulus, sros, routeros7 ]
+  supported_on: [ eos, iosv, vyos, dellos10, srlinux, none, routeros, nxos, frr, cumulus, sros, routeros7, none ]
   no_propagate: [ start_vlan_id, mode ]
   vlan_no_propagate: [ id, vni, mode, pool, prefix, evpn ]
   start_vlan_id: 1000
@@ -171,7 +175,7 @@ vlan: # VLAN support
       node: [ vlans ]
 
 vxlan: # VXLAN support
-  supported_on: [ eos, nxos, vyos, dellos10, srlinux, frr, cumulus, sros ]
+  supported_on: [ eos, nxos, vyos, dellos10, srlinux, frr, cumulus, sros, none ]
   requires: [ vlan ]
   config_after: [ vrf ] # For platforms that suppport L3 VXLAN, vrfs must be created first
   transform_after: [ vlan, vrf ]
@@ -185,7 +189,7 @@ vxlan: # VXLAN support
   use_v6_vtep: false
 
 mpls: # LDP, BGP LU, L3VPN and 6PE support
-  supported_on: [ eos, iosv, csr, routeros, vyos, routeros7, sros ]
+  supported_on: [ eos, iosv, csr, routeros, vyos, routeros7, sros, none ]
   config_after: [ vlan, ospf, isis, bgp ]
   transform_after: [ vlan, bgp ]
   ldp: True
@@ -276,16 +280,49 @@ devices:
       image: none
     libvirt:
       image: none
+    clab:
+      image: none
     external:
       image: none
     group_vars:
       ansible_connection: paramiko_ssh
       ansible_network_os: none
     features:
+      bgp:
+        local_as: True
+        vrf_local_as: True
+        local_as_ibgp: True
+        activate_af: True
+        ipv6_lla: True
+        rfc8950: True
+      initial:
+        ipv4:
+          unnumbered: True
+        ipv6:
+          lla: True
+      ospf:
+        unnumbered: True
+      isis:
+        unnumbered:
+          ipv4: True
+          ipv6: True
+          network: True
+      mpls:
+        ldp: True
+        bgp: True
+        vpn: True
+        6pe: True
+      evpn:
+        irb: True
       vlan:
-        model: switch
+        model: l3-switch
         svi_interface_name: Vlan{vlan}
         subif_name: "{ifname}.{vlan.access_id}"
+        mixed_trunk: True
+        native_routed: True
+      vrf:
+        loopback_interface_name: Loopback{vrfidx}
+
   iosv:
     interface_name: GigabitEthernet0/%d
     group_vars:

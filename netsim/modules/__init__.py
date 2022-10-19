@@ -333,53 +333,7 @@ def check_module_parameters(topology: Box) -> None:
                 common.IncorrectValue,
                 'groups')
 
-  for l in topology.get("links",[]):        # Inspect all links - use get to avoid instantiating links key
-    for m in topology.get("module",[]):     # Iterate over all known modules - get avoids instantiating module key
-      if m in l and mod_attr[m] and l[m]:   # ... focusing on modules that have attributes specified on this link
-                                            # ... and want to have their attributes checked
-
-        # Module attribute could be a list of keys or a class type
-        #
-        if isinstance(l[m],Box) and isinstance(mod_attr[m].link,list):
-          for k in l[m].keys():             # Iterate over link-level module attributes
-            if not k in mod_attr[m].link:   # If the name of an attribute is not in the list of allowed
-                                            # ... link-level attributes, report an error
-              common.error(
-                f"Invalid attribute {k} for module {m} on link {l}",
-                common.IncorrectValue,
-                'modules')
-        else:
-          if type(l[m]).__name__ != str(mod_attr[m].link):
-            common.error(
-              f"Invalid value type for attribute {k} for module {m} on link {l}, expected {mod_attr[m].link}",
-              common.IncorrectValue,
-              'modules')
-
-
-    for intf in l.interfaces:                     # Iterate over all interfaces attached to the link
-      n = intf.node                               # ... get node name
-      node = topology.nodes[n]                    # ... and node data structure (so the expressions don't get too crazy)
-      for m in node.get("module",[]):             # Iterate over all node modules
-        if mod_attr[m] and m in intf:             # Does the current module have a list of attributes?
-                                                  # ... and interface contains module attributes?
-          # Module attribute could be a list of keys or a class type
-          #
-          if isinstance(intf[m],Box) and isinstance(mod_attr[m].link,list):
-            for k in intf[m].keys():              # Iterate over node link-level module-specific attributes
-              if k in mod_attr[m].interface:      # Move on if the name of an attribute is in the list of allowed interface attributes
-                continue
-              if k.startswith('_'):               # ... also skip internal attributes
-                continue
-              common.error(
-                f"Node {n} has invalid attribute {k} for module {m} on link {l}",
-                common.IncorrectValue,
-                'modules')
-          else:
-            if type(intf[m]).__name__ != str(mod_attr[m].interface) and not (intf[m] is False):
-              common.error(
-                f"Node {n} has invalid value type for module {m} on link {l}, expected {mod_attr[m].interface}",
-                common.IncorrectValue,
-                'modules')
+  return
 
 """
 Prepare module attribute dictionary

@@ -10,7 +10,7 @@ from box import Box
 # Related modules
 from .. import common
 from .. import data
-from ..data.validate import must_be_string,must_be_list
+from ..data.validate import must_be_string,must_be_list,must_be_dict,validate_attributes
 from .. import addressing
 from . import devices
 
@@ -47,7 +47,6 @@ Normalize the list of links:
 * List ==> create a dictionary with 'interfaces' element
 * String ==> split into list, create a dictionary with 'interfaces' element
 
-REFACTOR!!!
 """
 
 def adjust_link_list(links: list, nodes: Box) -> list:
@@ -60,26 +59,22 @@ def adjust_link_list(links: list, nodes: Box) -> list:
   for l in links:
     if isinstance(l,dict) and 'interfaces' in l:                # a dictionary with 'interfaces' element
       l = Box(l,default_box=True,box_dots=True)
-      must_be_list(l,'interfaces',f'link[{link_cnt}]')          # ... check it's a list and move on
+      must_be_list(l,'interfaces',f'link[{link_cnt}]',module='links')
       l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
       link_list.append(l)
-    elif isinstance(l,dict):                                    # a dictionary without 'interfaces' element
+      continue
+
+    if isinstance(l,Box):                                       # a dictionary without 'interfaces' element
       link_data = Box({},default_box=True,box_dots=True)        # ... split it into link attributes
       link_intf = []                                            # ... and a list of nodes
-      for (k,v) in l.items():
+      for k in l.keys():
         if k in nodes:                                          # Node name -> interface list
-          if not v:
-            v = Box({},default_box=True,box_dots=True)
-          if not isinstance(v,dict):                            # Interface data must be a dictionary
-            common.error(
-              f'Interface data {v} for node {k} on link {l} must be a dictionary',
-              common.IncorrectValue,
-              'links')
-            continue
-          v['node'] = k                                         # ... add 'node' to the interface so we know what node it belongs to
-          link_intf.append(v)
+          must_be_dict(l,k,f'link[{link_cnt}]',create_empty=True)
+          if isinstance(l[k],dict):
+            l[k].node = k
+            link_intf.append(l[k])
         else:
-          link_data[k] = v                                      # ... otherwise copy key/value pair to link data
+          link_data[k] = l[k]                                   # ... otherwise copy key/value pair to link data
       link_data.interfaces = link_intf                          # Add revised interface data to link data
       link_list.append(link_data)                               # ... and move on
     elif isinstance(l,list):
@@ -105,30 +100,39 @@ def adjust_link_list(links: list, nodes: Box) -> list:
   return link_list
 
 """
-Get a maximized set of link attributes, including internal attributes and all modules
+Validate link attributes
 """
-def get_link_full_attributes(defaults: Box, with_modules: bool = True) -> set:
-  attributes = defaults.get('attributes',{})
-  user = attributes.get('link',[])
-  internal = attributes.get('link_internal',[])
+def validate(topology: Box) -> None:
+  for l_data in topology.links:
+    validate_attributes(
+      data=l_data,                                    # Validate node data
+      topology=topology,
+      data_path=f'links[{l_data.linkindex}]',         # Topology path to current link
+      data_name=f'link',
+      attr_list=['link'],                             # We're checking node attributes
+      modules=topology.get('module',[]),              # ... against topology modules
+      module_source='topology',
+      module='links')                                 # Function is called from 'links' module
 
-  set_attributes = set(user).union(set(internal))
-  if 'module' in defaults and with_modules:
-    set_attributes = set_attributes.union(set(defaults.module))
-
-  if 'link_attr' in defaults:
-    set_attributes = set_attributes.union(set(defaults.link_attr))
-
-  return set_attributes
+    for intf in l_data.interfaces:
+      n_data = topology.nodes[intf.node]
+      validate_attributes(
+        data=intf,                                      # Validate node data
+        topology=topology,
+        data_path=f'links[{l_data.linkindex}].{intf.node}',
+        data_name=f'interface',
+        attr_list=['interface','link'],                 # We're checking interface or link attributes
+        modules=n_data.get('module',[]),                # ... against node modules
+        module_source=f'nodes.{intf.node}',
+        module='links')                                 # Function is called from 'links' module
 
 """
 Get the link attributes that have to be propagated to interfaces: full set
 of attributes minus the 'no_propagate' attributes 
 """
-def get_link_base_attributes(defaults: Box, with_modules: bool = True) -> set:
-  attributes = defaults.get('attributes',{})
-  no_propagate = attributes.get('link_no_propagate')
-  return get_link_full_attributes(defaults,with_modules) - set(no_propagate)
+def get_link_propagate_attributes(defaults: Box) -> set:
+  return set(defaults.attributes.link).union(set(defaults.attributes.link_internal)) - \
+         set(defaults.attributes.link_no_propagate)
 
 """
 Add interface data structure to a node:
@@ -470,11 +474,10 @@ def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
 Create node interfaces from link interfaces
 """
 def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
-  link_attr_base = get_link_base_attributes(defaults)
-  link_attr_nomod = get_link_base_attributes(defaults,False)
+  link_attr_propagate = get_link_propagate_attributes(defaults)
 
   if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'\nCreate node interfaces: {link}')
+    print(f'\nCreate node interfaces: {link} using {link_attr_propagate}')
 
   interfaces = []
   for (intf_cnt,value) in enumerate(link.interfaces):
@@ -484,7 +487,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
     # and node-relevant link module attributes
     ifdata = interface_data(
                 link=link,
-                link_attr=link_attr_nomod.union(ndict[node].get('module',[])),
+                link_attr=link_attr_propagate.union(ndict[node].get('module',[])),
                 ifdata=Box(value))
     set_interface_name(ifdata,link,intf_cnt)
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
@@ -518,15 +521,6 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
                    link_attr=mods_with_attr.union(['ipv4','ipv6']),
                    ifdata=ngh_data)
       ifdata.neighbors.append(ngh_data)
-
-def check_link_attributes(data: Box, nodes: dict, valid: set) -> bool:
-  ok = True
-  for k in data.keys():
-    if k not in nodes and k not in valid:
-      common.error("Invalid link attributes '%s' in %s" % (k,data),common.IncorrectValue,'links')
-      ok = False
-
-  return ok
 
 def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
   node_cnt = len(link.interfaces)   # Set the number of attached nodes (used in many places further on)
@@ -679,12 +673,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
   if not link_list:
     return None
 
-  link_attr_full = get_link_full_attributes(defaults)
-
   for link in link_list:
-    if not check_link_attributes(data=link,nodes=nodes,valid=link_attr_full):
-      continue
-
     set_link_type_role(link=link,pools=pools,nodes=nodes)
     if not check_link_type(data=link):
       continue
