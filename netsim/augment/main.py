@@ -38,6 +38,7 @@ def transform_setup(topology: Box) -> None:
   modules.pre_default(topology)
   common.exit_on_error()
 
+  augment.topology.check_global_elements(topology)
   augment.nodes.validate(topology)
 
 def transform_data(topology: Box) -> None:
@@ -46,7 +47,6 @@ def transform_data(topology: Box) -> None:
   modules.pre_transform(topology)
 
   augment.groups.adjust_groups(topology)
-  augment.topology.check_global_elements(topology)
 
   augment.plugin.execute('pre_node_transform',topology)
   modules.pre_node_transform(topology)
