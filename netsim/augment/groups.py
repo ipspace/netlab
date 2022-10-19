@@ -246,7 +246,7 @@ def export_group_node_data(
     #
     # Find groups with node_data dictionaries
     if must_be_dict(gdata,f'node_data.{key}',f'groups.{gname}',module=module,create_empty=False):
-      for obj_name in gdata.node_data[key].keys():
+      for obj_name in list(gdata.node_data[key].keys()):
         if gdata.node_data[key][obj_name] is None:
           gdata.node_data[key][obj_name] = {}
         obj_data =  gdata.node_data[key][obj_name]
