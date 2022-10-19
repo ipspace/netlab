@@ -1,0 +1,36 @@
+#
+# A router-on-a-stick is performing inter-VXLAN routing
+#
+# Test creation of SVI interfaces even when there's no physical
+# VLAN attachment
+#
+defaults.device: eos
+
+groups:
+  router:
+    members: [ r1 ]
+    module: [ vlan,vxlan ]
+    node_data:
+      vlans:                        # Force VLANs to be present on router nodes
+        red:
+        blue:
+
+vlans:
+  red:
+  blue:
+
+nodes:
+  s1:
+    vlan.mode: bridge
+    module: [ vlan ]
+  s2:
+    vlan.mode: bridge
+    module: [ vlan, vxlan ]
+  r1:
+
+links:
+- s1:
+  s2:
+  vlan.trunk: [ red, blue ]         # Create physical VLAN presence on S2
+- s2:                               # ... and a VXLAN link between S2 and R1
+  r1:
