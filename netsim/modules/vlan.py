@@ -495,6 +495,8 @@ def create_loopback_vlan_links(topology: Box) -> None:
         continue
 
       # and now the real work starts: create a fake VLAN link with a single node attached to it
+      if common.debug_active('vlan'):
+        print(f'Creating loopback link for VLAN {vname} on node {n.name}')
       link_data = create_vlan_link_data({},vname,'wrong',topology)      # Create a vlan_member link with fake parent (nobody should ever use it)
       prefix = topology.vlans[vname].get('prefix',None)                 # Copy VLAN prefix into link_data
       if prefix:
