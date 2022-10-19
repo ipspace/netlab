@@ -301,6 +301,61 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
                 intf[af] = False                                  # ... make sure it's not connected to the native VLAN subnet
   return link_ok
 
+
+"""
+validate_trunk_vlan_list -- validate that the nodes connected to a VLAN trunk have at least some common VLANs
+
+At this point, the interfaces should contain a fully-blown list of VLAN attributes
+"""
+def validate_trunk_vlan_list(link: Box) -> bool:
+  needs_native = [ intf.node for intf in link.interfaces if not 'vlan' in intf ]
+  has_native   = [ intf.node for intf in link.interfaces if 'vlan' in intf and 'native' in intf.vlan ]
+
+  if common.debug_active('vlan'):
+    print(f'Validate trunk VLAN list -- needs_native: {needs_native} has_native: {has_native}')
+
+  # First check: if we have a non-VLAN node we must have a native VLAN
+  if needs_native and not has_native:
+    common.error(
+      f'Non-VLAN nodes are attached to VLAN trunk links[{link.linkindex}] that has no native VLAN',
+      common.IncorrectValue,
+      'vlan')
+    return False
+
+  # Second check: Every VLAN used by a node must be used by at least one other node
+  has_error = False
+  for o_intf in link.interfaces:                                      # Iterate over link interfaces
+    if not 'vlan' in o_intf:                                          # Skip non-VLAN interfaces (obviously we have a native VLAN by now)
+      continue
+    if not 'trunk' in o_intf.vlan:                                    # a VLAN interface without a trunk attribute is a huge red flag
+      common.fatal('validate_trunk_vlan_list: Found a VLAN node without trunk attribute\n... {link}')
+      return False
+
+    for vname in o_intf.vlan.trunk.keys():                            # OK, now we can iterate over all VLANs in this interfaces' trunk
+      vlan_found = False
+      for i_intf in link.interfaces:                                  # ... and over all other other interfaces
+        if i_intf is o_intf or not 'vlan' in i_intf:                  # ... I did say all OTHER VLAN interfaces, right?
+          continue
+        if not 'trunk' in i_intf.vlan:                                # We'll deal with this abomination in the outer loop
+          continue
+        if vname in i_intf.vlan.trunk:                                # Ah, found a matching VLAN, life is good, stop wasting CPU cycles
+          vlan_found = True
+          break
+
+      if vlan_found:                                                  # By the end of innermost loop we should have an answer to this question
+        continue
+
+      if vname == o_intf.vlan.get('native',None) and needs_native:    # But maybe we found a native VLAN that someone needs?
+        continue
+
+      common.error(
+        f'VLAN {vname} used by node {o_intf.node} on links[{link.linkindex}] is not used by any other node on that link',
+        common.IncorrectValue,
+        'vlan')
+      has_error = True
+
+  return not has_error
+
 """
 copy_vlan_attributes: copy prefix and link type from vlan to link
 """
@@ -714,9 +769,9 @@ def map_trunk_vlans(node: Box, topology: Box) -> None:
       continue
 
     vlan_list = []
-    for vlan in trunk.keys():
+    for vlan in list(trunk.keys()):
       if not vlan in node.vlans:
-        common.fatal(f'Internal error: VLAN {vlan} should be already defined on node {node.name}')
+        common.fatal(f'Internal error: VLAN {vlan} should be already defined on node {node.name}\n... interface {intf}')
         break
       vlan_list.append(node.vlans[vlan].id)
 
@@ -1012,7 +1067,13 @@ class VLAN(_Module):
         if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
           intf.vlan = link.vlan + intf.vlan                                       # ... merge link VLAN attributes with interface attributes
 
+    if common.debug_active('vlan'):
+      print(f'VLAN link_pre_transform for {link}')
+      print(f'... VLAN attribute set {v_attr}')
+
     if 'trunk' in v_attr:
+      if not validate_trunk_vlan_list(link):
+        return
       create_vlan_links(link,v_attr,topology)
 
     svi_skipattr = topology.defaults.vlan.attributes.vlan_no_propagate or []      # VLAN attributes not copied into link data

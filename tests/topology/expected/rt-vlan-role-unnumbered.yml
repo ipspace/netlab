@@ -3,8 +3,6 @@ groups:
     device: srlinux
     members:
     - leaf
-    module:
-    - vlan
 input:
 - topology/input/rt-vlan-role-unnumbered.yml
 - package:topology-defaults.yml
@@ -19,6 +17,9 @@ links:
   - ifindex: 1
     ifname: ethernet-1/1
     node: host
+    vlan:
+      trunk:
+        vxlan: {}
   linkindex: 1
   node_count: 2
   prefix: {}
@@ -33,6 +34,7 @@ nodes:
   host:
     af:
       ipv4: true
+      ipv6: true
     box: ghcr.io/nokia/srlinux
     clab:
       kind: srl
@@ -50,14 +52,63 @@ nodes:
       neighbors:
       - ifname: ethernet-1/1
         node: leaf
+      subif_index: 1
       type: p2p
+    - ifindex: 2
+      ifname: ethernet-1/1.1000
+      parent_ifindex: 1
+      parent_ifname: ethernet-1/1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: vxlan
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 3
+      ifname: irb0.1000
+      ipv4: true
+      ipv6: true
+      name: VLAN vxlan (1000) -> [leaf]
+      neighbors:
+      - ifname: irb0.1000
+        ipv4: true
+        ipv6: true
+        node: leaf
+      pool: fabric
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
       ifname: mgmt0
       ipv4: 192.168.121.102
       mac: 08-4F-A9-00-00-02
+    module:
+    - vlan
     name: host
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      vxlan:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        neighbors:
+        - ifname: irb0.1000
+          ipv4: true
+          ipv6: true
+          node: host
+        - ifname: irb0.1000
+          ipv4: true
+          ipv6: true
+          node: leaf
+        pool: fabric
+        prefix:
+          allocation: id_based
+          ipv4: true
+          ipv6: true
   leaf:
     af:
       ipv4: true
@@ -95,10 +146,13 @@ nodes:
       ifname: irb0.1000
       ipv4: true
       ipv6: true
-      name: VLAN vxlan (1000)
-      neighbors: []
+      name: VLAN vxlan (1000) -> [host]
+      neighbors:
+      - ifname: irb0.1000
+        ipv4: true
+        ipv6: true
+        node: host
       pool: fabric
-      role: stub
       type: svi
       virtual_interface: true
       vlan:
@@ -130,6 +184,10 @@ vlans:
     host_count: 0
     id: 1000
     neighbors:
+    - ifname: irb0.1000
+      ipv4: true
+      ipv6: true
+      node: host
     - ifname: irb0.1000
       ipv4: true
       ipv6: true
