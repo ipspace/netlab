@@ -373,6 +373,58 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
   copy_vlan_attributes(link_vlan,topology.nodes[list(node_set)[0]].vlans[link_vlan],link)
 
 """
+create_vlan_link_data: Create initial link data for a VLAN member link
+
+Used by create_vlan_links and create_loopback_vlan_links
+"""
+def create_vlan_link_data(init: typing.Union[Box,dict],vname: str, parent: typing.Any, topology: Box) -> Box:
+  link_data = Box(init,default_box=True,box_dots=True)
+  link_data.linkindex = topology.links[-1].linkindex + 1
+  link_data.parentindex = parent
+  link_data.vlan.access = vname
+  link_data.vlan_name = vname
+  link_data.type = 'vlan_member'
+  link_data.interfaces = []
+  fix_vlan_mode_attribute(link_data)
+
+  if vname in topology.get('vlans',{}):
+    vdata = topology.vlans[vname]
+    for k in vdata.keys():                              # Copy list-related VLAN attributes
+      if k in topology.defaults.vlan.attributes.vlan_no_propagate:
+        continue
+
+      link_data[k] = vdata[k]
+
+  return link_data
+
+"""
+create_vlan_member_interface: Create interface data for a VLAN mamber link
+
+Used by create_vlan_links and create_loopback_vlan_links
+"""
+def create_vlan_member_interface(
+      init: typing.Union[Box,dict],               # Initial VLAN parameters taken from vlan.trunk
+      vname: str,                                 # VLAN name
+      parent_intf: Box,                           # Parent interface data (used to get node name etc)
+      topology: Box,
+      loop_index: int) -> Box:                    # selfloop_ifindex to support crazy topologies
+
+  intf_data = Box(init,default_box=True,box_dots=True)
+  intf_data.node = parent_intf.node
+  intf_data._selfloop_ifindex = loop_index                  # Used in find_parent_interface to disambiguate self-links
+  intf_data.vlan.access = vname
+
+  if 'mode' in parent_intf.vlan and not get_from_box(intf_data,'vlan.mode'):
+    intf_data.vlan.mode = parent_intf.vlan.mode             # vlan.mode is inherited from trunk dictionary or parent interface
+
+  intf_node = topology.nodes[parent_intf.node]
+  if interface_vlan_mode(intf_data,intf_node,topology) == 'bridge':     # Is this VLAN interface in bridge mode?
+    intf_data.ipv4 = False                                              # ... if so, disable addressing on this interface
+    intf_data.ipv6 = False
+
+  return intf_data
+
+"""
 create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
 """
 def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
@@ -383,45 +435,23 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
 
   for vname in sorted(v_attr.trunk.set):
     if vname != native_vlan:           # Skip native VLAN
-      link_data = Box(link.vlan.trunk[vname] or {},default_box=True,box_dots=True)
-      link_data.linkindex = topology.links[-1].linkindex + 1
-      link_data.parentindex = link.linkindex
-      link_data.vlan.access = vname
-      link_data.vlan_name = vname
-      link_data.type = 'vlan_member'
-      link_data.interfaces = []
-      fix_vlan_mode_attribute(link_data)
+      link_data = create_vlan_link_data(link.vlan.trunk[vname] or {},vname,link.linkindex,topology)
 
       prefix = None
       if vname in topology.get('vlans',{}):
-        vdata = topology.vlans[vname]
-        prefix = vdata.get('prefix',None)
-        for k in vdata.keys():                              # Copy list-related VLAN attributes
-          if k in topology.defaults.vlan.attributes.vlan_no_propagate:
-            continue
-
-          link_data[k] = vdata[k]
+        prefix = topology.vlans[vname].get('prefix',None)
 
       selfloop_ifindex = 0
       for intf in link.interfaces:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
-          intf_data = Box(intf.vlan.trunk[vname] or {},default_box=True,box_dots=True)
-          intf_data.node = intf.node
-          intf_data._selfloop_ifindex = selfloop_ifindex     # Used in find_parent_interface to disambiguate self-links
+          intf_data = create_vlan_member_interface(intf.vlan.trunk[vname] or {},vname,intf,topology,selfloop_ifindex)
           selfloop_ifindex = selfloop_ifindex + 1
-          intf_data.vlan.access = vname
           intf_node = topology.nodes[intf.node]
 
-          if 'mode' in intf.vlan and not get_from_box(intf_data,'vlan.mode'):
-            intf_data.vlan.mode = intf.vlan.mode            # vlan.mode is inherited from trunk dictionary or parent interface
-
-          if interface_vlan_mode(intf_data,intf_node,topology) == 'bridge':     # Is this VLAN interface in bridge mode?
-            intf_data.ipv4 = False                                              # ... if so, disable addressing on this interface
-            intf_data.ipv6 = False
-          else:
-            if not prefix:                                  # Still no usable IP prefix? Try to get it from the node VLAN pool
-              if vname in intf_node.get('vlans',{}):
-                prefix = topology.node[intf.node].vlans[vname].prefix
+          # Still no usable IP prefix? Try to get it from the node VLAN pool, but only if VLAN is not in bridge mode
+          if not prefix and vname in intf_node.get('vlans',{}):
+            if interface_vlan_mode(intf_data,intf_node,topology) != 'bridge':
+              prefix = topology.node[intf.node].vlans[vname].get('prefix',None)
 
           link_data.interfaces.append(intf_data)            # Append the interface to vlan link
 
@@ -436,6 +466,49 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
         link_data.prefix = prefix
 
       topology.links.append(link_data)
+
+"""
+create_loopback_vlan_links
+
+Sometimes we have to create a SVI/VLAN interface even though a node has no physical interface participating
+in that VLAN. Typical use cases are VXLAN transport used in VRF-lite scenarios, asymmetric IRB, or VXLAN-to-VXLAN routing
+
+This routine collects node VLAN attachment data from 'vlan_name' attribute set on links by link_pre_transform code,
+identifies missing VLANs, and creates fake links with a single node attached to VLAN access interface.
+"""
+def create_loopback_vlan_links(topology: Box) -> None:
+  node_vlan_list: dict = {}
+  for link_data in topology.links:                                      # Phase 1: collect per-node VLAN attachment data
+    if not 'vlan_name' in link_data:                                    # ... skip non-VLAN links
+      continue
+    for intf in link_data.interfaces:                                   # Now iterate over all interfaces attached to the link
+      if not intf.node in node_vlan_list:                               # Create empty VLAN lists for new nodes
+        node_vlan_list[intf.node] = []
+      if not link_data.vlan_name in node_vlan_list[intf.node]:          # Do we know about this particular VLAN/node attachment?
+        node_vlan_list[intf.node].append(link_data.vlan_name)           # ... not yet, append it to the list
+
+  for n in topology.nodes.values():                                     # Now iterate over nodes
+    if not 'vlans' in n:                                                # Move on if the node has no 'vlans' attribute
+      continue
+    for vname in n.vlans.keys():                                        # Now iterate over VLANs defined on a node
+      if n.name in node_vlan_list and vname in node_vlan_list[n.name]:  # VLAN already present on a node interface, move on
+        continue
+
+      # and now the real work starts: create a fake VLAN link with a single node attached to it
+      if common.debug_active('vlan'):
+        print(f'Creating loopback link for VLAN {vname} on node {n.name}')
+      link_data = create_vlan_link_data({},vname,'loopback',topology)   # Create a vlan_member link with fake parent (nobody should ever use it)
+      prefix = topology.vlans[vname].get('prefix',None)                 # Copy VLAN prefix into link_data
+      if prefix:
+        link_data.prefix = prefix
+
+      # Create interface data using fake parent interface
+      fake_parent = Box({'node': n.name},default_box=True,box_dots=True)
+      intf_data = create_vlan_member_interface({},vname,fake_parent,topology,0)
+
+      if interface_vlan_mode(intf_data,n,topology) == 'irb':            # We're adding loopback links only for IRB VLANs
+        link_data.interfaces.append(intf_data)
+        topology.links.append(link_data)
 
 """
 get_vlan_data: Get VLAN data structure (node or topology)
@@ -702,6 +775,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
                           if intf.type != 'vlan_member' or intf.vlan.get('mode','') == 'route' ]
     subif_name = features.vlan.routed_subif_name                  # Just in case: try to get interface name pattern for routed subinterface
 
+  has_vlan_loopbacks = False
   for intf in node.interfaces:                                    # Now loop over remaining vlan_member interfaces
     if intf.type != 'vlan_member':
       continue
@@ -720,6 +794,10 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     if not subif_name:                                            # pragma: no-cover -- hope we got device settings right
       common.fatal(
         f'Internal error: device {node.device} acts as a VLAN-capable {features.vlan.model} but does not have subinterface name template')
+      continue
+
+    if not isinstance(intf.parentindex,int):                      # Must be a loopback VLAN interface, skip it
+      has_vlan_loopbacks = True
       continue
 
     parent_intf = find_parent_interface(intf,node,topology)
@@ -756,6 +834,9 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
 
     if intf.vlan.access_id in parent_intf.vlan.get('trunk_id',[]):    # Remove subinterface VLAN from parent interface trunk list
       remove_vlan_from_trunk(parent_intf,intf.vlan.access_id)
+
+  if has_vlan_loopbacks:
+    node.interfaces = [ intf for intf in node.interfaces if intf.parentindex != 'loopback']
 
 """
 If we have a routed native VLAN, and there are no other bridged VLANs left
@@ -866,7 +947,10 @@ def populate_node_vlan_data(n: Box, topology: Box) -> None:
     for vname in n.vlans.keys():                                            # ... to cope with nodes that had VLANs defined
       if vname in topology.get('vlans',{}):                                 # ... through groups.node_data
         topo_data = Box(topology.vlans[vname])                              # Create a copy of topology VLAN
-        topo_data.pop('neighbors',None)                                     # ... and remove neighbors
+        topo_data.pop('neighbors',None)                                     # ... remove neighbors
+        for m in list(topo_data.keys()):                                    # ... and irrelevant module attributes
+          if not m in n.module and m in topology.module:
+            topo_data.pop(m,None)
         n.vlans[vname] = topo_data + n.vlans[vname]                         # ... now merge with the VLAN data
 
 class VLAN(_Module):
@@ -964,6 +1048,9 @@ class VLAN(_Module):
           if interface_vlan_mode(intf,intf_node,topology) == 'bridge':            # ... that is in bridge mode on the current access VLAN?
             intf.ipv4 = False                                                     # ... if so, disable addressing on this interface
             intf.ipv6 = False
+
+  def module_pre_link_transform(self, topology: Box) -> None:
+    create_loopback_vlan_links(topology)
 
   def module_post_link_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
