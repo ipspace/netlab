@@ -321,6 +321,37 @@ def get_valid_attributes(
   return valid
 
 """
+build_module_extra_attributes -- build a list of extra attributes defined by modules
+
+Some modules (vlan, vrf) define extra attributes (vlans, vrfs). While those attributes get added to the correct
+attribute lists during module initialization phase, it's good to know what hasn't been enabled if those attributes
+are not valid, so we're building a reverse lookup list from defaults._module_.attributes.extra lists
+"""
+
+def build_module_extra_attributes(topology: Box) -> None:
+  global_attr = topology.defaults.attributes            # Shortcut to global attribute list (where 'extra' list will be added)
+  # Iterate over all modules
+  for m in topology.defaults.keys():                    # Iterate over all default settings
+    if not 'supported_on' in topology.defaults[m]:      # ... not a module, move on
+      continue
+    mod_attr = topology.defaults[m].attributes          # A convenient shortcut to current module attributes to keep code simple
+    if not 'extra' in mod_attr:                         # No extra attributes for this module, move on
+      continue
+
+    for a_cat,a_list in mod_attr.extra.items():         # Now iterate over all attribute categories defined by this module
+      for attr in a_list:                               # ... and for every entry in that list
+        global_attr.extra[a_cat][attr] = m              # ... add a pointer back to the module
+
+"""
+get_extra_module_attributes -- return a dictionary of extra module attributes relevant to current validation context
+"""
+def get_extra_module_attributes(attributes : Box,attr_list: typing.List[str]) -> dict:
+  return { 
+    attr:mod for a_cat,a_extra in attributes.extra.items() \
+               if a_cat in attr_list \
+                 for attr,mod in a_extra.items() }
+
+"""
 validate_module_can_be_false: Check whether module attributes for an object can be 'false'
 """
 def validate_module_can_be_false(
@@ -369,11 +400,17 @@ def validate_attributes(
   if attributes is None:
     attributes = topology.defaults.attributes
 
+  if not 'extra' in topology.defaults.attributes:
+    build_module_extra_attributes(topology)
+
   if module_source is None:
     module_source = data_path
 
   if not list_of_modules:
     list_of_modules = [ m for m in topology.defaults.keys() if 'supported_on' in topology.defaults[m] ]
+
+  if common.debug_active('validate'):
+    print(f'validate {data_path} against {attr_list} attributes + {modules} modules from {module_source}')
 
   #
   # Part 2: Build the list of valid attributes
@@ -382,6 +419,7 @@ def validate_attributes(
   # Deal with that as well (although in an awkward way that should be improved)
   #
   valid = get_valid_attributes(attributes,attr_list,extra_attributes)
+  extra_module_attr = get_extra_module_attributes(topology.defaults.attributes,attr_list)
   if isinstance(valid,str):                   # Validate data that is not a dictionary
     data_type = type(data).__name__
     if data_type == valid:                    # OK, we have a match
@@ -438,6 +476,13 @@ def validate_attributes(
     if k in list_of_modules:
       common.error(
         f"{data_path} uses an attribute from module {k} which is not enabled in {module_source}",
+        common.IncorrectAttr,
+        module)
+      continue
+
+    if k in extra_module_attr:
+      common.error(
+        f"Attribute '{k}' used in {data_path} is defined by module {extra_module_attr[k]} which is not enabled",
         common.IncorrectAttr,
         module)
       continue
