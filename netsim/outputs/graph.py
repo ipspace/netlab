@@ -32,9 +32,11 @@ def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.
   f.write(' label="%s"' % (n.prefix.ipv4 or n.prefix.ipv6 or n.bridge))
   f.write("]\n")
 
-def edge_label(f : typing.TextIO, direction: str, data: Box) -> None:
+def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
   addr = data.ipv4 or data.ipv6
-  if addr:
+  if isinstance(addr,str):
+    if not subnet:
+      addr = addr.split('/')[0]
     f.write(' %slabel="%s"' % (direction,addr))
 
 def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
@@ -45,11 +47,11 @@ def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -
     edge_label(f,'head',l.interfaces[1])
   f.write(' ]\n')
 
-def edge_node_net(f : typing.TextIO, l: Box, k: str, labels: typing.Optional[bool] = False) -> None:
-  f.write(' "%s" -- "%s"' % (k,l.bridge))
-  f.write(' [')
-  if labels:
-    edge_label(f,'tail',l[k])
+def edge_node_net(f : typing.TextIO, link: Box, ifdata: Box, labels: typing.Optional[bool] = False) -> None:
+  f.write(' "%s" -- "%s"' % (ifdata.node,link.bridge))
+  f.write(' [ ')
+  if labels and 'ipv4' in ifdata and isinstance(ifdata.ipv4,str):
+    edge_label(f,'tail',ifdata,subnet=False)
   f.write(' ]\n')
 
 def graph_start(f : typing.TextIO) -> None:
@@ -147,7 +149,7 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
       network_with_label(f,l,settings)
       for ifdata in l.interfaces:
         if ifdata.node in maps.nodes:
-          edge_node_net(f,l,ifdata.node,settings.interface_labels)
+          edge_node_net(f,l,ifdata,settings.interface_labels)
 
   f.write("}\n")
   f.close()
