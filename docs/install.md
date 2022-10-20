@@ -24,6 +24,8 @@ We have tested *netlab* with:
 * libvirt/KVM and Vagrant on Ubuntu and Fedora. This combination should work on other Linux distributions.
 * Docker and containerlab on Ubuntu. This combination should also work on other Linux distributions.
 
+You can also run *netlab* in a [Ubuntu instance in a public cloud](install/cloud.md).
+
 When selecting the virtualization environment, consider the following:
 
 **VirtualBox** is commonly used together with Vagrant as a laptop virtualization solution, resulting in wider variety of prepackaged boxes (Arista vEOS, Cisco Nexus 9300v, Cumulus VX, Juniper vSRX). The downsides: 
@@ -49,6 +51,7 @@ You can set up your lab:
 * On a [Ubuntu virtual machine running on Windows or MacOS](install/ubuntu-vm.md).
 * On a [generic Ubuntu VM or bare-metal Ubuntu server](install/ubuntu.md)
 * On [other Linux distributions](install/linux.md)
+* In a [public cloud](install/cloud.md)
 
 ```{tip}
 * If you decide to run the network labs within a Ubuntu VM on your MacOS/Windows computer, [create a new VM and use the automated software installation procedure](install/ubuntu-vm.md). It's much easier and safer than trying to install the necessary software on an existing VM.
@@ -86,6 +89,7 @@ If you want to get the latest development code or if you want to participate in 
    install/ubuntu-vm.md
    install/ubuntu.md
    install/linux.md
+   install/cloud.md
    labs/libvirt.md
    labs/clab.md
    install/clone.md
