@@ -127,7 +127,8 @@ def validate(topology: Box) -> None:
         module_source=f'nodes.{intf.node}',
         module='links')                                 # Function is called from 'links' module
 
-    if 'prefix' in l_data:
+    # Validate link prefix attributes, but only if it's a dictionary. Other cases will be handled by prefix parsing routines
+    if 'prefix' in l_data and isinstance(l_data.prefix,Box):
       validate_attributes(
         data=l_data.prefix,                             # Validate link prefix
         topology=topology,
@@ -248,7 +249,7 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
 
   pfx_list = addressing.get(addr_pools,pools)
   link.prefix = {
-      af: str(v) if af in common.AF_LIST else v for af,v in pfx_list.items()
+      af: str(v) if af in common.AF_LIST and not isinstance(v,bool) else v for af,v in pfx_list.items()
     }
   if not link.prefix:
     link.pop('prefix',None)
@@ -422,6 +423,11 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         'links')
       continue
 
+    if not allocation_policy in IPAM_dispatch:
+      common.error(
+        f'Invalid IP address allocation policy specified in prefix {pfx_list} found on links[{link.linkindex}]',
+        common.IncorrectValue,
+        'links')
     IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)               # execute IPAM policy to get AF addresses on interfaces
 
 """

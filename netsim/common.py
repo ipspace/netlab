@@ -23,8 +23,6 @@ WARNING : bool = False
 AF_LIST = ['ipv4','ipv6']
 BGP_SESSIONS = ['ibgp','ebgp']
 
-EMPTY_BOX: typing.Final = Box({},default_box=True,box_dots=True)
-
 err_count : int = 0
 netsim_package_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -135,6 +133,14 @@ def set_verbose(value: typing.Optional[int] = 1) -> None:
 def print_verbose(t: typing.Any) -> None:
   if VERBOSE:
     print(t)
+
+def print_structured_dict(d: Box, prefix: str = '') -> None:
+  for k,v in d.items():
+    if v and (isinstance(v,dict) or isinstance(v,list)):
+      print(f'{prefix}{k}:')
+      print(f'{prefix}  {v}')
+    else:
+      print(f'{prefix}{k}: {v}')
 
 #
 # Sets common flags based on parsed arguments.

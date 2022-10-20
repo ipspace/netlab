@@ -291,16 +291,19 @@ def setup(topology: Box) -> None:
   null_to_string(topology.addressing)
   addrs = setup_pools(defaults.addressing + topology.addressing,defaults)
 
-  common.print_verbose("Addressing\n=================")
-  common.print_verbose(addrs.to_yaml())
+  if common.debug_active('addressing'):
+    print("addressing:")
+    common.print_structured_dict(addrs,'.. ')
 
   validate_pools(addrs,topology)
   common.exit_on_error()
 
   topology.pools = create_pool_generators(addrs,defaults.attributes.pool_no_copy)
   topology.addressing = addrs
-  common.print_verbose("Pools\n=================")
-  common.print_verbose(str(topology.pools))
+
+  if common.debug_active('addressing'):
+    print("pools:")
+    common.print_structured_dict(topology.pools,'.. ')
 
   common.exit_on_error()
 
