@@ -20,9 +20,13 @@ topology:
       mgmt_ipv6: {{ n.mgmt.ipv6 }}
 {%   endif %}
       kind: {{ clab.kind | default(n.device) }}
-{%    if clab.type is defined %}
-      type: {{ clab.type }}
-{%    endif %}
+{%    for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
+{%      if clab[cset] is string %}
+      {{ cset }}: '{{ clab[cset] }}'
+{%      else %}
+      {{ cset }}: {{ clab[cset] }}
+{%      endif %}
+{%    endfor %}
       image: {{ clab.image|default(n.box) }}
       runtime: {{ clab.runtime|default(defaults.providers.clab.runtime) }}
 {%    if groups is defined %}
@@ -32,9 +36,6 @@ topology:
 {% if 'srl-agents' in clab %}
       extras:
         srl-agents: {{ clab['srl-agents'] }}
-{% endif %}
-{% if 'env' in clab %}
-      env: {{ clab.env }}
 {% endif %}
 {% if 'binds' in clab %}
       binds:

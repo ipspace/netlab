@@ -54,13 +54,46 @@ links: [ s1-s2, s2-s3 ]
 ```
 
 ## Container runtime support
-Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**.
-The runtime to use can be configured globally or per node, for example:
+
+Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**. The runtime to use can be configured globally or per node, for example:
 
 ```
 provider: clab
 defaults.providers.clab.runtime: podman
 nodes:
- s1:
-  clab.runtime: ignite
+  s1:
+    clab.runtime: ignite
+```
+
+## Using File Binds
+
+You can use **clab.binds** to map container paths to host file system paths. Host file paths (dictionary keys) in **clab.binds** might contain dots which would trigger the expansion of keys-with-dots into hierarchical dictionary. To prevent that, all host file paths should have at least one '/' character, for example:
+
+```
+nodes:
+- name: gnmic
+  device: linux
+  image: ghcr.io/openconfig/gnmic:latest
+  clab:
+    binds:
+      './gnmic.yaml': '/app/gnmic.yaml:ro'
+      '/var/run/docker.sock': '/var/run/docker.sock'
+```
+
+## Using Other Containerlab Node Parameters
+
+Default *netlab* settings support these additional *containerlab* parameters:
+
+* **clab.type** to set node type (used by Nokia SR OS and Nokia SR Linux)
+* **clab.env** to set container environment (used by Arista EOS to set Ethernet interface names)
+* **clab.ports** to map container ports to host ports
+* **clab.cmd** to execute a command in a container.
+
+String values (for example command to execute specified in **clab.cmd**) are put into single quotes when written into `clab.yml` containerlab configuration file -- make sure you're not using single quotes in your command line.
+
+To add other *containerlab* attributes to the `clab.yml` configuration file, modify **defaults.providers.clab.node_config_attributes** settings, for example:
+
+```
+provider: clab
+defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 ```

@@ -68,7 +68,7 @@ def unroll_dots(b : typing.Any) -> None:
   if isinstance(b,dict):
     for k in list(b.keys()):
       unroll_dots(b[k])
-      if isinstance(k,str) and ('.' in k):
+      if isinstance(k,str) and ('.' in k) and not ('/' in k):
         v = b[k]
         del b[k]     # If you're using Box with box_dots parameter
         set_dots(b,k.split('.'),v)
