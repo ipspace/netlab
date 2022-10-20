@@ -28,7 +28,7 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser.add_argument('--raise_on_error', dest='raise_on_error', action='store_true',help=argparse.SUPPRESS)
   if debugging:
     parser.add_argument('--debug', dest='debug', action='store',nargs='*',
-                    choices=['all','addr','cli','links','libvirt','modules','plugin','template','vlan','vrf','quirks','validate'],
+                    choices=['all','addr','cli','links','libvirt','modules','plugin','template','vlan','vrf','quirks','validate','addressing'],
                     help=argparse.SUPPRESS)
 
   return parser

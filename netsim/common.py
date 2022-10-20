@@ -23,6 +23,8 @@ WARNING : bool = False
 AF_LIST = ['ipv4','ipv6']
 BGP_SESSIONS = ['ibgp','ebgp']
 
+EMPTY_BOX: typing.Final = Box({},default_box=True,box_dots=True)
+
 err_count : int = 0
 netsim_package_path = os.path.abspath(os.path.dirname(__file__))
 
