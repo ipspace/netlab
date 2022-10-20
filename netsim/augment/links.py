@@ -104,10 +104,11 @@ Validate link attributes
 """
 def validate(topology: Box) -> None:
   for l_data in topology.links:
+    linkpath = f'links[{l_data.linkindex}]'           # Topology path to current link
     validate_attributes(
-      data=l_data,                                    # Validate node data
+      data=l_data,                                    # Validate link data
       topology=topology,
-      data_path=f'links[{l_data.linkindex}]',         # Topology path to current link
+      data_path=linkpath,
       data_name=f'link',
       attr_list=['link'],                             # We're checking node attributes
       modules=topology.get('module',[]),              # ... against topology modules
@@ -117,14 +118,25 @@ def validate(topology: Box) -> None:
     for intf in l_data.interfaces:
       n_data = topology.nodes[intf.node]
       validate_attributes(
-        data=intf,                                      # Validate node data
+        data=intf,                                      # Validate interface data
         topology=topology,
-        data_path=f'links[{l_data.linkindex}].{intf.node}',
+        data_path=f'linkpath.{intf.node}',
         data_name=f'interface',
         attr_list=['interface','link'],                 # We're checking interface or link attributes
         modules=n_data.get('module',[]),                # ... against node modules
         module_source=f'nodes.{intf.node}',
         module='links')                                 # Function is called from 'links' module
+
+    # Validate link prefix attributes, but only if it's a dictionary. Other cases will be handled by prefix parsing routines
+    if 'prefix' in l_data and isinstance(l_data.prefix,Box):
+      validate_attributes(
+        data=l_data.prefix,                             # Validate link prefix
+        topology=topology,
+        data_path=f'{linkpath}.prefix',                 # Topology path to link prefix
+        data_name=f'prefix',
+        attr_list=['prefix'],                           # We're checking prefix attributes
+        modules=None,                                   # No module attributes in prefix
+        module='links')
 
 """
 Get the link attributes that have to be propagated to interfaces: full set
@@ -237,8 +249,7 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
 
   pfx_list = addressing.get(addr_pools,pools)
   link.prefix = {
-      af: pfx_list[af] if isinstance(pfx_list[af],bool) else str(pfx_list[af])
-            for af in ('ipv4','ipv6','unnumbered') if af in pfx_list
+      af: str(v) if af in common.AF_LIST and not isinstance(v,bool) else v for af,v in pfx_list.items()
     }
   if not link.prefix:
     link.pop('prefix',None)
@@ -412,6 +423,11 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         'links')
       continue
 
+    if not allocation_policy in IPAM_dispatch:
+      common.error(
+        f'Invalid IP address allocation policy specified in prefix {pfx_list} found on links[{link.linkindex}]',
+        common.IncorrectValue,
+        'links')
     IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)               # execute IPAM policy to get AF addresses on interfaces
 
 """

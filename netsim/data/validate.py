@@ -385,7 +385,7 @@ def validate_attributes(
       data_path: str,                                   # Path to the data object (needed in error messages)
       data_name: str,                                   # Name of the object (needed in error messages, example: 'node')
       attr_list: typing.List[str],                      # List of valid attributes (example: ['node'] or ['link','interface'])
-      modules: typing.List[str] = [],                   # List of relevant modules
+      modules: typing.Optional[list] = [],              # List of relevant modules
       module: str = 'attributes',                       # Module generating the error message (default: 'attributes')
       module_source: typing.Optional[str] = None,       # Where did we get the list of modules?
       attributes: typing.Optional[Box] = None,          # Where to get valid attributes from
@@ -455,7 +455,7 @@ def validate_attributes(
     if k in valid:
       continue
 
-    if k in modules:                                    # For module attributes, perform recursive check
+    if not modules is None and k in modules:            # For module attributes, perform recursive check
       if data[k] is False and validate_module_can_be_false(attributes,attr_list):
         continue                                        # Some objects accept 'attribute: false' syntax (example: links)
       fixed_data = validate_attributes(
@@ -473,14 +473,14 @@ def validate_attributes(
 
       continue
 
-    if k in list_of_modules:
+    if k in list_of_modules and not modules is None:
       common.error(
         f"{data_path} uses an attribute from module {k} which is not enabled in {module_source}",
         common.IncorrectAttr,
         module)
       continue
 
-    if k in extra_module_attr:
+    if k in extra_module_attr and not modules is None:
       common.error(
         f"Attribute '{k}' used in {data_path} is defined by module {extra_module_attr[k]} which is not enabled",
         common.IncorrectAttr,

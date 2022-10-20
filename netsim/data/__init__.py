@@ -7,6 +7,15 @@ from box import Box
 from .. import common
 
 #
+# I had enough -- here's a function that returns a box with proper default settings
+
+def get_box(init: dict) -> Box:
+  return Box(init,default_box=True,box_dots=True)
+
+def get_empty_box() -> Box:
+  return get_box({})
+
+#
 # Change all NULL values in a nested dictionary structure to empty strings
 # to make them nicer in YAML printouts
 #
