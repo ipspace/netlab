@@ -49,19 +49,28 @@ parameters when the corresponding addressing parameteres are missing:
 
 import sys
 import typing
+import types
 
 import netaddr
 from box import Box
 
 # Related modules
 from . import common
-from . import data
+from .data import get_empty_box,null_to_string
+from .data.validate import validate_attributes
 
 def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
 
   # Normalize IP addr strings, e.g. 2001:001::/48 becomes 2001:1::/48
   def normalize_ip(ip:typing.Union[str,bool]) -> typing.Union[str,bool]:
-    return str(netaddr.IPNetwork(ip)) if isinstance(ip,str) else ip
+    try:
+      return str(netaddr.IPNetwork(ip)) if isinstance(ip,str) else ip
+    except Exception as ex:
+      common.error(
+        f'Cannot parse address prefix: {ex}',
+        common.IncorrectValue,
+        'addressing')
+      return False
 
   if not pfx:
     return Box({},default_box=True,box_dots=True)
@@ -105,7 +114,18 @@ def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Option
 
   return addrs
 
-def validate_pools(addrs: typing.Optional[Box] = None) -> None:
+def validate_pools(addrs: Box, topology: Box) -> None:
+  for p_name,p_value in addrs.items():
+    validate_attributes(
+      data=p_value,                                   # Validate node data
+      topology=topology,
+      data_path=f'addressing.{p_name}',               # Topology path to node name
+      data_name=f'address pool',
+      attr_list=['pool'],                             # We're checking address pool attributes
+      modules=[],                                     # No module attributes in pools yet
+#      modules=n_data.get('module',[]),                # ... against node modules
+      module='addressing')
+
   if not addrs:       # pragma: no cover (pretty hard not to have address pools)
     addrs = Box({})
   for k in ('lan','loopback'):
@@ -190,10 +210,10 @@ def validate_pools(addrs: typing.Optional[Box] = None) -> None:
       category=common.MissingValue,
       module='addressing')
 
-def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
+def create_pool_generators(addrs: Box, no_copy_list: list) -> Box:
   if not addrs:       # pragma: no cover (pretty hard not to have address pools)
-    addrs = Box({})
-  gen: typing.Dict = {}
+    addrs = get_empty_box()
+  gen = get_empty_box()
   for pool,pfx in addrs.items():
     gen[pool] = {}
     for key,data in pfx.items():
@@ -203,7 +223,7 @@ def create_pool_generators(addrs: typing.Optional[Box] = None) -> typing.Dict:
         gen[pool][af] = data.subnet(plen)
         if (af == 'ipv4' and plen == 32) or (pool == 'loopback'):
           next(gen[pool][af])
-      elif isinstance(data,bool):
+      elif not key in no_copy_list:
         gen[pool][key] = data
   return gen
 
@@ -223,35 +243,38 @@ def get_nth_subnet(n: int, subnet: netaddr.IPNetwork.subnet, cache_list: list) -
     cache_list.append(next(subnet))
   return cache_list[n-1]
 
-def get_pool_prefix(pools: typing.Dict, p: str, n: typing.Optional[int] = None) -> Box:
-  prefixes = Box({})
-  if pools[p].get('unnumbered'):
-    return Box({ 'unnumbered': True })
+def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
+  prefixes = get_empty_box()
   for af in list(pools[p]):
-    if not 'cache' in af:
-      if isinstance(pools[p][af],bool):
-        prefixes[af] = pools[p][af]
-      elif n:
-        subnet_cache = 'cache_%s' % af
-        if not subnet_cache in pools[p]:
-          pools[p][subnet_cache] = []
-        try:
-          prefixes[af] = get_nth_subnet(n,pools[p][af],pools[p][subnet_cache])
-        except StopIteration:
-          common.error(
-            f'Cannot allocate {n}-th {af} element from {p} pool',
-            common.IncorrectValue,
-            'addressing')
-      else:
-        try:
-          prefixes[af] = next(pools[p][af])
-        except StopIteration:
-          common.error(
-            f'Ran out of {af} prefixes in {p} pool' +
-            (' (use --debug addr CLI argument to get more details)' if not common.debug_active('addr') else ''),
-            common.MissingValue,
-            'addressing')
+    if 'cache' in af:                                                 # Skipping over caches
+      continue
+    if not isinstance(pools[p][af],types.GeneratorType):              # Copy non-generator attributes
+      prefixes[af] = pools[p][af]
+      continue
 
+    if n:                                                             # Allocating a specific prefix or IP address from a subnet
+      subnet_cache = 'cache_%s' % af
+      if not subnet_cache in pools[p]:                                # Set up a cache to speed up things
+        pools[p][subnet_cache] = []
+      try:
+        prefixes[af] = get_nth_subnet(n,pools[p][af],pools[p][subnet_cache])
+      except StopIteration:
+        common.error(
+          f'Cannot allocate {n}-th {af} element from {p} pool',
+          common.IncorrectValue,
+          'addressing')
+    else:                                                             # Just asking for the next available prefix
+      try:
+        prefixes[af] = next(pools[p][af])                             # Let's see if we can get one more
+      except StopIteration:                                           # Ouch, ran out of prefixes, report that
+        common.error(
+          f'Ran out of {af} prefixes in {p} pool' +
+          (' (use --debug addr CLI argument to get more details)' if not common.debug_active('addr') else ''),
+          common.MissingValue,
+          'addressing')
+
+  if common.debug_active('addressing'):
+    print(f'get_pool_prefix: {p} => {prefixes}')
   return prefixes
 
 def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typing.Optional[int] = None) -> Box:
@@ -263,35 +286,32 @@ def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typi
   else:
     return Box({})                        # pragma: no cover -- can't figure out how to get here
 
-prefix_attributes: typing.List[str] = []
+def setup(topology: Box) -> None:
+  defaults = topology.defaults
+  null_to_string(topology.addressing)
+  addrs = setup_pools(defaults.addressing + topology.addressing,defaults)
 
-def setup(topo: Box, defaults: Box) -> None:
-  global prefix_attributes
+  if common.debug_active('addressing'):
+    print("addressing:")
+    common.print_structured_dict(addrs,'.. ')
 
-  prefix_attributes = topo.defaults.attributes.prefix
-  data.null_to_string(topo.addressing)
-  addrs = setup_pools(defaults.addressing + topo.addressing,defaults)
-
-  common.print_verbose("Addressing\n=================")
-  common.print_verbose(addrs.to_yaml())
-
-  validate_pools(addrs)
+  validate_pools(addrs,topology)
   common.exit_on_error()
 
-  topo.pools = create_pool_generators(addrs)
-  topo.addressing = addrs
-  common.print_verbose("Pools\n=================")
-  common.print_verbose(str(topo.pools))
+  topology.pools = create_pool_generators(addrs,defaults.attributes.pool_no_copy)
+  topology.addressing = addrs
+
+  if common.debug_active('addressing'):
+    print("pools:")
+    common.print_structured_dict(topology.pools,'.. ')
 
   common.exit_on_error()
 
 def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
-  global prefix_attributes
-
   if common.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f"parse prefix: {prefix} type={type(prefix)}")
 
-  empty_box = Box({})
+  empty_box = get_empty_box()
   if not prefix:
     return empty_box
 
@@ -313,13 +333,7 @@ def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
 
   for af,pfx in prefix.items():
     if not af in supported_af:                        # Are we dealing with an address family prefix?
-      if af in prefix_attributes:                     # ... no, is it a known prefix attribute?
-        prefix_list[af] = pfx
-        continue
-
-      common.error( \
-        'Unknown address family %s in prefix %s' % (af,prefix), \
-        category=common.IncorrectValue,module='addressing')
+      prefix_list[af] = pfx                           # No, copy attribute over, someone should have checked it beforehand
       continue
 
     if isinstance(pfx,bool):

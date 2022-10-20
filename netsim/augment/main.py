@@ -42,7 +42,7 @@ def transform_setup(topology: Box) -> None:
   augment.nodes.validate(topology)
 
 def transform_data(topology: Box) -> None:
-  addressing.setup(topology,topology.defaults)
+  addressing.setup(topology)
   augment.plugin.execute('pre_transform',topology)
   modules.pre_transform(topology)
 

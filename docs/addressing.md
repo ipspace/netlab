@@ -47,6 +47,7 @@ You can override or augment them in topology **addressing** element. You can als
 
 Every address pool could have an IPv4 and an IPv6 prefix, supporting IPv4-only, dual-stack or IPv6-only deployments. Pool address space is specified in **ipv4** or **ipv6** CIDR prefix. Size of individual IPv4 address allocations is specified with the **prefix** parameter, IPv6 prefixes are currently fixed  (/64).
 
+(address-pool-specs)=
 ## Specifying Address Pools
 
 Address pools could be specified:
@@ -64,8 +65,9 @@ Each address pool specification is a dictionary of address pools. Individual add
 * **ipv4** -- IPv4 CIDR prefix or **true** for unnumbered IPv4 links
 * **ipv6** -- IPv6 CIDR prefix or **true** for LLA-only IPv6 links.
 * **unnumbered** -- unnumbered address pool. Interfaces attached to nodes based on this address pool will have IPv4 and/or IPv6 enabled based on the protocols enabled on node's loopback interface.
-* **prefix** - IPv4 subnet allocation size. IPv6 subnets use /64 prefixes that cannot be changed.
-* **start** - first subnet or first IP address offset. Used primarily with **loopback** pool to ensure the first devices gets x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address.
+* **prefix** -- IPv4 subnet allocation size. IPv6 subnets use /64 prefixes that cannot be changed.
+* **start** -- first subnet or first IP address offset. Used primarily with **loopback** pool to ensure the first devices gets x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address.
+* **allocation** -- [address allocation policy](addressing-tutorial-lan-links) (`id_based`, `sequential`, or `p2p`).
 
 **Notes:**
 

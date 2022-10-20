@@ -134,6 +134,14 @@ def print_verbose(t: typing.Any) -> None:
   if VERBOSE:
     print(t)
 
+def print_structured_dict(d: Box, prefix: str = '') -> None:
+  for k,v in d.items():
+    if v and (isinstance(v,dict) or isinstance(v,list)):
+      print(f'{prefix}{k}:')
+      print(f'{prefix}  {v}')
+    else:
+      print(f'{prefix}{k}: {v}')
+
 #
 # Sets common flags based on parsed arguments.
 #
