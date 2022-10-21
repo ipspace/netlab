@@ -362,11 +362,8 @@ def validate_module_can_be_false(
   if not 'can_be_false' in attributes:
     return False
 
-  for a in attr_list:                                   # Can at least one attribute category be false?
-    if a in attributes.can_be_false:
-      return True                                       # OK, we can accept False value
-
-  return False                                          # No such category found, reject the idea of accepting False values
+  intersect = set(attr_list) & set(attributes.can_be_false)
+  return bool(intersect)
 
 """
 validate_attributes -- validate object attributes
