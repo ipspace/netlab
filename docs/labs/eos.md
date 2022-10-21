@@ -4,6 +4,11 @@ Arista EOS is supported by the **netlab libvirt package** command. To build an A
 
 * Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
 * Download vEOS disk image (.vmdk or .qcow2 file) into that directory
+
+```{tip}
+Use the `eos-downloader` Python package to simplify vEOS image download. See the [eos-downloader documentation](https://pypi.org/project/eos-downloader/) for more details.
+```
+
 * Execute **netlab libvirt package eos _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}

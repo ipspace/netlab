@@ -1,8 +1,10 @@
 # Installing Arista EOS Container
 
-To use Arista EOS with containerlab:
+To use Arista EOS with containerlab you need to register for a free account on [Arista's website](https://www.arista.com/en/login).  You then have two options to download the EOS container.
 
-* Download cEOS from Arista Software Download page (registration/login required)
+## Option 1: Download the Container from Arista's Website
+
+* Download cEOS from [Arista Software Download page](https://www.arista.com/en/support/software-download) (registration/login required)
 * The downloaded file is a xzipped tar file. If it's saved as .tar file (that's what Chrome on MacOS does), rename it to .tar.xz file
 * Unzip the file with `unxz filename`
 
@@ -21,3 +23,18 @@ Alternatively, if you want to use the same cEOS image in all your labs, add the 
 ```
 devices.eos.clab.image: "ceos.4.27.2F"
 ```
+
+## Option 2: Download the container using eos-downloader
+
+See the [eos-downloader documentation](https://pypi.org/project/eos-downloader/) for details.
+
+* Go to [the user portal page](https://www.arista.com/en/users/profile) and create a portal token to generate and record your token[^AC]
+* Install eos-downloader:
+
+```bash
+pip install eos-downloader
+```
+
+* Follow the instructions via the [eos-downloader documentation](https://pypi.org/project/eos-downloader/).
+
+[^AC]: Assuming you have an account with that capability. It looks like guest accounts cannot create API tokens.
