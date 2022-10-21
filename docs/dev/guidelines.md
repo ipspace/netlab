@@ -34,6 +34,7 @@ The easiest way to get started is to [add support for a new platform for an exis
    config/bfd.md
    config/vlan.md
    config/vrf.md
+   config/gateway.md
 ```
 
 ```eval_rst

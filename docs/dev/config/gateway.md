@@ -2,24 +2,29 @@
 
 This document describes First-Hop Gateway configuration module implementation details.
 
-## Theory of Operation
+## Configuration Template Boilerplate
 
-The configuration module:
+* If your device supports device-wide shared (anycast) MAC addresses, use node **gateway.anycast.mac** parameter to set the shared virtual router MAC address.
 
-* Combines global parameters with link-level parameters
-* Sets up `_reserved` list of reserved node IDs for every link
-* Sets a `_stub` flag for routing modules to ignore this link
-* Removes IP addresses from node interfaces if the nodes use **gateway** module, if the **gateway.protocol** is set to *anycast* and if the **gateway.anycast.unicast** is set to *False.*
+```
+{% if gateway.anycast.mac is defined %}
+ip virtual-router mac-address {{ gateway.anycast.mac }}
+{% endif %}
+```
 
-Interactions with other modules:
+* Iterate over interfaces and select only those that have **gateway.protocol** set
+* Based on the value of **gateway.protocol** configure the desired FHRP protocol. You might want to use included files for clarity.
 
-* The interface address allocation routines avoid the reserved IDs when assigning IP addresses to individual nodes.
-* Link processing code will set **gateway.ipv4** to the IP address corresponding to **gateway.id** on links with **gateway** dictionary. The **gateway** dictionary is then copied to interfaces of attached hosts to serve as the target for static routes configured on the hosts.
-* Common routing protocol code removes routing protocols from links with "ignore this link" flag.
+```
+{% for intf in interfaces if intf.gateway.protocol is defined %}
+interface {{ intf.ifname }}
+{%   if intf.gateway.protocol == 'anycast' %}
+### anycast configuration
+{%   endif %}
+{% endfor %}
+```
 
-## Anycast Configuration Template Boilerplate
-
-Use node **gateway.anycast.mac** parameter to set the shared virtual router MAC address.
+## Configuring Anycast Gateways
 
 When configuring anycast gateway on an interface, use the following interface parameters:
 
@@ -28,22 +33,10 @@ When configuring anycast gateway on an interface, use the following interface pa
 * **gateway.anycast.mac** could be set to a link-specific shared MAC address. Ignore this parameter if your platform cannot support link-specific virtual router MAC addresses.
 
 ```
-{% for l in interfaces if bfd|default(False) or l.bfd|default(False) %}
-interface {{ l.ifname }}
-{%   set disable_bfd = l.bfd is defined and not l.bfd %}
-{%   if not disable_bfd %}
-{%     set link_bfd = l.bfd|default({}) %}
- bfd interval {{ 
-   link_bfd.min_tx|default(bfd.min_tx)|default(500) }} min_rx {{ 
-   link_bfd.min_rx|default(bfd.min_rx)|default(500) }} multiplier {{
-   link_bfd.multiplier|default(bfd.multiplier)|default(3)
-   }}
-!
-{%   else %}
- no bfd interval
+{% for intf in interfaces if intf.gateway.protocol is defined %}
+interface {{ intf.ifname }}
+{%   if intf.gateway.protocol == 'anycast' %}
+  ip virtual-router address {{ intf.gateway.ipv4 }}
 {%   endif %}
 {% endfor %}
-{% if bfd.min_echo_rx|default(0) %}
-bfd slow-timers {{ bfd.min_echo_rx }} 
-{% endif %}
 ```

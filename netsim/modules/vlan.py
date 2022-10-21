@@ -645,7 +645,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
   # VLAN attributes not copied into VLAN interface: we take the global defaults and remove
   # mode attribute from that list as it's needed to set interface VLAN mode
   #
-  svi_skipattr = [ k for k in list(topology.defaults.vlan.attributes.vlan_no_propagate or []) if k != "mode" ]
+  svi_skipattr = [ k for k in list(topology.defaults.vlan.attributes.vlan_no_propagate or []) if k != "mode" ] + \
+                  list(topology.defaults.vlan.attributes.vlan_svi_no_propagate)
 
   iflist_len = len(node.interfaces)
   for ifidx in range(0,iflist_len):

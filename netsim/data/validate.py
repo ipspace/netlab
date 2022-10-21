@@ -455,6 +455,9 @@ def validate_attributes(
     if not modules is None and k in modules:            # For module attributes, perform recursive check
       if data[k] is False and validate_module_can_be_false(attributes,attr_list):
         continue                                        # Some objects accept 'attribute: false' syntax (example: links)
+      if data[k] is True:
+        if set(attr_list) & set(topology.defaults[k].attributes.can_be_true):
+          continue
       fixed_data = validate_attributes(
         data=data[k],
         topology=topology,
