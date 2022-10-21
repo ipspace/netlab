@@ -212,6 +212,32 @@ def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
   return ifdata
 
 """
+Set FHRP (anycast/VRRP/...) gateway on a link
+"""
+
+def set_fhrp_gateway(link: Box, pfx_list: Box, link_path: str) -> None:
+  gwid = data.get_from_box(link,'gateway.id')
+  if not gwid:                                                        # No usable gateway ID, nothing to do
+    return
+
+  if not 'ipv4' in pfx_list or isinstance(pfx_list.ipv4,bool):        # No usable IPv4 prefix, nothing to do
+    return
+
+  try:                                                                # Now try to get N-th IP address on that link
+    link.gateway.ipv4 = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix.ipv4),link.gateway.id)
+  except Exception as ex:
+    common.error(
+      f'Cannot generate gateway IP address on {link_path}' + \
+      f' from IPv4 prefix {link.prefix.ipv4} and gateway ID {link.gateway.id}\n' + \
+      common.extra_data_printout(str(ex)),
+      common.IncorrectValue,
+      'links')
+    return
+
+  if common.debug_active('links'):
+    print(f'... Assigning FHRP IPv4 address: {link.gateway}')
+
+"""
 Assign a prefix (IPv4+IPv6) to a link:
 
 * If the prefix is already defined, validate it
@@ -230,6 +256,8 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
     pfx_list = addressing.parse_prefix(link.prefix)
     if isinstance(link.prefix,str):
       link.prefix = addressing.rebuild_prefix(pfx_list)   # convert str to prefix dictionary
+
+    set_fhrp_gateway(link,pfx_list,link_path)
     return pfx_list
 
   if 'unnumbered' in link:                                # User requested an unnumbered link
@@ -254,6 +282,7 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
   if not link.prefix:
     link.pop('prefix',None)
 
+  set_fhrp_gateway(link,pfx_list,link_path)
   return pfx_list
 
 """
@@ -283,6 +312,19 @@ def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool],
     return 'sequential'
 
   return 'error'
+
+"""
+Get Nth IP address in a prefix returned as a nice string with a subnet mask
+
+*** WARNING *** WARNING *** WARNING ***
+
+Parent must catch the exception as we don't know what error text to display
+"""
+
+def get_nth_ip_from_prefix(pfx: netaddr.IPNetwork, n_id: int) -> str:
+  node_addr = netaddr.IPNetwork(pfx[n_id])
+  node_addr.prefixlen = pfx.prefixlen
+  return str(node_addr)
 
 """
 Set an interface address based on the link prefix and interface sequential number (could be node.id or counter)
@@ -321,9 +363,7 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
 
   # No static interface address, or static address specified as relative node_id
   try:
-    node_addr = netaddr.IPNetwork(pfx[node_id])
-    node_addr.prefixlen = pfx.prefixlen
-    intf[af] = str(node_addr)
+    intf[af] = get_nth_ip_from_prefix(pfx,node_id)
     return True
   except Exception as ex:
     common.error(
@@ -630,6 +670,10 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'host_count' in link:      # No hosts attached to the link, get out
     return
 
+  # No IPv4 prefix on the link or unnumbered IPv4 link
+  if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
+    return
+
   link.pop('host_count',None)
   if common.debug_active('links'):
     print(f'Set DGW for {link}')
@@ -639,14 +683,10 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
         link.gateway.ipv4 = ifdata.ipv4
         break
-  else:
-    if not isinstance(ifdata.gateway,dict) or not 'ipv4' in ifdata.gateway:  # pragma: no cover
-      common.error(
-        f'Gateway attribute specified on {link} is not a dictionary with ipv4 key',
-        common.IncorrectValue,
-        'links')
+  elif link.gateway is False:
+    return
 
-  if not 'gateway' in link:         # Didn't find a usable gateway, exit
+  if not 'gateway' in link or not 'ipv4' in link.gateway: # Didn't find a usable gateway, exit
     if common.debug_active('links'):
       print('... not found')
     return

@@ -10,6 +10,7 @@ The following configuration modules are included in **netlab** distribution:
    module/bgp.md
    module/eigrp.md
    module/evpn.md
+   module/gateway.md
    module/isis.md
    MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
    module/ospf.md
