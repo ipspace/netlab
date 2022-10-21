@@ -35,7 +35,6 @@ def create_node_dict(nodes: Box) -> Box:
     node_dict = nodes
   else:
     node_dict = Box({},default_box=True,box_dots=True)
-    node_id = 0
     for n in nodes or []:
       if isinstance(n,dict):
         if not 'name' in n:
@@ -43,8 +42,6 @@ def create_node_dict(nodes: Box) -> Box:
           continue
       elif isinstance(n,str):
         n = Box({ 'name': n },default_box=True,box_dots=True)
-      node_id = node_id + 1
-      n.id = node_id
       node_dict[n.name] = n
 
   for name in list(node_dict.keys()):
