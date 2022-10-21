@@ -1,8 +1,13 @@
 # Installing Arista EOS Container
 
-To use Arista EOS with containerlab:
+To use Arista EOS with containerlab you need to register for a free account on [Arista's website](https://www.arista.com/en/login).  You then have 2 options to download the EOS container.
 
-* Download cEOS from Arista Software Download page (registration/login required)
+## Option 1: Download the container from Arista's website
+
+
+The image is a tar archive that contains the EOS image and a license file. You will need to extract the EOS image from the archive and place it in the `images` directory of containerlab.
+
+* Download cEOS from [Arista Software Download page](https://www.arista.com/en/support/software-download) (registration/login required)
 * The downloaded file is a xzipped tar file. If it's saved as .tar file (that's what Chrome on MacOS does), rename it to .tar.xz file
 * Unzip the file with `unxz filename`
 
@@ -21,3 +26,17 @@ Alternatively, if you want to use the same cEOS image in all your labs, add the 
 ```
 devices.eos.clab.image: "ceos.4.27.2F"
 ```
+
+## Option 2: Download the container using eos-downloader
+
+See the [eos-downloader documentation](https://pypi.org/project/eos-downloader/) for details.
+
+Go to [the user portal page](https://www.arista.com/en/users/profile) and create a portal token to generate and record your token.
+
+Install eos-downloader:
+
+```bash
+pip install eos-downloader
+```
+
+Follow the instructions via the [eos-downloader documentation](https://pypi.org/project/eos-downloader/).

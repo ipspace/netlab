@@ -1,5 +1,7 @@
 # Building an Arista EOS Vagrant Libvirt Box
 
+_Note:_ To download vEOS images easily, you can use the [eos-downloader](https://pypi.org/project/eos-downloader/) Python package.  See the the above link for more details.
+
 Arista EOS is supported by the **netlab libvirt package** command. To build an Arista EOS box:
 
 * Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
