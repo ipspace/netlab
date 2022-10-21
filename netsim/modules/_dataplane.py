@@ -74,6 +74,9 @@ def set_id_counter(name: str, start: int, max_value: int = 4096) -> int:
 	idvar = global_vars.get(f'{name}_id')
 	idvar.next = start
 	idvar.max = max_value
+	if not idvar.value:
+		idvar.value = set()
+
 	return start
 
 def get_next_id(name: str) -> int:
