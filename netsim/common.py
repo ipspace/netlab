@@ -70,9 +70,13 @@ def exit_on_error() -> None:
     fatal('Cannot proceed beyond this point due to errors, exiting')
 
 def extra_data_printout(s : str) -> str:
-  return textwrap.TextWrapper(
-    initial_indent="... ",
-    subsequent_indent="      ").fill(s)
+  lines = []
+  for line in s.split('\n'):
+    lines.append(textwrap.TextWrapper(
+      initial_indent="... ",
+      subsequent_indent="      ").fill(line))
+
+  return "\n".join(lines)
 
 #
 # File functions
@@ -134,13 +138,19 @@ def print_verbose(t: typing.Any) -> None:
   if VERBOSE:
     print(t)
 
-def print_structured_dict(d: Box, prefix: str = '') -> None:
+def format_structured_dict(d: Box, prefix: str = '') -> str:
+  lines = []
   for k,v in d.items():
     if v and (isinstance(v,dict) or isinstance(v,list)):
-      print(f'{prefix}{k}:')
-      print(f'{prefix}  {v}')
+      lines.append(f'{prefix}{k}:')
+      lines.append(f'{prefix}  {v}')
     else:
-      print(f'{prefix}{k}: {v}')
+      lines.append(f'{prefix}{k}: {v}')
+
+  return "\n".join(lines)
+
+def print_structured_dict(d: Box, prefix: str = '') -> None:
+  print(format_structured_dict(d,prefix))
 
 #
 # Sets common flags based on parsed arguments.

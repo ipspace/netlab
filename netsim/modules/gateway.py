@@ -45,6 +45,30 @@ class FHRP(_Module):
     else:                                       # Otherwise merge global defaults with links settings (because we usually don't do that)
       link.gateway = global_gateway + link.gateway
 
+    for k in ('id','protocol'):
+      if not k in link.gateway or not link.gateway[k]:
+        common.error(
+          f'Gateway attribute {k} is missing in links[{link.linkindex}]\n' + \
+          common.extra_data_printout(common.format_structured_dict(link)),
+          common.MissingValue,
+          'gateway')
+        return
+
+    if not data.is_true_int(link.gateway.id):
+      common.error(
+        f'Gateway.id parameter in links[{link.linkindex}] must be an integer\n' + \
+          common.extra_data_printout(common.format_structured_dict(link)),
+        common.IncorrectType,
+        'gateway')
+      return
+
+    if link.gateway.id == -1:
+        common.error(
+          f'Cannot use -1 as the gateway ID in links[{link.linkindex}] -- that would be the broadcast address\n' + \
+          common.extra_data_printout(common.format_structured_dict(link)),
+          common.IncorrectValue,
+          'gateway')
+
   def node_post_transform(self, node: Box, topology: Box) -> None:
     for intf in node.interfaces:                                      # Time to clean up interface addresses
       if not intf.get('gateway',False):                               # This interface not using FHRP or FHRP is disabled
