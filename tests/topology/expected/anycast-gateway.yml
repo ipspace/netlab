@@ -120,16 +120,66 @@ links:
   interfaces:
   - ifindex: 3
     ifname: Ethernet3
-    ipv4: 10.42.42.3/28
+    ipv4: 10.42.42.1/28
     node: r2
   - ifindex: 2
     ifname: eth2
-    ipv4: 10.42.42.13/28
+    ipv4: 10.42.42.2/28
     node: h4
   linkindex: 4
   node_count: 2
   prefix:
     ipv4: 10.42.42.0/28
+  role: stub
+  type: lan
+- bridge: input_5
+  gateway:
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    id: 1
+    ipv4: 10.42.42.1/29
+    protocol: anycast
+  interfaces:
+  - ifindex: 4
+    ifname: Ethernet4
+    ipv4: 10.42.42.2/29
+    node: r2
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.42.42.3/29
+    node: h4
+  linkindex: 5
+  node_count: 2
+  prefix:
+    ipv4: 10.42.42.0/29
+  role: stub
+  type: lan
+- bridge: input_6
+  gateway:
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    id: 1
+    ipv4: 172.31.31.1/24
+    ipv6: 2001:db8:cafe:1::1/64
+    protocol: anycast
+  interfaces:
+  - ifindex: 5
+    ifname: Ethernet5
+    ipv4: 172.31.31.3/24
+    ipv6: 2001:db8:cafe:1::3/64
+    node: r2
+  - ifindex: 4
+    ifname: eth4
+    ipv4: 172.31.31.13/24
+    ipv6: 2001:db8:cafe:1::d/64
+    node: h4
+  linkindex: 6
+  node_count: 2
+  prefix:
+    ipv4: 172.31.31.0/24
+    ipv6: 2001:db8:cafe:1::/64
   role: stub
   type: lan
 module:
@@ -252,6 +302,7 @@ nodes:
   h4:
     af:
       ipv4: true
+      ipv6: true
     box: generic/ubuntu2004
     device: linux
     id: 13
@@ -282,15 +333,45 @@ nodes:
       type: lan
     - bridge: input_4
       gateway:
-        ipv4: 10.42.42.3/28
+        ipv4: 10.42.42.1/28
       ifindex: 2
       ifname: eth2
-      ipv4: 10.42.42.13/28
+      ipv4: 10.42.42.2/28
       linkindex: 4
       name: h4 -> r2
       neighbors:
       - ifname: Ethernet3
-        ipv4: 10.42.42.3/28
+        ipv4: 10.42.42.1/28
+        node: r2
+      role: stub
+      type: lan
+    - bridge: input_5
+      gateway:
+        ipv4: 10.42.42.2/29
+      ifindex: 3
+      ifname: eth3
+      ipv4: 10.42.42.3/29
+      linkindex: 5
+      name: h4 -> r2
+      neighbors:
+      - ifname: Ethernet4
+        ipv4: 10.42.42.2/29
+        node: r2
+      role: stub
+      type: lan
+    - bridge: input_6
+      gateway:
+        ipv4: 172.31.31.3/24
+      ifindex: 4
+      ifname: eth4
+      ipv4: 172.31.31.13/24
+      ipv6: 2001:db8:cafe:1::d/64
+      linkindex: 6
+      name: h4 -> r2
+      neighbors:
+      - ifname: Ethernet5
+        ipv4: 172.31.31.3/24
+        ipv6: 2001:db8:cafe:1::3/64
         node: r2
       role: stub
       type: lan
@@ -405,6 +486,7 @@ nodes:
   r2:
     af:
       ipv4: true
+      ipv6: true
     box: arista/veos
     device: eos
     gateway:
@@ -458,12 +540,61 @@ nodes:
         protocol: anycast
       ifindex: 3
       ifname: Ethernet3
-      ipv4: 10.42.42.3/28
+      ipv4: 10.42.42.1/28
       linkindex: 4
       name: r2 -> h4
       neighbors:
       - ifname: eth2
-        ipv4: 10.42.42.13/28
+        ipv4: 10.42.42.2/28
+        node: h4
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: true
+      role: stub
+      type: lan
+    - bridge: input_5
+      gateway:
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        id: 1
+        ipv4: 10.42.42.1/29
+        protocol: anycast
+      ifindex: 4
+      ifname: Ethernet4
+      ipv4: 10.42.42.2/29
+      linkindex: 5
+      name: r2 -> h4
+      neighbors:
+      - ifname: eth3
+        ipv4: 10.42.42.3/29
+        node: h4
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: true
+      role: stub
+      type: lan
+    - bridge: input_6
+      gateway:
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        id: 1
+        ipv4: 172.31.31.1/24
+        ipv6: 2001:db8:cafe:1::1/64
+        protocol: anycast
+      ifindex: 5
+      ifname: Ethernet5
+      ipv4: 172.31.31.3/24
+      ipv6: 2001:db8:cafe:1::3/64
+      linkindex: 6
+      name: r2 -> h4
+      neighbors:
+      - ifname: eth4
+        ipv4: 172.31.31.13/24
+        ipv6: 2001:db8:cafe:1::d/64
         node: h4
       ospf:
         area: 0.0.0.0
@@ -479,7 +610,7 @@ nodes:
         id: 1
         ipv4: 172.16.0.1/24
         protocol: anycast
-      ifindex: 4
+      ifindex: 6
       ifname: Vlan1000
       ipv4: 172.16.0.3/24
       name: VLAN red (1000) -> [h3,r1,h4]
@@ -514,6 +645,7 @@ nodes:
     ospf:
       af:
         ipv4: true
+        ipv6: true
       area: 0.0.0.0
       router_id: 10.0.0.3
     vlan:

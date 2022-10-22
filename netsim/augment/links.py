@@ -220,22 +220,25 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, link_path: str) -> None:
   if not gwid:                                                        # No usable gateway ID, nothing to do
     return
 
-  if not 'ipv4' in pfx_list or isinstance(pfx_list.ipv4,bool):        # No usable IPv4 prefix, nothing to do
-    return
+  fhrp_assigned = False
+  for af in common.AF_LIST:
+    if not af in pfx_list or isinstance(pfx_list[af],bool):           # No usable IPv4/IPv6 prefix, nothing to do
+      return
 
-  try:                                                                # Now try to get N-th IP address on that link
-    link.gateway.ipv4 = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix.ipv4),link.gateway.id)
-  except Exception as ex:
-    common.error(
-      f'Cannot generate gateway IP address on {link_path}' + \
-      f' from IPv4 prefix {link.prefix.ipv4} and gateway ID {link.gateway.id}\n' + \
-      common.extra_data_printout(str(ex)),
-      common.IncorrectValue,
-      'links')
-    return
+    try:                                                                # Now try to get N-th IP address on that link
+      link.gateway[af] = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix[af]),link.gateway.id)
+      fhrp_assigned = True
+    except Exception as ex:
+      common.error(
+        f'Cannot generate gateway IP address on {link_path}' + \
+        f' from [af] prefix {link.prefix[af]} and gateway ID {link.gateway.id}\n' + \
+        common.extra_data_printout(str(ex)),
+        common.IncorrectValue,
+        'links')
+      return
 
-  if common.debug_active('links'):
-    print(f'... Assigning FHRP IPv4 address: {link.gateway}')
+  if common.debug_active('links') and fhrp_assigned:
+    print(f'... Assigning FHRP address(es): {link.gateway}')
 
 """
 Assign a prefix (IPv4+IPv6) to a link:
@@ -298,17 +301,27 @@ Return 'error' if the prefix size is too small
 def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool], ndict: Box) -> str:
   if isinstance(pfx,bool):
     return 'unnumbered'
-  if link.type == 'p2p':
+
+  gwid = data.get_from_box(link,'gateway.id') or 0                    # Get link gateway ID (if set) --- must be int for min to work
+  if link.type == 'p2p' and not gwid:                                 # P2P allocation policy cannot be used with default gateway
     return 'p2p' if pfx.first != pfx.last else 'error'
 
   pfx_size = pfx.last - pfx.first + 1
+  add_extra_ip = 0
+  subtract_reserved_ip = -2
+
   if pfx_size > 2:
-    pfx_size = pfx_size - 2
+    if gwid > 0:                                                      # Gateway ID at the front of the subnet -- need one extra IP
+      add_extra_ip = 1
+    if gwid < 0:                                                      # Don't allow node address allocation beyond last-in-subnet gateway
+      subtract_reserved_ip = min(subtract_reserved_ip,gwid)
+
+    pfx_size = pfx_size + subtract_reserved_ip
 
   max_id = max([ ndict[intf.node].id for intf in link.interfaces if intf.node in ndict ])
   if max_id < pfx_size:
     return 'id_based'
-  if len(link.interfaces) < pfx_size:
+  if len(link.interfaces) + add_extra_ip < pfx_size:
     return 'sequential'
 
   return 'error'
@@ -391,7 +404,10 @@ def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) 
 
 def IPAM_sequential(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
   start = 1 if pfx.last != pfx.first + 1 else 0
+  gwid = data.get_from_box(link,'gateway.id')
   for count,intf in enumerate(link.interfaces):
+    if count + start == gwid:                                   # Would the next address overlap with gateway ID
+      start = start + 1                                         # ... no big deal, just move the starting point ;)
     set_interface_address(intf,af,pfx,count+start)
 
 def IPAM_p2p(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
@@ -457,8 +473,11 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         allocation_policy = get_prefix_IPAM_policy(link,pfx_net,ndict)    # get IPAM policy based on prefix and link size
 
     if allocation_policy == 'error':                                      # Something went wrong, cannot assing IP addresses
+      rq = f'{len(link.interfaces)} nodes'
+      if data.get_from_box(link,'gateway.id'):
+        rq = rq + f' plus first-hop gateway'
       common.error(
-        f'Cannot use {af} prefix {pfx_list[af]} to address {len(link.interfaces)} nodes on link#{link.linkindex}',
+        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on link#{link.linkindex}',
         common.IncorrectValue,
         'links')
       continue
