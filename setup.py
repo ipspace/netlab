@@ -1,7 +1,11 @@
 """setup.py file."""
 from setuptools import setup, find_packages
+from pathlib import Path
 import netsim
 import sys
+
+
+long_description = (Path(__file__).parent / "README.md").read_text()
 
 with open("requirements.txt", "r") as fs:
   reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
@@ -16,6 +20,8 @@ setup(
   author="Ivan Pepelnjak",
   author_email="ip@ipspace.net",
   description="CLI-based Virtual Networking Lab Abstraction Layer",
+  long_description=long_description,
+  long_description_content_type='text/markdown',  
   classifiers=[
     "Topic :: Utilities",
     "Programming Language :: Python",
