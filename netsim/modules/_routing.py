@@ -211,7 +211,7 @@ def remove_unused_igp(node: Box, proto: str) -> None:
     return                                                                  # ... OK, we're good
 
   for vdata in node.get('vrfs',{}).values():                                # Is protocol active in at least one VRF?
-    if proto in vdata:
+    if proto in vdata and not vdata[proto] is False:
       return                                                                # ... OK, we're good
 
   node.module = [ m for m in node.module if m != proto ]                    # Makes no sense to keep it, remove the config module
