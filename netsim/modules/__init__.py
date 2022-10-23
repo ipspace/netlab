@@ -442,12 +442,13 @@ def copy_node_data_into_interfaces(topology: Box) -> None:
       for intf in n.get('interfaces',[]):                        # We might have some work to do, iterate over all interfaces
         if not isinstance(intf.get(m,{}),dict):                  # ... if the interface module data is not a dict, we can't merge
           continue
+        vrf_attr = Box({})                                       # Assume we have no VRF attributes
         if 'vrf' in intf and mod_attr.vrf_aware:                 # Do we have to deal with VRF-aware attributes?
-          vrf_attr = Box({ k: v
-            for k,v in n.vrfs[intf.vrf].get(m,{}).items()
-              if k in mod_attr.vrf_aware })                      # Build a Box of VRF attributes that could be copied to interfaces
-        else:
-          vrf_attr = Box({})                                     # ... otherwise set VRF attributes to an empty box
+          vrf_mod_data = n.vrfs[intf.vrf].get(m,{})
+          if not vrf_mod_data is False:                          # Deal with things like 'ospf: False' on VRF level
+            vrf_attr = Box({ k: v
+              for k,v in vrf_mod_data.items()
+                if k in mod_attr.vrf_aware })                    # Build a Box of VRF attributes that could be copied to interfaces
 
         if copy_attr or vrf_attr:                                # ... modify interface data only if we have something to merge
           intf[m] = copy_attr + vrf_attr + intf[m]

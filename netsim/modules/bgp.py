@@ -255,9 +255,10 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if not ebgp_data is None:
         ebgp_data['as'] = neighbor_local_as
         if 'vrf' in l:        # VRF neighbor
-          if not node.vrfs[l.vrf].bgp.neighbors:
-            node.vrfs[l.vrf].bgp.neighbors = []
-          node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
+          if not node.vrfs[l.vrf].bgp is False:
+            if not node.vrfs[l.vrf].bgp.neighbors:
+              node.vrfs[l.vrf].bgp.neighbors = []
+            node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
         else:                 # Global neighbor
           node.bgp.neighbors.append(ebgp_data)
 
