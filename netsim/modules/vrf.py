@@ -137,7 +137,7 @@ def set_vrf_auto_id(vrf: Box, value: typing.Tuple[int,str]) -> None:
     vrf.rd = value[1]
 
 #
-# Get VRF RD value needed for import/export values. 
+# Get VRF RD value needed for import/export values.
 #
 # WARNING: Global value takes precedence over node value because you might want to change per-node RD
 # values for weird topologies like hub-and-spoke
@@ -462,6 +462,11 @@ class VRF(_Module):
             common.IncorrectValue,
             'vrf')
           common.exit_on_error()
+
+        # Cleanup any <routing-protocol>: False flags
+        for routing_proto in ['bgp','isis','ospf']:
+          if routing_proto in v and v[routing_proto] is False:
+            v.pop(routing_proto)
 
       # We need unique VRF index to create OSPF processes, assign in order sorted by VRF ID "for consistency"
       for v in sorted(node.vrfs.values(),key=lambda v: v.id):
