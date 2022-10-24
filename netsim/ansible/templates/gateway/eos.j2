@@ -12,11 +12,15 @@ interface {{ intf.ifname }}
   ip virtual-router address {{ intf.gateway.ipv4 }}
 {%   endif %}
 {%   if intf.gateway.protocol == 'vrrp' %}
-{%     if intf.gateway.ipv6 is defined %}
   vrrp {{ intf.gateway.vrrp.group }} ipv4 version 3
-{%     endif %}
 {%     for af in 'ipv4','ipv6' if af in intf.gateway %}
   vrrp {{ intf.gateway.vrrp.group }} {{ af }} {{ intf.gateway[af]|ipaddr('address') }}
 {%     endfor %}
+{%     if 'priority' in intf.gateway.vrrp %}
+  vrrp {{ intf.gateway.vrrp.group }} priority-level {{ intf.gateway.vrrp.priority }}
+{%     endif %}
+{%     if intf.gateway.vrrp.preempt|default(False) %}
+  vrrp {{ intf.gateway.vrrp.group }} preempt
+{%     endif %}
 {%   endif %}
 {% endfor %}
