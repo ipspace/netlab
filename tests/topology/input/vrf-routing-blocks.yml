@@ -1,0 +1,105 @@
+#
+# Routing blocks test case
+#
+# Blocks OSPF, ISIS and BGP on interfaces and in VRF instances
+#
+
+module: [ ospf, bgp, isis, vrf ]
+
+defaults.device: eos
+bgp.as: 65000
+
+vrfs:
+  o_1:
+    ospf.area: 17
+    loopback: True
+  o_2:
+    ospf: False
+  o_3:
+    ospf.active: True
+  b_1:
+  b_2:
+    bgp: False
+
+nodes:
+  r1:
+    vrfs:
+      o_1:
+        ospf.router_id: 10.0.0.42
+  r2:
+  x:
+    bgp.as: 65001
+
+links:
+- r1-r2               # OSPF + ISIS
+- r1:
+  r2:
+  isis: False         # OSPF, no ISIS
+  name: r1-r2 no ISIS
+- r1:
+  r2:
+  vrf: o_1            # OSPF
+  ospf.area: 51
+  name: r1-r2 OSPF
+- r1:
+  r2:
+  vrf: o_1
+  ospf: False         # No OSPF
+  name: r1-r2 no OSPF
+- r1:
+  r2:
+  vrf: o_2            # No OSPF
+  name: r1-r2 no VRF OSPF
+- r1:
+  vrf: o_3            # Force OSPF
+  name: r1 force OSPF
+- r1:
+  x:
+  vrf: b_1            # BGP
+- r1:
+  x:
+  vrf: b_1
+  bgp: False          # No BGP
+- r1:
+  x:
+  vrf: b_2            # No BGP
+
+#
+# Use these formats to display a summary of transformed topology when debugging the test case
+#
+# Display OSPF, ISIS or BGP information with 'netlab create _file_ -o format:_format_'
+#
+defaults.outputs.format:
+  ospf: |
+    {% for n,n_d in nodes.items() %}
+    {{ n }}: 
+    {%   for intf in n_d.interfaces if 'ospf' in intf %}
+      {{ intf.ifname }} {{ intf.name }}: {{ intf.ospf }}
+    {%   endfor %}
+    {%   for v_n,v_d in n_d.vrfs.items() if 'ospf' in v_d %}
+      {{ v_n }} (VRF)
+    {%     for intf in v_d.ospf.interfaces %}
+        {{ intf.ifname }} {{ intf.name }}: {{ intf.ospf }}
+    {%     endfor %}
+    {%   endfor %}
+    {% endfor %}
+  isis: |
+    {% for n,n_d in nodes.items() %}
+    {{ n }}: 
+    {%   for intf in n_d.interfaces if 'isis' in intf %}
+      {{ intf.ifname }} {{ intf.name }}: {{ intf.isis }}
+    {%   endfor %}
+    {% endfor %}
+  bgp: |
+    {% for n,n_d in nodes.items() %}
+    {{ n }}: 
+    {%   for ngb in n_d.bgp.neighbors %}
+      {{ ngb }}
+    {%   endfor %}
+    {%   for v_n,v_d in n_d.vrfs.items() if 'bgp' in v_d %}
+      {{ v_n }} (VRF)
+    {%     for ngb in v_d.bgp.neighbors %}
+        {{ ngb }}
+    {%     endfor %}
+    {%   endfor %}
+    {% endfor %}

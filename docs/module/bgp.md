@@ -133,6 +133,14 @@ Finally, BGP configuration module supports these advanced node parameters that y
 
 [^RAS_P]: This functionality might not be configurable on all platforms. For example, Arista EOS supports only the **neighbor local-as no-prepend replace-as** command.
 
+## VRF Parameters
+
+You can set a VRF-specific BGP router ID with **bgp.router_id** VRF parameter. Use this setting when building topologies with back-to-back links between VRFs on the same device.
+
+BGP is always enabled for all VRF address families. The connected interfaces (and OSPF routes when applicable) are always redistributed into the BGP routing process. 
+
+To stop the creation of VRF EBGP sessions, set **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
+
 ## Link-Level Parameters
 
 You can also use these link-level parameters to influence the BGP prefix advertisements:

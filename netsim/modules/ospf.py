@@ -70,4 +70,5 @@ class OSPF(_Module):
     _routing.build_vrf_interface_list(node,'ospf',topology)
     _routing.routing_af(node,'ospf')
     bfd.bfd_link_state(node,'ospf')
+    _routing.remove_vrf_routing_blocks(node,'ospf')
     _routing.remove_unused_igp(node,'ospf')

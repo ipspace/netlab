@@ -77,7 +77,7 @@ def run(cli_args: typing.List[str],
   common.exit_on_error()
 
   for output_format in args.output:
-    output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format])
+    output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format.split(':')[0]])
     if output_module:
       output_module.write(topology)
     else:
