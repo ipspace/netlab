@@ -6,12 +6,6 @@
    customer: '1'
    admin-state: enable
    service-id: {{ vni if type=='l3' else (vrf[4:]|int + 10000) }} # transit VNI for l3, should not overlap
-
-{% if type=='l3' %}
-   routes:
-     ip-prefix:
-      advertise: True # Symmetric IRB using RT5 prefixes
-{% endif %}
    vxlan:
     instance:
     - vxlan-instance: 1
@@ -19,11 +13,20 @@
    bgp:
    - bgp-instance: 1
      # route-distinguisher: {{ rd }} # Don't configure this, use auto RD
+{% if type=='l2' %}
      route-target:
       export: "target:{{ rts.export[0] }}"
       import: "target:{{ rts.import[0] }}"
+{% endif %}
    bgp-evpn:
     evi: {{ evi }}
+{% if type=='l3' %}
+    routes:
+     ip-prefix:
+      advertise: True # Symmetric IRB using RT5 prefixes
+     mac-ip:
+      advertise: False
+{% endif %}
     vxlan:
     - vxlan-instance: 1
       bgp-instance: 1
@@ -51,7 +54,7 @@ updates:
 {# Symmetric IRB interfaces, note using VRF ID as transit EVI value #}
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if 'evpn' in vdata and 'transit_vni' in vdata.evpn %}
-{{ vxlan_interface("l3vni-"+vname,'l3',vdata.evpn.transit_vni,vdata.vrfidx,vdata.rd,vdata) }}
+{{ vxlan_interface("l3vni-"+vname,'l3',vdata.evpn.transit_vni,vdata.vrfidx,vdata.rd,vdata,is_routed=True) }}
 
 {# Add it to the VPRN, enable evpn-tunnel and configure RT #}
 - path: configure/service/vprn[service-name={{ vname }}]
