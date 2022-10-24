@@ -9,6 +9,8 @@ The module is supported on these platforms:
 | Operating system      | Anycast | VRRPv3 | VRRPv3<br>IPv6 |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
+| Cisco CSR 1000v       | ✅  | ✅  | ✅  |
+| Cisco IOSv            | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
 
 ## Global Parameters
