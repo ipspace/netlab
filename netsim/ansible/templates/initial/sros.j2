@@ -2,6 +2,30 @@
 {{- (('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s' if n[0].isdigit() else '%s')|format(n)).replace(':','_') -}}
 {%- endmacro %}
 
+{% macro declare_router(i,sub_path="") -%}
+{%  set service_name = i.vrf if i.vrf is defined else 'default' %}
+{%  set in_base = i.vrf is not defined and (i.vlan is not defined or i.vlan.mode|default('irb')=='route') %}
+{%  set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
+
+{# Minimal service config must exist #}
+{%  if not in_base %}
+- path: configure/{{ base_path }}
+  val:
+   service-id: {{ vrfs[i.vrf].vrfidx if i.vrf is defined else 1 }}
+   customer: "1"
+   admin-state: enable
+   ecmp: 64
+{%  endif %}
+
+- path: configure/{{ base_path }}{{ sub_path }}
+{%- endmacro %}
+
+{% macro declare_interface(i,name=None) %}
+{% set name = name or i.ifname %}
+{% set ifname = (('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s' if name[0].isdigit() else '%s')|format(name)).replace(':','_') %}
+{{ declare_router(i,sub_path="/interface[interface-name=" + ifname + "]") }}
+{% endmacro %}
+
 {% macro ip_addr(v,ip,ifname) %}
 {% set _ip = ip|ipaddr('address') %}
 {% set _pre = ip|ipaddr('prefix') %}
@@ -17,27 +41,14 @@
 {% endif %}
 {% endmacro %}
 
-{% macro interface(name,desc,ip_v4,ip_v6,port,l,vlan=0,in_base=True) -%}
-{% set service_name = l.vrf if l.vrf is defined else 'default' %}
-{% set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
-
-{# Minimal service config must exist #}
-{% if not in_base %}
-- path: configure/{{ base_path }}
-  val:
-   service-id: {{ vrfs[l.vrf].vrfidx if l.vrf is defined else 1 }}
-   customer: "1"
-   admin-state: enable
-   ecmp: 64
-{% endif %}
-
-- path: configure/{{ base_path }}/interface[interface-name={{if_name(name)}}]
+{% macro interface(name,desc,ip_v4,ip_v6,port,l,vlan=0) -%}
+{{ declare_interface(l,name) }}
   val:
    admin-state: enable
    description: "{{ desc }} vlan={{vlan}}"
 {% if port %}
 {%  if l.vrf is defined %}
-   sap: 
+   sap:
    - sap-id: "{{ port }}"
 {%  else %}
    port: "{{ port }}"
@@ -105,9 +116,9 @@
 
 {% if v4 or v6 %}
 {%  if l.type not in ['loopback','stub','svi'] %}
-{{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan,in_base=in_base) }}
+{{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan) }}
 {%  else %}
-{{ interface("stub-"+l.ifname if l.type=='stub' else l.ifname,desc,v4,v6,None,l,in_base=in_base) }}
+{{ interface("stub-"+l.ifname if l.type=='stub' else l.ifname,desc,v4,v6,None,l) }}
 {%  endif %}
 {% endif %}
 {%- endmacro -%}
@@ -132,7 +143,7 @@ updates:
 {% set _v4 = loopback.ipv4|default(False) %}
 {% set _v6 = loopback.ipv6|default(False) %}
 {# The interface name 'system' is special, also used for IP unnumbered #}
-{{ interface("system","system interface",_v4,_v6,'',loopback,in_base=True) }}
+{{ interface("system","system interface",_v4,_v6,port=None,l=loopback) }}
 {% endif %}
 
 {% for l in (interfaces|default([])) if l.vlan is not defined and l.subif_index is not defined %}

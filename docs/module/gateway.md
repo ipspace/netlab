@@ -22,10 +22,11 @@ The module is supported on these platforms:
 | Cisco IOSv            |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
+| Nokia SR OS           | ✅  | ✅  | ✅  |
 
 ## Global Parameters
 
-The module supports the following global parameters: 
+The module supports the following global parameters:
 
 * **gateway.protocol** (default: *anycast*) -- the first-hop gateway resolution protocol. The only supported value is currently *anycast*
 * **gateway.id** (default: -1) -- the IP address within the subnet used for the gateway IP address
@@ -41,7 +42,8 @@ The *gateway* configuration module supports IPv4 anycast gateways -- MAC and IPv
 ### Implementation Notes
 
 * The default *netlab* shared MAC address is 0200.cafe.00ff.
-* Vendors use different names for anycast gateways: VARP (Arista), VRR (Cumulus)
+* The gateway IP is configured to respond to ping requests
+* Vendors use different names for anycast gateways: VARP (Arista), VRR (Cumulus), passive VRRP (Nokia)
 * Arista EOS uses the same shared MAC address on all interfaces. Do not set link-level **gateway.anycast.mac** parameter in topologies using Arista EOS.
 * Arista vEOS cannot use VRRP MAC address as a shared MAC address (default recommended by Cumulus Linux)
 

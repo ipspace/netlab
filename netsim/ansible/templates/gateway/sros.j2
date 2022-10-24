@@ -1,0 +1,27 @@
+{% from "templates/initial/sros.j2" import declare_interface with context %}
+
+updates:
+{% for intf in interfaces if intf.gateway.protocol is defined %}
+{{ declare_interface(intf) }}
+  val:
+{%  for af in ('ipv4','ipv6') %}
+{%   if intf.gateway.protocol in ['anycast','vrrp'] and af in intf.gateway %}
+   {{ af }}:
+    vrrp:
+    - virtual-router-id: {{ intf.gateway.vrrp.group }}
+      admin-state: enable
+      ping-reply: True
+      backup: [ "{{ intf.gateway[af]|ipaddr('address') }}" ]
+      passive: {{ intf.gateway.protocol == 'anycast' }}
+{%    if gateway.anycast.mac is defined %}
+      mac: {{ gateway.anycast.mac }}
+{%    endif %}
+{%    if intf.gateway.protocol == 'vrrp' %}
+      preempt: {{ intf.gateway.vrrp.preempt|default(False)|bool }}
+{%     if 'priority' in intf.gateway.vrrp %}
+      priority: {{ intf.gateway.vrrp.priority }}
+{%     endif %}
+{%    endif %}
+{%   endif %}
+{%  endfor %}
+{% endfor %}

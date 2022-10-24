@@ -1,12 +1,16 @@
-{% from "templates/initial/sros.j2" import if_name with context %}
+{% from "templates/initial/sros.j2" import if_name, declare_router with context %}
 {% set pid = ospf.process|default(0) %}
 
 {% macro ospf_config(af) %}
 {% set ospfv = 'ospf3' if af=='ipv6' else 'ospf' %}
 
 {% macro ospf_interface(l) %}
-- path: configure/router[router-name=Base]/{{ospfv}}[ospf-instance={{pid}}]
+{{ declare_router(l,sub_path="/"+ospfv+"[ospf-instance="+pid|string + "]") }}
   val:
+{% if ospf.reference_bandwidth is defined %}
+   reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
+{% endif %}
+   admin-state: enable
    area:
    - area-id: "{{ l.ospf.area }}"
      interface:
@@ -25,21 +29,8 @@
 {%  endif %}
 {% endmacro %}
 
-- path: configure/router[router-name=Base]
-  val:
-   router-id: "{{ ospf.router_id }}"
-   {{ ospfv }}:
-   - ospf-instance: {{ pid }}
-{% if ospf.reference_bandwidth is defined %}
-     reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
-{% endif %}
-     admin-state: enable
-     area:
-     - area-id: "{{ ospf.area }}"
-       interface:
-       - interface-name: "system"
-         passive: True
-{% for l in interfaces|default([]) if 'ospf' in l %}
+{% set system_if = { 'ifname': "system", 'ospf': { 'passive': True, 'area': ospf.area } } %}
+{% for l in interfaces|default([])+([system_if] if af in loopback else []) if 'ospf' in l %}
 {{ ospf_interface(l)}}
 {% endfor %}
 {% endmacro %}
