@@ -217,17 +217,21 @@ gateway:
   supported_on: [ eos, cumulus ]
   transform_after: [ vlan, vrf, ospf, isis, eigrp ]
   config_after: [ vlan,vrf ]
-  id: -1
+  id: -2
   protocol: anycast
   anycast:
     mac: 0200.cafe.00ff
     unicast: True
-  no_propagate: [ id, stub ]
+  vrrp:
+    group: 1
+  no_propagate: [ id, protocol ]
   attributes:
-    global: [ id, protocol, stub, anycast ]
-    node: [ protocol, anycast ]
+    global: [ id, protocol, stub, anycast, vrrp ]
+    node: [ protocol, anycast, vrrp ]
     can_be_true: [ link ]
     anycast: [ unicast, mac ]
+    protocols: [ anycast, vrrp ]
+    vrrp: [ group ]
     link: [ id, ipv4, protocol, stub, anycast ]
 
 #
@@ -544,6 +548,8 @@ devices:
         loopback_interface_name: Loopback{vrfidx}
       evpn:
         irb: True
+      gateway:
+        protocol: [ anycast, vrrp ]
     clab:
       interface:
         name: et%d
@@ -746,6 +752,8 @@ devices:
         loopback_interface_name: "lo{vrfidx}"
       evpn:
         irb: True
+      gateway:
+        protocol: [ anycast, vrrp ]
     clab:
       mtu: 1500
       node:
