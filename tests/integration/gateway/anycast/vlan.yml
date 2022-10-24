@@ -1,33 +1,52 @@
 #
-# Anycast gateway test case
+# Anycast gateway on a physical interface
 #
+
+message: |
+  This test case replaces a multi-access LAN with a VLAN -- the switches have anycast
+  IP address configured on the shared LAN. Two LANs are used in the topology to explore
+  the impact of shared MAC addresses on multiple LANs.
+
+  Static routes on hosts point to the shared anycast IP address. The switches
+  are running OSPF with a third switch to enable network-wide connectivity.
+
+  All hosts should be able to ping the loopback addresses of all switches.
 
 gateway.id: 1
 
 groups:
   switches:
-    module: [ gateway,vlan ]
-    members: [ r1, r2, r3 ]
-    device: eos
+    module: [ gateway,ospf,vlan ]
+    members: [ s1,s2,s3 ]
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
 
-nodes: [ r1,r2,r3,h1,h2,h3,h4 ]
-
 vlans:
   red:
-    gateway.anycast.unicast: True
+    gateway: True
+  blue:
+    gateway: True
+
+nodes: [ s1,s2,s3,h1,h2,h3,h4 ]
 
 links:
-- r1:
-  r2:
+- s1:
   h1:
+  vlan.access: red
+- s2:
   h2:
-  gateway: True
-- r1:
+  vlan.access: red
+- s1:
   h3:
   vlan.access: red
-- r2:
+- s2:
   h4:
   vlan.access: red
+- s1:
+  s2:
+  vlan.trunk: [ red, blue ]
+- s1:
+  s3:
+- s2:
+  s3:

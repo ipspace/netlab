@@ -9,9 +9,15 @@ The module is supported on these platforms:
 | Operating system      | Anycast |
 | --------------------- | :-: |
 | Arista EOS            | ✅  |
+| Cumulus Linux         | ✅  |
 
 ```{note}
-* Arista's implementation of anycast gateway is called Virtual ARP
+### Implementation Notes
+
+* The default *netlab* shared MAC address is 0200.cafe.00ff.
+* Vendors use different names for anycast gateways: VARP (Arista), VRR (Cumulus)
+* Arista EOS uses the same shared MAC address on all interfaces. Do not set link-level **gateway.anycast.mac** parameter in topologies using Arista EOS.
+* Arista vEOS cannot use VRRP MAC address as a shared MAC address (default recommended by Cumulus Linux)
 ```
 
 ## Global Parameters

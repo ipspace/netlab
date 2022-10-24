@@ -24,11 +24,28 @@ def check_mlps_vlan_bundle(node: Box) -> None:
     node.interfaces = [ intf for intf in node.interfaces if intf.ifname != ifname ]
 
 def check_mpls_clab(node: Box, topology: Box) -> None:
-  if topology.provider == 'clab':
-      common.error(
-        f'Arista cEOS ({node.name}) does not support MPLS. Use vEOS VM with libvirt provider',
-        common.IncorrectType,
-        'quirks')
+  if devices.get_provider(node,topology) == 'clab':
+    common.error(
+      f'Arista cEOS ({node.name}) does not support MPLS. Use vEOS VM with libvirt provider',
+      common.IncorrectType,
+      'quirks')
+
+def check_shared_mac(node: Box, topology: Box) -> None:
+  if devices.get_provider(node,topology) != 'clab':
+    return
+
+  for intf in node.interfaces:
+    if get_from_box(intf,'gateway.protocol') != 'anycast':              # We hope that VRRP works (not tested yet)
+      continue
+
+    if get_from_box(intf,'vlan'):                                       # Anycast works on VLAN cEOS interfaces
+      continue
+
+    common.error(
+      f'Anycast gateway (VARP) on non-VLAN interfaces does not work on Arista cEOS ({node.name}).\n.. Use vEOS VM with libvirt provider',
+      common.IncorrectType,
+      'quirks')
+    return
 
 class EOS(_Quirks):
 
@@ -41,3 +58,5 @@ class EOS(_Quirks):
       check_mlps_vlan_bundle(node)
     if 'mpls' in mods:
       check_mpls_clab(node,topology)
+    if 'gateway' in mods:
+      check_shared_mac(node,topology)

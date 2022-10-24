@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+cat >/etc/network/interfaces.d/80-gateway.intf <<CONFIG
+{% for intf in interfaces if 'gateway' in intf %}
+auto {{ intf.ifname }}
+iface {{ intf.ifname }}
+{%   if intf.gateway.protocol == 'anycast' %}
+    address-virtual {{ intf.gateway.anycast.mac|hwaddr('linux') }} {{ intf.gateway.ipv4 }}
+{%   endif %}
+{% endfor %}
+CONFIG
+ifreload -a
