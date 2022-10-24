@@ -14,4 +14,5 @@ class EIGRP(_Module):
         _routing.passive(intf,'eigrp')
 
     _routing.remove_unaddressed_intf(node,'ospf')
+    _routing.remove_vrf_interfaces(node,'isis')
     _routing.routing_af(node,'eigrp')

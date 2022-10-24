@@ -103,6 +103,13 @@ Notes:
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 
+## VRF Parameters
+
+* You can specify default area for a VRF OSPF instance with VRF-level **ospf.area** parameter
+* You can change the router ID of a VRF OSPF instance with **ospf.router_id** parameter. Use this parameter when building back-to-back links between VRFs on the same node.
+* Set **ospf.active** to *True* to force a VRF to use OSPF even though there are no routers attached to the VRF interfaces.
+* To disable OSPF in a VRF set **ospf** to *False* (see also [](routing_disable_vrf)).
+
 ## Link Parameters
 
 * **ospf.cost** -- OSPF cost
@@ -110,6 +117,8 @@ You can specify most node parameters as global values (top-level topology elemen
 * **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.bfd** -- enable or disable BFD for OSPF on an individual link or interface (boolean value, overrides node **ospf.bfd** setting)
 * **ospf.passive** -- explicitly enable or disable [passive interfaces](routing.md#passive-interfaces)
+
+To disable OSPF on a link, set **ospf** to *False* (see also [](routing_disable)).
 
 [^NS]: Some OSPF network types (non-broadcast or point-to-multipoint) are not supported by all platforms.
 

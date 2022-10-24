@@ -540,3 +540,4 @@ class BGP(_Module):
     check_bgp_parameters(node)
     build_bgp_sessions(node,topology)
     bgp_set_advertise(node,topology)
+    _routing.remove_vrf_routing_blocks(node,'bgp')

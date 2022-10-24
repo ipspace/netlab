@@ -168,7 +168,9 @@ def remove_vrf_interfaces(node: Box, proto: str) -> None:
 def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
   for l in node.interfaces:
     if proto in l and 'vrf' in l:
-      if node.vrfs[l.vrf][proto] is False:                                  # Skip protocols disabled on VRF level
+      if node.vrfs[l.vrf][proto] is True:                                   # Handle 'force' the protocol by setting it to True
+        node.vrfs[l.vrf][proto] = { 'active': True }
+      elif node.vrfs[l.vrf][proto] is False:                                # Skip protocols disabled on VRF level
         l.pop(proto,None)
         continue
       if not 'interfaces' in node.vrfs[l.vrf][proto]:                       # Start with an empty interface list
@@ -215,3 +217,19 @@ def remove_unused_igp(node: Box, proto: str) -> None:
       return                                                                # ... OK, we're good
 
   node.module = [ m for m in node.module if m != proto ]                    # Makes no sense to keep it, remove the config module
+
+#
+# remove_vrf_routing_blocks -- remove 'proto: False' VRF settings
+#
+
+def remove_vrf_routing_blocks(node: Box, proto: str) -> None:
+  if not 'vrfs' in node:                                                    # No VRFs, no work
+    return
+
+  for vdata in node.vrfs.values():
+    if not proto in vdata:                                                  # This VRFs doesn't care about our protocol, move on
+      continue
+    if not vdata[proto] is False:                                           # Not a false flag
+      continue
+
+    vdata.pop(proto,None)                                                   # Got rid of the false flag

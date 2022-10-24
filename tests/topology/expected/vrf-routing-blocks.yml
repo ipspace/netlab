@@ -1,0 +1,794 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+    - r2
+  as65001:
+    members:
+    - x
+input:
+- topology/input/vrf-routing-blocks.yml
+- package:topology-defaults.yml
+isis:
+  area: 49.0001
+  type: level-2
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.5/30
+    node: r1
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.6/30
+    node: r2
+  isis: false
+  linkindex: 2
+  name: r1-r2 no ISIS
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  type: p2p
+- interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 10.1.0.9/30
+    node: r1
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 10.1.0.10/30
+    node: r2
+  linkindex: 3
+  name: r1-r2 OSPF
+  node_count: 2
+  ospf:
+    area: 51
+  prefix:
+    ipv4: 10.1.0.8/30
+  type: p2p
+  vrf: o_1
+- interfaces:
+  - ifindex: 4
+    ifname: Ethernet4
+    ipv4: 10.1.0.13/30
+    node: r1
+  - ifindex: 4
+    ifname: Ethernet4
+    ipv4: 10.1.0.14/30
+    node: r2
+  linkindex: 4
+  name: r1-r2 no OSPF
+  node_count: 2
+  ospf: false
+  prefix:
+    ipv4: 10.1.0.12/30
+  type: p2p
+  vrf: o_1
+- interfaces:
+  - ifindex: 5
+    ifname: Ethernet5
+    ipv4: 10.1.0.17/30
+    node: r1
+  - ifindex: 5
+    ifname: Ethernet5
+    ipv4: 10.1.0.18/30
+    node: r2
+  linkindex: 5
+  name: r1-r2 no VRF OSPF
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.16/30
+  type: p2p
+  vrf: o_2
+- bridge: input_6
+  interfaces:
+  - ifindex: 6
+    ifname: Ethernet6
+    ipv4: 172.16.0.1/24
+    node: r1
+  linkindex: 6
+  name: r1 force OSPF
+  node_count: 1
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: stub
+  vrf: o_3
+- interfaces:
+  - ifindex: 7
+    ifname: Ethernet7
+    ipv4: 10.1.0.21/30
+    node: r1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.22/30
+    node: x
+  linkindex: 7
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.20/30
+  role: external
+  type: p2p
+  vrf: b_1
+- bgp: false
+  interfaces:
+  - ifindex: 8
+    ifname: Ethernet8
+    ipv4: 10.1.0.25/30
+    node: r1
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.26/30
+    node: x
+  linkindex: 8
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.24/30
+  role: external
+  type: p2p
+  vrf: b_1
+- interfaces:
+  - ifindex: 9
+    ifname: Ethernet9
+    ipv4: 10.1.0.29/30
+    node: r1
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 10.1.0.30/30
+    node: x
+  linkindex: 9
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.28/30
+  role: external
+  type: p2p
+  vrf: b_2
+module:
+- bgp
+- ospf
+- isis
+- vrf
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.2
+        name: r2
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: r1-r2 no ISIS
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.6/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 3
+      ifname: Ethernet3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: r1-r2 OSPF
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 10.1.0.10/30
+        node: r2
+        vrf: o_1
+      type: p2p
+      vrf: o_1
+    - ifindex: 4
+      ifname: Ethernet4
+      ipv4: 10.1.0.13/30
+      linkindex: 4
+      name: r1-r2 no OSPF
+      neighbors:
+      - ifname: Ethernet4
+        ipv4: 10.1.0.14/30
+        node: r2
+        vrf: o_1
+      type: p2p
+      vrf: o_1
+    - ifindex: 5
+      ifname: Ethernet5
+      ipv4: 10.1.0.17/30
+      linkindex: 5
+      name: r1-r2 no VRF OSPF
+      neighbors:
+      - ifname: Ethernet5
+        ipv4: 10.1.0.18/30
+        node: r2
+        vrf: o_2
+      type: p2p
+      vrf: o_2
+    - bgp:
+        advertise: true
+      bridge: input_6
+      ifindex: 6
+      ifname: Ethernet6
+      ipv4: 172.16.0.1/24
+      linkindex: 6
+      name: r1 force OSPF
+      neighbors: []
+      type: stub
+      vrf: o_3
+    - ifindex: 7
+      ifname: Ethernet7
+      ipv4: 10.1.0.21/30
+      linkindex: 7
+      name: r1 -> x
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.22/30
+        node: x
+        vrf: b_1
+      role: external
+      type: p2p
+      vrf: b_1
+    - ifindex: 8
+      ifname: Ethernet8
+      ipv4: 10.1.0.25/30
+      linkindex: 8
+      name: r1 -> x
+      neighbors:
+      - bgp: false
+        ifname: Ethernet2
+        ipv4: 10.1.0.26/30
+        node: x
+        vrf: b_1
+      role: external
+      type: p2p
+      vrf: b_1
+    - ifindex: 9
+      ifname: Ethernet9
+      ipv4: 10.1.0.29/30
+      linkindex: 9
+      name: r1 -> x
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 10.1.0.30/30
+        node: x
+        vrf: b_2
+      role: external
+      type: p2p
+      vrf: b_2
+    - ifindex: 10
+      ifname: Loopback100
+      ipv4: 10.2.0.1/32
+      name: VRF Loopback o_1
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: o_1
+    isis:
+      af:
+        ipv4: true
+      area: 49.0001
+      type: level-2
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - bgp
+    - ospf
+    - isis
+    - vrf
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+    vrf:
+      as: 65000
+    vrfs:
+      b_1:
+        af:
+          ipv4: true
+        bgp:
+          neighbors:
+          - as: 65001
+            ifindex: 7
+            ipv4: 10.1.0.22
+            name: x
+            type: ebgp
+        export:
+        - '65000:4'
+        id: 4
+        import:
+        - '65000:4'
+        rd: '65000:4'
+        vrfidx: 103
+      b_2:
+        af:
+          ipv4: true
+        export:
+        - '65000:5'
+        id: 5
+        import:
+        - '65000:5'
+        rd: '65000:5'
+        vrfidx: 104
+      o_1:
+        af:
+          ipv4: true
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        loopback: true
+        networks:
+        - ipv4: 10.2.0.1/32
+        ospf:
+          active: true
+          area: 17
+          interfaces:
+          - ifindex: 3
+            ifname: Ethernet3
+            ipv4: 10.1.0.9/30
+            linkindex: 3
+            name: r1-r2 OSPF
+            neighbors:
+            - ifname: Ethernet3
+              ipv4: 10.1.0.10/30
+              node: r2
+              vrf: o_1
+            ospf:
+              area: 51
+              network_type: point-to-point
+              passive: false
+            type: p2p
+            vrf: o_1
+          - ifindex: 10
+            ifname: Loopback100
+            ipv4: 10.2.0.1/32
+            name: VRF Loopback o_1
+            neighbors: []
+            ospf:
+              area: 17
+              passive: false
+            type: loopback
+            virtual_interface: true
+            vrf: o_1
+          router_id: 10.0.0.42
+        rd: '65000:1'
+        vrfidx: 100
+      o_2:
+        af:
+          ipv4: true
+        export:
+        - '65000:2'
+        id: 2
+        import:
+        - '65000:2'
+        rd: '65000:2'
+        vrfidx: 101
+      o_3:
+        af:
+          ipv4: true
+        export:
+        - '65000:3'
+        id: 3
+        import:
+        - '65000:3'
+        ospf:
+          active: true
+          area: 0.0.0.0
+          interfaces:
+          - bgp:
+              advertise: true
+            bridge: input_6
+            ifindex: 6
+            ifname: Ethernet6
+            ipv4: 172.16.0.1/24
+            linkindex: 6
+            name: r1 force OSPF
+            neighbors: []
+            ospf:
+              area: 0.0.0.0
+              passive: true
+            type: stub
+            vrf: o_3
+          router_id: 10.0.0.1
+        rd: '65000:3'
+        vrfidx: 102
+  r2:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.1
+        name: r1
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: r1-r2 no ISIS
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.5/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 3
+      ifname: Ethernet3
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: r1-r2 OSPF
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 10.1.0.9/30
+        node: r1
+        vrf: o_1
+      type: p2p
+      vrf: o_1
+    - ifindex: 4
+      ifname: Ethernet4
+      ipv4: 10.1.0.14/30
+      linkindex: 4
+      name: r1-r2 no OSPF
+      neighbors:
+      - ifname: Ethernet4
+        ipv4: 10.1.0.13/30
+        node: r1
+        vrf: o_1
+      type: p2p
+      vrf: o_1
+    - ifindex: 5
+      ifname: Ethernet5
+      ipv4: 10.1.0.18/30
+      linkindex: 5
+      name: r1-r2 no VRF OSPF
+      neighbors:
+      - ifname: Ethernet5
+        ipv4: 10.1.0.17/30
+        node: r1
+        vrf: o_2
+      type: p2p
+      vrf: o_2
+    - ifindex: 6
+      ifname: Loopback100
+      ipv4: 10.2.0.2/32
+      name: VRF Loopback o_1
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: o_1
+    isis:
+      af:
+        ipv4: true
+      area: 49.0001
+      type: level-2
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - bgp
+    - ospf
+    - isis
+    - vrf
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+    vrf:
+      as: 65000
+    vrfs:
+      o_1:
+        af:
+          ipv4: true
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        loopback: true
+        networks:
+        - ipv4: 10.2.0.2/32
+        ospf:
+          active: true
+          area: 17
+          interfaces:
+          - ifindex: 3
+            ifname: Ethernet3
+            ipv4: 10.1.0.10/30
+            linkindex: 3
+            name: r1-r2 OSPF
+            neighbors:
+            - ifname: Ethernet3
+              ipv4: 10.1.0.9/30
+              node: r1
+              vrf: o_1
+            ospf:
+              area: 51
+              network_type: point-to-point
+              passive: false
+            type: p2p
+            vrf: o_1
+          - ifindex: 6
+            ifname: Loopback100
+            ipv4: 10.2.0.2/32
+            name: VRF Loopback o_1
+            neighbors: []
+            ospf:
+              area: 17
+              passive: false
+            type: loopback
+            virtual_interface: true
+            vrf: o_1
+          router_id: 10.0.0.2
+        rd: '65000:1'
+        vrfidx: 100
+      o_2:
+        af:
+          ipv4: true
+        export:
+        - '65000:2'
+        id: 2
+        import:
+        - '65000:2'
+        rd: '65000:2'
+        vrfidx: 101
+  x:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: arista/veos
+    device: eos
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.22/30
+      linkindex: 7
+      name: x -> r1
+      neighbors:
+      - ifname: Ethernet7
+        ipv4: 10.1.0.21/30
+        node: r1
+        vrf: b_1
+      role: external
+      type: p2p
+      vrf: b_1
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.26/30
+      linkindex: 8
+      name: x -> r1
+      neighbors:
+      - bgp: false
+        ifname: Ethernet8
+        ipv4: 10.1.0.25/30
+        node: r1
+        vrf: b_1
+      role: external
+      type: p2p
+      vrf: b_1
+    - ifindex: 3
+      ifname: Ethernet3
+      ipv4: 10.1.0.30/30
+      linkindex: 9
+      name: x -> r1
+      neighbors:
+      - ifname: Ethernet9
+        ipv4: 10.1.0.29/30
+        node: r1
+        vrf: b_2
+      role: external
+      type: p2p
+      vrf: b_2
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - bgp
+    - vrf
+    name: x
+    vrf:
+      as: 65000
+    vrfs:
+      b_1:
+        af:
+          ipv4: true
+        bgp:
+          neighbors:
+          - as: 65000
+            ifindex: 1
+            ipv4: 10.1.0.21
+            name: r1
+            type: ebgp
+        export:
+        - '65000:4'
+        id: 4
+        import:
+        - '65000:4'
+        rd: '65000:4'
+        vrfidx: 100
+      b_2:
+        af:
+          ipv4: true
+        export:
+        - '65000:5'
+        id: 5
+        import:
+        - '65000:5'
+        rd: '65000:5'
+        vrfidx: 101
+ospf:
+  area: 0.0.0.0
+provider: libvirt
+vrf:
+  as: 65000
+vrfs:
+  b_1:
+    export:
+    - '65000:4'
+    id: 4
+    import:
+    - '65000:4'
+    rd: '65000:4'
+  b_2:
+    bgp: false
+    export:
+    - '65000:5'
+    id: 5
+    import:
+    - '65000:5'
+    rd: '65000:5'
+  o_1:
+    export:
+    - '65000:1'
+    id: 1
+    import:
+    - '65000:1'
+    loopback: true
+    ospf:
+      area: 17
+    rd: '65000:1'
+  o_2:
+    export:
+    - '65000:2'
+    id: 2
+    import:
+    - '65000:2'
+    ospf: false
+    rd: '65000:2'
+  o_3:
+    export:
+    - '65000:3'
+    id: 3
+    import:
+    - '65000:3'
+    ospf:
+      active: true
+    rd: '65000:3'

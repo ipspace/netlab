@@ -165,3 +165,33 @@ links:
 ```
 
 You cannot influence IBGP sessions with interface- or link attributes; you have to use [advanced BGP node parameters](bgp-advanced-node).
+
+(routing_disable_vrf)=
+## Disabling a Routing Protocol in VRF
+
+You can disable a VRF instance of OSPF or BGP with **ospf: False** or **bgp: False** VRF parameter.
+
+In the following example, OSPF will be configured in `o_1` but not in `o_2`:
+
+```
+module: [ ospf, vrf ]
+
+defaults.device: eos
+
+vrfs:
+  o_1:
+  o_2:
+    ospf: False
+
+nodes:
+  r1:
+  r2:
+
+links:
+- r1:
+  r2:
+  vrf: o_1            # VRF OSPF is active between r1 and r2
+- r1:
+  r2:
+  vrf: o_2            # No OSPF instance in o_2
+```
