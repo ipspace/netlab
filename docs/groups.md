@@ -101,6 +101,12 @@ While it's perfectly OK to set the desired attribute(s) on individual nodes, it'
 
 The node group attribute will be set on all members of the group. The data is [deep-merged](defaults.md#deep-merging) with the existing node data -- for example, you could set **bgp.advertise_loopback** attribute in group definition without affecting **bgp.as** node attribute.
 
+```{warning}
+Due to a [circular dependency documented in Issue #611](https://github.com/ipspace/netlab/issues/611), the node data specified in groups overwrites the attributes specified in individual nodes.
+
+**Workaround**: Do not specify the same node attributes in groups and individual group members.
+```
+
 Using this functionality, a BGP anycast topology file becomes much more concise than it would have been otherwise:
 
 ```
