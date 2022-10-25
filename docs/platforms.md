@@ -190,23 +190,26 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 [^NSM]: Use **[netlab show module-support](netlab/show.md)** command to display the current system settings
 
-| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | EVPN |
-| --------------------- | :--: | :---: | :---: | :-: | :-: | :--: |
-| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
-| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
-| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
-| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  |
-| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  |
-| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |
-| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  |
-| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |
-| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |
-| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |
-| Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
-| Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |
-| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
-| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |
-| VyOS                  | ✅   |   ✅   |   ❌   | ✅  | ✅  | ✅  |
+| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | EVPN | FHRP |
+| --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
+| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
+| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
+| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
+| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
+| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
+| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
+| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
+| Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
+| Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
+| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| VyOS                  | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+
+**Notes:**
+* FRHP = First-Hop Redundancy Protocol (anycast gateway or VRRP)
 
 (platform-dataplane-support)=
 The following data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
