@@ -10,10 +10,8 @@ from box import Box
 
 from .. import common
 from .. import data
-from ..data.validate import must_be_dict,must_be_list,must_be_string
+from ..data.validate import must_be_dict,must_be_list,must_be_string,validate_attributes
 from . import nodes
-
-group_attr = [ 'members','vars','config','node_data','device','module' ]
 
 '''
 Return members of the specified group. Recurse through child groups if needed
@@ -47,8 +45,7 @@ def check_group_data_structure(topology: Box) -> None:
   if not 'groups' in topology:
     topology.groups = Box({},default_box=True,box_dots=True)
 
-  if not isinstance(topology.groups,dict):
-    common.error('Groups topology-level element should be a dictionary of groups')
+  if must_be_dict(topology,'groups','topology',create_empty=True,module='groups') is None:
     return
 
   '''
@@ -66,10 +63,33 @@ def check_group_data_structure(topology: Box) -> None:
   '''
   Sanity checks on global group data
   '''
+
+  list_of_modules = [ m for m in topology.defaults.keys() \
+                          if isinstance(topology.defaults[m],dict) \
+                            and 'supported_on' in topology.defaults[m] ]
+  group_attr = topology.defaults.attributes.group
+
   for grp,gdata in topology.groups.items():
-    if not isinstance(gdata,Box):
-      common.error('Group definition should be a dictionary: %s' % grp)
+    if must_be_dict(topology.groups,grp,'topology.groups',create_empty=True,module='groups') is None:
       continue
+
+    gpath=f'topology.groups.{grp}'
+    g_modules = gdata.get('module',[])
+    if g_modules:                                                     # Modules specified in the group -- we know what these nodes will use
+      gm_source = 'group'
+    else:
+      gm_source = 'topology'
+      g_modules = topology.get('module',[])
+
+    validate_attributes(
+      data=gdata,
+      topology=topology,
+      data_path=gpath,
+      data_name='group',
+      attr_list=[ 'group','node' ],
+      module='groups',
+      modules=g_modules,
+      module_source=gm_source)
 
     if not 'members' in gdata:
       gdata.members = []
@@ -77,23 +97,30 @@ def check_group_data_structure(topology: Box) -> None:
     if grp == 'all' and gdata.members:
       common.error('Group "all" should not have explicit members')
 
-    if 'vars' in gdata:
-      if not isinstance(gdata.vars,dict):
-        common.error('Group variables must be a dictionary: %s' % grp)
+    must_be_dict(gdata,'vars',gpath,create_empty=False,module='groups')
+    must_be_dict(gdata,'node_data',gpath,create_empty=False,module='groups')
+    must_be_list(gdata,'config',gpath,create_empty=False,module='groups')
+    must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=list_of_modules)
+    must_be_string(gdata,'device',gpath,module='groups',valid_values=list(topology.defaults.devices))
 
-    for attr in ('config','module'):
-      if attr in gdata:
-        must_be_list(gdata,attr,f'groups.{grp}')
+    if 'node_data' in gdata:                          # Validate node_data attributes (if any)
+      validate_attributes(
+        data=gdata.node_data,
+        topology=topology,
+        data_path=f'{gpath}.node_data',
+        data_name='node',
+        attr_list=[ 'node' ],
+        module='groups',
+        modules=g_modules,
+        module_source=gm_source)
 
-    for attr in ('device'):
-      must_be_string(gdata,attr,f'groups.{grp}')
+    for k in list(gdata.keys()):                      # Then move (validated) group node attributes into node_data
+      if k in group_attr:
+        continue
+      gdata.node_data[k] = gdata[k]
+      gdata.pop(k,None)
 
-    for k in gdata.keys():
-      if not k in group_attr:
-        common.error('Unknown attribute "%s" in group %s' % (k,grp))
-
-    if not isinstance(gdata.members,list):
-      common.error('Group members must be a list of nodes or groups: %s' % grp)
+    if must_be_list(gdata,'members',gpath,create_empty=False,module='groups') is None:
       continue
 
     for n in gdata.members:
