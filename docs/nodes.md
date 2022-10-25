@@ -55,6 +55,7 @@ nodes:
       as: 65000
 ```
 
+(node-attributes)=
 ## Node Attributes
 
 *netlab* uses the following node attributes[^NC]:

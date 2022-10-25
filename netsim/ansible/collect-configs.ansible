@@ -1,7 +1,7 @@
 #!/usr/bin/env ansible-playbook
 ---
 - name: Collect device configurations
-  hosts: all
+  hosts: all:!unprovisioned
   gather_facts: false
   vars:
     config_dir: "{{ lookup('env','PWD') }}/{{ target|default('config') }}"
@@ -15,7 +15,15 @@
     run_once: true
     delegate_to: localhost
 
-  - include_tasks: "tasks/fetch-config/{{netlab_device_type}}.yml"
+  - include_tasks: "{{ item }}"
+    name: Collect device configurations
+    with_first_found:
+    - "tasks/fetch-config/{{netlab_device_type}}.yml"
+    - "missing.yml"
+    args:
+      apply:
+        vars:
+          netsim_action: fetch-config
 
   - copy:
       content: "{{ ansible_net_config }}"

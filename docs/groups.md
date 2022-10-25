@@ -37,6 +37,13 @@ The custom node groups are used to create additional groups in Ansible inventory
 
 For example, `netlab config mpls.j2 --limit g1` would deploy configuration template `mpls.j2` only on lab devices A, B and C.
 
+(group-special-names)=
+### Special Group Names
+
+The following groups have special meaning in *netlab*-generated Ansible inventory:
+
+* `unprovisioned`: **netlab up** and **netlab initial** will skip devices in this group while deploying device configurations.
+
 ## Custom Configuration Templates
 
 You can building complex labs with functionality that is not yet part of *netlab* with the help of **[netlab config](netlab/config.md)** command that deploys custom configuration template to a set of lab devices. 
