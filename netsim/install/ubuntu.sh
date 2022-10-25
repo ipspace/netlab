@@ -13,10 +13,10 @@ during the installation process.
 EOM
 
 # Add sudo / root check - ghostinthenet 20220418
-SUDO=''
+SUDO='DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a'
 if [ "$UID" != "0" ]; then
  if [ -x "$(command -v sudo)" ]; then
-  SUDO=sudo
+  SUDO="sudo $SUDO"
  else
   echo 'Script requires root privileges.'
   exit 0
