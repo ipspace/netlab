@@ -18,6 +18,20 @@ from ..augment import devices
 #
 no_propagate_list = ["attributes","extra_attributes","requires","supported_on","no_propagate","config_after","transform_after"]
 
+"""
+Return the authoritative list of all modules.
+
+A module is a top-level 'defaults' dictionary key if the value is a dictionary with 'supported_on' key
+"""
+def list_of_modules(topology: Box) -> list:
+  if not '_modlist' in topology.defaults._globals:
+    topology.defaults._globals._modlist = [ 
+      m for m in topology.defaults.keys() \
+        if isinstance(topology.defaults[m],dict) \
+          and 'supported_on' in topology.defaults[m] ]
+
+  return topology.defaults._globals._modlist
+
 class _Module(Callback):
 
   def __init__(self, data: Box) -> None:

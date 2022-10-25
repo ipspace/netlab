@@ -99,13 +99,9 @@ While it's perfectly OK to set the desired attribute(s) on individual nodes, it'
  
 [^NDT]: Node attributes were stored in **node_data** group attribute prior to *netlab* release 1.4. Starting with release 1.4, you can continue using **node_data** dictionary or set node  attributes directly in group definitions.
 
-The node group attribute will be set on all members of the group. The data is [deep-merged](defaults.md#deep-merging) with the existing node data -- for example, you could set **bgp.advertise_loopback** attribute in group definition without affecting **bgp.as** node attribute.
+The node group attribute will be set on all members of the group. The data is [deep-merged](defaults.md#deep-merging) with the existing node data -- for example, you could set **bgp.advertise_loopback** attribute in group definition without affecting **bgp.as** node attribute[^NDGP].
 
-```{warning}
-Due to a [circular dependency documented in Issue #611](https://github.com/ipspace/netlab/issues/611), the node data specified in groups overwrites the attributes specified in individual nodes.
-
-**Workaround**: Do not specify the same node attributes in groups and individual group members.
-```
+[^NDGP]: In a topology with hierarchical groups, attributes from the innermost groups take precedence. Node attributes from groups with static members have have precedence over node attributes from BGP-generated groups
 
 Using this functionality, a BGP anycast topology file becomes much more concise than it would have been otherwise:
 

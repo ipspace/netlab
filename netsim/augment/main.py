@@ -46,8 +46,6 @@ def transform_data(topology: Box) -> None:
   augment.plugin.execute('pre_transform',topology)
   modules.pre_transform(topology)
 
-  augment.groups.adjust_groups(topology)
-
   augment.plugin.execute('pre_node_transform',topology)
   modules.pre_node_transform(topology)
   augment.nodes.transform(topology,topology.defaults,topology.pools)

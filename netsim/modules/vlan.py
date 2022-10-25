@@ -1034,14 +1034,20 @@ class VLAN(_Module):
       for vname in node.vlans.keys():
         if node.vlans[vname] is None:
           node.vlans[vname] = {}
-        if 'vlans' in topology and vname in topology.vlans:
-          for kw in ('prefix','id','vni'):
-            if kw in node.vlans[vname]:
-              common.error(
-                f'Cannot set {kw} for VLAN {vname} on node {node.name} -- VLAN is defined globally',
-                common.IncorrectValue,
-                'vlan')
-          node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
+        if vname in topology.get('vlans',{}):                                     # We have a VLAN defined globally and in a node
+          for kw in ('prefix','id','vni'):                                        # These three attributes MUST NOT be different
+            if not kw in node.vlans[vname]:                                       # OK, attribute not in node VLAN, move on
+              continue
+
+            if kw in topology.vlans[vname] and node.vlans[vname][kw] == topology.vlans[vname][kw]:
+              continue                                                            # Overlap, but the attributes match. OK...
+
+            common.error(
+              f'Cannot set {kw} for VLAN {vname} on node {node.name} -- VLAN is defined globally',
+              common.IncorrectValue,
+              'vlan')
+
+          node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]           # Merge topology VLAN info into node VLAN info
 
     validate_vlan_attributes(node,topology)
 

@@ -137,6 +137,7 @@ def must_be_dict(
       true_value: typing.Optional[dict] = None,         # Value to use to replace _true_, set _false_ to []
       context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
       module:     typing.Optional[str] = None,          # Module name to display in error messages
+      crash:      bool = False                          # Crash on error
                 ) -> typing.Optional[list]:
 
   value = get_from_box(parent,key)
@@ -145,6 +146,8 @@ def must_be_dict(
       set_dots(parent,key.split('.'),{})
       return parent[key]
     else:
+      if crash:
+        raise common.IncorrectValue()
       return None
 
   if isinstance(value,bool) and not true_value is None:
@@ -155,6 +158,10 @@ def must_be_dict(
     return parent[key]
 
   wrong_type_message(path=path, key=key, expected='a dictionary', value=value, context=context, module=module)
+
+  if crash:
+    raise common.IncorrectType()
+
   return None
 
 def must_be_string(

@@ -10,7 +10,7 @@ import netaddr
 from . import _Module,_routing
 from .. import common
 from .. import data
-from ..data.validate import must_be_int,must_be_list
+from ..data.validate import must_be_int,must_be_list,must_be_dict
 from ..augment import devices
 
 def check_bgp_parameters(node: Box) -> None:
@@ -384,99 +384,69 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
     if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
       l.bgp.advertise = True                # ... otherwise figure out whether to advertise the subnet
 
-class BGP(_Module):
+"""
+process_as_list:
+  If the global BGP parameters have as_list attribute, set node AS numbers and node
+  RR flags accordingly
+"""
+def process_as_list(topology: Box) -> None:
+  if not data.get_from_box(topology,'bgp.as_list'):         # Do we have global bgp.as_list setting?
+    return                                                  # ... nope, no work for me ;)) 
 
-  '''
-  process_as_list:
-    If the global BGP parameters have as_list attribute, set node AS numbers and node
-    RR flags accordingly
-  '''
-  def process_as_list(self, topology: Box) -> None:
-    if not 'bgp' in topology:                            # Do we have global BGP settings?
-      return
+  try:
+    must_be_dict(topology.bgp,'as_list','bgp',create_empty=False,module='bgp',crash=True)
+  except Exception as ex:
+    return
 
-    if not 'as_list' in topology.bgp:                    # Do we have global AS list?
-      return
-
-    if not isinstance(topology.bgp.as_list,dict):
+  node_data = Box({},default_box=True,box_dots=True)
+  node_list = list(topology.nodes.keys())
+  for asn,as_data in topology.bgp.as_list.items():
+    if not isinstance(as_data,Box):
       common.error(
-        "bgp.as_list should be a dictionary of AS parameters",
-        common.IncorrectValue)
-      return
+        f"Invalid value in bgp.as_list for ASN {asn}\n" + \
+        f"... Each ASN in a BGP as_list must be a dictionary with (at least) members key:\n"+
+        f"... Found: {as_data}",
+        common.IncorrectValue,
+        'bgp')
+      continue
+    
+    must_be_list(as_data,'members',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
+    must_be_list(as_data,'rr',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
+    if not as_data.members:
+      common.error(
+        f"BGP as_list for ASN {asn} does not have a valid list of members",
+        common.IncorrectValue,
+        'bgp')
+      continue
 
-    node_data = Box({},default_box=True,box_dots=True)
-    for asn,as_data in topology.bgp.as_list.items():
-      if not isinstance(as_data,Box):
+    for n in as_data.members:
+      if 'as' in node_data[n]:
         common.error(
-          "Invalid value in bgp.as_list for ASN %s: " % asn + \
-          "\n... Each ASN in a BGP as_list must be a dictionary with (at least) members key:"+
-          "\n... Found: %s" % as_data,
+          f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
+          common.IncorrectValue)
+        continue
+      node_data[n]["as"] = asn
+
+    for n in as_data.get('rr',{}):
+      if node_data[n]["as"] != asn:
+        common.error(
+          "Node %s is specified as route reflector in AS %s but is not in member list" % (n,asn),
+          common.IncorrectValue)
+        continue
+      node_data[n].rr = True
+
+  for name,node in topology.nodes.items():
+    if name in node_data:
+      node_as = node.bgp.get("as",None)
+      if node_as and node_as != node_data[name]["as"]:
+        common.error(
+          "Node %s has AS %s but is also in member list of AS %s" % (node.name,node_as,node_data[node.name]["as"]),
           common.IncorrectValue)
         continue
 
-      if not 'members' in as_data:
-        common.error(
-          "BGP as_list for ASN %s does not have a member attribute" % asn,
-          common.IncorrectValue)
-        continue
+      node.bgp = node_data[name] + node.bgp
 
-      must_be_list(as_data,'members',f'bgp.as_list.{asn}')
-      for n in as_data.members:
-        if not n in topology.nodes:
-          common.error(
-            "Invalid node name %s in member list of BGP AS %s" % (n,asn),
-            common.IncorrectValue)
-          continue
-        elif 'as' in node_data[n]:
-          common.error(
-            f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
-            common.IncorrectValue)
-          continue
-        node_data[n]["as"] = asn
-
-      for n in as_data.get('rr',{}):
-        if not n in topology.nodes:
-          common.error(
-            "Invalid node name %s in route reflector list of BGP AS %s" % (n,asn),
-            common.IncorrectValue)
-          continue
-        if node_data[n]["as"] != asn:
-          common.error(
-            "Node %s is specified as route reflector in AS %s but is not in member list" % (n,asn),
-            common.IncorrectValue)
-          continue
-        node_data[n].rr = True
-
-    for name,node in topology.nodes.items():
-      if name in node_data:
-        node_as = node.bgp.get("as",None)
-        if node_as and node_as != node_data[name]["as"]:
-          common.error(
-            "Node %s has AS %s but is also in member list of AS %s" % (node.name,node_as,node_data[node.name]["as"]),
-            common.IncorrectValue)
-          continue
-
-        node.bgp = node_data[name] + node.bgp
-
-  '''
-  bgp_build_group: create automatic groups based on BGP AS numbers
-  '''
-  def build_bgp_groups(self, topology: Box) -> None:
-    for gname,gdata in topology.groups.items():
-      if re.match('as\\d+$',gname):
-        if gdata.get('members',None):
-          common.error('BGP AS groups should not have static members %s' % gname)
-
-    for name,node in topology.nodes.items():
-      if 'bgp' in node and 'as' in node.bgp:
-        grpname = "as%s" % node.bgp["as"]
-        if not grpname in topology.groups:
-          topology.groups[grpname] = { 'members': [] }
-
-        if not 'members' in topology.groups[grpname]:   # pragma: no cover (members list is created in group processing)
-          topology.groups[grpname].members = []
-
-        topology.groups[grpname].members.append(name)
+class BGP(_Module):
 
   """
   Module pre-default:
@@ -485,8 +455,7 @@ class BGP(_Module):
   * create automatic BGP groups
   """
   def module_pre_default(self, topology: Box) -> None:
-    self.process_as_list(topology)
-    self.build_bgp_groups(topology)
+    pass
 
   """
   Node pre-transform: set bgp.rr node attribute to _true_ if the node name is in the
