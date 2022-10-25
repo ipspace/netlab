@@ -1,0 +1,73 @@
+#
+# Anycast gateway on a physical interface
+#
+
+message: |
+  This test case replaces a multi-access LAN with a VLAN -- the switches have VRRP
+  configured on the shared VLAN.
+
+  Static routes on hosts point to the shared anycast IP address. The switches
+  are running OSPF with a third switch to enable network-wide connectivity.
+
+  All hosts should be able to ping the loopback addresses of all switches.
+
+gateway.id: 1
+gateway.protocol: vrrp
+
+groups:
+  switches:
+    module: [ gateway,ospf,vlan ]
+    members: [ s1,s2,s3 ]
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+
+vlans:
+  red:
+    gateway: True
+  blue:
+    gateway: True
+
+nodes: [ s1,s2,s3,h1,h2,h3,h4 ]
+
+links:
+- s1:
+    gateway.vrrp.priority: 250
+    gateway.vrrp.preempt: True
+  h1:
+  vlan.access: red
+- s2:
+  h2:
+  vlan.access: red
+- s1:
+  h3:
+  vlan.access: red
+- s2:
+  h4:
+  vlan.access: red
+- s1:
+  s2:
+  vlan.trunk: [ red, blue ]
+- s1:
+  s3:
+- s2:
+  s3:
+
+#
+# The following "line noise" defines a Jinja2 template that you can use to
+# find the relevant data structures when creating your template.
+#
+# Display gateway-related node- and interface data structures with
+# with 'netlab create _file_ -o format:vrrp'
+#
+defaults.outputs.format:
+  vrrp: |
+    {% for n,n_d in nodes.items() if 'gateway' in n_d.module %}
+
+    {{ n }}:
+        {{ n_d.gateway }}
+    {%   for intf in n_d.interfaces if 'gateway' in intf %}
+      {{ intf.ifname }} {{ intf.name }}:
+        {{ intf.gateway }}
+    {%   endfor %}
+    {% endfor %}

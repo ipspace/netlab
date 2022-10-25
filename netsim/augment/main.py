@@ -60,6 +60,7 @@ def transform_data(topology: Box) -> None:
     common.exit_on_error()
     augment.plugin.execute('pre_link_transform',topology)
     modules.pre_link_transform(topology)
+    common.exit_on_error()
     augment.links.transform(topology.links,topology.defaults,topology.nodes,topology.pools)
     common.exit_on_error()
     augment.plugin.execute('post_link_transform',topology)

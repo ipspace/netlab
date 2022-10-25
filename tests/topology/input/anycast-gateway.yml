@@ -1,0 +1,73 @@
+#
+# Anycast gateway test case
+#
+
+gateway.id: 1
+
+groups:
+  switches:
+    module: [ gateway,vlan,ospf ]
+    members: [ r1, r2 ]
+    device: eos
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+
+nodes:
+  r1:
+  r2:
+  h1:
+  h2:
+  h3:
+  h4:
+    id: 13
+
+vlans:
+  red:                        # Test anycast in a VLAN
+    gateway: True             # ... also verify that the VLAN data is not overwriting gateway data on SVI interface
+
+links:
+- r1:
+  r2:
+  h1:
+  h2:
+  gateway.anycast.unicast: False      # Test removal of unicast IP addresses
+  gateway.id: -2                      # And a negative offset
+- r1:
+  h3:
+  vlan.access: red
+- r2:
+  h4:
+  vlan.access: red
+- r2:                                 # Force sequential allocation through low last-in-subnet IP
+  h4:
+  prefix:
+    ipv4: "10.42.42.0/28"
+  gateway.id: -3
+- r2:                                 # Force sequential allocation through low prefix size -- verify gateway IP is skipped
+  h4:
+  prefix:
+    ipv4: "10.42.42.0/29"
+  gateway: True
+- r2:
+  h4:
+  prefix:
+    ipv4: "172.31.31.0/24"
+    ipv6: "2001:db8:cafe:1::/64"
+  gateway: True
+
+#
+# Use these formats to display a summary of transformed topology when debugging the test case
+#
+# Display anycast information with 'netlab create _file_ -o format:anycast'
+#
+defaults.outputs.format:
+  anycast: |
+    {% for n,n_d in nodes.items() if 'gateway' in n_d.module %}
+    {{ n }}:
+        {{ n_d.gateway }}
+    {%   for intf in n_d.interfaces if 'gateway' in intf %}
+      {{ intf.ifname }} {{ intf.name }}:
+        {{ intf.gateway }}
+    {%   endfor %}
+    {% endfor %}

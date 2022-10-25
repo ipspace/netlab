@@ -1,0 +1,22 @@
+fhrp version vrrp v3
+!
+{% for intf in interfaces if intf.gateway.protocol is defined %}
+interface {{ intf.ifname }}
+{%   if intf.gateway.protocol == 'vrrp' %}
+{%     for af in 'ipv4','ipv6' if af in intf.gateway %}
+  vrrp {{ intf.gateway.vrrp.group }} address-family {{ af }}
+{%     if af == 'ipv4' %}
+    address {{ intf.gateway[af]|ipaddr('address') }}
+{%     else %}
+    address {{ 'fe80::200:5eff:fe00:02%02d' % ( intf.gateway.vrrp.group ) }} primary
+    address {{ intf.gateway[af] }}
+{%     endif %}
+{%     if 'priority' in intf.gateway.vrrp %}
+    priority {{ intf.gateway.vrrp.priority }}
+{%     endif %}
+{%     if intf.gateway.vrrp.preempt|default(False) %}
+    preempt
+{%     endif %}
+{%     endfor %}
+{%   endif %}
+{% endfor %}

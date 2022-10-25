@@ -12,7 +12,18 @@ from box import Box
 from .. import common
 from .. import addressing
 from . import devices
-from ..data.validate import validate_attributes
+from ..data.validate import validate_attributes,must_be_int
+from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
+
+"""
+Reserve a node ID, for example for gateway ID, return True if successful, False if duplicate
+"""
+def reserve_id(n_id: int) -> bool:
+  if is_id_used('node_id',n_id):
+    return False
+
+  extend_id_set('node_id',set([n_id]))
+  return True
 
 """
 Node data structure is a dictionary. Convert lists of dictionaries (now obsolete)
@@ -24,7 +35,6 @@ def create_node_dict(nodes: Box) -> Box:
     node_dict = nodes
   else:
     node_dict = Box({},default_box=True,box_dots=True)
-    node_id = 0
     for n in nodes or []:
       if isinstance(n,dict):
         if not 'name' in n:
@@ -32,8 +42,6 @@ def create_node_dict(nodes: Box) -> Box:
           continue
       elif isinstance(n,str):
         n = Box({ 'name': n },default_box=True,box_dots=True)
-      node_id = node_id + 1
-      n.id = node_id
       node_dict[n.name] = n
 
   for name in list(node_dict.keys()):
@@ -203,19 +211,6 @@ def augment_node_system_data(topology: Box) -> None:
               common.IncorrectValue,
               'nodes')
 
-'''
-get_next_id: given a list of static IDs and the last ID, get the next device ID
-'''
-def get_next_id(id_list: list, id: int) -> int:
-  while id < 254:
-    id = id + 1
-    if not id in id_list:
-      return id
-
-  common.fatal(
-    'Cannot get the next device ID. The lab topology is probably too big')  # pragma: no cover (I'm not going to write a test case for this one)
-  return -1                                                                 # pragma: no cover (making mypy happy)
-
 """
 augment_node_device_data: copy attributes that happen to be node attributes from device defaults into node data
 """
@@ -242,23 +237,20 @@ Main node transformation code
 * set management IP and MAC addresses
 '''
 def transform(topology: Box, defaults: Box, pools: Box) -> None:
-  id = 0
-  id_list = []
-
   for name,n in topology.nodes.items():
-    if 'id' in n:
-      if isinstance(n.id,int) and n.id > 0 and n.id <= 250:
-        id_list.append(n.id)
-      else:
-        common.error('Device ID must be an integer between 1 and 250')
+    if not must_be_int(n,'id',f'nodes.{name}',module='nodes',min_value=1,max_value=250):
+      continue
+    if not reserve_id(n.id):
+      common.error(
+        f'Duplicate static node ID {n.id} on node {n.name}',
+        common.IncorrectValue,
+        'nodes')
 
   common.exit_on_error()
-
-
+  set_id_counter('node_id',1,250)
   for name,n in topology.nodes.items():
     if not 'id' in n:
-      id = get_next_id(id_list,id)
-      n.id = id
+      n.id = get_next_id('node_id')
 
     if not n.name: # pragma: no cover (name should have been checked way before)
       common.fatal(f"Internal error: node does not have a name {n}",'nodes')

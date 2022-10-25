@@ -29,7 +29,7 @@ attributes:
   global: [ addressing,defaults,groups,links,module,name,nodes,plugin,provider ]
   internal: [ input,includes,pools,Provider,Plugin,message ]
   can_be_false: [ link,interface ]
-  link: [ bandwidth,bridge,name,prefix,role,pool,type,unnumbered,interfaces,mtu,gateway,vlan_name ]
+  link: [ bandwidth,bridge,name,prefix,role,pool,type,unnumbered,interfaces,mtu,vlan_name ]
   link_internal: [ linkindex,parentindex ]
   link_no_propagate: [ prefix,interfaces,gateway ]
   link_module_no_propagate: [ vlan ]                  # Do not propagate VLAN attributes to node interfaces -- see #575
@@ -177,6 +177,9 @@ vlan: # VLAN support
     # Do not propagate these attributes into links or SVI interfaces
     vlan_no_propagate: [ id, vni, mode, prefix, evpn ]
     #
+    # Do not copy these VLAN attributes into SVI interfaces
+    vlan_svi_no_propagate: [ gateway ]
+    #
     # Do not copy these attributes into SVI interfaces
     phy_ifattr: [ bridge, ifindex, parentindex, ifname, linkindex, type, vlan, mtu, _selfloop_ifindex ]
     #
@@ -209,6 +212,27 @@ mpls: # LDP, BGP LU, L3VPN and 6PE support
     global: [ ldp, bgp, vpn, 6pe ]
     node: [ ldp, bgp, vpn, 6pe ]
     link: [ ldp ]
+
+gateway:
+  supported_on: [ eos, cumulus, iosv, csr, nxos ]
+  transform_after: [ vlan, vrf, ospf, isis, eigrp ]
+  config_after: [ vlan,vrf ]
+  id: -2
+  protocol: anycast
+  anycast:
+    mac: 0200.cafe.00ff
+    unicast: True
+  vrrp:
+    group: 1
+  no_propagate: [ id, protocol ]
+  attributes:
+    global: [ id, protocol, stub, anycast, vrrp ]
+    node: [ protocol, anycast, vrrp ]
+    can_be_true: [ link ]
+    anycast: [ unicast, mac ]
+    protocols: [ anycast, vrrp ]
+    vrrp: [ group ]
+    link: [ id, ipv4, protocol, stub, anycast, vrrp ]
 
 #
 # Network automation defaults
@@ -387,6 +411,8 @@ devices:
         native_routed: True
       vrf:
         loopback_interface_name: Loopback{vrfidx}
+      gateway:
+        protocol: [ vrrp ]
     external:
       image: none
     graphite.icon: router
@@ -430,6 +456,8 @@ devices:
         6pe: True
       vrf:
         loopback_interface_name: Loopback{vrfidx}
+      gateway:
+        protocol: [ vrrp ]
     libvirt:
       image: cisco/csr1000v
       create:
@@ -473,6 +501,8 @@ devices:
         native_routed: True
       evpn:
         irb: True
+      gateway:
+        protocol: [ vrrp ]
     libvirt:
       create_template: nxos.xml.j2
       image: cisco/nexus9300v
@@ -524,6 +554,8 @@ devices:
         loopback_interface_name: Loopback{vrfidx}
       evpn:
         irb: True
+      gateway:
+        protocol: [ anycast, vrrp ]
     clab:
       interface:
         name: et%d
@@ -726,6 +758,8 @@ devices:
         loopback_interface_name: "lo{vrfidx}"
       evpn:
         irb: True
+      gateway:
+        protocol: [ anycast, vrrp ]
     clab:
       mtu: 1500
       node:

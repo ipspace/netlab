@@ -49,6 +49,12 @@ def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: 
 # Get a global setting or corresponding system default. Use for attributes that are not propagated or early in the
 # transformation logic when the module attributes haven't been propagated yet
 #
+# Use 'get_global_parameter' to get a single value and 'get_global_settings' to get a merged dictionary of
+# default and topology settings
+#
+# Use 'get_global_settings' when you need a dictionary of global module parameters if the module uses
+# 'no_propagate' flag to stop leaking into nodes.
+#
 
 def get_global_parameter(topology: Box, selector: str) -> typing.Optional[typing.Any]:
   value = get_from_box(topology,selector)
@@ -56,6 +62,24 @@ def get_global_parameter(topology: Box, selector: str) -> typing.Optional[typing
     return get_from_box(topology.defaults,selector)
   else:
     return value
+
+def get_global_settings(topology: Box, selector: str) -> typing.Optional[typing.Any]:
+  g_set = get_from_box(topology,selector)
+  d_set = get_from_box(topology.defaults,selector)
+
+  if d_set:                                                           # Found default settings
+    if 'attributes' in d_set:                                         # ... filter them down to actual global attributes
+      d_set = get_box({ k:v for k,v in d_set.items() if k in d_set.attributes['global'] })
+  else:                                                               # No default settings? Just return the g_set
+    return g_set
+
+  if g_set is None:                                                   # No global settings, go for default whatever it is
+    return d_set
+
+  if isinstance(g_set,Box) and isinstance(d_set,Box):                 # We can merge two boxes but nothing else
+    return d_set + g_set                                              # Return a merged value, be careful about precedences
+
+  return g_set                                                        # Can't merge, and we know g_set has some value
 
 #
 # Set a dictionary value specified by a list of keys

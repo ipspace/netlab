@@ -212,6 +212,35 @@ def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
   return ifdata
 
 """
+Set FHRP (anycast/VRRP/...) gateway on a link
+"""
+
+def set_fhrp_gateway(link: Box, pfx_list: Box, link_path: str) -> None:
+  gwid = data.get_from_box(link,'gateway.id')
+  if not gwid:                                                        # No usable gateway ID, nothing to do
+    return
+
+  fhrp_assigned = False
+  for af in common.AF_LIST:
+    if not af in pfx_list or isinstance(pfx_list[af],bool):           # No usable IPv4/IPv6 prefix, nothing to do
+      return
+
+    try:                                                                # Now try to get N-th IP address on that link
+      link.gateway[af] = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix[af]),link.gateway.id)
+      fhrp_assigned = True
+    except Exception as ex:
+      common.error(
+        f'Cannot generate gateway IP address on {link_path}' + \
+        f' from [af] prefix {link.prefix[af]} and gateway ID {link.gateway.id}\n' + \
+        common.extra_data_printout(str(ex)),
+        common.IncorrectValue,
+        'links')
+      return
+
+  if common.debug_active('links') and fhrp_assigned:
+    print(f'... Assigning FHRP address(es): {link.gateway}')
+
+"""
 Assign a prefix (IPv4+IPv6) to a link:
 
 * If the prefix is already defined, validate it
@@ -230,6 +259,8 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
     pfx_list = addressing.parse_prefix(link.prefix)
     if isinstance(link.prefix,str):
       link.prefix = addressing.rebuild_prefix(pfx_list)   # convert str to prefix dictionary
+
+    set_fhrp_gateway(link,pfx_list,link_path)
     return pfx_list
 
   if 'unnumbered' in link:                                # User requested an unnumbered link
@@ -254,6 +285,7 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
   if not link.prefix:
     link.pop('prefix',None)
 
+  set_fhrp_gateway(link,pfx_list,link_path)
   return pfx_list
 
 """
@@ -269,20 +301,43 @@ Return 'error' if the prefix size is too small
 def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool], ndict: Box) -> str:
   if isinstance(pfx,bool):
     return 'unnumbered'
-  if link.type == 'p2p':
+
+  gwid = data.get_from_box(link,'gateway.id') or 0                    # Get link gateway ID (if set) --- must be int for min to work
+  if link.type == 'p2p' and not gwid:                                 # P2P allocation policy cannot be used with default gateway
     return 'p2p' if pfx.first != pfx.last else 'error'
 
   pfx_size = pfx.last - pfx.first + 1
+  add_extra_ip = 0
+  subtract_reserved_ip = -2
+
   if pfx_size > 2:
-    pfx_size = pfx_size - 2
+    if gwid > 0:                                                      # Gateway ID at the front of the subnet -- need one extra IP
+      add_extra_ip = 1
+    if gwid < 0:                                                      # Don't allow node address allocation beyond last-in-subnet gateway
+      subtract_reserved_ip = min(subtract_reserved_ip,gwid)
+
+    pfx_size = pfx_size + subtract_reserved_ip
 
   max_id = max([ ndict[intf.node].id for intf in link.interfaces if intf.node in ndict ])
   if max_id < pfx_size:
     return 'id_based'
-  if len(link.interfaces) < pfx_size:
+  if len(link.interfaces) + add_extra_ip < pfx_size:
     return 'sequential'
 
   return 'error'
+
+"""
+Get Nth IP address in a prefix returned as a nice string with a subnet mask
+
+*** WARNING *** WARNING *** WARNING ***
+
+Parent must catch the exception as we don't know what error text to display
+"""
+
+def get_nth_ip_from_prefix(pfx: netaddr.IPNetwork, n_id: int) -> str:
+  node_addr = netaddr.IPNetwork(pfx[n_id])
+  node_addr.prefixlen = pfx.prefixlen
+  return str(node_addr)
 
 """
 Set an interface address based on the link prefix and interface sequential number (could be node.id or counter)
@@ -321,9 +376,7 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
 
   # No static interface address, or static address specified as relative node_id
   try:
-    node_addr = netaddr.IPNetwork(pfx[node_id])
-    node_addr.prefixlen = pfx.prefixlen
-    intf[af] = str(node_addr)
+    intf[af] = get_nth_ip_from_prefix(pfx,node_id)
     return True
   except Exception as ex:
     common.error(
@@ -351,7 +404,10 @@ def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) 
 
 def IPAM_sequential(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
   start = 1 if pfx.last != pfx.first + 1 else 0
+  gwid = data.get_from_box(link,'gateway.id')
   for count,intf in enumerate(link.interfaces):
+    if count + start == gwid:                                   # Would the next address overlap with gateway ID
+      start = start + 1                                         # ... no big deal, just move the starting point ;)
     set_interface_address(intf,af,pfx,count+start)
 
 def IPAM_p2p(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
@@ -417,8 +473,11 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         allocation_policy = get_prefix_IPAM_policy(link,pfx_net,ndict)    # get IPAM policy based on prefix and link size
 
     if allocation_policy == 'error':                                      # Something went wrong, cannot assing IP addresses
+      rq = f'{len(link.interfaces)} nodes'
+      if data.get_from_box(link,'gateway.id'):
+        rq = rq + f' plus first-hop gateway'
       common.error(
-        f'Cannot use {af} prefix {pfx_list[af]} to address {len(link.interfaces)} nodes on link#{link.linkindex}',
+        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on link#{link.linkindex}',
         common.IncorrectValue,
         'links')
       continue
@@ -630,6 +689,10 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'host_count' in link:      # No hosts attached to the link, get out
     return
 
+  # No IPv4 prefix on the link or unnumbered IPv4 link
+  if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
+    return
+
   link.pop('host_count',None)
   if common.debug_active('links'):
     print(f'Set DGW for {link}')
@@ -639,14 +702,10 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
         link.gateway.ipv4 = ifdata.ipv4
         break
-  else:
-    if not isinstance(ifdata.gateway,dict) or not 'ipv4' in ifdata.gateway:  # pragma: no cover
-      common.error(
-        f'Gateway attribute specified on {link} is not a dictionary with ipv4 key',
-        common.IncorrectValue,
-        'links')
+  elif link.gateway is False:
+    return
 
-  if not 'gateway' in link:         # Didn't find a usable gateway, exit
+  if not 'gateway' in link or not 'ipv4' in link.gateway: # Didn't find a usable gateway, exit
     if common.debug_active('links'):
       print('... not found')
     return
