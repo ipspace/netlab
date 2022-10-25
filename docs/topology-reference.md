@@ -1,6 +1,8 @@
 # Lab Topology Reference
 
-The lab topology is described in a YAML file using a dictionary format. The three major components that should be present in every topology file are:
+The lab topology is described in a YAML file using a dictionary format. You could use [hierarchical attribute names](topology/hierarchy.md) as dictionary keys to make the topology file more readable.
+
+The three major components that should be present in every topology file are:
 
 * **nodes** -- [lab devices (nodes)](nodes.md)
 * **links** -- [links between the lab devices](links.md)
@@ -39,5 +41,6 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    plugins.md
    providers.md
    defaults.md
+   topology/hierarchy.md
    extend-attributes.md
 ```

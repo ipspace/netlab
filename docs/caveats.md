@@ -10,13 +10,15 @@
 * Nexus OS release 9.3 runs in 6 GB of RAM (*netlab* system default).
 * Nexus OS release 10.1 requires 8 GB of RAM and will fail with a cryptic message claiming it's running on unsupported hardware when it doesn't have enough memory.
 * Nexus OS release 10.2 requires at least 10 GB of RAM and crashes when ran as an 8 GB VM.
-* To change the default amount of memory used by a **nxos** device, set the **defaults.devices.nxos.memory** parameter (in MB)
+* To change the default amount of memory used by a **nxos** device, set the **defaults.devices.nxos.memory** parameter (in MB)[^DD]
+
+[^DD]: See [](topology/hierarchy.md) for an in-depth explanation of why attributes with hierarchical names work in *netlab*
 
 ## Cumulus Linux in ContainerLab
 
 * *containerlab* could run Cumulus Linux as a [container or as a micro-VM with *firecracker*](https://containerlab.dev/manual/kinds/cvx/). The default used by *netlab* is to run Cumulus Linux as a container. To change that, add **clab.runtime** parameter to node data.
 * Cumulus Linux ran as a container might report errors related to DHCP client during initial configuration, in which case you might have to disable **apparmor** for DHCP client to get it to run. The hammer-of-Thor command to fix this problem is `sudo systemctl disable apparmor` followed by a reboot, your sysadmin friends probably have a better suggestion.
-* *netlab* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.devices.cumulus.clab.image** parameter (or by editing the `topology-defaults.yml` file included with *netlab*).
+* *netlab* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.devices.cumulus.clab.image**[^DD] parameter (or by editing the `topology-defaults.yml` file included with *netlab*).
 * The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 
 (caveats-cumulus-nvue)=
@@ -27,7 +29,7 @@ You could configure Cumulus Linux 5.0 with configuration templates developed for
 
 NVUE has several shortcomings that prevent *netlab* from configuring basic designs like IBGP on top of IGP. Don't be surprised if the labs that work with **cumulus** device don't work with **cumulus_nvue** device, and please create a GitHub issue whenever you find a glitch. We'd love to know (at least) what doesn't work as expected.
 
-To run Cumulus Linux 5.x with **cumulus** device type, add the following lines to your lab topology:
+To run Cumulus Linux 5.x with **cumulus** device type, add the following lines to your lab topology[^DD]:
 
 ```
 defaults.devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
@@ -53,9 +55,9 @@ devices.cumulus.libvirt.memory: 2048
 
 ## Generic Linux
 
-*Generic Linux device* is a Linux VM running Ubuntu 20.04 or an Alpine/Python container. To use any other Linux distribution, add **image** attribute with the name of Vagrant box or Docker container to the node data[^1]; the only requirements are working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration.
+*Generic Linux device* is a Linux VM running Ubuntu 20.04 or an Alpine/Python container. To use any other Linux distribution, add **image** attribute with the name of Vagrant box or Docker container to the node data[^GL]; the only requirements are working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration.
 
-[^1]: You can also set the **defaults.devices.linux._provider_.image** attribute to change the Vagrant box for all Linux hosts in your lab.
+[^GL]: You can also set the **defaults.devices.linux._provider_.image** attribute to change the Vagrant box for all Linux hosts in your lab.
 
 ### Host Routing
 
