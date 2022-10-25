@@ -4,6 +4,15 @@ First-hop Gateway configuration module implements mechanisms used to implement a
 
 The module supports statically configured anycast gateway IPv4 address and VRRPv3 for IPv4 and IPv6.
 
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Platform Support
+
 The module is supported on these platforms:
 
 | Operating system      | Anycast | VRRPv3 | VRRPv3<br>IPv6 |
@@ -40,17 +49,23 @@ The *gateway* configuration module supports IPv4 anycast gateways -- MAC and IPv
 Anycast implementation of shared first-hop IPv4 address supports these parameters that can be specified globally or on individual links or interfaces.
 
 * **gateway.anycast.unicast** (default: True) -- configure node-specific unicast IP addresses together with anycast IP address.
-* **gateway.anycast.mac** -- Static MAC address used for the anycast IP address
+* **gateway.anycast.mac** -- Static MAC address used for the anycast IPv4 address
 
 ```{tip}
-Many implementations require unique unicast IP addresses configured on the interfaces that have anycast IP address. Set **gateway.anycast.unicast** to *False* only when absolutely necessary.
+Many implementations require unique unicast IPv4 addresses configured on the interfaces that have anycast IPv4 address. Set **gateway.anycast.unicast** to *False* only when absolutely necessary.
 ```
 
 ## Virtual Router Redundancy Protocol (VRRP)
 
-*netlab* supports a single VRRPv3 instance per subnet. The VRRPv3 instance can provide shared IPv4 and IPv6 addresses. More complex topologies like multiple VRRPv3 instances could be deployed with a judicious application of interface parameters[^VNS].
+*netlab* supports a single VRRPv3 instance per subnet/interface. The VRRPv3 instance can provide shared IPv4 and IPv6 addresses.
 
-[^VNS]: These topologies are not supported and will not be integrated into *netlab* core. If you want to have an easier way of configuring the in a lab topology, please feel free to create a plugin.
+```{tip}
+More complex topologies like multiple VRRPv3 instances *on the same subnet* could be deployed with a judicious application of interface parameters[^VNS], but you won't be able to model multiple VRRPv3 instances *per interface*[^VDM].
+```
+
+[^VNS]: These topologies are not supported and will not be integrated into *netlab* core. If you want to have an easier way of configuring them in a lab topology, please feel free to create a plugin.
+
+[^VDM]: That would require a completely different data model. You'll have to use custom configuration templates if you want to implement something along those lines.
 
 ### VRRP Parameters
 
