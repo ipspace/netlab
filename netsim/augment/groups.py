@@ -114,6 +114,13 @@ def check_group_data_structure(topology: Box) -> None:
         modules=g_modules,
         module_source=gm_source)
 
+      for k in ('module','device'):                   # Check that the 'module' or 'device' attributes are not in node_data
+        if k in gdata.node_data:
+          common.error(
+            f'Cannot use attribute {k} in node_data in group {grp}, set it as a group attribute',
+            common.IncorrectValue,
+            'groups')
+
     for k in list(gdata.keys()):                      # Then move (validated) group node attributes into node_data
       if k in group_attr:
         continue
@@ -126,7 +133,6 @@ def check_group_data_structure(topology: Box) -> None:
     for n in gdata.members:
       if not n in topology.nodes and not n in topology.groups:
         common.error('Member %s of group %s is not a valid node or group name' % (n,grp))
-
 
 '''
 Add node-level group settings to global groups
@@ -195,18 +201,25 @@ def copy_group_device_module(topology: Box) -> None:
   for grp in reverse_topsort(topology):
     gdata = topology.groups[grp]
     if 'device' in gdata or 'module' in gdata:
+      if common.debug_active('groups'):
+        print(f'Setting device/module for group {grp}')
       g_members = group_members(topology,grp)
-      if g_members:
-        for name,ndata in topology.nodes.items():
-          if name in g_members:
-            for attr in ('device','module'):
-              if attr in gdata and not attr in ndata:
-                ndata[attr] = gdata[attr]
-      else:
+      if not g_members:
         common.error(
           f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
           common.IncorrectValue,
           'groups')
+        continue
+
+      for name,ndata in topology.nodes.items():
+        if not name in g_members:
+          continue
+
+        for attr in ('device','module'):
+          if attr in gdata and not attr in ndata:
+            ndata[attr] = gdata[attr]
+            if common.debug_active('groups'):
+              print(f'... setting {attr} on {name} to {gdata[attr]}')
 
 '''
 Utility function: merge group value into node value. Deals with scalars and dicts
@@ -229,24 +242,18 @@ Copy node data from group into group members
 def copy_group_node_data(topology: Box) -> None:
   for grp in reverse_topsort(topology):
     gdata = topology.groups[grp]
-    if 'node_data' in gdata:
-      node_data_keys  = set(gdata.node_data.keys())                   # You cannot set device type or node modules with
-      node_data_wrong = False                                         # ... node data, those attributes have to be set
-      for k in ('module','device'):                                   # ... at group level
-        if k in node_data_keys:
-          common.error(
-            f'Cannot use attribute {k} in node_data in group {grp}, set it as a group attribute',
-            common.IncorrectValue,
-            'groups')
-          node_data_wrong = True
-      if node_data_wrong:
-        continue
+    if not 'node_data' in gdata:
+      continue
 
-      g_members = group_members(topology,grp)
-      for name,ndata in topology.nodes.items():
-        if name in g_members:
-          for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
-            merge_node_data(ndata,k,v,ndata.name,grp)
+    g_members = group_members(topology,grp)
+    if common.debug_active('groups'):
+      print(f'copy node data {grp}: {gdata.node_data}')
+    for name,ndata in topology.nodes.items():
+      if name in g_members:
+        if common.debug_active('groups'):
+          print(f'... merging node data with {name}')
+        for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
+          merge_node_data(ndata,k,v,ndata.name,grp)
 
 '''
 Export node_data from groups to topology
