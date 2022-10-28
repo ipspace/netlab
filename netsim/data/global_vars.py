@@ -6,7 +6,6 @@
 
 import typing
 from box import Box
-from ..common import fatal
 
 _topology: typing.Optional[Box] = None
 _globals:  typing.Optional[Box] = None
@@ -31,7 +30,14 @@ get -- get a pointer to a global Box (referenced by name) hidden in topology
 
 def get(varname: str) -> Box:
   if _globals is None:
+    from ..common import fatal
+
     fatal(f'Trying to get global variable {varname} before the global_vars subsystem is initialized')
     return Box({})                  # pragma: no cover -- fatal aborts, but we need to return the right object to keep mypy happy
 
   return _globals[varname]
+
+def get_topology() -> Box:
+  global _topology
+
+  return _topology

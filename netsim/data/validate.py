@@ -435,6 +435,12 @@ def validate_attributes(
       'validate')
     return data
 
+  #
+  # Now that we know the valid attributes are a list, add extra attributes from enabled modules
+  #
+
+  valid.extend([ attr for attr,mod in extra_module_attr.items() if mod in modules ])
+
   # Part 3 -- validate attributes
   #
   # * Anything starting with "_" is OK (internal attributes)

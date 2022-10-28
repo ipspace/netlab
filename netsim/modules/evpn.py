@@ -281,6 +281,27 @@ def set_local_evpn_rd(node: Box) -> None:
         o_data.evpn.rd = f'{node.bgp.router_id}:{o_data.evpn.evi}'
 
 """
+Check whether all VLANs needed for an asymmetric IRB VRF are present on a node
+"""
+
+def check_asym_vlan(vrf_name: str, node: Box, topology: Box) -> None:
+  if not 'vlans' in topology:                                   # No global VLANs, nothing to check
+    return
+
+  for vl_name,vl_data in topology.vlans.items():                # Iterate over global VLANs
+    if not vrf_name in vl_data.get('vrf',''):                   # The VLAN is not in current VRF, skip it
+      continue
+
+    if vl_name in node.get('vlans',{}):                         # Is the VLAN present on the node?
+      continue                                                  # Yeah, everything OK
+
+    common.error(
+      f'VLAN {vl_name} -- part of VRF {vrf_name} that uses asymmetric IRB -- is not present on node {node.name}',
+      common.IncorrectValue,
+      module='evpn',
+      hint='irb_group')
+
+"""
 Check whether VXLAN IRB mode is supported by the device
 """
 def check_node_vrf_irb(node: Box, topology: Box) -> None:
@@ -308,6 +329,8 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
           common.IncorrectValue,
           'evpn')
         continue
+
+      check_asym_vlan(vrf_name,node,topology)
 
 class EVPN(_Module):
 
