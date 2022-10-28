@@ -37,7 +37,7 @@ def get(varname: str) -> Box:
 
   return _globals[varname]
 
-def get_topology() -> Box:
+def get_topology() -> typing.Optional[Box]:
   global _topology
 
   return _topology

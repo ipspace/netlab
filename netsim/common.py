@@ -66,11 +66,14 @@ def error(text: str, category: typing.Type[Warning] = UserWarning, module: str =
   else:
     print(f'{category.__name__} in {module}: {text}',file=sys.stderr)
 
-  if hint is None:
+  if hint is None:                                  # No extra hints
     return
 
   topology = get_topology()
-  mod_hints = topology.defaults.hints[module]
+  if topology is None:                              # No valid topology ==> no hints
+    return
+
+  mod_hints = topology.defaults.hints[module]       # Get hints for current module
 
   if mod_hints[hint]:
     print(extra_data_printout(mod_hints[hint],width=90),file=sys.stderr)
