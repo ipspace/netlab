@@ -25,6 +25,12 @@ A clear and concise description of what you expected to happen.
 Please add the minimum lab topology needed to reproduce the bug
 ```
 
+**Output**
+
+```
+Please add the output you get when running `netlab create` on the minimum lab topology provided
+```
+
 ** Version
 
 * netlab version (as displayed by `netlab version`)
