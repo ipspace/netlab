@@ -22,13 +22,13 @@ def group_members(topology: Box, group: str, count: int = 0) -> list:
     common.error(
       f'Internal error: unknown group {group}',
       common.IncorrectValue,
-      'groups')                    
-    return []                      
+      'groups')
+    return []
 
   if count > 99:                    # pragma: no cover (impossible to get here, recursive groups are checked elsewhere)
     common.fatal(
       'Recursive group definition, aborting',
-      'groups')                    
+      'groups')
 
   for m in topology.groups[group].members:
     if m in topology.nodes:
@@ -68,14 +68,14 @@ def check_group_data_structure(topology: Box) -> None:
                           if isinstance(topology.defaults[m],dict) \
                             and 'supported_on' in topology.defaults[m] ]
   group_attr = topology.defaults.attributes.group
-
+  providers = list(topology.defaults.providers.keys())
   for grp,gdata in topology.groups.items():
     if must_be_dict(topology.groups,grp,'topology.groups',create_empty=True,module='groups') is None:
       continue
 
     gpath=f'topology.groups.{grp}'
     g_modules = gdata.get('module',[])
-    if g_modules:                                                     # Modules specified in the group -- we know what these nodes will use
+    if g_modules:                          # Modules specified in the group -- we know what these nodes will use
       gm_source = 'group'
     else:
       gm_source = 'topology'
@@ -89,7 +89,8 @@ def check_group_data_structure(topology: Box) -> None:
       attr_list=[ 'group','node' ],
       module='groups',
       modules=g_modules,
-      module_source=gm_source)
+      module_source=gm_source,
+      extra_attributes=providers)          # Allow provider-specific settings (not checked at the moment)
 
     if not 'members' in gdata:
       gdata.members = []
@@ -103,7 +104,7 @@ def check_group_data_structure(topology: Box) -> None:
     must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=list_of_modules)
     must_be_string(gdata,'device',gpath,module='groups',valid_values=list(topology.defaults.devices))
 
-    if 'node_data' in gdata:                          # Validate node_data attributes (if any)
+    if 'node_data' in gdata:                 # Validate node_data attributes (if any)
       validate_attributes(
         data=gdata.node_data,
         topology=topology,
@@ -112,16 +113,17 @@ def check_group_data_structure(topology: Box) -> None:
         attr_list=[ 'node' ],
         module='groups',
         modules=g_modules,
-        module_source=gm_source)
+        module_source=gm_source,
+        extra_attributes=providers)          # Allow provider-specific settings (not checked at the moment)
 
-      for k in ('module','device'):                   # Check that the 'module' or 'device' attributes are not in node_data
+      for k in ('module','device'):          # Check that the 'module' or 'device' attributes are not in node_data
         if k in gdata.node_data:
           common.error(
             f'Cannot use attribute {k} in node_data in group {grp}, set it as a group attribute',
             common.IncorrectValue,
             'groups')
 
-    for k in list(gdata.keys()):                      # Then move (validated) group node attributes into node_data
+    for k in list(gdata.keys()):             # Then move (validated) group node attributes into node_data
       if k in group_attr:
         continue
       gdata.node_data[k] = gdata[k]
@@ -159,8 +161,8 @@ Check recursive group definitions
 def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Optional[list]:
   if not group in topology.groups: # pragma: no cover (if we ever get here we're seriously messed up)
     common.fatal(
-      'Internal error: unknown group in check_recursive_chain') 
-    return None  
+      'Internal error: unknown group in check_recursive_chain')
+    return None
 
   chain = chain + [ group ]
   for m in topology.groups[group].members:
