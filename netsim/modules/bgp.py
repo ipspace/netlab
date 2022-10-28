@@ -409,7 +409,7 @@ def process_as_list(topology: Box) -> None:
         common.IncorrectValue,
         'bgp')
       continue
-    
+
     must_be_list(as_data,'members',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
     must_be_list(as_data,'rr',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
     if not as_data.members:

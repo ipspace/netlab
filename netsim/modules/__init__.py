@@ -25,7 +25,7 @@ A module is a top-level 'defaults' dictionary key if the value is a dictionary w
 """
 def list_of_modules(topology: Box) -> list:
   if not '_modlist' in topology.defaults._globals:
-    topology.defaults._globals._modlist = [ 
+    topology.defaults._globals._modlist = [
       m for m in topology.defaults.keys() \
         if isinstance(topology.defaults[m],dict) \
           and 'supported_on' in topology.defaults[m] ]
