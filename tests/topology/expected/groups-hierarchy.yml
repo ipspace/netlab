@@ -20,46 +20,88 @@ groups:
     - g1
     - g3
     node_data:
-      foo: bar
+      ospf:
+        area: 42
   g3:
     device: iosv
     members:
     - e
     module:
     - bgp
+    - ospf
     node_data:
       bgp:
         as: 65000
-      foo: baz
+      ospf:
+        area: 51
 input:
 - topology/input/groups-hierarchy.yml
 - package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: swp1
+    ipv4: 10.1.0.1/30
+    node: a
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv4: 10.1.0.2/30
+    node: e
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
 module:
+- ospf
 - bgp
 name: input
 nodes:
   a:
+    af:
+      ipv4: true
     box: CumulusCommunity/cumulus-vx:4.4.0
     config:
     - g2a
     - a
     device: cumulus
-    foo: bar
     id: 1
-    interfaces: []
+    interfaces:
+    - ifindex: 1
+      ifname: swp1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: a -> e
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 10.1.0.2/30
+        node: e
+      ospf:
+        area: 42
+        network_type: point-to-point
+        passive: false
+      type: p2p
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
       ifname: eth0
       ipv4: 192.168.121.101
       mac: 08-4F-A9-00-00-01
+    module:
+    - ospf
     name: a
+    ospf:
+      af:
+        ipv4: true
+      area: 42
+      router_id: 10.0.0.1
   b:
+    af:
+      ipv4: true
     box: CumulusCommunity/cumulus-vx:4.4.0
     config:
     - b
     device: cumulus
-    foo: bar
     id: 2
     interfaces: []
     loopback:
@@ -68,8 +110,11 @@ nodes:
       ifname: eth0
       ipv4: 192.168.121.102
       mac: 08-4F-A9-00-00-02
+    module: []
     name: b
   c:
+    af:
+      ipv4: true
     box: arista/veos
     device: eos
     id: 3
@@ -80,14 +125,16 @@ nodes:
       ifname: Management1
       ipv4: 192.168.121.103
       mac: 08-4F-A9-00-00-03
+    module: []
     name: c
   d:
+    af:
+      ipv4: true
     box: CumulusCommunity/cumulus-vx:4.4.0
     config:
     - g2a
     - g2b
     device: cumulus
-    foo: bar
     id: 4
     interfaces: []
     loopback:
@@ -96,8 +143,11 @@ nodes:
       ifname: eth0
       ipv4: 192.168.121.104
       mac: 08-4F-A9-00-00-04
+    module: []
     name: d
   e:
+    af:
+      ipv4: true
     bgp:
       advertise_loopback: true
       as: 65000
@@ -117,9 +167,22 @@ nodes:
     - g3
     - e
     device: iosv
-    foo: baz
     id: 5
-    interfaces: []
+    interfaces:
+    - ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: e -> a
+      neighbors:
+      - ifname: swp1
+        ipv4: 10.1.0.1/30
+        node: a
+      ospf:
+        area: 42
+        network_type: point-to-point
+        passive: false
+      type: p2p
     loopback:
       ipv4: 10.0.0.5/32
     mgmt:
@@ -128,11 +191,18 @@ nodes:
       mac: 08-4F-A9-00-00-05
     module:
     - bgp
+    - ospf
     name: e
+    ospf:
+      af:
+        ipv4: true
+      area: 42
+      router_id: 10.0.0.5
   f:
+    af:
+      ipv4: true
     box: CumulusCommunity/cumulus-vx:4.4.0
     device: cumulus
-    foo: bar
     id: 6
     interfaces: []
     loopback:
@@ -141,5 +211,8 @@ nodes:
       ifname: eth0
       ipv4: 192.168.121.106
       mac: 08-4F-A9-00-00-06
+    module: []
     name: f
+ospf:
+  area: 0.0.0.0
 provider: libvirt

@@ -272,54 +272,7 @@ def adjust_modules(topology: Box) -> None:
 Validate module parameters and dependencies
 """
 def module_validate(topology: Box) -> None:
-  check_module_parameters(topology)
   check_module_dependencies(topology)
-
-"""
-check_module_parameters:
-
-Verify global, node, link, and node-on-link data for all modules
-that include _attributes_ element in default settings
-
-parse_module_attributes:
-
-Accept list or dict as module attributes. List format applies to
-all levels (global, node, link, node-on-link), dict format specifies
-lists for every level.
-
-Global attributes are used as default value for node attributes.
-Link attributes are used as default value for node-on-link attributes.
-"""
-
-def check_module_parameters(topology: Box) -> None:
-  mod_attr = Box({},default_box=True,box_dots=True)
-
-  for m in topology.get("module",[]):                      # Iterate over all active modules
-    mod_def = topology.defaults.get(m,{})                  # Get module defaults
-    if mod_def:                                            # Did we get something meaningful?
-      if "attributes" in topology.defaults.get(m,{}):      # ... and does it include "attributes"?
-        mod_attr[m] = parse_module_attributes(topology.defaults[m].attributes)
-#
-#        if topology.get(m,{}):                             # Now we can start: are there global module parameters in topology?
-#          for k in topology[m].keys():                     # Got them - iterate over them
-#            if not k in mod_attr[m]["global"]:             # Did we get a parameter that is not in global attributes? Jeez... barf
-#              common.error(
-#                "Invalid global %s attribute %s" % (m,k),
-#                common.IncorrectValue,
-#                'module')
-
-  for g in topology.get('groups',{}):                    # Inspect node_data in groups
-    if 'node_data' in topology.groups[g]:
-      for m in topology.get('module',[]):                # Iterate over global modules
-        if m in topology.groups[g].node_data:            # Does the group node_data contain module attributes?
-          for k in topology.groups[g].node_data[m]:      # Iterate over module-specific attributes in node_data
-            if not k in mod_attr[m].node:                # Is the attribute a valid node attribute for the module?
-              common.error(
-                f"node_data in group {g} contains invalid attribute {k} for module {m}",
-                common.IncorrectValue,
-                'groups')
-
-  return
 
 """
 Prepare module attribute dictionary
