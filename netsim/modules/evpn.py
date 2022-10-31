@@ -299,8 +299,6 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
           common.IncorrectValue,
           'evpn')
         continue
-
-      vrf_data.pop('ospf',None)                                 # Remove OSPF from EVPN IRB VRF
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
         common.error(
@@ -308,6 +306,8 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
           common.IncorrectValue,
           'evpn')
         continue
+
+    vrf_data.pop('ospf',None)                                 # Remove OSPF from EVPN IRB VRF, in both cases
 
 class EVPN(_Module):
 
