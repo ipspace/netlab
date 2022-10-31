@@ -25,11 +25,11 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | Arista EOS         | ✅  | ✅  |  ❌  | ✅  |
 | Cisco Nexus OS     | ✅  |  ❌  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  |  ❌  |  ❌  | ✅  |
-| Dell OS 10         | ✅  |  ❌  |  ❌  | ✅  |
+| Dell OS 10         | ✅  |  ❌  |  ✅  | ✅  |
 | FRR                | ✅  |  ❌  |  ❌  | ✅  |
 | Nokia SR Linux     | ✅  |  ✅ | ✅  | ✅  |
 | Nokia SR OS        | ✅  |  ❌  | ✅  | ✅  |
-| VyOS               | ✅  |  ❌  |  ❌  | ✅  |
+| VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
 The following table describes per-platform support of individual EVPN/MPLS features:
 
