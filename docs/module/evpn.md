@@ -31,12 +31,6 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | Nokia SR OS        | ✅  |  ❌  | ✅  | ✅  |
 | VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
-The following table describes per-platform support of individual EVPN/MPLS features:
-
-| Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
-| ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  |  ❌  |  ❌  |
-
 ```{note}
 * Arista EOS requires anycast gateway for EVPN/MPLS symmetric IRB configuration. Anycast gateway is not yet supported by _netlab_.
 ```
