@@ -1,0 +1,20 @@
+updates:
+{% for i in interfaces if i.gateway.protocol|default('')=='anycast'
+   and i.type=='svi' and i.vlan.mode|default('irb')=='irb' %}
+{% set if_name_index = i.ifname.split('.') %}
+- path: interface[name={{ if_name_index[0] }}]/subinterface[index={{ if_name_index[1] }}]
+  val:
+{% if i.gateway.anycast.mac is defined %}
+   anycast-gw:
+    anycast-gw-mac: {{ i.gateway.anycast.mac|hwaddr('linux') }}
+{% else %}
+   anycast-gw: { }
+{% endif %}
+
+{%  for af in ('ipv4','ipv6') if af in i.gateway %}
+   {{ af }}:
+    address:
+    - ip-prefix: "{{ i.gateway[af] }}"
+      anycast-gw: True
+{%  endfor %}
+{% endfor %}
