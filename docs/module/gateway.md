@@ -23,6 +23,7 @@ The module is supported on these platforms:
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
+| Nokia SR Linux        | ✅  | ❌  | ❌  |
 
 ## Global Parameters
 
