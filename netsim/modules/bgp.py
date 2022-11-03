@@ -17,7 +17,11 @@ def check_bgp_parameters(node: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
   if not "as" in node.bgp:
-    common.error("Node %s has BGP enabled but no AS number specified" % node.name)
+    common.error(
+      f"Node {node.name} has BGP enabled but no AS number specified",
+      common.MissingValue,
+      'bgp')
+    return
 
   must_be_int(parent=node,key='bgp.as',path=f'nodes.{node.name}',min_value=1,max_value=65535,module='bgp')
 
@@ -467,6 +471,8 @@ class BGP(_Module):
       if node.name in topology.bgp.rr_list:
         node.bgp.rr = True
 
+    check_bgp_parameters(node)
+
   """
   Link pre-transform: Set link role based on BGP nodes attached to the link.
 
@@ -506,7 +512,6 @@ class BGP(_Module):
     if not "bgp" in node:   # pragma: no cover (this should have been caught in check_bgp_parameters)
       common.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
       return
-    check_bgp_parameters(node)
     build_bgp_sessions(node,topology)
     bgp_set_advertise(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')
