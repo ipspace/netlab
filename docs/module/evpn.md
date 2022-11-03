@@ -7,7 +7,7 @@ The current implementation of EVPN module supports:
 * VXLAN-based transport over IPv4 and MPLS-based transport
 * VLAN-Based Service (bridging of a single VLAN within an EVPN Instance)
 * VLAN-Aware Bundle Service (bridging of multiple related VLANs inside a single EVPN Instance)
-* Symmetric IRB
+* Symmetric and asymmetric IRB
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -22,9 +22,9 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  |  ❌  | ✅  |
+| Arista EOS         | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS     | ✅  |  ❌  |  ❌  | ✅  |
-| Cumulus Linux      | ✅  |  ❌  |  ❌  | ✅  |
+| Cumulus Linux      | ✅  |  ❌  | ✅  | ✅  |
 | Dell OS 10         | ✅  |  ❌  |  ❌  | ✅  |
 | FRR                | ✅  |  ❌  |  ❌  | ✅  |
 | Nokia SR Linux     | ✅  |  ✅ | ✅  | ✅  |
@@ -38,7 +38,7 @@ The following table describes per-platform support of individual EVPN/MPLS featu
 | Arista EOS         | ✅  | ✅  |  ❌  |  ❌  |
 
 ```{note}
-* Arista EOS requires anycast gateway for EVPN/MPLS symmetric IRB configuration. Anycast gateway is not yet supported by _netlab_.
+* Arista EOS requires anycast gateway for EVPN/MPLS symmetric IRB configuration.
 ```
 
 EVPN module supports three design paradigms:
@@ -105,7 +105,7 @@ The default value of VRF EVPN Instance identifier is the **vrf.id**.
 
 IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addresses:
 
-* Asymmetric IRB requires no extra parameters[^NS]
+* Asymmetric IRB requires no extra parameters (see [](evpn-asymmetric-irb) section for more details)
 * Symmetric IRB used with VXLAN transport needs a transit VNI that has to be set with the **evpn.transit_vni** parameter.
 * You can set the VRF EVI value with **evpn.evi** parameter.
 
@@ -115,4 +115,34 @@ The **evpn.transit_vni** parameter must specify a globally unique VNI value. It 
 * An *integer value*: static VNI assignment, checked for uniqueness
 * Name of *another VRF*: the **evpn.transit_vni** value is copied from that VRF. Use this setting for complex topologies where VRFs with different connectivity requirements have to share the transit VXLAN segment.
 
-[^NS]: Asymmetric IRB is only supported on Nokia SR OS at the moment
+(evpn-asymmetric-irb)=
+## Asymmetric IRB
+
+Asymmetric IRB is a forwarding paradigm where the ingress PE-device performs routing between source and destination VLAN followed by EVPN bridging, while the egress PE-device performs bridging between EPVN transport (VXLAN or MPLS pseudowire) and destination VLAN.
+
+To make asymmetric IRB work, all EVPN-enabled VLANs participating in a routing domain must be present on all participating PE-devices. EVPN configuration module strictly enforces that requirement -- every EVPN-enabled VLAN belonging to a VRF that uses asymmetric IRB must be present on every node on which the parent VRF is defined.
+
+While you could define VLANs with a **vlans** attribute on every participating device, it's much easier to meet those requirements with a *group* of PE-devices, listing the VLANs participating in an asymmetric IRB routing domain in the group **vlans** attribute:
+
+```
+groups:
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+  switches:
+    members: [ s1,s2 ]
+    module: [ vlan,vxlan,ospf,bgp,evpn,vrf ]
+    bgp.as: 65000
+    vrfs:
+      tenant:
+        ospf: False
+    vlans:
+      red:
+        vrf: tenant
+      blue:
+        vrf: tenant
+```
+
+```{tip}
+Disable OSPF in a VRF using asymmetric IRB unless you connected external router(s) to one of the participating VLANs
+```

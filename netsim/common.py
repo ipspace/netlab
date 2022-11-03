@@ -11,6 +11,7 @@ import pathlib
 
 from jinja2 import Environment, PackageLoader, FileSystemLoader, StrictUndefined, make_logging_undefined
 from box import Box,BoxList
+from .data.global_vars import get_topology
 
 LOGGING : bool = False
 VERBOSE : int = 0
@@ -56,25 +57,40 @@ def fatal(text: str, module: str = 'netlab') -> None:
       print(f'Fatal error in {module}: {text}',file=sys.stderr)
     sys.exit(1)
 
-def error(text: str, category: typing.Type[Warning] = UserWarning, module: str = 'topology') -> None:
+def error(text: str, category: typing.Type[Warning] = UserWarning, module: str = 'topology', hint: typing.Optional[str] = None) -> None:
   global err_count
   err_count = err_count + 1
   if WARNING:
     warnings.warn_explicit(text,category,filename=module,lineno=err_count)
+    return
   else:
     print(f'{category.__name__} in {module}: {text}',file=sys.stderr)
+
+  if hint is None:                                  # No extra hints
+    return
+
+  topology = get_topology()
+  if topology is None:                              # No valid topology ==> no hints
+    return
+
+  mod_hints = topology.defaults.hints[module]       # Get hints for current module
+
+  if mod_hints[hint]:
+    print(extra_data_printout(mod_hints[hint],width=90),file=sys.stderr)
+    mod_hints[hint] = ''
 
 def exit_on_error() -> None:
   global err_count
   if err_count > 0:
     fatal('Cannot proceed beyond this point due to errors, exiting')
 
-def extra_data_printout(s : str) -> str:
+def extra_data_printout(s : str, width: int = 70) -> str:
   lines = []
   for line in s.split('\n'):
     lines.append(textwrap.TextWrapper(
       initial_indent="... ",
-      subsequent_indent="      ").fill(line))
+      subsequent_indent="      ",
+      width=width).fill(line))
 
   return "\n".join(lines)
 
