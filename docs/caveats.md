@@ -112,3 +112,7 @@ This is because the stable release (*1.3*) lacks (or has limitations on) some of
 The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 
 Additionally, using always the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current), should allow to easily track and react to any configuration syntax change (which anyway is a very rare event). In any case, if you find a mis-alignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
+
+## Dell OS10
+
+Dell OS10 uses a concept of a so-called *Virtual Network* interface to try to handle transparently VLANs and VXLANs in the same way. However, it seems that right now it is **NOT** possible to activate OSPF on a *Virtual Network* (VLAN) SVI interface.
