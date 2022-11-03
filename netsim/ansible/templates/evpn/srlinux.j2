@@ -19,5 +19,35 @@ updates:
     rapid-update: True
    route-advertisement:
     rapid-withdrawal: True
+{% endfor %}
 
+{# Enable IP advertisement for all irb interfaces in EVPN vlans #}
+{% set evpn_vrfs = evpn.vlans|selectattr('vrf','defined')|map(attribute='vrf')|list %}
+{% for i in interfaces if i.vrf|default('') in evpn_vrfs and i.type=='svi' and i.vlan.mode|default('irb')=='irb' %}
+{%  set vrf = vrfs[i.vrf] %}
+{%  set symmetric_irb = 'evpn' in vrf and 'transit_vni' in vrf.evpn %}
+- path: /interface[name=irb0]/subinterface[index={{ i.ifname.split('.')[1] }}]
+  val:
+{%  for ip,arpnd in [('ipv4','arp'),('ipv6','neighbor-discovery')] %}
+{%   if ip in i %}
+   {{ ip }}:
+     {{ arpnd }}:
+       learn-unsolicited: {{ True if ip=='ipv4' else 'both' }}
+       evpn:
+        advertise: # Type of ARP/ND entries to be advertised
+        - route-type: dynamic
+          _annotate: "Advertise dynamically learned IPs"
+        - route-type: static
+          _annotate: "Advertise local irb interface IPs"
+{%    if symmetric_irb %}
+       host-route:
+        _annotate: "Create host routes of type 'arp-nd' in ip-vrf route table"
+        populate:
+        - route-type: dynamic
+        # - route-type: static
+        # - route-type: evpn # not for entries learned through EVPN
+{%    endif %}
+{%   endif %}
+
+{%  endfor %}
 {% endfor %}
