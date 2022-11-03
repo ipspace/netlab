@@ -4,9 +4,10 @@ from box import Box
 from netsim import api
 
 """
-Attribute 'proxy_arp' is enabled per VRF; not currently enforced
+Enable 'proxy_arp' attribute per VRF
 """
-# def init(topology: Box) -> None:
+def init(topology: Box) -> None:
+  topology.defaults.attributes.vrf.append('proxy_arp')
 
 """
 Add 'proxy_arp' flag and trigger custom config file for any interfaces that are
