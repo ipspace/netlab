@@ -120,8 +120,6 @@ Validate transit VNI values and register them with the VNI set
 def register_static_transit_vni(topology: Box) -> None:
   vni_set = _dataplane.get_id_set('vni')
   for vrf_name,vrf_data in topology.get('vrfs',{}).items():
-    if vrf_data is None:
-      continue
     must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
 
     transit_vni = data.get_from_box(vrf_data,'evpn.transit_vni')
@@ -164,8 +162,6 @@ def vrf_transit_vni(topology: Box) -> None:
   evpn_transport = data.get_from_box(topology,'evpn.transport') or 'vxlan'
 
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
-    if vrf_data is None:                                        # Skip empty VRF definitions
-      continue
     vni = data.get_from_box(vrf_data,'evpn.transit_vni')        # transit_vni makes no sense with MPLS transport
     if vni and evpn_transport != 'vxlan':
       common.error(
@@ -194,8 +190,6 @@ def vrf_transit_vni(topology: Box) -> None:
 
   vni_start = topology.defaults.evpn.start_transit_vni
   for vrf_name,vrf_data in topology.vrfs.items():               # Second pass: set transit VNI values for VRFs with "transit_vni: True"
-    if vrf_data is None:                                        # Skip empty VRF definitions
-      continue
     if isinstance(data.get_from_box(vrf_data,'evpn.transit_vni'),str):
       continue                                                  # Skip transit_vni string values (will be checked in third pass)
     transit_vni = must_be_int(
