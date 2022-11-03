@@ -50,10 +50,11 @@ def int_value_error(
 def check_valid_values(
       path: str,                                        # Path to the value
       expected: list,                                   # Expected values
-      value: typing.Any,                                # Value we got
-      key: typing.Optional[str] = None,                 # Optional key within the object
-      context: typing.Optional[typing.Any] = None,      # Optional context
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
+      value:    typing.Any,                             # Value we got
+      key:      typing.Optional[str] = None,            # Optional key within the object
+      context:  typing.Optional[typing.Any] = None,     # Optional context
+      module:   typing.Optional[str] = None,            # Module name to display in error messages
+      abort:    bool = False,
                       ) -> bool:
 
   if isinstance(value,list):                            # Deal with lists first
@@ -71,6 +72,9 @@ def check_valid_values(
     f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}',
     common.IncorrectValue,
     module or 'topology')
+
+  if abort:
+    raise common.IncorrectValue()
   return False
 
 #
@@ -103,6 +107,7 @@ def must_be_list(
       context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
       module:     typing.Optional[str] = None,          # Module name to display in error messages
       valid_values: typing.Optional[list] = None,       # List of valid values
+      abort:      bool = False,
                 ) -> typing.Optional[list]:
 
   value = get_from_box(parent,key)
@@ -111,6 +116,8 @@ def must_be_list(
       set_dots(parent,key.split('.'),[])
       return parent[key]
     else:
+      if abort:
+        raise common.IncorrectValue()
       return None
 
   if isinstance(value,bool) and not true_value is None:
@@ -123,10 +130,13 @@ def must_be_list(
 
   if isinstance(value,list):
     if not valid_values is None:
-      check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module)
+      check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module, abort=abort)
     return parent[key]
 
   wrong_type_message(path=path, key=key, expected='a scalar or a list', value=value, context=context, module=module)
+  if abort:
+    raise common.IncorrectType()
+
   return None
 
 def must_be_dict(
@@ -137,7 +147,7 @@ def must_be_dict(
       true_value: typing.Optional[dict] = None,         # Value to use to replace _true_, set _false_ to []
       context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
       module:     typing.Optional[str] = None,          # Module name to display in error messages
-      crash:      bool = False                          # Crash on error
+      abort:      bool = False                          # Crash on error
                 ) -> typing.Optional[list]:
 
   value = get_from_box(parent,key)
@@ -146,7 +156,7 @@ def must_be_dict(
       set_dots(parent,key.split('.'),{})
       return parent[key]
     else:
-      if crash:
+      if abort:
         raise common.IncorrectValue()
       return None
 
@@ -159,7 +169,7 @@ def must_be_dict(
 
   wrong_type_message(path=path, key=key, expected='a dictionary', value=value, context=context, module=module)
 
-  if crash:
+  if abort:
     raise common.IncorrectType()
 
   return None

@@ -11,6 +11,7 @@ from box import Box
 # Related modules
 from .. import common
 from ..data import get_from_box
+from ..data.validate import must_be_list
 from ..callback import Callback
 from ..augment import devices
 
@@ -119,13 +120,22 @@ def post_transform(topology: Box) -> None:
 # Set default list of modules for nodes without specific module list
 #
 def augment_node_module(topology: Box) -> None:
-  if not 'module' in topology:
-    return
+  g_module = topology.get('module',[])
+  mod_list = sorted(list_of_modules(topology))
 
-  module = topology['module']
   for name,n in topology.nodes.items():
-    if not 'module' in n and n.get('role') != 'host' and devices.get_device_attribute(n,'role',topology.defaults) != 'host':
-      n.module = module
+    if 'module' in n:
+      must_be_list(
+        parent=n,
+        key='module',
+        path=f'nodes.{name}',
+        create_empty=False,
+        valid_values=mod_list)
+      continue
+
+    # Copy global modules (if they exist) into non-host devices
+    if g_module and n.get('role') != 'host' and devices.get_device_attribute(n,'role',topology.defaults) != 'host':
+      n.module = g_module
 
 # Check whether the modules defined on individual nodes are valid module names
 # and supported by the node device type
@@ -200,15 +210,26 @@ adjust_global_modules: last phase of global module adjustments
 * copy global settings into node settings (apart from no_propagate attributes)
 '''
 def adjust_global_modules(topology: Box) -> None:
-  mod_dict = { m : None for m in topology.get('module',[]) }
+  if 'module' in topology:
+    mod_list = sorted(list_of_modules(topology))
+    must_be_list(
+      parent=topology,
+      key='module',
+      path='topology',
+      create_empty=False,
+      valid_values=mod_list)
+
+  mods = list(topology.module)
   for name,n in topology.nodes.items():
-    for m in n.get('module',[]):
-      mod_dict[m] = None
+    if not 'module' in n:
+      continue
 
-  if not mod_dict:
-    return
+    mods.extend(n.module)
 
-  topology.module = list(mod_dict.keys())
+  if not mods:
+    topology.pop('module',None)
+  else:
+    topology.module = sorted(set(mods))
 
 """
 Merge default module parameters with global module parameters
@@ -277,6 +298,7 @@ def adjust_modules(topology: Box) -> None:
   if not 'module' in topology:
     return
     
+  common.exit_on_error()
   module_transform("init",topology)
   merge_node_module_params(topology)
   merge_global_module_params(topology)
