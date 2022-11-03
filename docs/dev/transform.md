@@ -20,6 +20,10 @@ The data transformation has three major steps:
 	* Add group members based on nodes' **group** attribute
 	* Check recursive groups
 	* Copy group **device** and **module** attribute into nodes
+	* Copy group **node_data** into nodes
+	* Process **bgp.as_list** to get **bgp.as** node attributes
+	* Create BGP autogroups (groups based on BGP AS numbers)
+	* Copy **node_data** from BGP autogroups into nodes
 
 * Adjust the list of links -- transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
 * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
@@ -40,7 +44,6 @@ The data transformation has three major steps:
 * Execute **pre_transform** plugin hooks (`netsim.augment.plugin.execute`)
 * Execute [**pre_transform** module adjustments](#adjust-global-module-parameters) (`netsim.modules.adjust_modules`)
 * Execute **pre_transform** [node-](#node-level-module-hooks) and [link-level](#link-level-module-hooks) module hooks
-* Adjust node groups: copy group-level **node_data** settings into all member nodes (`netsim.augment.groups.adjust_groups`):
 * Validate top-level topology elements (`netsim.augment.topology.check_global_elements`)
 
 ## Node Data Transformation

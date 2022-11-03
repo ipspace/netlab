@@ -5,11 +5,14 @@ top-level element. That dictionary is merged from global- and node-level paramet
 '''
 
 import typing
+import re
 
 from box import Box
 
 from .. import common
 from .. import data
+from .. import modules
+from ..modules import bgp
 from ..data.validate import must_be_dict,must_be_list,must_be_string,validate_attributes
 from . import nodes
 
@@ -64,9 +67,7 @@ def check_group_data_structure(topology: Box) -> None:
   Sanity checks on global group data
   '''
 
-  list_of_modules = [ m for m in topology.defaults.keys() \
-                          if isinstance(topology.defaults[m],dict) \
-                            and 'supported_on' in topology.defaults[m] ]
+  list_of_modules = modules.list_of_modules(topology)
   group_attr = topology.defaults.attributes.group
   providers = list(topology.defaults.providers.keys())
   for grp,gdata in topology.groups.items():
@@ -144,8 +145,7 @@ def add_node_level_groups(topology: Box) -> None:
     if not 'group' in n:
       continue
 
-    if isinstance(n.group,str):                           # Node group should be a list
-      n.group = [ n.group ]                               # Convert a string value into a single-element list
+    must_be_list(n,'group',f'nodes.{name}')
 
     for grpname in n.group:
       if not grpname in topology.groups:
@@ -224,38 +224,26 @@ def copy_group_device_module(topology: Box) -> None:
               print(f'... setting {attr} on {name} to {gdata[attr]}')
 
 '''
-Utility function: merge group value into node value. Deals with scalars and dicts
-'''
-def merge_node_data(ndata: Box, k: str, v: typing.Any, node_name: str, group_name: str) -> None:
-  if not k in ndata:
-    ndata[k] = v
-  if isinstance(ndata[k],dict):
-    if isinstance(v,dict):
-      ndata[k] = ndata[k] + v
-    else:
-      common.error(
-        f'Cannot merge non-dictionary node_data {k} from group {group_name} into node {node_name}',
-        common.IncorrectValue,
-        'groups')
-
-'''
 Copy node data from group into group members
 '''
-def copy_group_node_data(topology: Box) -> None:
+def copy_group_node_data(topology: Box,pfx: str) -> None:
   for grp in reverse_topsort(topology):
+    if not grp.startswith(pfx):                                       # Skip groups that don't match the current prefix (ex: BGP autogroups)
+      continue
     gdata = topology.groups[grp]
-    if not 'node_data' in gdata:
+    if not 'node_data' in gdata:                                      # No group data, skip
       continue
 
-    g_members = group_members(topology,grp)
+    g_members = group_members(topology,grp)                           # Get recursive list of members
     if common.debug_active('groups'):
       print(f'copy node data {grp}: {gdata.node_data}')
-    for name,ndata in topology.nodes.items():
-      if name in g_members:
-        if common.debug_active('groups'):
-          print(f'... merging node data with {name}')
-        for k,v in gdata.node_data.items():   # Have to go one level deeper, changing ndata value wouldn't work
-          merge_node_data(ndata,k,v,ndata.name,grp)
+    for name in g_members:                                            # Iterate over group members
+      if not name in topology.nodes:                                  # Member is not a node, skip it
+        continue
+
+      if common.debug_active('groups'):
+        print(f'... merging node data with {name}')
+      topology.nodes[name] = gdata.node_data + topology.nodes[name]
 
 '''
 Export node_data from groups to topology
@@ -300,6 +288,44 @@ def export_group_node_data(
             topology[key][obj_name][attr] = obj_data[attr]
 
 #
+# create_bgp_autogroups -- create BGP AS groups
+#
+
+def create_bgp_autogroups(topology: Box) -> None:
+  g_module = topology.get('module',[])                          # Global list of modules, could be invalid
+  if not isinstance(g_module,list):                             # Won't deal with incorrectly formatted 'module' attribute here
+    g_module = []                                               # ... just assume it's an empty list
+  g_bgpas = data.get_global_parameter(topology,'bgp.as')        # Try to get the global BGP AS
+  if not data.is_true_int(g_bgpas):                             # ... don't worry if it's not int, someone else will complain
+    g_bgpas = 0
+
+  for gname,gdata in topology.groups.items():                   # Sanity check: BGP autogroups should not have static members
+    if re.match('as\\d+$',gname):
+      if gdata.get('members',None):                             # Well, it's OK to have an empty list of members ;)
+        common.error(
+          f'BGP AS group {gname} should not have static members',
+          common.IncorrectValue,
+          'groups')
+
+  for n_name,n_data in topology.nodes.items():                  # Now iterate over nodes
+    n_module = n_data.get('module',g_module)                    # Get node or global module (global modules haven't been propagated yet)
+    if not isinstance(n_module,list):                           # Node list of modules is insane, someone else will complain
+      continue
+
+    if not 'bgp' in n_module:                                   # Looks like this node does not care about BGP
+      continue
+
+    n_bgpas = data.get_from_box(n_data,'bgp.as') or g_bgpas     # Get node-level or global BGP AS
+    if not n_bgpas:
+      continue
+
+    grpname = f"as{n_bgpas}"                                    # BGP auto-group name
+    if not 'members' in topology.groups[grpname]:               # Set members of a new group to an empty list
+      topology.groups[grpname].members = []                     # ... because we're using Box this also creates an empty group dict
+
+    topology.groups[grpname].members.append(n_name)             # ... and append the node to AS group
+
+#
 # init_groups:
 #
 # * Check and adjust group data structures
@@ -318,22 +344,11 @@ def init_groups(topology: Box) -> None:
   common.exit_on_error()
 
   copy_group_device_module(topology)
-
-#
-# adjust_groups:
-#
-# * Copy group data into nodes
-#
-# We have to split the group initialization code into two phases
-# due to BGP auto groups.
-#
-def adjust_groups(topology: Box) -> None:
-  copy_group_node_data(topology)
+  copy_group_node_data(topology,'')                 # Copy all group data into nodes (potentially setting bgp.as)
+  bgp.process_as_list(topology)
+  create_bgp_autogroups(topology)                   # Create AS-based groups
+  copy_group_node_data(topology,'as')               # And add group data from 'asxxxx' into nodes
   common.exit_on_error()
-
-  '''
-  Finally, remove 'groups' topology element if it's not needed
-  '''
   if not topology.groups:
     del topology['groups']
 
