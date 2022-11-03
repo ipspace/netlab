@@ -22,10 +22,10 @@ updates:
 {% endfor %}
 
 {# Enable IP advertisement for all irb interfaces in EVPN vlans #}
-{% set evpn_vrfs = evpn.vlans|selectattr('vrf','defined')|map(attribute='vrf')|list %}
-{% for i in interfaces if i.vrf|default('') in evpn_vrfs and i.type=='svi' and i.vlan.mode|default('irb')=='irb' %}
+{% if vrfs %}
+{% for i in interfaces if i.vrf is defined and vrfs[i.vrf].evpn is defined and i.type=='svi' and i.vlan.mode|default('irb')=='irb' %}
 {%  set vrf = vrfs[i.vrf] %}
-{%  set symmetric_irb = 'evpn' in vrf and 'transit_vni' in vrf.evpn %}
+{%  set symmetric_irb = 'transit_vni' in vrf.evpn %}
 - path: /interface[name=irb0]/subinterface[index={{ i.ifname.split('.')[1] }}]
   val:
 {%  for ip,arpnd in [('ipv4','arp'),('ipv6','neighbor-discovery')] %}
@@ -51,3 +51,4 @@ updates:
 
 {%  endfor %}
 {% endfor %}
+{% endif %}
