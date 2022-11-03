@@ -198,7 +198,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
-| Dell OS10             | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| Dell OS10             | [❗](caveats.html#dell-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
 | Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |

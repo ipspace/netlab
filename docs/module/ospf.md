@@ -47,7 +47,7 @@ The following table describes per-platform support of individual router-level OS
 | Cisco Nexus OS           |   ✅  |            ✅          |   ✅  |  ✅  |
 | Cumulus Linux            |   ✅  |            ✅          |   ✅  |  ❌  |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅          |   ❌   |  ❌  |
-| Dell OS10                |   ✅  |            ✅          |   ✅   |  ✅  |
+| Dell OS10 ([❗](caveats.html#dell-os10))            |   ✅  |            ✅          |   ✅   |  ✅  |
 | Fortinet FortiOS         |   ❗  |            ✅          |   ❌   |  ❌  |
 | FRR 7.5.0                |   ✅  |            ✅          |   ✅   |  ❌  |
 | Juniper vSRX 3.0         |   ✅  |            ✅          |   ✅   |  ✅  |
@@ -60,6 +60,7 @@ The following table describes per-platform support of individual router-level OS
 **Notes:**
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
+* Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, which is the VLAN implementation model currently used in our templates.
 
 The following table documents the interface-level OSPF features:
 
