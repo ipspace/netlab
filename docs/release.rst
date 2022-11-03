@@ -2,8 +2,12 @@ Release notes
 =============
 
 XXXX-XX-XX (release 1.4)
-  * EVPN MPLS transport on Arista EOS and Nokia SR Linux
+  * EVPN asymmetric IRB
+  * Anycast gateway and VRRP
+  * EVPN MPLS transport
+  * New address allocation algorithm for links with small IPv4 prefixes
   * Tighter control of VXLAN-enabled and EVPN-controlled VLANs and VRFs
+  * Unmanaged and unprovisioned devices
 
   :doc:`More details <release/1.4>`
 

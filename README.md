@@ -6,7 +6,7 @@
 * Create *containerlab* configuration file
 * Create Ansible inventory and configuration file
 * Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, and BGP routing design
-* Configure IPv4, IPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
+* Configure IPv4, IPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, VRRP, anycast gateways, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
 
 Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
@@ -14,9 +14,9 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release 1.3.2](https://github.com/ipspace/netlab/releases/tag/release_1.3.2). It should be pretty stable, otherwise there's always the 1.2 release train.
+The latest release is [release 1.4.0](https://github.com/ipspace/netlab/releases/tag/release_1.4.0). We refactored several configuration modules and significantly improved topology validation, resulting in a number of potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html) first.
 
-More details in [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html).
+The latest stable release is [release 1.3.3](https://github.com/ipspace/netlab/releases/tag/release_1.3.3).
 
 ## An overview of tools:
 

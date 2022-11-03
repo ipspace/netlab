@@ -204,8 +204,8 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
-| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
-| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
 
 **Notes:**
