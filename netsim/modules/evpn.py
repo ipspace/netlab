@@ -292,6 +292,9 @@ def check_asym_vlan(vrf_name: str, node: Box, topology: Box) -> None:
     if not vrf_name in vl_data.get('vrf',''):                   # The VLAN is not in current VRF, skip it
       continue
 
+    if not 'evpn' in vl_data:                                   # VLAN is not EVPN-enabled, so it doesn't have to be present everywhere
+      continue
+
     if vl_name in node.get('vlans',{}):                         # Is the VLAN present on the node?
       continue                                                  # Yeah, everything OK
 

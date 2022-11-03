@@ -120,7 +120,7 @@ The **evpn.transit_vni** parameter must specify a globally unique VNI value. It 
 
 Asymmetric IRB is a forwarding paradigm where the ingress PE-device performs routing between source and destination VLAN followed by EVPN bridging, while the egress PE-device performs bridging between EPVN transport (VXLAN or MPLS pseudowire) and destination VLAN.
 
-All VLANs participating in a routing domain must be present on all participating PE-devices, and EVPN configuration module strictly enforces that requirement -- every VLAN belonging to a VRF that uses asymmetric IRB must be present on every node on which the parent VRF is defined.
+To make asymmetric IRB work, all EVPN-enabled VLANs participating in a routing domain must be present on all participating PE-devices. EVPN configuration module strictly enforces that requirement -- every EVPN-enabled VLAN belonging to a VRF that uses asymmetric IRB must be present on every node on which the parent VRF is defined.
 
 While you could define VLANs with a **vlans** attribute on every participating device, it's much easier to meet those requirements with a *group* of PE-devices, listing the VLANs participating in an asymmetric IRB routing domain in the group **vlans** attribute:
 
