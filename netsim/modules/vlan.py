@@ -980,7 +980,8 @@ fix_vlan_gateways -- set VLAN-wide gateway IP
 The link augmentation code sets gateway IP for hosts connected to physical links. That approach does not work
 for VLAN subnets stretched across multiple physical links. We have to fix that here based on host neighbor list.
 
-Please note that we'll have to fix this code when we implement the first-hop gateway module
+Please note that when a first-hop gateway is applied to a VLAN, the link transformation code sets gateway.ipv4
+on every segment of the VLAN, and consequently sets gateway.ipv4 for all hosts attached to a VLAN-enabled link
 """
 def fix_vlan_gateways(topology: Box) -> None:
   for node in topology.nodes.values():
