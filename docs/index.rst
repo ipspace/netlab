@@ -57,6 +57,7 @@ Getting Started
    cli-overview.md
    example/addressing-tutorial.md
    example/vrf-tutorial.md
+   example/external.md
 ..
 
 .. toctree::
