@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 sys.path.append('..')
 
-version="1.3.3-post1"
+version="1.4.0"
 
 setup(
   name="netsim-tools",

@@ -1,7 +1,7 @@
 Release notes
 =============
 
-XXXX-XX-XX (release 1.4)
+2022-11-04 (release 1.4)
   * EVPN asymmetric IRB
   * Anycast gateway and VRRP
   * EVPN MPLS transport
