@@ -80,6 +80,24 @@ nodes:
       '/var/run/docker.sock': '/var/run/docker.sock'
 ```
 
+### Generating and binding custom config files
+
+In addition to binding pre-existing files, Netlab can also generate custom config files on the fly based on templates.
+For example, this is used internally to create the list of daemons for the **frr** container image:
+
+```
+frr:
+ clab:
+  image: frrouting/frr:v8.3.1
+  mtu: 1500
+  node:
+    kind: linux
+    config_templates:
+      daemons: /etc/frr/daemons
+```
+
+```daemons``` references ```templates/provider/clab/frr/daemons.j2``` (```.j2``` is implied); the result gets mapped to /etc/frr/daemons
+
 ## Using Other Containerlab Node Parameters
 
 Default *netlab* settings support these additional *containerlab* parameters:
