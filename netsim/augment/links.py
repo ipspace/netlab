@@ -120,7 +120,7 @@ def validate(topology: Box) -> None:
       validate_attributes(
         data=intf,                                      # Validate interface data
         topology=topology,
-        data_path=f'linkpath.{intf.node}',
+        data_path=f'{linkpath}.{intf.node}',
         data_name=f'interface',
         attr_list=['interface','link'],                 # We're checking interface or link attributes
         modules=n_data.get('module',[]),                # ... against node modules
