@@ -1,0 +1,49 @@
+hostname {{ inventory_hostname }}
+domain-name lab.local
+!
+{% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
+{%   if v.loopback.ipv4 is defined %}
+name {{ v.loopback.ipv4|ipaddr('address') }} {{ k }}
+{%   endif %}
+{% endfor %}
+!
+{% for l in interfaces|default([]) %}
+interface {{ l.ifname }}
+  no shutdown
+  nameif {{ l.ifname }}
+{% if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
+{% endif %}
+{#
+    Set interface addresses: IPv4
+#}
+{% if 'ipv4' in l %}
+{%   if l.ipv4|ipv4 %}
+ ip address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
+{%   else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%   endif %}
+{% endif %}
+{#
+    Set interface addresses: IPv6
+#}
+{% if 'ipv6' in l %}
+{%   if l.ipv6 == True %}
+ ipv6 enable
+{%   elif l.ipv6|ipv6 %}
+ ipv6 address {{ l.ipv6|upper }}
+{%   else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%   endif %}
+{% endif %}
+!
+{#
+    Set MTU
+#}
+{% if l.mtu is defined %}
+mtu {{ l.ifname }} {{ l.mtu }}
+{% endif %}
+!
+{% endfor %}

@@ -1,0 +1,29 @@
+{#
+   Address family BGP neighbor definition
+#}
+{% macro neighbor_af(n,ip,bgp) %}
+  neighbor {{ ip }} activate
+  neighbor {{ ip }} remote-as {{ n.as }}
+{% if n.type == 'ibgp' %}
+{#{%   if bgp.community.ibgp|default([]) %}
+  neighbor {{ ip }} send-community 
+{%   endif %}#}
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+  neighbor {{ ip }} next-hop-self
+{%   endif %}
+{# {% else %}{# EBGP IPv4 neighbor #}
+{%   if bgp.community.ebgp|default([]) %}
+  neighbor {{ ip }} send-community
+{%   endif %}
+ #}{% endif %}
+{%- endmacro -%}
+{#
+   BGP network statement
+#}
+{% macro bgp_network(af,pfx) %}
+{%   if af == 'ipv4' %}
+  network {{ pfx|ipaddr('network') }} mask {{ pfx|ipaddr('netmask') }}
+{%   else %}
+  network {{ pfx|ipaddr('0') }}
+{%   endif %}
+{%- endmacro %}

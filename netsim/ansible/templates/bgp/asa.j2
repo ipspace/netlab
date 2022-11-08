@@ -1,0 +1,26 @@
+{% import "asa.macro.j2" as bgpcfg %}
+!
+router bgp {{ bgp.as }}
+{% if bgp.router_id|ipv4 %}
+  bgp router-id {{ bgp.router_id }}
+{% endif %}
+
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+  address-family {{ af }} unicast
+    neighbor {{ n[af] }} remote-as {{ n.as }}
+    neighbor {{ n[af] }} description {{ n.name }}
+{%     if loopback[af] is defined and bgp.advertise_loopback %}
+    {{ bgpcfg.bgp_network(af,loopback[af]) }}
+{%     endif %}
+{%     for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
+    {{ bgpcfg.bgp_network(af,l[af]) }}
+{%     endfor %}
+{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+    {{ bgpcfg.bgp_network(af,pfx) }}
+{%     endfor %}
+{%     for n in bgp.neighbors if n[af] is defined %}
+    {{ bgpcfg.neighbor_af(n,n[af],bgp) }}
+{%     endfor %}
+{%   endfor%}
+{% endfor %}

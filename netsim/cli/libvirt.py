@@ -94,7 +94,7 @@ def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
   if os.path.exists('bootstrap.iso'):
     os.remove('bootstrap.iso')
 
-  abort_on_failure("mkisofs -l -o bootstrap.iso iso")
+  abort_on_failure("mkisofs -l --iso-level 4 -o bootstrap.iso iso")
   print("... done\n")
 
 def lp_create_vm(args: argparse.Namespace,settings: Box) -> None:

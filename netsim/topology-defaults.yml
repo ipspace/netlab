@@ -47,7 +47,7 @@ attributes:
 # Built-in module defaults
 #
 bgp:
-  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, vsrx, vyos, routeros, srlinux, sros, none, dellos10, routeros7, none ]
+  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, asav, vsrx, vyos, routeros, srlinux, sros, none, dellos10, routeros7, none ]
   ebgp_role: external
   advertise_roles: [ stub ]
   advertise_loopback: True
@@ -70,7 +70,7 @@ bgp:
     interface: [ local_as, replace_global_as ]
 
 isis:
-  supported_on: [ eos, frr, csr, iosv, nxos, vsrx, srlinux, sros, vyos, none ]
+  supported_on: [ eos, frr, csr, iosv, nxos, asav, vsrx, srlinux, sros, vyos, none ]
   area: 49.0001
   type: level-2
   transform_after: [ vlan,vrf ]
@@ -512,6 +512,27 @@ devices:
       image: none
     graphite.icon: nexus5000
 
+  asav:
+    interface_name: GigabitEthernet0/%d
+    ifindex_offset: 0
+    mgmt_if: Management0/0
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      ansible_become_method: enable
+      ansible_become_password: vagrant
+      ansible_network_os: asa
+      ansible_connection: network_cli
+    libvirt:
+      image: cisco/asav
+      create: 
+        virt-install --connect=qemu:///system --network network=vagrant-libvirt,model=virtio --name=vm_box
+          --cpu host --arch=x86_64 --machine=pc-1.0 --vcpus=1 --ram=2048 --os-type=linux --noacpi 
+          --virt-type=kvm --watchdog i6300esb,action=reset 
+          --disk path=vm.qcow2,format=qcow2,device=disk,bus=virtio,cache=writethrough 
+          --disk path=bootstrap.iso,format=iso,device=cdrom --graphics none --import
+      create_iso: asav
+  
   eos:
     interface_name: Ethernet%d
     description: Arista vEOS

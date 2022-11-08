@@ -70,7 +70,7 @@ def network_type(
       p2p: str = 'point-to-point') -> typing.Optional[str]:
   if 'network_type' in intf[proto]:                 # Did the user specify network type?
     if not intf[proto].network_type:                # ... she did and she wants it gone
-      intf.proto.pop('network_type')
+      intf[proto].pop('network_type')
     else:
       if intf[proto].network_type not in allowed:   # ... did she specify a valid value?
         return(f"Invalid {proto} network type {intf[proto].network_type}")
