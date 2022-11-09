@@ -80,7 +80,7 @@ The following table documents the interface-level OSPF features:
 | Mikrotik RouterOS 7      |   ✅  |         ✅        |             ❌            |            ✅           |
 | Nokia SR Linux           |   ✅  |         ✅        |             ❌            |            ✅           |
 | Nokia SR OS              |   ✅  |         ✅        |             ✅            |            ✅           |
-| VyOS                     |   ✅  |         ✅        |             ❌            |            ✅           |
+| VyOS                     |   ✅  |         ✅        |             ✅            |            ✅           |
 
 Notes:
 * Arista EOS, Cisco Nexus OS, SR Linux and Dell OS10 support point-to-point and broadcast network types. Other network types will not be configured.

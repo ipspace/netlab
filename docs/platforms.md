@@ -187,7 +187,7 @@ The following interface addresses are supported on various platforms:
 | Mikrotik RouterOS 7   |          ✅          |          ✅          |             ❌              |
 | Nokia SR Linux        |          ✅          |          ✅          |             ❌              |
 | Nokia SR OS           |          ✅          |          ✅          |             ✅              |
-| VyOS                  |          ✅          |          ✅          |             ❌              |
+| VyOS                  |          ✅          |          ✅          |             ✅              |
 
 ## Supported Configuration Modules
 
