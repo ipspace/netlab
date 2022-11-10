@@ -566,10 +566,16 @@ def create_loopback_vlan_links(topology: Box) -> None:
         topology.links.append(link_data)
 
 """
-get_vlan_data: Get VLAN data structure (node or topology)
+get_vlan_data: Get VLAN data structure (node or topology or interface neighbors)
 """
-def get_vlan_data(vlan: str, node: Box, topology: Box) -> typing.Optional[Box]:
-  return get_from_box(topology,f'vlans.{vlan}') or get_from_box(node,f'vlans.{vlan}')
+def get_vlan_data(vlan: str, node: Box, topology: Box, intf: Box) -> typing.Optional[Box]:
+  vlan_data = get_from_box(topology,f'vlans.{vlan}') or get_from_box(node,f'vlans.{vlan}')
+  if not vlan_data:
+    for n in intf.neighbors:  # Look for local vlan in neighbor
+      vlan_data = get_from_box(topology.nodes[n.node],f'vlans.{vlan}')
+      if vlan_data:
+        break
+  return vlan_data
 
 """
 get_vlan_mode: Get VLAN mode attribute (node or topology), default 'irb'
@@ -581,7 +587,7 @@ def get_vlan_mode(node: Box, topology: Box) -> str:
 update_vlan_neighbor_list: Build a VLAN-wide list of neighbors
 """
 def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,topology: Box) -> None:
-  vlan_data = get_vlan_data(vlan,node,topology)                         # Try to get global or node-level VLAN data
+  vlan_data = get_vlan_data(vlan,node,topology,phy_if)                  # Try to get global or node-level VLAN data
   if vlan_data is None:                                                 # ... and get out if there's none
     return
 
@@ -740,12 +746,12 @@ set_svi_neighbor_list: set SVI neighbor list from VLAN neighbor list
 def set_svi_neighbor_list(node: Box, topology: Box) -> None:
   for ifdata in node.interfaces:
     if 'vlan_name' in ifdata:
-      vlan_data = get_vlan_data(ifdata.vlan_name,node,topology)             # Try to get global or local VLAN data
-      if vlan_data is None:                                                 # Not found?
-        continue                                                            # ... too bad
-
       if get_from_box(ifdata,'vlan.routed_link'):                           # Don't update neighbors on a routed VLAN link
         continue
+
+      vlan_data = get_vlan_data(ifdata.vlan_name,node,topology,ifdata)      # Try to get global or local VLAN data
+      if vlan_data is None:                                                 # Not found?
+        continue                                                            # ... too bad
 
       if not 'host_count' in vlan_data:                                     # Calculate the number of hosts attached to the VLAN
         vlan_data.host_count = len([ n for n in vlan_data.neighbors if topology.nodes[n.node].get('role','') == 'host' ])
