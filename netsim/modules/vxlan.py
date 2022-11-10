@@ -53,11 +53,13 @@ Inputs:
 """
 def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
   vxlan_vlans = get_from_box(toponode,'vxlan.vlans')
-  if not vxlan_vlans:                                               # No VXLAN-enabled VLANs in the current data object ==> nothing to do
+  if not vxlan_vlans:                                             # No VXLAN-enabled VLANs in the current data object ==> nothing to do
     return
 
   vni_ids = _dataplane.get_id_set('vni')
   for vname in vxlan_vlans:
+    if not vname in toponode.get('vlans',{}):                     # Skip VXLAN-enabled VLANs that are not present on a node
+      continue
     vlan_data = toponode.vlans[vname]
     vpath = f'{obj_path}.vlans.{vname}'
     if vname in topology.get('vlans',{}) and toponode != topology:
