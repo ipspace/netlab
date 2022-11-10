@@ -202,26 +202,37 @@ Copy group-level module or device setting into node data
 def copy_group_device_module(topology: Box) -> None:
   for grp in reverse_topsort(topology):
     gdata = topology.groups[grp]
-    if 'device' in gdata or 'module' in gdata:
-      if common.debug_active('groups'):
-        print(f'Setting device/module for group {grp}')
-      g_members = group_members(topology,grp)
-      if not g_members:
-        common.error(
-          f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
-          common.IncorrectValue,
-          'groups')
+    if not 'device' in gdata and not 'module' in gdata:
+      continue                                                        # This group is not interesting, move on
+
+    if common.debug_active('groups'):
+      print(f'Setting device/module for group {grp}')
+    g_members = group_members(topology,grp)
+    if not g_members:
+      common.error(
+        f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
+        common.IncorrectValue,
+        'groups')
+      continue
+
+    for name in g_members:                                            # Iterate over group members
+      if not name in topology.nodes:                                  # Member not a node? Move on...
         continue
 
-      for name,ndata in topology.nodes.items():
-        if not name in g_members:
-          continue
+      ndata = topology.nodes[name]
+      if 'device' in gdata and not 'device' in ndata:                 # Copy device from group data to node data
+        ndata.device = gdata.device
+        if common.debug_active('groups'):
+          print(f'... setting {name}.device to {gdata.device}')
 
-        for attr in ('device','module'):
-          if attr in gdata and not attr in ndata:
-            ndata[attr] = gdata[attr]
-            if common.debug_active('groups'):
-              print(f'... setting {attr} on {name} to {gdata[attr]}')
+      if 'module' in gdata:                                           # Merge group modules with device modules
+        ndata.module = ndata.module or []                             # Make sure node.module is a list
+        for m in gdata.module:                                        # Now iterate over group modules
+          if not m in ndata.module:                                   # ... and add missing modules to nodes
+            ndata.module.append(m)
+
+        if common.debug_active('groups'):
+          print(f'... adding module {gdata.module} to {name}. Node modules now {ndata.module}')
 
 '''
 Copy node data from group into group members

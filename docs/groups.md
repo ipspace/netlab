@@ -161,13 +161,14 @@ As the group VLANs/VRFs are copied into all nodes in a group, you'll get all VLA
 
 ## Setting Device Type or List of Modules in Groups
 
-You can set node device type (**device** attribute[^DVTRANS]) or the list of configuration modules (**module** attribute[^MDTRANS]) in group definitions, but only on groups with static members.
+You can set node device type (**device** attribute) or the list of configuration modules (**module** attribute) in group definitions, but only on groups with static members.
+
+Device type is copied from groups to nodes that have no explicit device type. Modules listed in a group are added to modules already enabled on group members. The merging of node- and group modules takes precedence over the global (topology-level) list of modules.
 
 The following example uses this functionality to use Cumulus VX on routers advertising anycast IP address, and to use BGP as the only configuration module on those devices.
 
 ```
-defaults:
-  device: iosv
+defaults.device: iosv
 
 module: [ bgp, ospf ]
 bgp.as: 65000
@@ -183,9 +184,15 @@ groups:
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
 
+**Notes:**
+* BGP module specified in the **anycast** group is added to the list of modules specified on the group members. No group members have an explicit module definition, resulting in `module: [ bgp ]` being set on A1, A2, and A3.
+* Device type specified in the **anycast** group is copied into A1, A2, and A3.
+* Default device type specified in **defaults.device** is copied into nodes that still have no device type (L1, L2, L3, S1)
+* Default list of modules (`module: [ bgp, ospf ]`) is copied into nodes that still have no **module** attribute (L1, L2, L3, S1).
+
 ## Group Variables
 
-Group definition could include group variables in the **vars** element. Group variables are a dictionary of name/value pairs:
+Group definition could include group inventory variables in the **vars** element. Group variables are a dictionary of name/value pairs:
 
 ```
 ---
