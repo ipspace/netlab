@@ -76,6 +76,14 @@ class _Provider(Callback):
         processor_name = str(subprocess.check_output("cat /proc/cpuinfo", shell=True).splitlines()[1].split()[2])
       topology.defaults.processor = processor_name
 
+  def _get_binds(self, node: Box, key: str):
+    binds = get_from_box(node,f'{self.provider}.{key}') or {}
+
+    # Convert list of strings into dict of file: mapping items
+    if isinstance(binds,list):
+      binds = { f:m for f,m in [ s.split(':') for s in binds ] }
+    return binds
+
   def create_extra_files_mappings(
       self,
       node: Box,
@@ -85,7 +93,7 @@ class _Provider(Callback):
 
     mappings = get_from_box(node,f'{self.provider}.{inkey}')
     if mappings:
-      cur_binds = get_from_box(node,f'{self.provider}.{outkey}') or {}
+      cur_binds = self._get_binds(node,outkey)
       for file,mapping in mappings.items():
         if mapping in cur_binds.values():
           continue
@@ -105,7 +113,10 @@ class _Provider(Callback):
           continue
 
         out_folder = f"{self.provider}_files/{node.name}"
-        node[self.provider][outkey][f"{out_folder}/{file}"] = mapping
+        if isinstance(node[self.provider][outkey],list):
+          node[self.provider][outkey].append( f"{out_folder}/{file}:{mapping}" )
+        else:
+          node[self.provider][outkey][f"{out_folder}/{file}"] = mapping
 
   def create_extra_files(
       self,
@@ -114,7 +125,7 @@ class _Provider(Callback):
       inkey: str = 'config_templates',
       outkey: str = 'binds') -> None:
 
-    binds = get_from_box(node,f'{self.provider}.{outkey}')
+    binds = self._get_binds(node,outkey)
     if not binds:
       return
 
