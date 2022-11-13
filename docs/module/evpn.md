@@ -41,6 +41,13 @@ The following table describes per-platform support of individual EVPN/MPLS featu
 * Arista EOS requires anycast gateway for EVPN/MPLS symmetric IRB configuration.
 ```
 
+Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement the following bundle service types (see RFC 7432 section 6 for more details):
+
+| Operating system   | VLAN<br>bundle | Port<br>service | VLAN-aware<br>bundle | Port-based<br>VLAN bundle |
+| ------------------ | :-: | :-: | :-: | :-: |
+| Arista EOS         |  ❌  |  ❌  | ✅  |  ❌  |
+| Nokia SR Linux     |  ❌  |  ❌  | ✅  |  ❌  |
+
 EVPN module supports three design paradigms:
 
 * IBGP with IGP
@@ -73,10 +80,10 @@ EVPN module supports these default/global/node parameters:
 * **evpn.vlans** (global or node parameter): A list of EVPN-enabled VLANs. Default value with VXLAN transport: all global VLANs with **vni** parameter. There is no default value with MPLS transport.
 * **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
 * **evpn.as** (global parameter): Autonomous system number to use for VLAN and VRF route targets. Default value: **bgp.as** (when set globally) or **vrf.as**.
-* **evpn.vlan_bundle_service** (global parameter): Use VLAN bundle service for VLANs within a VRF (default: `False`)
 * **evpn.start_transit_vni** (system default parameter) -- the first symmetric IRB transit VNI, range 4096..16777215
 * **evpn.start_transit_vlan** (device-dependent node parameter) -- the starting VLAN ID for VLANs used to map VXLAN transit VNIs
 
+(evpn-vlan-service)=
 ### VLAN-Based Service Parameters
 
 EVPN-related VLAN parameters are set on **vlans** dictionary. You can set the following parameters for every VLAN using VLAN-Based Service:
@@ -85,7 +92,7 @@ EVPN-related VLAN parameters are set on **vlans** dictionary. You can set the fo
 * **evpn.rd**: EVPN Instance route distinguisher (not checked at the moment). Default: **bgp.router_id**:**evpn.evi**
 * **evpn.import** and **evpn.export**: Import and export route targets (not checked at the moment).
 
-EVPN configuration module sets the following default EVI/RD/RT values for [VXLAN-enabled VLANs](vxlan.md#selecting-vxlan-enabled-vlans):
+EVPN configuration module sets the following default EVI/RD/RT values for EVPN-enabled VLANs that are not part of a bundle service:
 
 * **evpn.evi**: `vlan-id`
 * **evpn.rd**: `router-id:evi` (according to Section 7.9 of RFC 7432 as the **evpn.evi** is set to **vlan.id**)
@@ -93,13 +100,19 @@ EVPN configuration module sets the following default EVI/RD/RT values for [VXLAN
 
 [^EAS]: The AS number used in EVPN route targets is described in [](evpn-global-parameters).
 
-### VLAN-Aware Bundle Service
+(evpn-bundle-service)=
+### EVPN Bundle Services
 
-VLAN-Aware Bundle Service is disabled by default and has to be enabled by setting **evpn.vlan_bundle_service** parameter to _True_. Although that parameter is a global/node parameter, it might not be a good idea to use different settings on different nodes. 
+VLAN-Aware Bundle Service uses VRF configuration (and thus requires [VRF configuration module](vrf.md)). All EVPN-enabled VLANs belonging to a single VRF are configured as a bundle service, modeled as a single EVPN Instance.
 
-VLAN-Aware Bundle Service uses VRF configuration (and thus requires [VRF configuration module](vrf.md)). All VLANs belonging to a single VRF are configured as a VLAN bundle, modeled as a single EVPN Instance. [RD and RT values assigned by VRF module](vrf.md#rd-and-rt-values) are used to configure the VLAN bundle; you can set **evpn.evi** VRF parameter to set the EVPN Instance identifier.
+[RD and RT values assigned by VRF module](vrf.md#rd-and-rt-values) are used to configure the VLAN bundle; you can set **evpn.evi** VRF parameter to set the EVPN Instance identifier. The default value of VRF EVPN Instance identifier is the **vrf.id**.
 
-The default value of VRF EVPN Instance identifier is the **vrf.id**.
+The EVPN bundle service is enabled with **evpn.bundle** VRF parameter that can take one of the following values:
+
+* **vlan** -- VLAN bundle service (RFC 7432 section 6.2)
+* **port** -- Port-based service (RFC 7432 section 6.2.1)
+* **vlan_aware** -- VLAN-aware bundle service (RFC 7432 section 6.3)
+* **port_aware** -- Port-based VLAN-aware service (RFC 7432 section 6.3.1)
 
 ### Integrated Routing and Bridging
 

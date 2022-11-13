@@ -95,15 +95,15 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
       'evpn')
     return
 
-  vlan.evpn.bundle = vlan.vrf                                       # Set a 'we are in a bundle' flag
   vrf = topology.vrfs[vrf_name]
   must_be_dict(
     parent=vrf,
     key='evpn',
     path=f'vrfs.{vrf_name}',
     create_empty=True)
-
+ 
   evpn = vrf.evpn
+  vlan.evpn.bundle = evpn.bundle                                    # Copy the bundle type into VLAN
   if not 'evi' in evpn:                                             # If needed, set EVI attribute for the global VRF
     evpn.evi = vrf.id                                               # ... to the VRF ID
 
@@ -113,6 +113,55 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
       evpn[k] = []                                                  # ... create an empty list of VLANs
   evpn.vlans.append(vname)                                          # Finally, add VLAN name to the list of MAC VRF VLANs
   evpn.vlan_ids.append(topology.vlans[vname].id)                    # ... and a VLAN ID to list of EVPN-enabled VLAN tags
+
+
+"""
+Figure out whether we have to treat a VLAN as part of a VLAN bundle or an independent VLAN service
+"""
+
+def get_vlan_bundle_flag(vlan: Box, vname: str, topology: Box) -> bool:
+  if not 'vrf' in vlan:                                             # VLAN not part of a VRF ==> VLAN service
+    return False
+
+  vrf = topology.vrfs[vlan.vrf]
+  if not data.get_from_box(vrf,'evpn.bundle'):                      # VRF does not have evpn.bundle attribute ==> VLAN service
+    return False
+
+  must_be_string(
+    parent=vrf,
+    key='evpn.bundle',
+    path=f'vrfs.{vlan.vrf}',
+    module='evpn',
+    valid_values=topology.defaults.evpn.attributes.bundle)          # Validate evpn.bundle value
+
+  return True
+
+"""
+Create VLAN services -- either as independent VLANs or as a VRF-based bundle
+"""
+
+def create_vlan_service(vname: str, topology: Box) -> None:
+  vlan = topology.vlans[vname]
+  if not get_vlan_bundle_flag(vlan,vname,topology):
+    vlan_based_service(vlan,vname,topology)
+  else:
+    vlan_aware_bundle_service(vlan,vname,topology)
+
+"""
+Validate that there's no evpn.bundle setting on node VRFs
+"""
+
+def validate_no_node_vrf_bundle(node: Box, topology: Box) -> None:
+  if not 'vrfs' in node:                                            # No VRFs defined in the node, move on
+    return
+  for vname,vdata in node.vrfs.items():
+    if not data.get_from_box(vdata,'evpn.bundle'):                  # EVPN bundle not set in VRF, move on
+      continue
+    common.error(
+      f'VRF {vname} in node {node.name} cannot have evpn.bundle attribute',
+      common.IncorrectValue,
+      'evpn',
+      hint='node_bundle')
 
 """
 Validate transit VNI values and register them with the VNI set
@@ -329,6 +378,22 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
 
       check_asym_vlan(vrf_name,node,topology)
 
+"""
+Check whether the node supports the requested EVPN bundle type
+"""
+
+def check_node_vrf_bundle(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)      # Get device features
+  for vrf_name,vrf_data in node.get('vrfs',{}).items():               # Iterate over all VRFs defined on the device
+    b_type = data.get_from_box(vrf_data,'evpn.bundle')                # Get evpn.bundle value, skip if not defined
+    if not b_type:
+      continue
+    if not b_type in features.evpn.bundle:                            # EVPN bundle type not supported by the device
+      common.error(
+        f"'{b_type}'' EVPN bundle service used in VRF {vrf_name} is not supported by device {node.device} (node: {node.name})",
+        common.IncorrectValue,
+        'evpn')
+
 class EVPN(_Module):
 
   def module_init(self, topology: Box) -> None:
@@ -343,20 +408,17 @@ class EVPN(_Module):
       valid_values=['vxlan','mpls'],
       module='evpn')
 
+  def node_pre_transform(self, node: Box, topology: Box) -> None:
+    validate_no_node_vrf_bundle(node,topology)
+
   def module_post_node_transform(self, topology: Box) -> None:
     validate_evpn_lists(topology,'topology',topology,create=True)
     for n in topology.nodes.values():
       validate_evpn_lists(n,f'nodes.{n.name}',topology,create=False)
 
     vrf_transit_vni(topology)
-    vlan_bundle = data.get_from_box(topology,'evpn.vlan_bundle_service')
-
     for vname in data.get_from_box(topology,'evpn.vlans') or []:
-      vlan = topology.vlans[vname]
-      if not 'vrf' in vlan or not vlan_bundle:
-        vlan_based_service(vlan,vname,topology)
-      else:
-        vlan_aware_bundle_service(vlan,vname,topology)
+      create_vlan_service(vname,topology)
 
     vrf_irb_setup(topology)
 
@@ -373,5 +435,6 @@ class EVPN(_Module):
     _routing.router_id(node,'bgp',topology.pools)                 # Make sure we have a usable router ID
     copy_global_evpn_lists(node,topology)
     check_node_vrf_irb(node,topology)
+    check_node_vrf_bundle(node,topology)
     trim_node_evpn_lists(node)
     set_local_evpn_rd(node)
