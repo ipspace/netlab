@@ -1,0 +1,42 @@
+{% for intf in interfaces if intf.gateway.protocol is defined %}
+
+{%   if loop.first %}
+!
+{%     if gateway.anycast.mac is defined %}
+{% set anycast_mac = '{}{}:{}{}:{}{}:{}{}:{}{}:{}{}'.format(*gateway.anycast.mac|replace('.', '')) -%}
+ip virtual-router mac-address {{ anycast_mac }}
+{%     endif %}
+{%     if intf.gateway.protocol == 'vrrp' %}
+vrrp version 3
+{%     endif %}
+!
+{%   endif %}
+
+!
+interface {{ intf.ifname }}
+
+{%   if intf.gateway.protocol == 'anycast' and 'ipv4' in intf.gateway %}
+  ip virtual-router address {{ intf.gateway.ipv4|ipaddr('address') }}
+{%   endif %}
+
+
+{%   if intf.gateway.protocol == 'vrrp' %}
+
+{%     for af in 'ipv4','ipv6' if af in intf.gateway %}
+{%       if af == 'ipv4' %}
+  vrrp-group {{ intf.gateway.vrrp.group }}
+{%       elif af == 'ipv6' %}
+  vrrp-ipv6-group {{ intf.gateway.vrrp.group }}
+{%       endif %}
+    virtual-address {{ intf.gateway[af]|ipaddr('address') }}
+{%       if 'priority' in intf.gateway.vrrp %}
+    priority {{ intf.gateway.vrrp.priority }}
+{%       endif %}
+{%       if not intf.gateway.vrrp.preempt|default(False) %}
+    no preempt
+{%       endif %}
+{%     endfor %}
+
+{%   endif %}
+
+{% endfor %}
