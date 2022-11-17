@@ -140,7 +140,7 @@ def validate(topology: Box) -> None:
 
 """
 Get the link attributes that have to be propagated to interfaces: full set
-of attributes minus the 'no_propagate' attributes 
+of attributes minus the 'no_propagate' attributes
 """
 def get_link_propagate_attributes(defaults: Box) -> set:
   return set(defaults.attributes.link).union(set(defaults.attributes.link_internal)) - \
@@ -163,7 +163,11 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   # Allow user to select a specific interface index per link
   ifindex = ifdata.get('ifindex',None) or (len(node.interfaces) + ifindex_offset)
 
-  ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
+  ifname_eval = devices.get_device_attribute(node,'interface_name_eval',defaults)
+  if ifname_eval:
+    ifname_format = eval(ifname_eval,{'ifindex':ifindex})
+  else:
+    ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
   ifdata.ifindex = ifindex
   if ifname_format and not 'ifname' in ifdata:
@@ -419,7 +423,7 @@ def IPAM_id_based(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> Non
   for intf in link.interfaces:
     set_interface_address(intf,af,pfx,ndict[intf.node].id)
 
-IPAM_dispatch: typing.Final[dict] = { 
+IPAM_dispatch: typing.Final[dict] = {
     'unnumbered': IPAM_unnumbered,
     'p2p': IPAM_p2p,
     'sequential': IPAM_sequential,

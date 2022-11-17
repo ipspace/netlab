@@ -14,7 +14,7 @@
    service-id: {{ vrfs[i.vrf].vrfidx if i.vrf is defined else 1 }}
    customer: "1"
    admin-state: enable
-   ecmp: 64
+   ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
 {%  endif %}
 
 - path: configure/{{ base_path }}{{ sub_path }}
@@ -88,14 +88,15 @@
 {%  set portname = l.parent_ifname if l.type=='vlan_member' else l.ifname %}
 {%  if l.type in ['p2p','lan','vlan_member'] %}
 {%   if 'c' in portname %}
-- path: configure/port[port-id={{portname}}]
+- path: configure/port[port-id={{portname[:-2]}}]
   val:
+   admin-state: enable
    connector:
     breakout: "c1-100g"
-{%    set portname = portname + '/1' %}
+{%   endif %}
 - path: configure/port[port-id={{ portname }}]
   val:
-{%   endif %}
+   admin-state: enable
    ethernet:
 {%   set eth_header = 14 + (4 if tagged else 0) %}
 {%   if l.mtu is defined and l.mtu <= (9800-eth_header) %}
@@ -129,7 +130,7 @@ updates:
   val:
    ecmp-profile:
    - profile-id: 1
-     type: ip # or mpls
+     type: {{ 'mpls' if 'mpls' in module else 'ip' }}
      links: 16
      groups: 64
 {% endif %}

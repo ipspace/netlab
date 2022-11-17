@@ -570,7 +570,7 @@ get_vlan_data: Get VLAN data structure (node or topology or interface neighbors)
 """
 def get_vlan_data(vlan: str, node: Box, topology: Box, intf: Box) -> typing.Optional[Box]:
   vlan_data = get_from_box(topology,f'vlans.{vlan}') or get_from_box(node,f'vlans.{vlan}')
-  if not vlan_data:
+  if not vlan_data and 'neighbors' in intf:
     for n in intf.neighbors:  # Look for local vlan in neighbor
       vlan_data = get_from_box(topology.nodes[n.node],f'vlans.{vlan}')
       if vlan_data:

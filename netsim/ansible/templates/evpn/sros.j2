@@ -3,6 +3,8 @@ updates:
 - path: configure/router[router-name=Base]
   val:
    bgp:
+    vpn-apply-export: True
+    vpn-apply-import: True
     group:
 {%  for type in evpn.session %}
     - group-name: {{ 'ibgp-ipv4' if type=='ibgp' else 'ebgp' }}
@@ -18,3 +20,23 @@ updates:
      evpn: True
 
 {%  endfor %}
+
+{# Enable dynamic advertisement for all EVPN IRB interfaces #}
+{% for l in interfaces if l.type=='svi' and l.vrf is defined and 'evpn' in vrfs[l.vrf] %}
+- path: configure/service/vprn[service-name={{ l.vrf }}]
+  val:
+   interface:
+   - interface-name: {{ l.ifname }}
+{%  for af in ('ipv4','ipv6') if af in l %}
+     {{ af }}:
+      neighbor-discovery:
+       learn-unsolicited: True
+       # populate: True # default: False, allow static and dynamic hosts to be populated in system ARP cache? breaks ping to gateway??
+       proactive-refresh: True
+       host-route:
+        populate:
+        - route-type: dynamic
+        - route-type: evpn
+{%  endfor %}
+     # vpls: -> evpn -> learn-dynamic defaults to True
+{% endfor %}

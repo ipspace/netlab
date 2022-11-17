@@ -1,0 +1,66 @@
+#
+# See https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE14991AAAFTQZZA01_V1_7450%20ESS%207750%20SR%207950%20XRS%20Advanced%20Configuration%20Guide%20for%20Releases%20up%20to%2021.5.R2-Part%20II.pdf
+# EVPN for MPLS Tunnels in Routed VPLS
+#
+{% from "templates/evpn/sros.macro.j2" import mpls_l3vnis,vlan_bundles with context %}
+
+{% macro mpls_evpn_service(vrf,type,label,evi,rd,evpn,is_routed=False) %}
+- path: configure/service/vpls[service-name={{ vrf }}]
+  val:
+{# May get created for first time here, when not referenced from any interfaces #}
+   customer: '1'
+   admin-state: enable
+   service-id: {{ evi }} # transit EVI for l3, should not overlap
+   # pbb-type: b-vpls # PLUS static-isid on a sap triggers evpn routes with tags
+{% if is_routed %}
+   routed-vpls:
+    evpn-mpls-ecmp: True
+{% endif %}
+   bgp:
+   - bgp-instance: 1
+     # route-distinguisher: {{ rd }} # Don't configure this, use auto RD
+{% if type=='l2' %}
+     route-target:
+      export: "target:{{ evpn.export[0] }}"
+      import: "target:{{ evpn.import[0] }}"
+{% endif %}
+   bgp-evpn:
+    evi: {{ evi }}
+{% if type=='l3' %}
+    routes:
+     ip-prefix:
+      advertise: True # Symmetric IRB using RT5 prefixes
+     mac-ip:
+      advertise: False
+{% endif %}
+    mpls:
+    - bgp-instance: 1
+      admin-state: enable
+      # requires system bgp evpn ingress-replication-bum-label-block "default"
+      # ingress-replication-bum-label: "default"
+{% if 'ixr' not in clab.type %}
+      control-word: True # For multi-vendor interop
+      force-vc-forwarding: "vlan" # Datapath setting to include VLAN + p-bits
+{% endif %}
+      ecmp: {{ 1 if 'ixr' in clab.type else 8 }}
+      auto-bind-tunnel:
+       resolution: any
+       ecmp: {{ 1 if 'ixr' in clab.type else 8 }}
+
+{% endmacro %}
+
+{# TODO: Hybrid MPLS/VXLAN scenarios #}
+{% if evpn.transport|default('vxlan')=='mpls' %}
+{%  for vname,vdata in vlans.items() if vname in evpn.vlans|default([]) %}
+{%   set is_routed = vdata.mode|default('irb') != 'bridge' %}
+{%   if 'bundle' in vdata.evpn %}
+{%    set bundle = vrfs[ vdata.evpn.bundle ] %}
+{{    mpls_evpn_service('vlan-bundle-'+vdata.evpn.bundle,'l2', None, bundle.evpn.evi, bundle.evpn.rd, bundle, is_routed) }}
+{%   else %}
+{{    mpls_evpn_service('vlan'+vdata.id|string,'l2', None, vdata.evpn.evi, vdata.evpn.rd, vdata.evpn, is_routed) }}
+{%   endif %}
+{%  endfor %}
+
+{# Symmetric IRB interfaces, note using VRF ID as transit EVI value #}
+{{ mpls_l3vnis( mpls_evpn_service, l3_id=None ) }}
+{% endif %}
