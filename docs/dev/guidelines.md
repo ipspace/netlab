@@ -21,6 +21,7 @@ The easiest way to get started is to [add support for a new platform for an exis
    device-features.md
    devices.md
    unnumbered.md
+   doubt.md
 ```
 
 ```eval_rst
