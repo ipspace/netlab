@@ -71,12 +71,12 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
 
   clab_yml = clab.to_yaml()
   if not ('topology' in clab and 'nodes' in clab.topology):
-    common.fatal('Containerlab configuration file {infile} is weird: cannot find topology.nodes dictionary')
+    common.fatal(f'Containerlab configuration file {infile} is weird: cannot find topology.nodes dictionary')
 
   try:
     cfglist = os.listdir(configs)
   except Exception as ex:
-    common.fatal('Cannot read the contents of {configs} directory: {ex}')
+    common.fatal(f'Cannot read the contents of {configs} directory: {ex}')
 
   for n in list(clab.topology.nodes.keys()):
     cfgfile = find_config_file(n,cfglist)
@@ -86,7 +86,7 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
       clab.topology.nodes[n]['startup-config'] = cfgfile
 
   if clab.to_yaml() == clab_yml:
-    common.fatal('No relevant configuration files were found in {configs} directory, aborting')
+    common.fatal(f'No relevant configuration files were found in {configs} directory, aborting')
 
   output = common.open_output_file(outfile)
   output.write(clab.to_yaml())
@@ -128,7 +128,7 @@ def run(cli_args: typing.List[str]) -> None:
     return
 
   if not settings:
-    common.fatal("Cannot read the system defaults","libvirt")
+    common.fatal("Cannot read the system defaults","clab")
     return
 
   if cli_args[0] == 'tarball':

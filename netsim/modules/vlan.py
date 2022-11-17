@@ -95,6 +95,10 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     return
 
   for vname in list(obj.vlans.keys()):
+    if not isinstance(vname,str):
+      common.error(f'VLAN names in {obj_name} must be strings ({vname}):\n... {obj.vlans}',common.IncorrectValue,'vlan')
+      return
+
     if not obj.vlans[vname]:
       obj.vlans[vname] = Box({},default_box=True,box_dots=True)
 
@@ -328,10 +332,13 @@ def validate_trunk_vlan_list(link: Box) -> bool:
     if not 'vlan' in o_intf:                                          # Skip non-VLAN interfaces (obviously we have a native VLAN by now)
       continue
     if not 'trunk' in o_intf.vlan:                                    # a VLAN interface without a trunk attribute is a huge red flag
-      common.fatal('validate_trunk_vlan_list: Found a VLAN node without trunk attribute\n... {link}')
+      common.fatal(f'validate_trunk_vlan_list: Found a VLAN node without trunk attribute\n... {link}')
       return False
 
     for vname in o_intf.vlan.trunk.keys():                            # OK, now we can iterate over all VLANs in this interfaces' trunk
+      if not isinstance(vname,str):
+        common.error(f'VLAN names in trunks ({vname}) must be strings:\n... {link}',common.IncorrectValue,'vlan')
+        return False
       vlan_found = False
       for i_intf in link.interfaces:                                  # ... and over all other other interfaces
         if i_intf is o_intf or not 'vlan' in i_intf:                  # ... I did say all OTHER VLAN interfaces, right?

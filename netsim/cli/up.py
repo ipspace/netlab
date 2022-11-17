@@ -1,7 +1,7 @@
 #
 # netlab up command
 #
-# * Transform lab topology and create provider and automation files, 
+# * Transform lab topology and create provider and automation files,
 #   or read transformed lab topology from snapshot file
 # * Start the lab, including provider-specific pre- and post-start hooks
 #
@@ -61,7 +61,7 @@ def run(cli_args: typing.List[str]) -> None:
 
     topology = read_topology.read_yaml(filename=args.snapshot)
     if topology is None:
-      common.fatal('Cannot read snapshot file {args.snapshot}, aborting...')
+      common.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
       return
 
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
@@ -81,7 +81,7 @@ def run(cli_args: typing.List[str]) -> None:
     provider.pre_start_lab(topology)
 
   external_commands.start_lab(settings,topology.provider,3,"netlab up")
-  
+
   if hasattr(provider,'post_start_lab') and callable(provider.post_start_lab):
     provider.post_start_lab(topology)
 

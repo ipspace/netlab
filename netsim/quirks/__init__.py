@@ -31,7 +31,7 @@ class _Quirks(Callback):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    common.fatal('{node.device} quirks module does not implement device_quirks method')
+    common.fatal(f'{node.device} quirks module does not implement device_quirks method')
 
 """
 Callback transformation routines
