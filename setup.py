@@ -10,8 +10,8 @@ long_description = (Path(__file__).parent / "README.md").read_text()
 with open("requirements.txt", "r") as fs:
   reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
 
-if sys.version_info < (3, 7):
-  raise RuntimeError("This package requires Python 3.7+")
+if sys.version_info < (3, 8):
+  raise RuntimeError("This package requires Python 3.8+")
 
 setup(
   name="networklab",
@@ -21,19 +21,22 @@ setup(
   author_email="ip@ipspace.net",
   description="CLI-based Virtual Networking Lab Abstraction Layer",
   long_description=long_description,
-  long_description_content_type='text/markdown',  
+  long_description_content_type='text/markdown',
   classifiers=[
     "Topic :: Utilities",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10.0",
+    "Programming Language :: Python :: 3.11.0",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
   ],
   url="https://github.com/ipspace/netlab",
   include_package_data=True,
   setup_requires=["wheel"],
-  python_requires='>=3.7',  # Due to e.g. 'capture_output' in subprocess.run
+  python_requires='>=3.8',  # Due to e.g. 'capture_output' in subprocess.run, and use of typing.Final
   install_requires=reqs,
   entry_points={
     "console_scripts": ["netlab=netsim.cli:lab_commands"]
