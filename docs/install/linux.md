@@ -10,7 +10,7 @@ This page describes generic installation steps you have to follow to create a vi
 
 To build a Linux environment needed to run network devices as virtual machines or containers:
 
-* Install Python 3.7 or later
+* Install Python 3.8 or later
 * Install KVM and libvirt
 * Install Vagrant 2.2.14 or later
 * Install *vagrant-libvirt* plugin with `vagrant plugin install libvirt --plugin-version=0.4.1`

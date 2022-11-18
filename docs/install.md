@@ -1,6 +1,6 @@
 # Installation
 
-*netlab* is a Python3 package[^NSL] that runs on Python 3.7 or later on Windows, MacOS, or Linux. It's a high-level abstraction and orchestration tool that relies on other tools to provide the low-level functionality:
+*netlab* is a Python3 package[^NSL] that runs on Python 3.8 or later on Windows, MacOS, or Linux. It's a high-level abstraction and orchestration tool that relies on other tools to provide the low-level functionality:
 
 [^NSL]: For legacy reasons, the *netlab* Python code resides in *netsim.\** modules.
 
