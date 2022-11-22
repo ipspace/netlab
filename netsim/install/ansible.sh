@@ -55,8 +55,8 @@ $SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP jinja2 six bracket-expansion netad
 echo "Install Ansible Python dependencies"
 echo ".. pynacl lxml"
 $SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP pynacl lxml
-echo ".. paramiko netmiko"
-$SUDO pip3 install $REPLACE $FLAG_PIP paramiko netmiko
+echo ".. paramiko netmiko ansible-pylibssh"
+$SUDO pip3 install $REPLACE $FLAG_PIP paramiko netmiko ansible-pylibssh
 #
 echo "Install optional Python components"
 $SUDO pip3 install $REPLACE $FLAG_PIP textfsm ttp jmespath ntc-templates
