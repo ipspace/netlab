@@ -317,7 +317,7 @@ def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
 
   supported_af = ['ipv4','ipv6']
   prefix_list = Box({})
-  if not isinstance(prefix,dict):
+  if not isinstance(prefix,Box):
     return Box({ 'ipv4' : netaddr.IPNetwork(prefix) })
 
   if 'ip' in prefix:                                  # Deal with legacy 'ip' address family -- rename it to ipv4
