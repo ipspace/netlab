@@ -5,6 +5,7 @@
 | Virtual network device                    | netlab device type |
 | ----------------------------------------- | ------------------ |
 | Arista vEOS                               | eos                |
+| Cisco ASAv                                | asav               |
 | Cisco IOSv                                | iosv               |
 | Cisco CSR 1000v                           | csr                |
 | Cisco Nexus 9300v                         | nxos               |
@@ -62,10 +63,10 @@ You cannot use all supported network devices with all virtualization providers. 
 | Virtual network device | Vagrant<br />Libvirt | Vagrant<br />Virtualbox | Containerlab |
 | -------------------------------------------------- | :-: | :-: | :-: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
+| Cisco ASAv                                         |          ✅           |              ❌               |            ❌             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
-| Cisco ASA                                          |          ✅           |              ❌               |            ❌             |
 | Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Dell OS10                                          |          ✅           |              ❌               |            ❌             |
@@ -88,10 +89,10 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Virtual network device     | netlab device type | CPUs | memory | libvirt NIC model          |
 | -------------------------- | ------------------ | ---: | -----: | -------------------------: |
 | Arista vEOS                | eos                |    2 |   2048 | virtio (*libvirt default*) |
+| Cisco ASAv                 | asav               |    1 |   2048 | virtio (*libvirt default*) |
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
 | Cisco CSR 1000v            | csr                |    2 |   4096 | virtio (*libvirt default*) |
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| e1000 |
-| Cisco ASA                  | asa                |    1 |   2048 | virtio (*libvirt default*) |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio (*libvirt default*) |
 | Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio (*libvirt default*) |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
@@ -109,9 +110,9 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Operating system      | Deploy configuration | Collect configuration |
 | --------------------- | :------------------: | :-------------------: |
 | Arista EOS            |          ✅           |           ✅           |
+| Cisco ASAv            |          ✅           |           ✅           |
 | Cisco IOS / IOS XE    |          ✅           |           ✅           |
 | Cisco Nexus OS        |          ✅           |           ✅           |
-| Cisco ASA             |          ✅           |           ✅           |
 | Cumulus Linux         |          ✅           |           ✅           |
 | Dell OS10             |          ✅           |           ✅           |
 | Fortinet FortiOS      |          ✅           |           ✅           |
@@ -131,9 +132,9 @@ The following system-wide features are configured on supported network operating
 | Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
 | Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Cisco ASAv            |    ✅     |     ✅      |             ❌             |             ❌              |             ❌              |
 | Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Cisco ASA             |    ✅     |     ✅      |             ❌             |             ❌              |             ❌              |
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
@@ -152,9 +153,9 @@ The following interface parameters are configured on supported network operating
 | Operating system      | Interface<br />description | Interface<br />bandwidth | MTU |
 | --------------------- | :------------------------: | :----------------------: | :-: |
 | Arista EOS            |            ✅              |            ✅            | ✅ |
+| Cisco ASAv            |            ✅              |            ❌            | ✅ |
 | Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.html#cisco-ios) |
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
-| Cisco ASA             |            ✅              |            ❌            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
 | Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
 | Dell OS10             |            ✅              |            ❌            | ✅ |
@@ -173,9 +174,9 @@ The following interface addresses are supported on various platforms:
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | 
 | --------------------- | :-----------------: | :-----------------: | :------------------------: | 
 | Arista EOS            |          ✅          |          ✅          |             ✅              |
+| Cisco ASAv            |          ✅          |          ✅          |             ❌              |
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
-| Cisco ASA             |          ✅          |          ✅          |             ❌              |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux 5.0 (NVUE) |       ✅          |          ✅          |             ✅              |
 | Dell OS10             |          ✅          |          ✅          |             ❌              |
@@ -199,10 +200,10 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | EVPN | FHRP |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS             | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
+| Cisco ASAv            | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
+| Cisco IOSv            | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
-| Cisco ASA             | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
 | Dell OS10             | [❗](caveats.html#dell-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
@@ -224,7 +225,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Operating system      | VLAN | VRF | VXLAN | MPLS | SR-MPLS | SRv6 |
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
 | Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
-| Cisco IOS             |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
+| Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Cisco IOS XE          |   ❌  | ✅  |  ❌   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
@@ -244,10 +245,10 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |
 | Arista EOS            |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ✅    |
-| Cisco IOS             |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco ASAv            |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Cisco IOSv            |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco IOS XE          |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
-| Cisco ASA             |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
