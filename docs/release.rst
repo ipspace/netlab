@@ -3,7 +3,8 @@ Release notes
 
 2022-11-25 (release 1.4.1)
   * Cisco ASAv support
-  * Anycast gateway on VyOS and Dell OS10
+  * VRRP and anycast gateway on Dell OS10
+  * VRRP on VyOS
   * Unnumbered OSPF interfaces on VyOS
   * Add support for all EVPN bundle services
 
