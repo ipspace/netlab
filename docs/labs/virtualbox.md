@@ -56,7 +56,7 @@ Vagrant relies on *boxes* (prepackaged VM images). The following Vagrant boxes a
 | Cumulus VX 5.0 (NVUE)            | CumulusCommunity/cumulus-vx:5.0.1|
 | Generic Linux          | generic/ubuntu2004 |
 
-You'll have to download Arista vEOS and Nexus 9300v images from the vendor web site (requires registration) and install them with **vagrant box add _filename_ \-\-name _boxname_** command. You'll find build recipes for other network devices on [codingpackets.com](https://codingpackets.com/blog/tag/vagrant/).
+You'll have to download Arista vEOS and Nexus 9300v images from the vendor web site (requires registration) and install them with **vagrant box add _filename_ \-\-name _boxname_** command. You'll find build recipes for other network devices on [codingpackets.com](https://codingpackets.com/blog/tag/#vagrant).
 
 You have to use the following box names when installing or building the Vagrant boxes:
 
