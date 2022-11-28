@@ -68,7 +68,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco ASA                                          |          ✅           |              ❌               |            ❌             |
 | Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
 | Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
-| Dell OS10                                          |          ✅           |              ❌               |            ❌             |
+| Dell OS10                                          |          ✅           |              ❌               |            ✅             |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
 | FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
 | Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
