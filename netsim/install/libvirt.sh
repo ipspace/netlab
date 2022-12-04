@@ -63,14 +63,14 @@ curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/
 $SUDO sh -c 'echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list'
 $SUDO apt-get update
 $SUDO apt-get install -y $FLAG_QUIET ruby-dev ruby-libvirt vagrant
-set +e
-PLUGIN_VER=$(vagrant plugin list|grep vagrant-libvirt|grep 0.4.1)
-set -e
-if [[ -z "$PLUGIN_VER" ]]; then
-  vagrant plugin install vagrant-libvirt --plugin-version=0.4.1
-else
-  echo ".. libvirt-vagrant plugin already installed"
-fi
+vagrant plugin install vagrant-libvirt --plugin-version=0.4.1
+#
+# Temporary fix: replace fog-libvirt 0.10.1 with fog-libvirt 0.9.0 until we can upgrade to the latest vagrant-libvirt plugin
+#
+echo ".. replacing fog-libvirt gem with an older version"
+GEMS_DIR=`echo ~/.vagrant.d/gems/*`
+GEM_HOME=$GEMS_DIR gem uninstall -aIx fog-libvirt
+GEM_HOME=$GEMS_DIR gem install 'fog-libvirt:0.9.0'
 echo ".. vagrant installed"
 echo
 set +e
