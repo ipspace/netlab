@@ -1,0 +1,21 @@
+
+# In case vMX is running on clab, with vrnetlab, the container is answering to pings 
+# even if the vMX virtual machines are not ready.
+# Furthermore, the TCP 3-way handshake for the SSH port is working as well (because the port 22 is proxied with socat).
+# That breaks very badly the different junos_config and junos_command modules.
+# This is a workaround for checking that the vMX CP is really ready to answer on SSH.
+
+- name: Execute local ssh command to check vMX CP readiness
+  local_action:
+    module: command
+    cmd: "sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ansible_user }}@{{ ansible_host }} 'show system information'"
+  register: command_out
+  until: command_out.rc == 0
+  retries: 10
+  delay: 30
+  when: clab.kind is defined
+
+- name: "junos_config: deploying initial config from {{ config_template }}"
+  junos_config:
+    src: "{{ config_template }}"
+  tags: [ print_action, always ]
