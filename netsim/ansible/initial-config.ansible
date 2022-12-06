@@ -19,21 +19,36 @@
     vars:
       config_module: initial
     with_first_found:
+    - "templates/{{ config_module }}/{{ device }}.j2"
     - "templates/{{ config_module }}/{{ netlab_device_type }}.j2"
     - "templates/missing.j2"
     tags: [ initial,test ]
+
+  - set_fact:
+      config_template: "{{ lookup('first_found',params,errors='ignore') }}"
+    tags: [ always ]
+    vars:
+      config_module: initial
+      params:
+        paths:
+        - "templates/"
+        files:
+        - "{{ config_module }}/{{device}}.j2"
+        - "{{ config_module }}/{{netlab_device_type}}.j2"
 
   - include_tasks: "{{ item }}"
     name: Deploy initial device configuration
     tags: [ initial ]
     with_first_found:
+    - "tasks/{{device}}/initial.yml"
+    - "tasks/deploy-config/{{device}}.yml"
     - "tasks/{{netlab_device_type}}/initial.yml"
     - "tasks/deploy-config/{{netlab_device_type}}.yml"
     - "missing.yml"
     args:
       apply:
         vars:
-          config_template: "templates/initial/{{netlab_device_type}}.j2"
+          config_template: "{{ config_template }}"
           netsim_action: initial
         tags: [ always ]
 

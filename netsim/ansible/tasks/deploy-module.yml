@@ -25,19 +25,33 @@
       verbosity: 1
     tags: [ test,module ]
     with_first_found:
+    - "../templates/{{ config_module }}/{{ device }}.j2"
     - "../templates/{{ config_module }}/{{ netlab_device_type }}.j2"
     - "../templates/missing.j2"
-
+  
+  - set_fact:
+      config_template: "{{ lookup('first_found',params,errors='ignore') }}"
+    tags: [ always ]
+    vars:
+      params:
+        paths:
+        - "../templates/"
+        files:
+        - "{{ config_module }}/{{device}}.j2"
+        - "{{ config_module }}/{{netlab_device_type}}.j2"
+  
   - include_tasks: "{{ item }}"
     tags: [ module ]
     with_first_found:
+    - "{{device}}/{{ config_module }}.yml"
+    - "deploy-config/{{device}}.yml"
     - "{{netlab_device_type}}/{{ config_module }}.yml"
     - "deploy-config/{{netlab_device_type}}.yml"
     - "../missing.yml"
     args:
       apply:
         vars:
-          config_template: "../templates/{{ config_module }}/{{netlab_device_type}}.j2"
+          config_template: "{{ config_template }}"
           netsim_action: "{{ config_module }}"
         tags: [ always ]
 
