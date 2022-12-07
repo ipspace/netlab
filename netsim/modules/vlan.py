@@ -134,7 +134,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
 
     vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
     vlan_pool.extend(['vlan','lan'])
-    pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,f'{obj_path}.{vname}')
+    pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,topology.nodes,f'{obj_path}.{vname}')
     vdata.prefix = addressing.rebuild_prefix(pfx_list)
     if not 'allocation' in vdata.prefix:
       vdata.prefix.allocation = 'id_based'
@@ -993,21 +993,41 @@ fix_vlan_gateways -- set VLAN-wide gateway IP
 The link augmentation code sets gateway IP for hosts connected to physical links. That approach does not work
 for VLAN subnets stretched across multiple physical links. We have to fix that here based on host neighbor list.
 
-Please note that when a first-hop gateway is applied to a VLAN, the link transformation code sets gateway.ipv4
-on every segment of the VLAN, and consequently sets gateway.ipv4 for all hosts attached to a VLAN-enabled link
+We have to do a two-step process because the first-hop gateway is not applied consistently on every segment of the 
+VLAN (because a VLAN is modeled as a number of link).
 """
 def fix_vlan_gateways(topology: Box) -> None:
   for node in topology.nodes.values():
     if node.get('role') != 'host':                                    # Fix first-hop gateways only for hosts
       continue
     for intf in node.get('interfaces',[]):                            # Iterate over all interfaces
-      if not get_from_box(intf,'gateway.ipv4'):                       # ... that don't have an IPv4 gateway
-        for neighbor in intf.get('neighbors',[]):                     # Iterate over all neighbors
-          if neighbor.get('ipv4',False):                              # ... until we find one with a usable IPv4
-            n_node = topology.nodes[neighbor.node]
-            if n_node.get('role') != 'host':                          # ... that is not another host
-              intf.gateway.ipv4 = neighbor.ipv4                       # Set that address as our gateway
-              break                                                   # ... and get out of here
+      if get_from_box(intf,'gateway.ipv4'):                           # ... that don't have an IPv4 gateway
+        continue
+
+      gw_found = False
+      for neighbor in intf.get('neighbors',[]):                       # Iterate over all neighbors trying to find first-hop gateway
+        if not get_from_box(neighbor,'gateway.ipv4'):                 # ... does the neighbor have first-hop gateway set?
+          continue                                                    # ... nope, keep going
+
+        n_node = topology.nodes[neighbor.node]
+        if n_node.get('role') == 'host':                              # Check whether the neighbor is a host
+          continue                                                    # ... don't trust gateway information coming from another host
+
+        gw_found = True                                               # Found a first-hop gateway on a non-host. Mission Accomplished
+        intf.gateway.ipv4 = neighbor.gateway.ipv4                     # ... copy it and get out of here
+        break
+
+      if gw_found:                                                    # Found the first-hop gateway, no need for additional work
+        break
+
+      for neighbor in intf.get('neighbors',[]):                       # Another iteration, now desperately looking at neighbor IPv4 addresses
+        if not neighbor.get('ipv4',False):                            # Does the neighbor have a usable IPv4 address?
+          continue                                                    # ... nope, move on
+
+        n_node = topology.nodes[neighbor.node]
+        if n_node.get('role') != 'host':                              # Use the neighbor IPv4 address only if it's not another host
+          intf.gateway.ipv4 = neighbor.ipv4                           # Set that address as our gateway
+          break                                                       # ... and get out of here
 
 """
 populate_node_vlan_data -- merge topology VLANs into node VLANs that were copied from groups.node_data

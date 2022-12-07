@@ -226,7 +226,7 @@ def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
 Set FHRP (anycast/VRRP/...) gateway on a link
 """
 
-def set_fhrp_gateway(link: Box, pfx_list: Box, link_path: str) -> None:
+def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> None:
   gwid = data.get_from_box(link,'gateway.id')
   if not gwid:                                                        # No usable gateway ID, nothing to do
     return
@@ -234,9 +234,9 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, link_path: str) -> None:
   fhrp_assigned = False
   for af in common.AF_LIST:
     if not af in pfx_list or isinstance(pfx_list[af],bool):           # No usable IPv4/IPv6 prefix, nothing to do
-      return
+      continue
 
-    try:                                                                # Now try to get N-th IP address on that link
+    try:                                                              # Now try to get N-th IP address on that link
       link.gateway[af] = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix[af]),link.gateway.id)
       fhrp_assigned = True
     except Exception as ex:
@@ -248,8 +248,17 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, link_path: str) -> None:
         'links')
       return
 
-  if common.debug_active('links') and fhrp_assigned:
-    print(f'... Assigning FHRP address(es): {link.gateway}')
+  if not fhrp_assigned:
+    return
+
+  for intf in link.interfaces:                                        # Copy link gateway into interface attributes
+    if 'gateway' in nodes[intf.node].get('module',[]):                # ... but only for nodes using the gateway module
+      for af in common.AF_LIST:
+        if af in link.gateway:
+          intf.gateway[af] = link.gateway[af]
+
+  if common.debug_active('links'):     # pragma: no cover (debugging)
+    print(f'FHRP gateway set for {link}')
 
 """
 Assign a prefix (IPv4+IPv6) to a link:
@@ -265,13 +274,18 @@ Allocating pool prefix:
 * Allocate a prefix from the first available candidate pool
 """
 
-def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_path: str = 'links') -> Box:
+def assign_link_prefix(
+      link: Box,
+      pools: typing.List[str],
+      addr_pools: Box,
+      nodes: Box,
+      link_path: str = 'links') -> Box:
   if 'prefix' in link:                                    # User specified a static link prefix
     pfx_list = addressing.parse_prefix(link.prefix)
     if isinstance(link.prefix,str):
       link.prefix = addressing.rebuild_prefix(pfx_list)   # convert str to prefix dictionary
 
-    set_fhrp_gateway(link,pfx_list,link_path)
+    set_fhrp_gateway(link,pfx_list,nodes,link_path)
     return pfx_list
 
   if 'unnumbered' in link:                                # User requested an unnumbered link
@@ -296,7 +310,7 @@ def assign_link_prefix(link: Box,pools: typing.List[str],addr_pools: Box,link_pa
   if not link.prefix:
     link.pop('prefix',None)
 
-  set_fhrp_gateway(link,pfx_list,link_path)
+  set_fhrp_gateway(link,pfx_list,nodes,link_path)
   return pfx_list
 
 """
@@ -559,7 +573,7 @@ def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
 """
 Create node interfaces from link interfaces
 """
-def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Box) -> None:
+def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box) -> None:
   link_attr_propagate = get_link_propagate_attributes(defaults)
 
   if common.debug_active('links'):     # pragma: no cover (debugging)
@@ -584,7 +598,8 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
                                                                   # ... must use dict not Box as Box creates a copy of the data structure
 
   if common.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'... LAN link data: {link}\n')
+    print(f'... link data: {link}')
+    print(f'... interface data: {interfaces}\n')
 
   # Second phase: build neighbor list from list of newly-created interfaces
   for node_if in interfaces:
@@ -599,7 +614,8 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: dict, defaults: Bo
       #
       # Find relevant modules that have interface attributes
       mods_with_attr = set([ m for m in ndict[remote_node].get('module',[])
-                              if defaults[m].attributes.get('interface',None) ])
+                              if defaults[m].attributes.get('interface',None) or
+                                 defaults[m].attributes.get('link_to_neighbor',None) ])
       #
       # Merge neighbor module data + AF with baseline neighbor data
       ngh_data = interface_data(
@@ -699,12 +715,15 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
 def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'host_count' in link:      # No hosts attached to the link, get out
     return
+  link.pop('host_count',None)
 
   # No IPv4 prefix on the link or unnumbered IPv4 link
   if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
     return
 
-  link.pop('host_count',None)
+#  if 'vlan_name' in link:                                 # Do not try to set first-hop gateways on VLAN links, VLAN module will do that
+#    return
+
   if common.debug_active('links'):
     print(f'Set DGW for {link}')
   if not 'gateway' in link:
@@ -716,7 +735,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   elif link.gateway is False:
     return
 
-  if not 'gateway' in link or not 'ipv4' in link.gateway: # Didn't find a usable gateway, exit
+  if not 'gateway' in link or not isinstance(link.gateway,Box) or not 'ipv4' in link.gateway: # Didn't find a usable gateway, exit
     if common.debug_active('links'):
       print('... not found')
     return
@@ -766,7 +785,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
 
     set_link_bridge_name(link,defaults)
     link_default_pools = ['p2p','lan'] if link.type == 'p2p' else ['lan']
-    assign_link_prefix(link,link_default_pools,pools,f'links[{link.linkindex}]')
+    assign_link_prefix(link,link_default_pools,pools,nodes,f'links[{link.linkindex}]')
     assign_interface_addresses(link,pools,nodes,defaults)
     create_node_interfaces(link,pools,nodes,defaults=defaults)
 
