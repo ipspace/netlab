@@ -28,7 +28,7 @@ def provider_inventory_settings(node: Box, defaults: Box) -> None:
         node[v] = p_data['forwarded'][k] + node['id']
 
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
-topo_to_host_skip = [ 'name' ]
+topo_to_host_skip = [ 'name','device' ]
 
 def ansible_inventory_host(node: Box, defaults: Box) -> Box:
   host = Box({})
