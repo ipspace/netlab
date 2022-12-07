@@ -23,13 +23,15 @@
            passive: True
 {%     endif %}
 {%     for l in vrf_interfaces if (l.vlan is not defined or l.vlan.mode|default('irb')!='bridge') and l.subif_index is not defined %}
-{%     set ifname = l.ifname if '.' in l.ifname else l.ifname|replace('vlan','irb0.') if l.type=='svi' else (l.ifname+'.0') %}
-{%     if 'ospf' not in l %}
-       # OSPF not configured on external interface {{ ifname }}
-{%     else %}
+{%      set if_name_index = l.ifname.split('.') %}
+{%      set if_name = if_name_index[0] if l.type!='stub' else "lo0" %}
+{%      set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else '0' %}
+{%      if 'ospf' not in l %}
+       # OSPF not configured on external interface {{ if_name }}
+{%      else %}
        - area-id: {{ l.ospf.area }}
          interface:
-         - interface-name: {{ ifname }}
+         - interface-name: {{ if_name }}.{{ if_index }}
            passive: {{ ospf.passive | default(False) }}
 {%         if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
            interface-type: "{{ l.ospf.network_type }}"
