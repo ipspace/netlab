@@ -113,7 +113,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
   with open(fname,"w") as output:
     output.write(header)
     if callable(getattr(data,"to_yaml",None)):
-      output.write(data.to_yaml())
+      output.write(data.to_yaml(ruamel_attrs={'version': (1,2)}))
     else:                            # pragma: no cover -- this should never happen as we're using Box, but just in case...
       output.write(yaml.dump(data))
     output.close()
