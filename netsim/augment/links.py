@@ -95,7 +95,7 @@ def adjust_link_list(links: list, nodes: Box) -> list:
   if common.debug_active('links'):
     print("Adjusted link list")
     print("=" * 60)
-    print(common.print_yaml(link_list))
+    print(common.get_yaml_string(link_list))
 
   return link_list
 
