@@ -44,7 +44,7 @@ class YAML(_TopologyOutput):
 
     common.exit_on_error()
     if modname == 'YAML':
-      output.write(cleantopo.to_yaml())
+      output.write(common.get_yaml_string(cleantopo))
     else:
       output.write(cleantopo.to_json(indent=2,sort_keys=True))
     if outfile != '-':

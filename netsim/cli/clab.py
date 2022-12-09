@@ -69,7 +69,7 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
     common.fatal("Cannot read clab.yml configuration file, aborting")
     return
 
-  clab_yml = clab.to_yaml()
+  clab_yml = common.get_yaml_string(clab)
   if not ('topology' in clab and 'nodes' in clab.topology):
     common.fatal(f'Containerlab configuration file {infile} is weird: cannot find topology.nodes dictionary')
 
@@ -85,11 +85,12 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
       print(f"Found config file for {n}: {cfgfile}")
       clab.topology.nodes[n]['startup-config'] = cfgfile
 
-  if clab.to_yaml() == clab_yml:
+  final_clab_yml = common.get_yaml_string(clab) 
+  if final_clab_yml == clab_yml:
     common.fatal(f'No relevant configuration files were found in {configs} directory, aborting')
 
   output = common.open_output_file(outfile)
-  output.write(clab.to_yaml())
+  output.write(final_clab_yml)
   output.close()
 
 def clab_tarball(cli_args: typing.List[str], settings: Box) -> None:

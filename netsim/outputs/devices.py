@@ -38,10 +38,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
 
   with open(fname,"w") as output:
     output.write(header)
-    if callable(getattr(data,"to_yaml",None)):
-      output.write(data.to_yaml())
-    else:                            # pragma: no cover -- this should never happen as we're using Box, but just in case...
-      output.write(yaml.dump(data))
+    output.write(common.get_yaml_string(data))
     output.close()
 
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]

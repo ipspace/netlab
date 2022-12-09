@@ -42,4 +42,4 @@ def run(cli_args: typing.List[str]) -> None:
   common.exit_on_error()
 
   transform_setup(topology)
-  args.output.write(topology.to_yaml())
+  args.output.write(common.get_yaml_string(topology))
