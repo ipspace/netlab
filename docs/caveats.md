@@ -118,3 +118,15 @@ Additionally, using always the latest build published on [Vagrant Hub](https://a
 Dell OS10 uses a concept of a so-called *Virtual Network* interface to try to handle transparently VLANs and VXLANs in the same way. However, it seems that right now it is **NOT** possible to activate OSPF on a *Virtual Network* (VLAN) SVI interface.
 
 Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface (but *anycast* gateway is supported). At the same time, *anycast* gateway is not supported on plain *ethernet* interfaces, so you need to use *VRRP* there.
+
+## Juniper vMX in Containerlab
+Juniper vMX runs in Containerlab with the *vrnetlab* extension. See https://containerlab.dev/manual/kinds/vr-vmx/ for further details.
+
+Additionally, the Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. For this reason it's better to use a different subnet for the loopback addresses of your topologies with:
+```
+addressing:
+  loopback:
+    ipv4: 10.255.0.0/24
+  router_id:
+    ipv4: 10.255.0.0/24
+```
