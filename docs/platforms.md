@@ -15,6 +15,7 @@
 | Fortinet FortiOS [❗](caveats.html#fortinet-fortios) | fortios            |
 | FRR 7.5.0                                 | frr                |
 | Generic Linux host                        | linux              |
+| Juniper vMX                               | vmx                |
 | Juniper vSRX 3.0                          | vsrx               |
 | Mikrotik RouterOS 6 (CHR)                 | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats.html#mikrotik-routeros-7) | routeros7           |
@@ -73,6 +74,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
 | FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
 | Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
+| Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats.html#juniper-vmx-in-containerlab)             |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
 | Mikrotik RouterOS 6                                |          ✅           |              ❌               |            ❌             |
 | Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
@@ -118,6 +120,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Fortinet FortiOS      |          ✅           |           ✅           |
 | FRR container         |          ✅           |           ❌           |
 | Generic Linux         |          ✅           |           ❌           |
+| Juniper vMX           |          ✅           |           ✅           |
 | Juniper vSRX 3.0      |          ✅           |           ✅           |
 | Mikrotik RouterOS 6   |          ✅           |           ✅           |
 | Mikrotik RouterOS 7   |          ✅           |           ✅           |
@@ -141,6 +144,7 @@ The following system-wide features are configured on supported network operating
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | FRR 7.5.0             |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
+| Juniper vMX           |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Juniper vSRX 3.0      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Mikrotik RouterOS 6   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
 | Mikrotik RouterOS 7   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
@@ -162,6 +166,7 @@ The following interface parameters are configured on supported network operating
 | Fortinet FortiOS      |            ✅              |            ✅            | ❌ |
 | FRR 7.5.0             |            ✅              |            ✅            | ✅ |
 | Generic Linux         |            ❌              |            ❌            | ✅ |
+| Juniper vMX           |            ✅              |            ✅            | ✅ |
 | Juniper vSRX 3.0      |            ✅              |            ✅            | ✅ |
 | Mikrotik RouterOS 6   |            ✅              |            ❌            | ✅ |
 | Mikrotik RouterOS 7   |            ✅              |            ❌            | ✅ |
@@ -183,6 +188,7 @@ The following interface addresses are supported on various platforms:
 | Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |
 | FRR 7.5.0             |          ✅          |          ✅          |             ❌              |
 | Generic Linux         |          ✅          |          ✅          |             ❌              |
+| Juniper vMX           |          ✅          |          ✅          |             ✅              |
 | Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |
 | Mikrotik RouterOS 6   |          ✅          |          ✅          |             ❌              |
 | Mikrotik RouterOS 7   |          ✅          |          ✅          |             ❌              |
@@ -209,6 +215,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Dell OS10             | [❗](caveats.html#dell-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
 | Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
+| Juniper vMX           | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
@@ -231,6 +238,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.html#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
 | Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
+| Juniper vMX           |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
 | Juniper vSRX 3.0      |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
 | Mikrotik RouterOS 6   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Mikrotik RouterOS 7   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
@@ -255,6 +263,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | FRR 7.5.0             |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
+| Juniper vMX           |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Juniper vSRX 3.0      |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Mikrotik RouterOS 6   |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Mikrotik RouterOS 7   |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
