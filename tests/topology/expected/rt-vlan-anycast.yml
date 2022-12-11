@@ -1,0 +1,324 @@
+gateway:
+  anycast:
+    mac: 0200.cafe.00ff
+    unicast: true
+  vrrp:
+    group: 1
+input:
+- topology/input/rt-vlan-anycast.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  gateway: true
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.1.1/24
+    node: h
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.1.2/24
+    node: s1
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 172.16.1.0/24
+  role: stub
+  type: lan
+- bridge: input_2
+  gateway: true
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.0.1/24
+    node: h
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: blue
+  linkindex: 2
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: blue
+- interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    node: s1
+    vlan:
+      trunk:
+        blue: {}
+  - ifindex: 1
+    ifname: Ethernet1
+    node: s2
+    vlan:
+      trunk:
+        blue: {}
+  linkindex: 3
+  node_count: 2
+  prefix: {}
+  type: p2p
+  vlan:
+    trunk:
+      blue: {}
+module:
+- vlan
+- gateway
+name: input
+nodes:
+  h:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 1
+    interfaces:
+    - bridge: input_1
+      gateway:
+        ipv4: 172.16.1.2/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.1.1/24
+      linkindex: 1
+      name: h -> s1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.1.2/24
+        node: s1
+      role: stub
+      type: lan
+    - bridge: input_2
+      gateway:
+        ipv4: 172.16.0.254/24
+      ifindex: 2
+      ifname: eth2
+      ipv4: 172.16.0.1/24
+      linkindex: 2
+      name: h -> [s1,s2]
+      neighbors:
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+      - gateway:
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+          id: -2
+          ipv4: 172.16.0.254/24
+          protocol: anycast
+          vrrp:
+            group: 1
+        ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: s2
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    name: h
+    role: host
+  s1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.1.2/24
+      linkindex: 1
+      name: s1 -> h
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.1.1/24
+        node: h
+      role: stub
+      type: lan
+    - bridge: input_2
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 2
+      type: lan
+      vlan:
+        access: blue
+        access_id: 1000
+    - ifindex: 3
+      ifname: Ethernet3
+      linkindex: 3
+      name: s1 -> s2
+      neighbors:
+      - ifname: Ethernet1
+        node: s2
+      type: p2p
+      vlan:
+        trunk:
+          blue: {}
+        trunk_id:
+        - 1000
+    - bridge_group: 1
+      ifindex: 5
+      ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      name: VLAN blue (1000) -> [h,s2]
+      neighbors:
+      - ifname: eth2
+        ipv4: 172.16.0.1/24
+        node: h
+      - gateway:
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+          id: -2
+          ipv4: 172.16.0.254/24
+          protocol: anycast
+          vrrp:
+            group: 1
+        ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: s2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - vlan
+    name: s1
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      blue:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+  s2:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    gateway:
+      anycast:
+        mac: 0200.cafe.00ff
+        unicast: true
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      linkindex: 3
+      name: s2 -> s1
+      neighbors:
+      - ifname: Ethernet3
+        node: s1
+      type: p2p
+      vlan:
+        trunk:
+          blue: {}
+        trunk_id:
+        - 1000
+    - bridge_group: 1
+      gateway:
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        id: -2
+        ipv4: 172.16.0.254/24
+        protocol: anycast
+      ifindex: 3
+      ifname: Vlan1000
+      ipv4: 172.16.0.3/24
+      name: VLAN blue (1000) -> [h,s1]
+      neighbors:
+      - ifname: eth2
+        ipv4: 172.16.0.1/24
+        node: h
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - vlan
+    - gateway
+    name: s2
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      blue:
+        bridge_group: 1
+        gateway: true
+        id: 1000
+        mode: irb
+        neighbors:
+        - ifname: eth2
+          ipv4: 172.16.0.1/24
+          node: h
+        - ifname: Vlan1000
+          ipv4: 172.16.0.2/24
+          node: s1
+        - gateway:
+            anycast:
+              mac: 0200.cafe.00ff
+              unicast: true
+            id: -2
+            ipv4: 172.16.0.254/24
+            protocol: anycast
+            vrrp:
+              group: 1
+          ifname: Vlan1000
+          ipv4: 172.16.0.3/24
+          node: s2
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+provider: libvirt
+vlans:
+  blue:
+    gateway: true
+    host_count: 1
+    id: 1000
+    neighbors:
+    - ifname: eth2
+      ipv4: 172.16.0.1/24
+      node: h
+    - ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      node: s1
+    - gateway:
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        id: -2
+        ipv4: 172.16.0.254/24
+        protocol: anycast
+        vrrp:
+          group: 1
+      ifname: Vlan1000
+      ipv4: 172.16.0.3/24
+      node: s2
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.0.0/24
