@@ -173,6 +173,12 @@ class VXLAN(_Module):
     for name,ndata in topology.nodes.items():
       if not 'vxlan' in ndata.get('module',[]):                     # Skip nodes without VXLAN module
         continue
+      if not ndata.interfaces:
+        common.error(
+          f'VXLAN-enabled node {name} should be connected to at least one link',
+          common.MissingValue,
+          'vxlan')
+        continue
       if not 'vlans' in ndata:                                      # Skip VXLAN-enabled nodes without VLANs
         if 'vxlan' in ndata:                                        # ... but make sure there's no vxlan.vlans list left on them
           ndata.vxlan.pop('vlans',None)
