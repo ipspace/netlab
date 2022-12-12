@@ -26,12 +26,12 @@ def pre_link_transform(topology: Box) -> None:
         for intf in link.interfaces:
             if 'bgp' in intf:
                 # as_override shall be bool
-                data.must_be_bool(parent=intf.bgp,key='as_override', path=f'links[{link.linkindex}].{intf.node}.bgp')
+                data.validate.must_be_bool(parent=intf.bgp,key='as_override', path=f'links[{link.linkindex}].{intf.node}.bgp')
                 # allowas_in shall be int (force 1 if True)
-                data.must_be_int(parent=intf.bgp,key='allowas_in', path=f'links[{link.linkindex}].{intf.node}.bgp', true_value=1, min_value=1, max_value=10)
+                data.validate.must_be_int(parent=intf.bgp,key='allowas_in', path=f'links[{link.linkindex}].{intf.node}.bgp', true_value=1, min_value=1, max_value=10)
         if 'bgp' in link:
             # password
-            data.must_be_string(parent=link.bgp,key='password', path=f'links[{link.linkindex}].bgp')
+            data.validate.must_be_string(parent=link.bgp,key='password', path=f'links[{link.linkindex}].bgp')
 
 def post_transform(topology: Box) -> None:
     config_name = api.get_config_name(globals())
