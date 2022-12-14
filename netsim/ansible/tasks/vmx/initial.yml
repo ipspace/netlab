@@ -15,6 +15,22 @@
   delay: 30
   when: clab.kind is defined
 
+- name: Download vMX eval license (60 days) from Juniper public website
+  delegate_to: localhost
+  get_url:
+    dest: /tmp/vmx_eval.txt
+    url: https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
+
+- name: Copy vMX eval license (60 days) to vMX instance
+  local_action:
+    module: command
+    cmd: "sshpass -p '{{ ansible_ssh_pass }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/vmx_eval.txt {{ ansible_user }}@{{ ansible_host }}:"
+
+- name: Load vMX eval license (60 days)
+  local_action:
+    module: command
+    cmd: "sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ansible_user }}@{{ ansible_host }} 'request system license add vmx_eval.txt'"
+
 - name: "junos_config: deploying initial config from {{ config_template }}"
   junos_config:
     src: "{{ config_template }}"
