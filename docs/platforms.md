@@ -80,7 +80,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
 | Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
-| VyOS                                               |          ✅           |              ❌               |            ❌             |
+| VyOS                                               |          ✅           |              ❌               |            ✅             |
 
 **Note:**
 
