@@ -19,7 +19,7 @@
 | Juniper vSRX 3.0                          | vsrx               |
 | Mikrotik RouterOS 6 (CHR)                 | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats.html#mikrotik-routeros-7) | routeros7           |
-| Nokia SR Linux                            | srlinux            |
+| Nokia SR Linux [❗](caveats.html#nokia-sr-linux) | srlinux            |
 | Nokia SR OS [❗](caveats.html#nokia-sr-os) | sros               |
 | VyOS 1.4 [❗](caveats.html#vyos)         | vyos               |
 
@@ -176,8 +176,8 @@ The following interface parameters are configured on supported network operating
 
 The following interface addresses are supported on various platforms:
 
-| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces | 
-| --------------------- | :-----------------: | :-----------------: | :------------------------: | 
+| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces |
+| --------------------- | :-----------------: | :-----------------: | :------------------------: |
 | Arista EOS            |          ✅          |          ✅          |             ✅              |
 | Cisco ASAv            |          ✅          |          ✅          |             ❌              |
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
