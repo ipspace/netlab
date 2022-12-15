@@ -12,6 +12,14 @@ from .. import common
 from ..data import get_from_box
 from ..augment import devices
 
+def unit_0_trick(intf, round='global'):
+  oldname = intf.ifname
+  newname = oldname + ".0"
+  print(" - [{}] Found interface {}, renaming to {}".format(round, intf.ifname, newname))
+  intf.ifname = newname
+  intf.junos_interface = oldname
+  intf.junos_unit = '0'
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -22,13 +30,7 @@ class JUNOS(_Quirks):
     base_vlan_interfaces = []
     for intf in node.get('interfaces', []):
       if not '.' in intf.ifname:
-          oldname = intf.ifname
-          newname = oldname + ".0"
-          print(" - Found interface {}, renaming to {}".format(intf.ifname, newname))
-          intf.ifname = newname
-          intf.junos_interface = oldname
-          intf.junos_unit = '0'
-
+          unit_0_trick(intf)
           if 'vlan' in mods:
             # check VLAN params, and add if needed
             if '_vlan_native' in intf:
@@ -48,3 +50,10 @@ class JUNOS(_Quirks):
       for intf in node.get('interfaces', []):
         if intf.junos_unit=='0' and intf.junos_interface in base_vlan_interfaces:
           intf._vlan_master = True
+    
+    # need to append .0 unit trick to the interface list copied into vrf->ospf
+    if 'vrf' in mods and 'ospf' in mods:
+      for vname,vdata in node.vrfs.items():
+        for intf in vdata.get('ospf', {}).get('interfaces', []):
+          if not '.' in intf.ifname:
+            unit_0_trick(intf, "vrf({})/ospf".format(vname))

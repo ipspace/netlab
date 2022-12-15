@@ -1,0 +1,27 @@
+
+{% if bgp.as is defined %}
+
+{% include 'junos.bgp.j2' %}
+
+{# generic policy to redistribute bgp into ospf #}
+policy-options {
+  policy-statement BGP-INTO-OSPF {
+    term BGP-ONLY {
+      from protocol bgp;
+      then {
+        accept;
+      }
+    }
+    term LOCAL-LEAKED {
+      from community [ leaked ];
+      then accept;
+    }
+  }
+}
+
+{% endif %}
+
+
+{% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
+{%   include 'junos.ospfv2-vrf.j2' %}
+{% endfor %}
