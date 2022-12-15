@@ -1,0 +1,20 @@
+{% if vxlan.vlans is defined %}
+interface nve1
+ no shutdown
+ source-interface Loopback0
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+ member vni {{ vlan.vni }}
+{%     if vlan.vtep_list is defined %}
+{%       for remote_vtep in vlan.vtep_list %}
+  ingress-replication {{ remote_vtep }}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+!
+bridge-domain {{ vlan.id }}
+ member vni {{ vlan.vni }}
+{%   endfor %}
+{% endif %}

@@ -26,6 +26,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Operating system   | VXLAN<br>bridging | Per-VLAN<br>replication | IPv6 VTEP |
 | ------------------ | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |  ❌  |
+| Cisco CSR 1000v    | ✅  | ✅  |  ❌  |
 | Cisco Nexus OS     | ✅  | ✅  |  ❌  |
 | Cumulus Linux      | ✅  | ✅  |  ❌  |
 | Dell OS10          | ✅  | ✅  |  ❌  |
