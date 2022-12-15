@@ -23,6 +23,7 @@ VLANs are supported on these platforms:
 | --------------------- | :-: | :-: |:-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Cisco CSR 1000v       | ✅  | ✅  | ❌[❗](../caveats.html#caveats-csr)   | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |

@@ -233,7 +233,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
 | Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
-| Cisco IOS XE          |   ❌  | ✅  |  ❌   | ✅   |    ✅   |  ❌   |
+| Cisco IOS XE          |  ✅  | ✅  |  ❌   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.html#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
