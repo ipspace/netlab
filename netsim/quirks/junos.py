@@ -16,7 +16,7 @@ class JUNOS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.hostname))
+    print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.name))
     mods = node.get('module',[])
     # Need to understand if I need to configure unit 0 or not.
     base_vlan_interfaces = []
