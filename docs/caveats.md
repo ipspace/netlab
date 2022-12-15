@@ -1,9 +1,14 @@
 # Platform Caveats
 
-## Cisco IOS
+## Cisco IOSv
 
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+
+(caveats-csr)=
+## Cisco CSR 1000v
+
 * Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
+* VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 
 ## Cisco Nexus OS
 
