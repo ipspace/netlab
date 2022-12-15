@@ -11,6 +11,22 @@ Start the lab with
 netlab up -p <provider> -d <device> <topology-file>
 ```
 
+After validating the basic setup (single-node bridging and VLAN trunks), you might want
+to make one of the switches a third-party switch (example: Cumulus Linux) to validate
+cross-platform interoperability. Use a command similar to:
+
+```
+netlab up -p <provider> -d <device> -s nodes.s1.device=cumulus <topology-file>
+```
+
+Finally, you might want to use third-party devices as layer-2 switches in the _routed
+subinterfaces_ scenarios if you're working with a platform that is a resource hog or
+uses a long time to start. Use something like:
+
+```
+netlab up -p <provider> -d cumulus -s nodes.s1.ros=<device> <topology-file>
+```
+
 The topologies (in increasing order of complexity) implement the following scenarios:
 
 ### Single node bridging
@@ -44,7 +60,6 @@ The topologies (in increasing order of complexity) implement the following scena
 * `vlan-routed-trunk.yml` -- a router-on-a-stick is attached to a VLAN trunk. Make sure the
   router configuration uses routed subinterfaces and not VLAN interfaces.
 * `vlan-vrf-lite.yml` -- implement VRF lite across three routers using VLAN trunks
-
 
 ### Weird scenarios
 
