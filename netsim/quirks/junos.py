@@ -12,7 +12,7 @@ from .. import common
 from ..data import get_from_box
 from ..augment import devices
 
-def unit_0_trick(intf, round='global'):
+def unit_0_trick(intf: Box, round: str ='global') -> None:
   oldname = intf.ifname
   newname = oldname + ".0"
   print(" - [{}] Found interface {}, renaming to {}".format(round, intf.ifname, newname))
