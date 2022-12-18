@@ -13,6 +13,8 @@ The plugin includes Jinja2 templates for Cisco IOS, Arista EOS and VyOS.
 | ------------------------ | :--------: | :---------: | :------: | :---------------: |
 | Arista EOS               |      ✅    |     ✅      |    ✅    |    ✅    |
 | Cisco IOS                |      ✅    |     ✅      |    ✅    |    ✅    |
+| Juniper vMX              |      ❌    |     ✅      |    ✅    |    ❌    |
+| Juniper vSRX 3.0         |      ❌    |     ✅      |    ✅    |    ❌    |
 | Mikrotik RouterOS 7      |      ✅    |     ✅      |    ✅    |    ✅    |
 | VyOS                     |      ✅    |     ✅      |    ✅    |    ✅    |
 

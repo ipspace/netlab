@@ -311,6 +311,8 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
     v.networks.append(vrfaddr)
     node.interfaces.append(ifdata)
 
+    # add loopback addresses to the vrf data as well
+    v.loopback_address = vrfaddr
 
   return
 

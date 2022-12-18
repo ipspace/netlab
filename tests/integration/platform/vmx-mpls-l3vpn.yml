@@ -1,0 +1,58 @@
+---
+provider: clab
+defaults:
+  device: vmx
+
+vrfs:
+  red:
+    loopback: true
+
+bgp.as: 65000
+
+nodes:
+  p1:
+    module: [ ospf, mpls ]
+    id: 1
+  pe1:
+    module: [ vrf,ospf,bgp,mpls ]
+    mpls:
+      ldp: true
+      vpn: true
+    id: 11
+  pe2:
+    module: [ vrf,ospf,bgp,mpls ]
+    mpls:
+      ldp: true
+      vpn: true
+    id: 12
+  ce1:
+    id: 21
+    module: [ bgp ]
+    bgp.as: 65001
+  ce2:
+    id: 22
+    module: [ bgp ]
+    bgp.as: 65002
+  host1:
+    device: linux
+    id: 31
+  host2:
+    device: linux
+    id: 32
+
+links:
+- p1-pe1
+- p1-pe2
+- pe1: { vrf: red }
+  ce1:
+  prefix: 10.20.1.0/30
+- pe2: { vrf: red }
+  ce2:
+  prefix: 10.20.2.0/30
+- ce1:
+  host1:
+  bgp.advertise: true
+- ce2:
+  host2:
+  bgp.advertise: true
+

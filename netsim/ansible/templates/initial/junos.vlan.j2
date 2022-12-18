@@ -1,0 +1,61 @@
+{#
+# RAW interfaces with flexible vlan tagging, + VLAN TAGS
+#}
+
+interfaces {
+
+{% for l in interfaces|default([]) %}
+
+{%   if l.junos_interface != 'irb' and l.junos_unit != '0' and l.type|default('') == 'vlan_member' %}
+{# This is an ethernet subinterface for a VLAN #}
+{# -> be sure flexible vlan tagging is enabled on basic interface #}
+
+  {{ l.junos_interface }} {
+    flexible-vlan-tagging;
+  }
+
+  {{ l.ifname }} {
+    vlan-id {{ l.vlan.access_id }};
+  }
+
+{%   endif %}
+
+{%   if l.junos_interface != 'irb' and l.junos_unit == '0' %}
+{# This is the ethernet subinterface 0 #}
+{# -> we need to check if it's a "native vlan routed port", if yes #}
+{# -> we need to set native-vlan-id on the basic interface, and report the vlan id on the subunit #}
+
+{%     set ns = namespace(native_vlan="1") %}
+{%     if l._vlan_master|default(false) %}
+{%       if l._vlan_native_id is defined %}
+{%         set ns.native_vlan = l._vlan_native_id %}
+{%       endif %}
+
+  {{ l.junos_interface }} {
+    flexible-vlan-tagging;
+    native-vlan-id {{ ns.native_vlan }};
+  }
+
+  {{ l.junos_interface }}.0 {
+    vlan-id {{ ns.native_vlan }};
+  }
+
+{%     endif %}
+{%   endif %}
+
+{%   if l.junos_interface != 'irb' and l.junos_unit == '0' and l._vlan_master is defined and l.vlan.access_id is defined %}
+{# this is a irb port in access mode on unit 0 #}
+  {{ l.junos_interface }} {
+    flexible-vlan-tagging;
+    native-vlan-id {{ l.vlan.access_id }};
+  }
+
+  {{ l.ifname }} {
+    vlan-id {{ l.vlan.access_id }};
+  }
+
+{%   endif %}
+
+{% endfor %}
+
+}

@@ -1,0 +1,36 @@
+{% set KW_NETWORK_TYPE = {'point-to-point': 'p2p','point-to-multipoint': 'p2mp', 'non-broadcast': 'nbma' } %}
+
+routing-instances {
+  {{vname}} {
+    protocols {
+      ospf {
+        export vrf-{{vname}}-ospf-export;
+
+{% for l in vdata.ospf.interfaces|default([]) %}
+        area {{ l.ospf.area }} {
+          interface {{ l.ifname }} {
+{%   if l.ospf.network_type is defined and l.ospf.network_type != 'broadcast' %}
+            interface-type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
+{%   endif %}
+{%   if l.ospf.passive|default(False) or l.type|default('') == 'loopback' %}
+            passive;
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+            metric {{ l.ospf.cost }};
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+            bfd-liveness-detection {
+              minimum-receive-interval {{ l.bfd.min_rx|default(bfd.min_rx)|default(500) }};
+              multiplier {{ l.bfd.multiplier|default(bfd.multiplier)|default(3) }};
+              transmit-interval {
+                minimum-interval {{ l.bfd.min_tx|default(bfd.min_tx)|default(500) }};
+              }
+            }
+{%   endif %}
+          }
+        }
+{% endfor %}
+      }
+    }
+  }
+}

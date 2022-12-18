@@ -1,0 +1,75 @@
+
+{# Define communities for import/export #}
+
+{% set ns = namespace(target_list=[]) %}
+{% for vname,vdata in vrfs.items() %}
+{%   for i in vdata.import|default([]) %}
+{{     ns.target_list.append(i) }}
+{%   endfor %}
+{%   for i in vdata.export|default([]) %}
+{{     ns.target_list.append(i) }}
+{%   endfor %}
+{% endfor %}
+
+policy-options {
+{% for tgt in ns.target_list|unique %}
+{%   set comname = tgt|replace(':', '_')|replace('.', '_') %}
+  community tg_{{ comname }} members target:{{ tgt }};
+{% endfor %}
+}
+
+
+{# Define policies for import/export #}
+
+policy-options {
+{% for vname,vdata in vrfs.items() %}
+  policy-statement vrf-{{vname}}-export {
+    term 1 {
+      then {
+{%   for e in vdata.export|default([]) %}
+        community add tg_{{e|replace(':', '_')|replace('.', '_')}};
+{%   endfor %}
+        accept;
+      }
+    }
+  }
+
+{% set ns = namespace(import_list=[]) %}
+{%   for i in vdata.import|default([]) %}
+{{ ns.import_list.append('tg_'+i|replace(':', '_')|replace('.', '_')) }}
+{%   endfor %}
+
+  policy-statement vrf-{{vname}}-import {
+    term 1 {
+      from community [ {{ ns.import_list|join(' ') }} ];
+      then accept;
+    }
+    term default {
+      then reject;
+    }
+  }
+{% endfor %}
+}
+
+routing-instances {
+{% for vname,vdata in vrfs.items() %}
+
+  {{ vname }} {
+    instance-type vrf;
+    route-distinguisher {{ vdata.rd }};
+
+    vrf-import vrf-{{vname}}-import;
+    vrf-export vrf-{{vname}}-export;
+
+    routing-options {
+      auto-export;
+    }
+
+{%   for l in interfaces|default([]) if l.vrf|default('') == vname %}
+    interface {{ l.ifname }};
+{%   endfor %}
+
+  }
+
+{% endfor %}
+}

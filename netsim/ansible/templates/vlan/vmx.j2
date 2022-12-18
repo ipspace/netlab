@@ -1,0 +1,33 @@
+
+
+
+interfaces {
+{% for ifdata in interfaces|default([]) if ifdata.vlan.access_id is defined and ifdata.vlan.mode|default('') != 'route' and (ifdata.type == 'vlan_member' or ifdata._vlan_master is defined) %}
+
+  {{ ifdata.junos_interface }} {
+    encapsulation flexible-ethernet-services;
+  }
+
+  {{ ifdata.ifname }} {
+    encapsulation vlan-bridge;
+  }
+
+{% endfor %}
+}
+
+
+bridge-domains {
+{% for vname,vdata in vlans.items() if vdata.mode|default('') != 'route' %}
+
+  vlan-{{ vdata.id }} {
+    domain-type bridge;
+    vlan-id {{ vdata.id }};
+    routing-interface irb.{{ vdata.id }};
+
+{%   for ifdata in interfaces|default([]) if (ifdata.type == 'vlan_member' or ifdata._vlan_master is defined) and ifdata.vlan.access_id|default(0) == vdata.id %}
+    interface {{ ifdata.ifname }};
+{%   endfor %}
+  }
+
+{% endfor %}
+}

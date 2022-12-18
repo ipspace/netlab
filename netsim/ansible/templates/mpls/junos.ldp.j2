@@ -1,0 +1,26 @@
+{# add address family on interfaces #}
+
+interfaces {
+{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
+  {{ l.ifname }} {
+    family mpls;
+  }
+{% endfor %}
+}
+
+protocols {
+  mpls {
+    traffic-engineering bgp-igp-both-ribs;
+{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
+    interface {{ l.ifname }};
+{% endfor %}
+  }
+  ldp {
+{% if ldp.explicit_null|default(False) %}
+    explicit-null;
+{% endif %}
+{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
+    interface {{ l.ifname }};
+{% endfor %}
+  }
+}
