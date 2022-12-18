@@ -78,7 +78,7 @@ Getting Started
    :maxdepth: 2
    :hidden:
 
-   release.rst
+   release.md
    caveats.md
 ..
 

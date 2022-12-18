@@ -14,7 +14,7 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release 1.4.1](https://github.com/ipspace/netlab/releases/tag/release_1.4.1). We refactored several configuration modules and significantly improved topology validation in release 1.4.0, resulting in a number of potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html) first.
+The latest release is [release 1.4.2](https://github.com/ipspace/netlab/releases/tag/release_1.4.2). We refactored several configuration modules and significantly improved topology validation in release 1.4.0, resulting in a number of potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html) first.
 
 The latest release before the changes made in release 1.4.0 is [release 1.3.3](https://github.com/ipspace/netlab/releases/tag/release_1.3.3).
 
