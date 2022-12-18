@@ -1,0 +1,74 @@
+{#
+   Macro for neighbor attributes
+#}
+{% macro ebgp_utils_neigh_attributes(n) %}
+{%   if n.as_override|default(false) %}
+  as-override;
+{%   endif %}
+{%   if n.password is defined %}
+  authentication-key "{{ n.password }}";
+{%   endif %}
+{%- endmacro %}
+
+
+{# Main BGP Instance #}
+protocols {
+  bgp {
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined and loopback[af] is defined %}
+    group ibgp-peers-{{ af }} {
+{%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' %}
+      neighbor {{ n[af] }} {
+        {# THIS HERE IS THE NEIGHBOR (iBGP) #}
+        {{ ebgp_utils_neigh_attributes(n) }}
+      }
+{%   endfor %}
+    }
+{% endfor %}
+    group ebgp-peers {
+{% for n in bgp.neighbors if n.type == 'ebgp' %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+      neighbor {{ n[af] }} {
+        {# THIS HERE IS THE NEIGHBOR (eBGP) #}
+        {{ ebgp_utils_neigh_attributes(n) }}
+      }
+{%   endfor %}
+{% endfor %}
+    }
+  }
+}
+
+
+{# VRF -> BGP Instances #}
+routing-instances {
+{% for vname,vdata in (vrfs|default({})).items() %}
+
+  {{vname}} {
+    protocols {
+      bgp {
+{%   for af in ['ipv4','ipv6'] if vdata.af[af] is defined and vdata.loopback_address[af] is defined %}
+        group ibgp-peers-{{ af }} {
+{%     for n in vdata.bgp.neighbors|default([]) if n[af] is defined and n.type == 'ibgp' %}
+          neighbor {{ n[af] }} {
+            {# THIS HERE IS THE NEIGHBOR (VRF->iBGP) #}
+            {{ ebgp_utils_neigh_attributes(n) }}
+          }
+{%     endfor %}
+        }
+{%   endfor %}
+
+        group ebgp-peers {
+{%   for n in vdata.bgp.neighbors|default([]) if n.type == 'ebgp' %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+          neighbor {{ n[af] }} {
+            {# THIS HERE IS THE NEIGHBOR (VRF->eBGP) #}
+            {{ ebgp_utils_neigh_attributes(n) }}
+          }
+{%     endfor %}
+{%   endfor %}
+        }
+      }
+    }
+  }
+
+{% endfor %}
+}
