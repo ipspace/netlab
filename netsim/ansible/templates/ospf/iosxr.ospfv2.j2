@@ -1,0 +1,32 @@
+{% set pid = ospf.process|default(1) %}
+router ospf {{ pid }}
+{% if ospf.router_id|ipv4 %}
+ router-id {{ ospf.router_id }}
+{% endif %}
+{% if ospf.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+ loopback stub-network enable
+{% for area in (interfaces|json_query('[*].ospf.area') + [ ospf.area ]) | unique %}
+ area {{ area }}
+{%   if area == ospf.area %}
+  interface Loopback0
+{%   endif %}
+{%   for intf in interfaces if 'ipv4' in intf and intf.ospf.area|default('') == area %}
+  interface {{ intf.ifname }}
+{%     if intf.ospf.passive|default(False) %}
+   passive enable
+{%     endif %}
+{%     if intf.ospf.network_type is defined %}
+   network {{ intf.ospf.network_type }}
+{%     endif %}
+{%     if intf.ospf.cost is defined %}
+   cost {{ intf.ospf.cost }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+{########
+{%   if l.ospf.bfd|default(False) %}
+ ip ospf bfd
+{%   endif %}
+#########}

@@ -210,12 +210,13 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 [^NSM]: Use **[netlab show module-support](netlab/show.md)** command to display the current system settings
 
-| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | EVPN | FHRP |
+| Operating system      | [OSPF](module/ospf.html) | [IS-IS](module/isis.html) | [EIGRP](module/eigrp.html) | [BGP](module/bgp.html) | [BFD](module/bfd.html) | [EVPN](module/evpn.html) | [FHRP](module/gateway.html) |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
 | Cisco ASAv            | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
 | Cisco IOSv            | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
+| Cisco IOS XRv         | ✅   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |  ❌  |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |

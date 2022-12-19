@@ -43,6 +43,7 @@ The following table describes per-platform support of individual router-level OS
 | ------------------------ | :---: | :---------------------: | :----: | :--: |
 | Arista EOS               |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco IOS                |   ✅  |            ✅          |   ✅   |  ✅  |
+| Cisco IOS XRv            |   ✅  |            ✅          |   ✅   |  ❌   |
 | Cisco IOS XE             |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco Nexus OS           |   ✅  |            ✅          |   ✅  |  ✅  |
 | Cumulus Linux            |   ✅  |            ✅          |   ✅  |  ❌  |
@@ -70,6 +71,7 @@ The following table documents the interface-level OSPF features:
 | Arista EOS               |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cisco IOS                |   ✅  |         ✅        |             ❗            |            ✅           |
 | Cisco IOS XE             |   ✅  |         ✅        |             ✅            |            ✅           |
+| Cisco IOS XRv             |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cisco Nexus OS           |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cumulus Linux            |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |         ✅        |             ✅            |            ✅           |
