@@ -1,0 +1,26 @@
+# Find the temporary IP address
+#
+- name: "Get current IOS XR IP address from Vagrant"
+  shell: "vagrant ssh-config {{ inventory_hostname }}|grep -i hostname|grep -o '[0-9.]*'"
+  register: ssh_config
+
+# Add secondary IP address to the IOS XR management interface if the DHCP server gave
+# it an unexpected IP address due to its use of ASCII DHCP client ID
+#
+- block:
+  - name: "Change ansible_hostname for IOS XR to temporary Vagrant-supplied IP address"
+    set_fact:
+      ansible_host: "{{ ssh_config.stdout }}"
+
+  - name: "Configure secondary IP address on IOS XR management interface"
+    iosxr_config:
+      parents:
+      - interface {{ mgmt.ifname }}
+      lines:
+      - ip address {{ mgmt.ipv4 }} 255.255.255.0 secondary
+
+  when: ansible_host != ssh_config.stdout
+
+- name: "iosxr_config: deploying initial config from {{ config_template }}"
+  iosxr_config:
+    src: "{{ config_template }}"

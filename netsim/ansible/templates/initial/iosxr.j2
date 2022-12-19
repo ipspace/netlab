@@ -1,0 +1,66 @@
+hostname {{ inventory_hostname }}
+!
+domain lookup disable
+!
+lldp
+ no management enable
+!
+{% for af in ['ipv4','ipv6'] %}
+{%   for k,v in hostvars.items() if k != inventory_hostname and v.af[af]|default(False) %}
+{%     if v.loopback[af] is defined %}
+domain {{ af }} host {{ k }} {{ v.loopback[af]|ipaddr('address') }}
+{%     elif v.interfaces|default([]) and v.interfaces[0][af] is defined %}
+domain {{ af }} host {{ k }} {{ v.interfaces[0][af]|ipaddr('address') }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+!
+interface Loopback0
+{% if 'ipv4' in loopback %}
+ ipv4 address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+ ipv6 address {{ loopback.ipv6|upper }}
+{% endif %}
+!
+{% for l in interfaces|default([]) %}
+interface {{ l.ifname }}
+ no shutdown
+{% if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
+{% endif %}
+{% if l.bandwidth is defined %}
+ bandwidth {{ l.bandwidth  }}
+{% endif %}
+{% if l.mtu is defined %}
+ mtu {{ l.mtu }}
+{% endif %}
+{#
+    Set interface addresses: IPv4
+#}
+{% if 'ipv4' in l %}
+{%   if l.ipv4 == True %}
+ ipv4 point-to-point
+ ipv4 unnumbered {{ loopback_name|default('Loopback0') }}
+{%   elif l.ipv4|ipv4 %}
+ ipv4 address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
+{%   else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%   endif %}
+{% endif %}
+{#
+    Set interface addresses: IPv6
+#}
+{% if 'ipv6' in l %}
+{%   if l.ipv6 == True %}
+ ipv6 enable
+{%   elif l.ipv6|ipv6 %}
+ ipv6 address {{ l.ipv6 }}
+{%   else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%   endif %}
+{% endif %}
+!
+{% endfor %}
