@@ -7,6 +7,7 @@ from . import _Module,_routing
 from . import bfd
 from .. import common
 from ..augment import devices
+from ..data import validate
 
 def isis_unnumbered(node: Box, features: Box) -> bool:
   for af in ('ipv4','ipv6'):
@@ -41,8 +42,11 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
 class ISIS(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
+    isis_type = [ 'level-1', 'level-2', 'level-1-2' ]
     features = devices.get_device_features(node,topology.defaults)
 
+    validate.must_be_string(
+      node,'isis.type',f'nodes.{node.name}',module='isis',valid_values=isis_type)
     if not isis_unnumbered(node,features):
       return
 
@@ -55,6 +59,8 @@ class ISIS(_Module):
         err = _routing.network_type(l,'isis',['point-to-point'])
         if err:
           common.error(f'{err}\n... node {node.name} link {l}')
+      validate.must_be_string(
+        l,'isis.type',f'nodes.{node.name}.interfaces.{l.ifname}',module='isis',valid_values=isis_type)
 
     #
     # Final steps:

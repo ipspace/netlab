@@ -43,7 +43,7 @@ The following table describes per-platform support of individual IS-IS features:
 ## Global Parameters
 
 * **isis.area** -- CLNS area prefix. Router address (NET) is computed from area prefix, 6-byte system ID (using **id** node attribute) and NSAP selector (.00)
-* **isis.type** -- IS-IS router type (default: **level-2**)
+* **isis.type** -- IS-IS router type (**level-1**, **level-2** or **level-1-2**. Default: **level-2**)
 * **isis.bfd** -- enable BFD for IS-IS. This parameter could be a boolean value (*True*/*False*) or a dictionary of address families, for example:
 
 ```
@@ -63,7 +63,7 @@ You can specify node parameters as global values (top-level topology elements) o
 
 ## Link Parameters
 
-* **isis.type** -- Link type (L1/L2/L1-2). Recognized as a valid attribute but not implemented. Please feel free to fix the configuration templates and submit a pull request.
+* **isis.type** -- Link type (**level-1**, **level-2** or **level-1-2**). Recognized as a valid attribute but not implemented. Please feel free to fix the configuration templates and submit a pull request.
 * **isis.network_type** -- Set IS-IS network type. Valid values are **point-to-point** or *False* (do not set the network type). See also [Default Link Parameters](#default-link-parameters).
 * **isis.metric** or **isis.cost** -- Interface cost. Both parameters are recognized to make IS-IS configuration similar to OSPF (*metric* takes precedence over *cost*)
 * **isis.bfd** -- enable or disable BFD on individual interfaces. Like with the node-level **isis.bfd** parameter, this parameter could be a boolean value (*True* to enable BFD for all address families, *False* to disable IS-IS BFD on the interface) or a dictionary of address families, for example:
