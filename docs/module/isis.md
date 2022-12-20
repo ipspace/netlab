@@ -29,6 +29,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
 | Cisco IOS          | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Cisco IOS XE       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌ |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
 | Cisco ASAv         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 

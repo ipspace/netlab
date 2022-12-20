@@ -1,0 +1,41 @@
+{% set KW_TYPE = {'level-1': 'level-1','level-1-2': 'level-1-2', 'level-2': 'level-2-only' } %}
+router isis Gandalf
+ log adjacency changes
+{% if isis.type is defined %}
+ is-type {{ KW_TYPE[isis.type] }}
+{% endif %}
+{% if isis.net is defined %}
+ net {{ isis.net }}
+{% elif isis.area is defined %}
+ net {{ "%s.0000.0000.%04d.00" % (isis.area,id) }}
+{% endif %}
+{% for naf in ['ipv4','ipv4'] if af[naf] %}
+!
+ address-family {{ naf }} unicast
+  metric-style wide
+{%   if naf == 'ipv6' %}
+  no single-topology
+{%   endif %}
+{% endfor %}
+!
+ interface Loopback0
+  passive
+{% for naf in ['ipv4','ipv6'] if naf in loopback and naf in isis.af %}
+  address-family {{ naf }}
+{% endfor %}
+{% for l in interfaces|default([]) if 'isis' in l %}
+!
+ interface {{ l.ifname }}
+{%   if l.isis.passive|default(False) %}
+  passive
+{%   endif %}
+{%   if l.isis.network_type|default('') == 'point-to-point' %}
+  point-to-point
+{%   endif %}
+{%   for naf in ['ipv4','ipv6'] if naf in l and naf in isis.af %}
+  address-family {{ naf }}
+{%     if l.isis.cost is defined or l.isis.metric is defined %}
+   metric {{ l.isis.metric|default(l.isis.cost) }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
