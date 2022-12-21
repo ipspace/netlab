@@ -9,15 +9,21 @@
       netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
     tags: [ always ]
 
-  - set_fact: initial_pre_check="tasks/initial-pre-check/{{netlab_device_type}}.yml"
   - name: Check for initial device readiness task list
-    delegate_to: localhost
-    stat:
-      path: "{{initial_pre_check}}"
-    register: initial_pre_check_stat
-  - name: Waiting for device to become ready
-    include: "{{initial_pre_check}}"
-    when: initial_pre_check_stat.stat.exists
+    block:
+    - set_fact:
+        readiness_check_task: "{{ lookup('first_found',params,errors='ignore') }}"
+      vars:
+        params:
+          paths:
+          - "tasks/readiness-check/"
+          files:
+          - "{{netlab_device_type}}.yml"
+          - "{{ansible_network_os}}.yml"
+    - name: Waiting for device to become ready
+      include: "{{readiness_check_task}}"
+      when: readiness_check_task is defined and readiness_check_task != ''
+    tags: [ always ]
 
   - name: Find initial configuration template
     debug:
