@@ -45,9 +45,27 @@ However, we recommend to periodically download the updated box for:
 * [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
 
-**Notes:**
+```{note}
+For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
+```
 
-* For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
+## Replacing Vagrant Boxes
+
+If you want to rebuild and install a Vagrant box with the same version number, you have to remove the old box manually. You also have to delete the corresponding volume (disk image) from *libvirt* storage pool (*vagrant-libvirt* plugin installs new boxes but does not clean up the old ones).
+
+To delete an old version of a Vagrant box use a procedure  similar to the one described below:
+
+* Use `vagrant box list` to list the installed boxes
+* Use `vagrant box remove <box-name> --box-version=<box-version>` to delete the Vagrant box[^VV]
+* Use `virsh vol-list --pool default`[^DP] to list the installed Vagrant boxes
+* Find the relevant volume name, for example, `cisco-VAGRANTSLASH-iosxr_vagrant_box_image_7.4.2_box.img` for an IOS XR 7.4.2 image
+* Delete the volume with `virsh vol-delete --pool default <volume-name>`
+
+[^VV]: You don't have to specify the box version unless you created multiple versions of the same box.
+
+[^DP]: *libvirt* environment created with the **netlab install libvirt** installation script uses the *default* storage pool. A custom installation might use a different storage pool name.
+
+The new Vagrant box will be copied into the *libvirt* storage pool the next time you'll use the affected device in your lab.
 
 ```{eval-rst}
 .. toctree::

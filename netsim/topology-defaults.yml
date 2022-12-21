@@ -47,7 +47,8 @@ attributes:
 # Built-in module defaults
 #
 bgp:
-  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, asav, vsrx, vyos, routeros, srlinux, sros, none, dellos10, routeros7, vmx, none ]
+  supported_on: [ cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, asav, vsrx, vyos, routeros,
+    srlinux, sros, none, dellos10, routeros7, vmx, iosxr, none ]
   ebgp_role: external
   advertise_roles: [ stub ]
   advertise_loopback: True
@@ -70,7 +71,7 @@ bgp:
     interface: [ local_as, replace_global_as ]
 
 isis:
-  supported_on: [ eos, frr, csr, iosv, nxos, asav, vsrx, srlinux, sros, vyos, vmx, none ]
+  supported_on: [ eos, frr, csr, iosv, nxos, asav, vsrx, srlinux, sros, vyos, vmx, iosxr, none ]
   area: 49.0001
   type: level-2
   transform_after: [ vlan,vrf ]
@@ -84,7 +85,7 @@ ospf:
   area: 0.0.0.0
   supported_on: [
     arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos, vsrx, vyos, routeros,
-    srlinux, sros, dellos10, routeros7, vmx, none ]
+    srlinux, sros, dellos10, routeros7, vmx, iosxr, none ]
   transform_after: [ vlan,vrf ]
   config_after: [ vlan ]
   attributes:
@@ -517,6 +518,43 @@ devices:
     external:
       image: none
     graphite.icon: nexus5000
+
+  iosxr:
+    mgmt_if: MgmtEth0/RP0/CPU0/0
+    interface_name: GigabitEthernet0/0/0/%d
+    ifindex_offset: 0
+    group_vars:
+      ansible_user: vagrant
+      ansible_ssh_pass: vagrant
+      ansible_become_method: enable
+      ansible_become_password: vagrant
+      ansible_network_os: iosxr
+      ansible_connection: network_cli
+    features:
+      initial:
+        ipv4:
+          unnumbered: True
+        ipv6:
+          lla: True
+      ospf:
+        unnumbered: True
+      isis:
+        unnumbered:
+          ipv4: True
+          ipv6: True
+          network: True
+      bgp:
+        activate_af: True
+    libvirt:
+      image: cisco/iosxr
+      create:
+        virt-install --connect=qemu:///system --network network=vagrant-libvirt,model=e1000 --name=vm_box
+          --cpu host --arch=x86_64 --vcpus=2 --ram=8192
+          --virt-type=kvm
+          --disk path=vm.qcow2,format=qcow2,device=disk,bus=ide
+          --graphics none --import
+##      create_iso: iosxr
+##          --disk path=bootstrap.iso,format=iso,device=cdrom
 
   asav:
     interface_name: GigabitEthernet0/%d

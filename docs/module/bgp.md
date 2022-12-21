@@ -18,6 +18,8 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 
 ## Supported BGP Features
 
+_netlab_ BGP configuration module supports these features:
+
 * Multiple autonomous systems
 * IPv4 and IPv6 address families
 * Direct (single-hop) EBGP sessions
@@ -29,7 +31,7 @@ More interesting BGP topologies can be created with [custom plugins](../plugins.
 * BGP community propagation
 * Configurable activation of default address families
 * Configurable link prefix advertisement
-* Additional (dummy) prefix advertisement
+* Additional (dummy) IPv4 prefix advertisement
 * Changing local autonomous system for individual BGP sessions (*local-as*)
 * Static **router-id** and **cluster-id**
 * Interaction with OSPF or IS-IS (IGP is disabled on external links)
@@ -46,6 +48,7 @@ The following features are only supported on a subset of platforms:
 | --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS/IOS XE      |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
+| Cisco IOS XRv         |  ❌  |  ❌  |  ❌  |  ❌  |  ✅ |
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
 | Dell OS10             |  ✅  |  ✅  |  ✅ |  ❌  |  ✅  |

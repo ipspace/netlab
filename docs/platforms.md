@@ -6,8 +6,9 @@
 | ----------------------------------------- | ------------------ |
 | Arista vEOS                               | eos                |
 | Cisco ASAv                                | asav               |
-| Cisco IOSv                                | iosv               |
 | Cisco CSR 1000v                           | csr                |
+| Cisco IOSv                                | iosv               |
+| Cisco IOS XRv                             | iosxr [❗](caveats.html#caveats-iosxr)              |
 | Cisco Nexus 9300v                         | nxos               |
 | Cumulus Linux 4.x/5.x                     | cumulus            |
 | Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue [❗](caveats.html#caveats-cumulus-nvue)           |
@@ -66,6 +67,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
 | Cisco ASAv                                         |          ✅           |              ❌               |            ❌             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
+| Cisco IOS XRv                                      |          ✅           |    ❌     |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
 | Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
@@ -93,6 +95,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Arista vEOS                | eos                |    2 |   2048 | virtio (*libvirt default*) |
 | Cisco ASAv                 | asav               |    1 |   2048 | virtio (*libvirt default*) |
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
+| Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000                     |
 | Cisco CSR 1000v            | csr                |    2 |   4096 | virtio (*libvirt default*) |
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| e1000 |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio (*libvirt default*) |
@@ -114,6 +117,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Arista EOS            |          ✅           |           ✅           |
 | Cisco ASAv            |          ✅           |           ✅           |
 | Cisco IOS / IOS XE    |          ✅           |           ✅           |
+| Cisco IOS XRv         |          ✅           |           ✅           |
 | Cisco Nexus OS        |          ✅           |           ✅           |
 | Cumulus Linux         |          ✅           |           ✅           |
 | Dell OS10             |          ✅           |           ✅           |
@@ -137,6 +141,7 @@ The following system-wide features are configured on supported network operating
 | Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco ASAv            |    ✅     |     ✅      |             ❌             |             ❌              |             ❌              |
 | Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Cisco IOS XRv         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
@@ -159,6 +164,7 @@ The following interface parameters are configured on supported network operating
 | Arista EOS            |            ✅              |            ✅            | ✅ |
 | Cisco ASAv            |            ✅              |            ❌            | ✅ |
 | Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.html#cisco-ios) |
+| Cisco IOS XRv         |            ✅              |            ✅ [❗](caveats.html#caveats-iosxr)           | ✅ |
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
 | Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
@@ -181,6 +187,7 @@ The following interface addresses are supported on various platforms:
 | Arista EOS            |          ✅          |          ✅          |             ✅              |
 | Cisco ASAv            |          ✅          |          ✅          |             ❌              |
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
+| Cisco IOS XRv         |          ✅          |          ✅          |             ✅              |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux 5.0 (NVUE) |       ✅          |          ✅          |             ✅              |
@@ -203,12 +210,13 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 [^NSM]: Use **[netlab show module-support](netlab/show.md)** command to display the current system settings
 
-| Operating system      | OSPF | IS-IS | EIGRP | BGP | BFD | EVPN | FHRP |
+| Operating system      | [OSPF](module/ospf.html) | [IS-IS](module/isis.html) | [EIGRP](module/eigrp.html) | [BGP](module/bgp.html) | [BFD](module/bfd.html) | [EVPN](module/evpn.html) | [FHRP](module/gateway.html) |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
 | Cisco ASAv            | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
 | Cisco IOSv            | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
+| Cisco IOS XRv         | ✅   |  ✅   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |

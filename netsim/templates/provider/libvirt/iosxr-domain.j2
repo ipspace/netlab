@@ -1,0 +1,45 @@
+    cwd = Dir.pwd.split("/").last
+    guest_name = "{{ name }}"
+
+    {{ name }}.vm.synced_folder ".", "/vagrant", disabled: true
+    {{ name }}.vm.allow_fstab_modification = false
+    {{ name }}.vm.allow_hosts_modification = false
+    {{ name }}.ssh.insert_key = false
+    {{ name }}.ssh.password = "vagrant"
+    {{ name }}.vm.boot_timeout = 300
+    {{ name }}.vm.guest = :freebsd
+
+    {{ name }}.vm.provider :libvirt do |domain|
+      domain.default_prefix = "#{cwd}_"
+      domain.features = ['acpi','apic','pae']
+      domain.cpus = 2
+      domain.memory = 8192
+      domain.disk_bus = "ide"
+      domain.driver = "kvm"
+      domain.nic_model_type = "e1000"
+      domain.graphics_type = "none"
+    end
+
+    # Limit CPU once Box has finished booting.
+    {{ name }}.trigger.after :up do |trigger|
+      trigger.name = "Finished Message"
+      trigger.info = "Machine is up! : #{cwd}_#{guest_name}"
+      trigger.run = {inline: "virsh schedinfo #{cwd}_#{guest_name} --set vcpu_quota=50000"}
+    end
+
+    # Create two extra interfaces to make IOS XR happy. They point to nowhere.
+    {{ name }}.vm.network :private_network,
+                  :libvirt__tunnel_type => "udp",
+                  :libvirt__tunnel_local_ip => "127.254.0.{{ n.id }}",
+                  :libvirt__tunnel_local_port => "10001",
+                  :libvirt__tunnel_ip => "127.254.0.{{ n.id }}",
+                  :libvirt__tunnel_port => "20001",
+                  auto_config: false
+
+    {{ name }}.vm.network :private_network,
+                  :libvirt__tunnel_type => "udp",
+                  :libvirt__tunnel_local_ip => "127.254.0.{{ n.id }}",
+                  :libvirt__tunnel_local_port => "10002",
+                  :libvirt__tunnel_ip => "127.254.0.{{ n.id }}",
+                  :libvirt__tunnel_port => "20002",
+                  auto_config: false

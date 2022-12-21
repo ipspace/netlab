@@ -5,13 +5,16 @@ message: |
   When all BGP and OSPF sessions are established, the BGP table on R1 should look
   similar to the one below (please also check the next hops)
 
-       Network          Next Hop            Metric LocPrf Weight Path
-  *> 10.0.0.1/32      0.0.0.0                  0         32768 i
-  *>i10.0.0.2/32      10.0.0.2                 0    100      0 i
-  *>i10.0.0.3/32      10.0.0.3                 0    100      0 i
-  *> 10.0.0.4/32      10.1.0.2                 0             0 65001 i
-  *>i10.0.0.5/32      10.0.0.2                 0    100      0 65002 i
-  *>i10.0.0.6/32      10.0.0.3                 0    100      0 65003 i
+     Network          Next Hop            Metric LocPrf Weight Path
+  *>  10.0.0.1/32      0.0.0.0                  0         32768 i
+  r>i 10.0.0.2/32      10.0.0.2                 0    100      0 i
+  r>i 10.0.0.3/32      10.0.0.3                 0    100      0 i
+  *>  10.0.0.4/32      10.1.0.2                 0             0 65001 i
+  *>i 10.0.0.5/32      10.0.0.2                 0    100      0 65002 i
+  *>i 10.0.0.6/32      10.0.0.3                 0    100      0 65003 i
+  *>i 10.1.0.8/30      10.0.0.3                 0    100      0 i
+  *>i 10.42.42.0/24    10.0.0.3                 0    100      0 i
+
 module: [ bgp, ospf ]
 bgp.as: 65000
 
@@ -20,6 +23,7 @@ nodes:
   r2:
   rr:
     bgp.rr: True
+    bgp.originate: [ 10.42.42.0/24 ]
   x1:
     bgp.as: 65001
   x2:
@@ -30,7 +34,9 @@ nodes:
 links:
 - r1-x1
 - r2-x2
-- rr-x3
+- rr:
+  x3:
+  bgp.advertise: True
 - r1-rr
 - r2-rr
 - r1-r2
