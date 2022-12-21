@@ -27,6 +27,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOS             |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOS XE          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Juniper vMX           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
@@ -59,6 +60,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Arista EOS            |   ✅  |   ✅  |
 | Cisco IOS             |   ✅  |   ✅  |
 | Cisco IOS XE          |   ✅  |   ✅  |
+| FRR                   |   ✅  |   ✅  |
 | Juniper vMX           |   ✅  |   ✅  |
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ❌  |
