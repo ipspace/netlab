@@ -6,22 +6,29 @@ You can also mix-and-match the two approaches. For example, you could have a gen
 
 ## Search Paths
 
-The Ansible playbooks try to find device-specific task lists or templates using *netlab_device_type* or *ansible_network_os* (when *netlab_device_type* is missing) Ansible variable. These variables are usually defined as device group variables in system settings.
+The Ansible playbooks try to find device-specific task lists or templates using *netlab_device_type* or *ansible_network_os* (when *netlab_device_type* is missing) Ansible variable, including a combination with *netlab_provider* (for provider-specific configuration). These variables are usually defined as device group variables in system settings.
 
-The device type is set at the start of every Ansible playbook using `set_fact` module:
+Ansible playbooks use the following search path to find configuration templates within `netsim/ansible/templates` directory (*config_module* is set to *initial* for initial device configuration):
 
 ```
-- tasks:
-  - set_fact:
-      netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
+- "{{ config_module }}/{{netlab_device_type}}-{{ netlab_provider }}.j2"
+- "{{ config_module }}/{{netlab_device_type}}.j2"
+- "{{ config_module }}/{{ansible_network_os}}-{{ netlab_provider }}.j2"
+- "{{ config_module }}/{{ansible_network_os}}.j2"
 ```
 
-Initial configuration deployment playbook looks for device/module specific Ansible task list in:
+Initial configuration deployment playbook uses this search path to find device/module specific Ansible task list within `netsim/ansible/tasks` directory (*config_module* is set to *initial* for initial device configuration):
 
-* `netsim/ansible/tasks/{{ netlab_device_type }}/{{ module }}.yml`
-* `netsim/ansible/tasks/deploy-config/{{ netlab_device_type }}.yml`
-
-The device configuration templates should be located in `netsim/ansible/templates/{{ module }}/{{ netlab_device_type }}.j2`
+```
+- "{{netlab_device_type}}/{{ config_module }}-{{ netlab_provider }}.yml"
+- "{{netlab_device_type}}/{{ config_module }}.yml"
+- "deploy-config/{{netlab_device_type}}-{{ netlab_provider }}.yml"
+- "deploy-config/{{netlab_device_type}}.yml"
+- "{{ansible_network_os}}/{{ config_module }}-{{ netlab_provider }}.yml"
+- "{{ansible_network_os}}/{{ config_module }}.yml"
+- "deploy-config/{{ansible_network_os}}-{{ netlab_provider }}.yml"
+- "deploy-config/{{ansible_network_os}}.yml"
+```
 
 ## Finding Custom Configuration Templates
 
@@ -32,12 +39,27 @@ The following paths are searched when looking for custom configuration templates
 
 When looking for a custom configuration template in the above search path, the following names are tried (*custom_config* is the name of custom configuration template or directory):
 
-* `custom_config + '/' + netlab_device_type + '.j2'` -- device-specific templates within a subdirectory
-* `custom_config + '.' + netlab_device_type + '.j2'` -- device-specific templates within the main directory
-* `custom_config` -- verbatim custom configuration template name
-* `custom_config + '.j2'` -- custom configuration template name specified without the .j2 filetype
+```
+- "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
+- "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
+- "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
+- "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
+- "{{ custom_config }}"
+- "{{ custom_config + '.j2' }}"
+```
 
-The custom configuration could be deployed via a dedicated task list (`netsim/extra/{{ custom_config }}/deploy.{{ netlab_device_type }}.yml`) or via generic configuration deployment task list (see above)
+The custom configuration could be deployed via a dedicated task list or via generic configuration deployment task list (see above). The deployment process uses this search path:
+
+```
+- "../../extra/{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ netlab_provider }}.yml"
+- "../../extra/{{ custom_config }}/deploy.{{ netlab_device_type }}.yml"
+- "deploy-config/{{netlab_device_type}}-{{ netlab_provider }}.yml"
+- "deploy-config/{{netlab_device_type}}.yml"
+- "../../extra/{{ custom_config }}/deploy.{{ ansible_network_os }}-{{ netlab_provider }}.yml"
+- "../../extra/{{ custom_config }}/deploy.{{ ansible_network_os }}.yml"
+- "deploy-config/{{ansible_network_os}}-{{ netlab_provider }}.yml"
+- "deploy-config/{{ansible_network_os}}.yml"
+```
 
 ## Ansible Variables
 

@@ -16,37 +16,38 @@
         state: directory
       run_once: true
 
-    - set_fact:
-        config_template: "{{ lookup('first_found',params,errors='ignore') }}"
-      vars:
-        params:
-          paths:
-          - "templates/initial/"
-          files:
-          - "{{netlab_device_type}}.j2"
-          - "{{ansible_network_os}}.j2"
-
-    - name: Create initial configurations (IP addressing)
-      template:
-        src: "{{ config_template }}"
-        dest: "{{config_dir}}/{{inventory_hostname}}.initial.cfg"
-    
     delegate_to: localhost
+
+  - include_tasks: "tasks/create-config.yml"
+    args:
+      apply:
+        vars:
+          item: initial
+          paths: [ "../templates" ]
 
 - name: Create module-specific configurations
   hosts: modules
   tasks:
   - set_fact:
       modlist: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
+
   - include_tasks: "tasks/create-config.yml"
     loop: "{{ netlab_module|intersect(modlist) }}"
     when: item in module|default([])
+    args:
+      apply:
+        vars:
+          paths: [ "../templates" ]
 
 - name: Create custom deployment templates
   hosts: custom_configs
   serial: 1
   tasks:
-  - include_tasks: "tasks/create-custom-config.yml"
+  - include_tasks: "tasks/create-config.yml"
     loop: "{{ config }}"
-    loop_control:
-      loop_var: custom_config
+    args:
+      apply:
+        vars:
+          paths:
+          - "{{ lookup('env','PWD') }}"
+          - "../../extra"
