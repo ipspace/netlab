@@ -125,7 +125,8 @@ class _Provider(Callback):
       file_name = file.replace(out_folder+"/","")
       template_name =  file_name + ".j2"
       if os.path.exists(f"{ str(common.get_moddir()) }/{in_folder}/{template_name}"):
-        common.write_template( in_folder, template_name, node.to_dict(), out_folder, filename=file_name)
+        node_data = node + { 'hostvars': topology.nodes }
+        common.write_template( in_folder, template_name, node_data.to_dict(), out_folder, filename=file_name)
         print( f"Created {out_folder}/{file_name} from {in_folder}/{template_name}, mapped to {node.name}:{mapping}" )
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:

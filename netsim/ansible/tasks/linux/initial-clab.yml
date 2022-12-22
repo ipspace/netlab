@@ -1,0 +1,40 @@
+#
+# Initial configuration of a Linux container is just the networking setup (addressing + routing),
+# the /etc/hosts file is created as a clab bind.
+#
+# The commands to set up Linux networking are executed on the container host in the context
+# of container namespace so we don't need the 'ip' command or Python in the container.
+#
+# This task list:
+# 
+# * Creates a random file name that will be used for the initialization script
+# * Creates the networking setup script in the temporary file
+# * Executes a hack that maps Docker container namespace into a well-known namespace
+#   and then executes the networking initialization script within that namespace
+# * Cleans up the mess it made
+#
+- set_fact:
+    exec_script: /tmp/config-{{ lookup('password','/dev/null length=8 chars=ascii_letters') }}-{{ inventory_hostname }}.sh
+
+- name: "Create initial container setup from {{ config_template }}"
+  template:
+    src: "{{ config_template }}"
+    dest: "{{ exec_script }}"
+  delegate_to: localhost
+
+- name: "Initial container configuration via {{ exec_script }}"
+  shell: |
+    set -e
+    pid=$(docker inspect -f {% raw %}'{{.State.Pid}}'{% endraw %} clab-{{ netlab_name }}-{{inventory_hostname }})
+    mkdir -p /var/run/netns
+    ln -s /proc/$pid/ns/net /var/run/netns/$pid
+    ip netns exec $pid bash {{ exec_script }}
+    rm /var/run/netns/$pid
+  become: true
+  delegate_to: localhost  
+  tags: [ print_action, always ]
+
+- file:
+    path: "{{ exec_script }}"
+    state: absent
+  delegate_to: localhost
