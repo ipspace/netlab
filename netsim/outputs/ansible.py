@@ -47,24 +47,28 @@ def ansible_inventory_host(node: Box, defaults: Box) -> Box:
   provider_inventory_settings(host,defaults)
   return host
 
-def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
+def create(topology: Box) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
-  inventory.all.vars.netlab_provider = defaults.provider
+  inventory.all.vars.netlab_provider = topology.defaults.provider
+  inventory.all.vars.netlab_name = topology.name
+
   inventory.modules.hosts = {}
   inventory.custom_configs.hosts = {}
 
-  if 'module' in defaults:
-    inventory.modules.vars.netlab_module = defaults.module
+  defaults = topology.defaults
 
-  if addressing:
-    inventory.all.vars.pools = addressing
+  if 'module' in topology:
+    inventory.modules.vars.netlab_module = topology.module
+
+  if 'addressing' in topology:
+    inventory.all.vars.pools = topology.addressing
     for name,pool in inventory.all.vars.pools.items():
       for k in list(pool.keys()):
         if ('_pfx' in k) or ('_eui' in k):
           del pool[k]
 
-  for name,node in nodes.items():
+  for name,node in topology.nodes.items():
     group = node.get('device','all')
     inventory[group].hosts[name] = ansible_inventory_host(node,defaults)
 
@@ -82,7 +86,10 @@ def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[B
         if group_vars:
           inventory[group]['vars'] = group_vars
 
-  for gname,gdata in groups.items():
+  if not 'groups' in topology:
+    return inventory
+
+  for gname,gdata in topology.groups.items():
     if not gname in inventory:
       inventory[gname] = { 'hosts': {} }
 
@@ -91,10 +98,10 @@ def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[B
 
     if 'members' in gdata:
       for m in gdata.members:
-        if m in nodes:
+        if m in topology.nodes:
           if not m in inventory[gname].hosts:
             inventory[gname].hosts[m] = {}
-        elif m in groups:
+        elif m in topology.groups:
           inventory[gname].children[m] = {}
 
   return inventory
@@ -104,7 +111,7 @@ def create(nodes: Box, groups: Box, defaults: Box, addressing: typing.Optional[B
 def dump(data: Box) -> None:
   print("Ansible inventory data")
   print("===============================")
-  inventory = create(data.nodes,data.get('groups',{}),data.defaults)
+  inventory = create(data)
   print(common.get_yaml_string(inventory))
 
 def write_yaml(data: Box, fname: str, header: str) -> None:
@@ -119,11 +126,11 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
 
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
 
-def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', hostvars: typing.Optional[str] = 'dirs') -> None:
-  inventory = create(data['nodes'],data.get('groups',{}),data.get('defaults',{}),data.get('addressing',{}))
+def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', hostvars: typing.Optional[str] = 'dirs') -> None:
+  inventory = create(topology)
 
 #  import ipdb; ipdb.set_trace()
-  header = "# Ansible inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
+  header = "# Ansible inventory created from %s\n#\n---\n" % topology.get('input','<unknown>')
 
   if not fname:
     fname = 'hosts.yml'
@@ -133,34 +140,35 @@ def ansible_inventory(data: Box, fname: typing.Optional[str] = 'hosts.yml', host
   if hostvars == "min":
     write_yaml(inventory,fname,header)
     print("Created single-file Ansible inventory %s" % fname)
-  else:
-    for g in inventory.keys():
-      gvars = inventory[g].pop('vars',None)
-      if gvars:
-        write_yaml(gvars,'group_vars/%s/topology.yml' % g,header)
+    return
+
+  for g in inventory.keys():
+    gvars = inventory[g].pop('vars',None)
+    if gvars:
+      write_yaml(gvars,'group_vars/%s/topology.yml' % g,header)
+      if not common.QUIET:
+        print("Created group_vars for %s" % g)
+
+    if 'hosts' in inventory[g]:
+      hosts = inventory[g]['hosts']
+      for h in hosts.keys():
+        if not hosts[h]:
+          continue
+        min_host = Box({})
+        vars_host = Box({})
+        for item in hosts[h].keys():
+          if item in min_inventory_data:
+            min_host[item] = hosts[h][item]
+          else:
+            vars_host[item] = hosts[h][item]
+
+        write_yaml(vars_host,'host_vars/%s/topology.yml' % h,header)
         if not common.QUIET:
-          print("Created group_vars for %s" % g)
+          print("Created host_vars for %s" % h)
+        hosts[h] = min_host
 
-      if 'hosts' in inventory[g]:
-        hosts = inventory[g]['hosts']
-        for h in hosts.keys():
-          if not hosts[h]:
-            continue
-          min_host = Box({})
-          vars_host = Box({})
-          for item in hosts[h].keys():
-            if item in min_inventory_data:
-              min_host[item] = hosts[h][item]
-            else:
-              vars_host[item] = hosts[h][item]
-
-          write_yaml(vars_host,'host_vars/%s/topology.yml' % h,header)
-          if not common.QUIET:
-            print("Created host_vars for %s" % h)
-          hosts[h] = min_host
-
-    write_yaml(inventory,fname,header)
-    print("Created minimized Ansible inventory %s" % fname)
+  write_yaml(inventory,fname,header)
+  print("Created minimized Ansible inventory %s" % fname)
 
 def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventory_file: typing.Union[str,None] = 'hosts.yml') -> None:
   if not config_file:
