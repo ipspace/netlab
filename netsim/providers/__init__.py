@@ -141,6 +141,27 @@ class _Provider(Callback):
     else:
       output.write("\n")
 
+  def mark_providers(self, topology: Box) -> None:
+    for n in topology.nodes.values():                 # Set 'provider' attribute on all nodes
+      if 'provider' in n:
+        continue
+
+      n.provider = topology.provider
+
+    for l in topology.links:                          # Set 'providers' attribute on all links
+      for intf in l.interfaces:
+        node = topology.nodes[intf.node]
+        l.provider[node.provider] = True
+
+  def select_topology(self, topology: Box, provider: str) -> Box:
+    topology = Box(topology)                          # Create a copy of the topology
+    for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
+      if topology.nodes[n].provider != provider:
+        topology.nodes.pop(n,None)
+
+    topology.links = [ l for l in topology.links if provider in l.provider ]      # Retain only the links used by current provider
+    return topology
+
   def post_start_lab(self, topology: Box) -> None:
     pass
 
@@ -155,3 +176,17 @@ class _Provider(Callback):
 
   def post_configuration_create(self, topology: Box) -> None:
     pass
+
+  """
+  Provider post-transform processing:
+
+  * Mark multi-provider links
+  """
+  def pre_transform(self,topology : Box) -> None:
+    for l in topology.links:
+      for intf in l.interfaces:
+        node = topology.nodes[intf.node]
+        if not 'provider' in node:
+          continue
+
+        l[topology.provider].provider[node.provider] = True

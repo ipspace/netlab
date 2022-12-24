@@ -47,6 +47,7 @@ def transform_data(topology: Box) -> None:
   addressing.setup(topology)
   augment.plugin.execute('pre_transform',topology)
   modules.pre_transform(topology)
+  topology.Provider.call("pre_transform",topology)
 
   augment.plugin.execute('pre_node_transform',topology)
   modules.pre_node_transform(topology)

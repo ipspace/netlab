@@ -12,7 +12,7 @@ from box import Box
 from .. import common
 from .. import addressing
 from . import devices
-from ..data.validate import validate_attributes,must_be_int
+from ..data.validate import validate_attributes,must_be_int,must_be_string
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
 """
@@ -117,6 +117,99 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       node.mgmt.mac = str(addrs.mac_eui)
 
 """
+Add device data to nodes
+"""
+
+def find_node_device(n: Box, topology: Box) -> bool:
+  if 'device' not in n:
+    n.device = topology.defaults.device
+
+  if not n.device:
+    common.error(
+      f'No device type specified for node {n.name} and there is no default device type',
+      common.MissingValue,
+      'nodes')
+    return False
+
+  devtype = n.device
+
+  if not devtype in topology.defaults.devices:
+    common.error(f'Unknown device {devtype} in node {n.name}',common.IncorrectValue,'nodes')
+    return False
+
+  if not isinstance(topology.defaults.devices[devtype],dict):
+    common.fatal(f"Device data for device {devtype} must be a dictionary")
+
+  return True
+
+"""
+Find the image/box for the container/device
+"""
+def find_node_image(n: Box, topology: Box) -> bool:
+  provider = devices.get_provider(n,topology.defaults)
+
+  pdata = devices.get_provider_data(n,topology.defaults)
+  if 'node' in pdata:
+    if not isinstance(pdata.node,Box):    # pragma: no cover
+      common.fatal(f"Node data for device {n.device} provider {provider} must be a dictionary")
+      return False
+    n[provider] = pdata.node + n.get(provider,{})
+
+  if n.box:
+    return True
+
+  if 'image' in n:
+    n.box = n.image
+    del n['image']
+    return True
+
+  if 'image' in topology.defaults.devices[n.device]:
+    if not must_be_string(topology.defaults.devices[n.device],'image',f'defaults.devices.{n.device}',module='nodes'):
+      return False
+
+    n.box = topology.defaults.devices[n.device].image
+    return True
+
+  if 'image' in pdata:
+    if not must_be_string(pdata,'image',f'defaults.devices.{n.device}.{provider}.image',module='nodes'):
+      return False
+
+    n.box = pdata.image
+    return True
+
+  common.error(
+    f'No image specified for device {n.device} (provider {provider}) used by node {n.name}',
+    common.MissingValue,
+    'nodes')
+
+  return False
+
+"""
+Validate provider setting used in a node
+"""
+
+def validate_node_provider(n: Box, topology: Box) -> bool:
+  if not 'provider' in n:
+    return True
+
+  if not n.provider in topology.defaults.providers:
+    common.error(
+      f'Invalid provider {n.provider} specified in node {n.name}',
+      common.IncorrectValue,
+      'nodes')
+    return False
+
+  if not n.provider in topology.defaults.providers[topology.provider]:
+    common.error(
+      f'Provider {n.provider} specified in node {n.name} is not compatible with lab topology provider {topology.provider}',
+      common.IncorrectValue,
+      'nodes')
+    return False
+
+  topology[topology.provider].providers[n.provider] = True
+  return True
+
+"""
 Add provider data to nodes:
 
 * Check whether the node device exists
@@ -128,67 +221,14 @@ def augment_node_provider_data(topology: Box) -> None:
     common.fatal('Device defaults (defaults.devices) are missing')
 
   for name,n in topology.nodes.items():
-    if 'device' not in n:
-      n.device = topology.defaults.device
-
-    if not n.device:
-      common.error(
-        f'No device type specified for node {name} and there is no default device type',
-        common.MissingValue,
-        'nodes')
+    if not validate_node_provider(n,topology):
       continue
 
-    devtype = n.device
-
-    if not devtype in topology.defaults.devices:
-      common.error(f'Unknown device {devtype} in node {name}',common.IncorrectValue,'nodes')
+    if not find_node_device(n,topology):
       continue
 
-    if not isinstance(topology.defaults.devices[devtype],dict):
-      common.fatal(f"Device data for device {devtype} must be a dictionary")
-
-    provider = devices.get_provider(n,topology.defaults)
-    pdata = devices.get_provider_data(n,topology.defaults)
-    if 'node' in pdata:
-      if not isinstance(pdata.node,Box):    # pragma: no cover
-        common.fatal(f"Node data for device {devtype} provider {provider} must be a dictionary")
-        return
-      n[provider] = pdata.node + n.get(provider,{})
-
-    if n.box:
+    if not find_node_image(n,topology):
       continue
-    if 'image' in n:
-      n.box = n.image
-      del n['image']
-      continue
-
-    if 'image' in topology.defaults.devices[devtype]:
-      image = topology.defaults.devices[devtype].image
-      if isinstance(image,str):
-        n.box = image
-        continue
-      else:
-        common.error(
-          f"Image attribute of device {devtype} used by node {name} should be a string\n... found {image}",
-          common.IncorrectValue,
-          'nodes')
-        continue
-
-    if 'image' in pdata:
-      if isinstance(pdata.image,str):
-        n.box = pdata.image
-        continue
-      else:
-        common.error(
-          f"Image attribute specified for provider {provider} on device {devtype} should be a string\n... found {pdata.image}",
-          common.MissingValue,
-          'nodes')
-        continue
-
-    common.error(
-      f'No image specified for device {devtype} (provider {provider}) used by node {name}',
-      common.MissingValue,
-      'nodes')
 
 """
 Add system data to devices -- hacks that are not yet covered in the settings structure

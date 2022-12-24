@@ -103,6 +103,7 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 Validate link attributes
 """
 def validate(topology: Box) -> None:
+  providers = list(topology.defaults.providers.keys())
   for l_data in topology.links:
     linkpath = f'links[{l_data.linkindex}]'           # Topology path to current link
     validate_attributes(
@@ -112,6 +113,7 @@ def validate(topology: Box) -> None:
       data_name=f'link',
       attr_list=['link'],                             # We're checking node attributes
       modules=topology.get('module',[]),              # ... against topology modules
+      extra_attributes=providers,                     # Allow provider-specific attributes in links
       module_source='topology',
       module='links')                                 # Function is called from 'links' module
 

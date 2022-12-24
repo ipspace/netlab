@@ -91,7 +91,7 @@ def get_consolidated_device_data(node: Box, defaults: Box) -> Box:
 Get node provider -- currently returns the default provider, but we'll do fun stuff pretty soon ;)
 """
 def get_provider(node: Box, defaults: Box) -> str:
-  return defaults.provider
+  return node.get('provider',defaults.provider)
 
 def augment_device_settings(topology: Box) -> None:
   pass
