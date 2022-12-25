@@ -193,3 +193,28 @@ class _Provider(Callback):
           continue
 
         l[topology.provider].provider[node.provider] = True
+
+"""
+Get a pointer to provider module. Cached in topology._Providers
+"""
+def get_provider_module(topology: Box, pname: str) -> _Provider:
+  if not pname in topology._Providers:
+    topology._Providers[pname] = _Provider.load(pname,topology.defaults.providers[pname])
+
+  return topology._Providers[pname]
+
+"""
+Execute a topology-wide provider hook
+"""
+def execute(hook: str, topology: Box) -> None:
+  p_module = get_provider_module(topology,topology.provider)
+  p_module.call(hook,topology)
+
+"""
+Execute a node-level provider hook
+"""
+def execute_node(hook: str, node: Box, topology: Box) -> None:
+  node_provider = devices.get_provider(node,topology.defaults)
+  p_module = get_provider_module(topology,node_provider)
+  p_module.call(hook,node,topology)
+

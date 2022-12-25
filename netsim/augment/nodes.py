@@ -11,6 +11,7 @@ from box import Box
 
 from .. import common
 from .. import addressing
+from .. import providers
 from . import devices
 from ..data.validate import validate_attributes,must_be_int,must_be_string
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
@@ -311,7 +312,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
             n.loopback[af] = str(prefix_list[af])
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
-    topology.Provider.call("augment_node_data",n,topology)
+    providers.execute_node("augment_node_data",n,topology)
 
 '''
 Return a copy of the topology (leaving original topology unchanged) with unmanaged devices removed
