@@ -96,6 +96,20 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
   provider.call('post_start_lab',topology)
 
 """
+Recreate secondary configuration file
+"""
+def recreate_secondary_config(topology: Box, p_module: providers._Provider, p_provider: str, s_provider: str) -> None:
+  sp_data = topology.defaults.providers[p_provider][s_provider]
+  if not sp_data.recreate_config:                                     # Do we need to recreate the config file?
+    return
+
+  sp_module  = providers._Provider.load(s_provider,topology.defaults.providers[s_provider])
+  s_topology = p_module.select_topology(topology,s_provider)          # Create secondary provider subtopology
+  filename = sp_data.filename                                         # Get the secondary configuration filename
+  print(f"Recreating {filename} configuration file for {s_provider} provider")
+  sp_module.create(s_topology,filename)                               # ... and create the new configuration file
+
+"""
 Main "lab start" process
 """
 def run(cli_args: typing.List[str]) -> None:
@@ -116,6 +130,7 @@ def run(cli_args: typing.List[str]) -> None:
   start_provider_lab(topology,p_provider)
   for s_provider in topology[p_provider].providers:
     print()
+    recreate_secondary_config(topology,provider,p_provider,s_provider)
     s_topology = provider.select_topology(topology,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 

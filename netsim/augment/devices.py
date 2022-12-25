@@ -64,7 +64,7 @@ Get all device data for current provider
 """
 def get_provider_data(node: Box, defaults: Box) -> Box:
   devtype  = node.device
-  provider = defaults.provider
+  provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:
     common.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')

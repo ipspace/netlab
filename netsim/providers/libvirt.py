@@ -124,6 +124,7 @@ class Libvirt(_Provider):
 
       if match:
         linux_bridge = match.group(1)
+        l.bridge = linux_bridge
         common.print_verbose(f"... network {brname} maps into {linux_bridge}")
         try:
           subprocess.run(['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],check=True)
