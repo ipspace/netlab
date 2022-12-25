@@ -94,8 +94,9 @@ def custom_configs(config : str, group: str, step : int = 4, command: str = "tes
   if not run_command(set_ansible_flags(cmd)):
     common.fatal("netlab config failed, aborting...",command)
 
-def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test") -> None:
+def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   print_step(step,"stopping the lab",True)
-  cmd = settings.providers[provider].stop
-  if not run_command(cmd):
-    common.fatal("%s failed, aborting..." % cmd,command)
+  if exec_command is None:
+    exec_command = settings.providers[provider].stop
+  if not run_command(exec_command):
+    common.fatal(f"{exec_command} failed, aborting...",command)

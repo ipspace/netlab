@@ -85,26 +85,31 @@ def provider_probes(topology: Box) -> None:
 Start lab topology for a single provider
 """
 def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = None) -> None:
-  provider = providers._Provider.load(pname,topology.defaults.providers[pname])
+  p_name = sname or pname
+  p_module   = providers._Provider.load(p_name,topology.defaults.providers[p_name])
 
-  provider.call('pre_output_transform',topology)
-  provider.call('pre_start_lab',topology)
+  exec_command = None
 
-  exec_command = topology.defaults.providers[pname][sname].start if sname is not None else None
-  external_commands.start_lab(topology.defaults,pname,3,"netlab up",exec_command)
+  if sname is not None:
+    p_topology = providers.select_topology(topology,p_name)
+    exec_command = topology.defaults.providers[pname][sname].start
+  else:
+    p_topology = topology
 
-  provider.call('post_start_lab',topology)
+  p_module.call('pre_start_lab',p_topology)
+  external_commands.start_lab(topology.defaults,sname or pname,3,"netlab up",exec_command)
+  p_module.call('post_start_lab',p_topology)
 
 """
 Recreate secondary configuration file
 """
-def recreate_secondary_config(topology: Box, p_module: providers._Provider, p_provider: str, s_provider: str) -> None:
+def recreate_secondary_config(topology: Box, p_provider: str, s_provider: str) -> None:
   sp_data = topology.defaults.providers[p_provider][s_provider]
   if not sp_data.recreate_config:                                     # Do we need to recreate the config file?
     return
 
   sp_module  = providers._Provider.load(s_provider,topology.defaults.providers[s_provider])
-  s_topology = p_module.select_topology(topology,s_provider)          # Create secondary provider subtopology
+  s_topology = providers.select_topology(topology,s_provider)         # Create secondary provider subtopology
   filename = sp_data.filename                                         # Get the secondary configuration filename
   print(f"Recreating {filename} configuration file for {s_provider} provider")
   sp_module.create(s_topology,filename)                               # ... and create the new configuration file
@@ -124,14 +129,14 @@ def run(cli_args: typing.List[str]) -> None:
   provider_probes(topology)
 
   p_provider = topology.provider
-  provider = providers._Provider.load(p_provider,topology.defaults.providers[p_provider])
-  provider.call('mark_providers',topology)
+  p_module = providers._Provider.load(p_provider,topology.defaults.providers[p_provider])
+  providers.mark_providers(topology)
+  p_module.call('pre_output_transform',topology)
 
   start_provider_lab(topology,p_provider)
   for s_provider in topology[p_provider].providers:
     print()
-    recreate_secondary_config(topology,provider,p_provider,s_provider)
-    s_topology = provider.select_topology(topology,s_provider)
+    recreate_secondary_config(topology,p_provider,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 
   if not args.no_config:

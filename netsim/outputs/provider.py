@@ -32,13 +32,13 @@ class ProviderConfiguration(_TopologyOutput):
     # (AKA, remove unmanaged devices)
     topology = nodes.ghost_buster(topology)
     p_module = get_provider_module(topology,topology.provider)
-    p_module.mark_providers(topology)
+    providers.mark_providers(topology)
     p_module.call('pre_output_transform',topology)
-    write_provider_file(p_module.select_topology(topology,topology.provider),topology.provider,filename)
+    write_provider_file(providers.select_topology(topology,topology.provider),topology.provider,filename)
 
     for subprovider in topology[topology.provider].providers.keys():  # Iterate over subproviders
       print(f"Creating configuration file for secondary provider {subprovider}")
       write_provider_file(
-        topology=p_module.select_topology(topology,subprovider),
+        topology=providers.select_topology(topology,subprovider),
         provider=subprovider,
         filename=topology.defaults.providers[topology.provider][subprovider].filename)
