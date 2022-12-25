@@ -68,11 +68,12 @@ def run_probes(settings: Box, provider: str, step: int = 0) -> None:
   if common.VERBOSE or step:
     print(".. all tests succeeded, moving on\n")
 
-def start_lab(settings: Box, provider: str, step: int = 2, command: str = "test") -> None:
-  print_step(step,"starting the lab")
-  cmd = settings.providers[provider].start
-  if not run_command(cmd):
-    common.fatal("%s failed, aborting..." % cmd,command)
+def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "test", exec_command: typing.Optional[str] = None) -> None:
+  print_step(step,f"starting the lab -- {provider}")
+  if exec_command is None:
+    exec_command = settings.providers[provider].start
+  if not run_command(exec_command):
+    common.fatal(f"{exec_command} failed, aborting...",cli_command)
 
 def deploy_configs(step : int = 3, command: str = "test", fast: typing.Optional[bool] = False) -> None:
   print_step(step,"deploying initial device configurations",spacing = True)

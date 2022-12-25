@@ -11,54 +11,61 @@ from .. import common
 from ..data import get_from_box
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
-    return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 }
+  return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 and not 'external_bridge' in l.clab }
 
 def use_ovs_bridge( topology: Box ) -> bool:
     return topology.defaults.providers.clab.bridge_type == "ovs-bridge"
 
 def create_linux_bridge( brname: str ) -> bool:
-    try:
-      result = subprocess.run(['sudo','ip','link','add','name',brname,'type','bridge'],capture_output=True,check=True,text=True)
-      common.print_verbose( f"Create Linux bridge '{brname}': {result}" )
-      result2 = subprocess.run(['sudo','ip','link','set','dev',brname,'up'],capture_output=True,check=True,text=True)
-      common.print_verbose( f"Enable Linux bridge '{brname}': {result2}" )
-      result3 = subprocess.run(['sudo','sh','-c',f'echo 65528 >/sys/class/net/{brname}/bridge/group_fwd_mask'],check=True)
-      common.print_verbose( f"Enable LLDP,LACP,802.1X forwarding on Linux bridge '{brname}': {result3}" )
-      return True
-    except Exception as ex:
-      print(ex)
-      common.error("Error creating bridge '%s': %s" % (brname,ex), module='clab')
-      return False
+  try:
+    subprocess.run(['brctl','show',brname],capture_output=True,check=True,text=True)
+    common.print_verbose(f'Linux bridge {brname} already exists, skipping')
+    return True
+  except Exception as ex:
+    pass
+
+  try:
+    result = subprocess.run(['sudo','ip','link','add','name',brname,'type','bridge'],capture_output=True,check=True,text=True)
+    common.print_verbose( f"Create Linux bridge '{brname}': {result}" )
+    result2 = subprocess.run(['sudo','ip','link','set','dev',brname,'up'],capture_output=True,check=True,text=True)
+    common.print_verbose( f"Enable Linux bridge '{brname}': {result2}" )
+    result3 = subprocess.run(['sudo','sh','-c',f'echo 65528 >/sys/class/net/{brname}/bridge/group_fwd_mask'],check=True)
+    common.print_verbose( f"Enable LLDP,LACP,802.1X forwarding on Linux bridge '{brname}': {result3}" )
+    return True
+  except Exception as ex:
+    print(ex)
+    common.error("Error creating bridge '%s': %s" % (brname,ex), module='clab')
+    return False
 
 def destroy_linux_bridge( brname: str ) -> bool:
-    try:
-      result = subprocess.run(['sudo','ip','link','del','dev',brname],capture_output=True,check=True,text=True)
-      common.print_verbose( f"Delete Linux bridge '{brname}': {result}" )
-      return True
-    except Exception as ex:
-      print(ex)
-      common.error("Error deleting Linux bridge '%s': %s" % (brname,ex), module='clab')
-      return False
+  try:
+    result = subprocess.run(['sudo','ip','link','del','dev',brname],capture_output=True,check=True,text=True)
+    common.print_verbose( f"Delete Linux bridge '{brname}': {result}" )
+    return True
+  except Exception as ex:
+    print(ex)
+    common.error("Error deleting Linux bridge '%s': %s" % (brname,ex), module='clab')
+    return False
 
 def create_ovs_bridge( brname: str ) -> bool:
-    try:
-      result = subprocess.run(['sudo','ovs-vsctl','add-br',brname],capture_output=True,check=True,text=True)
-      common.print_verbose( f"Create OVS bridge '{brname}': {result}" )
-      return True
-    except Exception as ex:
-      print(ex)
-      common.error("Error deleting OVS bridge '%s': %s" % (brname,ex), module='clab')
-      return False
+  try:
+    result = subprocess.run(['sudo','ovs-vsctl','add-br',brname],capture_output=True,check=True,text=True)
+    common.print_verbose( f"Create OVS bridge '{brname}': {result}" )
+    return True
+  except Exception as ex:
+    print(ex)
+    common.error("Error deleting OVS bridge '%s': %s" % (brname,ex), module='clab')
+    return False
 
 def destroy_ovs_bridge( brname: str ) -> bool:
-    try:
-      result = subprocess.run(['sudo','ovs-vsctl','del-br',brname],capture_output=True,check=True,text=True)
-      common.print_verbose( f"Delete OVS bridge '{brname}': {result}" )
-      return True
-    except Exception as ex:
-      print(ex)
-      common.error("Error deleting OVS bridge '%s': %s" % (brname,ex), module='clab')
-      return False
+  try:
+    result = subprocess.run(['sudo','ovs-vsctl','del-br',brname],capture_output=True,check=True,text=True)
+    common.print_verbose( f"Delete OVS bridge '{brname}': {result}" )
+    return True
+  except Exception as ex:
+    print(ex)
+    common.error("Error deleting OVS bridge '%s': %s" % (brname,ex), module='clab')
+    return False
 
 GENERATED_CONFIG_PATH = "clab_files"
 

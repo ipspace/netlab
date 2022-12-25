@@ -33,6 +33,9 @@ class Libvirt(_Provider):
   """
   def pre_transform(self, topology: Box) -> None:
     _Provider.pre_transform(self,topology)
+    if not 'links' in topology:
+      return
+
     for l in topology.links:
       if get_from_box(l,'libvirt.provider'):
         l.type = 'lan'
@@ -47,9 +50,13 @@ class Libvirt(_Provider):
       if link.type != 'lan':                                        # Multi-provider links are always LAN links
         continue
 
-      subproviders = get_from_box(link,'libvirt.provider')
-      if 'clab' in subproviders:                                    # Find links with clab subprovider
+      if len(link.provider) <= 1:                                   # Skip single-provider links
+        continue
+
+      if 'clab' in link.provider:                                   # Find links with clab subprovider
         link.node_count = 999                                       # ... and fake link count to force clab to use a bridge
+        if 'libvirt' in link.provider:                              # If the link uses libvirt provider
+          link.clab.external_bridge = True                          # ... then the Linux bridge will be create by vagrant-libvirt
 
     for node in topology.nodes.values():                            # Now find P2P tunnel links and create interface data needed for Vagrantfile
       for intf in node.interfaces:
@@ -59,8 +66,14 @@ class Libvirt(_Provider):
           continue
 
         link = topology.links[intf.linkindex - 1]                   # P2P links must have two attached nodes and no extra libvirt attributes
-        if len(link.interfaces) == 2 and not 'libvirt' in link:
-          intf.libvirt.type = "tunnel"                              # ... found a true P2P link, set type to tunnel
+        if not 'libvirt' in link.provider:                          # Not a libvirt link? skip it
+          continue
+
+        if len(link.provider) > 1:                                  # multi-provider link. Skip it.
+          continue
+
+        if len(link.interfaces) == 2:
+          intf.libvirt.type = "tunnel"                              # ... found a true libvirt-only P2P link, set type to tunnel
 
         if intf.libvirt.type != 'tunnel':                           # The current link is not a tunnel link, move on
           continue
@@ -92,8 +105,11 @@ class Libvirt(_Provider):
     common.print_verbose('libvirt lab has started, fixing Linux bridges')
     for l in topology.links:
       brname = l.get('bridge',None)
-      if not brname:
+      if not brname:                                                # Link not using a Linux bridge
         continue
+      if not 'libvirt' in l.provider:                               # Not a libvirt link, skip it
+        continue
+
       try:
         if common.debug_active('libvirt'):
           print('libvirt post_start_lab: fixing Linux bridge for link {l}')
@@ -107,8 +123,13 @@ class Libvirt(_Provider):
         match = re.search("Bridge:\\s+(.*)$",result.stdout,flags=re.MULTILINE)
 
       if match:
-        common.print_verbose("... network %s maps into %s" % (brname,match.group(1)))
-        subprocess.run(['sudo','sh','-c','echo 0x4000 >/sys/class/net/%s/bridge/group_fwd_mask' % match.group(1)],check=True)
-        common.print_verbose("... setting LLDP enabled flag on %s" % (match.group(1)))
+        linux_bridge = match.group(1)
+        common.print_verbose(f"... network {brname} maps into {linux_bridge}")
+        try:
+          subprocess.run(['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],check=True)
+        except:
+          common.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
+          continue
+        common.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")
       else:
-        common.error('Cannot get Linux bridge name for libvirt network %s' % brname, module='libvirt')
+        common.error(f'Cannot get Linux bridge name for libvirt network {linux_bridge}', module='libvirt')

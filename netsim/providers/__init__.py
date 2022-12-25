@@ -183,6 +183,9 @@ class _Provider(Callback):
   * Mark multi-provider links
   """
   def pre_transform(self,topology : Box) -> None:
+    if not 'links' in topology:
+      return
+
     for l in topology.links:
       for intf in l.interfaces:
         node = topology.nodes[intf.node]
