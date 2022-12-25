@@ -1,9 +1,15 @@
 Release notes
 =============
 
+**[Release 1.4.3](release-1.4.3) (dev-1)**
+
+* [IOS XRv](platforms.md) support (initial configuration, IPv4+IPv6, OSPFv2/v3, IS-IS, BGP)
+* [MPLS, LDP and L3VPN](module/mpls.md) support on FRR
+* [Rewrite Linux container deployment](clab-linux) to remove Python and `ip` dependencies
+
 **[Release 1.4.2](release-1.4.2) (2022-12-18)**
 
-* [Juniper vMX](../platforms.md) support
+* [Juniper vMX](platforms.md) support
 * Junos BFD, VRF, MPLS, SR-MPLS, and MPLS/VPN support
 * Full VLAN support on vMX and routed VLAN interfaces on vSRX
 * CSR 1000v VLAN and VXLAN support

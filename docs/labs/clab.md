@@ -115,3 +115,13 @@ To add other *containerlab* attributes to the `clab.yml` configuration file, mod
 provider: clab
 defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 ```
+
+(clab-linux)=
+## Deploying Linux Containers
+
+The initial configuration process (**[netlab initial](../netlab/initial.md)**) no longer relies on commands executed within Linux containers:
+
+* The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process
+* Interface IP addresses and static routes to default gateway are configured with **ip** commands executed on the Linux host but within the container network namespace.
+
+You can therefore use any container image as a Linux node.
