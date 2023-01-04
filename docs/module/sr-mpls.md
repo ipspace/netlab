@@ -2,17 +2,37 @@
 
 This configuration module configures SR-MPLS within IS-IS routing process on Cisco IOS XE (CSR), Arista EOS, Juniper vSRX, Nokia SR Linux and Nokia SR OS.
 
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 1
+   :local:
+   :backlinks: none
+```
+
+## Supported Features
+
 Supported Segment Routing features:
 
-* IPv4 and IPv6 (see Notes)
+* IPv4 and IPv6 (see [](sr-mpls-platforms))
 * IS-IS routing protocol
 * IPv4 Node SID: set to node ID
 * IPv6 Node SID: set to node ID + 100
 
 The module depends on IS-IS module and will trigger a configuration error if the **isis** module is not enabled in the network topology.
 
-**Notes:**
-* Cisco IOS XE (that I used in my lab) does not support IPv6 Node SID with IS-IS. The Cisco IOS configuration templates are thus IPv4-only.
+(sr-mpls-platforms)=
+## Supported Platforms
+
+SR-MPLS is implemented on the following platforms:
+
+| Operating system      | IPv4  | IPv6 | IS-IS | OSPF |
+| ----------------------| :---: | :--: | :---: | :--: |
+| Arista EOS            |   ✅  |  ✅  |  ✅   |  ❌   |
+| Cisco IOS XE          |   ✅  |  ❌   |  ✅   |  ❌   |
+| Juniper vMX           |   ✅  |  ✅  |  ✅   |  ❌   |
+| Juniper vSRX          |   ✅  |  ✅  |  ✅   |  ❌   |
+| Nokia SR Linux        |   ✅  |  ✅  |  ✅   |  ❌   |
+| Nokia SR OS           |   ✅  |  ✅  |  ✅   |  ❌   |
 
 ## Parameters
 
