@@ -16,7 +16,7 @@ from box import Box
 from .. import common
 from ..callback import Callback
 from ..augment import devices
-from ..data import get_from_box
+from ..data import get_from_box,get_box
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
@@ -164,3 +164,71 @@ class _Provider(Callback):
 
   def post_configuration_create(self, topology: Box) -> None:
     pass
+
+  """
+  Provider post-transform processing:
+
+  * Mark multi-provider links
+  """
+  def pre_transform(self,topology : Box) -> None:
+    if not 'links' in topology:
+      return
+
+    for l in topology.links:
+      for intf in l.interfaces:
+        node = topology.nodes[intf.node]
+        if not 'provider' in node:
+          continue
+
+        l[topology.provider].provider[node.provider] = True
+
+"""
+Get a pointer to provider module. Cached in topology._Providers
+"""
+def get_provider_module(topology: Box, pname: str) -> _Provider:
+  if not pname in topology._Providers:
+    topology._Providers[pname] = _Provider.load(pname,topology.defaults.providers[pname])
+
+  return topology._Providers[pname]
+
+"""
+Execute a topology-wide provider hook
+"""
+def execute(hook: str, topology: Box) -> None:
+  p_module = get_provider_module(topology,topology.provider)
+  p_module.call(hook,topology)
+
+"""
+Execute a node-level provider hook
+"""
+def execute_node(hook: str, node: Box, topology: Box) -> None:
+  node_provider = devices.get_provider(node,topology.defaults)
+  p_module = get_provider_module(topology,node_provider)
+  p_module.call(hook,node,topology)
+
+"""
+Mark all nodes and links with relevant provider(s)
+"""
+def mark_providers(topology: Box) -> None:
+  for n in topology.nodes.values():                 # Set 'provider' attribute on all nodes
+    if 'provider' in n:
+      continue
+
+    n.provider = topology.provider
+
+  for l in topology.links:                          # Set 'providers' attribute on all links
+    for intf in l.interfaces:
+      node = topology.nodes[intf.node]
+      l.provider[node.provider] = True
+
+"""
+Select a subset of the topology -- links and nodes relevant to the current provider
+"""
+def select_topology(topology: Box, provider: str) -> Box:
+  topology = get_box(topology)                      # Create a copy of the topology
+  for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
+    if topology.nodes[n].provider != provider:
+      topology.nodes.pop(n,None)
+
+  topology.links = [ l for l in topology.links if provider in l.provider ]      # Retain only the links used by current provider
+  return topology
