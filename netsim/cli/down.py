@@ -13,7 +13,7 @@ from box import Box
 from . import common_parse_args, topology_parse_args, load_topology, load_snapshot_or_topology, external_commands,fs_cleanup
 from .. import read_topology,augment,common
 from .. import providers
-
+from .up import provider_probes
 #
 # CLI parser for 'netlab down' command
 #
@@ -48,10 +48,31 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
   return parser.parse_args(args)
 
 def down_cleanup(topology: Box, verbose: bool = False) -> None:
-  cleanup_list = topology.defaults.providers[topology.provider].cleanup or []
+  p_provider = topology.provider
+  cleanup_list = topology.defaults.providers[p_provider].cleanup or []
+
+  for s_provider in topology[p_provider].providers:
+    cleanup_list.extend(topology.defaults.providers[s_provider].cleanup or [])
+    s_filename = topology.defaults.providers[p_provider][s_provider].filename
+    if s_filename:
+      cleanup_list.append(s_filename)
+
   cleanup_list.extend(topology.defaults.automation.ansible.cleanup)
   cleanup_list.append('netlab.snapshot.yml')
   fs_cleanup(cleanup_list,verbose)
+
+def stop_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = None) -> None:
+  p_name = sname or pname
+  p_topology = providers.select_topology(topology,p_name)
+  p_module   = providers._Provider.load(p_name,topology.defaults.providers[p_name])
+
+  exec_command = None
+  if sname is not None:
+    exec_command = topology.defaults.providers[pname][sname].stop
+
+  p_module.call('pre_stop_lab',p_topology)
+  external_commands.stop_lab(topology.defaults,p_name,2,"netlab down",exec_command)
+  p_module.call('post_stop_lab',p_topology)
 
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
@@ -66,19 +87,18 @@ def run(cli_args: typing.List[str]) -> None:
     common.fatal('... could not read the lab topology, aborting')
     return
 
-  settings = topology.defaults
-  external_commands.run_probes(settings,topology.provider,1)
+  provider_probes(topology)
 
-  provider = providers._Provider.load(topology.provider,topology.defaults.providers[topology.provider])
-  provider.call('pre_output_transform',topology)
+  p_provider = topology.provider
+  p_module = providers._Provider.load(p_provider,topology.defaults.providers[p_provider])
+  providers.mark_providers(topology)
+  p_module.call('pre_output_transform',topology)
 
-  if hasattr(provider,'pre_stop_lab') and callable(provider.pre_stop_lab):
-    provider.pre_stop_lab(topology)
+  for s_provider in topology[p_provider].providers:
+    stop_provider_lab(topology,p_provider,s_provider)
+    print()
 
-  external_commands.stop_lab(settings,topology.provider,2,"netlab down")
-
-  if hasattr(provider,'post_stop_lab') and callable(provider.post_stop_lab):
-    provider.post_stop_lab(topology)
+  stop_provider_lab(topology,p_provider)
 
   if args.cleanup:
     external_commands.print_step(3,"Cleanup configuration files",spacing = True)

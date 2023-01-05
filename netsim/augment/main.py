@@ -9,7 +9,7 @@ from box import Box
 from .. import common
 from .. import addressing
 from .. import augment
-from ..providers import _Provider
+from .. import providers
 from .. import modules
 from .. import quirks
 from ..data import global_vars
@@ -30,7 +30,6 @@ def transform_setup(topology: Box) -> None:
   augment.topology.extend_attribute_list(topology.defaults)
   augment.topology.extend_module_attribute_list(topology)
   augment.topology.adjust_global_parameters(topology)
-  topology.Provider = _Provider.load(topology.provider,topology.defaults.providers[topology.provider])
   common.exit_on_error()
 
   augment.nodes.augment_node_provider_data(topology)
@@ -47,6 +46,7 @@ def transform_data(topology: Box) -> None:
   addressing.setup(topology)
   augment.plugin.execute('pre_transform',topology)
   modules.pre_transform(topology)
+  providers.execute("pre_transform",topology)
 
   augment.plugin.execute('pre_node_transform',topology)
   modules.pre_node_transform(topology)
@@ -70,15 +70,14 @@ def transform_data(topology: Box) -> None:
   modules.post_transform(topology)
   augment.plugin.execute('post_transform',topology)
   augment.groups.node_config_templates(topology)
-  topology.Provider.call("post_transform",topology)
+  providers.execute("post_transform",topology)
   common.exit_on_error()
 
   quirks.process_quirks(topology)
   common.exit_on_error()
   
-  topology.pop('Plugin',None)
-  del topology.pools
-  del topology.Provider
+  for remove_attr in ['Plugin','pools','_Providers']:
+    topology.pop(remove_attr,None)
 
 def transform(topology: Box) -> None:
   transform_setup(topology)
