@@ -626,7 +626,24 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                    ifdata=ngh_data)
       ifdata.neighbors.append(ngh_data)
 
-def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
+def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
+  node = link.interfaces[0].node
+  ndata = nodes[node]
+  features = devices.get_device_features(ndata,defaults)
+
+  lb_name = data.get_from_box(features,'vrf.loopback_interface_name')
+  if not lb_name:
+    return
+
+  if features.stub_loopback is False:
+    return
+
+  if not defaults.links.stub_loopback and not features.stub_loopback:
+    return
+
+  link.type = 'loopback'
+
+def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None:
   node_cnt = len(link.interfaces)   # Set the number of attached nodes (used in many places further on)
   link['node_count'] = node_cnt
 
@@ -644,6 +661,8 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
     return
 
   link.type = 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'     # Set link type based on number of attached nodes
+  if node_cnt == 1:
+    set_link_loopback_type(link,nodes,defaults)
 
   if host_count > 0:
     link.type = 'lan'
@@ -684,8 +703,18 @@ def check_link_type(data: Box) -> bool:
     common.error('Point-to-point link needs exactly two nodes: %s' % data,common.IncorrectValue,'links')
     return False
 
-  if not link_type in [ 'stub','p2p','lan','vlan_member']:
-    common.error('Invalid link type %s: %s' % (link_type,data),common.IncorrectValue,'links')
+  if link_type == 'loopback' and node_cnt != 1:
+    common.error(
+      f'Looopback link can have a single node attached: links[{data.linkindex}]\n... {data}',
+      common.IncorrectValue,
+      'links')
+    return False
+
+  if not link_type in [ 'stub','p2p','lan','loopback','vlan_member']:
+    common.error(
+      f'Invalid link type {link_type} in links[{data.linkindex}]\n... {data}',
+      common.IncorrectValue,
+      'links')
     return False
   return True
 
@@ -781,7 +810,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     return None
 
   for link in link_list:
-    set_link_type_role(link=link,pools=pools,nodes=nodes)
+    set_link_type_role(link=link,pools=pools,nodes=nodes,defaults=defaults)
     if not check_link_type(data=link):
       continue
 
