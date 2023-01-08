@@ -43,7 +43,7 @@ links:
 A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netlab* data transformation routines:
 
 * **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
-* **type** -- [link type](#link-types) (lan, p2p, stub)
+* **type** -- [link type](#link-types) (lan, p2p, stub, loopback)
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
 * **name** -- link name (used for interface description)
@@ -88,17 +88,30 @@ links:
 
 ## Link Types
 
-Lab topology could contain *stub*, *p2p* and *lan* links. The link type could be specified with the **type** attribute; when that attribute is missing the link type is selected based on the number of devices connected to the link:
+Lab topology could contain *lan*, *p2p*, *stub* and *loopback* links. The link type could be specified with the **type** attribute; when that attribute is missing the link type is selected based on the number of devices connected to the link:
 
-* Single node connected to a link ⇒ *stub*
+* Single node connected to a link ⇒ *stub* or *loopback* (see below)
 * Two nodes connected to a link ⇒ *p2p*
 * More than two nodes connected to a link, or a [link with a host attached](#hosts-and-default-gateways) ⇒ *lan*
 
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address, the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to multi-access (LAN) links are taken from *lan* pool. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the largest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links). 
-* Stub links are treated exactly like LAN links.
+* Prefixes assigned to other links are taken from *lan* pool. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the largest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links). 
+
+### Loopback Links
+
+Stub links (links with a single node) are treated as physical links and consume VM/container interfaces. Some virtualization platforms limit the number of VM interfaces, so you might be forced to turn such links into loopback interfaces.
+
+You could turn an interface attached to a stub link into a loopback interface with **type: loopback** link attribute. You could also change the default behavior with `defaults.links.stub_loopback` global setting or `defaults.devices.<device>.features.stub_loopback` device-specific setting.
+
+For example, to turn stub links into loopback interfaces on all lab devices apart from Cisco IOSv routers, use the following lab topology parameters:
+
+```
+defaults:
+  links.stub_loopback: True
+  devices.iosv.features.stub_loopback: False
+```
 
 ## Link Names
 
@@ -169,7 +182,7 @@ In dual-stack or IPv6-only environments you have to use the prefix dictionary sy
     ipv6: 2001:db8:cafe:2::/64
 ```
 
-### Other Link Types
+### Links Without Explicit Network-Layer Addresses
 
 * To create a layer-2-only link, set **prefix** to *False*.
 * To create unnumbered link, set **unnumbered** link attribute to *True*

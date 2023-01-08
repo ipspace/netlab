@@ -264,8 +264,9 @@ def validate_vrf_route_leaking(node : Box) -> None:
             'vrf')
 
 def vrf_loopbacks(node : Box, topology: Box) -> None:
-  features = devices.get_device_features(node,topology.defaults)
-  loopback_name = features.vrf.loopback_interface_name
+  loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults) or \
+                  devices.get_device_attribute(node,'features.vrf.loopback_interface_name',topology.defaults)
+
   if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
     common.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
     return
@@ -284,7 +285,7 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
       'type': "loopback",
       'name': f'VRF Loopback {vrfname}',
       'ifindex': node.interfaces[-1].ifindex + 1,
-      'ifname': loopback_name.format(vrfidx=v.vrfidx),
+      'ifname': loopback_name.format(vrfidx=v.vrfidx,ifindex=v.vrfidx),     # Use VRF-specific and generic loopback index
       'neighbors': [],
       'vrf': vrfname,
     },default_box=True,box_dots=True)
