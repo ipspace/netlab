@@ -38,9 +38,10 @@ After building a Vagrant box or a container, you have to integrate it with *netl
 
 The device parameters will have to include ([more details](device-box.md#adding-new-device-settings)):
 
-* Interface name template (**interface_name**), including `%d` to insert interface number.
+* Interface name template (**interface_name**), including `%d` or `{ifindex}` to insert interface number.
 * The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.
+* Optional loopback interface name (**‌loopback_interface_name**), including `{ifindex}` to insert interface number.
 * [Image name or box name](device-box.md#adding-new-device-settings) for every supported virtualization provider.
 
 After adding the device parameters into `netsim/topology-defaults.yml`, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.

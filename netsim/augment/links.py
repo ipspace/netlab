@@ -168,13 +168,17 @@ Add interface data structure to a node:
 * Cleanup 'af: False' entries
 * Handle interface/node/system MTU
 """
-def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
+def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
   if ifindex_offset is None:
     ifindex_offset = 1
 
   # Allow user to select a specific interface index per link
-  ifindex = ifdata.get('ifindex',None) or (len(node.interfaces) + ifindex_offset)
+  ifindex = ifdata.get('ifindex',None)
+
+  # When computing default ifindex, consider only non-loopback interfaces
+  if not ifindex:
+   ifindex = len([intf for intf in node.interfaces if intf.get('type',None) != 'loopback']) + ifindex_offset
 
   ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
@@ -190,6 +194,33 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if pdata:
     provider = devices.get_provider(node,defaults)
     ifdata[provider] = pdata
+
+def create_loopback_interface(node: Box, ifdata: Box, defaults: Box) -> None:
+  ifindex_offset = devices.get_device_attribute(node,'loopback_offset',defaults) or 0
+  ifdata.ifindex = ifindex_offset + ifdata.linkindex
+  ifname_format  = devices.get_device_attribute(node,'loopback_interface_name',defaults)
+
+  if not ifname_format:
+    common.error(
+      f'Device {node.device}/node {node.name} does not support loopback links',
+      common.IncorrectValue,
+      'links')
+    return
+
+  if not 'ifname' in ifdata:
+    ifdata.ifname = get_interface_name(ifname_format,ifdata)
+
+  # If the device uses 'loopback_offset' then we're assuming it's large enough to prevent overlap with physical interfaces
+  # Otherwise, create fake ifindex for loopback interfaces to prevent that overlap
+  #
+  if not ifindex_offset:
+    ifdata.ifindex = 10000 + ifdata.ifindex
+
+def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
+  if ifdata.get('type') == 'loopback':
+    create_loopback_interface(node,ifdata,defaults)
+  else:
+    create_regular_interface(node,ifdata,defaults)
 
   for af in ('ipv4','ipv6'):
     if af in ifdata and not ifdata[af]:
@@ -631,7 +662,7 @@ def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   ndata = nodes[node]
   features = devices.get_device_features(ndata,defaults)
 
-  lb_name = data.get_from_box(features,'vrf.loopback_interface_name')
+  lb_name = devices.get_device_attribute(ndata,'loopback_interface_name',defaults)
   if not lb_name:
     return
 
