@@ -273,6 +273,14 @@ def merge_global_module_params(topology: Box) -> None:
 '''
 add_module_extra_parameters: add extra module keywords (ex: 'vrfs' for 'vrf' module) to the list of attributes
 '''
+
+##### REMOVE AFTER ATTRIBUTE MIGRATION #####
+def extend_global_attributes(attr: typing.Union[list,dict], extra: str) -> None:
+  if isinstance(attr,dict):
+    attr[extra] = None
+  elif isinstance(attr,list):
+    attr.append(extra)
+
 def add_module_extra_parameters(topology: Box) -> None:
   if not 'module' in topology:
     return
@@ -282,7 +290,8 @@ def add_module_extra_parameters(topology: Box) -> None:
       for k in topology.defaults[m].attributes.extra.keys():    # ... oh, it does, iterate through its keys (attribute levels)
         for attr in topology.defaults[m].attributes.extra[k]:   # Take every attribute from the list of extra attributes
           if not attr in topology.defaults.attributes[k]:       # ... and if it's not already in the global list of attributes
-            topology.defaults.attributes[k].append(attr)        # ... append it to the global list
+            extend_global_attributes(topology.defaults.attributes[k],attr)
+###            topology.defaults.attributes[k].append(attr)        # ... append it to the global list
 
 '''
 adjust_modules: somewhat intricate multi-step config module adjustments

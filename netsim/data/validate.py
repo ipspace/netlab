@@ -5,7 +5,7 @@
 import typing,typing_extensions
 from box import Box
 from .. import common
-from . import get_from_box,set_dots
+from . import get_from_box,set_dots,get_empty_box,get_box
 
 #
 # Import functions from data.types to cope with legacy calls to must_be_something
@@ -18,42 +18,52 @@ Given an attribute dictionary, list of valid attribute categories, and extra att
 of valid attributes, or a string (type name) if the first attribute source in the list is a string
 """
 
+##### REMOVE AFTER ATTRIBUTE MIGRATION #####
+def make_attr_dict(atlist: typing.Union[list,Box]) -> typing.Union[Box]:
+  if isinstance(atlist,list):
+    return Box({ k: None for k in atlist })
+
+  return atlist
+
 def get_valid_attributes(
-      attributes: Box,                                  # Where to get valid attributes from
-      attr_list: typing.List[str],                      # List of valid attributes (example: ['node'] or ['link','interface'])
-      extra_attributes: typing.Optional[list] = None    # List of dynamic attributes (needed to validate node provider settings)
-        ) -> typing.Union[str,list]:
+      attributes: Box,                                      # Where to get valid attributes from
+      attr_list: typing.List[str],                          # List of valid attributes (example: ['node'] or ['link','interface'])
+      extra_attributes: typing.Optional[list] = None        # List of dynamic attributes (needed to validate node provider settings)
+        ) -> typing.Union[str,Box]:
 
-  valid = []
-  for idx,atlist in enumerate(attr_list):               # Build a list of all valid (global) attributes for the object
-    add_attr = attributes.get(atlist,[])                # Attributes to add to the list
-    if isinstance(add_attr,list):                       # Are we dealing with a fixed-type attribute?
-      no_propagate = f'{atlist}_no_propagate'           # No-propagate list excluded only for non-first attribute category
-      if idx and no_propagate in attributes:
-        add_attr = [ k for k in add_attr if not k in attributes[no_propagate] ]
-      valid.extend(add_attr)                            # ... nope, add to list of attributes and move on
-
-      internal_atlist = f'{atlist}_internal'            # Internal object attributes (used by links)
-      if internal_atlist in attributes:                 # Add internal attributes if they exist
-        valid.extend(attributes[internal_atlist])
+  valid = get_empty_box()
+  for idx,atlist in enumerate(attr_list):                   # Build a list of all valid (global) attributes for the object
+    if not atlist in attributes:
       continue
+    add_attr = attributes[atlist]                           # Attributes to add to the list
 
-    if valid:                                           # Have we already collected something?
+    if isinstance(add_attr,str):                            # Got a specific data type?
+      if valid:                                             # Have we already collected something?
+        common.fatal(
+          f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
+          f'... attributes: {attributes}')
+        return ''                                           # ... bad karma, inconsistent validation requirements
+      return add_attr
+
+    if not isinstance(add_attr,(Box,list)):
       common.fatal(
-        f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
+        f'Internal error: Expected string or list/dictionary for {atlist} attributes\n' +
         f'... attributes: {attributes}')
-      return []                                         # ... bad karma, inconsistent validation requirements
+      return ''                                             # ... dang, someone messed up. Abort, abort, abort...
 
-    if not isinstance(add_attr,str):                    # Looking good so far, but the thing we got that's not a list should be a string
-      common.fatal(
-        f'Internal error: Expected string or list for {atlist} attributes\n' +
-        f'... attributes: {attributes}')
-      return []                                         # ... dang, someone messed up. Abort, abort, abort...
+    add_attr = make_attr_dict(add_attr)                     # Convert attributes into a dictionary
 
-    return add_attr
+    no_propagate = f'{atlist}_no_propagate'                 # No-propagate list excluded only for non-first attribute category
+    if idx and no_propagate in attributes:
+      add_attr = { k:v for k,v in add_attr.items() if not k in attributes[no_propagate] }
+    valid += add_attr                                       # ... nope, add to list of attributes and move on
+
+    internal_atlist = f'{atlist}_internal'                  # Internal object attributes (used by links)
+    if internal_atlist in attributes:                       # Add internal attributes if they exist
+      valid += make_attr_dict(attributes[internal_atlist])
 
   if not extra_attributes is None:                      # Extend the attribute list with dynamic attributes
-    valid.extend(extra_attributes)
+    valid += make_attr_dict(extra_attributes)
 
   return valid
 
@@ -170,7 +180,7 @@ def validate_attributes(
   #
 
   if not modules is None:
-    valid.extend([ attr for attr,mod in extra_module_attr.items() if mod in modules ])
+    valid += Box({ attr: None for attr,mod in extra_module_attr.items() if mod in modules })
 
   # Part 3 -- validate attributes
   #
