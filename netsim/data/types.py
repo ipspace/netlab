@@ -2,7 +2,7 @@
 # Data validation routines
 #
 
-import typing,typing_extensions
+import typing,typing_extensions,types
 import functools
 from box import Box
 from .. import common
@@ -69,11 +69,40 @@ def check_valid_values(
   return False
 
 """
+is_true_int: work around the Python stupidity of bools being ints
+"""
+
+def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
+  return isinstance(data,int) and not isinstance(data,bool)
+
+"""
 type_test decorator function -- simplifies the type testing functions
 
 * Get the value (using parent and key)
 * Handle empty and boolean values
 * Handle valid values and abort-on-error
+
+Required input arguments:
+
+  parent - the parent dictionary of the attribute we want to listify
+           (a pointer to the element would be even better, but Python)
+  key    - the parent dictionary key
+  path   - path of the parent dictionary that would help the user identify
+           where the problem is
+
+Optional arguments:
+
+  context       - Additional data identifying the context (usually used for links)
+  module        - The caller module (used for error messages)
+  valid_values  - list of valid values (applicable to all data types)
+  create_empty  - Create an empty element if the value is missing
+  true_value    - Replace True with another value
+  abort         - Throw an exception after printing an error message
+
+Sample use: make sure the 'config' attribute of a node is list
+
+  must_be_list(node,'config',f'nodes.{node.name}')
+
 """
 
 def type_test(
@@ -82,6 +111,10 @@ def type_test(
 
   def test_wrapper(test_function: typing.Callable) -> typing.Callable:
 
+    # Generic data type validation framework
+    #
+    # Use it as a decorator wrapper around the actual testing function
+    #
     @functools.wraps(test_function)
     def execute_test(
           parent: Box,                                      # Parent object
@@ -95,141 +128,98 @@ def type_test(
           abort: bool = False,                              # Abort on error
           **kwargs: typing.Any) -> typing.Optional[typing.Any]:
 
-      value = get_from_box(parent,key)
-      if value is None:
-        if create_empty is None and not(empty_value is None):
-          create_empty = True
-  
-        if create_empty is True:
-          value = empty_value
-          set_dots(parent,key.split('.'),empty_value)
-        return value
+      value = get_from_box(parent,key)                      # Try to get the value from the parent object
+      if value is None:                                     # No value was found, now what?
+        if empty_value is None:                             # ... if there is no empty value for this data type, be quiet and get out
+          return value
 
+        if create_empty is None:                            # Empty value is defined, and we'll use it to create an empty object if the caller
+          create_empty = True                               # did not specify its preferencehs
+  
+        if create_empty:                                    # Now for the real deal
+          value = empty_value                               # ... if we should create an empty value do so
+          set_dots(parent,key.split('.'),empty_value)       # ... and store it in the parent object (dedottifying the key)
+        else:
+          if abort:                                         # Empty value was specified, 'create_empty' is False, and there's no actual value
+            raise common.IncorrectValue()                   # ... raise an exception if requested
+
+        return value                                        # And return the final empty value
+
+      # Handle boolean-to-data-type conversions if the value is bool and the caller specified true_value
+      #
       if isinstance(value,bool) and not (true_value is None):
-        if value:
+        if value is True:                                   # Replace True with true_value and move on
           value = true_value
         else:
-          if false_value is None:
+          if false_value is None:                           # If there's no false_value pop the bool option and return None
             parent.pop(key,None)
             return None
           else:
-            value = false_value
+            value = false_value                             # ... otherwise set the false value
 
         parent[key] = value
 
-      expected = test_function(value,**kwargs)
-      if not expected is True:
-        if isinstance(expected,str):
-          wrong_type_message(path=path, key=key, expected=expected, value=value, context=context, module=module)
-        if abort:
-          raise common.IncorrectType()
-        return None
+      expected = test_function(value,**kwargs)              # Now call the validator function with the item value
 
+      # Validator function could return:
+      #
+      # * True -- everything is OK
+      # * False -- failed the validation, error message was already printed
+      # * string -- error message
+      # * callable -- a function returning a replacement value
+      #
+      if isinstance(expected,(bool,str)):
+        if not expected is True:
+          if isinstance(expected,str):
+            wrong_type_message(path=path, key=key, expected=expected, value=value, context=context, module=module)
+          if abort:
+            raise common.IncorrectType()
+          return None
+      elif isinstance(expected,types.FunctionType):
+        value = expected(value)
+        parent[key] = value
+      else:
+        common.fatal(f'Validator function {test_function} returned unexpected value {expected}')
+
+      # Finally, check valid values (if specified)
+      #
       if valid_values:
         check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module, abort=abort)
 
+      # And return whatever the final value is (considering empty, true, and transformed values)
+      #
       return value
 
     return execute_test
 
   return test_wrapper
 
-#
-# must_be_list: make sure a dictionary value is a list. Convert scalar values
-#   to list if needed, report an error otherwise.
-#
-# must_be_string: make sure a dictionary value is a string. Throw an error otherwise.
-#
-# must_be_int: make sure a dictionary value is an integer. Throw an error otherwise.
-#
-# must_be_dict: make sure a dictionary value is another dictionary. Throw an error otherwise.
-#
-# Input arguments:
-#   parent - the parent dictionary of the attribute we want to listify
-#            (a pointer to the element would be even better, but Python)
-#   key    - the parent dictionary key
-#   path   - path of the parent dictionary that would help the user identify
-#            where the problem is
-#
-# Sample use: make sure the 'config' attribute of a node is list
-#
-#    must_be_list(node,'config',f'nodes.{node.name}')
-#
-def must_be_list(
-      parent: Box,                                      # Parent object
-      key: str,                                         # Key within the parent object, may include dots.
-      path: str,                                        # Path to parent object, used in error messages
-      create_empty: bool = True,                        # Do we want to create an empty list if needed?
-      true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_, set _false_ to []
-      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-      valid_values: typing.Optional[list] = None,       # List of valid values
-      abort:      bool = False,
-                ) -> typing.Optional[list]:
+"""
+Individual data type validators
+===============================
 
-  value = get_from_box(parent,key)
-  if value is None:
-    if create_empty:
-      set_dots(parent,key.split('.'),[])
-      return parent[key]
-    else:
-      if abort:
-        raise common.IncorrectValue()
-      return None
+Most validators check the instance type and return a string error message
 
-  if isinstance(value,bool) and not true_value is None:
-    value = true_value if value else []
-    parent[key] = value
+Exceptions:
 
-  if isinstance(value,(str,int,float,bool)):
-    parent[key] = [ value ]
-    value = parent[key]
+* List validator returns a transformation function when a scalar could be converted to a list
+* Integer validation can include minimum/maximum values
+"""
 
-  if isinstance(value,list):
-    if not valid_values is None:
-      check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module, abort=abort)
-    return parent[key]
+@type_test(false_value=[],empty_value=[])
+def must_be_list(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
 
-  wrong_type_message(path=path, key=key, expected='a scalar or a list', value=value, context=context, module=module)
-  if abort:
-    raise common.IncorrectType()
+  def transform_to_list(value: typing.Any) -> list:
+    return [ value ]
 
-  return None
+  if isinstance(value,(str,int,float,bool)):            # Handle scalar-to-list transformations with a callback function
+    return transform_to_list
 
-def must_be_dict(
-      parent: Box,                                      # Parent object
-      key: str,                                         # Key within the parent object, may include dots.
-      path: str,                                        # Path to parent object, used in error messages
-      create_empty: bool = True,                        # Do we want to create an empty list if needed?
-      true_value: typing.Optional[dict] = None,         # Value to use to replace _true_, set _false_ to []
-      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-      abort:      bool = False                          # Crash on error
-                ) -> typing.Optional[list]:
+  return True if isinstance(value,list) else 'a scalar or a list'
 
-  value = get_from_box(parent,key)
-  if value is None:
-    if create_empty:
-      set_dots(parent,key.split('.'),{})
-      return parent[key]
-    else:
-      if abort:
-        raise common.IncorrectValue()
-      return None
-
-  if isinstance(value,bool) and not true_value is None:
-    value = true_value if value else {}
-    parent[key] = value
-
-  if isinstance(value,dict):
-    return parent[key]
-
-  wrong_type_message(path=path, key=key, expected='a dictionary', value=value, context=context, module=module)
-
-  if abort:
-    raise common.IncorrectType()
-
-  return None
+@type_test(false_value={},empty_value={})
+def must_be_dict(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
+  return True if isinstance(value,dict) else 'a dictionary'
 
 @type_test(false_value='')
 def must_be_string(value: typing.Any) -> typing.Union[bool,str]:
@@ -263,11 +253,4 @@ def must_be_int(
 @type_test()
 def must_be_bool(value: typing.Any) -> typing.Union[bool,str]:
   return True if isinstance(value,bool) else 'a boolean'
-
-"""
-is_true_int: work around the Python stupidity of bools being ints
-"""
-
-def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
-  return isinstance(data,int) and not isinstance(data,bool)
 
