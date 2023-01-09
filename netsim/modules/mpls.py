@@ -9,7 +9,7 @@ from . import _Module,_routing
 from .. import common
 from ..common import AF_LIST,BGP_SESSIONS
 from .. import data
-from ..data.validate import must_be_bool,must_be_list,validate_list_elements
+from ..data.validate import must_be_bool,must_be_list
 from ..augment import devices
 
 DEFAULT_BGP_LU: dict = {
@@ -70,11 +70,13 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
 def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
   if isinstance(node.mpls[feature],list):
     session_list = node.mpls[feature]
-    if not validate_list_elements(session_list,BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}'):
-      common.error(
-        f'Invalid BGP session type in nodes.{node.name}.mpls.{feature} parameter',
-        common.IncorrectValue,
-        'mpls')
+    if not must_be_list(
+        parent=node.mpls,
+        key=feature,
+        path=f'nodes.{node.name}.mpls.{feature}',
+        valid_values=BGP_SESSIONS,
+        create_empty=False,
+        module='mpls'):
       return False
 
     node.mpls[feature] = Box({})
@@ -88,12 +90,15 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
       if must_be_list(node.mpls[feature],af,f'nodes.{node.name}.mpls.{feature}') is None:
         return False
 
-      if not validate_list_elements(node.mpls[feature][af],BGP_SESSIONS,f'nodes.{node.name}.mpls.{feature}.{af}'):
-        common.error(
-          f'Invalid BGP session type in nodes.{node.name}.mpls.{feature}.{af} parameter',
-          common.IncorrectValue,
-          'mpls')
+      if not must_be_list(
+          parent=node.mpls,
+          key=f'{feature}.{af}',
+          path=f'nodes.{node.name}.mpls.{feature}.{af}',
+          valid_values=BGP_SESSIONS,
+          create_empty=False,
+          module='mpls'):
         return False
+
   else:
     common.error(
       f'nodes.{node.name}.mpls.{feature} parameter must be a boolean, list, or dictionary',
