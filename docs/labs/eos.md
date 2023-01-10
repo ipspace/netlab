@@ -36,5 +36,5 @@ Some releases of Arista vEOS are available as Virtualbox boxes. To use them with
 * Remove the _virtualbox_ box with **vagrant box remove _boxname_ \-\-provider virtualbox** command.
 
 ```{warning}
-You might experience weird Vagrant errors when starting mutated vEOS boxes with **‌vagrant up** or **‌netlab up** command. Building a box yourself usually solves that problem.
+You might experience weird Vagrant errors when starting mutated vEOS boxes with **‌netlab up** command. Building a box yourself usually solves that problem.
 ```

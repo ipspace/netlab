@@ -35,5 +35,5 @@ Cisco Nexus 9300v is available as Virtualbox box. To use that box with *vagrant-
 * Remove the _virtualbox_ box with **vagrant box remove _boxname_ \-\-provider virtualbox** command.
 
 ```{warning}
-You might experience weird Vagrant errors when starting mutated Nexus OS boxes with **‌vagrant up** or **‌netlab up** command. Building a box yourself usually solves that problem.
+You might experience weird Vagrant errors when starting mutated Nexus OS boxes with **‌netlab up** command. Building a box yourself usually solves that problem.
 ```

@@ -75,17 +75,17 @@ if [[ -z "$G" ]]; then
   echo ".. You might need to log out and log in to start using netlab with libvirt"
   echo
 fi
-echo "Create vagrant-libvirt virtual network"
-set +e
-NET_LIST=$($SUDO virsh net-list --all|grep vagrant-libvirt)
-if [[ -n "$NET_LIST" ]]; then
-  echo ".. removing existing vagrant-libvirt network"
-  $SUDO virsh net-destroy vagrant-libvirt
-  $SUDO virsh net-undefine vagrant-libvirt
-fi
-SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
-set -e
-$SUDO virsh net-define "$SCRIPT_DIR/../templates/provider/libvirt/vagrant-libvirt.xml"
-echo ".. vagrant-libvirt network created"
-$SUDO virsh net-start vagrant-libvirt
-$SUDO virsh net-autostart vagrant-libvirt
+#echo "Create vagrant-libvirt virtual network"
+#set +e
+#NET_LIST=$($SUDO virsh net-list --all|grep vagrant-libvirt)
+#if [[ -n "$NET_LIST" ]]; then
+#  echo ".. removing existing vagrant-libvirt network"
+#  $SUDO virsh net-destroy vagrant-libvirt
+#  $SUDO virsh net-undefine vagrant-libvirt
+#fi
+#SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+#set -e
+#$SUDO virsh net-define "$SCRIPT_DIR/../templates/provider/libvirt/vagrant-libvirt.xml"
+#echo ".. vagrant-libvirt network created"
+#$SUDO virsh net-start vagrant-libvirt
+#$SUDO virsh net-autostart vagrant-libvirt

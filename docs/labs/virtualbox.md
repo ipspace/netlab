@@ -22,13 +22,11 @@ To create a new lab:
 * Create [lab topology file](../topology-overview.md) in an empty directory. Use `provider: virtualbox` in lab topology to select the *virtualbox* virtualization provider.
 * Execute **[netlab up](../netlab/up.md)**
 
-Alternatively, you could use **[netlab create](../netlab/create.md)** script to create *Vagrantfile* and Ansible inventory, and **vagrant up** to start the lab.
-
 [^1]: Running Ansible on Windows is not supported, but supposedly it runs just fine under WSL. 
 
 ## Testing the Installation
 
-The easiest way to test your installation is to use **netlab test** command. If you prefer to do step-by-step tests, or if you don't want to use WSL on Windows, you might find this recipe useful:
+The easiest way to test your installation is to use **netlab test** command. If you prefer to do step-by-step tests, or if you don't want to install Ansible, you might find this recipe useful:
 
 * Create an empty directory and `topology.yml` file with the following contents within that directory:
 
@@ -41,10 +39,9 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3, s1-s2-s3 ]
 ```
 
-* Create Vagrantfile with `netlab create`
-* Execute `vagrant up` to spin up three Cumulus VX virtual machines
+* Execute `netlab up --no-config` to create configuration files and start the lab without configuring network devices (that step would require Ansible)
 * Connect to the Cumulus VX devices with `vagrant ssh`
-* Destroy the lab with `vagrant destroy -f`
+* Destroy the lab with `netlab down`
 
 ## Creating Vagrant Boxes
 

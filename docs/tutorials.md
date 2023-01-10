@@ -14,7 +14,9 @@ If you plan to run your lab on MacOS or Windows, use [Vagrant with VirtualBox](l
 
 You might want to start somewhere else:
 
+<!--
 * For a step-by-step tutorial starting with *let's create a Linux virtual machine on our Windows/Mac laptop*, please read *[A Quick Introduction to Netsim-Tools](https://blog.kirchne.red/netsim-tools-quickstart.html)* by [Leo Kirchner](https://www.linkedin.com/in/leo-kirchner/).
+-->
 * [Julio Perez](https://github.com/JulioPDX) wrote a [container-focused tutorial using Arista cEOS](https://juliopdx.com/2022/02/13/network-simulation-tools-and-containerlab/).
 * For more complex tutorials, check the *[More Tutorials](#more-tutorials)* section at the end of this document.
 
@@ -27,7 +29,7 @@ We'll use Arista EOS image available for download on [Arista's web site](https:/
 If you're using VirtualBox with Vagrant:
 
 * Download the Arista vEOS Box file. The most recent vEOS version accessible in that format at the time this document was last updated was `vEOS-lab-4.24.8M-virtualbox.box`.
-* Install the .box file with `vagrant box add vEOS-lab-4.21.14M-virtualbox.box --name arista/veos`
+* Install the .box file with `vagrant box add <box-filename> --name arista/veos`
 
 If you're using containerlab, [download and install cEOS image](labs/ceos.md).
 
@@ -38,8 +40,7 @@ In an empty directory create the [lab topology file](topology-overview.md) `topo
 ```
 ---
 provider: virtualbox
-defaults:
-  device: eos
+defaults.device: eos
 module: [ ospf ]
 
 nodes: [ r1, r2 ]
@@ -56,7 +57,7 @@ The networking lab specified in the above topology file:
 
 **Notes:**
 * Replace `provider: virtualbox` with `provider: clab` if you're running Arista cEOS container with *containerlab*.
-* If you prefer using Cumulus VX, replace `device: eos` with `device: cumulus`
+* If you prefer using Cumulus VX, replace `defaults.device: eos` with `defaults.device: cumulus`
 
 ## Starting the Lab
 
@@ -66,14 +67,11 @@ The easiest way to start the lab is to execute **[netlab up](../netlab/up.md)** 
 * Starts the devices with **vagrant up** or **containerlab deploy** command
 * Configures the devices with **netlab initial** command.
 
-To execute individual steps in this process, follow the rest of this section, otherwise skip to [connecting to network devices](#connecting-to-network-devices).
-
 ### Creating Configuration Files
 
-Create `Vagrantfile`, `hosts.yml` (Ansible inventory file) and `ansible.cfg` (Ansible configuration file) with **[netlab create](../netlab/create.md)** command:
+**netlab up** executes **netlab create** to create `Vagrantfile`, `hosts.yml` (Ansible inventory file) and `ansible.cfg` (Ansible configuration file), resulting in a printout similar to this one:
 
 ```
-$ netlab create
 Created provider configuration file: Vagrantfile
 Created group_vars for eos
 Created host_vars for r1
@@ -84,12 +82,11 @@ Created Ansible configuration file: ansible.cfg
 
 ### Start the Virtual Devices
 
-Start the lab with **vagrant up** or **sudo containerlab deploy -t clab.yml**. Once all the lab devices have started, connect to individual devices with **vagrant ssh** or **[netlab connect](../netlab/connect.md)**.
+After the configuration files have been created, **netlab up** creates the virtual networking infrastructure (if needed) and starts the lab with **vagrant up** or **sudo containerlab deploy -t clab.yml**.
 
-If you execute **vagrant up** in a VirtualBox environment, you should get a printout similar to the one below:
+You can expect to see a printout similar to the one below if you're using VirtualBox:
 
 ```
-$ vagrant up
 Bringing machine 'r1' up with 'virtualbox' provider...
 Bringing machine 'r2' up with 'virtualbox' provider...
 ==> r1: Importing base box 'arista/veos'...
@@ -116,11 +113,11 @@ Bringing machine 'r2' up with 'virtualbox' provider...
 
 ### Deploy Device Configurations
 
-You'll need a working Ansible installation for the rest of this tutorial. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1], or use **[netlab install ansible](../netlab/install.md)** on Ubuntu.
+Deploying device configurations -- the final step in the **netlab up** process -- requires a working Ansible installation. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1], or use **[netlab install ansible](../netlab/install.md)** on Ubuntu.
 
 [^1]: I prefer using **homebrew** to install Ansible on MacOS.
 
-The Ansible inventory created by **netlab create** command contains enough information to configure interfaces and OSPF routing process. Here's the inventory information for *r1* (`host_vars/r1/topology.yml`):
+The Ansible inventory created by **netlab up** or **netlab create** command contains enough information to configure interfaces and OSPF routing process. Here's the inventory information for *r1* (`host_vars/r1/topology.yml`):
 
 ```
 # Ansible inventory created from ['lab.yml', 'package:topology-defaults.yml']
@@ -157,20 +154,15 @@ module:
 - ospf
 ```
 
-To configure the lab devices, run **[netlab initial](../netlab/initial.md)** command. We'll use the `dense` Ansible callback to minimize the amount of detritus generated by internal Ansible playbook used by **netlab initial**:
+To configure the lab devices, **netlab up** runs **[netlab initial](../netlab/initial.md)** command.
 
+```{tip}
+If you want to inspect the deployed device configurations, execute `netlab initial -v` -- the Ansible playbook will print out the device configurations before they'd be deployed -- or `netlab initial -o` to create configuration snippets in `config` directory.
 ```
-$ ANSIBLE_STDOUT_CALLBACK=dense netlab initial
-PLAY 1: DEPLOY DEVICE CONFIGURATION
-task 3: r1 r2
-task 7: r1 r2
-```
-
-If you want to inspect the deployed device configurations, you could use the `-v` (verbose) flag -- the playbook would print out the device configurations before they'd be deployed -- or `-o` flag to create configuration snippets in `config` directory.
 
 ## Connecting to Network Devices
 
-After installing Ansible, you could use the **[netlab connect](../netlab/connect.md)** command to connect to network devices[^2] and inspect the OSPF neighbors and IP routing table:
+After starting the lab and installing Ansible, you could use the **[netlab connect](../netlab/connect.md)** command to connect to network devices[^2] and inspect the OSPF neighbors and IP routing table:
 
 [^2]: **netlab connect** uses Ansible inventory to find the administrator username and password, device IP address and SSH port name.
 

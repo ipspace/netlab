@@ -9,7 +9,6 @@
 
 * netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name, in which case you'll have to set **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
 * Copying Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. Vagrant configuration file uses fixed SSH password.
-* IOS XR cannot use interface MAC address as the DHCP client ID and might get a random IP address on the management interface during the **vagrant up** processing. The initial configuration process adds the expected management IP address as a secondary address on the management interface.
 * Maximum interface bandwidth on IOS XRv is 1 Gbps (1000000).
 
 (caveats-csr)=

@@ -26,10 +26,8 @@ optional arguments:
 
 * Checks whether the selected virtualization provider and Vagrant are installed;
 * Creates a working directory and copies sample lab topology containing three routers and a few links into that directory;
-* Uses **netlab create** to create Vagrantfile, Ansible inventory, and `ansible.cfg`.
-* Starts the lab with **vagrant up**. Cumulus VX boxes are downloaded on demand if needed.
-* Deploys initial device configurations and configure OSPF with **netlab initial**.
-* Destroys the lab with **vagrant destroy -f**
+* Executes **netlab up** to create configuration files, start the lab, and configure network devices.
+* Destroys the lab with **netlab down**
 * Cleans up the working directory
 
 ## Notes on Containerlab Tests
