@@ -1,11 +1,12 @@
 Release notes
 =============
 
-**[Release 1.4.3](release-1.4.3) (dev-1)**
+**[Release 1.4.3](release-1.4.3) (2023-01-12)**
 
 * [IOS XRv](platforms.md) support (initial configuration, IPv4+IPv6, OSPFv2/v3, IS-IS, BGP)
 * [MPLS, LDP and L3VPN](module/mpls.md) support on FRR
 * [Rewrite Linux container deployment](clab-linux) to remove Python and `ip` dependencies
+* [Custom templates for container configuration files](clab-config-template)
 
 **[Release 1.4.2](release-1.4.2) (2022-12-18)**
 

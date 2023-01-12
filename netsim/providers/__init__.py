@@ -36,6 +36,12 @@ class _Provider(Callback):
   def get_template_path(self) -> str:
     return 'templates/provider/' + self.provider
 
+  def get_full_template_path(self) -> str:
+    return str(common.get_moddir()) + '/' + self.get_template_path()
+
+  def find_extra_template(self, node: Box, fname: str) -> typing.Optional[str]:
+    return common.find_file(fname+'.j2',[ f'./{node.device}','.',f'{ self.get_full_template_path() }/{node.device}'])
+
   def get_output_name(self, fname: typing.Optional[str], topology: Box) -> str:
     if fname:
       return fname
@@ -96,10 +102,9 @@ class _Provider(Callback):
             self.provider)
           continue
 
-        file_template = f"{ str(common.get_moddir()) }/{ self.get_template_path() }/{node.device}/{file}.j2"
-        if not os.path.exists(file_template):
+        if not self.find_extra_template(node,file):
           common.error(
-            f"Template missing for extra file {self.provider}.{inkey}.{file} on node {node.name}",
+            f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
             common.IncorrectValue,
             self.provider)
           continue
@@ -118,16 +123,20 @@ class _Provider(Callback):
     if not binds:
       return
 
-    in_folder = f"{ self.get_template_path() }/{node.device}"
+    sys_folder = str(common.get_moddir())+"/"
     out_folder = f"{self.provider}_files/{node.name}"
 
     for file,mapping in binds.items():
       file_name = file.replace(out_folder+"/","")
-      template_name =  file_name + ".j2"
-      if os.path.exists(f"{ str(common.get_moddir()) }/{in_folder}/{template_name}"):
+      template_name = self.find_extra_template(node,file_name)
+      if template_name:
         node_data = node + { 'hostvars': topology.nodes }
-        common.write_template( in_folder, template_name, node_data.to_dict(), out_folder, filename=file_name)
-        print( f"Created {out_folder}/{file_name} from {in_folder}/{template_name}, mapped to {node.name}:{mapping}" )
+        common.write_template(
+          in_folder=os.path.dirname(template_name),
+          j2=os.path.basename(template_name),
+          data=node_data.to_dict(),
+          out_folder=out_folder, filename=file_name)
+        print( f"Created {out_folder}/{file_name} from {template_name.replace(sys_folder,'')}, mapped to {node.name}:{mapping}" )
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)

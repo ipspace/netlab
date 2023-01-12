@@ -121,11 +121,28 @@ def get_yaml_string(x : typing.Any) -> str:
   else:
     return str(x)
 
+#
+# Find path to the module directory (needed for various templates)
+#
 def get_moddir() -> pathlib.Path:
   return pathlib.Path(__file__).resolve().parent
 
+#
+# Find a file in a search path
+#
+def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
+  for dirname in search_path:
+    candidate = os.path.join(dirname, path)
+    if os.path.exists(candidate):
+      return candidate
+
+  return None
+
 def template(j2: str , data: typing.Dict, path: str, user_template_path: typing.Optional[str] = None) -> str:
-  template_path = [ str(get_moddir()) + "/" + path ]
+  if path [0] in ('.','/'):                             # Absolute path or path relative to current directory?
+    template_path = [ path ]
+  else:                                                 # Path relative to netsim module, add module path to it
+    template_path = [ str(get_moddir()) + "/" + path ]
   if not user_template_path is None:
     template_path = [ './' + user_template_path, os.path.expanduser('~/.netlab/'+user_template_path) ] + template_path
   if debug_active('template'):

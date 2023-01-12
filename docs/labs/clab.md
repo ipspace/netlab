@@ -7,6 +7,13 @@
 * Create [lab topology file](../topology-overview.md). Use `provider: clab` in lab topology to select the *containerlab* virtualization provider.
 * Start the lab with **[netlab up](../netlab/up.md)**
 
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
 ## Container Images
 
 Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab create](../netlab/create.md)** command uses these container images (use **netlab show images** to display the actual system settings):
@@ -26,7 +33,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 
 You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Nexus 9300v and IOS XR, OpenWRT, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
 
-## LAN bridges
+## LAN Bridges
 
 For multi-access network topologies, **[netlab up](../netlab/up.md)** command automatically creates additional standard Linux bridges.
 
@@ -43,17 +50,7 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3 ]
 ```
 
-```{eval-rst}
-.. toctree::
-   :caption: Installing Container Images
-   :maxdepth: 1
-   :hidden:
-
-   ceos.md
-..
-```
-
-## Container runtime support
+## Container Runtime Support
 
 Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**. The runtime to use can be configured globally or per node, for example:
 
@@ -80,10 +77,10 @@ nodes:
       '/var/run/docker.sock': '/var/run/docker.sock'
 ```
 
-### Generating and binding custom config files
+(clab-config-template)=
+### Generating and Binding Custom Configuration Files
 
-In addition to binding pre-existing files, Netlab can also generate custom config files on the fly based on templates.
-For example, this is used internally to create the list of daemons for the **frr** container image:
+In addition to binding pre-existing files, _netlab_ can also generate custom config files on the fly based on Jinja2 templates. For example, this is used internally to create the list of daemons for the **frr** container image:
 
 ```
 frr:
@@ -96,7 +93,26 @@ frr:
       daemons: /etc/frr/daemons
 ```
 
-```daemons``` references ```templates/provider/clab/frr/daemons.j2``` (```.j2``` is implied); the result gets mapped to /etc/frr/daemons
+_netlab_ tries to locate the templates in the current directory, in a subdirectory with the name of the device, and within system directory ```templates/provider/clab/<device>```. ```.j2``` suffix is always appended to the template name.
+
+For example, the ```daemons``` template used in the above example could be ```./daemons.j2```, ```./frr/daemons.j2``` or ```<netsim_moddir>/templates/provider/clab/frr/daemons.j2```; the result gets mapped to ```/etc/frr/daemons``` within the container file system.
+
+You can use the ```clab.config_templates``` node attribute to add your own container configuration files[^UG], for example:
+
+[^UG]: As the global provider parameters aren't copied into node parameters, use groups to specify the same set of configuration templates for multiple devices.
+
+```
+provider: clab
+
+nodes:
+  t1:
+    device: linux
+    clab:
+      config_templates:
+        some_daemon: /etc/some_daemon.cf
+```
+
+Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon``` from ```some_daemon.j2``` (the template could be either in current directory or ```linux``` subdirectory) and maps it to ```/etc/some_daemon.cf``` within the container file system.
 
 ## Using Other Containerlab Node Parameters
 
@@ -119,9 +135,20 @@ defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 (clab-linux)=
 ## Deploying Linux Containers
 
-The initial configuration process (**[netlab initial](../netlab/initial.md)**) no longer relies on commands executed within Linux containers:
+The initial configuration process (**[netlab initial](../netlab/initial.md)**) does not rely on commands executed within Linux containers:
 
-* The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process
-* Interface IP addresses and static routes to default gateway are configured with **ip** commands executed on the Linux host but within the container network namespace.
+* The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process from the ```templates/provider/clab/frr/hosts.j2``` template (see [](clab-config-template)).
+* Interface IP addresses and static routes to in-lab default gateway are configured with **ip** commands executed on the Linux host but within the container network namespace.
+* Static default route points to the management interface.
 
 You can therefore use any container image as a Linux node.
+
+```{eval-rst}
+.. toctree::
+   :caption: Installing Container Images
+   :maxdepth: 1
+   :hidden:
+
+   ceos.md
+..
+```
