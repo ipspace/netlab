@@ -156,7 +156,7 @@ def validate_item(
           parent=data,
           key=k,
           data_type=data_type[k],
-          parent_path=f"{parent_path}.{k}",
+          parent_path=f"{parent_path}.{key}",
           data_name=data_name,
           module=module)
     return error

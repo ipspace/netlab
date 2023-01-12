@@ -22,7 +22,7 @@ def wrong_type_text(x : typing.Any) -> str:
 
 def get_element_path(parent: str, element: typing.Optional[str]) -> str:
   if element:
-    return f'{parent},{element}' if parent else element
+    return f'{parent}.{element}' if parent else element
   else:
     return parent
 
