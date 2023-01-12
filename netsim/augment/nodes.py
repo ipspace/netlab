@@ -132,6 +132,11 @@ def find_node_device(n: Box, topology: Box) -> bool:
       'nodes')
     return False
 
+  try:
+    must_be_string(n,'device',f'nodes.{n.name}',module='nodes',abort=True)
+  except Exception as ex:
+    return False
+
   devtype = n.device
 
   if not devtype in topology.defaults.devices:

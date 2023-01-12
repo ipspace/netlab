@@ -3,6 +3,7 @@
 #
 
 import typing,typing_extensions
+import builtins as _bi
 from box import Box
 from .. import common
 from . import get_from_box,set_dots,get_empty_box,get_box
@@ -113,6 +114,69 @@ def validate_module_can_be_false(
   return bool(intersect)
 
 """
+validate_item -- validate a single value from an object:
+
+* Return if the data type is None (= not validated)
+* Compare data types names if the data type is a string (OK, a bit more complex than that)
+* Recursively validate a dictionary
+"""
+
+def validate_item(
+      data: typing.Any,
+      data_type: typing.Any,
+      data_path: str,
+      data_name: str,
+      module: str,
+        ) -> bool:
+  global _bi
+
+  if data_type is None:                                               # Trivial case - data type not specified
+    return True                                                       # ==> anything goes
+
+  error = False
+  if isinstance(data,dict) and isinstance(data_type,dict):            # Validating a dictionary against a dictionary of elements
+    for k in data.keys():                                             # Iterate over the elements
+      if not k in data_type:                                          # ... and report elements with invalid name
+        common.error(
+          f'Incorrect {data_name} attribute {k} in {data_path}',
+          common.IncorrectAttr,
+          module)
+        error = True
+      else:                                                           # For valid elements, validate them
+        validate_item(
+          data=data[k],
+          data_type=data_type[k],
+          data_path=f"{data_path}.{k}",
+          data_name=data_name,
+          module=module)
+    return error
+
+  if isinstance(data_type,str):                                       # Convert desired data type name into a dummy data type dictionary
+    data_type = { 'type': data_type }
+
+  if not 'type' in data_type:                                         # The required data type is a true dict, but the data is not
+    common.error(
+      f'{data_name} attribute {data_path} should be a dictionary, found {type(data).__name__}',
+      common.IncorrectType,
+      module)
+    return False
+
+  dt_name = data_type['type']                                         # Get the desired data type in string format
+  if not hasattr(_bi,dt_name):                               # Is it a well-known type/class?
+    common.fatal(f'Invalid data type {dt_name} found when trying to validate {data_name} attribute {data_path}')
+    return False                                                      # pragma: no cover
+
+  dt_ref = getattr(_bi,dt_name)                              # Get pointer to desired data type
+  if not isinstance(data,dt_ref):                                     # ... and check if the current object is an instance of it
+    common.error(
+      f'{data_name} attribute {data_path} should be {dt_name}, found {type(data).__name__}',
+      common.IncorrectType,
+      module)
+    return False
+
+  return True
+
+"""
 validate_attributes -- validate object attributes
 
 Iterate over all keys in the 'data' dictionary and check whether they're valid global attributes
@@ -204,6 +268,12 @@ def validate_attributes(
       continue
 
     if k in valid:
+      validate_item(
+        data=data[k],
+        data_type=valid[k],
+        data_path=f'{data_path}.{k}',
+        data_name=data_name,
+        module=module)
       continue
 
     if not modules is None and k in modules:            # For module attributes, perform recursive check
