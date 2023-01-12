@@ -20,6 +20,12 @@ Common error checking routines:
 def wrong_type_text(x : typing.Any) -> str:
   return "dictionary" if isinstance(x,dict) else str(type(x).__name__)
 
+def get_element_path(parent: str, element: typing.Optional[str]) -> str:
+  if element:
+    return f'{parent}.{element}' if parent else element
+  else:
+    return parent
+
 def wrong_type_message(
       path: str,                                        # Path to the value
       expected: str,                                    # Expected type
@@ -30,7 +36,7 @@ def wrong_type_message(
                       ) -> None:
 
   wrong_type = wrong_type_text(value)
-  path = f'{path}.{key}' if key else path
+  path = get_element_path(path,key)
   ctxt = f'\n... context: {context}' if context else ''
   if 'NWT: ' in expected:                               # String with 'NWT' means 'we dont need the incorrect type'
     expected = expected.replace('NWT: ','')             # ... but we also don't want NWT in the error message ;)
@@ -62,7 +68,7 @@ def check_valid_values(
     if value in expected:                               # Not a list? Just check if the value matches one of expected values
       return True
 
-  path = f'{path}.{key}' if key else path
+  path = get_element_path(path,key)
   ctxt = f'\n... context: {context}' if context else ''
   common.error(
     f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}',
