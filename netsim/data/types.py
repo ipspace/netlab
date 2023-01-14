@@ -141,20 +141,19 @@ def type_test(
 
       value = get_from_box(parent,key)                      # Try to get the value from the parent object
       if value is None:                                     # No value was found, now what?
-        if empty_value is None:                             # ... if there is no empty value for this data type, be quiet and get out
-          return value
+        if empty_value is not None:                         # ... is there empty value for this data type?
+          if create_empty is None:                          # Empty value is defined, and we'll use it to create an empty object if the caller
+            create_empty = True                             # did not specify its preferencehs
+    
+          if create_empty:                                  # Now for the real deal
+            value = empty_value                             # ... if we should create an empty value do so
+            set_dots(parent,key.split('.'),empty_value)     # ... and store it in the parent object (dedottifying the key)
+          else:
+            if abort:                                       # Empty value was specified, 'create_empty' is False, and there's no actual value
+              raise common.IncorrectValue()                 # ... raise an exception if requested
 
-        if create_empty is None:                            # Empty value is defined, and we'll use it to create an empty object if the caller
-          create_empty = True                               # did not specify its preferencehs
-  
-        if create_empty:                                    # Now for the real deal
-          value = empty_value                               # ... if we should create an empty value do so
-          set_dots(parent,key.split('.'),empty_value)       # ... and store it in the parent object (dedottifying the key)
-        else:
-          if abort:                                         # Empty value was specified, 'create_empty' is False, and there's no actual value
-            raise common.IncorrectValue()                   # ... raise an exception if requested
-
-        return value                                        # And return the final empty value
+        if not key in parent:                               # We can skip the validation of the key is missing.
+          return value                                      # ... if the key is there, then we have to make sure the value is valid
 
       # Handle boolean-to-data-type conversions if the value is bool and the caller specified true_value
       #
