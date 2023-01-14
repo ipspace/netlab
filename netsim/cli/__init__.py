@@ -30,7 +30,7 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
     parser.add_argument('--debug', dest='debug', action='store',nargs='*',
                     choices=[
                       'all','addr','cli','links','libvirt','modules','plugin','template',
-                      'vlan','vrf','quirks','validate','addressing','groups'
+                      'vlan','vrf','quirks','validate','addressing','groups','quirks'
                     ],
                     help=argparse.SUPPRESS)
 

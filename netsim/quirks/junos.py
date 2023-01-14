@@ -15,7 +15,8 @@ from ..augment import devices
 def unit_0_trick(intf: Box, round: str ='global') -> None:
   oldname = intf.ifname
   newname = oldname + ".0"
-  print(" - [{}] Found interface {}, renaming to {}".format(round, intf.ifname, newname))
+  if common.debug_active('quirks'):
+    print(" - [{}] Found interface {}, renaming to {}".format(round, intf.ifname, newname))
   intf.ifname = newname
   intf.junos_interface = oldname
   intf.junos_unit = '0'
@@ -24,7 +25,8 @@ class JUNOS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.name))
+    if common.debug_active('quirks'):
+      print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.name))
     mods = node.get('module',[])
     # Need to understand if I need to configure unit 0 or not.
     base_vlan_interfaces = []
