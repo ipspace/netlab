@@ -4,6 +4,7 @@
 
 import typing,typing_extensions,types
 import functools
+import netaddr
 from box import Box
 from .. import common
 from . import get_from_box,set_dots
@@ -38,14 +39,15 @@ def wrong_type_message(
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
   ctxt = f'\n... context: {context}' if context else ''
-  if 'NWT: ' in expected:                               # String with 'NWT' means 'we dont need the incorrect type'
+  wrong_value = 'NWT: ' in expected
+  if wrong_value:                                       # String with 'NWT' means 'type is OK, value is incorrect'
     expected = expected.replace('NWT: ','')             # ... but we also don't want NWT in the error message ;)
   else:
     expected += f', found {wrong_type}'                 # A more generic message, add wrong type
 
   common.error(
     f'attribute {path} must be {expected}{ctxt}',
-    common.IncorrectType,
+    common.IncorrectValue if wrong_value else common.IncorrectType,
     module or 'topology')
   return
 
@@ -235,6 +237,10 @@ def must_be_dict(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
 def must_be_string(value: typing.Any) -> typing.Union[bool,str]:
   return True if isinstance(value,str) else 'a string'
 
+@type_test(false_value='')
+def must_be_str(value: typing.Any) -> typing.Union[bool,str]:
+  return True if isinstance(value,str) else 'a string'
+
 @type_test()
 def must_be_int(
       value: typing.Any,
@@ -264,3 +270,55 @@ def must_be_int(
 def must_be_bool(value: typing.Any) -> typing.Union[bool,str]:
   return True if isinstance(value,bool) else 'a boolean'
 
+@type_test()
+def must_be_asn(value: typing.Any) -> typing.Union[bool,str]:
+  err = 'an AS number (integer between 1 and 65535)'
+  if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
+    return err
+
+  if value < 0 or value > 65535:
+    return 'NWT: '+err
+
+  return True
+
+#
+# Testing for IPv4 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
+#
+@type_test()
+def must_be_ipv4(value: typing.Any, use: str) -> typing.Union[bool,str]:
+  if isinstance(value,bool):                                          # bool values are valid only on interfaces
+    if use not in ('interface','prefix'):
+      return 'NWT: an IPv4 address (boolean value is valid only on an interface)'
+    else:
+      return True
+
+  if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
+    if use != 'id':
+      return 'NWT: an IPv4 address (integer value is only valid as a 32-bit ID)'
+    if value < 0 or value > 2**32-1:
+      return 'NWT: an IPv4 address or an integer between 0 and 2**32'
+    return True
+
+  if not isinstance(value,str):
+    return 'IPv4 prefix' if use == 'prefix' else 'IPv4 address'
+
+  if '/' in value:
+    if use == 'id':                                                   # IDs should not have a prefix
+      return 'NWT: IPv4 address (not prefix)'
+  else:
+    if use == 'prefix':                                               # prefix must have a /
+      return 'NWT: IPv4 prefix'
+
+  try:
+    parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
+  except Exception as ex:
+    return "NWT: IPv4 " + ("address or " if use != 'prefix' else "") + "prefix"
+
+  try:                                                                # ... and finally we have to check it's a true IPv4 address
+    parse.ipv4()
+    if parse.is_ipv4_mapped():
+      return "NWT: IP address in IPv4 format"
+  except Exception as ex:
+    return "NWT: IPv4 address/prefix"
+
+  return True

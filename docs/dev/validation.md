@@ -68,7 +68,7 @@ As you can see, the dictionary-based approach allows in-depth validation of nest
 Using the dictionary-based approach, each attribute could be:
 
 * Another dictionary without the **type** key (use for nested attributes)
-* A string specifying the desired data type (**str**, **int**, **bool**, **list** or **dict**)
+* A string specifying the desired data type. Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and networking-specific data types (**asn**, **ipv4**)
 * A dictionary specifying the validation parameters.
 
 Every dictionary specifying the validation parameters must have a **type** attribute (data type as a string) and might include additional parameters as follows:
@@ -85,3 +85,39 @@ All data types:
 **int**: 
 * **min_value** -- minimum parameter value
 * **max_value** -- maximum parameter value
+
+## IP Address Validation
+
+**ipv4** and **ipv6** validators support **use** parameter that can take the following values:
+
+* **interface** -- an IP address specified on an interface. Can take True/False value and does not have to include a prefix length.
+* **prefix** -- an IP prefix. Can take True/False value and must include prefix length/subnet mask.
+* **id** (IPv4 only) -- an IPv4 address or an integer. Use **id** for parameters like OSPF areas, BGP cluster IDs, or router IDs.
+
+## Lists as Dictionaries
+
+A dictionary specified as a dictionary of valid attributes can include an additional **list_to_dict** key that specified the default value used when converting a list into a dictionary
+
+**list_to_dict** parameter is commonly used with address family parameters. For example, OSPF allows **ospf.af** parameter to be a list of enabled address families or a dictionary of address families with true/false value, for example:
+
+```
+nodes:
+- name: c_nxos
+  device: nxos
+  ospf.af: [ ipv4 ]
+- name: c_csr
+  device: csr
+  ospf.af.ipv4: True
+```
+
+The attribute definition for **ospf.af** attribute uses **list_to_dict** to cope with both:
+
+```
+ospf:
+  attributes:
+    global:
+      af:
+        list_to_dict: True
+        ipv4: bool
+        ipv6: bool
+```

@@ -143,6 +143,15 @@ def validate_item(
     return True                                                       # ==> anything goes
 
   error = False
+
+  # We have to handle a weird corner case: AF (or similar) list that is really meant to be a dictionary
+  #
+  if isinstance(data,list) and isinstance(data_type,Box) and 'list_to_dict' in data_type:
+    parent[key] = { k: data_type.list_to_dict for k in data }         # Transform lists into a dictionary (updating parent will make it into a Box)
+    data = parent[key]
+    data_type = Box(data_type)                                        # and fix datatype definition
+    data_type.pop('list_to_dict')
+
   if isinstance(data,Box) and isinstance(data_type,Box):              # Validating a dictionary against a dictionary of elements
     for k in data.keys():                                             # Iterate over the elements
       if not k in data_type:                                          # ... and report elements with invalid name
@@ -163,6 +172,12 @@ def validate_item(
 
   if isinstance(data_type,str):                                       # Convert desired data type name into a dummy data type dictionary
     data_type = { 'type': data_type }
+
+  if isinstance(data_type,list):                                      # Convert list into 'list' datatype with 'valid_values'
+    data_type = {
+      'type': 'list',
+      'valid_values': data_type
+    }
 
   if not 'type' in data_type:                                         # The required data type is a true dict, but the data is not
     common.error(
