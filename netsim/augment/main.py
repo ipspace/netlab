@@ -16,6 +16,7 @@ from ..data import global_vars
 
 def transform_setup(topology: Box) -> None:
   global_vars.init(topology)
+  augment.config.attributes(topology)
   augment.topology.check_required_elements(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   if 'links' in topology:
