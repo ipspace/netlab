@@ -282,7 +282,7 @@ def must_be_asn(value: typing.Any) -> typing.Union[bool,str]:
   return True
 
 #
-# Testing for IPv4 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
+# Testing for IPv4 and IPv6 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
 #
 @type_test()
 def must_be_ipv4(value: typing.Any, use: str) -> typing.Union[bool,str]:
@@ -293,8 +293,8 @@ def must_be_ipv4(value: typing.Any, use: str) -> typing.Union[bool,str]:
       return True
 
   if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
-    if use != 'id':
-      return 'NWT: an IPv4 address (integer value is only valid as a 32-bit ID)'
+    if use not in ('id','interface'):
+      return 'NWT: an IPv4 prefix (integer value is only valid as a 32-bit ID)'
     if value < 0 or value > 2**32-1:
       return 'NWT: an IPv4 address or an integer between 0 and 2**32'
     return True
@@ -320,5 +320,41 @@ def must_be_ipv4(value: typing.Any, use: str) -> typing.Union[bool,str]:
       return "NWT: IP address in IPv4 format"
   except Exception as ex:
     return "NWT: IPv4 address/prefix"
+
+  return True
+
+@type_test()
+def must_be_ipv6(value: typing.Any, use: str) -> typing.Union[bool,str]:
+  if isinstance(value,bool):                                          # bool values are valid only on interfaces
+    if use not in ('interface','prefix'):
+      return 'NWT: an IPv6 address (boolean value is valid only on an interface)'
+    else:
+      return True
+
+  if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
+    if use not in ('interface'):
+      return 'NWT: an IPv6 prefix (integer value is only valid as an inteface offset)'
+    return True
+
+  if not isinstance(value,str):
+    return 'IPv6 prefix' if use == 'prefix' else 'IPv6 address'
+
+  if not '/' in value:
+    if use == 'prefix':                                               # prefix must have a /
+      return 'NWT: IPv6 prefix (not an address)'
+
+  try:
+    parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
+  except Exception as ex:
+    return "NWT: IPv6 " + ("address or " if use != 'prefix' else "") + "prefix"
+
+  if parse.is_ipv4_mapped():                                          # This is really an IPv4 address, but it looks like IPv6, so OK
+    return True
+
+  try:                                                                # ... and finally we have to check it's a true IPv6 address
+    parse.ipv4()
+    return "NWT: IPv6 (not an IPv4) address"                          # If we could get IPv4 address out of it, it clearly is not
+  except Exception as ex:
+    pass
 
   return True
