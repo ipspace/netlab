@@ -41,7 +41,7 @@ class _Module(Callback):
   @classmethod
   def load(self, module: str, data: Box) -> typing.Any:
     module_name = __name__+"."+module
-    obj = self.find_class(module_name)
+    obj = self.find_class(module_name,abort=True)
     if obj:
       return obj(data)
     else:
