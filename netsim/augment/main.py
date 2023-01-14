@@ -42,9 +42,11 @@ def transform_setup(topology: Box) -> None:
 
   augment.topology.check_global_elements(topology)
   augment.nodes.validate(topology)
+  common.exit_on_error()
 
 def transform_data(topology: Box) -> None:
   addressing.setup(topology)
+  common.exit_on_error()
   augment.plugin.execute('pre_transform',topology)
   modules.pre_transform(topology)
   providers.execute("pre_transform",topology)

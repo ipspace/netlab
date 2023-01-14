@@ -358,3 +358,33 @@ def must_be_ipv6(value: typing.Any, use: str) -> typing.Union[bool,str]:
     pass
 
   return True
+
+@type_test()
+def must_be_rd(value: typing.Any) -> typing.Union[bool,str]:
+  if isinstance(value,int) or value is None:                          # Accept RD/RT offets and trust the modules to do the right thing
+    return True                                                       # Also: RD set to None can be used to prevent global-to-node RD inheritance
+
+  if not isinstance(value,str):                                       # Otherwise it must be a string
+    return "route distinguisher"
+
+  try:
+    (rdt,rdi) = value.split(':')
+  except Exception as ex:
+    return "NWT: route distinguisher in asn:id or ip:id format"
+
+  try:
+    rdi_parsed = int(rdi)
+  except Exception as ex:
+    return "NWT: an RD in asn:id or ip:id format where id is an integer value"
+
+  try:
+    rdt_parsed = int(rdt)
+  except Exception as ex:
+    try:
+      if '/' in rdt:
+        return "route distinguisher in asn:id or ip:id format"
+      netaddr.IPNetwork(rdt)
+    except Exception as ex:
+      return "NWT: an RD in asn:id or ip:id format where asn is an integer or ip is an IPv4 address"
+
+  return True

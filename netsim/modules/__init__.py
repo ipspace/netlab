@@ -74,6 +74,7 @@ def pre_transform(topology: Box) -> None:
   module_transform("pre_transform",topology)
   node_transform("pre_transform",topology)
   link_transform("pre_transform",topology)
+  common.exit_on_error()
 
 """
 pre/post_node_transform: executed just before/after the node data model transformation is started

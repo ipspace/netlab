@@ -68,7 +68,7 @@ As you can see, the dictionary-based approach allows in-depth validation of nest
 Using the dictionary-based approach, each attribute could be:
 
 * Another dictionary without the **type** key (use for nested attributes)
-* A string specifying the desired data type. Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and networking-specific data types (**asn**, **ipv4**)
+* A string specifying the desired data type. Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and networking-specific data types (**asn**, **ipv4**, **ipv6** and **rd**)
 * A dictionary specifying the validation parameters.
 
 Every dictionary specifying the validation parameters must have a **type** attribute (data type as a string) and might include additional parameters as follows:

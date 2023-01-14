@@ -2,6 +2,7 @@
 # VRF module
 #
 import typing, re
+import netaddr
 from box import Box
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
@@ -43,12 +44,20 @@ def get_rd_as_number(obj: Box, topology: Box) -> typing.Optional[typing.Any]:
 # Parse rd/rt value -- check whether the RD/RT value is in N:N format
 #
 
-def parse_rdrt_value(value: str) -> typing.Optional[typing.List[int]]:
+def parse_rdrt_value(value: str) -> typing.Optional[typing.List[typing.Union[int,str]]]:
   try:
     (asn,vid) = str(value).split(':')
-    return [int(asn),int(vid)]
   except Exception as ex:
     return None
+
+  try:
+    return [int(asn),int(vid)]
+  except Exception as ex:
+    try:
+      netaddr.IPNetwork(asn)
+      return [asn,int(vid)]
+    except Exception as ex:
+      return None
 
 def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
   rd_set = _dataplane.get_id_set('vrf_rd')
@@ -110,7 +119,7 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
         vdata.rd = f'{asn}:{vdata.rd}'
       elif isinstance(vdata.rd,str):
         if parse_rdrt_value(vdata.rd) is None:
-          common.error(f'RD value in VRF {vname} in {obj_name} is not in N:N format',
+          common.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
             common.IncorrectValue,
             'vrf')
       else:
@@ -354,6 +363,7 @@ class VRF(_Module):
         module_source='topology',
         module='vrf')                                   # Function is called from 'vrf' module
 
+    common.exit_on_error()
     normalize_vrf_ids(topology)
     populate_vrf_static_ids(topology)
     set_vrf_ids(topology,topology)
