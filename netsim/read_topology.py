@@ -11,8 +11,10 @@ import fnmatch
 from box import Box
 try:
   from importlib import resources
+  new_resources = hasattr(resources,'files')
 except ImportError:
-  import importlib_resources as resources # type: ignore
+  new_resources = False
+  import importlib_resources as resources         # type: ignore
 
 # Related modules
 from . import common
@@ -24,9 +26,14 @@ Utility routines for include_yaml functionality
 
 def get_traversable_path(dir_name : str) -> typing.Any:
   if 'package:' in dir_name:
-    package = '.'.join(__name__.split('.')[:-1])
-    pkg_files = resources.files(package)
     dir_name = dir_name.replace('package:','')
+    pkg_files: typing.Any = None
+
+    if not new_resources:
+      pkg_files = pathlib.Path(common.get_moddir())
+    else:
+      package = '.'.join(__name__.split('.')[:-1])
+      pkg_files = resources.files(package)        # type: ignore
     if dir_name == '':
       return pkg_files
     else:
@@ -108,8 +115,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
     return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
 
   if "package:" in filename:
-    package = '.'.join(__name__.split('.')[:-1])
-    pkg_files = resources.files(package)
+    pkg_files = get_traversable_path('package:')
     with pkg_files.joinpath(filename.replace("package:","")).open('r') as fid:
       pkg_data = read_yaml(string=fid.read())
       if not pkg_data is None:
