@@ -4,6 +4,7 @@
 
 import subprocess
 import re
+import typing
 from box import Box
 import pathlib
 
@@ -25,6 +26,24 @@ def create_vagrant_network() -> None:
   except subprocess.CalledProcessError as e:
     common.error('Exception in net handling for libvirt network %s: [%s] %s' % (LIBVIRT_MANAGEMENT_NETWORK_NAME, e.returncode, e.stderr), module='libvirt')
   return
+
+def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
+  try:
+    result = subprocess.run(['virsh','net-info',virsh_bridge],capture_output=True,check=True,text=True)
+  except:
+    common.error('Cannot run net-info for libvirt network %s' % virsh_bridge, module='libvirt')
+    return None
+
+  match = None
+  if result and result.returncode == 0:
+    match = re.search("Bridge:\\s+(.*)$",result.stdout,flags=re.MULTILINE)
+
+  if match:
+    return match.group(1)
+  else:
+    common.error(f'Cannot get Linux bridge name for libvirt network {virsh_bridge}', module='libvirt')
+
+  return None
 
 class Libvirt(_Provider):
 
@@ -103,6 +122,10 @@ class Libvirt(_Provider):
 
   def post_start_lab(self, topology: Box) -> None:
     common.print_verbose('libvirt lab has started, fixing Linux bridges')
+    mgmt_bridge = get_linux_bridge_name('vagrant-libvirt')
+    if mgmt_bridge:
+      topology.clab.mgmt.bridge = mgmt_bridge
+
     for l in topology.links:
       brname = l.get('bridge',None)
       if not brname:                                                # Link not using a Linux bridge
@@ -110,27 +133,18 @@ class Libvirt(_Provider):
       if not 'libvirt' in l.provider:                               # Not a libvirt link, skip it
         continue
 
-      try:
-        if common.debug_active('libvirt'):
-          print('libvirt post_start_lab: fixing Linux bridge for link {l}')
-        result = subprocess.run(['virsh','net-info',brname],capture_output=True,check=True,text=True)
-      except:
-        common.error('Cannot run net-info for libvirt network %s' % brname, module='libvirt')
+      if common.debug_active('libvirt'):
+        print('libvirt post_start_lab: fixing Linux bridge for link {l}')
+
+      linux_bridge = get_linux_bridge_name(brname)
+      if linux_bridge is None:
         continue
 
-      match = None
-      if result and result.returncode == 0:
-        match = re.search("Bridge:\\s+(.*)$",result.stdout,flags=re.MULTILINE)
-
-      if match:
-        linux_bridge = match.group(1)
-        l.bridge = linux_bridge
-        common.print_verbose(f"... network {brname} maps into {linux_bridge}")
-        try:
-          subprocess.run(['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],check=True)
-        except:
-          common.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
-          continue
-        common.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")
-      else:
-        common.error(f'Cannot get Linux bridge name for libvirt network {linux_bridge}', module='libvirt')
+      l.bridge = linux_bridge
+      common.print_verbose(f"... network {brname} maps into {linux_bridge}")
+      try:
+        subprocess.run(['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],check=True)
+      except:
+        common.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
+        continue
+      common.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")
