@@ -73,7 +73,11 @@ attributes:
     cpu:
     memory: int
     unmanaged: bool
-  vlan: [ id, vni, mode,prefix ]
+  vlan:
+    id: { type: int, min_value: 1, max_value: 4095 }
+    vni: { type: int, min_value: 1, max_value: 16777215 }
+    mode: { type: str, valid_values: [ bridge, irb, route ] }
+    prefix:
   vrf:
     rd: rd
     import: list
@@ -118,9 +122,24 @@ isis:
   transform_after: [ vlan,vrf ]
   config_after: [ vlan ]
   attributes:
-    global: [ af, area, type, bfd ]
-    node: [ af, area, net, type, bfd ]
-    link: [ metric, cost, type, bfd, network_type, passive ]
+    global:
+      af:
+      area:
+      type: { type: str, valid_values: [ level-1 ,level-2, level-1-2 ] }
+      bfd:
+    node:
+      af:
+      area:
+      net:
+      type:
+      bfd:
+    link:
+      metric: { type: int, min_value: 1, max_value: 16777215 }
+      cost: { type: int, min_value: 1, max_value: 16777215 }
+      type: { type: str, valid_values: [ level-1 ,level-2, level-1-2 ] }
+      bfd:
+      network_type: { type: str, valid_values: [ point-to-point ] }
+      passive: bool
 
 ospf:
   area: 0.0.0.0
@@ -243,8 +262,12 @@ vrf: # Basic VRF support
   transform_after: [ vlan, bgp ]
   as: 65000
   attributes:
-    global: [ as,loopback ]
-    node: [ as,loopback ]
+    global:
+      as: asn
+      loopback: bool
+    node:
+      as:
+      loopback:
     link: str
     interface: str
     extra:
@@ -257,10 +280,16 @@ vlan: # VLAN support
   start_vlan_id: 1000
   mode: irb
   attributes:
-    global: [ mode ]
-    node: [ mode ]
-    link: [ access, native, mode, trunk ]
-    vlans: [ id, vni, vrf, prefix, pool ]
+    global:
+      mode: { type: str, valid_values: [ bridge, irb, route] }
+    node:
+      mode:
+    link:
+      access: str
+      native: str
+      mode:  { type: str, valid_values: [ bridge, irb, route] }
+      trunk:
+    # vlans: [ id, vni, vrf, prefix, pool ]
     #
     # Do not propagate these attributes into links or SVI interfaces
     vlan_no_propagate: [ id, vni, mode, prefix, evpn ]
@@ -286,8 +315,15 @@ vxlan: # VXLAN support
   flooding: static
   start_vni: 100000
   attributes:
-    global: [ domain, flooding, vlans, use_v6_vtep ]
-    node: [ domain, flooding, vlans ]
+    global:
+      domain: str
+      flooding: { type: str, valid_values: [ static, evpn ] }
+      vlans: list
+      use_v6_vtep: bool
+    node:
+      domain:
+      flooding:
+      vlans:
   no_propagate: [ use_v6_vtep, start_vni ]
   use_v6_vtep: false
 
@@ -314,13 +350,37 @@ gateway:
     group: 1
   no_propagate: [ id, protocol ]
   attributes:
-    global: [ id, protocol, stub, anycast, vrrp ]
-    node: [ protocol, anycast, vrrp ]
+    global:
+      id: int
+      protocol: { type: str, valid_values: [ anycast, vrrp ] }
+#      stub:
+      anycast:
+        unicast: bool
+        mac: mac
+      vrrp:
+        group: int
+        priority: int
+        preempt: bool
+    node:
+      protocol:
+      anycast:
+      vrrp:
     can_be_true: [ link ]
     anycast: [ unicast, mac ]
     protocols: [ anycast, vrrp ]
     vrrp: [ group ]
-    link: [ id, ipv4, protocol, stub, anycast, vrrp ]
+    link:
+      id: int
+      ipv4: { type: ipv4, use: interface }
+      protocol: str
+#      stub:
+      anycast:
+        unicast: bool
+        mac: mac
+      vrrp:
+        group: int
+        priority: int
+        preempt: bool
     link_to_neighbor: True
 
 #

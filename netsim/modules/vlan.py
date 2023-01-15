@@ -80,16 +80,7 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
-  default_fwd_mode = get_from_box(obj,'vlan.mode')                # Get node-wide VLAN forwarding mode
-  if default_fwd_mode:                                            # ... is it set?
-    default_fwd_mode = str(default_fwd_mode)                      # Convert it to string so we don't have to deal with weird types
-    if not default_fwd_mode in vlan_mode_kwd:                     # ... and check keyword validity
-      common.error(
-        f'Invalid vlan.mode setting {default_fwd_mode} in {obj_name}',
-        common.IncorrectValue,
-        'vlan')
-  else:
-    default_fwd_mode = get_global_parameter(topology,'vlan.mode') # Else get it from the topology level
+  default_fwd_mode = get_from_box(obj,'vlan.mode') or get_global_parameter(topology,'vlan.mode')
 
   if not 'vlans' in obj:
     return
@@ -113,26 +104,14 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
       module_source='topology' if obj is topology else f'nodes.{obj.name}',
       module='vlans')                                 # Function is called from 'vlans' module
 
-    if 'mode' in vdata:                                             # Do we have 'mode' set in the VLAN definition?
-      if not vdata.mode in vlan_mode_kwd:                           # ... check the keyword value
-        common.error(
-          f'Invalid VLAN mode setting {vdata.mode} in VLAN {vname} in {obj_name}',
-          common.IncorrectValue,
-          'vlan')
-    else:
+    if not 'mode' in vdata:                                         # Do we have 'mode' set in the VLAN definition?
       if default_fwd_mode and obj is not topology:                  # Propagate default VLAN forwarding mode if needed
         vdata.mode = default_fwd_mode
 
     if not 'id' in vdata:                                           # When VLAN ID is not defined
       vdata.id = _dataplane.get_next_id('vlan_id')                  # ... take the next free VLAN ID from the list
-    if not isinstance(vdata.id,int):                                # Now validate the heck out of VLAN ID
-      common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be an integer',common.IncorrectValue,'vlan')
-      continue
-    if vdata.id < 2 or vdata.id > 4094:
-      common.error(f'VLAN ID {vdata.id} for VLAN {vname} in {obj_name} must be between 2 and 4094',common.IncorrectValue,'vlan')
-      continue
 
-    vlan_pool = [ vdata.pool ] if 'pool' in vdata else []
+    vlan_pool = [ vdata.pool ] if isinstance(vdata.get('pool',None),str) else []
     vlan_pool.extend(['vlan','lan'])
     pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,topology.nodes,f'{obj_path}.{vname}')
     vdata.prefix = addressing.rebuild_prefix(pfx_list)
@@ -1058,10 +1037,8 @@ class VLAN(_Module):
 
     populate_vlan_id_set(topology)
 
-    if not 'vlans' in topology:
-      return
-
-    validate_vlan_attributes(topology,topology)
+    if 'vlans' in topology:
+      validate_vlan_attributes(topology,topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if 'vlans' in node:

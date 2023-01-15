@@ -360,6 +360,18 @@ def must_be_ipv6(value: typing.Any, use: str) -> typing.Union[bool,str]:
   return True
 
 @type_test()
+def must_be_mac(value: typing.Any) -> typing.Union[bool,str]:
+  if not isinstance(value,str):
+    return 'MAC address'
+
+  try:
+    parse = netaddr.EUI(value)                                        # now let's check if we have a MAC address
+  except Exception as ex:
+    return "MAC address"
+
+  return True
+
+@type_test()
 def must_be_rd(value: typing.Any) -> typing.Union[bool,str]:
   if isinstance(value,int) or value is None:                          # Accept RD/RT offets and trust the modules to do the right thing
     return True                                                       # Also: RD set to None can be used to prevent global-to-node RD inheritance
