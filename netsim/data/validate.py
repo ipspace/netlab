@@ -117,6 +117,52 @@ def validate_module_can_be_false(
   return bool(intersect)
 
 """
+type_has_attribute: checks whether the data type definition has the specified attribute
+"""
+
+def type_has_attribute(data_type: typing.Any, attr: str) -> bool:
+  return isinstance(data_type,Box) and attr in data_type
+
+"""
+validate_dictionary -- recursively validate a dictionary
+
+Arguments are described in validate_item
+"""
+
+def validate_dictionary(
+      data: Box,
+      data_type: typing.Any,
+      parent_path: str,
+      data_name: str,
+      module: str,
+        ) -> bool:
+
+  OK = True
+  for k in data.keys():                                             # Iterate over the elements
+    if not k in data_type:                                          # ... and report elements with invalid name
+      common.error(
+        f'Incorrect {data_name} attribute {k} in {parent_path}',
+        common.IncorrectAttr,
+        module)
+      OK = False
+    else:                                                           # For valid elements, validate them
+      validate_item(
+        parent=data,
+        key=k,
+        data_type=data_type[k],
+        parent_path=parent_path,
+        data_name=data_name,
+        module=module)
+  return OK
+
+"""
+validate_alt_type -- deal with dictionaries that could be specified as something else
+"""
+
+def validate_alt_type(data: typing.Any, data_type: Box) -> bool:
+  return type(data).__name__ in data_type._alt_types
+
+"""
 validate_item -- validate a single value from an object:
 
 * Return if the data type is None (= not validated)
@@ -142,33 +188,24 @@ def validate_item(
   if data_type is None:                                               # Trivial case - data type not specified
     return True                                                       # ==> anything goes
 
-  error = False
-
   # We have to handle a weird corner case: AF (or similar) list that is really meant to be a dictionary
   #
-  if isinstance(data,list) and isinstance(data_type,Box) and 'list_to_dict' in data_type:
-    parent[key] = { k: data_type.list_to_dict for k in data }         # Transform lists into a dictionary (updating parent will make it into a Box)
+  if isinstance(data,list) and type_has_attribute(data_type,'_list_to_dict'):
+    parent[key] = { k: data_type._list_to_dict for k in data }        # Transform lists into a dictionary (updating parent will make it into a Box)
     data = parent[key]
     data_type = Box(data_type)                                        # and fix datatype definition
-    data_type.pop('list_to_dict')
 
   if isinstance(data,Box) and isinstance(data_type,Box):              # Validating a dictionary against a dictionary of elements
-    for k in data.keys():                                             # Iterate over the elements
-      if not k in data_type:                                          # ... and report elements with invalid name
-        common.error(
-          f'Incorrect {data_name} attribute {k} in {parent_path}.{key}',
-          common.IncorrectAttr,
-          module)
-        error = True
-      else:                                                           # For valid elements, validate them
-        validate_item(
-          parent=data,
-          key=k,
-          data_type=data_type[k],
-          parent_path=f"{parent_path}.{key}",
-          data_name=data_name,
-          module=module)
-    return error
+    return validate_dictionary(
+              data=data,
+              data_type=data_type,
+              parent_path=f"{parent_path}.{key}",
+              data_name=data_name,
+              module=module)
+
+  if type_has_attribute(data_type,'_alt_types'):
+    if validate_alt_type(data,data_type):
+      return True
 
   if isinstance(data_type,str):                                       # Convert desired data type name into a dummy data type dictionary
     data_type = { 'type': data_type }
@@ -185,6 +222,10 @@ def validate_item(
       common.IncorrectType,
       module)
     return False
+
+  for kw in list(data_type.keys()):                                   # Remove all 'internal' type attributes before calling validation function
+    if kw.startswith('_'):
+      data_type.pop(kw)
 
   dt_name = data_type['type']                                         # Get the desired data type in string format
   validation_function = getattr(_tv,f'must_be_{dt_name}',None)        # Try to get validation function
