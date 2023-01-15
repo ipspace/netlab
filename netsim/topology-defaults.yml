@@ -262,11 +262,26 @@ evpn: # Enables the EVPN address family towards BGP peers
   session: [ ibgp ]
   start_transit_vni: 200000
   attributes:
-    global: [ session, start_transit_vni, transport, vlans, vrfs, as ]
+    global:
+      session: [ ibgp, ebgp ]
+      start_transit_vni: { type: int, min_value: 1, max_value: 16777215 }
+      transport: { type: str, valid_values: [ evpn, mpls ] }
+      vlans: list
+      vrfs: list
+      as: asn
     bundle: [ vlan_aware, vlan, port, port_vlan ]
-    node: [ session, vlans, vrfs ]
-    vlans: [ evi,rd,import,export ]
-    vrf: [ transit_vni, bundle ]
+    node:
+      session:
+      vlans:
+      vrfs:
+    vlans:
+      evi: rd
+      rd: rd
+      import: list
+      export: list
+    vrf:
+      transit_vni: { type: int, min_value: 1, max_value: 16777215, _alt_types: [ str, bool ] }
+      bundle: { type: str, valid_values: [ vlan_aware, vlan, port, port_vlan ]}
 
 vrf: # Basic VRF support
   supported_on: [ eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos, srlinux, frr, cumulus, sros, routeros7, vmx, vsrx, none ]
@@ -345,9 +360,31 @@ mpls: # LDP, BGP LU, L3VPN and 6PE support
   transform_after: [ vlan, bgp ]
   ldp: True
   attributes:
-    global: [ ldp, bgp, vpn, 6pe ]
-    node: [ ldp, bgp, vpn, 6pe ]
-    link: [ ldp ]
+    global:
+      ldp:
+        _alt_types: [ bool ]
+        router_id: { type: ipv4, use: id }
+        igp_sync: bool
+        explicit_null: bool
+        advertise: list
+      bgp:
+        _alt_types: [ bool, BoxList ]
+        ipv4: { type: list, true_value: [ ibgp, ebgp ] }
+        ipv6: { type: list, true_value: [ ibgp, ebgp ] }
+        explicit_null: bool
+        disable_unlabeled: bool
+      vpn:
+        _alt_types: [ bool, BoxList ]
+        ipv4: { type: list, true_value: [ ibgp ] }
+        ipv6: { type: list, true_value: [ ibgp ] }
+      6pe: { type: list, true_value: [ ibgp ] }
+    node:
+      ldp:
+      bgp:
+      vpn:
+      6pe:
+    link:
+      ldp: bool
 
 gateway:
   supported_on: [ eos, cumulus, iosv, csr, nxos, sros, srlinux, vyos, dellos10 ]
