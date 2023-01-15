@@ -94,7 +94,7 @@ Using the dictionary-based approach, each attribute could be:
 (dev-valid-data-types)=
 ## Valid Data Types
 
-Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and networking-specific data types (**asn**, **ipv4**, **ipv6** and **rd**)
+Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and networking-specific data types (**asn**, **ipv4**, **ipv6**, **rd**, **mac** and **net**).
  
 Data type can be specified as a string (without additional parameters), or as a dictionary with a **type** attribute (data type as a string) and additional type-specific validation parameters.
 

@@ -49,10 +49,14 @@ The following table describes per-platform support of individual IS-IS features:
 
 ```
 isis:
-  area: 49.0002
+  area: "49.0002"
   bfd:
     ipv4: True
     ipv6: True
+```
+
+```{warning}
+Specify **‌isis.area** with a single dot (example: 49.0001) within quotes to tell YAML parser it's not a floating-point number.
 ```
 
 ## Node Parameters

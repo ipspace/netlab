@@ -5,6 +5,7 @@
 import typing,typing_extensions,types
 import functools
 import netaddr
+import re
 from box import Box
 from .. import common
 from . import get_from_box,set_dots
@@ -368,6 +369,19 @@ def must_be_mac(value: typing.Any) -> typing.Union[bool,str]:
     parse = netaddr.EUI(value)                                        # now let's check if we have a MAC address
   except Exception as ex:
     return "MAC address"
+
+  return True
+
+@type_test()
+def must_be_net(value: typing.Any) -> typing.Union[bool,str]:
+  if not isinstance(value,str):
+    return 'IS-IS NET/NSAP'
+
+  if not re.fullmatch('[0-9a-f.]+',value):
+    return 'NWT: IS-IS NET/NSAP containing hexadecimal digits or dots'
+
+  if len(value.replace('.','')) % 2 != 0:
+    return 'NWT: IS-IS NET/NSAP containing even number of hexadecimal digits'
 
   return True
 
