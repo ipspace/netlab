@@ -198,6 +198,7 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
 def create_loopback_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   ifindex_offset = devices.get_device_attribute(node,'loopback_offset',defaults) or 0
   ifdata.ifindex = ifindex_offset + ifdata.linkindex
+  ifdata.virtual_interface = True
   ifname_format  = devices.get_device_attribute(node,'loopback_interface_name',defaults)
 
   if not ifname_format:
