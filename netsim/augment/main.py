@@ -11,7 +11,7 @@ from .. import addressing
 from .. import augment
 from .. import providers
 from .. import modules
-from .. import quirks
+from .. import devices as quirks
 from ..data import global_vars
 
 def transform_setup(topology: Box) -> None:
