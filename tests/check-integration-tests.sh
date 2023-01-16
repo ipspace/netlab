@@ -5,7 +5,7 @@
 # files, run transformation on them, and write the results into
 # exp-topology*yml files (expected results)
 #
-for file in integration/*/${1:-*}.yml; do
+for file in integration/*/${1:-*}.yml integration/*/*/${1:-*}.yml; do
   ../netlab create -o none -d none $file 2>/dev/null || (
     echo "Errors found in $file"
     echo "========================================="
