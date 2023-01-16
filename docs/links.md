@@ -99,6 +99,7 @@ The link type influences the [address prefix pool](addressing.md) used to assign
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address, the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
 * Prefixes assigned to other links are taken from *lan* pool. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the largest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links). 
 
+(links-loopback)=
 ### Loopback Links
 
 Stub links (links with a single node) are treated as physical links and consume VM/container interfaces. Some virtualization platforms limit the number of VM interfaces, so you might be forced to turn such links into loopback interfaces.
