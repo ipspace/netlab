@@ -65,6 +65,7 @@ class Libvirt(_Provider):
     self.node_image_version(topology)
 
   def pre_output_transform(self, topology: Box) -> None:
+    _Provider.pre_output_transform(self,topology)
     for link in topology.links:                                     # Adjust links to deal with subprovider gotchas
       if link.type != 'lan':                                        # Multi-provider links are always LAN links
         continue
