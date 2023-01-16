@@ -43,7 +43,7 @@ def show_images(settings: Box, args: argparse.Namespace) -> None:
   heading.extend(settings.providers.keys())
 
   rows = []
-  for device in settings.devices.keys():
+  for device in sorted(settings.devices.keys()):
     if device == 'none':
       continue
 
@@ -61,7 +61,8 @@ def show_images(settings: Box, args: argparse.Namespace) -> None:
 
 def show_module_support(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
-  heading.extend([ m for m in settings.keys() if 'supported_on' in settings[m]])
+  mod_list = sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
+  heading.extend(mod_list)
 
   rows = []
   for device in sorted(settings.devices.keys()):
@@ -73,7 +74,7 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
 
     row = [ device ]
     for m in heading[1:]:
-      value = "x" if device in settings[m].supported_on else ""
+      value = "x".center(len(m)) if device in settings[m].supported_on else ""
       row.append(value)
     rows.append(row)
 

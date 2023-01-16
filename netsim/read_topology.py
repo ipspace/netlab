@@ -5,16 +5,93 @@ import os
 import sys
 import typing
 import argparse
+import pathlib
+import fnmatch
 
 from box import Box
 try:
   from importlib import resources
+  new_resources = hasattr(resources,'files')
 except ImportError:
-  import importlib_resources as resources # type: ignore
+  new_resources = False
+  import importlib_resources as resources         # type: ignore
 
 # Related modules
 from . import common
 from . import data
+
+"""
+Utility routines for include_yaml functionality
+"""
+
+def get_traversable_path(dir_name : str) -> typing.Any:
+  if 'package:' in dir_name:
+    dir_name = dir_name.replace('package:','')
+    pkg_files: typing.Any = None
+
+    if not new_resources:
+      pkg_files = pathlib.Path(common.get_moddir())
+    else:
+      package = '.'.join(__name__.split('.')[:-1])
+      pkg_files = resources.files(package)        # type: ignore
+    if dir_name == '':
+      return pkg_files
+    else:
+      return pkg_files.joinpath(dir_name)
+  else:
+    return pathlib.Path(dir_name)
+
+def get_globbed_files(path: typing.Any, glob: str) -> list:
+  if isinstance(path,pathlib.Path):
+    return [ str(fname) for fname in list(path.glob(glob)) ]
+  else:
+    file_names = list(path.iterdir())
+    return fnmatch.filter(file_names,glob)
+
+"""
+include_yaml: Include YAML snippets at any position within a YAML file
+
+* scan all dictionaries for '_include' key
+* every _include value should be a list of files to include
+
+Glob over all files to include:
+* try to read YAML file
+* add contents of the YAML file as another dictionary entry, using filename
+  as the key
+"""
+
+def include_yaml(data: Box, source_file: str) -> None:
+  if not isinstance(data,dict):                                       # Cannot include into something that's not a dictionary
+    return
+
+  for k in data:                                                      # First do a depth-first search into the dictionary structure
+    if isinstance(data[k],dict):
+      include_yaml(data[k],source_file)
+
+  if not '_include' in data:                                          # Then get out if there's nothing to do at the current level
+    return
+
+  if 'package:' in source_file:                                       # Get the relative path to included file(s)
+    inc_path = 'package:' + os.path.dirname(source_file.replace('package:',''))
+  else:
+    inc_path = os.path.dirname(source_file)
+
+  for inc_name in data._include:                                            # Iterate over included files
+    file_path = inc_path + ('/' if '/' in inc_path else '') + os.path.dirname(inc_name)
+    traversable = get_traversable_path(file_path)                           # Get a traversable object
+    inc_files = get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
+    if not inc_files:
+      common.fatal('Cannot file {inc_name} to be included into {source_file}')
+      return
+
+    for file_name in inc_files:
+      yaml_data = read_yaml(filename=file_name)
+      if yaml_data is None:
+        common.fatal('Cannot read {file_name} that should be included into {source_file}')
+        return
+      data[os.path.splitext(os.path.basename(file_name))[0]] = yaml_data
+
+  data.pop('_include',None)
 
 #
 # Read YAML from file, package file, or string
@@ -38,10 +115,11 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
     return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
 
   if "package:" in filename:
-    package = '.'.join(__name__.split('.')[:-1])
-    with resources.open_text(package,filename.replace("package:","")) as fid:
+    pkg_files = get_traversable_path('package:')
+    with pkg_files.joinpath(filename.replace("package:","")).open('r') as fid:
       pkg_data = read_yaml(string=fid.read())
       if not pkg_data is None:
+        include_yaml(pkg_data,filename)
         read_cache[filename] = Box(pkg_data)
       return pkg_data
   else:
@@ -51,6 +129,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
       return None
     try:
       yaml_data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
+      include_yaml(yaml_data,filename)
       read_cache[filename] = Box(yaml_data)
     except:
       common.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
