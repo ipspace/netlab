@@ -168,13 +168,17 @@ Add interface data structure to a node:
 * Cleanup 'af: False' entries
 * Handle interface/node/system MTU
 """
-def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
+def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
   if ifindex_offset is None:
     ifindex_offset = 1
 
   # Allow user to select a specific interface index per link
-  ifindex = ifdata.get('ifindex',None) or (len(node.interfaces) + ifindex_offset)
+  ifindex = ifdata.get('ifindex',None)
+
+  # When computing default ifindex, consider only non-loopback interfaces
+  if not ifindex:
+   ifindex = len([intf for intf in node.interfaces if intf.get('type',None) != 'loopback']) + ifindex_offset
 
   ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
@@ -190,6 +194,34 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if pdata:
     provider = devices.get_provider(node,defaults)
     ifdata[provider] = pdata
+
+def create_loopback_interface(node: Box, ifdata: Box, defaults: Box) -> None:
+  ifindex_offset = devices.get_device_attribute(node,'loopback_offset',defaults) or 0
+  ifdata.ifindex = ifindex_offset + ifdata.linkindex
+  ifdata.virtual_interface = True
+  ifname_format  = devices.get_device_attribute(node,'loopback_interface_name',defaults)
+
+  if not ifname_format:
+    common.error(
+      f'Device {node.device}/node {node.name} does not support loopback links',
+      common.IncorrectValue,
+      'links')
+    return
+
+  if not 'ifname' in ifdata:
+    ifdata.ifname = get_interface_name(ifname_format,ifdata)
+
+  # If the device uses 'loopback_offset' then we're assuming it's large enough to prevent overlap with physical interfaces
+  # Otherwise, create fake ifindex for loopback interfaces to prevent that overlap
+  #
+  if not ifindex_offset:
+    ifdata.ifindex = 10000 + ifdata.ifindex
+
+def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
+  if ifdata.get('type') == 'loopback':
+    create_loopback_interface(node,ifdata,defaults)
+  else:
+    create_regular_interface(node,ifdata,defaults)
 
   for af in ('ipv4','ipv6'):
     if af in ifdata and not ifdata[af]:
@@ -346,10 +378,13 @@ def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool],
     pfx_size = pfx_size + subtract_reserved_ip
 
   max_id = max([ ndict[intf.node].id for intf in link.interfaces if intf.node in ndict ])
-  if max_id < pfx_size:
-    return 'id_based'
-  if len(link.interfaces) + add_extra_ip < pfx_size:
-    return 'sequential'
+  if max_id < pfx_size:                                               # If we can fit all node IDs attached to this link into the prefix
+    return 'id_based'                                                 # ... we'll use ID-based address allocation
+  if len(link.interfaces) + add_extra_ip < pfx_size:                  # Otherwise, if the prefix is big enough
+    return 'sequential'                                               # ... we'll use sequential address allocation
+
+  if pfx_size < 2 and link.type == 'loopback':                        # Final straw: maybe we're dealing with a loopback?
+    return 'loopback'
 
   return 'error'
 
@@ -446,11 +481,17 @@ def IPAM_id_based(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> Non
   for intf in link.interfaces:
     set_interface_address(intf,af,pfx,ndict[intf.node].id)
 
+def IPAM_loopback(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
+  for intf in link.interfaces:
+    pfx.prefixlen = 128 if ':' in str(pfx) else 32
+    intf[af] = str(pfx)
+
 IPAM_dispatch: typing.Final[dict] = { 
     'unnumbered': IPAM_unnumbered,
     'p2p': IPAM_p2p,
     'sequential': IPAM_sequential,
-    'id_based': IPAM_id_based
+    'id_based': IPAM_id_based,
+    'loopback': IPAM_loopback
   }
 
 """
@@ -504,7 +545,8 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       if data.get_from_box(link,'gateway.id'):
         rq = rq + f' plus first-hop gateway'
       common.error(
-        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on link#{link.linkindex}',
+        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on link#{link.linkindex}\n' + \
+        common.extra_data_printout(f'link data: {link}',width=90),
         common.IncorrectValue,
         'links')
       continue
@@ -626,7 +668,24 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                    ifdata=ngh_data)
       ifdata.neighbors.append(ngh_data)
 
-def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
+def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
+  node = link.interfaces[0].node
+  ndata = nodes[node]
+  features = devices.get_device_features(ndata,defaults)
+
+  lb_name = devices.get_device_attribute(ndata,'loopback_interface_name',defaults)
+  if not lb_name:
+    return
+
+  if features.stub_loopback is False:
+    return
+
+  if not defaults.links.stub_loopback and not features.stub_loopback:
+    return
+
+  link.type = 'loopback'
+
+def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None:
   node_cnt = len(link.interfaces)   # Set the number of attached nodes (used in many places further on)
   link['node_count'] = node_cnt
 
@@ -644,6 +703,8 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box) -> None:
     return
 
   link.type = 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'     # Set link type based on number of attached nodes
+  if node_cnt == 1:
+    set_link_loopback_type(link,nodes,defaults)
 
   if host_count > 0:
     link.type = 'lan'
@@ -684,8 +745,18 @@ def check_link_type(data: Box) -> bool:
     common.error('Point-to-point link needs exactly two nodes: %s' % data,common.IncorrectValue,'links')
     return False
 
-  if not link_type in [ 'stub','p2p','lan','vlan_member']:
-    common.error('Invalid link type %s: %s' % (link_type,data),common.IncorrectValue,'links')
+  if link_type == 'loopback' and node_cnt != 1:
+    common.error(
+      f'Looopback link can have a single node attached: links[{data.linkindex}]\n... {data}',
+      common.IncorrectValue,
+      'links')
+    return False
+
+  if not link_type in [ 'stub','p2p','lan','loopback','vlan_member']:
+    common.error(
+      f'Invalid link type {link_type} in links[{data.linkindex}]\n... {data}',
+      common.IncorrectValue,
+      'links')
     return False
   return True
 
@@ -781,7 +852,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     return None
 
   for link in link_list:
-    set_link_type_role(link=link,pools=pools,nodes=nodes)
+    set_link_type_role(link=link,pools=pools,nodes=nodes,defaults=defaults)
     if not check_link_type(data=link):
       continue
 

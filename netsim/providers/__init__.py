@@ -166,9 +166,7 @@ class _Provider(Callback):
     pass
 
   """
-  Provider post-transform processing:
-
-  * Mark multi-provider links
+  Generic provider pre-transform processing: Mark multi-provider links
   """
   def pre_transform(self,topology : Box) -> None:
     if not 'links' in topology:
@@ -181,6 +179,15 @@ class _Provider(Callback):
           continue
 
         l[topology.provider].provider[node.provider] = True
+
+  """
+  Generic provider pre-output transform: remove loopback links
+  """
+  def pre_output_transform(self, topology: Box) -> None:
+    if not 'links' in topology:
+      return
+
+    topology.links = [ link for link in topology.links if link.type != 'loopback' ]
 
 """
 Get a pointer to provider module. Cached in topology._Providers

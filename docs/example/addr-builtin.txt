@@ -211,7 +211,43 @@ nodes:
         type: stub
 ```
 
-You could argue that a network device should always have a .1 IP address on a stub link. You might be right, but this approach makes our life easier, and you can always use static interface-level node IDs (more about that later).
+You could argue that a network device should always have a .1 IP address on a stub link. You might be right, but this approach makes our life easier, and you can always use static interface-level node IDs, or [set prefix **allocation** to **sequential**](addr-allocation-sequential) to assign the first IP address in the prefix to the node attached to the stub link.
+
+### Loopback Links
+
+[Loopback links](links-loopback) are a special case of stub links, and use the same address allocation mechanisms. They are configured as loopback interfaces not as physical interfaces and thus don't consume VM/container resources.
+
+The only difference between loopback- and stub links is the support for host prefixes -- you can configure a /32 IPv4 or a /128 IPv6 prefix on a loopback link, for example:
+
+```
+defaults.device: eos
+
+nodes:
+  r1:
+  r2:
+
+links:
+- r1:
+  prefix: 10.1.0.2/32
+  type: loopback
+- r2:
+    ipv4: 10.1.0.1/32
+  type: loopback
+```
+
+You can also assign addresses to loopback links from the **vrf_loopback** pool which generates /32 IPv4 prefixes:
+
+```
+defaults.device: eos
+
+nodes:
+  r1:
+
+links:
+- r1:
+  pool: vrf_loopback
+  type: loopback
+```
 
 ### Point-to-Point Links
 
@@ -276,6 +312,7 @@ Multi-access (LAN) links are exactly like [stub links](#stub-links), but they ha
 
 On LAN links with large-enough prefix to accommodate the highest **id** of all nodes attached to a link, *netlab* combines link prefix and node **id** to get the interface IP address. You can force *netlab* to use this allocation method by setting **allocation: id_based** in a [pool](address-pool-specs) or a **prefix**.
 
+(addr-allocation-sequential)=
 If the LAN prefix is not large enough (example: /29 prefix in a large lab), *netlab* allocates sequential IP addresses to interfaces attached to the link (based on their position in the link data structure). You can force *netlab* to use this allocation method by setting **allocation: sequential** in a [pool](address-pool-specs) or a **prefix**.
 
 ```{warning}
