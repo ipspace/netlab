@@ -155,7 +155,6 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 build_ebgp_sessions: create EBGP session data structure
 
 * EBGP sessions are established whenever two nodes on the same link have different AS
-* Links matching 'advertise_roles' get 'advertise' attribute set
 """
 def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
@@ -372,12 +371,10 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
   activate_bgp_default_af(node,activate,topology)
 
 """
-bgp_set_advertise: set bgp.advertise flag on stub links
+bgp_set_advertise: set bgp.advertise flag on stub links and on loopback interfaces
 """
 def bgp_set_advertise(node: Box, topology: Box) -> None:
-  stub_roles = data.get_global_parameter(topology,"bgp.advertise_roles")
-  if not stub_roles:
-    return
+  stub_roles = data.get_global_parameter(topology,"bgp.advertise_roles") or []
 
   for l in node.get("interfaces",[]):
     if "bgp" in l:
@@ -387,6 +384,9 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
         continue
     if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
       l.bgp.advertise = True                # ... otherwise figure out whether to advertise the subnet
+      continue
+    if l.get('type',None) == 'loopback' and node.bgp.advertise_loopback:
+      l.bgp.advertise = True                # ... also advertise loopback prefixes if bgp.advertise_loopback is set
 
 """
 process_as_list:
