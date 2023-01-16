@@ -377,10 +377,13 @@ def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool],
     pfx_size = pfx_size + subtract_reserved_ip
 
   max_id = max([ ndict[intf.node].id for intf in link.interfaces if intf.node in ndict ])
-  if max_id < pfx_size:
-    return 'id_based'
-  if len(link.interfaces) + add_extra_ip < pfx_size:
-    return 'sequential'
+  if max_id < pfx_size:                                               # If we can fit all node IDs attached to this link into the prefix
+    return 'id_based'                                                 # ... we'll use ID-based address allocation
+  if len(link.interfaces) + add_extra_ip < pfx_size:                  # Otherwise, if the prefix is big enough
+    return 'sequential'                                               # ... we'll use sequential address allocation
+
+  if pfx_size < 2 and link.type == 'loopback':                        # Final straw: maybe we're dealing with a loopback?
+    return 'loopback'
 
   return 'error'
 
@@ -477,11 +480,17 @@ def IPAM_id_based(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> Non
   for intf in link.interfaces:
     set_interface_address(intf,af,pfx,ndict[intf.node].id)
 
+def IPAM_loopback(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
+  for intf in link.interfaces:
+    pfx.prefixlen = 128 if ':' in str(pfx) else 32
+    intf[af] = str(pfx)
+
 IPAM_dispatch: typing.Final[dict] = { 
     'unnumbered': IPAM_unnumbered,
     'p2p': IPAM_p2p,
     'sequential': IPAM_sequential,
-    'id_based': IPAM_id_based
+    'id_based': IPAM_id_based,
+    'loopback': IPAM_loopback
   }
 
 """
@@ -535,7 +544,8 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       if data.get_from_box(link,'gateway.id'):
         rq = rq + f' plus first-hop gateway'
       common.error(
-        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on link#{link.linkindex}',
+        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on link#{link.linkindex}\n' + \
+        common.extra_data_printout(f'link data: {link}',width=90),
         common.IncorrectValue,
         'links')
       continue
