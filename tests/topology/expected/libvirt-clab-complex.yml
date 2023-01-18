@@ -1,0 +1,441 @@
+groups:
+  hosts:
+    device: linux
+    members:
+    - h1
+    - h2
+    node_data:
+      provider: clab
+  routers:
+    members:
+    - r1
+    - r2
+    - r3
+    module:
+    - ospf
+input:
+- topology/input/libvirt-clab-complex.yml
+- package:topology-defaults.yml
+libvirt:
+  providers:
+    clab: true
+links:
+- bridge: input_1
+  gateway:
+    ipv4: 172.16.0.1/24
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.4/24
+    node: h1
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv4: 172.16.0.1/24
+    node: r1
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv4: 172.16.0.2/24
+    node: r2
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 1
+  node_count: 3
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+- interfaces:
+  - ifindex: 2
+    ifname: GigabitEthernet0/2
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 2
+    ifname: GigabitEthernet0/2
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- bridge: input_3
+  interfaces:
+  - ifindex: 3
+    ifname: GigabitEthernet0/3
+    ipv4: 172.16.1.2/24
+    node: r2
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.1.3/24
+    node: r3
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: lan
+- bridge: input_4
+  gateway:
+    ipv4: 172.16.2.3/24
+  interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 172.16.2.3/24
+    node: r3
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.2.5/24
+    node: h2
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 172.16.2.0/24
+  role: stub
+  type: lan
+- bridge: input_5
+  gateway:
+    ipv4: 172.16.3.3/24
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.3.4/24
+    node: h1
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.3.3/24
+    node: r3
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.3.5/24
+    node: h2
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 5
+  node_count: 3
+  prefix:
+    ipv4: 172.16.3.0/24
+  role: stub
+  type: lan
+module:
+- ospf
+name: input
+nodes:
+  h1:
+    af:
+      ipv4: true
+    box: python:3.9-alpine
+    clab:
+      binds:
+        clab_files/h1/hosts: /etc/hosts
+      config_templates:
+        hosts: /etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-input-h1
+    id: 4
+    interfaces:
+    - bridge: input_1
+      gateway:
+        ipv4: 172.16.0.1/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.4/24
+      linkindex: 1
+      mtu: 1500
+      name: h1 -> [r1,r2]
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.2/24
+        node: r2
+      type: lan
+    - bridge: input_5
+      ifindex: 2
+      ifname: eth2
+      ipv4: 172.16.3.4/24
+      linkindex: 5
+      mtu: 1500
+      name: h1 -> [r3,h2]
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 172.16.3.3/24
+        node: r3
+      - ifname: eth2
+        ipv4: 172.16.3.5/24
+        node: h2
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: 08-4F-A9-00-00-04
+    mtu: 1500
+    name: h1
+    provider: clab
+    role: host
+  h2:
+    af:
+      ipv4: true
+    box: python:3.9-alpine
+    clab:
+      binds:
+        clab_files/h2/hosts: /etc/hosts
+      config_templates:
+        hosts: /etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-input-h2
+    id: 5
+    interfaces:
+    - bridge: input_4
+      gateway:
+        ipv4: 172.16.2.3/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.2.5/24
+      linkindex: 4
+      mtu: 1500
+      name: h2 -> r3
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 172.16.2.3/24
+        node: r3
+      role: stub
+      type: lan
+    - bridge: input_5
+      ifindex: 2
+      ifname: eth2
+      ipv4: 172.16.3.5/24
+      linkindex: 5
+      mtu: 1500
+      name: h2 -> [h1,r3]
+      neighbors:
+      - ifname: eth2
+        ipv4: 172.16.3.4/24
+        node: h1
+      - ifname: Ethernet3
+        ipv4: 172.16.3.3/24
+        node: r3
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: 08-4F-A9-00-00-05
+    mtu: 1500
+    name: h2
+    provider: clab
+    role: host
+  r1:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 1
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      name: r1 -> [h1,r2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h1
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.2/24
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: lan
+    - ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv4: 10.1.0.1/30
+      linkindex: 2
+      name: r1 -> r2
+      neighbors:
+      - ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.2/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - ospf
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+  r2:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 2
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 172.16.0.2/24
+      linkindex: 1
+      name: r2 -> [h1,r1]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h1
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.1/24
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: lan
+    - ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv4: 10.1.0.2/30
+      linkindex: 2
+      name: r2 -> r1
+      neighbors:
+      - ifname: GigabitEthernet0/2
+        ipv4: 10.1.0.1/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - bridge: input_3
+      ifindex: 3
+      ifname: GigabitEthernet0/3
+      ipv4: 172.16.1.2/24
+      linkindex: 3
+      name: r2 -> r3
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.1.3/24
+        node: r3
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: lan
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - ospf
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+  r3:
+    af:
+      ipv4: true
+    box: ceos:4.26.4M
+    clab:
+      env:
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-r3
+    id: 3
+    interfaces:
+    - bridge: input_3
+      clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.1.3/24
+      linkindex: 3
+      name: r3 -> r2
+      neighbors:
+      - ifname: GigabitEthernet0/3
+        ipv4: 172.16.1.2/24
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: lan
+    - bridge: input_4
+      clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 172.16.2.3/24
+      linkindex: 4
+      name: r3 -> h2
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.2.5/24
+        node: h2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: true
+      role: stub
+      type: lan
+    - bridge: input_5
+      clab:
+        name: et3
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.3.3/24
+      linkindex: 5
+      name: r3 -> [h1,h2]
+      neighbors:
+      - ifname: eth2
+        ipv4: 172.16.3.4/24
+        node: h1
+      - ifname: eth2
+        ipv4: 172.16.3.5/24
+        node: h2
+      ospf:
+        area: 0.0.0.0
+        passive: true
+      role: stub
+      type: lan
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - ospf
+    mtu: 1500
+    name: r3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+    provider: clab
+ospf:
+  area: 0.0.0.0
+provider: libvirt
