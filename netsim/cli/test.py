@@ -14,6 +14,7 @@ from box import Box
 from pathlib import Path
 
 from .. import common
+from .. import utils
 from .. import read_topology
 from . import external_commands
 
@@ -98,7 +99,8 @@ def run(cli_args: typing.List[str]) -> None:
     common.fatal("Directory %s already exists, aborting" % args.workdir,"test")
 
   if args.verbose:
-    common.set_verbose(args.verbose)
+    utils.log.set_logging_flags(args)
+
   external_commands.run_probes(settings,args.provider,1)
   copy_topology(args)
   create_configs()

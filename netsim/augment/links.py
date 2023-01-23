@@ -10,6 +10,7 @@ from box import Box
 # Related modules
 from .. import common
 from .. import data
+from .. import utils
 from ..data.validate import must_be_string,must_be_list,must_be_dict,validate_attributes
 from .. import addressing
 from . import devices
@@ -149,17 +150,6 @@ def get_link_propagate_attributes(defaults: Box) -> set:
          set(defaults.attributes.link_no_propagate)
 
 """
-Get interface name: create interface name given interface name format, ifindex and optional
-interface data structures. Use str.format if the name format includes '{}'
-"""
-def get_interface_name(fmt: str, ifdata: Box) -> str:
-  if '{' in fmt:
-    result = str(eval(f"f'{fmt}'",dict(ifdata)))                        # An awful hack to use f-string specified in a string variable
-    return result
-  else:
-    return fmt % ifdata.ifindex                                         # Old-style formatting
-
-"""
 Add interface data structure to a node:
 
 * Add node-specific interface index
@@ -184,12 +174,12 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
 
   ifdata.ifindex = ifindex
   if ifname_format and not 'ifname' in ifdata:
-    ifdata.ifname = get_interface_name(ifname_format,ifdata)
+    ifdata.ifname = utils.strings.eval_format(ifname_format,ifdata)
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
   pdata = Box(pdata,box_dots=True,default_box=True)                     # Create a copy of the provider interface data
   if 'name' in pdata:
-    pdata.name = get_interface_name(pdata.name,ifdata)
+    pdata.name = utils.strings.eval_format(pdata.name,ifdata)
 
   if pdata:
     provider = devices.get_provider(node,defaults)
@@ -209,7 +199,7 @@ def create_loopback_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     return
 
   if not 'ifname' in ifdata:
-    ifdata.ifname = get_interface_name(ifname_format,ifdata)
+    ifdata.ifname = utils.strings.eval_format(ifname_format,ifdata)
 
   # If the device uses 'loopback_offset' then we're assuming it's large enough to prevent overlap with physical interfaces
   # Otherwise, create fake ifindex for loopback interfaces to prevent that overlap
