@@ -10,6 +10,7 @@ import typing
 from box import Box
 
 from .. import common
+from .. import utils
 from .. import addressing
 from .. import providers
 from . import devices
@@ -90,7 +91,9 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
       if ifindex_offset is None:
         ifindex_offset = 1
-      mgmt_if = ifname_format % (ifindex_offset - 1)
+
+      mgmt_if = utils.strings.eval_format(ifname_format,{'ifindex': ifindex_offset - 1 })
+
     node.mgmt.ifname = mgmt_if
 
   # If the mgmt ipaddress is statically set (IPv4/IPv6)
