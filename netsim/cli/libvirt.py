@@ -82,6 +82,17 @@ def start_vagrant_network() -> None:
   except:
     pass
 
+def stop_vagrant_network() -> None:
+  try:
+    result = subprocess.run(['virsh','net-destroy',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
+  except:
+    pass
+
+  try:
+    result = subprocess.run(['virsh','net-undefine',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
+  except:
+    pass
+
 def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
   if not 'create_iso' in devdata.libvirt:
@@ -226,6 +237,7 @@ best not to damage the original virtual disk).
     lp_create_bootstrap_iso(args,settings)
   if not 'vm' in skip:
     lp_create_vm(args,settings)
+  stop_vagrant_network()
   if not 'box' in skip:
     lp_create_box(args,settings)
 

@@ -4,27 +4,108 @@
 
 import subprocess
 import re
+import sys
+import os
 import typing
 from box import Box
 import pathlib
+import tempfile
+import netaddr
 
 from .. import common
 from ..data import get_from_box
 from . import _Provider
 
 LIBVIRT_MANAGEMENT_NETWORK_NAME = "vagrant-libvirt"
+LIBVIRT_MANAGEMENT_BRIDGE_NAME  = "libvirt-mgmt"
 LIBVIRT_MANAGEMENT_NETWORK_FILE = "templates/provider/libvirt/vagrant-libvirt.xml"
+LIBVIRT_MANAGEMENT_SUBNET       = "192.168.121.0/24"
 
-def create_vagrant_network() -> None:
+"""
+Replace management IP subnet in vagrant-libvirt XML template:
+
+* Replace subnet (.1 address) and netmask
+* Replace start (.2) and end (start -1) of dynamic DHCP range
+* Replace IP addresses in static DHCP bindings (from start until the next address is no longer found)
+
+Replacements have to match single quotes (in XML) to ensure we don't replace partial IP addresses
+"""
+
+def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
+  o_net = netaddr.IPNetwork(m_subnet)
+  d_net = netaddr.IPNetwork(mgmt.ipv4)
+
+  xml = xml.replace(f"'{o_net.netmask}'",f"'{d_net.netmask}'")
+  for offset in [1,2]:
+    xml = xml.replace(f"'{o_net[offset]}'",f"'{d_net[offset]}'")
+
+  o_start = 100
+  d_start = mgmt.start
+
+  xml = xml.replace(f"'{o_net[o_start - 1]}'",f"'{d_net[d_start - 1]}'")
+  while True:
+    o_start += 1
+    d_start += 1
+    o_addr = str(o_net[o_start])
+
+    if not o_addr in xml:
+      return xml
+
+    xml = xml.replace(f"'{o_addr}'",f"'{d_net[d_start]}'")
+
+"""
+Create a virsh net-define XML file from vagrant-libvirt XML template:
+
+* Replace network and bridge name if needed
+* Replace IP subnet/mask and DHCP bindings
+* Create a temporary file with modified XML definitions
+* Return the name of the temporary file
+"""
+
+def get_libvirt_mgmt_template() -> str:
+  return str(pathlib.Path(__file__).parent.parent.joinpath(LIBVIRT_MANAGEMENT_NETWORK_FILE).resolve())
+
+def create_network_template(topology: Box) -> str:
+  net_template_xml = get_libvirt_mgmt_template()
+  mgmt = topology.addressing.mgmt
   try:
-    result = subprocess.run(['virsh','net-info',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
-    if result.returncode == 1:
-      # When ret code is 1, the network is missing
-      common.print_verbose('creating missing %s network' % LIBVIRT_MANAGEMENT_NETWORK_NAME)
-      net_template_xml = pathlib.Path(__file__).parent.parent.joinpath(LIBVIRT_MANAGEMENT_NETWORK_FILE).resolve()
-      result2 = subprocess.run(['virsh','net-define',net_template_xml],capture_output=True,check=True,text=True)
+    with open(net_template_xml) as xfile:
+      xml = xfile.read()
+  except Exception as ex:
+    common.fatal(f'Cannot open/read XML definition of vagrant-libvirt network {str(sys.exc_info()[1])}')
+
+  if mgmt._network:
+    xml = xml.replace(LIBVIRT_MANAGEMENT_NETWORK_NAME,mgmt._network)
+
+  if mgmt._bridge:
+    xml = xml.replace(LIBVIRT_MANAGEMENT_BRIDGE_NAME,mgmt._bridge)
+
+  if mgmt.ipv4 != LIBVIRT_MANAGEMENT_SUBNET:
+    xml = replace_xml_mgmt_subnet(xml,mgmt,LIBVIRT_MANAGEMENT_SUBNET)
+
+  with tempfile.NamedTemporaryFile(mode='w',delete=False) as tfile:
+    tfile.write(xml)
+    tfile.close()
+    return tfile.name
+
+def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
+  mgmt_net = topology.addressing.mgmt._network if topology is not None else ''
+  mgmt_net = mgmt_net or LIBVIRT_MANAGEMENT_NETWORK_NAME
+  try:
+    subprocess.run(['virsh','net-destroy',mgmt_net],capture_output=True,text=True,check=False)    # Remove management network
+    subprocess.run(['virsh','net-undefine',mgmt_net],capture_output=True,text=True,check=False)   # ... if it exists
+    common.print_verbose(f'creating libvirt management network {mgmt_net}')
+
+    if topology is None:
+      net_template = get_libvirt_mgmt_template()                    # When called without topology data use the default template
+    else:
+      net_template = create_network_template(topology)              # Otherwise create a temporary XML file
+    result2 = subprocess.run(['virsh','net-define',net_template],capture_output=True,check=True,text=True)
+    if not topology is None:                                        # Remove the temporary XML file if needed
+      os.remove(net_template)
+
   except subprocess.CalledProcessError as e:
-    common.error('Exception in net handling for libvirt network %s: [%s] %s' % (LIBVIRT_MANAGEMENT_NETWORK_NAME, e.returncode, e.stderr), module='libvirt')
+    common.fatal(f'Exception in net handling for libvirt network {mgmt_net}: {e.returncode}\n{e.stderr}')
   return
 
 def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
@@ -119,13 +200,13 @@ class Libvirt(_Provider):
     # Starting from vagrant-libvirt 0.7.0, the destroy actions deletes all the networking
     #  including the "vagrant-libvirt" management network.
     #  Let's re-create it if missing!
-    create_vagrant_network()
+    create_vagrant_network(topology)
 
   def post_start_lab(self, topology: Box) -> None:
     common.print_verbose('libvirt lab has started, fixing Linux bridges')
-    mgmt_bridge = get_linux_bridge_name('vagrant-libvirt')
+    mgmt_bridge = get_linux_bridge_name(topology.addressing.mgmt._network or LIBVIRT_MANAGEMENT_NETWORK_NAME)
     if mgmt_bridge:
-      topology.clab.mgmt.bridge = mgmt_bridge
+      topology.addressing.mgmt._bridge = mgmt_bridge
 
     for l in topology.links:
       brname = l.get('bridge',None)

@@ -1,33 +1,16 @@
-Vagrant.configure("2") do |config|
-
 VAGRANT_COMMAND = ARGV[0]
 
-$cumulus_script = <<-SCRIPT
-function set_cumulus_password(){
-    echo "### Setting cumulus user password to 'cumulus' ###"
-    echo "cumulus ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/10_cumulus
-    echo "cumulus:cumulus" | chpasswd
-    mkdir /home/cumulus/.ssh/
-    cat /home/vagrant/.ssh/authorized_keys >> /home/cumulus/.ssh/authorized_keys
-    chown -R cumulus:cumulus /home/cumulus/.ssh/
-    chmod 0700 /home/cumulus/.ssh/
-    chmod 0600 /home/cumulus/.ssh/authorized_keys
-}
-function disable_ztp(){
-    echo "### Disabling ZTP service..."
-    systemctl stop ztp.service
-    ztp -d 2>&1
-}
-if grep -q -i 'cumulus' /etc/lsb-release &> /dev/null; then
-    echo "### RUNNING CUMULUS EXTRA CONFIG ###"
-    set_cumulus_password
-    disable_ztp
-fi
-SCRIPT
-
+Vagrant.configure("2") do |config|
+  config.vm.provider :libvirt do |libvirt|
+{% if addressing.mgmt._network|default(False) %}
+    libvirt.management_network_name = "{{ addressing.mgmt._network }}"
+{% endif %}
+    libvirt.management_network_address = "{{ addressing.mgmt.ipv4 }}"
+  end
 {% for name,n in nodes.items() %}
 {%   set name = name.split('.')[0] %}
 {%   set box  = n.box %}
 {%   include [ n.device ~ "-raw.j2","define-domain.j2" ] +%}
 {% endfor %}
 end
+
