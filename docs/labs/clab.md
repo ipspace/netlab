@@ -132,6 +132,14 @@ provider: clab
 defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 ```
 
+## Containerlab Management Network
+
+*containerlab* creates a dedicated Docker network to connect the container management interfaces to the host TCP/IP stack. You can change the parameters of the management network in the **addressing.mgmt** pool:
+
+* **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
+* **\_network**: The Docker network name (default: `netlab_mgmt`)
+* **\_bridge**: The name of the underlying Linux bridge (default: unspecified, created by Docker)
+
 (clab-linux)=
 ## Deploying Linux Containers
 

@@ -1,4 +1,25 @@
-# Create Vagrant Boxes for Libvirt/KVM Environment
+# Using libvirt/KVM with Vagrant
+
+*netlab* can use *Vagrant* with *vagrant-libvirt* plugin to start virtual machines in libvirt/KVM environment. To use it:
+
+* Install *netlab* on a [Linux server](../install/linux.md) or [virtual machine](../install/ubuntu-vm.md)
+* If you're using Ubuntu, execute **netlab install libvirt** to install KVM, libvirt, Vagrant, and vagrant-libvirt. You'll have to install the software manually on other Linux distributions.
+* [Download or build Vagrant boxes](#vagrant-boxes)
+* Create [lab topology file](../topology-overview.md). *libvirt* is the default virtualization provider and does not have to be specified in the topology file
+* Start the lab with **[netlab up](../netlab/up.md)**
+
+```{warning}
+You MUST use **‌netlab up** to start the lab to ensure the virtual machines get correct management IP addresses.
+```
+
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Vagrant Boxes
 
 Vagrant starts virtual machines from prepackaged VM images called *boxes*. While it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
 
@@ -66,6 +87,16 @@ To delete an old version of a Vagrant box use a procedure  similar to the one de
 [^DP]: *libvirt* environment created with the **netlab install libvirt** installation script uses the *default* storage pool. A custom installation might use a different storage pool name.
 
 The new Vagrant box will be copied into the *libvirt* storage pool the next time you'll use the affected device in your lab.
+
+## Libvirt Management Network
+
+*vagrant-libvirt* plugin a dedicated uses *libvirt* network to connect the VM management interfaces to the host TCP/IP stack. **netlab up** command creates that network before executing **vagrant up** to ensure the network contains desired DHCP mappings. The management network is automatically deleted when you execute **netlab down** (recommended) or **vagrant destroy**.
+
+You can change the parameters of the management network in the **addressing.mgmt** pool:
+
+* **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
+* **\_network**: The *libvirt* network name (default: `vagrant-libvirt`)
+* **\_bridge**: The name of the underlying Linux bridge (default: `libvirt-mgmt`)
 
 ```{eval-rst}
 .. toctree::
