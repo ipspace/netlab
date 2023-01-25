@@ -1,3 +1,28 @@
+    $cumulus_script = <<-SCRIPT
+
+function set_cumulus_password(){
+    echo "### Setting cumulus user password to 'cumulus' ###"
+    echo "cumulus ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/10_cumulus
+    echo "cumulus:cumulus" | chpasswd
+    mkdir /home/cumulus/.ssh/
+    cat /home/vagrant/.ssh/authorized_keys >> /home/cumulus/.ssh/authorized_keys
+    chown -R cumulus:cumulus /home/cumulus/.ssh/
+    chmod 0700 /home/cumulus/.ssh/
+    chmod 0600 /home/cumulus/.ssh/authorized_keys
+}
+function disable_ztp(){
+    echo "### Disabling ZTP service..."
+    systemctl stop ztp.service
+    ztp -d 2>&1
+}
+if grep -q -i 'cumulus' /etc/lsb-release &> /dev/null; then
+    echo "### RUNNING CUMULUS EXTRA CONFIG ###"
+    set_cumulus_password
+    disable_ztp
+fi
+
+    SCRIPT
+
     if VAGRANT_COMMAND == "ssh" or VAGRANT_COMMAND == "scp"
         config.ssh.username = 'cumulus'
     end
