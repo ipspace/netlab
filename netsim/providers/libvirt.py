@@ -172,9 +172,9 @@ class Libvirt(_Provider):
 
     for node in topology.nodes.values():                            # Now find P2P tunnel links and create interface data needed for Vagrantfile
       for intf in node.interfaces:
-        if not intf.get('linkindex'):                               # Cannot get interface index, skip it
+        if not intf.get('linkindex',None):                          # Cannot get interface index, skip it
           continue
-        if intf.get('virtual_interface'):                           # Virtual interface, skip it
+        if intf.get('virtual_interface',None):                      # Virtual interface, skip it
           continue
 
         link = topology.links[intf.linkindex - 1]                   # P2P links must have two attached nodes and no extra libvirt attributes

@@ -10,6 +10,7 @@ import importlib.util
 
 from box import Box
 from .. import common
+from .. import data
 
 def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
   module_path = path+'/'+plugin
@@ -50,6 +51,11 @@ def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
   return pymodule
 
 def init(topology: Box) -> None:
+  data.types.must_be_list(parent=topology,key='defaults.plugin',path='',create_empty=True)    # defaults.plugin must be a list (if present)
+  if topology.defaults.plugin:                                                                # If we have default plugins...
+    data.types.must_be_list(parent=topology,key='plugin',path='',create_empty=True)           # ... make sure the plugin attribute is a list
+    topology.plugin.extend(topology.defaults.plugin)                                          # ... and extend it with default plugins
+
   if not 'plugin' in topology:
     return
 
