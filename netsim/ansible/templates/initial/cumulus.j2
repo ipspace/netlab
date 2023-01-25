@@ -60,21 +60,8 @@ configure system interface pattern *,!eth0,swp*
 CONFIG
 service lldpd restart
 #
-# Enable FRR modules
-#
-{% set modlist = {'bgp':'bgpd','ospf':['ospfd','ospf6d'],'isis':'isisd','vrf':'bgpd','gateway':'vrrpd'} %}
-{% for m in module|default([]) if modlist[m] is defined %}
-{%   for frr_m in [modlist[m]]|flatten %}
-echo "{{ frr_m }}=yes" >>/etc/frr/daemons
-{%   endfor %}
-{% endfor %}
-systemctl enable frr.service
-systemctl start frr.service
-systemctl reload frr.service
-#
 # Create loopback interface entry
 #
-
 {%- macro loopback_interface(name,data,create) %}
 auto {{ name }}
 {% if create %}
@@ -128,6 +115,18 @@ ifreload -a
 {% for l in interfaces if l.type in ['lan','p2p','stub'] and (l.ipv6 is defined or 'external' in l.role|default('')) %}
 sysctl -qw net.ipv6.conf.{{ l.ifname }}.disable_ipv6=0
 {% endfor %}
+#
+# Enable FRR modules for {{ module|default('none') }}
+#
+systemctl enable frr.service
+systemctl start frr.service
+{% set modlist = {'bgp':'bgpd','ospf':['ospfd','ospf6d'],'isis':'isisd','vrf':'bgpd','gateway':'vrrpd'} %}
+{% for m in module|default([]) if modlist[m] is defined %}
+{%   for frr_m in [modlist[m]]|flatten %}
+echo "{{ frr_m }}=yes" >>/etc/frr/daemons
+{%   endfor %}
+{% endfor %}
+systemctl reload frr.service
 #
 # Rest of initial configuration done through VTYSH
 #
