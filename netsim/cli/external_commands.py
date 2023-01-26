@@ -69,9 +69,9 @@ def run_probes(settings: Box, provider: str, step: int = 0) -> None:
     print(".. all tests succeeded, moving on\n")
 
 def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "test", exec_command: typing.Optional[str] = None) -> None:
-  print_step(step,f"starting the lab -- {provider}")
   if exec_command is None:
     exec_command = settings.providers[provider].start
+  print_step(step,f"starting the lab -- {provider}: {exec_command}")
   if not run_command(exec_command):
     common.fatal(f"{exec_command} failed, aborting...",cli_command)
 

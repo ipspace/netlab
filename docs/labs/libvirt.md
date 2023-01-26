@@ -98,6 +98,31 @@ You can change the parameters of the management network in the **addressing.mgmt
 * **\_network**: The *libvirt* network name (default: `vagrant-libvirt`)
 * **\_bridge**: The name of the underlying Linux bridge (default: `libvirt-mgmt`)
 
+## Starting Virtual Machines in Batches
+
+*vagrant-libvirt* plugin tries to start all the virtual machines specified in `Vagrantfile` in parallel. The resulting strain on CPU resources might cause VM boot failures in very large topologies. As a workaround, you can configure **libvirt** virtualization provider to execute a series of `vagrant up` commands to start the virtual machines in smaller batches:
+
+* Configure the batch size with **defaults.providers.libvirt.batch_size** parameter (an integer between 1 and 50)
+* Configure idle interval between batches (if needed) with **defaults.providers.libvirt.batch_interval** parameter (between 1 and 1000 seconds).
+
+Example:
+
+```
+provider: libvirt
+defaults.device: cumulus
+defaults.providers.libvirt.batch_size: 2
+defaults.providers.libvirt.batch_interval: 10
+
+nodes: [ a,b,c,x,z ]
+module: [ ospf ]
+
+links: [ a-x, a-z, b-x, b-z, c-x, c-z ]
+```
+
+```{tip}
+The virtual machines are batched based on their order in **‌nodes** list/dictionary. You might want to adjust the node order to group virtual machines with long start times (example: Cisco Nexus OS or Juniper vSRX) into as few batches as possible.
+```
+
 ```{eval-rst}
 .. toctree::
    :caption: Box Building Recipes
