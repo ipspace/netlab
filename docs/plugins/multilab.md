@@ -10,11 +10,15 @@ The *multilab* plugin modifies virtualization defaults for every lab instance, a
 
 The plugin has been tested with **[libvirt](../labs/libvirt.md)** and **[clab](../labs/clab.md)** _netlab_ virtualization providers.
 
+```{warning}
+While you can use the same topology file for multiple lab instances, you MUST run each lab instance in a different working directory.
+```
+
 ## Using the Plugin
 
 You can use *multilab* plugin in three scenarios:
 
-* Static instances -- **defaults.multilab.id** is specified in the lab topology. *multilab* plugin is specified in the lab topology **plugin** parameter.
+**Static instances:** you want to run different lab topologies in parallel, but not multiple instances of the same lab. Specify **defaults.multilab.id** in the lab topology and add *multilab* plugin with the lab topology **plugin** parameter.
 
 ```
 # Lab topology using multilab plugin
@@ -25,7 +29,7 @@ provider: libvirt
 defaults.multilab.id: 12
 ```
 
-* Per-user instances -- **multilab.id** is specified in [user defaults file](../defaults.md). *multilab* plugin is specified in the **plugin** parameter in the same file.
+**Per-user instances:** you have multiple users using the same Linux servers. Each user is allowed to run one lab at a time. Specify **multilab.id** in [user defaults file](../defaults.md) and activate *multilab* plugin with the **plugin** parameter in the same file.
 
 ```
 # User defaults file activating multilab plugin
@@ -34,7 +38,7 @@ plugin: [ multilab ]
 multilab.id: 12
 ```
 
-* Dynamic labs -- **defaults.multilab.id** is specified with the `-s` CLI parameter of **[netlab create](../netlab/create.md)** or **[netlab up](../netlab/up.md)** command. *multilab* plugin is added to the topology with the `--plugin` CLI parameter.
+**Dynamic labs:** Users can run multiple lab instances or multiple instances of the same lab topology. You will have to handle allocation of lab instances with an external system that passes **defaults.multilab.id** to _netlab_ with the `-s` argument of **[netlab create](../netlab/create.md)** or **[netlab up](../netlab/up.md)** command. The best way to activate the *multilab* plugin is with the `--plugin` CLI argument.
 
 ```
 # Start the lab with multilab plugin
@@ -51,6 +55,7 @@ netlab up --plugin multilab -s defaults.multilab.id=12 topology.yml
 change:
   name: 'ml_{id}'
   defaults.name: 'ml_{id}'
+  defaults.providers.libvirt.tunnel_id: '{id}'
   addressing.mgmt:
     ipv4: '192.168.{id}.0/24'
     _network: 'nl_mgmt_{id}'
