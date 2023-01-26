@@ -41,17 +41,29 @@ def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
 
   o_start = 100
   d_start = mgmt.start
+  mac_cnt = 0
 
   xml = xml.replace(f"'{o_net[o_start - 1]}'",f"'{d_net[d_start - 1]}'")
-  while True:
+  while True:                                                         # Replace predefined static DHCP bindings
     o_start += 1
     d_start += 1
+    mac_cnt += 1
     o_addr = str(o_net[o_start])
 
     if not o_addr in xml:
-      return xml
+      break
 
     xml = xml.replace(f"'{o_addr}'",f"'{d_net[d_start]}'")
+
+  eui = netaddr.EUI(mgmt.mac)
+  while d_start < d_net.size - 2:
+    eui[5] = mac_cnt
+    xstring = f"<host mac='{str(eui).replace('-',':')}' ip='{d_net[d_start]}'/>\n<!--more-->"
+    xml = xml.replace("<!--more-->",xstring)
+    d_start += 1
+    mac_cnt += 1
+
+  return xml
 
 """
 Create a virsh net-define XML file from vagrant-libvirt XML template:
@@ -80,8 +92,7 @@ def create_network_template(topology: Box) -> str:
   if mgmt._bridge:
     xml = xml.replace(LIBVIRT_MANAGEMENT_BRIDGE_NAME,mgmt._bridge)
 
-  if mgmt.ipv4 != LIBVIRT_MANAGEMENT_SUBNET:
-    xml = replace_xml_mgmt_subnet(xml,mgmt,LIBVIRT_MANAGEMENT_SUBNET)
+  xml = replace_xml_mgmt_subnet(xml,mgmt,LIBVIRT_MANAGEMENT_SUBNET)
 
   with tempfile.NamedTemporaryFile(mode='w',delete=False) as tfile:
     tfile.write(xml)
