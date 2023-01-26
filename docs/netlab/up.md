@@ -19,8 +19,8 @@ You can use `netlab up` to create configuration files and start the lab, or use 
 
 ```text
 usage: netlab up [-h] [--log] [-q] [-v] [--debug] [--defaults DEFAULTS] [-d DEVICE]
-                 [-p PROVIDER] [-s SETTINGS] [--no-config] [--fast-config]
-                 [topology]
+                 [-p PROVIDER] [--plugin PLUGIN][-s SETTINGS] 
+                 [--no-config] [--fast-config] [topology]
 
 Create configuration files, start a virtual lab, and configure it
 
@@ -38,6 +38,7 @@ optional arguments:
                         Default device type
   -p PROVIDER, --provider PROVIDER
                         Override virtualization provider
+  --plugin PLUGIN       Additional plugin(s)
   -s SETTINGS, --set SETTINGS
                         Additional parameters added to topology file
   --no-config           Do not configure lab devices

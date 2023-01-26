@@ -38,8 +38,8 @@ The _[](netlab-create-output-formats)_ section describes how you can control the
 
 ```text
 usage: netlab create [-h] [--log] [-q] [-v] [--defaults DEFAULTS] [-d DEVICE]
-                     [-p PROVIDER] [-s SETTINGS] [-o OUTPUT]
-                     [topology]
+                     [-p PROVIDER] [-s SETTINGS] [--plugin PLUGIN]
+                     [-o OUTPUT] [topology]
 
 Create provider- and automation configuration files
 
@@ -56,6 +56,7 @@ optional arguments:
                         Default device type
   -p PROVIDER, --provider PROVIDER
                         Override virtualization provider
+  --plugin PLUGIN       Additional plugin(s)
   -s SETTINGS, --set SETTINGS
                         Additional parameters added to topology file
   -o OUTPUT, --output OUTPUT
@@ -88,6 +89,7 @@ The following CLI flags can be used to change individual topology parameters:
 * `-d` sets default device type (**defaults.device**)
 * `-p` sets virtualization provider (**provider**)
 * `-s` uses `key=value` format to set specified topology element  value. The key could be a hierarchical dotted name.
+* `--plugin` specifies additional plugins not listed in lab topology or system defaults (example: multilab plugin)
 
 ### Example
 
