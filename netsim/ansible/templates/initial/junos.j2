@@ -33,15 +33,22 @@ interfaces {
 {% endif %}
     }
   }
+
+{# Handle MTU outside the main interface loop, since it needs to be applied only to the master interface #}
+{% for l in interfaces|default([]) %}
+{%   if l.mtu is defined %}
+  {{ l.junos_interface }} {
+    mtu {{ l.mtu + 14 }};
+  }
+{%   endif %}
+{% endfor %}
+
 {% for l in interfaces|default([]) %}
   {{ l.ifname }} {
 {% if l.name is defined %}
     description "{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}";
 {% elif l.type|default("") == "stub" %}
     description "Stub interface"
-{% endif %}
-{% if l.mtu is defined %}
-    mtu {{ l.mtu + 14 }};
 {% endif %}
     
 {% if l.bandwidth is defined %}
