@@ -85,19 +85,23 @@ def provider_probes(topology: Box) -> None:
 Start lab topology for a single provider
 """
 def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = None) -> None:
-  p_name = sname or pname
-  p_module   = providers._Provider.load(p_name,topology.defaults.providers[p_name])
-
-  exec_command = None
+  p_name   = sname or pname
+  p_module = providers._Provider.load(p_name,topology.defaults.providers[p_name])
 
   if sname is not None:
     p_topology = providers.select_topology(topology,p_name)
-    exec_command = topology.defaults.providers[pname][sname].start
   else:
     p_topology = topology
 
   p_module.call('pre_start_lab',p_topology)
-  external_commands.start_lab(topology.defaults,sname or pname,3,"netlab up",exec_command)
+  if sname is not None:
+    exec_command = topology.defaults.providers[pname][sname].start
+  else:
+    exec_command = topology.defaults.providers[pname].start
+
+  exec_list = exec_command if isinstance(exec_command,list) else [ exec_command ]
+  for cmd in exec_list:
+    external_commands.start_lab(topology.defaults,sname or pname,3,"netlab up",cmd)
   p_module.call('post_start_lab',p_topology)
 
 """

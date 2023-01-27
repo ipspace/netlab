@@ -13,7 +13,7 @@ import tempfile
 import netaddr
 
 from .. import common
-from ..data import get_from_box
+from ..data import get_from_box,types
 from . import _Provider
 
 LIBVIRT_MANAGEMENT_NETWORK_NAME = "vagrant-libvirt"
@@ -137,6 +137,34 @@ def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
 
   return None
 
+"""
+Create batches of 'vagrant up' command to deal with very large topologies
+
+* Split node names into libvirt.batch_size - sized batches
+* Change libvirt.start command into a list of commands
+"""
+def create_vagrant_batches(topology: Box) -> None:
+  libvirt_defaults = topology.defaults.providers.libvirt
+  if not libvirt_defaults.batch_size:
+    return
+
+  types.must_be_int(libvirt_defaults,'batch_size','defaults.providers.libvirt',module='libvirt',min_value=1,max_value=50)
+  types.must_be_int(libvirt_defaults,'batch_interval','defaults.providers.libvirt',module='libvirt',min_value=1,max_value=1000)
+  common.exit_on_error()
+
+  batch_size = libvirt_defaults.batch_size
+  start_cmd  = libvirt_defaults.start
+  libvirt_defaults.start = []
+  node_list = list(topology.nodes.keys())
+
+  while True:
+    libvirt_defaults.start.append(start_cmd + " " + " ".join(node_list[:batch_size]))     # Add up to batch_size nodes to the start command
+    if len(node_list) <= batch_size:
+      break
+    node_list = node_list[batch_size:]
+    if libvirt_defaults.batch_interval:
+      libvirt_defaults.start.append(f'sleep {libvirt_defaults.batch_interval}')
+
 class Libvirt(_Provider):
 
   """
@@ -212,6 +240,7 @@ class Libvirt(_Provider):
     #  including the "vagrant-libvirt" management network.
     #  Let's re-create it if missing!
     create_vagrant_network(topology)
+    create_vagrant_batches(topology)
 
   def post_start_lab(self, topology: Box) -> None:
     common.print_verbose('libvirt lab has started, fixing Linux bridges')
