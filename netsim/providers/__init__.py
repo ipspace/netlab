@@ -142,6 +142,7 @@ class _Provider(Callback):
     self.transform(topology)
     fname = self.get_output_name(fname,topology)
     output = common.open_output_file(fname)
+#    print(topology.nodes.to_yaml())
     output.write(common.template(self.get_root_template(),topology.to_dict(),self.get_template_path(),self.provider))
     if fname != '-':
       common.close_output_file(output)

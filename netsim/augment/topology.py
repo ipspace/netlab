@@ -71,7 +71,7 @@ def check_required_elements(topology: Box) -> None:
     common.fatal("Fatal topology errors, aborting")
 
   if not 'name' in topology:
-    topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))
+    topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
     topology.name = topo_name
 
   if 'module' in topology:

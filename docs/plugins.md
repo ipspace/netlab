@@ -1,21 +1,64 @@
 # Custom Plugins
 
-*netlab* supports dynamically loadable plugins allowing you to implement custom data model transformations without adding nerd knobs to the core topology transformation.
+*netlab* supports dynamically loadable plugins allowing you to implement custom data model transformations without adding nerd knobs to the core topology transformation. You might want to write your own plugins or use plugins shipped with _netlab_:
 
-```{warning}
-This is an underdocumented feature. A few commonly-used functions are defined in `netsim.api`; performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *netsim-tools* GitHub repository](https://github.com/ipspace/netlab/discussions) before proceeding.
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+
+   plugins/ebgp.utils.md
+   plugins/multilab.md
 ```
+
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Using Plugins
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:
 
 ```
-plugin: [ bgp-anycast ]
+plugin: [ ebgp.utils ]
 
 module: [ ospf, bgp ]
-...
 ```
 
+You can specify additional (system-wide) plugins in [system defaults](defaults.md) (**defaults.plugin**) or as a CLI parameter in **[netlab create](netlab/create.md)** or **[netlab up](netlab/up.md)** commands.
+
+Plugins can define their own _netlab_ attributes that you can use to configure plugin-provided functionality. For example, the [EBGP utilities](plugins/ebgp.utils.md) defines **bgp.password** attribute that can be used to enable MD5 authentication of EBGP sessions:
+
+```
+---
+provider: clab
+defaults.device: eos
+module: [ bgp ]
+plugin: [ ebgp.utils ]
+
+nodes:
+  r1:
+    bgp.as: 65101
+  r2:
+    bgp.as: 65000
+
+links:
+- r1:
+  r2:
+  bgp.password: Test
+```
+
+Plugins providing support for additional networking features usually rely on Jinja2 templates to configure those features, limiting their use to a subset of supported platforms. Please check the plugin documentation for more details.
+
+## Developing Plugins
+
 Plugins are either Python files or directories containing Python code plus configuration templates. They are loaded from the current directory or `netsim/extra` directory.
+
+```{warning}
+This is an underdocumented feature. A few commonly-used functions are defined in `netsim.api`; performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *netsim-tools* GitHub repository](https://github.com/ipspace/netlab/discussions) before proceeding.
+```
 
 For simple plugins, the plugin name specifies the file name (without the `.py` extension). For plugin packages, the plugin name specifies the directory with `plugin.py` Python module and one or more Jinja2 templates (one per supported **netlab_device_type**/**ansible_network_os**).
 
@@ -40,7 +83,7 @@ Every plugin function is called with a single *topology* argument: the current t
 
 Plugins extending [configuration modules](modules.md) might have to define additional module attributes. The [module attribute lists](dev/module-attributes.md) have to be extended in the **init** function before any module validation code is executed.
 
-## Example
+## Sample Plugin
 
 All anycast servers in a BGP anycast topology should have the same AS number, but do not need IBGP sessions between themselves. A custom plugin deletes IBGP sessions for any node with **bgp.anycast** attribute.
 
@@ -124,13 +167,4 @@ Notes:
   `node.config = node.get('config',[]).append(template)`\
   \
   ... the utility function handles edge cases like missing **config** attribute or duplicate configuration templates.
-
-## Sample Plugins
-
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-
-   plugins/ebgp.utils.md
-```
 

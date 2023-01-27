@@ -19,6 +19,7 @@ except ImportError:
 # Related modules
 from . import common
 from . import data
+from .data import types
 
 """
 Utility routines for include_yaml functionality
@@ -185,6 +186,13 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
 
   if args.provider:
     topo.provider = args.provider
+
+  if args.plugin:
+    if common.debug_active('plugin'):
+      print(f'Adding plugins from CLI arguments: {args.plugin}')
+    types.must_be_list(parent=topo,key='plugin',path='',create_empty=True)
+    common.exit_on_error()
+    topo.plugin.extend(args.plugin)
 
   if args.settings:
     for s in args.settings:
