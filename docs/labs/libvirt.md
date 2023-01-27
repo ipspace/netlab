@@ -119,6 +119,8 @@ module: [ ospf ]
 links: [ a-x, a-z, b-x, b-z, c-x, c-z ]
 ```
 
+Please note that the `batch_size` is set artificially low so that this pretty small topology generates three batches. Realistic `batch_size` depends on your hardware resources (CPU, memory) and VM type.
+
 ```{tip}
 The virtual machines are batched based on their order in **‌nodes** list/dictionary. You might want to adjust the node order to group virtual machines with long start times (example: Cisco Nexus OS or Juniper vSRX) into as few batches as possible.
 ```
