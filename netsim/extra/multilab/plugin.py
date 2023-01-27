@@ -46,7 +46,7 @@ Main multilab code:
 def init(topology: Box) -> None:
   mlab = topology.defaults.multilab
   abort = False
-  for kw in ['id','change']:
+  for kw in ['id','change']:                                          # Check that we have all default parameters needed for multilab to work
     if not kw in mlab:
       common.error(f'multilab plugin requires defaults.multilab.{kw} parameter',common.MissingValue,'multilab')
       abort = True
@@ -54,7 +54,12 @@ def init(topology: Box) -> None:
   if abort:
     return
 
-  data.types.must_be_int(
+  try:                                                                # Try to convert multilab ID into an integer
+    mlab.id = int(mlab.id)                                            # It could be a string if set via CLI parameter or environment var
+  except:
+    pass
+
+  data.types.must_be_int(                                             # Now validate that multilab.id is an integer less than 200
     parent=mlab,
     key='id',
     path='defaults.multilab',
@@ -62,7 +67,7 @@ def init(topology: Box) -> None:
     min_value=1,
     max_value=200)
 
-  data.types.must_be_dict(
+  data.types.must_be_dict(                                            # ... and that multilab.change is a dictionary
     parent=mlab,
     key='change',
     path='defaults.multilab',
@@ -70,8 +75,8 @@ def init(topology: Box) -> None:
 
   ctx_data = data.get_box(topology)
   ctx_data.id = mlab.id
-  eval_changed_parameters(mlab.change,ctx_data)
-  if common.debug_active('plugin'):
+  eval_changed_parameters(mlab.change,ctx_data)                       # Evaluate changed parameters
+  if common.debug_active('plugin'):                                   # Print the results if we're debugging
     print(f'MULTILAB CHANGES\n==============\n{mlab.change.to_yaml()}')
 
-  merge_changes(topology,mlab.change)
+  merge_changes(topology,mlab.change)                                 # And merge the changes with the topology
