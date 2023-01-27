@@ -41,6 +41,7 @@ After you decided what *device name* to use, create `<device-name>.yml` file in 
 
 The device parameters will have to include ([more details](device-box.md#adding-new-device-settings)):
 
+* Device **description** -- a short string describing the device
 * Interface name template (**interface_name**), including `{ifindex}` to insert interface number.
 * The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.

@@ -2,6 +2,7 @@
 
 **netlab show** displays system settings in a tabular form. The following settings can be displayed:
 
+* **devices** -- Valid device types
 * **images** -- Vagrant box names or container names for all supported devices or a single device
 * **module-support** -- Configuration modules support matrix
 
@@ -13,7 +14,7 @@ usage: netlab show [-h] [-d DEVICE] {images,module-support}
 Display system settings
 
 positional arguments:
-  {images,module-support}
+  {images,devices,module-support}
                         Select the system information to display
 
 optional arguments:
@@ -23,6 +24,37 @@ optional arguments:
 ```
 
 ## Examples
+
+Valid devices:
+
+```
+$ netlab show devices
+Virtual network devices supported by netlab
+
++--------------+-----------------------------------------------+
+| device       | description                                   |
++==============+===============================================+
+| asav         | Cisco ASAv                                    |
+| csr          | Cisco CSR 1000v                               |
+| cumulus      | Cumulus VX 4.x or 5.x configured without NVUE |
+| cumulus_nvue | Cumulus VX 5.x configured with NVUE           |
+| dellos10     | Dell OS10                                     |
+| eos          | Arista vEOS                                   |
+| fortios      | Fortinet FortiOS firewall                     |
+| frr          | FRR container                                 |
+| iosv         | Cisco IOSv                                    |
+| iosxr        | Cisco IOS XRv                                 |
+| linux        | Generic Linux host                            |
+| nxos         | Cisco Nexus 9300v                             |
+| routeros     | Mikrotik RouterOS version 6                   |
+| routeros7    | Mikrotik RouterOS version 7                   |
+| srlinux      | Nokia SR Linux container                      |
+| sros         | Nokia SR OS container                         |
+| vmx          | Juniper vMX container                         |
+| vsrx         | Juniper vSRX 3.0                              |
+| vyos         | Vyatta VyOS VM/container                      |
++--------------+-----------------------------------------------+
+```
 
 Vagrant boxes and container names for Arista EOS:
 

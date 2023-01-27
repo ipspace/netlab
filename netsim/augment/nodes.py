@@ -146,8 +146,18 @@ def find_node_device(n: Box, topology: Box) -> bool:
     common.error(f'Unknown device {devtype} in node {n.name}',common.IncorrectValue,'nodes')
     return False
 
-  if not isinstance(topology.defaults.devices[devtype],dict):
+  dev_def = topology.defaults.devices[devtype]
+  if not isinstance(dev_def,dict):
     common.fatal(f"Device data for device {devtype} must be a dictionary")
+
+  for kw in ['interface_name','description']:
+    if not kw in dev_def:
+      common.error(
+        f'Device {devtype} used on node {n.name} is not a valid device type\n'+
+        "... run 'netlab show devices' to display valid device types",
+        common.IncorrectValue,
+        'nodes')
+      return False
 
   return True
 

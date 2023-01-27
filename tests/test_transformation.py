@@ -80,6 +80,10 @@ def test_error_cases():
     with pytest.raises(common.ErrorAbort):
       topo = run_test(test_case)
 
+"""
+With the expanded default settings, it became impractical to run test cases
+without the defaults. These test cases have been migrated into errors
+
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 def test_minimal_cases():
   print("Starting minimal (no-default) test cases")
@@ -89,6 +93,7 @@ def test_minimal_cases():
     common.err_count = 0
     with pytest.raises(common.ErrorAbort):
       run_test(test_case,None,None)
+"""
 
 if __name__ == "__main__":
   test_transformation_cases("/tmp")

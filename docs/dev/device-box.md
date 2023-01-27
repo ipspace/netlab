@@ -15,6 +15,7 @@ Here's what you have to do:
 
 ## Adding New Device Settings
 
+* Every device parameter file must have a **description** -- a short string describing the device
 * For every supported virtualization provider, define device box (or container) to use with **image** parameter within the **_provider_** dictionary (example **libvirt.image**).
 * Define interface names as used by the new device with **interface_name**, **mgmt_if** and optionally **ifindex_offset** ([more details](devices.md#system-settings))
 * Add **group_vars** dictionary with Ansible variables specific to the new device. Set at least the **ansible_connection** and **ansible_network_os** variables. **ansible_user** and **ansible_ssh_pass** are highly recommended unless you're using *docker* connection type. The group variables are required even if you don't plan to implement a configurable device; they are used by **netlab connect** command to figure out how to connect to a device.

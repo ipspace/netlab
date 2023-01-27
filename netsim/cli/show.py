@@ -12,7 +12,10 @@ from box import Box
 from .. import common
 from .. import read_topology
 
-def print_table(heading: typing.List[str],rows: typing.List[typing.List[str]]) -> None:
+def print_table(
+      heading: typing.List[str],
+      rows: typing.List[typing.List[str]],
+      inter_row_line: bool = True) -> None:
 
   col_len: typing.List[int] = []
 
@@ -36,7 +39,11 @@ def print_table(heading: typing.List[str],rows: typing.List[typing.List[str]]) -
   print_row('+',char='=')
   for idx,row in enumerate(rows):
     print_row('|',row=row)
-    print_row('+',char='-')
+    if inter_row_line:                                                # If we're printing inter-row lines...
+      print_row('+',char='-')                                         # ... print one after each row
+
+  if not inter_row_line:                                              # No inter-row lines?
+      print_row('+',char='-')                                         # ... we still need one to wrap up the table
 
 def show_images(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
@@ -58,6 +65,22 @@ def show_images(settings: Box, args: argparse.Namespace) -> None:
   print((args.device or "Device") + " image names by virtualization provider")
   print("")
   print_table(heading,rows)
+
+def show_devices(settings: Box, args: argparse.Namespace) -> None:
+  heading = ['device','description']
+
+  rows = []
+  for device in sorted(settings.devices.keys()):
+    dev_data = settings.devices[device]
+    if device == 'none' or not 'description' in dev_data:
+      continue
+
+    row = [ device,dev_data.description ]
+    rows.append(row)
+
+  print('Virtual network devices supported by netlab')
+  print("")
+  print_table(heading,rows,inter_row_line=False)
 
 def show_module_support(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
@@ -84,6 +107,7 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
 
 show_dispatch = {
   'images': show_images,
+  'devices': show_devices,
   'module-support': show_module_support
 }
 
