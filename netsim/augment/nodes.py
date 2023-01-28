@@ -101,24 +101,38 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
   if 'ipv4' in node.mgmt or 'ipv6' in node.mgmt:
     return
 
-  if addrs:
-    for af in 'ipv4','ipv6':
-      pfx = af + '_pfx'
-      if pfx in addrs:
-        if not addrs.get('start'):
-          common.fatal("Start offset missing in management address pool for AF %s" % af)
-        if not af in node.mgmt:
-          try:
-            node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
-          except Exception as ex:
-            common.error(
-              f'Cannot assign management address from prefix {str(addrs[pfx])} (starting at {addrs.start}) to node with ID {node.id}',
-              common.IncorrectValue,
-              'nodes')
+  if not addrs:                                                       # We need a management address pool, but there's none
+    common.error(
+      f"Node {node.name} does not have a management IP address and there's no 'mgmt' address pool",
+      common.MissingValue,
+      'nodes')
+    return
 
-    if addrs.mac_eui and not 'mac' in node.mgmt:
-      addrs.mac_eui[5] = node.id
-      node.mgmt.mac = str(addrs.mac_eui)
+  for af in 'ipv4','ipv6':                                            # Try to assign IPv4 or IPv6 management address
+    pfx = af + '_pfx'
+    if not pfx in addrs:                                              # ... desired AF not in management pool, try the next one
+      continue
+
+    if not addrs.get('start'):
+      common.fatal("Start offset missing in management address pool for AF %s" % af)
+
+    try:                                                              # Try to assign management address (might fail due to large ID)
+      node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
+    except Exception as ex:
+      common.error(
+        f'Cannot assign management address from prefix {str(addrs[pfx])} (starting at {addrs.start}) to node with ID {node.id}',
+        common.IncorrectValue,
+        'nodes')
+
+  if addrs.mac_eui and not 'mac' in node.mgmt:                        # Finally, assign management MAC address
+    addrs.mac_eui[5] = node.id
+    node.mgmt.mac = str(addrs.mac_eui)
+
+  if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
+    common.error(
+      f'Node {node.name} does not have a usable management IP addresss',
+      common.MissingValue,
+      'nodes')
 
 """
 Add device data to nodes
