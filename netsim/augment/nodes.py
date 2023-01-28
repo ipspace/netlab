@@ -10,9 +10,11 @@ import typing
 from box import Box
 
 from .. import common
+from .. import utils
 from .. import addressing
+from .. import providers
 from . import devices
-from ..data.validate import validate_attributes,must_be_int
+from ..data.validate import validate_attributes,must_be_int,must_be_string
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
 """
@@ -89,7 +91,9 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
       if ifindex_offset is None:
         ifindex_offset = 1
-      mgmt_if = ifname_format % (ifindex_offset - 1)
+
+      mgmt_if = utils.strings.eval_format(ifname_format,{'ifindex': ifindex_offset - 1 })
+
     node.mgmt.ifname = mgmt_if
 
   # If the mgmt ipaddress is statically set (IPv4/IPv6)
@@ -97,24 +101,146 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
   if 'ipv4' in node.mgmt or 'ipv6' in node.mgmt:
     return
 
-  if addrs:
-    for af in 'ipv4','ipv6':
-      pfx = af + '_pfx'
-      if pfx in addrs:
-        if not addrs.get('start'):
-          common.fatal("Start offset missing in management address pool for AF %s" % af)
-        if not af in node.mgmt:
-          try:
-            node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
-          except Exception as ex:
-            common.error(
-              f'Cannot assign management address from prefix {str(addrs[pfx])} (starting at {addrs.start}) to node with ID {node.id}',
-              common.IncorrectValue,
-              'nodes')
+  if not addrs:                                                       # We need a management address pool, but there's none
+    common.error(
+      f"Node {node.name} does not have a management IP address and there's no 'mgmt' address pool",
+      common.MissingValue,
+      'nodes')
+    return
 
-    if addrs.mac_eui and not 'mac' in node.mgmt:
-      addrs.mac_eui[5] = node.id
-      node.mgmt.mac = str(addrs.mac_eui)
+  for af in 'ipv4','ipv6':                                            # Try to assign IPv4 or IPv6 management address
+    pfx = af + '_pfx'
+    if not pfx in addrs:                                              # ... desired AF not in management pool, try the next one
+      continue
+
+    if not addrs.get('start'):
+      common.fatal("Start offset missing in management address pool for AF %s" % af)
+
+    try:                                                              # Try to assign management address (might fail due to large ID)
+      node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
+    except Exception as ex:
+      common.error(
+        f'Cannot assign management address from prefix {str(addrs[pfx])} (starting at {addrs.start}) to node with ID {node.id}',
+        common.IncorrectValue,
+        'nodes')
+
+  if addrs.mac_eui and not 'mac' in node.mgmt:                        # Finally, assign management MAC address
+    addrs.mac_eui[5] = node.id
+    node.mgmt.mac = str(addrs.mac_eui)
+
+  if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
+    common.error(
+      f'Node {node.name} does not have a usable management IP addresss',
+      common.MissingValue,
+      'nodes')
+
+"""
+Add device data to nodes
+"""
+
+def find_node_device(n: Box, topology: Box) -> bool:
+  if 'device' not in n:
+    n.device = topology.defaults.device
+
+  if not n.device:
+    common.error(
+      f'No device type specified for node {n.name} and there is no default device type',
+      common.MissingValue,
+      'nodes')
+    return False
+
+  try:
+    must_be_string(n,'device',f'nodes.{n.name}',module='nodes',abort=True)
+  except Exception as ex:
+    return False
+
+  devtype = n.device
+
+  if not devtype in topology.defaults.devices:
+    common.error(f'Unknown device {devtype} in node {n.name}',common.IncorrectValue,'nodes')
+    return False
+
+  dev_def = topology.defaults.devices[devtype]
+  if not isinstance(dev_def,dict):
+    common.fatal(f"Device data for device {devtype} must be a dictionary")
+
+  for kw in ['interface_name','description']:
+    if not kw in dev_def:
+      common.error(
+        f'Device {devtype} used on node {n.name} is not a valid device type\n'+
+        "... run 'netlab show devices' to display valid device types",
+        common.IncorrectValue,
+        'nodes')
+      return False
+
+  return True
+
+"""
+Find the image/box for the container/device
+"""
+def find_node_image(n: Box, topology: Box) -> bool:
+  provider = devices.get_provider(n,topology.defaults)
+
+  pdata = devices.get_provider_data(n,topology.defaults)
+  if 'node' in pdata:
+    if not isinstance(pdata.node,Box):    # pragma: no cover
+      common.fatal(f"Node data for device {n.device} provider {provider} must be a dictionary")
+      return False
+    n[provider] = pdata.node + n.get(provider,{})
+
+  if n.box:
+    return True
+
+  if 'image' in n:
+    n.box = n.image
+    del n['image']
+    return True
+
+  if 'image' in topology.defaults.devices[n.device]:
+    if not must_be_string(topology.defaults.devices[n.device],'image',f'defaults.devices.{n.device}',module='nodes'):
+      return False
+
+    n.box = topology.defaults.devices[n.device].image
+    return True
+
+  if 'image' in pdata:
+    if not must_be_string(pdata,'image',f'defaults.devices.{n.device}.{provider}.image',module='nodes'):
+      return False
+
+    n.box = pdata.image
+    return True
+
+  common.error(
+    f'No image specified for device {n.device} (provider {provider}) used by node {n.name}',
+    common.MissingValue,
+    'nodes')
+
+  return False
+
+"""
+Validate provider setting used in a node
+"""
+
+def validate_node_provider(n: Box, topology: Box) -> bool:
+  if not 'provider' in n:
+    return True
+
+  if not n.provider in topology.defaults.providers:
+    common.error(
+      f'Invalid provider {n.provider} specified in node {n.name}',
+      common.IncorrectValue,
+      'nodes')
+    return False
+
+  if not n.provider in topology.defaults.providers[topology.provider]:
+    common.error(
+      f'Provider {n.provider} specified in node {n.name} is not compatible with lab topology provider {topology.provider}',
+      common.IncorrectValue,
+      'nodes')
+    return False
+
+  topology[topology.provider].providers[n.provider] = True
+  return True
 
 """
 Add provider data to nodes:
@@ -128,67 +254,14 @@ def augment_node_provider_data(topology: Box) -> None:
     common.fatal('Device defaults (defaults.devices) are missing')
 
   for name,n in topology.nodes.items():
-    if 'device' not in n:
-      n.device = topology.defaults.device
-
-    if not n.device:
-      common.error(
-        f'No device type specified for node {name} and there is no default device type',
-        common.MissingValue,
-        'nodes')
+    if not validate_node_provider(n,topology):
       continue
 
-    devtype = n.device
-
-    if not devtype in topology.defaults.devices:
-      common.error(f'Unknown device {devtype} in node {name}',common.IncorrectValue,'nodes')
+    if not find_node_device(n,topology):
       continue
 
-    if not isinstance(topology.defaults.devices[devtype],dict):
-      common.fatal(f"Device data for device {devtype} must be a dictionary")
-
-    provider = devices.get_provider(n,topology.defaults)
-    pdata = devices.get_provider_data(n,topology.defaults)
-    if 'node' in pdata:
-      if not isinstance(pdata.node,Box):    # pragma: no cover
-        common.fatal(f"Node data for device {devtype} provider {provider} must be a dictionary")
-        return
-      n[provider] = pdata.node + n.get(provider,{})
-
-    if n.box:
+    if not find_node_image(n,topology):
       continue
-    if 'image' in n:
-      n.box = n.image
-      del n['image']
-      continue
-
-    if 'image' in topology.defaults.devices[devtype]:
-      image = topology.defaults.devices[devtype].image
-      if isinstance(image,str):
-        n.box = image
-        continue
-      else:
-        common.error(
-          f"Image attribute of device {devtype} used by node {name} should be a string\n... found {image}",
-          common.IncorrectValue,
-          'nodes')
-        continue
-
-    if 'image' in pdata:
-      if isinstance(pdata.image,str):
-        n.box = pdata.image
-        continue
-      else:
-        common.error(
-          f"Image attribute specified for provider {provider} on device {devtype} should be a string\n... found {pdata.image}",
-          common.MissingValue,
-          'nodes')
-        continue
-
-    common.error(
-      f'No image specified for device {devtype} (provider {provider}) used by node {name}',
-      common.MissingValue,
-      'nodes')
 
 """
 Add system data to devices -- hacks that are not yet covered in the settings structure
@@ -271,7 +344,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
             n.loopback[af] = str(prefix_list[af])
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
-    topology.Provider.call("augment_node_data",n,topology)
+    providers.execute_node("augment_node_data",n,topology)
 
 '''
 Return a copy of the topology (leaving original topology unchanged) with unmanaged devices removed

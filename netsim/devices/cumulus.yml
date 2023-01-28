@@ -1,0 +1,50 @@
+description: Cumulus VX 4.x or 5.x configured without NVUE
+interface_name: swp{ifindex}
+loopback_interface_name: "lo{ifindex}"
+mgmt_if: eth0
+libvirt:
+  image: CumulusCommunity/cumulus-vx:4.4.0
+virtualbox:
+  image: CumulusCommunity/cumulus-vx:4.3.0
+group_vars:
+  ansible_user: vagrant
+  ansible_ssh_pass: vagrant
+  ansible_network_os: cumulus
+  ansible_connection: paramiko
+evpn._start_transit_vlan: 3900
+features:
+  initial:
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+  ospf:
+    unnumbered: True
+  bgp:
+    ipv6_lla: True
+    rfc8950: True
+    activate_af: True
+    local_as: True
+    vrf_local_as: True
+  vlan:
+    model: l3-switch
+    svi_interface_name: "vlan{vlan}"
+    subif_name: "{ifname}.{vlan.access_id}"
+    native_routed: True
+  evpn:
+    irb: True
+    asymmetrical_irb: True
+  gateway:
+    protocol: [ anycast, vrrp ]
+clab:
+  mtu: 1500
+  node:
+    kind: cvx
+    runtime: docker
+  image: networkop/cx:4.4.0
+  group_vars:
+    ansible_connection: docker
+    ansible_user: root
+external:
+  image: none
+graphite.icon: switch

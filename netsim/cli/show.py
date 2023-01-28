@@ -12,7 +12,10 @@ from box import Box
 from .. import common
 from .. import read_topology
 
-def print_table(heading: typing.List[str],rows: typing.List[typing.List[str]]) -> None:
+def print_table(
+      heading: typing.List[str],
+      rows: typing.List[typing.List[str]],
+      inter_row_line: bool = True) -> None:
 
   col_len: typing.List[int] = []
 
@@ -36,14 +39,18 @@ def print_table(heading: typing.List[str],rows: typing.List[typing.List[str]]) -
   print_row('+',char='=')
   for idx,row in enumerate(rows):
     print_row('|',row=row)
-    print_row('+',char='-')
+    if inter_row_line:                                                # If we're printing inter-row lines...
+      print_row('+',char='-')                                         # ... print one after each row
+
+  if not inter_row_line:                                              # No inter-row lines?
+      print_row('+',char='-')                                         # ... we still need one to wrap up the table
 
 def show_images(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
   heading.extend(settings.providers.keys())
 
   rows = []
-  for device in settings.devices.keys():
+  for device in sorted(settings.devices.keys()):
     if device == 'none':
       continue
 
@@ -59,9 +66,26 @@ def show_images(settings: Box, args: argparse.Namespace) -> None:
   print("")
   print_table(heading,rows)
 
+def show_devices(settings: Box, args: argparse.Namespace) -> None:
+  heading = ['device','description']
+
+  rows = []
+  for device in sorted(settings.devices.keys()):
+    dev_data = settings.devices[device]
+    if device == 'none' or not 'description' in dev_data:
+      continue
+
+    row = [ device,dev_data.description ]
+    rows.append(row)
+
+  print('Virtual network devices supported by netlab')
+  print("")
+  print_table(heading,rows,inter_row_line=False)
+
 def show_module_support(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
-  heading.extend([ m for m in settings.keys() if 'supported_on' in settings[m]])
+  mod_list = sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
+  heading.extend(mod_list)
 
   rows = []
   for device in sorted(settings.devices.keys()):
@@ -73,7 +97,7 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
 
     row = [ device ]
     for m in heading[1:]:
-      value = "x" if device in settings[m].supported_on else ""
+      value = "x".center(len(m)) if device in settings[m].supported_on else ""
       row.append(value)
     rows.append(row)
 
@@ -83,6 +107,7 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
 
 show_dispatch = {
   'images': show_images,
+  'devices': show_devices,
   'module-support': show_module_support
 }
 

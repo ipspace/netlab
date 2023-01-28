@@ -1,6 +1,14 @@
 Release notes
 =============
 
+**[Release 1.5.0](release-1.5.0) (2023-01-28)**
+
+* [Multi-provider topologies](providers.md#combining-virtualization-providers)
+* [Running multiple lab instances on Linux Servers](plugins/multilab.md)
+* Split large *libvirt* topology into [smaller **vagrant up** batches](labs/libvirt.md#starting-virtual-machines-in-batches)
+* [Use custom network/bridge name and IP subnet](labs/libvirt.md#libvirt-management-network) for `vagrant-libvirt` management network
+* ['loopback' link type](links.md#loopback-links) can be used to create additional loopback interfaces
+
 **[Release 1.4.3](release-1.4.3) (2023-01-12)**
 
 * [IOS XRv](platforms.md) support (initial configuration, IPv4+IPv6, OSPFv2/v3, IS-IS, BGP)
@@ -301,6 +309,7 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.5.md
    release/1.4.md
    release/1.3.md
    release/1.2.md

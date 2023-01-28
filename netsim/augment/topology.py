@@ -12,7 +12,7 @@ from box import Box
 
 from .. import common
 from .. import data
-from ..data.validate import must_be_list,validate_attributes
+from ..data.validate import must_be_list,validate_attributes,must_be_string
 
 #
 # Extend link/node/global attribute lists with extra attributes
@@ -40,7 +40,10 @@ def extend_attribute_list(settings: Box, attribute_path: str = 'topology.default
 
     for v in settings.extra_attributes[k]:             # Have to iterate over values in the custom attribute list
       if not v in settings.attributes[k]:              # ... to prevent duplicate values in attribute lists
-        settings.attributes[k].append(v)               # Going through sets is not an option due to element rearrangements
+        if isinstance(settings.attributes[k],Box):     # Deal with old- or new-style attributes
+          settings.attributes[k][v] = None             # ... new style: add element to dictionary
+        else:
+          settings.attributes[k].append(v)             # ... old style: append it to the list
 
 #
 # Extend attribute lists for all top-level elements of the defaults dictionary
@@ -68,14 +71,15 @@ def check_required_elements(topology: Box) -> None:
     common.fatal("Fatal topology errors, aborting")
 
   if not 'name' in topology:
-    topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))
+    topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
     topology.name = topo_name
 
   if 'module' in topology:
     must_be_list(topology,'module','')
     topology.defaults.module = topology.module
 
-  topology.defaults.name = topology.name
+  if must_be_string(topology,'name','',module='topology'):
+    topology.defaults.name = topology.name
 
 def check_global_elements(topology: Box) -> None:
   providers = list(topology.defaults.providers.keys())
@@ -103,6 +107,9 @@ def adjust_global_parameters(topology: Box) -> None:
 
   if not topology.provider:
     common.fatal('Virtualization provider is not defined in either "provider" or "defaults.provider" elements')
+
+  if not must_be_string(topology,'provider','',module='topology'):
+    common.exit_on_error()
 
   providers = topology.defaults.providers
   if not topology.provider in providers:

@@ -67,7 +67,7 @@ Each address pool specification is a dictionary of address pools. Individual add
 * **unnumbered** -- unnumbered address pool. Interfaces attached to nodes based on this address pool will have IPv4 and/or IPv6 enabled based on the protocols enabled on node's loopback interface.
 * **prefix** -- IPv4 subnet allocation size. IPv6 subnets use /64 prefixes that cannot be changed.
 * **start** -- first subnet or first IP address offset. Used primarily with **loopback** pool to ensure the first devices gets x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address.
-* **allocation** -- [address allocation policy](addressing-tutorial-lan-links) (`id_based`, `sequential`, or `p2p`).
+* **allocation** -- [address allocation policy](addressing-tutorial-lan-links) (`id_based`, `sequential`, `p2p` or `loopback`).
 
 **Notes:**
 

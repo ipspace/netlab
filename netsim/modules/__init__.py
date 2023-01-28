@@ -41,7 +41,7 @@ class _Module(Callback):
   @classmethod
   def load(self, module: str, data: Box) -> typing.Any:
     module_name = __name__+"."+module
-    obj = self.find_class(module_name)
+    obj = self.find_class(module_name,abort=True)
     if obj:
       return obj(data)
     else:
@@ -74,6 +74,7 @@ def pre_transform(topology: Box) -> None:
   module_transform("pre_transform",topology)
   node_transform("pre_transform",topology)
   link_transform("pre_transform",topology)
+  common.exit_on_error()
 
 """
 pre/post_node_transform: executed just before/after the node data model transformation is started
@@ -273,6 +274,14 @@ def merge_global_module_params(topology: Box) -> None:
 '''
 add_module_extra_parameters: add extra module keywords (ex: 'vrfs' for 'vrf' module) to the list of attributes
 '''
+
+##### REMOVE AFTER ATTRIBUTE MIGRATION #####
+def extend_global_attributes(attr: typing.Union[list,dict], extra: str) -> None:
+  if isinstance(attr,dict):
+    attr[extra] = None
+  elif isinstance(attr,list):
+    attr.append(extra)
+
 def add_module_extra_parameters(topology: Box) -> None:
   if not 'module' in topology:
     return
@@ -282,7 +291,8 @@ def add_module_extra_parameters(topology: Box) -> None:
       for k in topology.defaults[m].attributes.extra.keys():    # ... oh, it does, iterate through its keys (attribute levels)
         for attr in topology.defaults[m].attributes.extra[k]:   # Take every attribute from the list of extra attributes
           if not attr in topology.defaults.attributes[k]:       # ... and if it's not already in the global list of attributes
-            topology.defaults.attributes[k].append(attr)        # ... append it to the global list
+            extend_global_attributes(topology.defaults.attributes[k],attr)
+###            topology.defaults.attributes[k].append(attr)        # ... append it to the global list
 
 '''
 adjust_modules: somewhat intricate multi-step config module adjustments

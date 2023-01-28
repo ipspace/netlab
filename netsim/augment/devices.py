@@ -21,7 +21,7 @@ Get generic device attribute:
 """
 def get_device_attribute(node: Box, attr: str, defaults: Box) -> typing.Optional[typing.Any]:
   devtype  = node.device
-  provider = defaults.provider
+  provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:    # pragma: no cover
     common.fatal(f'Internal error: call to get_device_attribute with unknown device {devtype}')
@@ -64,7 +64,7 @@ Get all device data for current provider
 """
 def get_provider_data(node: Box, defaults: Box) -> Box:
   devtype  = node.device
-  provider = defaults.provider
+  provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:
     common.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
@@ -76,7 +76,7 @@ Get consolidated device data
 """
 def get_consolidated_device_data(node: Box, defaults: Box) -> Box:
   devtype  = node.device
-  provider = defaults.provider
+  provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:
     common.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
@@ -91,7 +91,7 @@ def get_consolidated_device_data(node: Box, defaults: Box) -> Box:
 Get node provider -- currently returns the default provider, but we'll do fun stuff pretty soon ;)
 """
 def get_provider(node: Box, defaults: Box) -> str:
-  return defaults.provider
+  return node.get('provider',defaults.provider)
 
 def augment_device_settings(topology: Box) -> None:
   pass

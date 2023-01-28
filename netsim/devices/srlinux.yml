@@ -1,0 +1,64 @@
+description: Nokia SR Linux container
+mgmt_if: mgmt0
+interface_name: ethernet-1/{ifindex}
+loopback_interface_name: "lo0.{ifindex}"
+group_vars:
+  ansible_user: admin
+  ansible_ssh_pass: NokiaSrl1!
+  ansible_network_os: srlinux
+  ansible_connection: paramiko
+  netlab_console_connection: ssh
+sr:
+  srgb_range_start: 500000
+  srgb_range_size: 1000
+  ipv6_sid_offset: 100
+bfd:           # SR Linux supports lower BFD timers than the global default
+  min_tx: 100
+  min_rx: 100
+clab:
+  image: ghcr.io/nokia/srlinux
+  node:
+    kind: srl
+    type: ixrd2
+  interface:
+    name: e1-{ifindex}
+  group_vars:
+    srlinux_grpc_port: 57400
+features:
+  initial:
+    system_mtu: True
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+  vlan:
+    model: router
+    svi_interface_name: "irb0.{vlan}"
+    subif_name: "{ifname}.{vlan.access_id}"
+    mixed_trunk: True
+  bgp:
+    local_as: True
+    vrf_local_as: True
+    local_as_ibgp: True
+    activate_af: True
+    ipv6_lla: True
+    rfc8950: True
+  vxlan:
+    requires: [ evpn ] # vrf for l3 vxlan
+  evpn:
+    irb: True
+    asymmetrical_irb: True
+  ospf:
+    unnumbered: False
+  isis:
+    unnumbered:
+      ipv4: False
+      ipv6: True
+      network: False
+  vrf:
+    keep_module: True
+  gateway:
+    protocol: [ anycast ]
+external:
+  image: none
+graphite.icon: router

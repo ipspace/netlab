@@ -30,7 +30,7 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
     parser.add_argument('--debug', dest='debug', action='store',nargs='*',
                     choices=[
                       'all','addr','cli','links','libvirt','modules','plugin','template',
-                      'vlan','vrf','quirks','validate','addressing','groups'
+                      'vlan','vrf','quirks','validate','addressing','groups','quirks'
                     ],
                     help=argparse.SUPPRESS)
 
@@ -42,6 +42,7 @@ def topology_parse_args() -> argparse.ArgumentParser:
                   help='Local topology defaults file')
   parser.add_argument('-d','--device', dest='device', action='store', help='Default device type')
   parser.add_argument('-p','--provider', dest='provider', action='store',help='Override virtualization provider')
+  parser.add_argument('--plugin',dest='plugin',action='append',help='Additional plugin(s)')
   parser.add_argument('-s','--set',dest='settings', action='append',help='Additional parameters added to topology file')
   return parser
 
@@ -72,7 +73,7 @@ def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   common.set_logging_flags(args)
   topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
 
-  if args.settings or args.device or args.provider:
+  if args.settings or args.device or args.provider or args.plugin:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)
     read_topology.add_cli_args(topology,args)
 

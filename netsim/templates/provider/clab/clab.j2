@@ -1,13 +1,16 @@
 name: {{ name }}
 
+{# We have to deal with mgmt._network not being defined or being False-ish #}
 mgmt:
-  network: netlab_mgmt
-  ipv4_subnet: {{ defaults.addressing.mgmt.ipv4|default('172.20.20.0/24') }}
+  network: {{ addressing.mgmt._network|default('') or 'netlab_mgmt' }}
+  ipv4_subnet: {{ addressing.mgmt.ipv4|default('172.20.20.0/24') }}
   # Note: 'start' not validated
 {% if defaults.addressing.mgmt.ipv6 is defined %}
   ipv6_subnet: {{ defaults.addressing.mgmt.ipv6 }}
 {% endif %}
-
+{% if addressing.mgmt._bridge|default('') %}
+  bridge: {{ addressing.mgmt._bridge }}
+{% endif %}
 topology:
   nodes:
 {% for name,n in nodes.items() %}
@@ -75,7 +78,12 @@ topology:
 {%       set clab = nl.clab|default({}) %}
   - endpoints:
     - "{{ n.name }}:{{ clab.name|default(nl.ifname) }}"
+{# Use node_intf name for bridge veth interface in standard setup and more cryptic (but unique) name in multilab deployment #}
+{%       if defaults.multilab.id|default(False) %}
+    - "{{ l.bridge }}:{{ name[:6] }}_{{ n.id }}_{{ nl.ifindex }}"
+{%       else %}
     - "{{ l.bridge }}:{{ n.name[:10] }}_{{ clab.name|default(nl.ifname) }}"
+{%       endif %}
 {%     endfor %}
 {%   endfor %}
 {% endif %}

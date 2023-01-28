@@ -1,0 +1,44 @@
+description: FRR container
+interface_name: eth{ifindex}
+mgmt_if: eth0
+loopback_interface_name: "lo{ifindex}"
+group_vars:
+  ansible_connection: docker
+  ansible_network_os: frr
+  ansible_python_interpreter: auto_silent
+clab:
+  # image: frrouting/frr:v7.5.0
+  image: frrouting/frr:v8.4.0
+  mtu: 1500
+  node:
+    kind: linux
+    config_templates:
+      daemons: /etc/frr/daemons
+external:
+  image: none
+features:
+  initial:
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+  vlan:
+    model: router
+    svi_interface_name: "vlan{vlan}"
+    subif_name: "{ifname}.{vlan.access_id}"
+    mixed_trunk: True
+    native_routed: True
+  evpn:
+    irb: True
+  vrf:
+    keep_module: True # Don't remove vrf module even if no interfaces are associated with any vrfs
+  bgp:
+    activate_af: True
+    ipv6_lla: True
+    rfc8950: True
+    local_as: True
+    vrf_local_as: True
+  mpls:
+    ldp: True
+    vpn: True
+graphite.icon: router

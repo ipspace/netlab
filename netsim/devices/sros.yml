@@ -1,0 +1,71 @@
+description: Nokia SR OS container
+mgmt_if: A/1
+interface_name: 1/1/c{ifindex}
+loopback_interface_name: "loopback.{ifindex}"
+group_vars:
+  ansible_user: admin
+  ansible_ssh_pass: admin
+  ansible_network_os: sros
+  ansible_connection: paramiko_ssh
+  netlab_console_connection: ssh
+  sros_use_openconfig: False
+sr:
+  srgb_range_start: 500000
+  srgb_range_size: 1000
+  ipv6_sid_offset: 100
+bfd:           # SR OS supports lower BFD timers than the global default
+  min_tx: 100
+  min_rx: 100
+features:
+  initial:
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+  ospf:
+    unnumbered: True
+  isis:
+    unnumbered:
+      ipv4: True
+      ipv6: True
+      network: False # SROS treats the interfaces as point-to-point and forms at most 1 adjacency
+  bgp:
+    local_as: True
+    vrf_local_as: True
+    local_as_ibgp: True
+    activate_af: True
+    ipv6_lla: True
+    rfc8950: False   # Not implemented yet, may be possible
+  evpn:
+    irb: True
+    asymmetrical_irb: True
+  mpls:
+    ldp: True
+    # bgp: True
+    # vpn: True
+    # 6pe: True
+  vxlan:
+    requires: [ evpn ] # Current implementation focuses on VXLAN+EVPN, device supports static too
+  vlan:
+    model: router
+    svi_interface_name: "svi.{vlan}"
+    subif_name: "{ifname}/1:{vlan.access_id}"
+    mixed_trunk: True
+    native_routed: True
+  gateway:
+    protocol: [ anycast, vrrp ]
+
+clab:
+  image: vrnetlab/vr-sros
+  mtu: 1500
+  node:
+    kind: vr-sros
+    type: sr-1 # By default emulate SR-1
+    license: /Projects/SR_OS_VSR-SIM_license.txt
+  interface:
+    name: eth{ifindex}
+  group_vars:
+    sros_grpc_port: 57400
+external:
+  image: none
+graphite.icon: router

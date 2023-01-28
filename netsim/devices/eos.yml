@@ -1,0 +1,70 @@
+description: Arista vEOS VM or cEOS container
+interface_name: Ethernet{ifindex}
+description: Arista vEOS
+mgmt_if: Management1
+loopback_interface_name: Loopback{ifindex}
+virtualbox:
+  image: arista/veos
+group_vars:
+  ansible_user: vagrant
+  ansible_ssh_pass: vagrant
+  ansible_network_os: eos
+  ansible_connection: network_cli
+features:
+  bgp:
+    local_as: True
+    vrf_local_as: True
+    local_as_ibgp: True
+    activate_af: True
+  initial:
+    system_mtu: True
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+  ospf:
+    unnumbered: True
+  isis:
+    unnumbered:
+      ipv4: True
+      ipv6: True
+      network: True
+  mpls:
+    ldp: True
+    bgp: True
+    vpn: True
+    6pe: True
+  vlan:
+    model: l3-switch
+    svi_interface_name: Vlan{vlan}
+    subif_name: "{ifname}.{subif_index}"
+    native_routed: True
+  evpn:
+    irb: True
+    asymmetrical_irb: True
+    bundle: [ vlan_aware ]
+  gateway:
+    protocol: [ anycast, vrrp ]
+clab:
+  interface:
+    name: et{ifindex}
+  node:
+    kind: ceos
+    env:
+      INTFTYPE: et
+  mgmt_if: Management0
+  image: ceos:4.26.4M
+  group_vars:
+    ansible_user: admin
+    ansible_ssh_pass: admin
+    ansible_become: yes
+    ansible_become_method: enable
+libvirt:
+  image: arista/veos
+  create_template: eos.xml.j2
+#      create: |
+#        virt-install --connect=qemu:///system --name=vm_box --os-type=linux --arch=x86_64 --cpu host --vcpus=2 --hvm
+#          --ram=2048 --disk path=vm.qcow2,bus=ide,format=qcow2 --network=network:vagrant-libvirt,model=virtio --graphics none --import
+external:
+  image: none
+graphite.icon: switch

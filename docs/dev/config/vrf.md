@@ -35,16 +35,14 @@ Other parameters:
 
 ## Device Features
 
-The only configurable VRF-related feature is the name of in-VRF loopback interface -- you can specify it in `devices.<device>.features.vrf.loopback_interface_name`. Use **vrfidx** variable to create a unique loopback interface for every VRF (based on VRF index).
+The only configurable VRF-related feature is the name of in-VRF loopback interface -- you can specify it in `devices.<device>.loopback_interface_name`. Use **ifindex** variable to create unique loopback interfaces (**ifindex** will be set to VRF index when creating VRF loopback interfaces).
 
 Cisco IOS example:
 
 ```
 devices:
   iosv:
-    features:
-      vrf:
-        loopback_interface_name: Loopback{vrfidx}
+    loopback_interface_name: Loopback{ifindex}
 ```
 
 ## VRF Configuration Principles

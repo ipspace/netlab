@@ -1,4 +1,25 @@
-# Create Vagrant Boxes for Libvirt/KVM Environment
+# Using libvirt/KVM with Vagrant
+
+*netlab* can use *Vagrant* with *vagrant-libvirt* plugin to start virtual machines in libvirt/KVM environment. To use it:
+
+* Install *netlab* on a [Linux server](../install/linux.md) or [virtual machine](../install/ubuntu-vm.md)
+* If you're using Ubuntu, execute **netlab install libvirt** to install KVM, libvirt, Vagrant, and vagrant-libvirt. You'll have to install the software manually on other Linux distributions.
+* [Download or build Vagrant boxes](#vagrant-boxes)
+* Create [lab topology file](../topology-overview.md). *libvirt* is the default virtualization provider and does not have to be specified in the topology file
+* Start the lab with **[netlab up](../netlab/up.md)**
+
+```{warning}
+You MUST use **‌netlab up** to start the lab to ensure the virtual machines get correct management IP addresses.
+```
+
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Vagrant Boxes
 
 Vagrant starts virtual machines from prepackaged VM images called *boxes*. While it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
 
@@ -66,6 +87,43 @@ To delete an old version of a Vagrant box use a procedure  similar to the one de
 [^DP]: *libvirt* environment created with the **netlab install libvirt** installation script uses the *default* storage pool. A custom installation might use a different storage pool name.
 
 The new Vagrant box will be copied into the *libvirt* storage pool the next time you'll use the affected device in your lab.
+
+## Libvirt Management Network
+
+*vagrant-libvirt* plugin a dedicated uses *libvirt* network to connect the VM management interfaces to the host TCP/IP stack. **netlab up** command creates that network before executing **vagrant up** to ensure the network contains desired DHCP mappings. The management network is automatically deleted when you execute **netlab down** (recommended) or **vagrant destroy**.
+
+You can change the parameters of the management network in the **addressing.mgmt** pool:
+
+* **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
+* **\_network**: The *libvirt* network name (default: `vagrant-libvirt`)
+* **\_bridge**: The name of the underlying Linux bridge (default: `libvirt-mgmt`)
+
+## Starting Virtual Machines in Batches
+
+*vagrant-libvirt* plugin tries to start all the virtual machines specified in `Vagrantfile` in parallel. The resulting strain on CPU resources might cause VM boot failures in very large topologies. As a workaround, you can configure **libvirt** virtualization provider to execute a series of `vagrant up` commands to start the virtual machines in smaller batches:
+
+* Configure the batch size with **defaults.providers.libvirt.batch_size** parameter (an integer between 1 and 50)
+* Configure idle interval between batches (if needed) with **defaults.providers.libvirt.batch_interval** parameter (between 1 and 1000 seconds).
+
+Example:
+
+```
+provider: libvirt
+defaults.device: cumulus
+defaults.providers.libvirt.batch_size: 2
+defaults.providers.libvirt.batch_interval: 10
+
+nodes: [ a,b,c,x,z ]
+module: [ ospf ]
+
+links: [ a-x, a-z, b-x, b-z, c-x, c-z ]
+```
+
+Please note that the `batch_size` is set artificially low so that this pretty small topology generates three batches. Realistic `batch_size` depends on your hardware resources (CPU, memory) and VM type.
+
+```{tip}
+The virtual machines are batched based on their order in **‌nodes** list/dictionary. You might want to adjust the node order to group virtual machines with long start times (example: Cisco Nexus OS or Juniper vSRX) into as few batches as possible.
+```
 
 ```{eval-rst}
 .. toctree::

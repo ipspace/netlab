@@ -2,6 +2,7 @@
 # VRF module
 #
 import typing, re
+import netaddr
 from box import Box
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
@@ -43,12 +44,20 @@ def get_rd_as_number(obj: Box, topology: Box) -> typing.Optional[typing.Any]:
 # Parse rd/rt value -- check whether the RD/RT value is in N:N format
 #
 
-def parse_rdrt_value(value: str) -> typing.Optional[typing.List[int]]:
+def parse_rdrt_value(value: str) -> typing.Optional[typing.List[typing.Union[int,str]]]:
   try:
     (asn,vid) = str(value).split(':')
-    return [int(asn),int(vid)]
   except Exception as ex:
     return None
+
+  try:
+    return [int(asn),int(vid)]
+  except Exception as ex:
+    try:
+      netaddr.IPNetwork(asn)
+      return [asn,int(vid)]
+    except Exception as ex:
+      return None
 
 def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
   rd_set = _dataplane.get_id_set('vrf_rd')
@@ -110,7 +119,7 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
         vdata.rd = f'{asn}:{vdata.rd}'
       elif isinstance(vdata.rd,str):
         if parse_rdrt_value(vdata.rd) is None:
-          common.error(f'RD value in VRF {vname} in {obj_name} is not in N:N format',
+          common.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
             common.IncorrectValue,
             'vrf')
       else:
@@ -255,8 +264,9 @@ def validate_vrf_route_leaking(node : Box) -> None:
             'vrf')
 
 def vrf_loopbacks(node : Box, topology: Box) -> None:
-  features = devices.get_device_features(node,topology.defaults)
-  loopback_name = features.vrf.loopback_interface_name
+  loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults) or \
+                  devices.get_device_attribute(node,'features.vrf.loopback_interface_name',topology.defaults)
+
   if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
     common.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
     return
@@ -275,7 +285,7 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
       'type': "loopback",
       'name': f'VRF Loopback {vrfname}',
       'ifindex': node.interfaces[-1].ifindex + 1,
-      'ifname': loopback_name.format(vrfidx=v.vrfidx),
+      'ifname': loopback_name.format(vrfidx=v.vrfidx,ifindex=v.vrfidx),     # Use VRF-specific and generic loopback index
       'neighbors': [],
       'vrf': vrfname,
     },default_box=True,box_dots=True)
@@ -354,6 +364,7 @@ class VRF(_Module):
         module_source='topology',
         module='vrf')                                   # Function is called from 'vrf' module
 
+    common.exit_on_error()
     normalize_vrf_ids(topology)
     populate_vrf_static_ids(topology)
     set_vrf_ids(topology,topology)

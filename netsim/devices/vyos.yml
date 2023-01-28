@@ -1,0 +1,52 @@
+description: Vyatta VyOS VM/container
+interface_name: eth{ifindex}
+loopback_interface_name: "dum{ifindex}"
+mgmt_if: eth0
+libvirt:
+  image: vyos/current
+group_vars:
+  ansible_network_os: vyos
+  ansible_connection: paramiko
+  ansible_user: vyos
+  ansible_ssh_pass: vyos
+  docker_shell: su - vyos
+features:
+  initial:
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+  ospf:
+    unnumbered: True
+  bgp:
+    local_as: True
+    vrf_local_as: True
+    activate_af: True
+    ipv6_lla: True
+    rfc8950: True
+  mpls:
+    ldp: True
+    vpn: True
+  vlan:
+    model: l3-switch
+    svi_interface_name: "br0.{vlan}"
+    subif_name: "{ifname}.{vlan.access_id}"
+    native_routed: True
+  evpn:
+    irb: True
+    asymmetrical_irb: True
+  gateway:
+    protocol: [ vrrp ]
+clab:
+  image: ghcr.io/sysoleg/vyos-container
+  mtu: 1500
+  node:
+    kind: linux
+    binds:
+      '/lib/modules': '/lib/modules'
+  group_vars:
+    ansible_connection: docker
+    ansible_user: vyos
+external:
+  image: none
+graphite.icon: router

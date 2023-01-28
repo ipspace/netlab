@@ -14,14 +14,14 @@ Interested? [Read the documentation](https://netsim-tools.readthedocs.io/) and [
 
 ## Releases
 
-The latest release is [release 1.4.3](https://github.com/ipspace/netlab/releases/tag/release_1.4.3). We refactored several configuration modules and significantly improved topology validation in release 1.4.0, resulting in a number of potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html) first.
+The latest release is [release 1.5.0](https://github.com/ipspace/netlab/releases/tag/release_1.5.0). We redesigned topology validation in release 1.5.0, resulting in potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netsim-tools.readthedocs.io/en/latest/release.html) first.
 
-The latest release before the changes made in release 1.4.0 is [release 1.3.3](https://github.com/ipspace/netlab/releases/tag/release_1.3.3).
+The latest release before the changes made in release 1.5.0 is [release 1.4.3](https://github.com/ipspace/netlab/releases/tag/release_1.4.3).
 
 ## An overview of tools:
 
 **netlab up**
-: Uses **netlab create** to create configuration files, starts the virtual lab, and uses **netlab initial** and **netlab config** to deploy device configurations. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/up.html) 
+: Uses **netlab create** to create configuration files, starts the virtual lab, and uses **netlab initial** to deploy device configurations. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/up.html) 
 
 **netlab down**
 : Destroys the virtual lab. [More details](https://netsim-tools.readthedocs.io/en/latest/netlab/down.html) 

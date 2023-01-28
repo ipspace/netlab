@@ -45,7 +45,11 @@ def build_id_set(obj: Box, dsname: str, attr: str, objname: str) -> set:
     return { 
       v[attr]
         for v in obj[dsname].values() 
-          if isinstance(v,dict) and attr in v and v[attr] is not None and not isinstance(v[attr],bool) }
+          if isinstance(v,dict)
+            and attr in v
+            and v[attr] is not None
+            and not isinstance(v[attr],bool)
+            and isinstance(v[attr],(int,str)) }
 
   return set()
 

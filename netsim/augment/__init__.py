@@ -7,3 +7,4 @@ from . import devices
 from . import plugin
 from . import topology
 from . import main
+from . import config

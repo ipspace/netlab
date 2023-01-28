@@ -4,7 +4,7 @@ This document describes the device data model parameters one should consider whe
 
 Most of the document assumes you already created an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see [Using Ansible Configuration Modules](initial-ansible-config) section at the bottom of this document.
 
-The device configuration template (in Jinja2 format) should be stored in `netsim/templates/initial/<nos>.j2` with **nos** being the value of **netlab_device_type** or  **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
+The device configuration template (in Jinja2 format) should be stored in `netsim/templates/initial/<nos>.j2` with **nos** being the value of **netlab_device_type** or  **ansible_network_os** Ansible variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -12,6 +12,26 @@ The device configuration template (in Jinja2 format) should be stored in `netsim
    :local:
    :backlinks: none
 ```
+
+## Device Parameters
+
+You can use several device settings (specified in [device parameter file](dev-device-parameters)) to indicate which optional initial device configuration features your device supports:
+
+```
+loopback_interface_name: Loopback{ifindex}
+features:
+  initial:
+    system_mtu: True
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+```
+
+* **loopback_interface_name** -- Loopback interface name template. Use `{ifindex}` to insert interface number.
+* **features.initial.system_mtu** -- The device supports system MTU settings
+* **features.initial.ipv4.unnumbered** -- The device supports unnumbered IPv4 interfaces. The IP address of the primary loopback interface should be used as the IPv4 address of those interfaces.
+* **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
 
 ## Static Configuration
 
@@ -58,7 +78,7 @@ interface defaults
 
 ## Loopback Configuration
 
-The device data model assumes a single loopback interface with unspecified name (the loopback interface name should be set in the configuration template). The data model may contains these optional loopback-related parameters:
+The device data model assumes every network device has a primary loopback interface with unspecified name (the loopback interface name should be set in the configuration template). The data model may contains these optional loopback-related parameters:
 
 * **loopback.ipv4** -- IPv4 loopback address in CIDR format
 * **loopback.ipv6** -- IPv6 loopback address in CIDR format.
@@ -103,6 +123,7 @@ Device interfaces are specified in the **interfaces** list. Each interface might
 
 * **ifname** -- interface name (always present)
 * **type** -- link type, for example: `stub` (optional)
+* **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...)
 * **role** -- link role (as set by **role** link attribute -- optional)
 * **mtu** -- interface MTU (optional)
 * **bandwidth** -- interface bandwidth (optional)
@@ -149,9 +170,20 @@ interface {{ l.ifname }}
 {% endfor %}
 ```
 
-### Setting Interface Name
+### Virtual Interfaces
 
-You might want to implement slightly more complex interface descriptions. For example:
+If you have to configure additional parameters on physical interfaces (example: choosing between switch ports and router interfaces), use **virtual_interface** parameter to decide whether to include the configuration commands related to physical interfaces. Arista EOS example:
+
+```
+{% if l.virtual_interface is not defined %}
+!
+ mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
+{% endif %}
+```
+
+### Setting Interface Description
+
+You might want to implement slightly more complex interface descriptions than what _netlab_ generates. For example:
 
 * Interface name is not set on stub interfaces.
 * You might want to add link role to the interface description.
@@ -342,3 +374,20 @@ Fortinet example (**vdom** variable is set as an Ansible group variable in syste
 
 ... more tasks...
 ```
+
+## Integration Tests
+
+You can use the following integration tests in `tests/integration/initial` directory to test your implementation:
+
+* **interfaces.yml** -- basic interface parameters, including IPv6 addresses, MTU and bandwidth
+* **loopback.yml** -- additional loopback interfaces
+* **unnumbered.yml** -- unnumbered IPv4 and IPv6 interfaces
+
+To use an integration test to test your configuration templates:
+
+* Execute `netlab up --no-config -d <device> <topology-name>` to start the lab without configuring the devices.
+* Execute `netlab initial -o` to create device configurations in `config` directory.
+* Inspect device configurations before proceeding.
+* Execute `netlab initial` to deploy device configurations
+
+To use an integration test in a CI/CD pipeline, execute `netlab up -d <device> <topology-name>`.

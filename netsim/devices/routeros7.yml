@@ -1,0 +1,35 @@
+description: Mikrotik RouterOS version 7
+interface_name: ether{ifindex}
+mgmt_if: ether1
+loopback_interface_name: loopback{ifindex}
+ifindex_offset: 2
+libvirt:
+  image: mikrotik/chr7
+  create:
+    virt-install --connect=qemu:///system --name=vm_box --arch=x86_64 --cpu host --vcpus=2 --hvm
+      --ram=256 --network=network:vagrant-libvirt,model=virtio --graphics none --import
+      --disk path=vm.qcow2,format=qcow2,bus=ide
+group_vars:
+  ansible_network_os: routeros
+  ansible_connection: network_cli
+  ansible_user: admin
+  ansible_ssh_pass: admin
+  netlab_device_type: routeros7
+features:
+  mpls:
+    ldp: True
+    vpn: True
+  vlan:
+    model: l3-switch
+    svi_interface_name: "vlan{vlan}"
+    subif_name: "{ifname}-{vlan.access_id}"
+    native_routed: True
+clab:
+  image: vrnetlab/vr-routeros:7.6
+  node:
+    kind: vr-ros
+  interface:
+    name: eth{ifindex-1}
+external:
+  image: none
+graphite.icon: router

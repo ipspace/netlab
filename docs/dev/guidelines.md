@@ -44,6 +44,7 @@ The easiest way to get started is to [add support for a new platform for an exis
    :caption: Advanced Topics
 
    groups-pre-transform.md
+   validation.md
    vlan-vrf-vxlan-evpn-transform.md
    quirks.md
 ```

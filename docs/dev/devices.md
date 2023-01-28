@@ -3,7 +3,7 @@
 Adding new devices to *netlab* shouldn't be too hard:
 
 * [Figure out the device image to use](#device-images)
-* [Modify system settings](#system-settings) including [Ansible variables](#using-your-device-with-ansible-playbooks)
+* [Create device settings file](#system-settings) including [Ansible variables](#using-your-device-with-ansible-playbooks)
 * Add [Ansible task lists](#configuring-the-device) to deploy and fetch device configurations
 * Add [initial](#initial-device-configuration)- and [module-specific](#configuration-modules) configuration templates
 * [Test and document your work](#test-your-changes)
@@ -29,25 +29,87 @@ Please publish the recipe (it's OK to add it to *netlab* documentation under *in
 
 [^1]: That was one of the reasons ArcOS was taken off the list of supported platforms.
 
+(dev-device-parameters)=
 ## System Settings
 
-After building a Vagrant box or a container, you have to integrate it with *netlab*. You'll need
+After building a Vagrant box or a container, you have to integrate it with *netlab*. Start with *device name*:
 
-* A template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for details.
-* Device parameters within the **devices** section of `netsim/topology-defaults.yml`.
+* Device name should not be too long (up to 16 characters is still OK) and should contain alphanumeric characters, but no special characters or blanks.
+* Check the [list of supported platforms](../platforms.md) for existing device names.
+
+After you decided what *device name* to use, create `<device-name>.yml` file in `netsim/devices` directory. You'll use that file to store device parameters.
 
 The device parameters will have to include ([more details](device-box.md#adding-new-device-settings)):
 
-* Interface name template (**interface_name**), including `%d` to insert interface number.
+* Device **description** -- a short string describing the device
+* Interface name template (**interface_name**), including `{ifindex}` to insert interface number.
 * The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.
+* Optional loopback interface name (**‌loopback_interface_name**), including `{ifindex}` to insert interface number.
 * [Image name or box name](device-box.md#adding-new-device-settings) for every supported virtualization provider.
 
-After adding the device parameters into `netsim/topology-defaults.yml`, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.
+Here's the device parameters file for the dummy device (`none.yml`):
+
+```
+interface_name: eth{ifindex}
+loopback_interface_name: Loopback{ifindex}
+virtualbox:
+  image: none
+libvirt:
+  image: none
+clab:
+  image: none
+external:
+  image: none
+group_vars:
+  ansible_connection: paramiko_ssh
+  ansible_network_os: none
+```
+
+Some devices use different interface names for VMs and containers. Specify provider-specific parameters in `<provider>.parameter` settings. For example, Arista vEOS and cEOS have different management interface names:
+
+```
+interface_name: Ethernet{ifindex}
+description: Arista vEOS
+mgmt_if: Management1
+loopback_interface_name: Loopback{ifindex}
+clab:
+  mgmt_if: Management0
+```
+
+Network OS containers could also use interface names that are different from the names of the underlying Linux interfaces. For example, Arista cEOS uses **EthernetX** in device configuration to refer to Linux interface **ethX**. To deal with such a device, specify Linux (container) interface name in **clab.interface.name** parameter:
+
+```
+interface_name: Ethernet{ifindex}
+description: Arista vEOS
+clab:
+  interface:
+    name: et{ifindex}
+```
+
+Finally, you can specify node attributes that are copied into node data (example: default device MTU) in **node** dictionary. If you want to specify provider-specific node parameters, use **_provider_.node** dictionary. For example, containers requires **clab.kind** attribute, and Arista cEOS requires an extra environment variable:
+
+```
+interface_name: Ethernet{ifindex}
+description: Arista vEOS
+clab:
+  node:
+    kind: ceos
+    env:
+      INTFTYPE: et
+```
+
+Device parameters file can also include numerous *features*. You'll find feature description in developer documentation for individual modules.
+
+After creating the device parameters file, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.
+
+## Vagrant Template File
+
+If you'll use a Vagrant box to start the network device as a VM, you have to add a template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for more details.
 
 ## Using Your Device with Ansible Playbooks
 
-If you want to configure your device with **[netlab initial](../netlab/initial.md)** or **[netlab config](../netlab/config.md)**, or connect to your device with **[netlab connect](../netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory into the **group_vars** part of your device settings.
+If you want to configure your device with **[netlab initial](../netlab/initial.md)** or **[netlab config](../netlab/config.md)**, or connect to your device with **[netlab connect](../netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory. Add those variables into the **group_vars** part of your device parameter file.
 
 The Ansible variables should include:
 
@@ -55,13 +117,48 @@ The Ansible variables should include:
 
 * `ansible_network_os` -- must be specified if your device uses **network_cli** connection. 
 
-* `netlab_device_type` or `ansible_network_os`[^DTP] is used to select the configuration task lists and templates used by **[netlab initial](../netlab/initial.md)**, **[netlab config](../netlab/config.md)** and **[netlab collect](../netlab/collect.md)** commands. Use `netlab_device_type` when you're creating different devices running the same operating system (example: ExaBGP daemon on Linux).
+* `netlab_device_type` or `ansible_network_os`[^DTP] is used to select the configuration task lists and templates used by **[netlab initial](../netlab/initial.md)**, **[netlab config](../netlab/config.md)** and **[netlab collect](../netlab/collect.md)** commands. Use `netlab_device_type` when you're creating different devices running the same operating system (example: Juniper vSRX and vMX both run Junos).
 
 * `ansible_user` and `ansible_ssh_pass` must often be set to the default values included in the network device image.
 
-[^DTP]: `netlab_device_type` takes precedence over `ansible_network_is`.
+[^DTP]: `netlab_device_type` takes precedence over `ansible_network_os`.
 
-If you want to use the same device with multiple virtualization providers, you might have to specify provider-specific Ansible group variables (see **providers.clab.devices.eos** settings for details).
+For example, here are the group variables for Cisco IOSv:
+
+```
+group_vars:
+  ansible_user: vagrant
+  ansible_ssh_pass: vagrant
+  ansible_become_method: enable
+  ansible_become_password: vagrant
+  ansible_network_os: ios
+  ansible_connection: network_cli
+  netlab_device_type: ios
+```
+
+If you want to use the same device with multiple virtualization providers, you might have to specify provider-specific Ansible group variables in `<provider>.group_vars` key. For example, cEOS uses a different administrator username/password than the vEOS Vagrant box:
+
+```
+group_vars:
+  ansible_user: vagrant
+  ansible_ssh_pass: vagrant
+  ansible_network_os: eos
+  ansible_connection: network_cli
+clab:
+  interface:
+    name: et{ifindex}
+  node:
+    kind: ceos
+    env:
+      INTFTYPE: et
+  mgmt_if: Management0
+  image: ceos:4.26.4M
+  group_vars:
+    ansible_user: admin
+    ansible_ssh_pass: admin
+    ansible_become: yes
+    ansible_become_method: enable
+```
 
 ## Configuring the Device
 
@@ -69,8 +166,8 @@ To configure your device (including initial device configuration), you'll have t
 
 There are two ways to configure a devices:
 
-* **Configuration templates**: you'll have to create a single Ansible *configuration deployment task list* that will deploy configuration templates. The configuration deployment task list has to be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` or `netlab_device_type` setting from `netsim/topology-defaults.yml`. [More details...](config/deploy.md)
-* **Ansible modules** (or REST API): you'll have to create an Ansible task list for initial configuration and any other configuration module supported by the device. The task list has to be in the device-specific subdirectory of `netsim/ansible/templates/` directory; the subdirectory name must match the `ansible_network_os` or `netlab_device_type` setting from `netsim/topology-defaults.yml`. The task list name has to be `initial.yml` for initial configuration deployment or `module.yml` for individual configuration modules (replace *module* with the module name). [More details...](config/deploy.md)
+* **Configuration templates**: you'll have to create a single Ansible *configuration deployment task list* that will deploy configuration templates. The configuration deployment task list has to be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in device parameters file. [More details...](config/deploy.md)
+* **Ansible modules** (or REST API): you'll have to create an Ansible task list for initial configuration and any other configuration module supported by the device. The task list has to be in the device-specific subdirectory of `netsim/ansible/templates/` directory; the subdirectory name must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in device parameters file. The task list name has to be `initial.yml` for initial configuration deployment or `<module>.yml` for individual configuration modules. [More details...](config/deploy.md)
 
 You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](../netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
 
@@ -80,9 +177,9 @@ Most lab users will want to use **netlab initial** or **netlab up** command to b
 
 If decided to configure your devices with configuration templates, you have to create Jinja2 templates for initial device configuration and any configuration module you want to support.
 
-Jinja2 templates that will generate IP addressing and LLDP configuration have to be within the `netsim/ansible/templates/initial` directory. The name of your template must match the `netlab_device_type` or `ansible_network_os` value from `netsim/topology-defaults.yml`.
+Jinja2 templates that will generate IP addressing and LLDP configuration have to be within the `netsim/ansible/templates/initial` directory. The name of your template must match the `netlab_device_type` or `ansible_network_os` Ansible variable specified in device parameters file.
 
-Jinja2 templates for individual configuration modules have to be in a subdirectory of the `netsim/ansible/templates` directory. The subdirectory name has to match the module name and the name of the template must match the `netlab_device_type` or `ansible_network_os` value from `netsim/topology-defaults.yml`.
+Jinja2 templates for individual configuration modules have to be in a subdirectory of the `netsim/ansible/templates` directory. The subdirectory name has to match the module name and the name of the template must match the `netlab_device_type` or `ansible_network_os` Ansible variable specified in device parameters file.
 
 Use existing configuration templates and *[initial device configurations](../platforms.md#initial-device-configurations)* part of *[supported platforms](../platforms.md)* document to figure out what settings your templates should support. [More details...](config/initial.md)
 
@@ -99,12 +196,12 @@ For every configuration module you add, update the module's `supported_on` list 
 To add a device that is already supported by *netlab* to a new virtualization environment follow these steps:
 
 * Get or build a Vagrant box or container image.
-* Add the [image/box/container name](device-box.md#adding-new-device-settings) for the new virtualization provider to system settings.
-* Add device-specific virtualization provider configuration to provider-specific subdirectory of `netsim/templates/provider` directory. Use existing templates to figure out what exactly needs to be done.
-* You might need to add provider-specific device settings to system defaults (`netsim/topology-defaults.yml`). See **devices.eos.clab** settings for details.
+* Add the [image/box/container name](device-box.md#adding-new-device-settings) for the new virtualization provider to device parameters file.
+* Add device-specific virtualization provider configuration template to provider-specific subdirectory of `netsim/templates/provider` directory. Use existing templates to figure out what exactly needs to be done.
+* You might need to add provider-specific device settings to device parameters file. See the above Arista cEOS examples for more details.
 
 **Notes**
-* The **node** dictionary within provider-specific device settings is copied directly into node data under provider key (example: **devices.eos.clab.node**  system setting is copied into **nodes.s1.clab** assuming S1 is an EOS device and you're using *clab* provider).
+* The **node** dictionary within provider-specific device settings is copied directly into node data under provider key. For example, **clab.node**  Arista cEOS setting (from `netsim/devices/eos.yml`) is copied into **nodes.s1.clab** assuming S1 is an EOS device and you're using *clab* provider.
 * Other provider-specific device settings overwrite global device settings.
 
 ## Test Your Changes
@@ -118,7 +215,7 @@ To add a device that is already supported by *netlab* to a new virtualization en
 ## Final Steps
 
 * Fix the documentation (at least **install.md** and **platforms.md** documents).
-* Make sure you created at least one test topology in `tests/integration` directory.
+* Make sure you created at least one test topology in `tests/integration/platform` directory.
 * Submit a pull request against the **dev** branch.
 
 ```eval_rst

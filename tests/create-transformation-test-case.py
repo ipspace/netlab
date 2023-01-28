@@ -20,7 +20,7 @@ def create_expected_results_file(topology,fname):
   with open(fname,"w") as output:
     output.write(utils.transformation_results_yaml(topology))
     output.close()
-    print("Created expected transformed topology: %s" % fname)
+    print(f"... created expected transformed topology: {fname}")
 
 def parse():
   parser = argparse.ArgumentParser(description='Create topology test cases')
@@ -31,12 +31,11 @@ def parse():
                   help='Expected topology file name')
   args = parser.parse_args()
 
-  netsim.common.VERBOSE = False
-  netsim.common.LOGGING = True
   return args
 
 def main():
   args = parse()
+  print(f"Reading {args.topology}")
   topology = netsim.read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")
   netsim.common.exit_on_error()
   netsim.augment.main.transform(topology)

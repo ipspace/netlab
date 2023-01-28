@@ -3,293 +3,17 @@
 #
 
 import typing,typing_extensions
+import builtins as _bi
 from box import Box
 from .. import common
-from . import get_from_box,set_dots
-
-# wrong_type_message: return a text message with the name of the incorrect type
-#
-def wrong_type_text(x : typing.Any) -> str:
-  return "dictionary" if isinstance(x,dict) else str(type(x))
-
-def wrong_type_message(
-      path: str,                                        # Path to the value
-      expected: str,                                    # Expected type
-      value: typing.Any,                                # Value we got
-      key: typing.Optional[str] = None,                 # Optional key within the object
-      context: typing.Optional[typing.Any] = None,      # Optional context
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-                      ) -> None:
-
-  wrong_type = wrong_type_text(value)
-  path = f'{path}.{key}' if key else path
-  ctxt = f'\n... context: {context}' if context else ''
-  common.error(
-    f'attribute {path} must be {expected}, found {wrong_type}{ctxt}',
-    common.IncorrectType,
-    module or 'topology')
-  return
-
-def int_value_error(
-      path: str,                                        # Path to the value
-      expected: str,                                    # Expected type
-      value: typing.Any,                                # Value we got
-      key: typing.Optional[str] = None,                 # Optional key within the object
-      context: typing.Optional[typing.Any] = None,      # Optional context
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-                      ) -> None:
-
-  path = f'{path}.{key}' if key else path
-  ctxt = f'\n... context: {context}' if context else ''
-  common.error(
-    f'attribute {path} must be {expected}, found {value}{ctxt}',
-    common.IncorrectValue,
-    module or 'topology')
-  return
-
-def check_valid_values(
-      path: str,                                        # Path to the value
-      expected: list,                                   # Expected values
-      value:    typing.Any,                             # Value we got
-      key:      typing.Optional[str] = None,            # Optional key within the object
-      context:  typing.Optional[typing.Any] = None,     # Optional context
-      module:   typing.Optional[str] = None,            # Module name to display in error messages
-      abort:    bool = False,
-                      ) -> bool:
-
-  if isinstance(value,list):                            # Deal with lists first
-    f = list(filter(lambda x: x not in expected,value)) # ... find all values not in expected values
-    if not f:
-      return True                                       # ... no unexpected values, cool, get out of here
-    value = ','.join(f)                                 # ... otherwise create something to display
-  else:
-    if value in expected:                               # Not a list? Just check if the value matches one of expected values
-      return True
-
-  path = f'{path}.{key}' if key else path
-  ctxt = f'\n... context: {context}' if context else ''
-  common.error(
-    f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}',
-    common.IncorrectValue,
-    module or 'topology')
-
-  if abort:
-    raise common.IncorrectValue()
-  return False
+from . import get_from_box,set_dots,get_empty_box,get_box
 
 #
-# must_be_list: make sure a dictionary value is a list. Convert scalar values
-#   to list if needed, report an error otherwise.
-#
-# must_be_string: make sure a dictionary value is a string. Throw an error otherwise.
-#
-# must_be_int: make sure a dictionary value is an integer. Throw an error otherwise.
-#
-# must_be_dict: make sure a dictionary value is another dictionary. Throw an error otherwise.
-#
-# Input arguments:
-#   parent - the parent dictionary of the attribute we want to listify
-#            (a pointer to the element would be even better, but Python)
-#   key    - the parent dictionary key
-#   path   - path of the parent dictionary that would help the user identify
-#            where the problem is
-#
-# Sample use: make sure the 'config' attribute of a node is list
-#
-#    must_be_list(node,'config',f'nodes.{node.name}')
-#
-def must_be_list(
-      parent: Box,                                      # Parent object
-      key: str,                                         # Key within the parent object, may include dots.
-      path: str,                                        # Path to parent object, used in error messages
-      create_empty: bool = True,                        # Do we want to create an empty list if needed?
-      true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_, set _false_ to []
-      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-      valid_values: typing.Optional[list] = None,       # List of valid values
-      abort:      bool = False,
-                ) -> typing.Optional[list]:
+# Import functions from data.types to cope with legacy calls to must_be_something
+from .types import must_be_list,must_be_dict,must_be_string,must_be_int,must_be_bool
 
-  value = get_from_box(parent,key)
-  if value is None:
-    if create_empty:
-      set_dots(parent,key.split('.'),[])
-      return parent[key]
-    else:
-      if abort:
-        raise common.IncorrectValue()
-      return None
-
-  if isinstance(value,bool) and not true_value is None:
-    value = true_value if value else []
-    parent[key] = value
-
-  if isinstance(value,(str,int,float,bool)):
-    parent[key] = [ value ]
-    value = parent[key]
-
-  if isinstance(value,list):
-    if not valid_values is None:
-      check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module, abort=abort)
-    return parent[key]
-
-  wrong_type_message(path=path, key=key, expected='a scalar or a list', value=value, context=context, module=module)
-  if abort:
-    raise common.IncorrectType()
-
-  return None
-
-def must_be_dict(
-      parent: Box,                                      # Parent object
-      key: str,                                         # Key within the parent object, may include dots.
-      path: str,                                        # Path to parent object, used in error messages
-      create_empty: bool = True,                        # Do we want to create an empty list if needed?
-      true_value: typing.Optional[dict] = None,         # Value to use to replace _true_, set _false_ to []
-      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-      abort:      bool = False                          # Crash on error
-                ) -> typing.Optional[list]:
-
-  value = get_from_box(parent,key)
-  if value is None:
-    if create_empty:
-      set_dots(parent,key.split('.'),{})
-      return parent[key]
-    else:
-      if abort:
-        raise common.IncorrectValue()
-      return None
-
-  if isinstance(value,bool) and not true_value is None:
-    value = true_value if value else {}
-    parent[key] = value
-
-  if isinstance(value,dict):
-    return parent[key]
-
-  wrong_type_message(path=path, key=key, expected='a dictionary', value=value, context=context, module=module)
-
-  if abort:
-    raise common.IncorrectType()
-
-  return None
-
-def must_be_string(
-      parent: Box,                                      # Parent object
-      key: str,                                         # Key within the parent object, may include dots.
-      path: str,                                        # Path to parent object, used in error messages
-      true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_, set to "" if _false_
-      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-      valid_values: typing.Optional[list] = None,       # List of valid values
-                ) -> typing.Optional[str]:
-
-  value = get_from_box(parent,key)
-  if value is None:
-    return None
-
-  if isinstance(value,str):
-    if not valid_values is None:
-      check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module)
-    return value
-
-  if isinstance(value,bool) and true_value:
-    value = true_value if value else ""
-    parent[key] = value
-    return value
-
-  wrong_type_message(path=path, key=key, expected='a string', value=value, context=context, module=module)
-  return None
-
-def must_be_int(
-      parent: Box,                                      # Parent object
-      key: str,                                         # Key within the parent object, may include dots.
-      path: str,                                        # Path to parent object, used in error messages
-      true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_, remove if _false_
-      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-      min_value:  typing.Optional[int] = None,          # Minimum value
-      max_value:  typing.Optional[int] = None,          # Maximum value
-                ) -> typing.Optional[int]:
-
-  value = get_from_box(parent,key)
-  if value is None:
-    return None
-
-  if isinstance(value,bool) and true_value:
-    if value:
-      parent[key] = true_value
-      return true_value
-    else:
-      parent.pop(key,None)
-      return None
-
-  if not isinstance(value,int):
-    wrong_type_message(path=path, key=key, expected='an integer', value=value, context=context, module=module)
-    return None
-
-  if isinstance(min_value,int) and isinstance(max_value,int):
-    if value < min_value or value > max_value:
-      int_value_error(path=path, key=key, expected=f'between {min_value} and {max_value}', value=value, context=context, module=module)
-      return None
-  elif isinstance(min_value,int):
-    if value < min_value:
-      int_value_error(path=path, key=key, expected=f'larger or equal to {min_value}', value=value, context=context, module=module)
-      return None
-  elif isinstance(max_value,int):
-    if value > max_value:
-      int_value_error(path=path, key=key, expected=f'less than or equal to {max_value}', value=value, context=context, module=module)
-      return None
-
-  return value
-
-#
-# must_be_bool: check whether a parameter is a boolean value and remove False value
-#   to simplify Jinja2 templates
-#
-# Input arguments:
-#   parent - parent dictionary
-#   key    - parent dictionary key
-#   path   - parent dictionary path (used in error messages)
-#
-def must_be_bool(
-      parent: Box,                                      # Parent object
-      key: str,                                         # Key within the parent object, may include dots.
-      path: str,                                        # Path to parent object, used in error messages
-      context:    typing.Optional[typing.Any] = None,   # Additional context (use when verifying link values)
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
-      valid_values: typing.Optional[list] = None,       # List of valid values
-                ) -> None:
-
-  value = get_from_box(parent,key)
-  if value is None:
-    return None
-
-  if isinstance(value,bool):
-    if not value:
-      parent.pop(key,None)
-    return None
-
-  wrong_type_message(path=path, key=key, expected='a boolean', value=value, context=context, module=module)
-  return None
-
-
-"""
-validate_list_elements: check whether the elements of a list belong to a set of predefined values
-"""
-
-def validate_list_elements(data: list, values: list, path: str) -> bool:
-  if not isinstance(data,list):  # pragma: no cover
-    common.fatal(f'{path} should be a list')
-    return False
-  return all(item in values for item in data)
-
-"""
-is_true_int: work around the Python stupidity of bools being ints
-"""
-
-def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
-  return isinstance(data,int) and not isinstance(data,bool)
+# We also need to import the whole data.types module to be able to do validation function lookup
+from . import types as _tv
 
 """
 get_valid_attributes
@@ -298,42 +22,52 @@ Given an attribute dictionary, list of valid attribute categories, and extra att
 of valid attributes, or a string (type name) if the first attribute source in the list is a string
 """
 
+##### REMOVE AFTER ATTRIBUTE MIGRATION #####
+def make_attr_dict(atlist: typing.Union[list,Box]) -> typing.Union[Box]:
+  if isinstance(atlist,list):
+    return Box({ k: None for k in atlist })
+
+  return atlist
+
 def get_valid_attributes(
-      attributes: Box,                                  # Where to get valid attributes from
-      attr_list: typing.List[str],                      # List of valid attributes (example: ['node'] or ['link','interface'])
-      extra_attributes: typing.Optional[list] = None    # List of dynamic attributes (needed to validate node provider settings)
-        ) -> typing.Union[str,list]:
+      attributes: Box,                                      # Where to get valid attributes from
+      attr_list: typing.List[str],                          # List of valid attributes (example: ['node'] or ['link','interface'])
+      extra_attributes: typing.Optional[list] = None        # List of dynamic attributes (needed to validate node provider settings)
+        ) -> typing.Union[str,Box]:
 
-  valid = []
-  for idx,atlist in enumerate(attr_list):               # Build a list of all valid (global) attributes for the object
-    add_attr = attributes.get(atlist,[])                # Attributes to add to the list
-    if isinstance(add_attr,list):                       # Are we dealing with a fixed-type attribute?
-      no_propagate = f'{atlist}_no_propagate'           # No-propagate list excluded only for non-first attribute category
-      if idx and no_propagate in attributes:
-        add_attr = [ k for k in add_attr if not k in attributes[no_propagate] ]
-      valid.extend(add_attr)                            # ... nope, add to list of attributes and move on
-
-      internal_atlist = f'{atlist}_internal'            # Internal object attributes (used by links)
-      if internal_atlist in attributes:                 # Add internal attributes if they exist
-        valid.extend(attributes[internal_atlist])
+  valid = get_empty_box()
+  for idx,atlist in enumerate(attr_list):                   # Build a list of all valid (global) attributes for the object
+    if not atlist in attributes:
       continue
+    add_attr = attributes[atlist]                           # Attributes to add to the list
 
-    if valid:                                           # Have we already collected something?
+    if isinstance(add_attr,str):                            # Got a specific data type?
+      if valid:                                             # Have we already collected something?
+        common.fatal(
+          f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
+          f'... attributes: {attributes}')
+        return ''                                           # ... bad karma, inconsistent validation requirements
+      return add_attr
+
+    if not isinstance(add_attr,(Box,list)):
       common.fatal(
-        f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
+        f'Internal error: Expected string or list/dictionary for {atlist} attributes\n' +
         f'... attributes: {attributes}')
-      return []                                         # ... bad karma, inconsistent validation requirements
+      return ''                                             # ... dang, someone messed up. Abort, abort, abort...
 
-    if not isinstance(add_attr,str):                    # Looking good so far, but the thing we got that's not a list should be a string
-      common.fatal(
-        f'Internal error: Expected string or list for {atlist} attributes\n' +
-        f'... attributes: {attributes}')
-      return []                                         # ... dang, someone messed up. Abort, abort, abort...
+    add_attr = make_attr_dict(add_attr)                     # Convert attributes into a dictionary
 
-    return add_attr
+    no_propagate = f'{atlist}_no_propagate'                 # No-propagate list excluded only for non-first attribute category
+    if idx and no_propagate in attributes:
+      add_attr = { k:v for k,v in add_attr.items() if not k in attributes[no_propagate] }
+    valid += add_attr                                       # ... nope, add to list of attributes and move on
+
+    internal_atlist = f'{atlist}_internal'                  # Internal object attributes (used by links)
+    if internal_atlist in attributes:                       # Add internal attributes if they exist
+      valid += make_attr_dict(attributes[internal_atlist])
 
   if not extra_attributes is None:                      # Extend the attribute list with dynamic attributes
-    valid.extend(extra_attributes)
+    valid += make_attr_dict(extra_attributes)
 
   return valid
 
@@ -381,6 +115,158 @@ def validate_module_can_be_false(
 
   intersect = set(attr_list) & set(attributes.can_be_false)
   return bool(intersect)
+
+"""
+type_has_attribute: checks whether the data type definition has the specified attribute
+"""
+
+def type_has_attribute(data_type: typing.Any, attr: str) -> bool:
+  return isinstance(data_type,Box) and attr in data_type
+
+"""
+validate_dictionary -- recursively validate a dictionary
+
+Arguments are described in validate_item
+"""
+
+def validate_dictionary(
+      data: Box,
+      data_type: typing.Any,
+      parent_path: str,
+      data_name: str,
+      module: str,
+        ) -> bool:
+
+  OK = True
+  for k in data.keys():                                             # Iterate over the elements
+    if not k in data_type:                                          # ... and report elements with invalid name
+      common.error(
+        f'Incorrect {data_name} attribute {k} in {parent_path}',
+        common.IncorrectAttr,
+        module)
+      OK = False
+    else:                                                           # For valid elements, validate them
+      validate_item(
+        parent=data,
+        key=k,
+        data_type=data_type[k],
+        parent_path=parent_path,
+        data_name=data_name,
+        module=module)
+  return OK
+
+"""
+validate_alt_type -- deal with dictionaries that could be specified as something else
+"""
+
+def validate_alt_type(data: typing.Any, data_type: Box) -> bool:
+  return type(data).__name__ in data_type._alt_types
+
+"""
+validate_item -- validate a single value from an object:
+
+* Return if the data type is None (= not validated)
+* Compare data types names if the data type is a string (OK, a bit more complex than that)
+* Recursively validate a dictionary
+
+To make matters worse, we cannot pass the item-to-validate directly into the function
+but have to invoke it with parent dictionary and key, so we can forward these elements
+to "must_be_something" routines.
+"""
+
+def validate_item(
+      parent: Box,
+      key: str,
+      data_type: typing.Any,
+      parent_path: str,
+      data_name: str,
+      module: str,
+        ) -> typing.Any:
+  global _bi,_tv
+
+  data = parent[key]
+  if data_type is None:                                               # Trivial case - data type not specified
+    return True                                                       # ==> anything goes
+
+  # We have to handle a weird corner case: AF (or similar) list that is really meant to be a dictionary
+  #
+  if isinstance(data,list) and type_has_attribute(data_type,'_list_to_dict'):
+    parent[key] = { k: data_type._list_to_dict for k in data }        # Transform lists into a dictionary (updating parent will make it into a Box)
+    data = parent[key]
+    data_type = Box(data_type)                                        # and fix datatype definition
+
+  if isinstance(data,Box) and isinstance(data_type,Box):              # Validating a dictionary against a dictionary of elements
+    return validate_dictionary(
+              data=data,
+              data_type=data_type,
+              parent_path=f"{parent_path}.{key}",
+              data_name=data_name,
+              module=module)
+
+  if type_has_attribute(data_type,'_alt_types'):
+    if validate_alt_type(data,data_type):
+      return True
+
+  if isinstance(data_type,str):                                       # Convert desired data type name into a dummy data type dictionary
+    data_type = { 'type': data_type }
+
+  if isinstance(data_type,list):                                      # Convert list into 'list' datatype with 'valid_values'
+    data_type = {
+      'type': 'list',
+      'valid_values': data_type
+    }
+
+  if not 'type' in data_type:                                         # The required data type is a true dict, but the data is not
+    common.error(
+      f'{data_name} attribute {parent_path}.{key} should be a dictionary, found {type(data).__name__}',
+      common.IncorrectType,
+      module)
+    return False
+
+  for kw in list(data_type.keys()):                                   # Remove all 'internal' type attributes before calling validation function
+    if kw.startswith('_'):
+      data_type.pop(kw)
+
+  dt_name = data_type['type']                                         # Get the desired data type in string format
+  validation_function = getattr(_tv,f'must_be_{dt_name}',None)        # Try to get validation function
+
+  if not validation_function:                                         # No validation function, have to compare type names
+    if not hasattr(_bi,dt_name):                                      # Is the requested data type a well-known type/class?
+      common.fatal(f'Invalid data type {dt_name} found when trying to validate {data_name} attribute {parent_path}.{key}')
+      return False                                                    # pragma: no cover
+
+    dt_ref = getattr(_bi,dt_name)                                     # Get pointer to desired data type
+    if not isinstance(data,dt_ref):                                   # ... and check if the current object is an instance of it
+      common.error(
+        f'{data_name} attribute {parent_path}.{key} should be {dt_name}, found {type(data).__name__}',
+        common.IncorrectType,
+        module)
+      return False
+
+    return True                                                       # We couldn't do full validation, but at least the instance type is OK
+
+  # We have to validate an item with a validation function
+  #
+  # First, create the extra arguments for the must_be_something function:
+  #
+  # * Start with the data type definition converted into a dictionary
+  # * Remove all attributes that are not used by the must_be_something functions
+  #
+  validation_attr = data_type.to_dict() if isinstance(data_type,Box) else data_type
+  for kw in ['type']:
+    validation_attr.pop(kw,None)
+
+  if data_type in ('dict','list') and not 'create_empty' in validation_attr:
+    validation_attr['create_empty'] = False                           # Do not create empty dictionaries/lists unless told otherwise
+
+  # Now call the validation function and hope for the best ;)
+  #
+  return validation_function(
+            parent=parent,                                            # We're validating a single item
+            key=key,                                                  # So we're setting the retrieval key to None
+            path=parent_path,                                         # Pass the parent path (it will be combined with key anyway)
+            module=module,                                            # ... and the module
+            **validation_attr)                                        # And any other attributes
 
 """
 validate_attributes -- validate object attributes
@@ -450,7 +336,7 @@ def validate_attributes(
   #
 
   if not modules is None:
-    valid.extend([ attr for attr,mod in extra_module_attr.items() if mod in modules ])
+    valid += Box({ attr: None for attr,mod in extra_module_attr.items() if mod in modules })
 
   # Part 3 -- validate attributes
   #
@@ -474,6 +360,13 @@ def validate_attributes(
       continue
 
     if k in valid:
+      validate_item(
+        parent=data,
+        key=k,
+        data_type=valid[k],
+        parent_path=data_path,
+        data_name=data_name,
+        module=module)
       continue
 
     if not modules is None and k in modules:            # For module attributes, perform recursive check

@@ -10,27 +10,44 @@ from box import Box
 from .. import common
 from . import _TopologyOutput
 from ..augment import nodes
+from ..augment import devices
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
-def provider_inventory_settings(node: Box, defaults: Box) -> None:
-  p_data = defaults.providers[defaults.provider]
-  if not p_data:
-    return        # pragma: no cover -- won't create an extra test case just to cover the "do nothing" scenario
-
+def copy_provider_inventory(host: Box, p_data: Box) -> None:
   if 'inventory' in p_data:
-    for k,v in p_data['inventory'].items():
-      node[k] = v
+    for k,v in p_data.inventory.items():
+      host[k] = v
 
   if 'inventory_port_map' in p_data and 'forwarded' in p_data:
-    for k,v in p_data['inventory_port_map'].items():
-      if k in p_data['forwarded']:
-        node[v] = p_data['forwarded'][k] + node['id']
+    for k,v in p_data.inventory_port_map.items():
+      if k in p_data.forwarded:
+        host[v] = p_data.forwarded[k] + host.id
+
+def copy_device_provider_group_vars(host: Box, node: Box, topology: Box) -> None:
+  p_data = devices.get_provider_data(node,topology.defaults)
+  if not 'group_vars' in p_data:
+    return
+
+  for k,v in p_data.group_vars.items():
+    if not k in host:
+      host[k] = v
+
+def provider_inventory_settings(host: Box, node: Box, topology: Box) -> None:
+  defaults = topology.defaults
+  node_provider = devices.get_provider(node,topology)
+  p_data = defaults.providers[node_provider]
+  if p_data:
+    copy_provider_inventory(host,p_data)
+
+  if 'provider' in node:                                              # Is the node using a secondary provider?
+    copy_device_provider_group_vars(host,node,topology)
 
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
 
-def ansible_inventory_host(node: Box, defaults: Box) -> Box:
+def ansible_inventory_host(node: Box, topology: Box) -> Box:
+  defaults = topology.defaults
   host = Box({})
   for (node_key,inv_key) in topo_to_host.items():
     if "." in node_key:
@@ -44,7 +61,7 @@ def ansible_inventory_host(node: Box, defaults: Box) -> Box:
     if not k in topo_to_host_skip:
       host[k] = v
 
-  provider_inventory_settings(host,defaults)
+  provider_inventory_settings(host,node,topology)
   return host
 
 def create(topology: Box) -> Box:
@@ -70,7 +87,7 @@ def create(topology: Box) -> Box:
 
   for name,node in topology.nodes.items():
     group = node.get('device','all')
-    inventory[group].hosts[name] = ansible_inventory_host(node,defaults)
+    inventory[group].hosts[name] = ansible_inventory_host(node,topology)
 
     if 'module' in node:
       inventory.modules.hosts[name] = {}
@@ -124,7 +141,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
     output.write(common.get_yaml_string(data))
     output.close()
 
-min_inventory_data = [ 'id','ansible_host','ansible_port' ]
+min_inventory_data = [ 'id','ansible_host','ansible_port','ansible_connection','ansible_user','ansible_ssh_pass' ]
 
 def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', hostvars: typing.Optional[str] = 'dirs') -> None:
   inventory = create(topology)

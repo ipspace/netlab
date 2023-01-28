@@ -8,10 +8,11 @@ from netsim import data
 Adds a custom bgp.{allowas_in,as_override,default_originate} as link->node (interface) attribute
 """
 def init(topology: Box) -> None:
-    topology.defaults.bgp.attributes.interface.append('allowas_in')
-    topology.defaults.bgp.attributes.interface.append('as_override')
-    topology.defaults.bgp.attributes.interface.append('default_originate')
-    topology.defaults.bgp.attributes.link.append('password')
+    attr = topology.defaults.bgp.attributes
+    attr.interface.allowas_in = { 'type': 'int', 'true_value': 1, 'min_value': 1, 'max_value': 10 }
+    attr.interface.as_override = 'bool'
+    attr.interface.default_originate = 'bool'
+    attr.link.password = 'str'
 
 def pre_link_transform(topology: Box) -> None:
     # Error if BGP module is not loaded
@@ -20,18 +21,6 @@ def pre_link_transform(topology: Box) -> None:
             f'BGP Module is not loaded.',
             common.IncorrectValue,
             'ebgp_utils')
-    # Validate custom attributes
-    # Iterate over node[x].interfaces
-    for link in topology.links:
-        for intf in link.interfaces:
-            if 'bgp' in intf:
-                # as_override shall be bool
-                data.validate.must_be_bool(parent=intf.bgp,key='as_override', path=f'links[{link.linkindex}].{intf.node}.bgp')
-                # allowas_in shall be int (force 1 if True)
-                data.validate.must_be_int(parent=intf.bgp,key='allowas_in', path=f'links[{link.linkindex}].{intf.node}.bgp', true_value=1, min_value=1, max_value=10)
-        if 'bgp' in link:
-            # password
-            data.validate.must_be_string(parent=link.bgp,key='password', path=f'links[{link.linkindex}].bgp')
 
 def post_transform(topology: Box) -> None:
     config_name = api.get_config_name(globals())
