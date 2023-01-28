@@ -69,6 +69,7 @@ Getting Started
    topology-reference.md
    modules.md
    module-reference.md
+   providers.md
    defaults.md
    outputs/index.md
 ..
