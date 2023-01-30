@@ -47,11 +47,11 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 | Generic Linux          | generic/ubuntu2004 |
 | VyOS                   | vyos/current       |
 
-**NOTE**: Even if a new box version is available from Vagrant Cloud, Vagrant will only output a warning to the user letting them know an update is available. That user can choose to ignore the warning for now, or can update the box by running `vagrant box update`. 
-Vagrant can not and does not automatically download the updated box and update the machine because boxes can be relatively large (See: https://www.vagrantup.com/docs/boxes/versioning).
+**NOTES**:
 
-However, we recommend to periodically download the updated box for:
-* vyos/current
+* Even if a new box version is available from Vagrant Cloud, Vagrant will only output a warning to let the user know an update is available. You can ignore that warning or update the box with `vagrant box update`. 
+* Vagrant does not automatically download the updated boxes because boxes can be relatively large (See [Vagrant box versioning](https://developer.hashicorp.com/vagrant/docs/boxes/versioning) for details).
+* We recommend that you periodically download the updated box for `vyos/current`
 
 ## Building Your Own Boxes
 

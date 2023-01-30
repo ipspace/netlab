@@ -1,4 +1,20 @@
-# Building a Cisco Nexus 9300v Vagrant Libvirt Box
+# Cisco Nexus 9300v Vagrant Libvirt Boxes
+
+You can download Nexus 9300v virtual disk (`.qcow2` file) or Vagrant box for VirtualBox from software.cisco.com. Vagrant box created for VirtualBox can be mutated into a *libvirt* box with `vagrant-mutate` plugin.
+
+Mutated NX-OS 9.3.10 box works well with `vagrant-libvirt`. You might want to try the same process with other NX-OS software releases before building your own Nexus 9300v box.
+
+## Mutating a VirtualBox Box
+
+* Download `nexus9300v.<release>.box` file from software.cisco.com
+* Check whether the `vagrant-mutate` plugin is installed with `vagrant plugin list`
+* If needed, install the `vagrant-mutate` plugin with `vagrant plugin install vagrant-mutate`
+* Install *virtualbox* version of the Nexus 9300v Vagrant box with `vagrant box add <box-filename> --name cisco/nexus9300v`
+* Mutate the Nexus 9300v box with `vagrant mutate cisco/nexus9300v libvirt`
+* Verify that you got the desired Vagrant box installed with `vagrant box list`
+* Optionally remove the *virtualbox* version of the Vagrant box with `vagrant box remove cisco/nexus9300v --provider virtualbox`
+
+## Building a Cisco Nexus 9300v Vagrant Libvirt Box
 
 Cisco Nexus 9300v is supported by the **netlab libvirt package** command. To build an Nexus 9300v box:
 
@@ -7,6 +23,7 @@ Cisco Nexus 9300v is supported by the **netlab libvirt package** command. To bui
 * Execute **netlab libvirt package nxos _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
+* The box building process generates a random device serial number that will be used by all Nexus 9300v devices created from the Vagrant box. As NX-OS uses device serial number as its DHCP client ID, you might experience problems starting a lab with more than one Nexus 9300v device on newer versions of KVM/libvirt. The workaround-of-last-resort is [setting libvirt **batch_size** to 1](libvirt.md#starting-virtual-machines-in-batches).
 * The **‌netlab libvirt package nxos** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
 * On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
 ```
@@ -28,11 +45,6 @@ During the box-building process (inspired by [this solution](https://github.com/
 
 Cisco Nexus 9300v is available as Virtualbox box. To use that box with *vagrant-libvirt*:
 
-* Install Vagrant *mutate* plugin with **vagrant plugin install vagrant-mutate**
-* Download the box file from vendor web site
-* Install *virtualbox* version of the box file with **vagrant box add *filename* \-\-name _boxname_**
-* Transform *virtualbox* box into *libvirt* box with **vagrant mutate _boxname_ libvirt**
-* Remove the _virtualbox_ box with **vagrant box remove _boxname_ \-\-provider virtualbox** command.
 
 ```{warning}
 You might experience weird Vagrant errors when starting mutated Nexus OS boxes with **‌netlab up** command. Building a box yourself usually solves that problem.
