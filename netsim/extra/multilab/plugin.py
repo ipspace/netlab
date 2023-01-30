@@ -54,11 +54,6 @@ def init(topology: Box) -> None:
   if abort:
     return
 
-  try:                                                                # Try to convert multilab ID into an integer
-    mlab.id = int(mlab.id)                                            # It could be a string if set via CLI parameter or environment var
-  except:
-    pass
-
   data.types.must_be_int(                                             # Now validate that multilab.id is an integer less than 200
     parent=mlab,
     key='id',

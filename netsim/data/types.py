@@ -247,7 +247,17 @@ def must_be_int(
       value: typing.Any,
       min_value:  typing.Optional[int] = None,          # Minimum value
       max_value:  typing.Optional[int] = None,          # Maximum value
-                ) -> typing.Union[bool,str]:
+                ) -> typing.Union[bool,str,typing.Callable]:
+
+  def transform_to_int(value: typing.Any) -> int:
+    return int(value)
+
+  if isinstance(value,str):                             # Try to convert STR to INT
+    try:
+      transform_to_int(value)
+      return transform_to_int
+    except:
+      pass
 
   if not isinstance(value,int):                         # value must be an int
     return 'an integer'
@@ -268,7 +278,24 @@ def must_be_int(
   return True
 
 @type_test()
-def must_be_bool(value: typing.Any) -> typing.Union[bool,str]:
+def must_be_bool(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
+
+  def transform_to_bool(value: typing.Any) -> bool:
+    if value == 'True' or value == 'true':
+      return True
+
+    if value == 'False' or value == 'false':
+      return False 
+
+    raise ValueError('invalid boolean literal -- use true or false')
+
+  if isinstance(value,str):                             # Try to convert STR to INT
+    try:
+      transform_to_bool(value)
+      return transform_to_bool
+    except:
+      pass
+
   return True if isinstance(value,bool) else 'a boolean'
 
 @type_test()
