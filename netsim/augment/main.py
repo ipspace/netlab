@@ -23,13 +23,15 @@ def transform_setup(topology: Box) -> None:
     topology.links = augment.links.adjust_link_list(topology.links,topology.nodes)
     augment.links.set_linkindex(topology)
   augment.devices.augment_device_settings(topology)
+  augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
+  augment.plugin.execute('init',topology)
+  common.exit_on_error()
+
+  augment.topology.extend_attribute_list(topology.defaults)             # Attributes have to be extended before group init
+  augment.topology.extend_module_attribute_list(topology)               # ... or we won't recognize node attributes in groups
   augment.groups.init_groups(topology)
   common.exit_on_error()
 
-  augment.plugin.init(topology)
-  augment.plugin.execute('init',topology)
-  augment.topology.extend_attribute_list(topology.defaults)
-  augment.topology.extend_module_attribute_list(topology)
   augment.topology.adjust_global_parameters(topology)
   common.exit_on_error()
 
