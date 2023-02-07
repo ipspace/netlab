@@ -18,7 +18,7 @@ Configuration modules could have:
 
 ## Valid Module Attributes
 
-The list of valid module attributes is specified in the **defaults._module_.attributes** dictionary:
+Valid module attributes are specified in a sub-dictionary of the the **defaults._module_.attributes** dictionary:
 
 * **global** -- valid global (topology-level) attributes
 * **node** -- valid node-level attributes
@@ -27,7 +27,9 @@ The list of valid module attributes is specified in the **defaults._module_.attr
 * **node_copy** -- node module attributes that should be copied into interface attributes
 * **interface** -- valid interface attributes
 
-You can [extend the list of valid module attributes](../extend-attributes.md) with **defaults._module_.extra_attributes** dictionary.
+Module attributes for an individual module are stored (together with other module-specific data) in `netsim/modules/<modname>.yml` file.
+
+You can [extend the list of valid module attributes](../extend-attributes.md) by adding new keys to the corresponding dictionary within **defaults._module_.attributes**. See [](validation.md) for more details.
 
 ## Propagating Module Attributes
 

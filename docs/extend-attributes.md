@@ -1,8 +1,30 @@
 # Custom Attributes
 
-*netlab* [topology file transformation](dev/transform.md) validates most of the global, link, and module attributes to prevent hard-to-find typing errors. Node attributes are not yet checked.
+*netlab* [topology file transformation](dev/transform.md) validates global, node, link, interface, module, address pool, VLAN, and VRF attributes to prevent hard-to-find typing errors.
 
 To extend the lab topology with custom attributes (examples: BGP anycast prefix, DMZ bandwidth, OSPF stub areas...) you have to define the custom attributes (keywords) you want to be recognized.
+
+The easiest way to define new attributes is to add them to the relevant **attributes** dictionary -- see [](dev/validation.md) for more details. With this approach you can also define the attribute type which can then be used during the validation phase to check attribute value.
+
+After defining custom attributes you usually have to create additional Jinja2 templates that use these attributes to configure additional lab device functionality. You can deploy those templates during initial lab device configuration with [custom configuration templates](groups.md#custom-configuration-templates) or use **‌netlab config** command to deploy them manually.
+
+For example, to add **dmz** attribute (an integer value) to a link to specify DMZ bandwidth, use:
+
+```
+defaults.attributes.link.dmz: int
+```
+
+To add **bgp.anycast** node attribute that's an IPv4 prefix, use:
+
+```
+defaults.bgp.attributes.node.anycast: { type: ipv4, use: prefix }
+```
+
+## Using extra_attributes Dictionary
+
+```{warning}
+Starting with release 1.5, don't use **extra_attributes** to specify additional topology attributes. Please use the much simpler (and more versatile) method described above.
+```
 
 Custom global and link attributes are defined in **defaults.extra_attributes** dictionary which can have the following elements:
 
@@ -12,13 +34,7 @@ Custom global and link attributes are defined in **defaults.extra_attributes** d
 
 The values of all elements of the **defaults.extra_attributes** dictionary should be lists of strings.
 
-```{tip}
-After defining custom attributes you have to create additional Jinja2 templates that use these attributes to configure additional lab device functionality.
-
-You can deploy those templates during initial lab device configuration with [custom configuration templates](groups.md#custom-configuration-templates) or use **‌netlab config** command to deploy them manually.
-```
-
-## Example: DMZ bandwidth
+### Example: DMZ bandwidth
 
 Imagine a lab topology in which you want to define external (DMZ) bandwidth on individual links. To do that, set the **defaults.extra_attributes.link** parameter to create an additional link attribute:
 
@@ -38,7 +54,7 @@ links:
   pe1:
 ```
 
-## Extending Module Attributes
+### Extending Module Attributes
 
 The lists of valid global-, node- and link attributes of every configuration are specified in **_module_.attributes** dictionary in *topology-defaults.yml* system configuration file.
 

@@ -14,6 +14,10 @@ The data transformation has three major steps:
 * Read customer and system [default settings](../defaults.md) (`topology-defaults.yml`) and [merge them](../defaults.md#deep-merging) with the topology file (`netsim.read_topology.load`)
 * Check for presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 * Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
+* Adjust the list of links -- transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
+* Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
+* Execute plugin **init** hook (`netsim.augment.plugin.execute`)
+* Extend **default.attributes** with **default.extra_attributes** (`netsim.augment.topology.extend_attribute_list`)
 * Initialize node groups (`netsim.augment.groups.init_groups`):
 
 	* Check the group data structures
@@ -25,10 +29,6 @@ The data transformation has three major steps:
 	* Create BGP autogroups (groups based on BGP AS numbers)
 	* Copy **node_data** from BGP autogroups into nodes
 
-* Adjust the list of links -- transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
-* Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
-* Execute plugin **init** hook (`netsim.augment.plugin.execute`)
-* Extend **default.attributes** with **default.extra_attributes** (`netsim.augment.topology.extend_attribute_list`)
 * Adjust global parameters (`netsim.augment.topology.adjust_global_parameters`):
 
   * Set `provider` top-level element
