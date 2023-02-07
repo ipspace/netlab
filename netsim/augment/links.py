@@ -80,7 +80,7 @@ def adjust_link_list(links: list, nodes: Box) -> list:
       link_list.append(link_data)                               # ... and move on
     elif isinstance(l,list):
       link_list.append(Box({ 'interfaces': adjust_interface_list(l,l,nodes) },default_box=True,box_dots=True))
-    else:                                   # Assuming the link value is a string, split
+    elif isinstance(l,str):
       link_intf = []
       for n in l.split('-'):                # ... split it into a list of nodes
         if n in nodes:                      # If the node name is valid
@@ -91,6 +91,13 @@ def adjust_link_list(links: list, nodes: Box) -> list:
             common.IncorrectValue,
             'links')
       link_list.append({ 'interfaces': link_intf })
+    else:                                   # Come on, you really should not do something like this
+      common.error(
+        f'Invalid type {type(l).__name__} for a link instance: {l}',
+        common.IncorrectType,
+        'links')
+      continue
+
     link_cnt = link_cnt + 1
 
   if common.debug_active('links'):
