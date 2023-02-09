@@ -8,6 +8,8 @@
 import argparse
 import typing
 import textwrap
+import os
+import sys
 from box import Box
 
 from . import common_parse_args, topology_parse_args, load_topology, load_snapshot_or_topology, external_commands,fs_cleanup
@@ -81,6 +83,11 @@ def run(cli_args: typing.List[str]) -> None:
   if args.topology:
     print(f"Reading lab topology from {args.topology}")
   else:
+    if not os.path.isfile(args.snapshot):
+      print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
+            "Looks like no lab was started from this directory")
+      sys.exit(1)
+
     print(f"Reading transformed lab topology from snapshot file {args.snapshot}")
 
   if topology is None:
