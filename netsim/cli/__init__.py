@@ -140,6 +140,11 @@ def lab_commands() -> None:
   mod = None
   cmd = sys.argv[1]
 
+  mod_path = os.path.dirname(__file__) + f"/{cmd}.py"
+  if not os.path.isfile(mod_path):
+    print("Unknown netlab command '%s'\nUse 'netlab usage' to get the list of valid commands" % cmd)
+    sys.exit(1)
+
   if cmd == 'debug':
     arg_start = 3
     mod = importlib.import_module("."+sys.argv[2],__name__)
@@ -150,13 +155,15 @@ def lab_commands() -> None:
     try:
       mod = importlib.import_module("."+cmd,__name__)
     except Exception as ex:
-      if 'dev' in __version__:
-        print( f"Error importing .{cmd},{__name__}: {ex}" )
-  
+      common.fatal(f"Error importing {__name__}.{cmd}: {ex}")
+
   if mod:
     if hasattr(mod,'run'):
       mod.run(sys.argv[arg_start:])   # type: ignore
       return
+    else:
+      common.fatal(f"Module {__name__}.{cmd} does not have a valid entry point")
+  else:
+    common.fatal(f'Could not import module {__name__}.{cmd}')
 
-  print("Invalid netlab command '%s'\nUse 'netlab usage' to get the list of valid commands" % cmd)
   sys.exit(1)
