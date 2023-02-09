@@ -49,7 +49,7 @@ def write_devices(data: Box, fname: str, fmt: typing.Optional[str]) -> None:
 
   inventory = create(data.nodes,data.get('defaults',{}),addressing)
 
-  header = "# Netlab Devices inventory created from %s\n#\n---\n" % data.get('input','<unknown>')
+  header = "# Netlab Devices inventory created from %s\n#\n" % data.get('input','<unknown>')
 
   write_yaml(inventory,fname,header)
   print("Created netlab devices inventory %s" % fname)

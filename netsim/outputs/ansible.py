@@ -147,7 +147,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
   inventory = create(topology)
 
 #  import ipdb; ipdb.set_trace()
-  header = "# Ansible inventory created from %s\n#\n---\n" % topology.get('input','<unknown>')
+  header = "# Ansible inventory created from %s\n#\n" % topology.get('input','<unknown>')
 
   if not fname:
     fname = 'hosts.yml'
