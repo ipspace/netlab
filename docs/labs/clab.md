@@ -14,6 +14,10 @@
    :backlinks: none
 ```
 
+## Minimal supported version: 0.37.1 (2023-2-27)
+Version 0.37 introduced some changes to the location of generated certificate files.
+Use ```sudo containerlab version upgrade``` to upgrade to the latest version
+
 ## Container Images
 
 Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab create](../netlab/create.md)** command uses these container images (use **netlab show images** to display the actual system settings):
