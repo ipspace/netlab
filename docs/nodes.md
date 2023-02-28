@@ -58,18 +58,20 @@ nodes:
 (node-attributes)=
 ## Node Attributes
 
-*netlab* uses the following node attributes[^NC]:
+*netlab* uses the following node attributes (in alphabetical order):
 
-[^NC]: Node attributes are not checked at the moment; you can add extra node attributes as needed.
-
+* **config** -- extra [configuration templates](custom-config) applied to this device.
+* **cpu** -- virtual CPU cores allocated to the VM lab device. Not applicable for container-based devices.
 * **device** -- device type (see [supported platforms](platforms.md)). [Default device type](default-device-type) is specified in **defaults.device**.
-* **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are specified in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
-* **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*, for which the host **role** is set in system device defaults.
-* **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU.
+* **group** -- list of [groups](groups.md) this node belongs to.
 * **id** -- static node identifier[^id] (see below)
+* **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are specified in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
 * **loopback** -- static loopback addresses. Must be a dictionary with **ipv4** and/or **ipv6** attributes.
 * **memory** -- memory allocated to the VM lab device. Not applicable for container-based devices.
-* **cpu** -- virtual CPU cores allocated to the VM lab device. Not applicable for container-based devices.
+* **module** -- the list of [configuration modules](modules.md) used by this node.
+* **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU.
+* **provider** -- virtualization provider used by this node (see [](multi-providers) for more details).
+* **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*, for which the host **role** is set in system device defaults.
 * **unmanaged** -- whether this node should me managed/handled by *netlab* or not (useful for integrating *netlab* topologies with additional external devices which should not be configured by *netlab* itself).
 
 [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.

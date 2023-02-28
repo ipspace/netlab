@@ -14,6 +14,7 @@
    :backlinks: none
 ```
 
+(multi-providers)=
 ## Combining Virtualization Providers
 
 You can use multiple virtualization providers within the same lab topology. One of them is the _primary_ provider specified in the **provider** topology attribute, other(s) are _secondary_ providers specified with **provider** attribute on individual nodes.
