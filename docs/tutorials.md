@@ -230,7 +230,7 @@ Practical examples:
 * [Optimal BGP Path Selection with BGP Additional Paths](https://blog.ipspace.net/2021/12/bgp-multipath-addpath.html) (custom deployment templates)
 * [Building a BGP Anycast Lab](https://blog.ipspace.net/2021/12/bgp-anycast-lab.html) (group-wide node data, auto-generated groups)
 
-[Even more tutorials...](https://blog.ipspace.net/series/netlab.html)
+[Even more tutorials...](https://blog.ipspace.net/tag/netlab.html)
 
 ### Configuration Module Examples
 
