@@ -70,6 +70,15 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
 ```
 
+## Modifying VM Settings
+
+The following node parameters influence the VM configuration created by *vagrant-libvirt*:
+
+* **cpu** -- number of virtual CPUs allocated to the VM
+* **memory** -- VM memory (in MB)
+* **libvirt.nic_model_type** -- VM NIC model (example: e1000). Default _netlab_ settings usually work fine.
+* **libvirt.nic_adapter_count** -- maximum number of VM NICs (default: 8)
+
 ## Replacing Vagrant Boxes
 
 If you want to rebuild and install a Vagrant box with the same version number, you have to remove the old box manually. You also have to delete the corresponding volume (disk image) from *libvirt* storage pool (*vagrant-libvirt* plugin installs new boxes but does not clean up the old ones).
