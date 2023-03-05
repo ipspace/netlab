@@ -5,6 +5,7 @@
 | Virtual network device                    | netlab device type |
 | ----------------------------------------- | ------------------ |
 | Arista vEOS                               | eos                |
+| Aruba AOS-CX [❗](caveats.html#aruba-aos-cx) | arubacx        |
 | Cisco ASAv                                | asav               |
 | Cisco CSR 1000v                           | csr                |
 | Cisco IOSv                                | iosv               |
@@ -65,6 +66,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Virtual network device | Vagrant<br />Libvirt | Vagrant<br />Virtualbox | Containerlab |
 | -------------------------------------------------- | :-: | :-: | :-: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
+| Aruba AOS-CX                                       |          ✅           |              ❌               |            ❌             |
 | Cisco ASAv                                         |          ✅           |              ❌               |            ❌             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco IOS XRv                                      |          ✅           |    ❌     |            ❌             |
@@ -93,6 +95,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Virtual network device     | netlab device type | CPUs | memory | libvirt NIC model          |
 | -------------------------- | ------------------ | ---: | -----: | -------------------------: |
 | Arista vEOS                | eos                |    2 |   2048 | virtio (*libvirt default*) |
+| Aruba AOS-CX               | arubacx            |    2 |   4096 | virtio (*libvirt default*) |
 | Cisco ASAv                 | asav               |    1 |   2048 | virtio (*libvirt default*) |
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
 | Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000                     |
@@ -115,6 +118,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Operating system      | Deploy configuration | Collect configuration |
 | --------------------- | :------------------: | :-------------------: |
 | Arista EOS            |          ✅           |           ✅           |
+| Aruba AOS-CX          |          ✅           |           ❌           |
 | Cisco ASAv            |          ✅           |           ✅           |
 | Cisco IOS / IOS XE    |          ✅           |           ✅           |
 | Cisco IOS XRv         |          ✅           |           ✅           |
@@ -139,6 +143,7 @@ The following system-wide features are configured on supported network operating
 | Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
 | Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Aruba AOS-CX          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Cisco ASAv            |    ✅     |     ✅      |             ❌             |             ❌              |             ❌              |
 | Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Cisco IOS XRv         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
@@ -162,6 +167,7 @@ The following interface parameters are configured on supported network operating
 | Operating system      | Interface<br />description | Interface<br />bandwidth | MTU |
 | --------------------- | :------------------------: | :----------------------: | :-: |
 | Arista EOS            |            ✅              |            ✅            | ✅ |
+| Aruba AOS-CX          |            ✅              |            ❌            | ✅ |
 | Cisco ASAv            |            ✅              |            ❌            | ✅ |
 | Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.html#cisco-ios) |
 | Cisco IOS XRv         |            ✅              |            ✅ [❗](caveats.html#caveats-iosxr)           | ✅ |
@@ -185,6 +191,7 @@ The following interface addresses are supported on various platforms:
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces |
 | --------------------- | :-----------------: | :-----------------: | :------------------------: |
 | Arista EOS            |          ✅          |          ✅          |             ✅              |
+| Aruba AOS-CX          |          ✅          |          ✅          |             ❌              |
 | Cisco ASAv            |          ✅          |          ✅          |             ❌              |
 | Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
 | Cisco IOS XRv         |          ✅          |          ✅          |             ✅              |
@@ -240,6 +247,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Operating system      | VLAN | VRF | VXLAN | MPLS | SR-MPLS | SRv6 |
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
 | Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
+| Aruba AOS-CX          |  ✅  | ✅  |  ❌   | ❌   |    ❌    |  ❌   |
 | Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Cisco IOS XE          |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
@@ -261,6 +269,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |
 | Arista EOS            |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ✅    |
+| Aruba AOS-CX          |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Cisco ASAv            |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cisco IOSv            |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco IOS XE          |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |

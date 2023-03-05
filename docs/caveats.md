@@ -146,3 +146,7 @@ addressing:
   router_id:
     ipv4: 10.255.0.0/24
 ```
+
+## Aruba AOS-CX
+
+* Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
