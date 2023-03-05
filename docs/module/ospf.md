@@ -42,6 +42,7 @@ The following table describes per-platform support of individual router-level OS
 | Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  |
 | ------------------------ | :---: | :---------------------: | :----: | :--: |
 | Arista EOS               |   ✅  |            ✅          |   ✅   |  ✅  |
+| Aruba AOS-CX             |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco IOS                |   ✅  |            ✅          |   ✅   |  ✅  |
 | Cisco IOS XRv            |   ✅  |            ✅          |   ✅   |  ❌   |
 | Cisco IOS XE             |   ✅  |            ✅          |   ✅   |  ✅  |
@@ -69,6 +70,7 @@ The following table documents the interface-level OSPF features:
 | Operating system         | Cost  | Network<br />type | Unnumbered<br />interfaces | Passive<br />interfaces |
 | ------------------------ | :---: | :---------------: | :------------------------: | :---------------------: |
 | Arista EOS               |   ✅  |         ✅        |             ✅            |            ✅           |
+| Aruba AOS-CX             |   ✅  |         ✅        |             ❌            |            ✅           |
 | Cisco IOS                |   ✅  |         ✅        |             ❗            |            ✅           |
 | Cisco IOS XE             |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cisco IOS XRv             |   ✅  |         ✅        |             ✅            |            ✅           |
