@@ -118,12 +118,17 @@ def show_parse(args: typing.List[str]) -> argparse.Namespace:
   global show_dispatch
   parser = argparse.ArgumentParser(
     prog='netlab show',
-    description='Display system settings')
+    description='Display default settings')
   parser.add_argument(
     '-d','--device',
     dest='device',
     action='store',
-    help='Display system information for a single device')
+    help='Display information for a single device')
+  parser.add_argument(
+    '--system',
+    dest='system',
+    action='store_true',
+    help='Display system information (without user defaults)')
   parser.add_argument(
     dest='action',
     action='store',
@@ -135,9 +140,13 @@ def show_parse(args: typing.List[str]) -> argparse.Namespace:
 def run(cli_args: typing.List[str]) -> None:
   global show_dispatch
   args = show_parse(cli_args)
-  settings =  read_topology.read_yaml("package:topology-defaults.yml")
-
-  if settings is None:
+#  settings =  read_topology.read_yaml("package:topology-defaults.yml")
+  empty_file = "package:cli/empty.yml"
+  loc_defaults = empty_file if args.system else ""
+  topology = read_topology.load(empty_file,loc_defaults,"package:topology-defaults.yml")
+  if topology is None:
     common.fatal("Cannot read system settings")
-  else:
-    show_dispatch[args.action](settings,args)
+    return
+
+  settings = topology.defaults
+  show_dispatch[args.action](settings,args)

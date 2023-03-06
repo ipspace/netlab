@@ -9,18 +9,19 @@
 ## Usage
 
 ```
-usage: netlab show [-h] [-d DEVICE] {images,module-support}
+usage: netlab show [-h] [-d DEVICE] [--system] {images,devices,module-support}
 
-Display system settings
+Display default settings
 
 positional arguments:
   {images,devices,module-support}
                         Select the system information to display
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -d DEVICE, --device DEVICE
-                        Display system information for a single device
+                        Display information for a single device
+  --system              Display system information (without user defaults)
 ```
 
 ## Examples
