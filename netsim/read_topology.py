@@ -165,15 +165,11 @@ def load(fname: str , local_defaults: str, sys_defaults: str) -> Box:
     if local_defaults:
       include_defaults(topology,local_defaults)
     else:
-      local_defaults = os.path.dirname(os.path.abspath(fname))+"/topology-defaults.yml"
-      if os.path.isfile(local_defaults):
-        include_defaults(topology,local_defaults)
-
-      for defname in ('~/.netlab.yml','~/topology-defaults.yml'):
+      dir_defaults = os.path.dirname(os.path.abspath(fname))+"/topology-defaults.yml"
+      for defname in (dir_defaults,'~/.netlab.yml','~/topology-defaults.yml'):
         user_defaults  = os.path.expanduser(defname)
         if os.path.isfile(user_defaults):
           include_defaults(topology,user_defaults)
-          break
 
   if sys_defaults and 'global_defaults' in topology.includes:
     include_defaults(topology,sys_defaults)
