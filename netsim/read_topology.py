@@ -78,11 +78,14 @@ def include_yaml(data: Box, source_file: str) -> None:
     inc_path = os.path.dirname(source_file)
 
   for inc_name in data._include:                                            # Iterate over included files
-    file_path = inc_path + ('/' if '/' in inc_path else '') + os.path.dirname(inc_name)
+    if "~/" in inc_name:
+      file_path = os.path.dirname(os.path.expanduser(inc_name))
+    else:
+      file_path = inc_path + ('/' if '/' in inc_path else '') + os.path.dirname(inc_name)
     traversable = get_traversable_path(file_path)                           # Get a traversable object
     inc_files = get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
     if not inc_files:
-      common.fatal(f'Cannot file {inc_name} to be included into {source_file}')
+      common.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
       return
 
     for file_name in inc_files:
