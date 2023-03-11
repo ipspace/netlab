@@ -78,6 +78,7 @@ end
 sudo apt-get update
 sudo apt-get install -y python3-pip
 sudo pip3 install --ignore-installed networklab
+sudo pip3 install cryptography==3.3.2
 netlab install -y ubuntu ansible libvirt containerlab
 ```
 
