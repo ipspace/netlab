@@ -59,6 +59,7 @@ Vagrant.configure("2") do |config|
     sudo apt-get update
     sudo apt-get install -y python3-pip
     sudo pip3 install --ignore-installed networklab
+    sudo pip3 install --upgrade pyopenssl cryptography
     netlab install -y ubuntu ansible libvirt containerlab
   SHELL
 end
@@ -78,7 +79,7 @@ end
 sudo apt-get update
 sudo apt-get install -y python3-pip
 sudo pip3 install --ignore-installed networklab
-sudo pip3 install cryptography==3.3.2
+sudo pip3 install --upgrade pyopenssl cryptography
 netlab install -y ubuntu ansible libvirt containerlab
 ```
 
