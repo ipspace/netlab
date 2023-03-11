@@ -82,13 +82,13 @@ def include_yaml(data: Box, source_file: str) -> None:
     traversable = get_traversable_path(file_path)                           # Get a traversable object
     inc_files = get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
     if not inc_files:
-      common.fatal('Cannot file {inc_name} to be included into {source_file}')
+      common.fatal(f'Cannot file {inc_name} to be included into {source_file}')
       return
 
     for file_name in inc_files:
       yaml_data = read_yaml(filename=file_name)
       if yaml_data is None:
-        common.fatal('Cannot read {file_name} that should be included into {source_file}')
+        common.fatal(f'Cannot read {file_name} that should be included into {source_file}')
         return
       data[os.path.splitext(os.path.basename(file_name))[0]] = yaml_data
 
