@@ -49,6 +49,7 @@ IGNORE="--ignore-installed"
 # Install Python components
 #
 echo "Install baseline Python components"
+$SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP pyopenssl cryptography
 $SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP testresources pyyaml httplib2
 $SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP jinja2 six bracket-expansion netaddr
 #
