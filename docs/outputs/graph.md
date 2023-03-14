@@ -1,4 +1,4 @@
-# Topology Graph Output Module
+# Topology Graph (graphviz) Output Module
 
 *graph* output module create a description of network topology in [*graphviz* DOT format](https://graphviz.org/doc/info/lang.html). You can use that description with *graphviz* commands to create topology diagrams in [numerous output formats](https://graphviz.org/docs/outputs/).
 
