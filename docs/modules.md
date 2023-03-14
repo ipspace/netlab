@@ -123,7 +123,7 @@ The link between R1, R2 and R3 should be in area 1. The OSPF cost on R1 should b
 
 ## Using Modules when Deploying Device Configurations
 
-During the initial device configuration, the **[netlab initial](../netlab/initial.md)** command generates and deploys configuration snippets for every module specified on individual network devices.
+During the initial device configuration, the **[netlab initial](netlab/initial.md)** command generates and deploys configuration snippets for every module specified on individual network devices.
 
 **Notes:**
 
