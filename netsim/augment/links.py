@@ -15,24 +15,34 @@ from ..data.validate import must_be_string,must_be_list,must_be_dict,validate_at
 from .. import addressing
 from . import devices
 
-def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
+def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
+  intf_cnt  = 0
   for n in iflist:                      # Sanity check of interface data
+    intf_cnt = intf_cnt + 1
     if isinstance(n,str):               # Another shortcut: node name as string
+      if not n in nodes:                # ... is it a valid node name?
+        common.error(                   # ... it's not, get lost
+          f'Interface {link._linkname}.interfaces.{intf_cnt} refers to an unknown node {n}',
+          common.IncorrectValue,
+          'links')
+        continue
       n = Box({ 'node': n },default_box=True,box_dots=True)
-    if not isinstance(n,dict):          # Still facing non-dict data type?
+      
+    if not isinstance(n,Box):          # Still facing non-dict data type?
       common.error(                     # ... report an error
-        f'Interface description {n} on link {link} must be a dictionary',
+        f'Interface data in {link._linkname}.interfaces[{intf_cnt}] must be a dictionary, found {type(n).__name__}',
         common.IncorrectValue,
         'links')
     elif not 'node' in n:               # Do we have node name in interface data?
       common.error(                     # ... no? Too bad, throw an error
-        f'Interface data {n} on link {link} is missing a "node" attribute',
+        f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute\n' +
+        f'... found {n}',
         common.MissingValue,
         'links')
-    elif not n['node'] in nodes:        # Is the node name valid?
+    elif not n.node in nodes:           # Is the node name valid?
       common.error(                     # ... it's not, get lost
-        f'Interface data {n} on link {link} refers to an unknown node {n["node"]}',
+        f'Interface data {link._linkname}.interfaces[{intf_cnt}] refers to an unknown node {n.node}',
         common.IncorrectValue,
         'links')
     else:
@@ -41,7 +51,7 @@ def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
   return link_intf
 
 """
-Normalize the list of links:
+Normalize the link objects:
 
 * Dictionary with 'interfaces' key ==> no change
 * Dictionary without 'interfaces' ==> extract nodes into 'interfaces', keep other keys
@@ -49,6 +59,56 @@ Normalize the list of links:
 * String ==> split into list, create a dictionary with 'interfaces' element
 
 """
+
+def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optional[Box]:
+  if isinstance(l,dict) and not isinstance(l,Box):            # transform dict into Box if needed
+    l = data.get_box(l)
+
+  if isinstance(l,Box) and 'interfaces' in l:                 # a dictionary with 'interfaces' element
+    l._linkname = linkname
+    must_be_list(l,'interfaces',linkname,module='links')
+    l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
+    return l
+
+  if isinstance(l,Box):                                       # a dictionary without 'interfaces' element
+    link_data = data.get_empty_box()                          # ... split it into link attributes
+    link_intf = []                                            # ... and a list of nodes
+    link_data._linkname = linkname                            # ... set link name
+    for k in l.keys():
+      if k in nodes:                                          # Node name -> interface list
+        must_be_dict(l,k,linkname,create_empty=True)
+        if isinstance(l[k],dict):
+          l[k].node = k
+          link_intf.append(l[k])
+      else:
+        link_data[k] = l[k]                                   # ... otherwise copy key/value pair to link data
+    link_data.interfaces = link_intf                          # Add revised interface data to link data
+    return link_data
+
+  if isinstance(l,list):                                              # List of nodes, transform into interfaces
+    link_data = data.get_box({ '_linkname' : linkname })              # ... create stub link data structure
+    link_data.interfaces = adjust_interface_list(l,link_data,nodes)   # ... and adjust interface list
+    return link_data
+
+  if isinstance(l,str):                                       # String, split into a list of nodes
+    link_intf = []
+    for n in l.split('-'):                # ... split it into a list of nodes
+      if n in nodes:                      # If the node name is valid
+        link_intf.append({ 'node': n })   # ... append it to the list of interfaces
+      else:
+        common.error(
+          f'Link string {l} in {linkname} refers to an unknown node {n}',
+          common.IncorrectValue,
+          'links')
+    return data.get_box({
+      'interfaces': link_intf,
+      '_linkname' : linkname })
+
+  common.error(
+    f'Invalid type {type(l).__name__} for {linkname}',
+    common.IncorrectType,
+    'links')
+  return None
 
 def adjust_link_list(links: list, nodes: Box) -> list:
   link_list: list = []
@@ -58,47 +118,10 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 
   link_cnt = 0
   for l in links:
-    if isinstance(l,dict) and 'interfaces' in l:                # a dictionary with 'interfaces' element
-      l = Box(l,default_box=True,box_dots=True)
-      must_be_list(l,'interfaces',f'link[{link_cnt}]',module='links')
-      l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
-      link_list.append(l)
-      continue
-
-    if isinstance(l,Box):                                       # a dictionary without 'interfaces' element
-      link_data = Box({},default_box=True,box_dots=True)        # ... split it into link attributes
-      link_intf = []                                            # ... and a list of nodes
-      for k in l.keys():
-        if k in nodes:                                          # Node name -> interface list
-          must_be_dict(l,k,f'link[{link_cnt}]',create_empty=True)
-          if isinstance(l[k],dict):
-            l[k].node = k
-            link_intf.append(l[k])
-        else:
-          link_data[k] = l[k]                                   # ... otherwise copy key/value pair to link data
-      link_data.interfaces = link_intf                          # Add revised interface data to link data
-      link_list.append(link_data)                               # ... and move on
-    elif isinstance(l,list):
-      link_list.append(Box({ 'interfaces': adjust_interface_list(l,l,nodes) },default_box=True,box_dots=True))
-    elif isinstance(l,str):
-      link_intf = []
-      for n in l.split('-'):                # ... split it into a list of nodes
-        if n in nodes:                      # If the node name is valid
-          link_intf.append({ 'node': n })   # ... append it to the list of interfaces
-        else:
-          common.error(
-            f'Link string {l} refers to an unknown node {n}',
-            common.IncorrectValue,
-            'links')
-      link_list.append({ 'interfaces': link_intf })
-    else:                                   # Come on, you really should not do something like this
-      common.error(
-        f'Invalid type {type(l).__name__} for a link instance: {l}',
-        common.IncorrectType,
-        'links')
-      continue
-
     link_cnt = link_cnt + 1
+    link_data = adjust_link_object(l,f'links[{link_cnt}]',nodes)
+    if not link_data is None:
+      link_list.append(link_data)
 
   if common.debug_active('links'):
     print("Adjusted link list")
