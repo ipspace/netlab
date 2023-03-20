@@ -133,12 +133,13 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
 
   if not isinstance(obj.vlan,dict):                               # Basic sanity check: VLAN attribute must be a dictionary
     common.error(
-      f'vlan link attribute must be a dictionary\n... {link}',
+      f'vlan link attribute on {link._linkname} must be a dictionary\n... {link}',
       common.IncorrectValue,
       'vlan')
     return False
 
-  node_error = f' in node {obj.node}' if not obj is link else ''  # Prepare for error checking
+  # Prepare details about object that's in error
+  node_error = f' in node {obj.node} on link {link._linkname}' if not obj is link else f' in link {link._linkname}'
   link_ok = True
 
   for attr in obj.vlan.keys():                                    # Check for unexpected attributes
@@ -300,7 +301,7 @@ def validate_trunk_vlan_list(link: Box) -> bool:
   # First check: if we have a non-VLAN node we must have a native VLAN
   if needs_native and not has_native:
     common.error(
-      f'Non-VLAN nodes are attached to VLAN trunk links[{link.linkindex}] that has no native VLAN',
+      f'Non-VLAN nodes are attached to VLAN trunk {link._linkname} that has no native VLAN',
       common.IncorrectValue,
       'vlan')
     return False
@@ -335,7 +336,7 @@ def validate_trunk_vlan_list(link: Box) -> bool:
         continue
 
       common.error(
-        f'VLAN {vname} used by node {o_intf.node} on links[{link.linkindex}] is not used by any other node on that link',
+        f'VLAN {vname} used by node {o_intf.node} on {link._linkname} is not used by any other node on that link',
         common.IncorrectValue,
         'vlan')
       has_error = True
@@ -476,7 +477,9 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
 
   for vname in sorted(v_attr.trunk.set):
     if vname != native_vlan:           # Skip native VLAN
-      link_data = create_vlan_link_data(link.vlan.trunk[vname] or {},vname,link.linkindex,topology)
+      link_data = link.vlan.trunk[vname] or {}
+      link_data['_linkname'] = f'{link._linkname}.{vname}'
+      link_data = create_vlan_link_data(link_data,vname,link.linkindex,topology)
 
       prefix = None
       if vname in topology.get('vlans',{}):
@@ -538,7 +541,8 @@ def create_loopback_vlan_links(topology: Box) -> None:
       # and now the real work starts: create a fake VLAN link with a single node attached to it
       if common.debug_active('vlan'):
         print(f'Creating loopback link for VLAN {vname} on node {n.name}')
-      link_data = create_vlan_link_data({},vname,'loopback',topology)   # Create a vlan_member link with fake parent (nobody should ever use it)
+      link_data = { '_linkname': f'nodes.{n.name}.vlans.{vname}' }      # Create a vlan_member link with fake parent (nobody should ever use it)
+      link_data = create_vlan_link_data(link_data,vname,'loopback',topology)
       prefix = topology.vlans[vname].get('prefix',None)                 # Copy VLAN prefix into link_data
       if prefix:
         link_data.prefix = prefix

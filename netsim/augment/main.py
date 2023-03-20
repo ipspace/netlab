@@ -72,6 +72,7 @@ def transform_data(topology: Box) -> None:
 
   modules.post_link_transform(topology)
 
+def post_transform(topology: Box) -> None:
   modules.post_transform(topology)
   augment.plugin.execute('post_transform',topology)
   augment.groups.node_config_templates(topology)
@@ -81,9 +82,11 @@ def transform_data(topology: Box) -> None:
   quirks.process_quirks(topology)
   common.exit_on_error()
   
+  augment.links.cleanup(topology)
   for remove_attr in ['Plugin','pools','_Providers']:
     topology.pop(remove_attr,None)
 
 def transform(topology: Box) -> None:
   transform_setup(topology)
   transform_data(topology)
+  post_transform(topology)
