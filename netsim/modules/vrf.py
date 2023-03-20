@@ -9,15 +9,10 @@ from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from .. import common
 from .. import data
 from ..data import get_from_box,global_vars
-from ..data.validate import must_be_list,must_be_dict,validate_attributes
+from ..data.validate import validate_attributes
+from ..data.types import must_be_list,must_be_dict,must_be_id
 from ..augment import devices,groups
 from .. import addressing
-
-#
-# Regex expression to validate names used in vrfs. No spaces or weird characters, not too long
-# (VRF names are used as device names on Linux, with max 16 characters length)
-#
-VALID_VRF_NAMES = re.compile( r"[a-zA-Z0-9_.-]{1,16}" )
 
 def populate_vrf_static_ids(topology: Box) -> None:
   for k in ('id','rd'):
@@ -73,14 +68,6 @@ def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
   return (vrf_id,rd)
 
 #
-# Check for 'reasonable' VRF names using a regex expression
-#
-def validate_vrf_name(name: str) -> None:
-  if not VALID_VRF_NAMES.fullmatch( name ):
-    common.error(f'VRF name "{name}" does not match the allowed regex expression {VALID_VRF_NAMES.pattern}',
-                 common.IncorrectValue,'vrf')
-
-#
 # Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
 # Also checks for valid naming
 #
@@ -96,7 +83,8 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
     return
 
   for vname in list(obj.vrfs.keys()):
-    validate_vrf_name(vname)
+    must_be_id(parent=None,key=vname,path=f'NOATTR:VRF name {vname} in {obj_name}',module='vrf')
+
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
     if not isinstance(obj.vrfs[vname],dict):
