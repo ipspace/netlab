@@ -7,8 +7,9 @@ from box import Box
 from . import _Module,_routing,get_effective_module_attribute,_dataplane
 from .. import common
 from .. import data
-from ..data import global_vars,get_from_box,get_global_parameter
+from ..data import global_vars,get_from_box,get_empty_box,get_box,get_global_parameter
 from ..data.validate import validate_attributes
+from ..data.types import must_be_id
 from .. import addressing
 from ..augment import devices,groups
 from ..augment import links
@@ -86,12 +87,10 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     return
 
   for vname in list(obj.vlans.keys()):
-    if not isinstance(vname,str):
-      common.error(f'VLAN names in {obj_name} must be strings ({vname}):\n... {obj.vlans}',common.IncorrectValue,'vlan')
-      return
+    must_be_id(parent=None,key=vname,path=f'NOATTR:VLAN name {vname} in {obj_name}',module='vlan')
 
     if not obj.vlans[vname]:
-      obj.vlans[vname] = Box({},default_box=True,box_dots=True)
+      obj.vlans[vname] = data.get_empty_box()
 
     vdata = obj.vlans[vname]
     validate_attributes(

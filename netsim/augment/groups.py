@@ -13,7 +13,8 @@ from .. import common
 from .. import data
 from .. import modules
 from ..modules import bgp
-from ..data.validate import must_be_dict,must_be_list,must_be_string,validate_attributes
+from ..data.validate import validate_attributes
+from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
 from . import nodes
 
 '''
@@ -71,6 +72,7 @@ def check_group_data_structure(topology: Box) -> None:
   group_attr = topology.defaults.attributes.group
   providers = list(topology.defaults.providers.keys())
   for grp,gdata in topology.groups.items():
+    must_be_id(parent=None,key=grp,path=f'NOATTR:group name {grp}',module='groups')
     if must_be_dict(topology.groups,grp,'topology.groups',create_empty=True,module='groups') is None:
       continue
 

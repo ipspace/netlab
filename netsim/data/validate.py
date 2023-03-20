@@ -163,7 +163,43 @@ def validate_alt_type(data: typing.Any, data_type: Box) -> bool:
   return type(data).__name__ in data_type._alt_types
 
 """
-validate_item -- validate a single value from an object:
+validate_value -- validate a single value (not from an object)
+"""
+
+def validate_value(
+      value: typing.Any,
+      data_type: str,
+      path: str,
+      context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
+      module: typing.Optional[str] = None,              # Module name to display in error messages
+      abort: bool = False) -> typing.Any:
+  global _bi,_tv
+
+  validation_function = getattr(_tv,f'must_be_{data_type}',None)      # Try to get validation function
+
+  if not validation_function:                                         # No validation function
+    if type(value).__name__ != data_type:                             # ... check data type name
+      _tv.wrong_type_message(
+              path=path,
+              key=None,
+              expected=data_type,
+              value=value,
+              context=context,
+              module=module)
+      if abort:
+        raise common.IncorrectType()
+    return value
+
+  return validation_function(
+            parent=None,                                # We're validating a standalone value
+            key=value,
+            path=path,
+            module=module,
+            context=context,
+            abort=abort)
+
+"""
+validate_item -- validate a single item from an object:
 
 * Return if the data type is None (= not validated)
 * Compare data types names if the data type is a string (OK, a bit more complex than that)
@@ -321,14 +357,11 @@ def validate_attributes(
   valid = get_valid_attributes(attributes,attr_list,extra_attributes)
   extra_module_attr = get_extra_module_attributes(topology.defaults.attributes,attr_list)
   if isinstance(valid,str):                   # Validate data that is not a dictionary
-    data_type = type(data).__name__
-    if data_type == valid:                    # OK, we have a match
-      return data
-
-    common.error(
-      f'{data_path} should be {valid}, found {data_type} instead',
-      common.IncorrectType,
-      'validate')
+    validate_value(                           # Use standalone value validator
+      value=data,
+      data_type=valid,
+      path=data_path,
+      module=module)
     return data
 
   #

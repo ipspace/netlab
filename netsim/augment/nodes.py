@@ -14,7 +14,8 @@ from .. import utils
 from .. import addressing
 from .. import providers
 from . import devices
-from ..data.validate import validate_attributes,must_be_int,must_be_string
+from ..data.validate import validate_attributes
+from ..data.types import must_be_int,must_be_string,must_be_id
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
 """
@@ -68,6 +69,7 @@ Validate node attributes
 """
 def validate(topology: Box) -> None:
   for n_name,n_data in topology.nodes.items():
+    must_be_id(parent=None,key=n_name,path=f'NOATTR:node name {n_name}',module='nodes')
     providers = list(topology.defaults.providers.keys())
     validate_attributes(
       data=n_data,                                    # Validate node data
