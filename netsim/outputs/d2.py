@@ -12,6 +12,10 @@ from ..data import get_from_box,get_box
 from ..data.validate import must_be_list
 from . import _TopologyOutput
 
+'''
+Copy default settings into a D2 map converting Python dictionaries into
+dotted-name format D2 is using
+'''
 def dump_d2_dict(f : typing.TextIO, data: dict, indent: str) -> None: 
   for k,v in data.items():
     if isinstance(v,dict):
@@ -20,16 +24,29 @@ def dump_d2_dict(f : typing.TextIO, data: dict, indent: str) -> None:
       v = f'"{v}"' if isinstance(v,str) else v
       f.write(f"{indent}{k}: {v}\n")
 
+'''
+Copy named D2 default settings into D2 output file. Just a convenience
+wrapper around dump_d2_dict
+'''
 def copy_d2_attr(f : typing.TextIO, dt: str, settings: Box, indent: str = '') -> None: 
   if not dt in settings:
     return
 
   dump_d2_dict(f,settings[dt],indent)
 
+'''
+Find D2-specific device type for a given node and copy device-specific attributes
+into D2 object. Another convenience wrapper around copy_d2_attr and dump_d2_dict
+'''
 def d2_node_attr(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   d2_type = n.d2.type or ''
   copy_d2_attr(f,d2_type,settings,indent)
 
+'''
+Create a node in D2 graph and add a label and styling attributes to it
+
+indent parameter is used to create indented definitions within containers
+'''
 def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.d2.name} {{\n')
   node_ip_str = ""
@@ -44,6 +61,10 @@ def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') 
   d2_node_attr(f,n,settings,indent+'  ')
   f.write(f'{indent}}}\n')
 
+'''
+Similar to node-with-label, create a LAN segment node in the D2 graph. Node name is
+the LAN bridge name, node label is its IPv4 or IPv6 prefix.
+'''
 def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.bridge}' + '{\n')
   f.write(f'  label: {n.prefix.ipv4 or n.prefix.ipv6 or n.bridge}\n')
@@ -51,6 +72,9 @@ def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '
   f.write('}\n')
 #  f.write('style=filled fillcolor="%s" fontsize=11' % (settings.colors.get("stub","#d1bfab")))
 
+'''
+Add an arrowhead label to a connection
+'''
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
   addr = data.ipv4 or data.ipv6
   if isinstance(addr,str):
@@ -58,6 +82,9 @@ def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True
       addr = addr.split('/')[0]
     f.write(f"  {direction}-arrowhead.label: '{addr}'\n")
 
+'''
+Create a P2P connection between two nodes
+'''
 def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
   f.write(f"{l.interfaces[0].node} -- {l.interfaces[1].node} {{\n")
   if labels:
@@ -65,27 +92,33 @@ def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -
     edge_label(f,'target',l.interfaces[1],True)
   f.write("}\n")
 
+'''
+Create a connection between a node and a LAN segment
+'''
 def edge_node_net(f : typing.TextIO, link: Box, ifdata: Box, labels: typing.Optional[bool] = False) -> None:
   f.write(f"{ifdata.node} -> {link.bridge} {{\n")
   if labels:
     edge_label(f,'source',ifdata,False)
   f.write("}\n")
 
+'''
+Create an ASN or group container
+'''
 def as_start(f : typing.TextIO, asn: str, label: typing.Optional[str], settings: Box) -> None:
   f.write(f'{asn} {{\n')
-#  f.write('    bgcolor="%s"\n' % settings.colors.get('as','#e8e8e8'))
-#  f.write('    fontname=Verdana\n')
-#  f.write('    margin=%s\n' % settings.margins.get('as',16))
   copy_d2_attr(f,'container',settings,'-  ')
   asn = asn.replace('_',' ')
   f.write('  label: '+ (f'{label} ({asn})' if label else asn)+'\n')
 
+'''
+Create a topology graph as a set of containers (groups or ASNs)
+'''
 def graph_clusters(f : typing.TextIO, clusters: Box, settings: Box, nodes: Box) -> None:
   for asn in clusters.keys():
     as_start(f,asn,clusters[asn].get('name',None),settings)
     for n in clusters[asn].nodes.values():
-      node_with_label(f,n,settings,'  ')
-      nodes[n.name].d2.name = f'{asn}.{n.name}'
+      node_with_label(f,n,settings,'  ')                    # Create a node within a cluster
+      nodes[n.name].d2.name = f'{asn}.{n.name}'             # And change the D2 node name that will be used in connections
     f.write('}\n')
 
 def build_maps(topology: Box) -> Box:
@@ -107,10 +140,9 @@ def build_maps(topology: Box) -> Box:
 
   return maps
 
-"""
+'''
 add_groups -- use topology groups as graph clustering mechanism
-"""
-
+'''
 def add_groups(maps: Box, groups: list, topology: Box) -> None:
   if not 'groups' in topology:
     return
@@ -165,6 +197,15 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
   f.close()
   return True
 
+'''
+Create a BGP session as a connection between two nodes
+
+* Select the connection (arrow) type based on whether a connection is a RR-to-client session
+* Copy IBGP or EBGP attributes to the connection
+
+Please note that we call this function once for every pair of nodes, so it has to deal with
+RR being the first (node) or the second (session) connection endpoint.
+'''
 def bgp_session(f : typing.TextIO, node: Box, session: Box, settings: Box, rr_session: bool, nodes: Box) -> None:
   arrow_dir = '<->'
   if rr_session:
@@ -206,6 +247,12 @@ graph_dispatch = {
   'bgp': graph_bgp
 }
 
+'''
+Set node attributes needed by D2 output module:
+
+* D2 shape name used in connections -- set to node name, can be modified to include container name
+* D2 shape type -- used to copy D2 style attributes from system defaults to D2 graph file
+'''
 def set_d2_attr(topology: Box) -> None:
   for n,ndata in topology.nodes.items():
     dev_data = topology.defaults.devices[ndata.device]
