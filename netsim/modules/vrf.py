@@ -322,15 +322,22 @@ class VRF(_Module):
         topology.defaults.attributes[attr_set].append('vrfs')
 
   def module_pre_transform(self, topology: Box) -> None:
+    if 'vrfs' in topology:
+      try:
+        must_be_dict(
+          parent=topology,
+          key='vrfs',
+          path='topology',
+          create_empty=False,
+          abort=True,
+          module='vrf')  # Check that we're dealing with a VRF dictionary and return otherwise
+      except:
+        return
+
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vrfs','vrf',copy_keys=['rd','export','import'])
 
-    if not must_be_dict(
-        parent=topology,
-        key='vrfs',
-        path='topology',
-        create_empty=False,
-        module='vrf'):                                # Check that we're dealing with a VRF dictionary and return if there's none
+    if not 'vrfs' in topology:                          # No global VRFs, nothing to do
       return
 
     for vname in topology.vrfs.keys():

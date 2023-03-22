@@ -39,7 +39,7 @@ create a set of attributes used in that object
 def build_id_set(obj: Box, dsname: str, attr: str, objname: str) -> set:
   if dsname in obj:
     if not isinstance(obj[dsname],dict):    # pragma: no cover
-      common.fatal(f'Found a {dsname} setting that is not a dictionary in {objname}','dataplane')
+      common.fatal(f'Found a {objname}.{dsname} setting that is not a dictionary','dataplane')
       return set()
 
     return { 

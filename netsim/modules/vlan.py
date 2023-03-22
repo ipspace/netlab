@@ -9,7 +9,7 @@ from .. import common
 from .. import data
 from ..data import global_vars,get_from_box,get_empty_box,get_box,get_global_parameter
 from ..data.validate import validate_attributes
-from ..data.types import must_be_id,must_be_list
+from ..data.types import must_be_id,must_be_list,must_be_dict
 from .. import addressing
 from ..augment import devices,groups
 from ..augment import links
@@ -1073,8 +1073,21 @@ def create_vlan_access_links(topology: Box) -> None:
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
+    if 'vlans' in topology:
+      try:
+        must_be_dict(
+          parent=topology,
+          key='vlans',
+          path='topology',
+          create_empty=False,
+          abort=True,
+          module='vlan')      # Check that we're dealing with a VLAN dictionary and return if there's an error
+      except:
+        return
+
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
+
     if get_from_box(topology,'vlan.mode'):
       if topology.vlan.mode not in vlan_mode_kwd:     # pragma: no cover
         common.error(
