@@ -1040,6 +1040,8 @@ def create_vlan_access_links(topology: Box) -> None:
     return
 
   for vname,vdata in topology.vlans.items():                                # Iterate over global VLANs
+    if not isinstance(vdata,Box):                                           # VLAN not yet a dictionary?
+      continue                                                              # ... no problem, skip it
     if not 'links' in vdata:                                                # No VLAN links?
       continue                                                              # ... no problem, move on
 
