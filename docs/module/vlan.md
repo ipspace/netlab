@@ -91,6 +91,7 @@ The keys of the **vlans** dictionary are VLAN names, the values are VLAN definit
 * **mode** -- default VLAN forwarding mode: **route**, **bridge** or **irb**.
 * **prefix** -- IP prefix assigned to the VLAN. The value of the prefix could be an IPv4 prefix or a dictionary with **ipv4** and **ipv6** keys.
 * **pool** -- addressing pool used to assign IPv4/IPv6 prefixes to the VLAN. VLAN prefixes are allocated from addressing pools before interface address assignments.
+* **links** -- [VLAN access links](module-vlan-creating-access-links) within the VLAN
 * A VLAN definition can also contain other valid link- or interface-level parameters (including link **role**, addressing **pool**, VRF name, OSPF cost...).
 
 VLAN definitions lacking **id** attribute get [default VLAN ID](default-vlan-values) assigned during the topology transformation process.

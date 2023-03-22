@@ -1054,7 +1054,7 @@ def create_vlan_access_links(topology: Box) -> None:
         module='vlans',
         abort=True)
     except:                                                                 # Error: not a list
-      vdata.pop('links')                                                    # ... remove the attribute
+      vdata.pop('links',None)                                               # ... remove the attribute
       continue                                                              # ... and move on
 
     for cnt,l in enumerate(vdata.links):                                    # So far so good, now iterate over the links

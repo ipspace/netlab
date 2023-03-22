@@ -61,6 +61,8 @@ The keys of the **vrfs** dictionary are VRF names, the values are VRF definition
 * **import** -- a list of import route targets
 * **export** -- a list of export route targets
 * **loopback** (bool or prefix) -- Create a loopback interface for this VRF.
+* **links** - a [list of links](module-vrf-links) within this VRF.
+* A VRF definition can also contain other link- or interface-level parameters (for example, OSPF cost).
 
 Empty VRF definition will get [default RD and RT values](default-vrf-values) assigned during the topology transformation process.
 
@@ -85,6 +87,10 @@ A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loo
 * A boolean value -- the address of the loopback interface will be allocated from the **vrf_loopback** address pool
 * A string specifying the IPv4 prefix of the loopback interface
 * A dictionary of address families specifying IPv4 and/or IPv6 prefixes to be used on the loopback interface
+
+```{warning}
+The explicit IPv4/IPv6 loopback addresses should not be used in the global VRF definition. Use them only in node VRF definition.
+```
 
 ### RD and RT Values
 
@@ -205,10 +211,38 @@ links:
   h1:
 - r1:
     vrf: red
-	h2:
+  h2:
 ```
 
 While it usually makes sense to specify **vrf** on an interface, you could use **vrf** attribute on a link to add all interfaces attached to that link to the specified VRF, for example when building VRF-lite topologies.
+
+(module-vrf-links)=
+### Specify Links within VRF Definition
+
+While you can assign links to VRFs with the **vrf** link- or interface attribute attribute, you can also list VRF links in the **links** list of a global VRF definition. The methods are equivalent and produce the same results, but the VRF **links** approach results in a more concise lab topology.
+
+Consider the simplest possible topology with a switch (s1) and two hosts (h1 and h2) connected to two interfaces in the same VRF. This is how you would define the VRF and links within that VRF:
+
+```
+vrfs:
+  example:
+  
+links:
+- h1:
+  s1:
+  vrf: example
+- h2:
+  s1:
+  vrf: example
+```
+
+Using the VRF **links** attribute, the same lab topology could be (using [link definition shortcuts](link-example-no-attributes)) shortened to:
+
+```
+vrfs:
+  example:
+    links: [ h1-s1, h2-s1 ]
+```
 
 ## Interaction with Routing Protocols
 
