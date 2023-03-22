@@ -11,6 +11,7 @@ This document contains way too many link definition examples, ranging from simpl
 
 Some examples include the resulting internal data structure (link data dictionary with **interfaces** list) generated in an early phase of [topology transformation process](../dev/transform.md).
 
+(link-example-no-attributes)=
 ## Simple Links with No Link Attributes
 
 When you need a connection between lab devices with no extra attributes, use the *string format*.

@@ -123,7 +123,7 @@ The default forwarding mode is **irb**.
 [^NVM]: Node setting takes precedence over global VLAN setting to allow you to attach a router to a VLAN trunk without setting too many parameters.
 
 (module-vlan-interface)=
-## Using VLANs on Interfaces and Links
+## Use VLANs on Interfaces and Links
 
 To use a VLAN on a link, add **vlan** dictionary to a link or an interface on a link. The VLAN dictionary may contain the following attributes:
 
@@ -148,8 +148,36 @@ VLAN configuration module enforces these rules:
 * Native VLAN specified in **vlan.native** must be included in **vlan.trunk** list.
 * Native VLAN must match across all VLAN-capable nodes connected to a link.
 
+(module-vlan-creating-access-links)=
+### Create Access VLAN Links
+
+You can create access VLAN links with the **vlan.access** link attribute; you can also list access VLAN links in the **links** list of a global VLAN definition. While the methods are equivalent and produce the same results, the VLAN **links** approach results in a more concise lab topology.
+
+Consider the simplest possible topology with a switch (s1) and two hosts (h1 and h2) connected to access VLAN interfaces. This is how you would define the VLAN and access VLAN links:
+
+```
+vlans:
+  example:
+  
+links:
+- h1:
+  s1:
+  vlan.access: example
+- h2:
+  s1:
+  vlan.access: example
+```
+
+Using the VLAN **links** attribute, the same lab topology could be (using [link definition shortcuts](link-example-no-attributes)) shortened to:
+
+```
+vlans:
+  example:
+    links: [ h1-s1, h2-s1 ]
+```
+
 (module-vlan-creating-interfaces)=
-## Creating VLAN Interfaces and Routed Subinterfaces
+## Create VLAN Interfaces and Routed Subinterfaces
 
 VLAN interfaces and subinterfaces are created on-demand based on these rules:
 

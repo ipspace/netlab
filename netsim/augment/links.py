@@ -857,6 +857,13 @@ def set_node_af(nodes: Box) -> None:
           n.af[af] = True
           continue
 
+def get_next_linkindex(topology: Box) -> int:
+  if not 'links' in topology:
+    topology.links = []
+    return topology.defaults.get('link_index',1)
+
+  return topology.links[-1].linkindex + 1
+
 def set_linkindex(topology: Box) -> None:
   if not 'links' in topology:
     return

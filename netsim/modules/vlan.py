@@ -9,7 +9,7 @@ from .. import common
 from .. import data
 from ..data import global_vars,get_from_box,get_empty_box,get_box,get_global_parameter
 from ..data.validate import validate_attributes
-from ..data.types import must_be_id
+from ..data.types import must_be_id,must_be_list
 from .. import addressing
 from ..augment import devices,groups
 from ..augment import links
@@ -1025,6 +1025,49 @@ def populate_node_vlan_data(n: Box, topology: Box) -> None:
             topo_data.pop(m,None)
         n.vlans[vname] = topo_data + n.vlans[vname]                         # ... now merge with the VLAN data
 
+"""
+create_vlan_access_links -- create VLAN access links based on VLAN 'links' attribute
+
+* Iterate over global VLANs
+* If a VLAN has 'links' attribute, verify that it's a list
+* Iterate over the 'links' list
+* Normalize every link in the list, add 'vlan.access: vname' attribute and append the link
+  to global list of links
+"""
+
+def create_vlan_access_links(topology: Box) -> None:
+  if not 'vlans' in topology:                                               # No global VLANs, nothing to do
+    return
+
+  for vname,vdata in topology.vlans.items():                                # Iterate over global VLANs
+    if not 'links' in vdata:                                                # No VLAN links?
+      continue                                                              # ... no problem, move on
+
+    try:
+      must_be_list(                                                         # Verify that the 'links' attribute is a list
+        parent=vdata,
+        key='links',
+        path=f'vlans.{vname}',
+        create_empty=False,
+        module='vlans',
+        abort=True)
+    except:                                                                 # Error: not a list
+      vdata.pop('links')                                                    # ... remove the attribute
+      continue                                                              # ... and move on
+
+    for cnt,l in enumerate(vdata.links):                                    # So far so good, now iterate over the links
+      link_data = links.adjust_link_object(                                 # Create link data from link definition
+                    l=l,
+                    linkname=f'vlans.{vname}.links[{cnt+1}]',
+                    nodes=topology.nodes)
+      if link_data is None:
+        continue
+      link_data.vlan.access = vname                                         # ... add access VLAN
+      link_data.linkindex = links.get_next_linkindex(topology)              # ... add linkindex (we're late in the process)
+      topology.links.append(link_data)                                      # ... and append new link to global link list
+
+    vdata.pop('links')                                                      # Finally, clean up the VLAN definition
+
 class VLAN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
@@ -1041,6 +1084,7 @@ class VLAN(_Module):
     populate_vlan_id_set(topology)
 
     if 'vlans' in topology:
+      create_vlan_access_links(topology)
       validate_vlan_attributes(topology,topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
