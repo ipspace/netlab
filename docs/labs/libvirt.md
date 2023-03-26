@@ -59,6 +59,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 * [Cisco ASAv](asav.md)
 * [Cisco IOSv](iosv.md)
 * [Cisco CSR](csr.md)
+* [Cisco IOS XR](iosxr.md)
 * [Cisco Nexus OS](nxos.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
@@ -144,6 +145,7 @@ The virtual machines are batched based on their order in **‌nodes** list/dicti
    asav.md
    csr.md
    iosv.md
+   iosxr.md
    nxos.md
    dellos10.md
    vsrx.md
