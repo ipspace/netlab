@@ -1,0 +1,287 @@
+input:
+- topology/input/link-group.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  ospf:
+    cost: 22
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.5/30
+    node: r2
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.6/30
+    node: r3
+  linkindex: 2
+  node_count: 2
+  ospf:
+    cost: 22
+  prefix:
+    ipv4: 10.1.0.4/30
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.9/30
+    node: r1
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.10/30
+    node: r3
+  linkindex: 3
+  node_count: 2
+  ospf:
+    cost: 22
+  prefix:
+    ipv4: 10.1.0.8/30
+  type: p2p
+- bridge: input_4
+  interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.0.1/24
+    node: r1
+  linkindex: 4
+  node_count: 1
+  ospf:
+    cost: 42
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: stub
+- bridge: input_5
+  interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.1.2/24
+    node: r2
+  linkindex: 5
+  node_count: 1
+  ospf:
+    cost: 17
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: stub
+- bridge: input_6
+  interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.2.3/24
+    node: r3
+  linkindex: 6
+  node_count: 1
+  ospf:
+    cost: 17
+  prefix:
+    ipv4: 172.16.2.0/24
+  type: stub
+module:
+- ospf
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        cost: 22
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: r1 -> r3
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.10/30
+        node: r3
+      ospf:
+        area: 0.0.0.0
+        cost: 22
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - bridge: input_4
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.0.1/24
+      linkindex: 4
+      name: r1 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        cost: 42
+        passive: true
+      type: stub
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    module:
+    - ospf
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+  r2:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        cost: 22
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: r2 -> r3
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.6/30
+        node: r3
+      ospf:
+        area: 0.0.0.0
+        cost: 22
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - bridge: input_5
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.1.2/24
+      linkindex: 5
+      name: r2 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        cost: 17
+        passive: true
+      type: stub
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    module:
+    - ospf
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+  r3:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: r3 -> r2
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.5/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        cost: 22
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: r3 -> r1
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.9/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        cost: 22
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - bridge: input_6
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.2.3/24
+      linkindex: 6
+      name: r3 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        cost: 17
+        passive: true
+      type: stub
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    module:
+    - ospf
+    name: r3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+ospf:
+  area: 0.0.0.0
+provider: libvirt

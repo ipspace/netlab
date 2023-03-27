@@ -42,18 +42,20 @@ links:
 
 A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netlab* data transformation routines:
 
-* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
-* **type** -- [link type](#link-types) (lan, p2p, stub, loopback)
+* **bandwidth** -- link bandwidth. Used to configure interface bandwidth when supported by the connected device(s).
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
+* **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
+* **group** -- [link group](link-groups) identifier
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
+* **members** -- list of links in a [link group](link-groups)
+* **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
 * **name** -- link name (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
+* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **role** -- link role, used to select specific configuration module behavior. Typical link roles include *stub*, *passive* and *external*. Please read [](module/routing.md) for more details.
-* **bandwidth** -- link bandwidth (used to configure interface bandwidth).
-* **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
-* **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
+* **type** -- [link type](#link-types) (lan, p2p, stub, loopback)
 
-You can use all link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
+You can use most link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
 
 * **ifindex** -- optional per-node interface index used to generate the interface/port name. Useful to select specific ports to match typical network designs (example: using high-speed ports for uplinks).
 
@@ -150,6 +152,22 @@ links:
 2. `r1 -> [r2,r3]`
 3. `P2P link`
 4. `LAN link`
+
+(link-groups)=
+## Link Groups
+
+When your lab topology contains numerous links with identical (or similar) attributes, it might be worth defining those links as a *link group*. A link group MUST have a **group** attribute (an *identifier*) and a list of **member** links.
+
+The link initialization phase of the lab topology transformation  creates new regular links from the group members links. Group attributes (apart from **group** and **members** attributes) are added to the member link attributes.
+
+You could, for example, use a link group to define a set of links with the same VLANs in a VLAN trunk ([complete example](https://github.com/ipspace/netlab-examples/tree/master/VRF/multihop-vrf-lite)):
+
+```
+links:
+- group: core_trunks
+  vlan.trunk: [ red, blue ]
+  members: [ s1-s2, s2-s3, s1-s3 ]
+```
 
 ## Static Link Addressing
 
