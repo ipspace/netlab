@@ -178,7 +178,7 @@ def run(cli_args: typing.List[str]) -> None:
     start_provider_lab(topology,p_provider,s_provider)
 
   if not args.no_config:
-    lab_status_change(topology,f'starting initial configuration')
+    lab_status_change(topology,f'deploying initial configuration')
     external_commands.deploy_configs(4,"netlab up",args.fast_config)
     message = get_message(topology,'up',False)
     if message:
