@@ -15,6 +15,8 @@ from box import Box
 from . import usage
 from .. import augment, common, read_topology
 from .. import __version__
+from ..utils import status
+from ..data import get_from_box
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
@@ -112,6 +114,48 @@ def get_message(topology: Box, action: str, default_message: bool = False) -> ty
     return None
 
   return topology.message.get(action,None)                  # Return action-specific message if it exists
+
+"""
+lab_status_update -- generic lab status callback
+
+* Get the lab ID (or default)
+* Map lab ID into current directory
+* Merge status dictionary or perform status-specific callback
+"""
+
+def get_lab_id(topology: Box) -> str:
+  return str(get_from_box(topology,'defaults.multilab.id') or 'default')
+
+def lab_status_update(
+      topology: Box,
+      status: Box,
+      update: typing.Optional[dict] = None,
+      cb: typing.Optional[typing.Callable] = None) -> None:
+
+  lab_id = get_lab_id(topology)                             # Get the lab ID (or default)
+  status[lab_id].dir = os.getcwd()                          # Map lab ID into current directory
+  if not 'providers' in status[lab_id]:                     # Initialize provider list
+    status[lab_id].providers = []
+
+  if update is not None:                                    # Update lab status from a dictionary
+    status[lab_id] = status[lab_id] + update
+    if 'status' in update:                                  # Append change in lab status to log        
+      if not 'log' in status[lab_id]:
+        status[lab_id].log = []
+      if not update['status'] in status[lab_id].log:
+        status[lab_id].log.append(update['status'])
+  if cb is not None:                                        # If needed, perform status-specific callback        
+    cb(status[lab_id])
+
+"""
+lab_status_change -- change current lab status
+"""
+def lab_status_change(topology: Box, new_status: str) -> None:
+  status.change_status(
+    topology,
+    callback = lambda s,t: 
+      lab_status_update(t,s,
+        update = { 'status': new_status }))
 
 #
 # Main command dispatcher

@@ -11,6 +11,13 @@ from ..common import fatal, get_yaml_string,debug_active
 from ..data import get_empty_box
 
 '''
+get_status_filename -- get the name of the netlab status file
+'''
+def get_status_filename(topology: Box) -> str:
+  status_file = topology.defaults.lab_status_file or '~/.netlab/status.yaml'
+  return os.path.expanduser(status_file)
+
+'''
 change_status -- change the status of a lab
 
 * Lock the lab status file
@@ -20,8 +27,7 @@ change_status -- change the status of a lab
 * Unlock the lab status file
 '''
 def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> None:
-  status_file = topology.defaults.lab_status_file or '~/.netlab/status.yaml'
-  status_file = os.path.expanduser(status_file)             # Get status file from topology defaults
+  status_file = get_status_filename(topology)               # Get status file name from topology defaults
   lock_file   = f'{status_file}.lock'                       # Associated lock file
 
   try:
@@ -49,3 +55,14 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
       f.write(get_yaml_string(status))
   except:
     fatal(f'Cannot lock lab status file {lock_file}')
+
+def read_status(topology: Box) -> Box:
+  status_file = get_status_filename(topology)               # Get status file name from topology defaults
+  if not os.path.exists(status_file):
+    return get_empty_box()
+  
+  try:
+    return Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
+  except:
+    fatal(f'Cannot read lab status file {status_file}')
+    return get_empty_box()

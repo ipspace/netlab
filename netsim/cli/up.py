@@ -18,7 +18,7 @@ from pathlib import Path
 from .. import common
 from . import create
 from . import external_commands
-from . import common_parse_args, load_snapshot_or_topology, get_message
+from . import common_parse_args, load_snapshot_or_topology, get_message, lab_status_update, lab_status_change
 from .. import providers
 from .. import read_topology
 from ..utils import status
@@ -74,36 +74,6 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
   return topology
 
 """
-lab_status_update -- generic lab status callback
-
-* Get the lab ID (or default)
-* Map lab ID into current directory
-* Merge status dictionary or perform status-specific callback
-"""
-
-def lab_status_update(
-      topology: Box,
-      status: Box,
-      update: typing.Optional[dict] = None,
-      cb: typing.Optional[typing.Callable] = None) -> None:
-
-  print(f'Called lab status update: {status}')
-  lab_id = str(get_from_box(topology,'defaults.multilab.id') or 'default')
-  status[lab_id].dir = os.getcwd()                          # Map lab ID into current directory
-  if not 'providers' in status[lab_id]:                     # Initialize provider list
-    status[lab_id].providers = []
-
-  if update is not None:                                    # Update lab status from a dictionary
-    status[lab_id] = status[lab_id] + update
-    if 'status' in update:                                  # Append change in lab status to log        
-      if not 'log' in status[lab_id]:
-        status[lab_id].log = []
-      if not update['status'] in status[lab_id].log:
-        status[lab_id].log.append(update['status'])
-  if cb is not None:                                        # If needed, perform status-specific callback        
-    cb(status[lab_id])
-
-"""
 Lab status routines:
 
 * status_start_lab -- lab initialization has started
@@ -129,13 +99,6 @@ def status_start_provider(topology: Box, provider: str) -> None:
       lab_status_update(t,s,
         update = { 'status': f'starting provider {provider}' },
         cb = lambda s: s.providers.append(provider)))
-
-def lab_status_change(topology: Box, new_status: str) -> None:
-  status.change_status(
-    topology,
-    callback = lambda s,t: 
-      lab_status_update(t,s,
-        update = { 'status': new_status }))
 
 """
 Execute provider probes

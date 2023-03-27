@@ -12,9 +12,11 @@ import os
 import sys
 from box import Box
 
-from . import common_parse_args, topology_parse_args, load_topology, load_snapshot_or_topology, external_commands,fs_cleanup
+from . import topology_parse_args, load_snapshot_or_topology, external_commands,fs_cleanup
+from . import lab_status_change, lab_status_update,get_lab_id
 from .. import read_topology,augment,common
 from .. import providers
+from ..utils import status
 from .up import provider_probes
 #
 # CLI parser for 'netlab down' command
@@ -76,6 +78,13 @@ def stop_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = N
   external_commands.stop_lab(topology.defaults,p_name,2,"netlab down",exec_command)
   p_module.call('post_stop_lab',p_topology)
 
+def remove_lab_status(topology: Box) -> None:
+  lab_id = get_lab_id(topology)
+
+  status.change_status(
+    topology,
+    callback = lambda s,t: s.pop(lab_id,None))
+
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
   topology = load_snapshot_or_topology(args)
@@ -94,6 +103,7 @@ def run(cli_args: typing.List[str]) -> None:
     common.fatal('... could not read the lab topology, aborting')
     return
 
+  lab_status_change(topology,'lab shutdown requested')
   provider_probes(topology)
 
   p_provider = topology.provider
@@ -102,6 +112,7 @@ def run(cli_args: typing.List[str]) -> None:
   p_module.call('pre_output_transform',topology)
 
   for s_provider in topology[p_provider].providers:
+    lab_status_change(topology,f'stopping {s_provider} provider')
     stop_provider_lab(topology,p_provider,s_provider)
     print()
 
@@ -110,3 +121,5 @@ def run(cli_args: typing.List[str]) -> None:
   if args.cleanup:
     external_commands.print_step(3,"Cleanup configuration files",spacing = True)
     down_cleanup(topology,True)
+
+  remove_lab_status(topology)
