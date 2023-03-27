@@ -858,12 +858,25 @@ def set_node_af(nodes: Box) -> None:
           n.af[af] = True
           continue
 
+'''
+Link index utility functions:
+
+* get_next_linkindex: get last linkindex+1 or default value
+* get_link_by_index: given a link index, return the link
+'''
+
 def get_next_linkindex(topology: Box) -> int:
   if not 'links' in topology:
     topology.links = []
     return topology.defaults.get('link_index',1)
 
   return topology.links[-1].linkindex + 1
+
+def get_link_by_index(topology: Box, idx: int) -> typing.Optional[Box]:
+  for link in topology.links:
+    if link.linkindex == idx:
+      return link
+  return None
 
 '''
 set_linknames -- set link name if not defined
