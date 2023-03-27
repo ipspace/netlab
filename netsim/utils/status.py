@@ -39,14 +39,14 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
 
   try:                                                      # Try to lock the status file          
     lock = FileLock(lock_file, timeout=3)
-    with lock:
-      if os.path.exists(status_file):                       # If the status file exists, read it
-        try:
-          status = Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
-        except:
-          fatal(f'Cannot read lab status file {status_file}')
-      else:                                                 # Otherwise, create an empty status
-        status = get_empty_box()
+    lock.acquire()
+    if os.path.exists(status_file):                       # If the status file exists, read it
+      try:
+        status = Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
+      except:
+        fatal(f'Cannot read lab status file {status_file}')
+    else:                                                 # Otherwise, create an empty status
+      status = get_empty_box()
 
     callback(status,topology)                               # Change the lab status
     if debug_active('status'):
@@ -55,6 +55,8 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
       f.write(get_yaml_string(status))
   except:
     fatal(f'Cannot lock lab status file {lock_file}')
+  finally:
+    lock.release()
 
 def read_status(topology: Box) -> Box:
   status_file = get_status_filename(topology)               # Get status file name from topology defaults
