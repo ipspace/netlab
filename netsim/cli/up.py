@@ -21,6 +21,8 @@ from . import external_commands
 from . import common_parse_args, load_snapshot_or_topology, get_message
 from .. import providers
 from .. import read_topology
+from ..utils import status
+from ..data import get_box,get_from_box
 
 #
 # Extra arguments for 'netlab up' command
@@ -72,6 +74,70 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
   return topology
 
 """
+lab_status_update -- generic lab status callback
+
+* Get the lab ID (or default)
+* Map lab ID into current directory
+* Merge status dictionary or perform status-specific callback
+"""
+
+def lab_status_update(
+      topology: Box,
+      status: Box,
+      update: typing.Optional[dict] = None,
+      cb: typing.Optional[typing.Callable] = None) -> None:
+
+  print(f'Called lab status update: {status}')
+  lab_id = str(get_from_box(topology,'defaults.multilab.id') or 'default')
+  status[lab_id].dir = os.getcwd()                          # Map lab ID into current directory
+  if not 'providers' in status[lab_id]:                     # Initialize provider list
+    status[lab_id].providers = []
+
+  if update is not None:                                    # Update lab status from a dictionary
+    status[lab_id] = status[lab_id] + update
+    if 'status' in update:                                  # Append change in lab status to log        
+      if not 'log' in status[lab_id]:
+        status[lab_id].log = []
+      if not update['status'] in status[lab_id].log:
+        status[lab_id].log.append(update['status'])
+  if cb is not None:                                        # If needed, perform status-specific callback        
+    cb(status[lab_id])
+
+"""
+Lab status routines:
+
+* status_start_lab -- lab initialization has started
+* status_start_provider -- provider activation has started
+* status_config -- configuration deployment has started
+* status_complete -- lab initialization has completed
+"""
+
+def status_start_lab(topology: Box) -> None:
+  status.change_status(
+    topology,
+    callback = lambda s,t: 
+      lab_status_update(t,s,
+        update = {
+          'status': 'starting lab',
+          'name': topology.name,
+          'providers': [] }))
+
+def status_start_provider(topology: Box, provider: str) -> None:
+  status.change_status(
+    topology,
+    callback = lambda s,t: 
+      lab_status_update(t,s,
+        update = { 'status': f'starting provider {provider}' },
+        cb = lambda s: s.providers.append(provider)))
+
+def lab_status_change(topology: Box, new_status: str) -> None:
+  status.change_status(
+    topology,
+    callback = lambda s,t: 
+      lab_status_update(t,s,
+        update = { 'status': new_status }))
+
+"""
 Execute provider probes
 """
 def provider_probes(topology: Box) -> None:
@@ -93,6 +159,7 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
   else:
     p_topology = topology
 
+  status_start_provider(topology,p_name)
   p_module.call('pre_start_lab',p_topology)
   if sname is not None:
     exec_command = topology.defaults.providers[pname][sname].start
@@ -103,6 +170,8 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
   for cmd in exec_list:
     external_commands.start_lab(topology.defaults,sname or pname,3,"netlab up",cmd)
   p_module.call('post_start_lab',p_topology)
+
+  lab_status_change(topology,f'{p_name} started')
 
 """
 Recreate secondary configuration file
@@ -137,6 +206,8 @@ def run(cli_args: typing.List[str]) -> None:
   providers.mark_providers(topology)
   p_module.call('pre_output_transform',topology)
 
+  status_start_lab(topology)
+
   start_provider_lab(topology,p_provider)
   for s_provider in topology[p_provider].providers:
     print()
@@ -144,9 +215,13 @@ def run(cli_args: typing.List[str]) -> None:
     start_provider_lab(topology,p_provider,s_provider)
 
   if not args.no_config:
+    lab_status_change(topology,f'starting initial configuration')
     external_commands.deploy_configs(4,"netlab up",args.fast_config)
     message = get_message(topology,'up',False)
     if message:
       print(f"\n\n{message}")
+    lab_status_change(topology,f'initial configuration complete')
   else:
     print("\nInitial configuration skipped, run 'netlab initial' to configure the devices")
+
+  lab_status_change(topology,'started')
