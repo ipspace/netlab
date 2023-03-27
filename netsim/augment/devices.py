@@ -31,10 +31,10 @@ def get_device_attribute(node: Box, attr: str, defaults: Box) -> typing.Optional
   devdata = defaults.devices[devtype]
 
   if provider in devdata:                # Does this device have attributes for current provider?
-  	if attr in devdata[provider]:        # Including the attribute we're looking for?
-  	  pvalue = devdata[provider][attr]   # Get the provider value
-  	  if not isinstance(pvalue,dict):    # Provider-specific value is not a dictionary
-  	  	return pvalue                    # No chance of merging, return it
+    if attr in devdata[provider]:        # Including the attribute we're looking for?
+      pvalue = devdata[provider][attr]   # Get the provider value
+      if not isinstance(pvalue,dict):    # Provider-specific value is not a dictionary
+        return pvalue                    # No chance of merging, return it
 
   value = devdata.get(attr,None)         # Non-specific device data
   if isinstance(value,Box) and isinstance(pvalue,Box):

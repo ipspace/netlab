@@ -11,7 +11,8 @@ from box import Box
 from .. import common
 from .. import data
 from .. import utils
-from ..data.validate import must_be_string,must_be_list,must_be_dict,validate_attributes
+from ..data.validate import validate_attributes
+from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from .. import addressing
 from . import devices
 
@@ -864,18 +865,73 @@ def get_next_linkindex(topology: Box) -> int:
 
   return topology.links[-1].linkindex + 1
 
-def set_linkindex(topology: Box) -> None:
-  if not 'links' in topology:
-    return
+'''
+set_linknames -- set link name if not defined
+'''
+def set_linknames(topology: Box) -> None:
+  for cnt,link in enumerate(topology.links):
+    if link.get('group'):
+      link._linkname = f'links[{link.group}]'
+    elif not '_linkname' in link:
+      link._linkname = f'links[{cnt+1}]'
 
+'''
+set_linkindex -- set link index for each link
+'''
+def set_linkindex(topology: Box) -> None:
   linkindex = topology.defaults.get('link_index',1)
-  linkcnt   = 1
   for link in topology.links:
     link.linkindex = linkindex
-    if not '_linkname' in link:
-      link._linkname = f'links[{linkcnt}]'
     linkindex = linkindex + 1
-    linkcnt   = linkcnt + 1
+
+'''
+expand_groups -- expand link groups (identified by 'group' and 'members' attributes) into individual links
+appended to the end of the link list
+'''
+def expand_groups(topology: Box) -> None:
+  for link in list(topology.links):                 # Iterate over existing links (that's why we have to cast it as a list)
+    if not 'group' in link:                         # Not a group link, move on
+      if 'members' in link:
+        common.error(
+          f'Link {link._linkname} is not a group link, but has a "members" list',
+          common.IncorrectValue,
+          'links')
+      continue
+
+    try:                                            # Check that the group ID is a valid identifier
+      must_be_id(
+        parent=link,
+        key='group',
+        path=link._linkname,
+        abort=True,
+        module='links')
+    except:                                         # If not, report error and skip the link
+      continue
+
+    if not must_be_list(parent=link,key='members',path=link._linkname,create_empty=False,module='links'):
+      common.error(                                 # Make sure 'members' is a list
+        f'Group link {link._linkname} has no members',
+        common.MissingValue,
+        'links')
+      continue                                      # Report error and skip otherwise
+
+    copy_group_data = data.get_box(link)            # We'll copy all group data into member links
+    for key in ['group','members','_linkname']:     # Apart from the link name and 
+      copy_group_data.pop(key,None)
+
+    for idx,member in enumerate(link.members):
+      member = adjust_link_object(member,f'{link._linkname}[{idx+1}]',topology.nodes)
+      member = copy_group_data + member             # Copy group data into member link
+      topology.links.append(member)
+
+  # Finally, remove group links from the link list
+  topology.links = [ link for link in topology.links if not 'group' in link ]
+
+def links_init(topology: Box) -> None:
+  topology.links = adjust_link_list(topology.links,topology.nodes)
+  set_linknames(topology)
+  expand_groups(topology)
+  set_linkindex(topology)
 
 def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
   if not link_list:
