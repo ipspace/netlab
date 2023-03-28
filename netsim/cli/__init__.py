@@ -142,7 +142,7 @@ def lab_status_update(
     if 'status' in update:                                  # Append change in lab status to log        
       if not 'log' in status[lab_id]:
         status[lab_id].log = []
-      if not update['status'] in status[lab_id].log:
+      if not status[lab_id].log or update['status'] != status[lab_id].log[-1]:
         status[lab_id].log.append(update['status'])
   if cb is not None:                                        # If needed, perform status-specific callback        
     cb(status[lab_id])
