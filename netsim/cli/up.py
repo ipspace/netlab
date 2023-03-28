@@ -154,7 +154,7 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
     external_commands.start_lab(topology.defaults,sname or pname,3,"netlab up",cmd)
   p_module.call('post_start_lab',p_topology)
 
-  lab_status_change(topology,f'{p_name} started')
+  lab_status_change(topology,f'{p_name} workload started')
 
 """
 Recreate secondary configuration file

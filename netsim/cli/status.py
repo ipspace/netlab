@@ -69,8 +69,8 @@ def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) 
     if result.stdout:
       print(f'{pdata.act_title}\n{"=" * 80}\n{result.stdout}\n')
 
-def show_lab_instance(lab_state: Box) -> None:
-  print(f'Lab {lab_state.id} in {lab_state.dir}')
+def show_lab_instance(iid: str, lab_state: Box) -> None:
+  print(f'Lab {iid} in {lab_state.dir}')
   print(f'  status: {lab_state.status}')
   print(f'  provider(s): {",".join(lab_state.providers)}')
   if lab_state.log:
@@ -82,7 +82,7 @@ def show_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
     if not iid in lab_states:
       print(f'Unknown lab instance {iid}, skipping\n')
       continue
-    show_lab_instance(lab_states[iid])
+    show_lab_instance(iid,lab_states[iid])
 
 def cleanup_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
   if args.all:

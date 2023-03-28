@@ -5,6 +5,7 @@
 
 import sys
 import importlib
+import datetime
 import argparse
 import os
 import shutil
@@ -140,10 +141,16 @@ def lab_status_update(
   if update is not None:                                    # Update lab status from a dictionary
     status[lab_id] = status[lab_id] + update
     if 'status' in update:                                  # Append change in lab status to log        
-      if not 'log' in status[lab_id]:
+      if not 'log' in status[lab_id]:                       # Create empty log if needed
         status[lab_id].log = []
-      if not status[lab_id].log or update['status'] != status[lab_id].log[-1]:
-        status[lab_id].log.append(update['status'])
+
+      # Append status change to log if it's not a duplicate of the last entry
+      # This is to avoid excessive log entries when the status is updated multiple times
+      # in a row (e.g. when a lab is being created)
+      #
+      if not status[lab_id].log or not f': {update["status"]}' in status[lab_id].log[-1]:
+        status[lab_id].log.append(f'{datetime.datetime.now().isoformat()}: {update["status"]}')
+
   if cb is not None:                                        # If needed, perform status-specific callback        
     cb(status[lab_id])
 
