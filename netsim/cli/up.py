@@ -101,6 +101,26 @@ def status_start_provider(topology: Box, provider: str) -> None:
         cb = lambda s: s.providers.append(provider)))
 
 """
+check_existing_lab -- print an command-specific error message if there'a s lab already running in this directory
+"""
+def check_existing_lab() -> None:
+  if not status.is_directory_locked():
+    return
+  
+  print(f'''
+It looks like you have another lab running in this directory. If you want to
+continue the lab startup process due to a previous failure, please use the
+'netlab up --snapshot' command.
+
+Otherwise use 'netlab status' to check the status of labs running on this machine, or
+'netlab down' to shut down the other lab running in this directory.
+
+If you are sure that no other lab is running in this directory, remove the
+netlab.lock file manually and retry.
+''')
+  common.fatal('Cannot start another lab in the same directory')
+
+"""
 Execute provider probes
 """
 def provider_probes(topology: Box) -> None:
@@ -156,6 +176,9 @@ Main "lab start" process
 def run(cli_args: typing.List[str]) -> None:
   up_args_parser = up_parse_args(False)                       # Try to parse the up-specific arguments
   (args,rest) = up_args_parser.parse_known_args(cli_args)
+  if not args.snapshot:
+    check_existing_lab()
+
   topology = get_topology(args,cli_args)
 
   settings = topology.defaults
