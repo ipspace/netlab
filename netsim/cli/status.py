@@ -13,8 +13,10 @@ from box import Box
 from .. import common
 from .. import read_topology
 from ..utils import status
+from ..utils import strings
 
 from . import external_commands
+from . import down
 
 def status_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
@@ -36,6 +38,11 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store',
     nargs="*",
     help='Display or cleanup specific lab instance(s)')
+  parser.add_argument(
+    '--all',
+    dest='all',
+    action='store_true',
+    help='Display or cleanup all lab instance(s)')
   if args:
     return parser.parse_args(args)
   else:
@@ -77,11 +84,57 @@ def show_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
       continue
     show_lab_instance(lab_states[iid])
 
+def cleanup_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
+  if args.all:
+    print(f'Active lab instances:\n')
+    for k,v in lab_states.items():
+      print (f'  {k} in {v.dir}')
+    print("")
+  
+  if not args.all and not args.instance:
+    print('No lab instances specified, nothing to do')
+    return
+  confirm_msg = f'Cleanup will remove all {"" if args.all else "specified "}lab instances. Are you sure?'
+  if not strings.confirm(confirm_msg):
+    return
+
+  pwd = os.getcwd()
+  for iid in list(lab_states.keys()):
+    if not args.all and not iid in args.instance:
+      continue
+    print(f'Shutting down lab {iid} in {lab_states[iid].dir}')
+    os.chdir(lab_states[iid].dir)
+    try:
+      result = subprocess.run(['netlab','down','--cleanup'],capture_output=False,check=True)
+    except Exception as ex:
+      print(f'Error shutting down lab {iid}: {ex}')
+      print(f'... aborting the cleanup process')
+      break
+
+  os.chdir(pwd)
+
+def reset_lab_status(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
+  lab_status_file = status.get_status_filename(topology)
+  print(f'''
+This action deletes the lab status file {lab_status_file}.
+
+That makes it impossible for netlab to track active lab instances. Use this
+command only when you're absolutely sure that the lab status shown by
+'netlab status' is corrupted
+''')
+  if not strings.confirm('Do you want to continue?'):
+    return
+  try:
+    os.remove(lab_status_file)
+    print('Lab status file removed')
+  except Exception as ex:
+    common.fatal(f'Cannot remove lab status file: {ex}')
+
 action_map = {
   'list': display_active_labs,
   'show': show_lab,
-#  'cleanup': cleanup_lab,
-#  'reset': reset_lab_status
+  'cleanup': cleanup_lab,
+  'reset': reset_lab_status
 }
 
 def run(cli_args: typing.List[str]) -> None:
