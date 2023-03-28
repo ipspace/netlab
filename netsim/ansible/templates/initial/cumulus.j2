@@ -14,7 +14,9 @@ SCRIPT
 #
 # Build hosts file
 #
+echo "INIT: setting hostname"
 hostname {{ inventory_hostname }}
+echo "INIT: creating /etc/hosts"
 awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
 echo "127.0.0.1 {{ inventory_hostname }}" >>/tmp/hosts
 {% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
@@ -26,6 +28,14 @@ cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
 mv /tmp/hosts-start /etc/hosts
 {% endif %}
 sort /tmp/hosts|uniq >>/etc/hosts
+#
+echo "INIT: waiting for firstboot processing to finish"
+while [ -n "$(pgrep -f firstboot)" ]; do
+  sleep 5
+done
+until ifreload -a; do
+  sleep 5
+done
 {% if clab.kind is not defined %}
 {# no need to disable ZTP in a container #}
 #
@@ -33,6 +43,7 @@ sort /tmp/hosts|uniq >>/etc/hosts
 #
 ztp --disable
 {% else %}
+echo "INIT: recreating /etc/network/interfaces"
 {# Disable DHCP on management interface #}
 cat >/etc/network/interfaces <<CONFIG
 auto lo
@@ -51,14 +62,7 @@ source /etc/network/interfaces.d/*.intf
 CONFIG
 {% endif %}
 #
-# Enable LLDP
-#
-cat <<CONFIG >/etc/lldpd.d/system.conf
-configure lldp tx-interval 30
-configure lldp tx-hold 3
-configure system interface pattern *,!eth0,swp*
-CONFIG
-service lldpd restart
+echo "INIT: creating loopback interface"
 #
 # Create loopback interface entry
 #
@@ -86,7 +90,12 @@ cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
 {{ loopback_interface(l.ifname,l,True) }}
 {% endfor %}
 CONFIG
-ifup lo
+ps -ef
+#
+echo "INIT: changing loopback interface configuration"
+ifreload -a
+#
+echo "INIT: creating other interface"
 cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
 {% for l in interfaces if l.type in ['lan','p2p','stub'] %}
 auto {{ l.ifname }}
@@ -108,6 +117,8 @@ iface {{ l.ifname }}
 {%   endif %}
 {% endfor %}
 CONFIG
+#
+echo "INIT: executing ifreload"
 ifreload -a
 #
 # For whatever crazy reason, I had to enable IPv6 in containers
@@ -153,3 +164,13 @@ interface {{ l.ifname }}
 do write
 CONFIG
 vtysh -f /tmp/config
+#
+# Enable LLDP
+#
+echo "INIT: enabling LLDP"
+cat <<CONFIG >/etc/lldpd.d/system.conf
+configure lldp tx-interval 30
+configure lldp tx-hold 3
+configure system interface pattern *,!eth0,swp*
+CONFIG
+service lldpd restart
