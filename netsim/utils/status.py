@@ -1,5 +1,5 @@
 #
-# Common routines used to implement lab status commands
+# Common routines used to implement lab status and locking commands
 #
 
 import typing
@@ -68,3 +68,29 @@ def read_status(topology: Box) -> Box:
   except:
     fatal(f'Cannot read lab status file {status_file}')
     return get_empty_box()
+
+lock_file: typing.Final[str] = 'netlab.lock'
+
+'''
+lock_directory -- create netlab.lock file in current directory to prevent 
+                  overwriting provider configuration files or Ansible inventory
+'''
+def lock_directory() -> None:
+  global lock_file
+  with open(lock_file, 'w') as f:
+    f.write('netlab lock file, do not remove')
+
+'''
+unlock_directory -- remove netlab.lock file in current directory
+'''
+def unlock_directory() -> None:
+  global lock_file
+  if os.path.exists(lock_file):
+    os.remove(lock_file)
+
+'''
+is_locked -- check if netlab.lock file exists in current directory
+'''
+def is_directory_locked() -> bool:
+  global lock_file
+  return os.path.exists(lock_file)

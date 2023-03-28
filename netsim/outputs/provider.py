@@ -4,7 +4,7 @@
 import typing
 from box import Box
 
-from . import _TopologyOutput
+from . import _TopologyOutput,check_writeable
 from .. import providers
 from .. import common
 from ..augment import nodes
@@ -19,6 +19,7 @@ def write_provider_file(topology: Box, provider: str, filename: typing.Optional[
 class ProviderConfiguration(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
+    check_writeable('provider configuration')
     filename = None
     if hasattr(self,'filenames'):
       filename = self.filenames[0]

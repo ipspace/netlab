@@ -11,7 +11,7 @@ from .. import common
 from .. import data
 from ..augment import topology
 
-from . import _TopologyOutput
+from . import _TopologyOutput,check_writeable
 
 class YAML(_TopologyOutput):
 
@@ -23,6 +23,9 @@ class YAML(_TopologyOutput):
       outfile = self.filenames[0]
       if len(self.filenames) > 1:
         common.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),common.IncorrectValue,modname)
+
+    if outfile == 'netlab.snapshot.yml':
+      check_writeable('netlab.snapshot.yml')
 
     cleantopo: typing.Any = topology.cleanup_topology(topo)
     output = common.open_output_file(outfile)

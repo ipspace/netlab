@@ -169,6 +169,7 @@ def run(cli_args: typing.List[str]) -> None:
   providers.mark_providers(topology)
   p_module.call('pre_output_transform',topology)
 
+  status.lock_directory()
   status_start_lab(topology)
 
   start_provider_lab(topology,p_provider)

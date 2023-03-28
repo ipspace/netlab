@@ -123,3 +123,4 @@ def run(cli_args: typing.List[str]) -> None:
     down_cleanup(topology,True)
 
   remove_lab_status(topology)
+  status.unlock_directory()
