@@ -43,12 +43,19 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='all',
     action='store_true',
     help='Display or cleanup all lab instance(s)')
+  parser.add_argument(
+    '-v','--verbose',
+    dest='verbose',
+    action='store_true',
+    help='Verbose printout(s)')
   if args:
     return parser.parse_args(args)
   else:
     return parser.parse_args(['list'])
 
 def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
+  if args.verbose:
+    print(f'netlab status file: {status.get_status_filename(topology)}\n')
   if not lab_states:
     print('No netlab-managed labs')
     return
@@ -81,6 +88,10 @@ def show_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
   for iid in args.instance:
     if not iid in lab_states:
       print(f'Unknown lab instance {iid}, skipping\n')
+      continue
+
+  for iid in lab_states.keys():
+    if not iid in args.instance and not args.all:
       continue
     show_lab_instance(iid,lab_states[iid])
 
