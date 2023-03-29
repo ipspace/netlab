@@ -16,7 +16,7 @@ from . import topology_parse_args, load_snapshot_or_topology, external_commands,
 from . import lab_status_change, lab_status_update,get_lab_id
 from .. import read_topology,augment,common
 from .. import providers
-from ..utils import status
+from ..utils import status,strings
 from .up import provider_probes
 #
 # CLI parser for 'netlab down' command
@@ -78,6 +78,32 @@ def stop_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = N
   external_commands.stop_lab(topology.defaults,p_name,2,"netlab down",exec_command)
   p_module.call('post_stop_lab',p_topology)
 
+'''
+lab_dir_mismatch -- check if the lab instance is running in the current directory
+'''
+def lab_dir_mismatch(topology: Box) -> bool:
+  lab_id = get_lab_id(topology)
+  lab_status = status.read_status(topology)       # Find current running instance(s)
+  if not lab_id in lab_status:                    # This could be a lab instance from pre-status days
+    return False                                  # ... in which case we can shut it down
+  if lab_id in lab_status and lab_status[lab_id].dir == os.getcwd():
+    return False                                 # Lab instance is known  and this is the correct directory        
+
+  print(f'''
+According to the netlab status file, the lab instance '{lab_id}' is running
+in directory {lab_status[lab_id].dir}.
+
+You could proceed if you want to clean up the netlab artifacts from this
+directory, but you might impact the running lab instance.
+''')
+  if not strings.confirm('Do you want to proceed?'):
+    common.fatal('aborting lab shutdown request')
+
+  return True
+
+'''
+Remove the lab instance/directory from the status file
+'''
 def remove_lab_status(topology: Box) -> None:
   lab_id = get_lab_id(topology)
 
@@ -103,7 +129,9 @@ def run(cli_args: typing.List[str]) -> None:
     common.fatal('... could not read the lab topology, aborting')
     return
 
-  lab_status_change(topology,'lab shutdown requested')
+  mismatch = lab_dir_mismatch(topology)
+
+  lab_status_change(topology,f'lab shutdown requested{" in conflicting directory" if mismatch else ""}')
   provider_probes(topology)
 
   p_provider = topology.provider
@@ -122,5 +150,6 @@ def run(cli_args: typing.List[str]) -> None:
     external_commands.print_step(3,"Cleanup configuration files",spacing = True)
     down_cleanup(topology,True)
 
-  remove_lab_status(topology)
+  if not mismatch:
+    remove_lab_status(topology)
   status.unlock_directory()

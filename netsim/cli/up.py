@@ -18,7 +18,8 @@ from pathlib import Path
 from .. import common
 from . import create
 from . import external_commands
-from . import common_parse_args, load_snapshot_or_topology, get_message, lab_status_update, lab_status_change
+from . import common_parse_args, get_message
+from . import lab_status_update, lab_status_change, get_lab_id
 from .. import providers
 from .. import read_topology
 from ..utils import status
@@ -82,15 +83,25 @@ Lab status routines:
 * status_complete -- lab initialization has completed
 """
 
+def lab_status_start(status: Box, topology: Box) -> None:
+  lab_id = get_lab_id(topology)                             # Get the lab ID (or default)
+  if lab_id in status:
+    if status[lab_id].dir != os.getcwd():
+      lab_status_update(topology,status,
+        update = { 'status': f'conflict -- trying to start lab in {os.getcwd()}'})
+      topology.defaults.err_conflict = status[lab_id].dir
+      return
+
+  lab_status_update(topology,status,
+    update = {
+      'status': 'starting lab' if not lab_id in status else 'restarting lab',
+      'name': topology.name,
+      'providers': [] })
+
 def status_start_lab(topology: Box) -> None:
   status.change_status(
     topology,
-    callback = lambda s,t: 
-      lab_status_update(t,s,
-        update = {
-          'status': 'starting lab',
-          'name': topology.name,
-          'providers': [] }))
+    callback = lambda s,t: lab_status_start(s,t))
 
 def status_start_provider(topology: Box, provider: str) -> None:
   status.change_status(
@@ -119,6 +130,31 @@ If you are sure that no other lab is running in this directory, remove the
 netlab.lock file manually and retry.
 ''')
   common.fatal('Cannot start another lab in the same directory')
+
+"""
+check_lab_instance -- print an error message if the lab instance is already running in a different directory
+"""
+def check_lab_instance(topology: Box) -> None:
+  lab_id = get_lab_id(topology)                   # Get the current lab instance ID from lab topology
+  lab_states = status.read_status(topology)       # Read the state of existing lab instances
+
+  if not lab_id in lab_states:                    # If this lab instance is not running ==> OK
+    return
+  
+  if lab_states[lab_id].dir == os.getcwd():       # If this lab instance is already running in this directory
+    return                                        # ... we'll deal with that a bit later in the process
+
+  print(f'''
+It looks like the lab instance '{lab_id}' is already running in directory
+{lab_states[lab_id].dir}.
+
+Please use 'netlab status' to check the status of labs running on this machine.
+You can stop the other lab instance with 'netlab status cleanup {lab_id}'.
+
+If you think your netlab status file is corrupt, use 'netlab status reset' to
+delete it.
+''')
+  common.fatal(f'aborting "netlab up" request')
 
 """
 Execute provider probes
@@ -180,6 +216,7 @@ def run(cli_args: typing.List[str]) -> None:
     check_existing_lab()
 
   topology = get_topology(args,cli_args)
+  check_lab_instance(topology)
 
   settings = topology.defaults
   if common.QUIET:
@@ -192,8 +229,12 @@ def run(cli_args: typing.List[str]) -> None:
   providers.mark_providers(topology)
   p_module.call('pre_output_transform',topology)
 
-  status.lock_directory()
   status_start_lab(topology)
+  if 'err_conflict' in topology.defaults:
+    common.fatal(f'race condition, lab instance already running in {topology.defaults.err_conflict}')
+    return
+
+  status.lock_directory()
 
   start_provider_lab(topology,p_provider)
   for s_provider in topology[p_provider].providers:

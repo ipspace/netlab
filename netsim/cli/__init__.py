@@ -134,7 +134,8 @@ def lab_status_update(
       cb: typing.Optional[typing.Callable] = None) -> None:
 
   lab_id = get_lab_id(topology)                             # Get the lab ID (or default)
-  status[lab_id].dir = os.getcwd()                          # Map lab ID into current directory
+  if not lab_id in status:
+    status[lab_id].dir = os.getcwd()                        # Map lab ID into current directory
   if not 'providers' in status[lab_id]:                     # Initialize provider list
     status[lab_id].providers = []
 
@@ -149,7 +150,8 @@ def lab_status_update(
       # in a row (e.g. when a lab is being created)
       #
       if not status[lab_id].log or not f': {update["status"]}' in status[lab_id].log[-1]:
-        status[lab_id].log.append(f'{datetime.datetime.now().isoformat()}: {update["status"]}')
+        timestamp = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()
+        status[lab_id].log.append(f'{timestamp}: {update["status"]}')
 
   if cb is not None:                                        # If needed, perform status-specific callback        
     cb(status[lab_id])

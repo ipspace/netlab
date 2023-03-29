@@ -4,6 +4,7 @@
 
 import typing
 import os
+import sys
 from box import Box
 from filelock import Timeout, FileLock
 
@@ -54,7 +55,7 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
     with open(status_file, 'w') as f:                       # Write the modified status          
       f.write(get_yaml_string(status))
   except:
-    fatal(f'Cannot lock lab status file {lock_file}')
+    fatal(f'Cannot lock lab status file {lock_file}\n... {sys.exc_info()[0]}')
   finally:
     lock.release()
 
