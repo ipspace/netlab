@@ -35,3 +35,9 @@ Notes:
 * **netlab down** needs transformed topology data to find the virtualization provider and link (bridge) names.
 * **netlab down** reads the transformed topology from `netlab.snapshot.yml` file created by **netlab up** or **netlab create** unless you specify the topology file name or any of the `-d`, `-p` or `-s` flags.
 * Use the `--cleanup` flag to delete all Ansible-, Vagrant- or containerlab-related configuration files.
+
+## Conflict Resolution
+
+**netlab down** command checks the _netlab_ status file (default: `~/.netlab/status.yml`) to verify that the current lab instance (default: `default`) is not running in another directory. You can decide to proceed if you want to remove _netlab_ artifacts from the current directory, but the shutdown/cleanup process might impact the lab instance running in another directory.
+
+After a successful completion, **netlab down** command removes the `netlab.lock` file from the current directory, and all information about the lab instance from the _netlab_ status file.

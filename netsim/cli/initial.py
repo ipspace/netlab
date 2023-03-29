@@ -7,7 +7,7 @@ import typing
 import os
 import argparse
 
-from . import common_parse_args,get_message,load_snapshot_or_topology
+from . import common_parse_args,get_message,load_snapshot_or_topology,lab_status_change
 from . import ansible
 from box import Box
 
@@ -46,21 +46,27 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = initial_config_parse(cli_args)
 
+  deploy_parts = []
   if args.verbose:
     rest = ['-' + 'v' * args.verbose] + rest
 
   if args.initial:
     rest = ['-t','initial'] + rest
+    deploy_parts.append("initial configuration")
 
   if args.quiet:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
   if args.module:
     if args.module != "*":
+      deploy_parts.append("module(s): " + args.module)
       rest = ['-e','modlist='+args.module] + rest
+    else:
+      deploy_parts.append("modules")
     rest = ['-t','module'] + rest
   
   if args.custom:
+    deploy_parts.append("custom")
     rest = ['-t','custom'] + rest
 
   if args.output:
@@ -76,9 +82,14 @@ def run(cli_args: typing.List[str]) -> None:
     ansible.playbook('create-config.ansible',rest)
     print("\nInitial configurations have been created in the %s directory" % args.output)
   else:
-    ansible.playbook('initial-config.ansible',rest)
     topology = load_snapshot_or_topology(Box({},default_box=True,box_dots=True))
+    deploy_text = ', '.join(deploy_parts) or 'complete configuration'
+    if not topology is None:
+      lab_status_change(topology,f'deploying configuration: {deploy_text}')
+
+    ansible.playbook('initial-config.ansible',rest)
     if topology:
       message = get_message(topology,'initial',True)
       if message:
         print(f"\n\n{message}")
+      lab_status_change(topology,f'configuration deployment complete')

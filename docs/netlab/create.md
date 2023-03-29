@@ -30,6 +30,12 @@ You can influence the data model transformation with optional [configuration mod
 * YAML or JSON representation of transformed lab topology or parts of the transformed data model
 * Configuration file for *graphite* visualization tool
 
+```{warning}
+**‌netlab create** command refuses to create provider configuration files, Ansible inventory, or `netlab.snapshot.yml` file if it finds `netlab.lock` file in the current directory. 
+
+`netlab.lock` file is created by the **‌netlab up** command to ensure subsequent **‌netlab create** commands don't overwrite the provider configuration files. It is automatically removed after a successful completion of **‌netlab down** command.
+```
+
 The _[](netlab-create-output-formats)_ section describes how you can control the output files and their format with CLI parameters. See _[](../outputs/index.md)_ for more details on individual file formats.
 
 [^1]: Or *netlab-devices.yml* file when the `--devices` flag is used

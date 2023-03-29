@@ -38,6 +38,12 @@ plugin: [ multilab ]
 multilab.id: 12
 ```
 
+```{warning}
+Use system-wide _netlab_ status file if you have multiple users starting lab instances on the same Linux server. You can change the location of the status file with the **‌defaults.lab_status_file** parameter.
+
+The _netlab_ status file and the parent directory should be writeable by all users using _netlab_.
+```
+
 **Dynamic labs:** Users can run multiple lab instances or multiple instances of the same lab topology. You will have to handle allocation of lab instances with an external system that passes **defaults.multilab.id** to _netlab_ with the `-s` argument of **[netlab create](../netlab/create.md)** or **[netlab up](../netlab/up.md)** command. The best way to activate the *multilab* plugin is with the `--plugin` CLI argument.
 
 ```

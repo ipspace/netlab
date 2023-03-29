@@ -8,7 +8,7 @@ import os
 from box import Box
 
 from .. import common
-from . import _TopologyOutput
+from . import _TopologyOutput,check_writeable
 from ..augment import nodes
 from ..augment import devices
 
@@ -202,6 +202,7 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
 class AnsibleInventory(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
+    check_writeable('Ansible inventory')
     hostfile = self.settings.hostfile or 'hosts.yml'
     configfile = self.settings.configfile or 'ansible.cfg'
     output_format = None

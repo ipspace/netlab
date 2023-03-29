@@ -15,7 +15,28 @@ import re
 from box import Box
 
 from .. import common
+from ..utils import status
 from ..callback import Callback
+
+'''
+check_writeable -- check if the current directory is writeable (does not have netlab.lock file)
+
+Print an error message explaining what to do next and exit with a fatal error if the directory is locked
+'''
+def check_writeable(target: str) -> None:
+  if status.is_directory_locked():
+    print(f'''
+It looks like you have another lab running in this directory. netlab cannot
+create {target} as that might impact your ability to shut down
+the other lab.
+
+Please use 'netlab status' to check the status of labs running on this machine, or
+'netlab down' to shut down the other lab running in this directory.
+
+If you are sure that no other lab is running in this directory, you can remove
+the netlab.lock file manually and retry.
+''')
+    common.fatal('Cannot create configuration files in a locked directory')
 
 class _TopologyOutput(Callback):
   def __init__(self, output: str, data: Box) -> None:
