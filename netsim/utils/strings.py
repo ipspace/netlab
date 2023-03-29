@@ -38,7 +38,7 @@ def eval_format(fmt: str, data: dict) -> str:
 confirm: print the prompt and wait for a yes/no answer
 """
 def confirm(prompt: str) -> bool:
-  prompt = f'{prompt} [Y/n]'
+  prompt = f'{prompt} [y/n]'
 
   while True:
     answer = input(prompt).lower()

@@ -16,6 +16,7 @@ from box import Box
 
 from .. import common
 from .. import read_topology
+from ..utils import strings,status
 from . import external_commands
 from ..providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
 
@@ -210,7 +211,16 @@ Importing Vagrant box
 Failed to add Vagrant box. Fix the error(s) and use "vagrant box add box.json" to add it.
 """)
 
-def libvirt_package(cli_args: typing.List[str], settings: Box) -> None:
+def libvirt_package(cli_args: typing.List[str], topology: Box) -> None:
+  lab_states = status.read_status(topology)
+  if lab_states:
+    print('''
+netlab cannot create a Vagrant box while there are running labs. Inspect the
+status of your lab instances with "netlab status" and stop them with
+"netlab down" or "netlab status cleanup --all"
+''')
+    return
+  settings = topology.defaults
   args = package_parse(cli_args,settings)
   skip = args.skip
 
@@ -226,8 +236,9 @@ It also assumes that it can wreak havoc in the current directory (although it wi
 best not to damage the original virtual disk).
 
 """)
-  if input('Do you want to continue [Y/n]: ') != 'Y':
-    common.fatal('Aborting...')
+  if not strings.confirm('Do you want to continue?'):
+    print('User decided to abort the box building process')
+    return
 
   vm_cleanup('vm_box')
   start_vagrant_network()
@@ -265,18 +276,18 @@ def libvirt_usage() -> None:
   print("Usage: netlab libvirt package|config --help")
 
 def run(cli_args: typing.List[str]) -> None:
-  settings = read_topology.read_yaml('package:topology-defaults.yml')
+  topology = read_topology.load("package:cli/empty.yml","","package:topology-defaults.yml")
+  if not topology:
+    common.fatal("Cannot read the system defaults","libvirt")
+    return
+
   if not cli_args:
     libvirt_usage()
     return
 
-  if not settings:
-    common.fatal("Cannot read the system defaults","libvirt")
-    return
-
   if cli_args[0] == 'package':
-    libvirt_package(cli_args[1:],settings)
+    libvirt_package(cli_args[1:],topology)
   elif cli_args[0] == 'config':
-    libvirt_config(cli_args[1:],settings)
+    libvirt_config(cli_args[1:],topology.settings)
   else:
     libvirt_usage()
