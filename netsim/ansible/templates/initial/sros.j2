@@ -21,8 +21,7 @@
 {%- endmacro %}
 
 {% macro declare_interface(i,name=None) %}
-{% set name = name or i.ifname %}
-{% set ifname = (('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s' if name[0].isdigit() else '%s')|format(name)).replace(':','_') %}
+{% set ifname = if_name(name or i.ifname) %}
 {{ declare_router(i,sub_path="/interface[interface-name=" + ifname + "]") }}
 {% endmacro %}
 
@@ -86,6 +85,10 @@
 {%  endif %}
 
 {%  set portname = l.parent_ifname if l.type=='vlan_member' else l.ifname %}
+{%  if 'ixr' in clab.type %}
+{#  Remove connector from port name for IXR platform #}
+{%  set portname = portname.replace("c","") %}
+{%  endif %}
 {%  if l.type in ['p2p','lan','vlan_member'] %}
 {%   if 'c' in portname %}
 - path: configure/port[port-id={{portname}}]
@@ -93,9 +96,9 @@
    connector:
     breakout: "c1-100g"
 {%    set portname = portname + '/1' %}
+{%   endif %}
 - path: configure/port[port-id={{ portname }}]
   val:
-{%   endif %}
    ethernet:
 {%   set eth_header = 14 + (4 if tagged else 0) %}
 {%   if l.mtu is defined and l.mtu <= (9800-eth_header) %}
@@ -109,7 +112,7 @@
     mode: network
 {%   endif %}
 {%   if tagged %}
-{%     set portname = portname + ':' + vlan|string %}
+{%    set portname = portname + ':' + vlan|string %}
     encap-type: dot1q
 {%   endif %}
 {%  endif %}
