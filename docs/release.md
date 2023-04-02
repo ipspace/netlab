@@ -1,6 +1,15 @@
 Release notes
 =============
 
+**[Release 1.5.1](release-1.5.1) (2023-04-02)**
+
+* [Simplified definition of VLAN access links](module-vlan-creating-access-links)
+* [Simplified definition of VRF links](module-vrf-links)
+* [Link groups](link-groups)
+* Stricter type checks for node names, group names, VLAN names, VRF names, link roles, address pools, device names, and Linux bridges. Names must be *identifiers*: alphanumeric strings up to 16 characters long.
+* *netlab* status file [tracks active lab instances](netlab/status.md) -- used by **[netlab create](netlab/create.md)**, **[netlab up](netlab/up.md)** and **[netlab down](netlab/down.md)** commands to check for duplicate lab instances.
+* [Output module](outputs/d2.md) for [D2 diagram scripting language](https://d2lang.com/tour/intro)
+
 **[Release 1.5.0](release-1.5.0) (2023-01-28)**
 
 * [Multi-provider topologies](providers.md#combining-virtualization-providers)

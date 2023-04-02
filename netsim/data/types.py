@@ -28,26 +28,41 @@ def get_element_path(parent: str, element: typing.Optional[str]) -> str:
   else:
     return parent
 
+wrong_type_help: dict = {}
+
 def wrong_type_message(
       path: str,                                        # Path to the value
       expected: str,                                    # Expected type
       value: typing.Any,                                # Value we got
       key: typing.Optional[str] = None,                 # Optional key within the object
       context: typing.Optional[typing.Any] = None,      # Optional context
-      module:     typing.Optional[str] = None,          # Module name to display in error messages
+      module: typing.Optional[str] = None,              # Module name to display in error messages
                       ) -> None:
+  global wrong_type_help
 
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
   ctxt = f'\n... context: {context}' if context else ''
+  expected_help = expected.split(' HELP:')              # Does the error message contain help?
+  if len(expected_help) > 1:                            # ... it does, let's see what we can do
+    if not expected_help[0] in wrong_type_help:         # Did we print this help before? Adjust context if not
+      ctxt = f'\n... FYI: {expected_help[0]} is {expected_help[1]}{ctxt}'
+      wrong_type_help[expected_help[0]] = expected_help[1]
+    expected = expected_help[0]                         # ... and get the actual target data type name
+
   wrong_value = 'NWT: ' in expected
   if wrong_value:                                       # String with 'NWT' means 'type is OK, value is incorrect'
     expected = expected.replace('NWT: ','')             # ... but we also don't want NWT in the error message ;)
   else:
     expected += f', found {wrong_type}'                 # A more generic message, add wrong type
 
+  if 'NOATTR:' in path:                                 # Deal with values that are not attributes
+    path = path.replace('NOATTR:','')
+  else:
+    path = f'attribute {path}'
+
   common.error(
-    f'attribute {path} must be {expected}{ctxt}',
+    f'{path} must be {expected}{ctxt}',
     common.IncorrectValue if wrong_value else common.IncorrectType,
     module or 'topology')
   return
@@ -119,6 +134,89 @@ Sample use: make sure the 'config' attribute of a node is list
 
 """
 
+def get_value_to_check(
+      parent: Box,                                      # Parent object
+      key: str,                                         # Key within the parent object, may include dots.
+      empty_value: typing.Optional[typing.Any] = None,  # Optional value to use when there is no value
+      create_empty: typing.Optional[bool] = None,       # Do we need to create an empty value?
+      true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_
+      false_value: typing.Optional[typing.Any] = None,  # Value to use to replace _false_
+      abort: bool = False) -> typing.Any:
+  value = get_from_box(parent,key)                      # Otherwise, try to get the value from the parent object
+  if value is None:                                     # No value was found, now what?
+    if empty_value is not None:                         # ... is there empty value for this data type?
+      if create_empty is None:                          # Empty value is defined, and we'll use it to create an empty object if the caller
+        create_empty = True                             # did not specify its preferencehs
+
+      if create_empty:                                  # Now for the real deal
+        value = empty_value                             # ... if we should create an empty value do so
+        set_dots(parent,key.split('.'),empty_value)     # ... and store it in the parent object (dedottifying the key)
+      else:
+        if abort:                                       # Empty value was specified, 'create_empty' is False, and there's no actual value
+          raise common.IncorrectValue()                 # ... raise an exception if requested
+
+    if not key in parent:                               # We can skip the validation of the key is missing.
+      return value                                      # ... if the key is there, then we have to make sure the value is valid
+
+  # Handle boolean-to-data-type conversions if the value is bool and the caller specified true_value
+  #
+  if isinstance(value,bool) and not (true_value is None):
+    if value is True:                                   # Replace True with true_value and move on
+      value = true_value
+      parent[key] = value
+    else:
+      if false_value is None:                           # If there's no false_value pop the bool option and return None
+        parent.pop(key,None)
+        return None
+      else:
+        value = false_value                             # ... otherwise set the false value
+        parent[key] = value
+
+  return value
+
+"""
+post-validation processing
+
+Validator function could return:
+
+* True -- everything is OK
+* False -- failed the validation, error message was already printed
+* string -- error message
+* callable -- a function returning a replacement value
+"""
+
+def post_validation(
+      value: typing.Any,
+      parent: typing.Optional[Box],
+      path: str,
+      key: typing.Optional[str],
+      expected: typing.Any,
+      context: typing.Optional[str] = None,
+      module: typing.Optional[str] = None,
+      abort: bool = False,
+      test_function: typing.Any = None) -> typing.Any:
+
+  if isinstance(expected,(bool,str)):
+    if not expected is True:
+      if isinstance(expected,str):
+        wrong_type_message(
+          path=path,
+          key=None if parent is None else key,
+          expected=expected,
+          value=value,context=context,
+          module=module)
+      if abort:
+        raise common.IncorrectType()
+      return None
+  elif isinstance(expected,types.FunctionType):
+    value = expected(value)
+    if not parent is None:
+      parent[key] = value
+  else:
+    common.fatal(f'Validator function {test_function} returned unexpected value {expected}')
+
+  return value
+
 def type_test(
       false_value: typing.Optional[typing.Any] = None,
       empty_value: typing.Optional[typing.Any] = None) -> typing.Callable:
@@ -131,7 +229,7 @@ def type_test(
     #
     @functools.wraps(test_function)
     def execute_test(
-          parent: Box,                                      # Parent object
+          parent: typing.Optional[Box],                     # Parent object
           key: str,                                         # Key within the parent object, may include dots.
           path: str,                                        # Path to parent object, used in error messages
           context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
@@ -142,62 +240,43 @@ def type_test(
           abort: bool = False,                              # Abort on error
           **kwargs: typing.Any) -> typing.Optional[typing.Any]:
 
-      value = get_from_box(parent,key)                      # Try to get the value from the parent object
-      if value is None:                                     # No value was found, now what?
-        if empty_value is not None:                         # ... is there empty value for this data type?
-          if create_empty is None:                          # Empty value is defined, and we'll use it to create an empty object if the caller
-            create_empty = True                             # did not specify its preferencehs
-    
-          if create_empty:                                  # Now for the real deal
-            value = empty_value                             # ... if we should create an empty value do so
-            set_dots(parent,key.split('.'),empty_value)     # ... and store it in the parent object (dedottifying the key)
-          else:
-            if abort:                                       # Empty value was specified, 'create_empty' is False, and there's no actual value
-              raise common.IncorrectValue()                 # ... raise an exception if requested
-
-        if not key in parent:                               # We can skip the validation of the key is missing.
-          return value                                      # ... if the key is there, then we have to make sure the value is valid
-
-      # Handle boolean-to-data-type conversions if the value is bool and the caller specified true_value
-      #
-      if isinstance(value,bool) and not (true_value is None):
-        if value is True:                                   # Replace True with true_value and move on
-          value = true_value
-        else:
-          if false_value is None:                           # If there's no false_value pop the bool option and return None
-            parent.pop(key,None)
-            return None
-          else:
-            value = false_value                             # ... otherwise set the false value
-
-        parent[key] = value
+      if parent is None:                                    # No parent => key is the value to check
+        value = key
+      else:
+        value = get_value_to_check(
+                  parent=parent,
+                  key=key,
+                  empty_value=empty_value,
+                  create_empty=create_empty,
+                  true_value=true_value,
+                  false_value=false_value,
+                  abort=abort)
+        if not key in parent:
+          return value
 
       expected = test_function(value,**kwargs)              # Now call the validator function with the item value
-
-      # Validator function could return:
-      #
-      # * True -- everything is OK
-      # * False -- failed the validation, error message was already printed
-      # * string -- error message
-      # * callable -- a function returning a replacement value
-      #
-      if isinstance(expected,(bool,str)):
-        if not expected is True:
-          if isinstance(expected,str):
-            wrong_type_message(path=path, key=key, expected=expected, value=value, context=context, module=module)
-          if abort:
-            raise common.IncorrectType()
-          return None
-      elif isinstance(expected,types.FunctionType):
-        value = expected(value)
-        parent[key] = value
-      else:
-        common.fatal(f'Validator function {test_function} returned unexpected value {expected}')
+      value = post_validation(
+                value=value,
+                parent=parent,
+                path=path,
+                key=key,
+                expected=expected,
+                context=context,
+                module=module,
+                abort=abort,
+                test_function=test_function)
 
       # Finally, check valid values (if specified)
       #
       if valid_values:
-        check_valid_values(path=path, key=key, value=value, expected=valid_values, context=context, module=module, abort=abort)
+        check_valid_values(
+          path=path,
+          key=None if parent is None else key,
+          value=value,
+          expected=valid_values,
+          context=context,
+          module=module,
+          abort=abort)
 
       # And return whatever the final value is (considering empty, true, and transformed values)
       #
@@ -241,6 +320,13 @@ def must_be_string(value: typing.Any) -> typing.Union[bool,str]:
 @type_test(false_value='')
 def must_be_str(value: typing.Any) -> typing.Union[bool,str]:
   return True if isinstance(value,str) else 'a string'
+
+@type_test()
+def must_be_id(value: typing.Any) -> typing.Union[bool,str]:
+  if not isinstance(value,str) or not re.fullmatch('[a-zA-Z_][a-zA-Z0-9_-]{0,15}',value):
+    return 'an identifier HELP:a string containing up to 16 alphanumeric characters, numbers and underscores'
+
+  return True
 
 @type_test()
 def must_be_int(

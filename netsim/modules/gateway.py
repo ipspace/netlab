@@ -122,13 +122,13 @@ class FHRP(_Module):
       link.pop('gateway',None)
       return
     else:                                       # Otherwise merge global defaults with links settings (because we usually don't do that)
-      check_gw_protocol(link.gateway,f'links[{link.linkindex}]',topology)
+      check_gw_protocol(link.gateway,f'{link._linkname}',topology)
       link.gateway = global_gateway + link.gateway
 
     for k in ('id','protocol'):
       if not k in link.gateway or not link.gateway[k]:
         common.error(
-          f'Gateway attribute {k} is missing in links[{link.linkindex}]\n' + \
+          f'Gateway attribute {k} is missing in {link._linkname}\n' + \
           common.extra_data_printout(common.format_structured_dict(link)),
           common.MissingValue,
           'gateway')
@@ -136,7 +136,7 @@ class FHRP(_Module):
 
     if not data.is_true_int(link.gateway.id):
       common.error(
-        f'Gateway.id parameter in links[{link.linkindex}] must be an integer\n' + \
+        f'Gateway.id parameter in {link._linkname} must be an integer\n' + \
           common.extra_data_printout(common.format_structured_dict(link)),
         common.IncorrectType,
         'gateway')
@@ -144,7 +144,7 @@ class FHRP(_Module):
 
     if link.gateway.id == -1:
         common.error(
-          f'Cannot use -1 as the gateway ID in links[{link.linkindex}] -- that would be the broadcast address\n' + \
+          f'Cannot use -1 as the gateway ID in {link._linkname} -- that would be the broadcast address\n' + \
           common.extra_data_printout(common.format_structured_dict(link)),
           common.IncorrectValue,
           'gateway')

@@ -33,3 +33,16 @@ def print_structured_dict(d: Box, prefix: str = '') -> None:
 #
 def eval_format(fmt: str, data: dict) -> str:
   return str(eval(f"f'{fmt}'",dict(data)))                            # An awful hack to use f-string specified in a string variable
+
+"""
+confirm: print the prompt and wait for a yes/no answer
+"""
+def confirm(prompt: str) -> bool:
+  prompt = f'{prompt} [y/n]'
+
+  while True:
+    answer = input(prompt).lower()
+    if answer in ['y','yes']:
+      return True
+    if answer in ['n','no']:
+      return False

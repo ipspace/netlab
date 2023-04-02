@@ -14,7 +14,9 @@ SCRIPT
 #
 # Build hosts file
 #
+echo "INIT: setting hostname"
 hostname {{ inventory_hostname }}
+echo "INIT: creating /etc/hosts"
 awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
 echo "127.0.0.1 {{ inventory_hostname }}" >>/tmp/hosts
 {% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
@@ -26,6 +28,7 @@ cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
 mv /tmp/hosts-start /etc/hosts
 {% endif %}
 sort /tmp/hosts|uniq >>/etc/hosts
+#
 {% if clab.kind is not defined %}
 {# no need to disable ZTP in a container #}
 #
@@ -33,7 +36,21 @@ sort /tmp/hosts|uniq >>/etc/hosts
 #
 ztp --disable
 {% else %}
-{# Disable DHCP on management interface #}
+echo "INIT: recreating /etc/network/interfaces"
+{#
+  DHCP in Cumulus containers is becoming a ever-more-complex mess whenever
+  I update Ubuntu 20.04 LTS -- right now 'ifreload -a' fails because another
+  daemon continuously tries to do something to the network interfaces.
+  
+  Here's the current approach to survive through that mess:
+  
+  * Change /etc/network/interfaces to disable DHCP on management interface
+  * Wait for firstboot processes to disappear
+  * Kill any DHCP clients
+  * At that time there might be more firstboot processes, but we're ignoring them
+  * Keep reloading interfaces until it succeeds
+  * Move on with the rest of the configuration
+#}
 cat >/etc/network/interfaces <<CONFIG
 auto lo
 iface lo inet loopback
@@ -49,16 +66,29 @@ iface eth0 inet static
 
 source /etc/network/interfaces.d/*.intf
 CONFIG
+#
+echo "INIT: waiting for firstboot processing to finish"
+while [ -n "$(pgrep -f firstboot)" ]; do
+  logger "Waiting for firstboot to finish"
+  ps -ef|grep firstboot|logger
+  sleep 1
+done
+#
+echo "INIT: Kill DHCP clients"
+if [ -n "$(pgrep -f dhclient)" ]; then
+  echo "INIT: killing dhclient"
+  kill -9 $(pgrep -f dhclient)
+fi
+#
+echo "INIT: disabling DHCP on eth0"
+until ifreload -a; do
+  logger "ifreload failed, retrying"
+  sleep 1
+done
 {% endif %}
 #
-# Enable LLDP
 #
-cat <<CONFIG >/etc/lldpd.d/system.conf
-configure lldp tx-interval 30
-configure lldp tx-hold 3
-configure system interface pattern *,!eth0,swp*
-CONFIG
-service lldpd restart
+echo "INIT: creating loopback interface"
 #
 # Create loopback interface entry
 #
@@ -86,7 +116,13 @@ cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
 {{ loopback_interface(l.ifname,l,True) }}
 {% endfor %}
 CONFIG
-ifup lo
+ps -ef
+#
+until ifreload -a; do
+  sleep 10
+done
+#
+echo "INIT: creating other interface"
 cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
 {% for l in interfaces if l.type in ['lan','p2p','stub'] %}
 auto {{ l.ifname }}
@@ -108,6 +144,8 @@ iface {{ l.ifname }}
 {%   endif %}
 {% endfor %}
 CONFIG
+#
+echo "INIT: executing ifreload"
 ifreload -a
 #
 # For whatever crazy reason, I had to enable IPv6 in containers
@@ -153,3 +191,13 @@ interface {{ l.ifname }}
 do write
 CONFIG
 vtysh -f /tmp/config
+#
+# Enable LLDP
+#
+echo "INIT: enabling LLDP"
+cat <<CONFIG >/etc/lldpd.d/system.conf
+configure lldp tx-interval 30
+configure lldp tx-hold 3
+configure system interface pattern *,!eth0,swp*
+CONFIG
+service lldpd restart

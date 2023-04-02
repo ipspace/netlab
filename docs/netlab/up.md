@@ -51,6 +51,12 @@ optional arguments:
 Do not use the `--fast-config` option with custom configuration templates that must be executed in specific order. See **‌[netlab initial](netlab-initial-custom)** documentation for more details.
 ```
 
+## Conflict Resolution
+
+**netlab up** command checks the netlab status file (default: `~/.netlab/status.yml`) to verify that the current lab instance (default: `default`) is not running in another directory. You cannot start two copies of the same lab instance (even if they're using different directories) due to potential management MAC/IP address overlap. If you want to run multiple lab instances on the same server, use the **‌[multilab](../plugins/multilab.md)** plugin.
+
+**netlab up** command also uses the `netlab.lock` file in the current directory before invoking **netlab create** process to ensure you cannot accidentally overwrite provider configuration files. If you want to resume a failed lab startup process (usually caused by VM timeouts), use **netlab up --snapshot** command which skips the **netlab create** process.
+
 ## Provider-Specific Initialization
 
 **netlab up** can execute provider-specific tasks before invoking the orchestration tool (*Vagrant* or *containerlab*) or after the virtual lab has been created

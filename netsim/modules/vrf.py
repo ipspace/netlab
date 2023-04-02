@@ -9,15 +9,10 @@ from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from .. import common
 from .. import data
 from ..data import get_from_box,global_vars
-from ..data.validate import must_be_list,must_be_dict,validate_attributes
-from ..augment import devices,groups
+from ..data.validate import validate_attributes
+from ..data.types import must_be_list,must_be_dict,must_be_id
+from ..augment import devices,groups,links
 from .. import addressing
-
-#
-# Regex expression to validate names used in vrfs. No spaces or weird characters, not too long
-# (VRF names are used as device names on Linux, with max 16 characters length)
-#
-VALID_VRF_NAMES = re.compile( r"[a-zA-Z0-9_.-]{1,16}" )
 
 def populate_vrf_static_ids(topology: Box) -> None:
   for k in ('id','rd'):
@@ -73,14 +68,6 @@ def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
   return (vrf_id,rd)
 
 #
-# Check for 'reasonable' VRF names using a regex expression
-#
-def validate_vrf_name(name: str) -> None:
-  if not VALID_VRF_NAMES.fullmatch( name ):
-    common.error(f'VRF name "{name}" does not match the allowed regex expression {VALID_VRF_NAMES.pattern}',
-                 common.IncorrectValue,'vrf')
-
-#
 # Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
 # Also checks for valid naming
 #
@@ -96,7 +83,8 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
     return
 
   for vname in list(obj.vrfs.keys()):
-    validate_vrf_name(vname)
+    must_be_id(parent=None,key=vname,path=f'NOATTR:VRF name {vname} in {obj_name}',module='vrf')
+
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
     if not isinstance(obj.vrfs[vname],dict):
@@ -326,6 +314,51 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
 
   return
 
+"""
+create_vrf_links -- create VRF links based on VRF 'links' attribute
+
+* Iterate over global VRFs
+* If a VRF has 'links' attribute, verify that it's a list
+* Iterate over the 'links' list
+* Normalize every link in the list, add 'vrf: vname' attribute and append the link
+  to global list of links
+"""
+
+def create_vrf_links(topology: Box) -> None:
+  if not 'vrfs' in topology:                                                # No global VRFs, nothing to do
+    return
+
+  for vname,vdata in topology.vrfs.items():                                 # Iterate over global VRFs
+    if not isinstance(vdata,Box):                                           # VRF not yet a dictionary?
+      continue                                                              # ... no problem, skip it
+    if not 'links' in vdata:                                                # No VRF links?
+      continue                                                              # ... no problem, move on
+
+    try:
+      must_be_list(                                                         # Verify that the 'links' attribute is a list
+        parent=vdata,
+        key='links',
+        path=f'vlans.{vname}',
+        create_empty=False,
+        module='vlans',
+        abort=True)
+    except:                                                                 # Error: not a list
+      vdata.pop('links',None)                                               # ... remove the attribute
+      continue                                                              # ... and move on
+
+    for cnt,l in enumerate(vdata.links):                                    # So far so good, now iterate over the links
+      link_data = links.adjust_link_object(                                 # Create link data from link definition
+                    l=l,
+                    linkname=f'vrfs.{vname}.links[{cnt+1}]',
+                    nodes=topology.nodes)
+      if link_data is None:
+        continue
+      link_data.vrf = vname                                                 # ... add VRF
+      link_data.linkindex = links.get_next_linkindex(topology)              # ... add linkindex (we're late in the process)
+      topology.links.append(link_data)                                      # ... and append new link to global link list
+
+    vdata.pop('links')                                                      # Finally, clean up the VLAN definition
+
 class VRF(_Module):
 
   def module_pre_default(self, topology: Box) -> None:
@@ -334,17 +367,25 @@ class VRF(_Module):
         topology.defaults.attributes[attr_set].append('vrfs')
 
   def module_pre_transform(self, topology: Box) -> None:
+    if 'vrfs' in topology:
+      try:
+        must_be_dict(
+          parent=topology,
+          key='vrfs',
+          path='topology',
+          create_empty=False,
+          abort=True,
+          module='vrf')  # Check that we're dealing with a VRF dictionary and return otherwise
+      except:
+        return
+
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vrfs','vrf',copy_keys=['rd','export','import'])
 
-    if not must_be_dict(
-        parent=topology,
-        key='vrfs',
-        path='topology',
-        create_empty=False,
-        module='vrf'):                                # Check that we're dealing with a VRF dictionary and return if there's none
+    if not 'vrfs' in topology:                          # No global VRFs, nothing to do
       return
 
+    create_vrf_links(topology)                          # Create VRF links (and remove 'links' attribute)
     for vname in topology.vrfs.keys():
       must_be_dict(
         parent=topology,

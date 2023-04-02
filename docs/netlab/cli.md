@@ -11,6 +11,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 
 ## Configuring and Controlling the Lab
 
+* **‌[netlab status](status.md)** display the state of lab instances running on the current server
 * **[netlab initial](initial.md)** uses an internal Ansible playbook to deploy initial device configurations to lab devices
 * **[netlab config](config.md)** creates custom configuration snippets from Jinja2 templates and uses an internal Ansible playbook to deploy them to lab devices
 * **[netlab connect](connect.md)** relies on Ansible inventory created with **netlab create** to find IP address, username, and password of specified lab device, and uses SSH or **docker exec** to connect to the lab device.
@@ -40,6 +41,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab install <install.md>
    netlab restart <restart.md>
    netlab show <show.md>
+   netlab status <status.md>
    netlab test <test.md>
    netlab up <up.md>
 ```

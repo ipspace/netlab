@@ -15,6 +15,7 @@ import netaddr
 from .. import common
 from ..data import get_from_box,types
 from . import _Provider
+from ..augment.links import get_link_by_index
 
 LIBVIRT_MANAGEMENT_NETWORK_NAME = "vagrant-libvirt"
 LIBVIRT_MANAGEMENT_BRIDGE_NAME  = "libvirt-mgmt"
@@ -205,7 +206,10 @@ class Libvirt(_Provider):
         if intf.get('virtual_interface',None):                      # Virtual interface, skip it
           continue
 
-        link = topology.links[intf.linkindex - 1]                   # P2P links must have two attached nodes and no extra libvirt attributes
+        link = get_link_by_index(topology,intf.linkindex)           # Get the link object based on intf linkindex
+        if link is None:                                            # Weird, cannot find the link, skip it
+          continue
+
         if not 'libvirt' in link.provider:                          # Not a libvirt link? skip it
           continue
 

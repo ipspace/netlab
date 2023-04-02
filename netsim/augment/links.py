@@ -11,28 +11,39 @@ from box import Box
 from .. import common
 from .. import data
 from .. import utils
-from ..data.validate import must_be_string,must_be_list,must_be_dict,validate_attributes
+from ..data.validate import validate_attributes
+from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from .. import addressing
 from . import devices
 
-def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
+def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
+  intf_cnt  = 0
   for n in iflist:                      # Sanity check of interface data
+    intf_cnt = intf_cnt + 1
     if isinstance(n,str):               # Another shortcut: node name as string
+      if not n in nodes:                # ... is it a valid node name?
+        common.error(                   # ... it's not, get lost
+          f'Interface {link._linkname}.interfaces.{intf_cnt} refers to an unknown node {n}',
+          common.IncorrectValue,
+          'links')
+        continue
       n = Box({ 'node': n },default_box=True,box_dots=True)
-    if not isinstance(n,dict):          # Still facing non-dict data type?
+      
+    if not isinstance(n,Box):          # Still facing non-dict data type?
       common.error(                     # ... report an error
-        f'Interface description {n} on link {link} must be a dictionary',
+        f'Interface data in {link._linkname}.interfaces[{intf_cnt}] must be a dictionary, found {type(n).__name__}',
         common.IncorrectValue,
         'links')
     elif not 'node' in n:               # Do we have node name in interface data?
       common.error(                     # ... no? Too bad, throw an error
-        f'Interface data {n} on link {link} is missing a "node" attribute',
+        f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute\n' +
+        f'... found {n}',
         common.MissingValue,
         'links')
-    elif not n['node'] in nodes:        # Is the node name valid?
+    elif not n.node in nodes:           # Is the node name valid?
       common.error(                     # ... it's not, get lost
-        f'Interface data {n} on link {link} refers to an unknown node {n["node"]}',
+        f'Interface data {link._linkname}.interfaces[{intf_cnt}] refers to an unknown node {n.node}',
         common.IncorrectValue,
         'links')
     else:
@@ -41,7 +52,7 @@ def adjust_interface_list(iflist: list, link: typing.Any, nodes: Box) -> list:
   return link_intf
 
 """
-Normalize the list of links:
+Normalize the link objects:
 
 * Dictionary with 'interfaces' key ==> no change
 * Dictionary without 'interfaces' ==> extract nodes into 'interfaces', keep other keys
@@ -49,6 +60,56 @@ Normalize the list of links:
 * String ==> split into list, create a dictionary with 'interfaces' element
 
 """
+
+def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optional[Box]:
+  if isinstance(l,dict) and not isinstance(l,Box):            # transform dict into Box if needed
+    l = data.get_box(l)
+
+  if isinstance(l,Box) and 'interfaces' in l:                 # a dictionary with 'interfaces' element
+    l._linkname = linkname
+    must_be_list(l,'interfaces',linkname,module='links')
+    l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
+    return l
+
+  if isinstance(l,Box):                                       # a dictionary without 'interfaces' element
+    link_data = data.get_empty_box()                          # ... split it into link attributes
+    link_intf = []                                            # ... and a list of nodes
+    link_data._linkname = linkname                            # ... set link name
+    for k in l.keys():
+      if k in nodes:                                          # Node name -> interface list
+        must_be_dict(l,k,linkname,create_empty=True)
+        if isinstance(l[k],dict):
+          l[k].node = k
+          link_intf.append(l[k])
+      else:
+        link_data[k] = l[k]                                   # ... otherwise copy key/value pair to link data
+    link_data.interfaces = link_intf                          # Add revised interface data to link data
+    return link_data
+
+  if isinstance(l,list):                                              # List of nodes, transform into interfaces
+    link_data = data.get_box({ '_linkname' : linkname })              # ... create stub link data structure
+    link_data.interfaces = adjust_interface_list(l,link_data,nodes)   # ... and adjust interface list
+    return link_data
+
+  if isinstance(l,str):                                       # String, split into a list of nodes
+    link_intf = []
+    for n in l.split('-'):                # ... split it into a list of nodes
+      if n in nodes:                      # If the node name is valid
+        link_intf.append({ 'node': n })   # ... append it to the list of interfaces
+      else:
+        common.error(
+          f'Link string {l} in {linkname} refers to an unknown node {n}',
+          common.IncorrectValue,
+          'links')
+    return data.get_box({
+      'interfaces': link_intf,
+      '_linkname' : linkname })
+
+  common.error(
+    f'Invalid type {type(l).__name__} for {linkname}',
+    common.IncorrectType,
+    'links')
+  return None
 
 def adjust_link_list(links: list, nodes: Box) -> list:
   link_list: list = []
@@ -58,47 +119,10 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 
   link_cnt = 0
   for l in links:
-    if isinstance(l,dict) and 'interfaces' in l:                # a dictionary with 'interfaces' element
-      l = Box(l,default_box=True,box_dots=True)
-      must_be_list(l,'interfaces',f'link[{link_cnt}]',module='links')
-      l.interfaces = adjust_interface_list(l.interfaces,l,nodes)
-      link_list.append(l)
-      continue
-
-    if isinstance(l,Box):                                       # a dictionary without 'interfaces' element
-      link_data = Box({},default_box=True,box_dots=True)        # ... split it into link attributes
-      link_intf = []                                            # ... and a list of nodes
-      for k in l.keys():
-        if k in nodes:                                          # Node name -> interface list
-          must_be_dict(l,k,f'link[{link_cnt}]',create_empty=True)
-          if isinstance(l[k],dict):
-            l[k].node = k
-            link_intf.append(l[k])
-        else:
-          link_data[k] = l[k]                                   # ... otherwise copy key/value pair to link data
-      link_data.interfaces = link_intf                          # Add revised interface data to link data
-      link_list.append(link_data)                               # ... and move on
-    elif isinstance(l,list):
-      link_list.append(Box({ 'interfaces': adjust_interface_list(l,l,nodes) },default_box=True,box_dots=True))
-    elif isinstance(l,str):
-      link_intf = []
-      for n in l.split('-'):                # ... split it into a list of nodes
-        if n in nodes:                      # If the node name is valid
-          link_intf.append({ 'node': n })   # ... append it to the list of interfaces
-        else:
-          common.error(
-            f'Link string {l} refers to an unknown node {n}',
-            common.IncorrectValue,
-            'links')
-      link_list.append({ 'interfaces': link_intf })
-    else:                                   # Come on, you really should not do something like this
-      common.error(
-        f'Invalid type {type(l).__name__} for a link instance: {l}',
-        common.IncorrectType,
-        'links')
-      continue
-
     link_cnt = link_cnt + 1
+    link_data = adjust_link_object(l,f'links[{link_cnt}]',nodes)
+    if not link_data is None:
+      link_list.append(link_data)
 
   if common.debug_active('links'):
     print("Adjusted link list")
@@ -113,11 +137,10 @@ Validate link attributes
 def validate(topology: Box) -> None:
   providers = list(topology.defaults.providers.keys())
   for l_data in topology.links:
-    linkpath = f'links[{l_data.linkindex}]'           # Topology path to current link
     validate_attributes(
       data=l_data,                                    # Validate link data
       topology=topology,
-      data_path=linkpath,
+      data_path=l_data._linkname,
       data_name=f'link',
       attr_list=['link'],                             # We're checking node attributes
       modules=topology.get('module',[]),              # ... against topology modules
@@ -130,7 +153,7 @@ def validate(topology: Box) -> None:
       validate_attributes(
         data=intf,                                      # Validate interface data
         topology=topology,
-        data_path=f'{linkpath}.{intf.node}',
+        data_path=f'{l_data._linkname}.{intf.node}',
         data_name=f'interface',
         attr_list=['interface','link'],                 # We're checking interface or link attributes
         modules=n_data.get('module',[]),                # ... against node modules
@@ -142,7 +165,7 @@ def validate(topology: Box) -> None:
       validate_attributes(
         data=l_data.prefix,                             # Validate link prefix
         topology=topology,
-        data_path=f'{linkpath}.prefix',                 # Topology path to link prefix
+        data_path=f'{l_data._linkname}.prefix',         # Topology path to link prefix
         data_name=f'prefix',
         attr_list=['prefix'],                           # We're checking prefix attributes
         modules=None,                                   # No module attributes in prefix
@@ -525,7 +548,7 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         pfx_net = netaddr.IPNetwork(pfx_list[af])
       except Exception as ex:                         # Report an error and move on if it cannot be parsed
         common.error(
-          f'Cannot parse {af} prefix {pfx_list[af]} on link#{link.linkindex}\n' + \
+          f'Cannot parse {af} prefix {pfx_list[af]} on {link._linkname}\n' + \
             common.extra_data_printout(f'{ex}') + '\n' + \
             common.extra_data_printout(f'{link}'),
           common.IncorrectValue,
@@ -542,7 +565,7 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       if data.get_from_box(link,'gateway.id'):
         rq = rq + f' plus first-hop gateway'
       common.error(
-        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on link#{link.linkindex}\n' + \
+        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}\n' + \
         common.extra_data_printout(f'link data: {link}',width=90),
         common.IncorrectValue,
         'links')
@@ -550,7 +573,7 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
 
     if not allocation_policy in IPAM_dispatch:
       common.error(
-        f'Invalid IP address allocation policy specified in prefix {pfx_list} found on links[{link.linkindex}]',
+        f'Invalid IP address allocation policy specified in prefix {pfx_list} found on {link._linkname}',
         common.IncorrectValue,
         'links')
     IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)               # execute IPAM policy to get AF addresses on interfaces
@@ -573,7 +596,7 @@ def cleanup_link_interface_AF_entries(link: Box) -> None:
 
       if data.is_true_int(intf[af]):            # Unprocessed int. Must be node index on an unnumbered link ==> error
         common.error(
-          f'Interface ID for node {intf.node} did not result in a usable address on link#{link.linkindex}\n' + \
+          f'Interface ID for node {intf.node} did not result in a usable address on {link._linkname}\n' + \
             common.extra_data_printout(f'{link}'),
           common.IncorrectType,
           'links')
@@ -581,7 +604,7 @@ def cleanup_link_interface_AF_entries(link: Box) -> None:
 
       if not '/' in intf[af]:                   # Subnet mask is unknown
         common.error(
-          f'Unknown subnet mask for {af} address {intf[af]} used by node {intf.node} on link#{link.linkindex}\n' + \
+          f'Unknown subnet mask for {af} address {intf[af]} used by node {intf.node} on {link._linkname}\n' + \
             common.extra_data_printout(f'{link}'),
           common.IncorrectType,
           'links')
@@ -744,14 +767,14 @@ def check_link_type(data: Box) -> bool:
 
   if link_type == 'loopback' and node_cnt != 1:
     common.error(
-      f'Looopback link can have a single node attached: links[{data.linkindex}]\n... {data}',
+      f'Looopback link {data._linkname} can have a single node attached\n... {data}',
       common.IncorrectValue,
       'links')
     return False
 
   if not link_type in [ 'stub','p2p','lan','loopback','vlan_member']:
     common.error(
-      f'Invalid link type {link_type} in links[{data.linkindex}]\n... {data}',
+      f'Invalid link type {link_type} in {data._linkname}\n... {data}',
       common.IncorrectValue,
       'links')
     return False
@@ -835,14 +858,93 @@ def set_node_af(nodes: Box) -> None:
           n.af[af] = True
           continue
 
-def set_linkindex(topology: Box) -> None:
-  if not 'links' in topology:
-    return
+'''
+Link index utility functions:
 
+* get_next_linkindex: get last linkindex+1 or default value
+* get_link_by_index: given a link index, return the link
+'''
+
+def get_next_linkindex(topology: Box) -> int:
+  if not 'links' in topology:
+    topology.links = []
+    return topology.defaults.get('link_index',1)
+
+  return topology.links[-1].linkindex + 1
+
+def get_link_by_index(topology: Box, idx: int) -> typing.Optional[Box]:
+  for link in topology.links:
+    if link.linkindex == idx:
+      return link
+  return None
+
+'''
+set_linknames -- set link name if not defined
+'''
+def set_linknames(topology: Box) -> None:
+  for cnt,link in enumerate(topology.links):
+    if link.get('group'):
+      link._linkname = f'links[{link.group}]'
+    elif not '_linkname' in link:
+      link._linkname = f'links[{cnt+1}]'
+
+'''
+set_linkindex -- set link index for each link
+'''
+def set_linkindex(topology: Box) -> None:
   linkindex = topology.defaults.get('link_index',1)
   for link in topology.links:
     link.linkindex = linkindex
     linkindex = linkindex + 1
+
+'''
+expand_groups -- expand link groups (identified by 'group' and 'members' attributes) into individual links
+appended to the end of the link list
+'''
+def expand_groups(topology: Box) -> None:
+  for link in list(topology.links):                 # Iterate over existing links (that's why we have to cast it as a list)
+    if not 'group' in link:                         # Not a group link, move on
+      if 'members' in link:
+        common.error(
+          f'Link {link._linkname} is not a group link, but has a "members" list',
+          common.IncorrectValue,
+          'links')
+      continue
+
+    try:                                            # Check that the group ID is a valid identifier
+      must_be_id(
+        parent=link,
+        key='group',
+        path=link._linkname,
+        abort=True,
+        module='links')
+    except:                                         # If not, report error and skip the link
+      continue
+
+    if not must_be_list(parent=link,key='members',path=link._linkname,create_empty=False,module='links'):
+      common.error(                                 # Make sure 'members' is a list
+        f'Group link {link._linkname} has no members',
+        common.MissingValue,
+        'links')
+      continue                                      # Report error and skip otherwise
+
+    copy_group_data = data.get_box(link)            # We'll copy all group data into member links
+    for key in ['group','members','_linkname']:     # Apart from the link name and 
+      copy_group_data.pop(key,None)
+
+    for idx,member in enumerate(link.members):
+      member = adjust_link_object(member,f'{link._linkname}[{idx+1}]',topology.nodes)
+      member = copy_group_data + member             # Copy group data into member link
+      topology.links.append(member)
+
+  # Finally, remove group links from the link list
+  topology.links = [ link for link in topology.links if not 'group' in link ]
+
+def links_init(topology: Box) -> None:
+  topology.links = adjust_link_list(topology.links,topology.nodes)
+  set_linknames(topology)
+  expand_groups(topology)
+  set_linkindex(topology)
 
 def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
   if not link_list:
@@ -855,7 +957,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
 
     set_link_bridge_name(link,defaults)
     link_default_pools = ['p2p','lan'] if link.type == 'p2p' else ['lan']
-    assign_link_prefix(link,link_default_pools,pools,nodes,f'links[{link.linkindex}]')
+    assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
     assign_interface_addresses(link,pools,nodes,defaults)
     create_node_interfaces(link,pools,nodes,defaults=defaults)
 
@@ -865,3 +967,10 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
   interface_feature_check(nodes,defaults)
   set_node_af(nodes)
   return link_list
+
+def cleanup(topology: Box) -> None:
+  if not 'links' in topology:
+    return
+
+  for link in topology.links:
+    link.pop('_linkname',None)

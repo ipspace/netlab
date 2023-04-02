@@ -9,7 +9,7 @@ import sys
 from box import Box
 
 from .. import common
-from . import _TopologyOutput
+from . import _TopologyOutput,check_writeable
 from .common import adjust_inventory_host
 
 def create(nodes: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
@@ -72,6 +72,7 @@ def read_inventory(host: str, filename: typing.Optional[str] = None) -> typing.O
 class DeviceInventory(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
+    check_writeable('netlab-devices.yml')
     hostfile = self.settings.hostfile or 'netlab-devices.yml'
     output_format = None
 

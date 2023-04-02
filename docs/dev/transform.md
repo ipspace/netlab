@@ -14,7 +14,13 @@ The data transformation has three major steps:
 * Read customer and system [default settings](../defaults.md) (`topology-defaults.yml`) and [merge them](../defaults.md#deep-merging) with the topology file (`netsim.read_topology.load`)
 * Check for presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 * Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
-* Adjust the list of links -- transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
+
+* Initialize the link list (`netsim.augment.links.links_init`)
+  * Transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
+  * Set link names (`netsim.augment.links.set_linknames`)
+  * Expand [link groups](link-groups) (`netsim.augment.links.expand_groups`)
+  * Set **linkindex** attributes (`netsim.augment.links.set_linkindex`)
+
 * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
 * Execute plugin **init** hook (`netsim.augment.plugin.execute`)
 * Extend **default.attributes** with **default.extra_attributes** (`netsim.augment.topology.extend_attribute_list`)
@@ -65,7 +71,7 @@ The data transformation has three major steps:
 
   * If the link does not have a **prefix** attribute, get link prefix from the [corresponding address pool](../links.md#selecting-custom-address-pools)
   * Set node interface IP addresses to first and second subnet IP address for numbered P2P links.
-  * Calculate node interface IP addresses from node ID and link prefix for all other links unless the on-link node data contains [static IP addresses](links.md#static-interface-addressing).
+  * Calculate node interface IP addresses from node ID and link prefix for all other links unless the on-link node data contains [static IP addresses](../links.md#static-interface-addressing).
   * Copy link-level configuration module data into node interface data (example: OSPF area)
   * Create interface data for all nodes connected to the link ([details](../links.md#augmenting-node-data)).
 

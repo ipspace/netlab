@@ -20,8 +20,8 @@ def transform_setup(topology: Box) -> None:
   augment.topology.check_required_elements(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   if 'links' in topology:
-    topology.links = augment.links.adjust_link_list(topology.links,topology.nodes)
-    augment.links.set_linkindex(topology)
+    augment.links.links_init(topology)
+
   augment.devices.augment_device_settings(topology)
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('init',topology)
@@ -72,6 +72,7 @@ def transform_data(topology: Box) -> None:
 
   modules.post_link_transform(topology)
 
+def post_transform(topology: Box) -> None:
   modules.post_transform(topology)
   augment.plugin.execute('post_transform',topology)
   augment.groups.node_config_templates(topology)
@@ -81,9 +82,11 @@ def transform_data(topology: Box) -> None:
   quirks.process_quirks(topology)
   common.exit_on_error()
   
+  augment.links.cleanup(topology)
   for remove_attr in ['Plugin','pools','_Providers']:
     topology.pop(remove_attr,None)
 
 def transform(topology: Box) -> None:
   transform_setup(topology)
   transform_data(topology)
+  post_transform(topology)

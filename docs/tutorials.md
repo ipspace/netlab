@@ -61,7 +61,7 @@ The networking lab specified in the above topology file:
 
 ## Starting the Lab
 
-The easiest way to start the lab is to execute **[netlab up](../netlab/up.md)** command which:
+The easiest way to start the lab is to execute **[netlab up](netlab/up.md)** command which:
 
 * Creates `Vagrantfile` or `clab.yml`, and Ansible inventory files;
 * Starts the devices with **vagrant up** or **containerlab deploy** command
@@ -113,7 +113,7 @@ Bringing machine 'r2' up with 'virtualbox' provider...
 
 ### Deploy Device Configurations
 
-Deploying device configurations -- the final step in the **netlab up** process -- requires a working Ansible installation. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1], or use **[netlab install ansible](../netlab/install.md)** on Ubuntu.
+Deploying device configurations -- the final step in the **netlab up** process -- requires a working Ansible installation. Please follow the instructions in [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems) documentation[^1], or use **[netlab install ansible](netlab/install.md)** on Ubuntu.
 
 [^1]: I prefer using **homebrew** to install Ansible on MacOS.
 
@@ -154,7 +154,7 @@ module:
 - ospf
 ```
 
-To configure the lab devices, **netlab up** runs **[netlab initial](../netlab/initial.md)** command.
+To configure the lab devices, **netlab up** runs **[netlab initial](netlab/initial.md)** command.
 
 ```{tip}
 If you want to inspect the deployed device configurations, execute `netlab initial -v` -- the Ansible playbook will print out the device configurations before they'd be deployed -- or `netlab initial -o` to create configuration snippets in `config` directory.
@@ -162,7 +162,7 @@ If you want to inspect the deployed device configurations, execute `netlab initi
 
 ## Connecting to Network Devices
 
-After starting the lab and installing Ansible, you could use the **[netlab connect](../netlab/connect.md)** command to connect to network devices[^2] and inspect the OSPF neighbors and IP routing table:
+After starting the lab and installing Ansible, you could use the **[netlab connect](netlab/connect.md)** command to connect to network devices[^2] and inspect the OSPF neighbors and IP routing table:
 
 [^2]: **netlab connect** uses Ansible inventory to find the administrator username and password, device IP address and SSH port name.
 
@@ -200,7 +200,7 @@ r1#
 
 ## Cleanup
 
-Destroy the lab with **[netlab down](../netlab/down.md)** or **vagrant destroy -f**:
+Destroy the lab with **[netlab down](netlab/down.md)** or **vagrant destroy -f**:
 
 ```
 $ vagrant destroy -f
