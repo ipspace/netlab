@@ -14,8 +14,7 @@ import re
 # Related modules
 from box import Box
 
-from .. import common
-from ..utils import status
+from ..utils import status,log
 from ..callback import Callback
 
 '''
@@ -36,7 +35,7 @@ Please use 'netlab status' to check the status of labs running on this machine, 
 If you are sure that no other lab is running in this directory, you can remove
 the netlab.lock file manually and retry.
 ''')
-    common.fatal('Cannot create configuration files in a locked directory')
+    log.fatal('Cannot create configuration files in a locked directory')
 
 class _TopologyOutput(Callback):
   def __init__(self, output: str, data: Box) -> None:
@@ -74,4 +73,4 @@ class _TopologyOutput(Callback):
     return None
 
   def write(self, topology: Box) -> None:
-    common.fatal('someone called the "write" method of TopologyOutput abstract class')
+    log.fatal('someone called the "write" method of TopologyOutput abstract class')
