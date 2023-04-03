@@ -47,6 +47,7 @@ The following features are only supported on a subset of platforms:
 | Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered IPv4<br />EBGP sessions | EBGP<br>local AS | IBGP<br>local AS | Configurable<br>default AF |
 | --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
+| Aruba AOS-CX          |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS/IOS XE      |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS XRv         |  ❌  |  ❌  |  ❌  |  ❌  |  ✅ |
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
