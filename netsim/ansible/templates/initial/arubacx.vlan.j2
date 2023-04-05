@@ -1,0 +1,16 @@
+!
+{# need to define vlans before creating L3 SVI interfaces #}
+{% if vlans is defined %}
+{%   for vname,vdata in vlans.items() %}
+vlan {{ vdata.id }}
+ name {{ vname }}
+!
+{%   endfor +%}
+{% endif %}
+!
+{# for master interface of subinterfaces, remove ipv6 lla #}
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type|default('') == 'vlan_member' and ifdata.parent_ifname is defined %}
+interface {{ ifdata.parent_ifname }}
+ no ipv6 address link-local
+{% endfor +%}
+!
