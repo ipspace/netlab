@@ -1,0 +1,13 @@
+- template:
+    src: "{{ config_template }}"
+    dest: /tmp/{{inventory_hostname}}_config.sh
+  delegate_to: localhost # Run on controller, to avoid dependency on Python
+
+- name: Copy template file into running container
+  shell: docker cp /tmp/{{inventory_hostname}}_config.sh clab-{{ netlab_name }}-{{inventory_hostname}}:/tmp/config.sh
+  delegate_to: localhost
+
+- name: "Execute /tmp/config.sh to deploy {{ netsim_action }} config from {{ config_template }}"
+  delegate_to: "{{ inventory_hostname }}"
+  raw: "{{ docker_shell|default('sh') }} /tmp/config.sh"
+  tags: [ print_action, always ]
