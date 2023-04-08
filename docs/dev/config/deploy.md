@@ -40,17 +40,31 @@ The following paths are searched when looking for custom configuration templates
 When looking for a custom configuration template in the above search path, the following names are tried (*custom_config* is the name of custom configuration template or directory):
 
 ```
-- "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
-- "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
-- "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
-- "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
-- "{{ custom_config }}"
-- "{{ custom_config + '.j2' }}"
+- "{{ config + '/' + inventory_hostname + '.' + netlab_device_type + '-' + netlab_provider + '.j2' }}"
+- "{{ config + '/' + inventory_hostname + '.' + netlab_device_type + '.j2' }}"
+- "{{ config + '/' + inventory_hostname + '.j2' }}"
+- "{{ config + '/' + netlab_device_type + '-' + netlab_provider + '.j2' }}"
+- "{{ config + '/' + netlab_device_type + '.j2' }}"
+- "{{ config + '/' + ansible_network_os + '-' + netlab_provider + '.j2' }}"
+- "{{ config + '/' + ansible_network_os + '.j2' }}"
+- "{{ config + '.' + inventory_hostname + '.' + netlab_device_type + '.j2' }}"
+- "{{ config + '.' + inventory_hostname + '.' + ansible_network_os + '.j2' }}"
+- "{{ config + '.' + inventory_hostname + '.j2' }}"
+- "{{ config + '.' + netlab_device_type + '.j2' }}"
+- "{{ config + '.' + ansible_network_os + '.j2' }}"
+- "{{ config }}"
+- "{{ config + '.j2' }}"
 ```
 
 The custom configuration could be deployed via a dedicated task list or via generic configuration deployment task list (see above). The deployment process uses this search path:
 
 ```
+- "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy-{{ inventory_hostname }}.yml"
+- "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ netlab_provider }}.yml"
+- "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ netlab_device_type }}.yml"
+- "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ ansible_network_os }}-{{ netlab_provider }}.yml"
+- "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ ansible_network_os }}.yml"
+- "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.yml"
 - "../../extra/{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ netlab_provider }}.yml"
 - "../../extra/{{ custom_config }}/deploy.{{ netlab_device_type }}.yml"
 - "deploy-config/{{netlab_device_type}}-{{ netlab_provider }}.yml"
@@ -59,6 +73,7 @@ The custom configuration could be deployed via a dedicated task list or via gene
 - "../../extra/{{ custom_config }}/deploy.{{ ansible_network_os }}.yml"
 - "deploy-config/{{ansible_network_os}}-{{ netlab_provider }}.yml"
 - "deploy-config/{{ansible_network_os}}.yml"
+- "../missing.yml"
 ```
 
 ## Ansible Variables
