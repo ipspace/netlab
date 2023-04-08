@@ -13,6 +13,7 @@ from .. import common
 from .. import data
 from .. import modules
 from ..modules import bgp
+from ..data import get_box
 from ..data.validate import validate_attributes
 from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
 from . import nodes
@@ -240,6 +241,7 @@ def copy_group_device_module(topology: Box) -> None:
 Copy node data from group into group members
 '''
 def copy_group_node_data(topology: Box,pfx: str) -> None:
+  topo_modules = topology.get('module',[])                            # Get list of default list of modules
   for grp in reverse_topsort(topology):
     if not grp.startswith(pfx):                                       # Skip groups that don't match the current prefix (ex: BGP autogroups)
       continue
@@ -256,7 +258,13 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
 
       if common.debug_active('groups'):
         print(f'... merging node data with {name}')
-      topology.nodes[name] = gdata.node_data + topology.nodes[name]
+      merge_data=get_box(gdata.node_data)
+      if 'module' in topology.nodes[name]:
+        for m in topo_modules:
+          if not m in topology.nodes[name].module:
+            merge_data.pop(m,None)
+
+      topology.nodes[name] = merge_data + topology.nodes[name]
 
 '''
 Export node_data from groups to topology

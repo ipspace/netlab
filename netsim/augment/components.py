@@ -180,5 +180,6 @@ def expand_components(topology: Box) -> None:
     expand_include(n_name,n_data,topology)                  # ... yes, do the include magic
 
   log.exit_on_error()
-  print(topology.groups.to_yaml())
   topology.pop('components',None)
+
+#  print(topology.groups.to_yaml())
