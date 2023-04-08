@@ -220,7 +220,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Operating system      | [OSPF](module/ospf.html) | [IS-IS](module/isis.html) | [EIGRP](module/eigrp.html) | [BGP](module/bgp.html) | [BFD](module/bfd.html) | [EVPN](module/evpn.html) | [FHRP](module/gateway.html) |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅   |  ❌   |   ❌   | ✅  | ✅  | ✅  | ❌  |
+| Aruba AOS-CX          | ✅   |  ❌   |   ❌   | ✅  | ✅  | ✅  | ✅  |
 | Cisco ASAv            | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
 | Cisco IOSv            | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |

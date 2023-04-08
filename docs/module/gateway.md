@@ -18,6 +18,7 @@ The module is supported on these platforms:
 | Operating system      | Anycast | VRRPv3 | VRRPv3<br>IPv6 |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  | ✅  |
 | Cisco CSR 1000v       |  ❌  | ✅  | ✅  |
 | Cisco IOSv            |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |

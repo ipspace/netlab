@@ -1,0 +1,47 @@
+!
+no ip icmp redirect
+
+! globally enable vrrp if needed
+{% for intf in interfaces if intf.gateway.protocol is defined and intf.gateway.protocol == 'vrrp' %}
+{%   if loop.first %}
+router vrrp enable
+{%   endif %}
+{% endfor %}
+
+{% for intf in interfaces if intf.gateway.protocol is defined %}
+
+interface {{ intf.ifname }}
+{%   if intf.gateway.protocol == 'anycast' and 'ipv4' in intf.gateway and gateway.anycast.mac is defined %}
+{% set anycast_mac = '{}{}:{}{}:{}{}:{}{}:{}{}:{}{}'.format(*gateway.anycast.mac|replace('.', '')) %}
+ active-gateway ip mac {{ anycast_mac }}
+ active-gateway ip {{ intf.gateway.ipv4|ipaddr('address') }}
+{%   endif %}
+
+
+{%   if intf.gateway.protocol == 'vrrp' %}
+
+{%     for af in 'ipv4','ipv6' if af in intf.gateway %}
+ vrrp {{ intf.gateway.vrrp.group }} address-family {{ af }}
+  version 3
+{%       if af == 'ipv4' %}
+  address {{ intf.gateway[af]|ipaddr('address') }} primary
+{%       endif %}
+{%       if af == 'ipv6' %}
+  address fe80::1 primary
+  address {{ intf.gateway[af]|ipaddr('address') }} secondary
+{%       endif %}
+{%       if intf.gateway.vrrp.preempt|default(False) %}
+  preempt
+{%       else %}
+  no preempt
+{%       endif %}
+{%       if 'priority' in intf.gateway.vrrp %}
+  priority {{ intf.gateway.vrrp.priority }}
+{%       endif %}
+ no shutdown
+ exit
+{%     endfor %}
+
+{%   endif %}
+
+{% endfor %}
