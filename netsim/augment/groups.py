@@ -258,7 +258,7 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
 
       if common.debug_active('groups'):
         print(f'... merging node data with {name}')
-      merge_data=get_box(gdata.node_data)
+      merge_data=Box(gdata.node_data)
       if 'module' in topology.nodes[name]:
         for m in topo_modules:
           if not m in topology.nodes[name].module:
