@@ -23,6 +23,7 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
+| Aruba AOS-CX       | ✅  |  ❌  |  ✅  | [❌](caveats.html#aruba-aos-cx)  |
 | Cisco Nexus OS     | ✅  |  ❌  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  |  ❌  | ✅  | ✅  |
 | Dell OS 10         | ✅  |  ❌  |  ✅  | ✅  |
@@ -57,6 +58,7 @@ EVPN module supports three design paradigms:
 | Operating system   | IBGP+IGP | BGP RR | EBGP-only | IBGP over<br>EBGP | IPv4 BGP<br>transport | IPv6 BGP<br>transport |
 | ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
+| Aruba AOS-CX       | ✅  | ✅  | ✅  | ✅  | ✅  | ❌   |
 | Cisco Nexus OS     | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
 | Cumulus Linux      | ✅  | ✅  | ❌   | ❌   | ✅  | ❌   |
 | Dell OS 10         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌   |

@@ -151,3 +151,5 @@ addressing:
 
 * Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
 * OSPF processes can be only *1-63*. VRF indexes usually are > 100, so a device tweak will map every *vrfidx* to a different OSPF process id. That means you cannot have more than 62 VRF using OSPF.
+* The VXLAN dataplane (at least, on the virtual version) seems not supporting VNI greater than 65535. If you set an higher value, an overflow will occur, and you may have overlapping VNIs. The workaround for this is to set, i.e., `defaults.vxlan.start_vni: 20000` (especially on multi-vendor topologies).
+* On the Aruba AOS-CX Virtual version *10.11.0001*, EVPN Symmetric IRB seems not supported.

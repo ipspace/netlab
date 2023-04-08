@@ -220,7 +220,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Operating system      | [OSPF](module/ospf.html) | [IS-IS](module/isis.html) | [EIGRP](module/eigrp.html) | [BGP](module/bgp.html) | [BFD](module/bfd.html) | [EVPN](module/evpn.html) | [FHRP](module/gateway.html) |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅   |  ❌   |   ❌   | ✅  | ✅  | ❌  | ❌  |
+| Aruba AOS-CX          | ✅   |  ❌   |   ❌   | ✅  | ✅  | ✅  | ❌  |
 | Cisco ASAv            | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
 | Cisco IOSv            | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
@@ -248,7 +248,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Operating system      | VLAN | VRF | VXLAN | MPLS | SR-MPLS | SRv6 |
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
 | Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
-| Aruba AOS-CX          |  ✅  | ✅  |  ❌   | ❌   |    ❌    |  ❌   |
+| Aruba AOS-CX          |  ✅  | ✅  |  [✅](caveats.html#aruba-aos-cx)   | ❌   |    ❌    |  ❌   |
 | Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Cisco IOS XE          |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
