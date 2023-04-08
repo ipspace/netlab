@@ -22,6 +22,8 @@ def transform_setup(topology: Box) -> None:
   if 'links' in topology:
     augment.links.links_init(topology)
 
+  augment.components.expand_components(topology)
+
   augment.devices.augment_device_settings(topology)
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('init',topology)

@@ -18,6 +18,8 @@ from ..data.validate import validate_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
+MAX_NODE_ID: typing.Final[int] = 250
+
 """
 Reserve a node ID, for example for gateway ID, return True if successful, False if duplicate
 """
@@ -313,7 +315,7 @@ Main node transformation code
 '''
 def transform(topology: Box, defaults: Box, pools: Box) -> None:
   for name,n in topology.nodes.items():
-    if not must_be_int(n,'id',f'nodes.{name}',module='nodes',min_value=1,max_value=250):
+    if not must_be_int(n,'id',f'nodes.{name}',module='nodes',min_value=1,max_value=MAX_NODE_ID):
       continue
     if not reserve_id(n.id):
       common.error(
@@ -322,7 +324,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
         'nodes')
 
   common.exit_on_error()
-  set_id_counter('node_id',1,250)
+  set_id_counter('node_id',1,MAX_NODE_ID)
   for name,n in topology.nodes.items():
     if not 'id' in n:
       n.id = get_next_id('node_id')
