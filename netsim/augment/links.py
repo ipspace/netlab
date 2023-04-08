@@ -94,7 +94,11 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
   if isinstance(l,str):                                       # String, split into a list of nodes
     link_intf = []
     for n in l.split('-'):                # ... split it into a list of nodes
-      if n in nodes:                      # If the node name is valid
+      valid_node = n in nodes
+      if not valid_node:
+        valid_node = len([ x for x in nodes if n.startswith(x) ]) > 0
+
+      if valid_node:                      # If the node name is valid
         link_intf.append({ 'node': n })   # ... append it to the list of interfaces
       else:
         common.error(
