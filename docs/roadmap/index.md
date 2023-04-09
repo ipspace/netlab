@@ -7,4 +7,5 @@ These documents describe potential future _netlab_ functionality. Please feel fr
    :maxdepth: 1
 
    tools.md
+   external-interface.md
 ```
