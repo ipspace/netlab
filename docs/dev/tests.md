@@ -1,11 +1,11 @@
-# Automated Tests
+# Automated CI/CD Tests
 
 *netlab* uses GitHub Workflows CI/CD pipeline, see `.github/workflows/tests.yml` for details. The automated tests executed on every push, pull request or merge include:
 
 * **mypy** static type checking of all Python code in `netsim/` directory
 * Transformation tests ran with **pytest** in `tests/` directory
 
-You can run the same tests with the `run-tests.sh` script in *tests* directory. It's highly recommended you run them before creating a pull request, or we'll have to have a discussion before your PR is merged.
+You can run the same tests with the `run-tests.sh` script in *tests* directory. It's highly recommended you run them before creating a pull request that modifies Python code, or we'll have to have a discussion before your PR is merged.
 
 ## Transformation Tests
 
@@ -27,6 +27,8 @@ Whenever you're creating a new test case or modifying an existing one, you **HAV
 To create *expected results* files run `create-transformation-tests.sh` script in the *tests* directory. The script assumes that your code works flawlessly and that whatever the code does is the correct result. That might *not* be the case, so it's highly recommended that you execute `git diff topology` after running `create-transformation-tests.sh` script and do a thorough check of the differences.
 
 ## Before Submitting a PR
+
+If you PR includes modifications to Python code, make sure you follow these steps before submitting it:
 
 * Run `create-transformation-tests.sh` script
 * Check the differences (again)

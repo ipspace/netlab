@@ -89,7 +89,7 @@ Getting Started
    :hidden:
 
    dev/guidelines.md
-   dev/transform.md
-   dev/module-attributes.md
-   dev/tests.md
+   dev/config/index.md
+   dev/advanced.md
+   roadmap/index.md
 ..

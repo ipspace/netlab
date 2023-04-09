@@ -23,28 +23,3 @@ The easiest way to get started is to [add support for a new platform for an exis
    unnumbered.md
    doubt.md
 ```
-
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-   :caption: Implementation Notes
-
-   config/deploy.md
-   config/initial.md
-   config/ospf.md
-   config/bfd.md
-   config/vlan.md
-   config/vrf.md
-   config/gateway.md
-```
-
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-   :caption: Advanced Topics
-
-   groups-pre-transform.md
-   validation.md
-   vlan-vrf-vxlan-evpn-transform.md
-   quirks.md
-```
