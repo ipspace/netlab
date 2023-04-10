@@ -248,7 +248,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Operating system      | VLAN | VRF | VXLAN | MPLS | SR-MPLS | SRv6 |
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
 | Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
-| Aruba AOS-CX          |  ✅  | ✅  |  [✅](caveats.html#aruba-aos-cx)   | ❌   |    ❌    |  ❌   |
+| Aruba AOS-CX          |  ✅  | ✅  |  [✅](caveats.html#aruba-aos-cx)   | [❗](caveats.html#aruba-aos-cx)   |    ❌    |  ❌   |
 | Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Cisco IOS XE          |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |

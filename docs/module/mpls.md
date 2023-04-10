@@ -25,6 +25,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Operating system      | LDP   | Exp.Null | IGP sync | Advertise<br>filter | CsC |
 | ----------------------| :---: | :------: | :--: | :--: | :--: |
 | Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Aruba AOS-CX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOS             |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOS XE          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
@@ -58,6 +59,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
 | Arista EOS            |   ✅  |   ✅  |
+| Aruba AOS-CX          |   [❗](caveats.html#aruba-aos-cx)  |   ❌  |
 | Cisco IOS             |   ✅  |   ✅  |
 | Cisco IOS XE          |   ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |
