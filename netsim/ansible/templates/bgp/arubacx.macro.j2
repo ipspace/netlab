@@ -1,0 +1,45 @@
+{% macro community(list) -%}
+{{ "both" if list|length >= 2 else list[0] }}
+{%- endmacro %}
+!
+{#
+   Global BGP neighbor definition
+#}
+{% macro neighbor_global(n,ip) %}
+  neighbor {{ ip }} remote-as {{ n.as }}
+{% if n.local_as is defined %}
+  neighbor {{ ip }} local-as {{ n.local_as }}{% 
+    if n.replace_global_as|default(True) and n.type != 'localas_ibgp' %} no-prepend replace-as{% endif +%}
+{% endif %}
+  neighbor {{ ip }} description {{ n.name }}
+{% if n.type == 'ibgp' %}
+  neighbor {{ ip }} update-source loopback 0
+{% endif %}
+{%- endmacro %}
+{#
+   Address family BGP neighbor definition
+#}
+{% macro neighbor_af(n,ip,bgp) %}
+    neighbor {{ ip }} activate
+{% if 'ibgp' in n.type %}
+{%   if bgp.community.ibgp|default([]) %}
+    neighbor {{ ip }} send-community {{ community(bgp.community.ibgp) }}
+{%   endif %}
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+    neighbor {{ ip }} next-hop-self
+{%   endif %}
+{%   if bgp.rr|default('') and (not n.rr|default('') or n.type == 'localas_ibgp') %}
+    neighbor {{ ip }} route-reflector-client
+{%   endif %}
+{% else %}{# EBGP IPv4 neighbor #}
+{%   if bgp.community.ebgp|default([]) %}
+    neighbor {{ ip }} send-community {{ community(bgp.community.ebgp) }}
+{%   endif %}
+{% endif %}
+{%- endmacro -%}
+{#
+   BGP network statement
+#}
+{% macro bgp_network(af,pfx) %}
+    network {{ pfx|ipaddr('0') }}
+{%- endmacro %}

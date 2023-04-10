@@ -1,0 +1,32 @@
+!
+router bgp {{ bgp.as }}
+!
+ address-family l2vpn evpn
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
+  neighbor {{ n.ipv4 }} activate
+  neighbor {{ n.ipv4 }} send-community extended
+{%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
+  neighbor {{ n.ipv4 }} route-reflector-client
+{%   endif %}
+{% endfor %}
+!
+
+{% if vlans is defined %}
+evpn
+ arp-suppression
+ redistribute local-mac
+ redistribute local-svi
+{%   for v in vlans.values() if v.vni is defined %}
+{%     set import_target = v.evpn.import|join(' ') -%}
+{%     set export_target = v.evpn.export|join(' ') %}
+ vlan {{ v.id }}
+  rd {{ v.evpn.rd }}
+  route-target import {{ v.evpn.import|join(' ') }}
+  route-target export {{ v.evpn.export|join(' ') }}
+{%     if import_target == export_target %}
+  route-target both {{ v.evpn.export|join(' ') }}
+{%     endif %}
+
+{%   endfor %}
+{% endif %}
+

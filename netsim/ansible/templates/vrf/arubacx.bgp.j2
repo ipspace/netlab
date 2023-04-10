@@ -1,0 +1,30 @@
+{% import "arubacx.bgp-macro.j2" as bgpcfg %}
+!
+router bgp {{ bgp.as }}
+{% for vname,vdata in vrfs.items() %}
+  vrf {{ vname }}
+  bgp router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
+
+{%   for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
+{%     for n in vdata.bgp.neighbors|default([]) if af in n %}
+{{       bgpcfg.neighbor_global(n,n[af]) }}
+{%     endfor %}
+{%   endfor %}
+
+{%   for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
+ address-family {{ af }} unicast
+  redistribute connected
+  redistribute local loopback
+{%     if af == 'ipv4' and 'ospf' in vdata %}
+  redistribute ospf {{ vdata.vrfidx }}
+{%     endif %}
+!
+{%     for n in vdata.networks|default([]) if af in n %}
+{{       bgpcfg.bgp_network(af,n[af]) }}
+{%     endfor %}
+!
+{%     for n in vdata.bgp.neighbors|default([]) if af in n %}
+{{       bgpcfg.neighbor_af(n,n[af],bgp) }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

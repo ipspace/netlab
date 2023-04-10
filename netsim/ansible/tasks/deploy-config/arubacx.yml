@@ -1,0 +1,24 @@
+- local_action:
+    module: tempfile
+    state: file
+    suffix: temp
+    prefix: ansible.{{ inventory_hostname }}.
+  register: tempfile_1
+
+- local_action:
+    module: template
+    src: "{{ config_template }}"
+    dest: "{{ tempfile_1.path }}"
+
+- name: "aoscx_config: deploying {{ netsim_action }} from {{ config_template }}"
+  arubanetworks.aoscx.aoscx_config:
+    match: "none"
+    src: "{{ tempfile_1.path }}"
+  tags: [ print_action, always ]
+  register: aoscx_output
+
+- local_action:
+    module: file
+    path: "{{ tempfile_1.path }}"
+    state: absent
+  when: tempfile_1.path is defined

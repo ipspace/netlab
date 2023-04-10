@@ -1,0 +1,19 @@
+!
+{% for ifdata in interfaces if ifdata.vlan is defined %}
+!
+interface {{ ifdata.ifname }}
+{%   if ifdata.vlan.trunk_id is defined %}
+ no routing
+ vlan trunk allow {{ ifdata.vlan.trunk_id|sort|join(",") }}
+{%     if ifdata.vlan.native is defined %}
+ vlan trunk native {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   elif ifdata.vlan.access_id is defined %}
+{%     if ifdata.type == 'vlan_member' %}
+ encapsulation dot1q {{ ifdata.vlan.access_id }}
+{%     else %}
+ no routing
+ vlan access {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   endif %}
+{% endfor +%}

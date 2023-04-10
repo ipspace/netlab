@@ -1,0 +1,61 @@
+hostname {{ inventory_hostname.replace("_","-") }}
+!
+lldp
+!
+
+{% if vrfs is defined %}
+{% include 'arubacx.vrf.j2' %}
+{% endif %}
+
+{% if vlans is defined %}
+{% include 'arubacx.vlan.j2' %}
+{% endif %}
+
+interface loopback 0
+{% if 'ipv4' in loopback %}
+    ip address {{ loopback.ipv4 }}
+{% endif %}
+{% if 'ipv6' in loopback %}
+    ipv6 address {{ loopback.ipv6 }}
+{% endif %}
+!
+interface {{ mgmt.ifname|default('mgmt') }}
+    no lldp transmit
+    no lldp receive
+!
+
+{% for l in interfaces|default([]) %}
+
+interface {{ l.ifname }}
+{% if l.virtual_interface is not defined %}
+    shutdown
+{% endif %}
+{% if l.vrf is defined %}
+    vrf attach {{ l.vrf }}
+{% endif %}
+{% if l.mtu is defined %}
+    mtu {{ l.mtu }}
+{% endif %}
+{% if l.name is defined %}
+    description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+    description Stub interface
+{% endif %}
+{#
+    Set interface IPv4 addresses
+#}
+{% if 'ipv4' in l %}
+    ip address {{ l.ipv4 }}
+{% endif %}
+{#
+    Set interface IPv6 addresses
+#}
+{% if 'ipv6' in l %}
+    ipv6 address {{ l.ipv6 }}
+{% endif %}
+{% if l.virtual_interface is not defined %}
+    no shutdown
+{% endif %}
+!
+{% endfor %}
+!

@@ -1,0 +1,46 @@
+{% import "arubacx.macro.j2" as bgpcfg %}
+!
+!
+router bgp {{ bgp.as }}
+  bgp log-neighbor-changes
+{% if bgp.router_id|ipv4 %}
+  bgp router-id {{ bgp.router_id }}
+{% endif %}
+{% if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
+  bgp cluster-id {{ bgp.rr_cluster_id }}
+{% endif %}
+{#
+    Configure IPv4 and IPv6 BGP neighbors
+#}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     bgpcfg.neighbor_global(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+!
+{# Configure BGP address families #}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+  address-family {{ af }} unicast
+!
+{%   if loopback[af] is defined and bgp.advertise_loopback %}
+{{     bgpcfg.bgp_network(af,loopback[af]) }}
+{%   endif %}
+!
+{%   for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+{{     bgpcfg.bgp_network(af,l[af]) }}
+{%   endfor %}
+{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{{     bgpcfg.bgp_network(af,pfx) }}
+{%   endfor %}
+!
+{%   for n in bgp.neighbors if n[af] is defined and n.activate[af] is defined and n.activate[af] %}
+{{     bgpcfg.neighbor_af(n,n[af],bgp) }}
+{%   endfor %}
+{% endfor %}
+!
+{#
+  Add extra IPv4 prefixes
+#}
+{% for pfx in bgp.originate|default([]) %}
+ip route {{ pfx|ipaddr('network') }} {{ pfx|ipaddr('netmask') }} nullroute
+{% endfor %}

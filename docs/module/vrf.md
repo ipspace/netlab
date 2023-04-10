@@ -17,6 +17,7 @@ VRFs are supported on these platforms:
 | Operating system      | VRF<br />config | Route<br />leaking | VRF-aware<br />OSPF | VRF-aware<br />EBGP | VRF-aware<br />Loopback |
 | --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  | ✅  |

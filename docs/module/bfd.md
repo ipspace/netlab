@@ -7,6 +7,7 @@ BFD is supported on these platforms:
 | Operating system      | Configurable<br>timers | OSPF | IS-IS |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  | ❌  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |

@@ -22,6 +22,7 @@ VLANs are supported on these platforms:
 | Operating system      | Access<br>VLANs | VLAN<br>interfaces | Routed<br>subinterfaces | Trunk<br>ports | Native<br>VLAN |
 | --------------------- | :-: | :-: |:-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Aruba AOS-CX          | ✅  | ✅  | ❌  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅  | ✅  | ❌[❗](../caveats.html#caveats-csr)   | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |

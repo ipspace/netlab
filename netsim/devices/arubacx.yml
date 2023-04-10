@@ -1,0 +1,42 @@
+description: ArubaOS-CX
+interface_name: 1/1/{ifindex}
+mgmt_if: mgmt
+loopback_interface_name: "loopback {ifindex}"
+ifindex_offset: 1
+libvirt:
+  image: aruba/cx
+  create:
+    virt-install --connect=qemu:///system --name=vm_box --arch=x86_64 --cpu host --vcpus=2 --hvm
+      --ram=4096 --network=network:vagrant-libvirt,model=virtio --graphics none --import
+      --disk path=vm.qcow2,format=qcow2,bus=ide
+group_vars:
+  ansible_network_os: arubanetworks.aoscx.aoscx
+  ansible_connection: network_cli
+  #ansible_connection: arubanetworks.aoscx.aoscx
+  ansible_user: admin
+  ansible_ssh_pass: admin
+  netlab_device_type: arubacx
+features:
+  bgp:
+    local_as: True
+    vrf_local_as: True
+    local_as_ibgp: True
+    activate_af: True
+  vlan:
+    #model: l3-switch
+    model: switch
+    svi_interface_name: vlan{vlan}
+    # ArubaOS-CX supports subinterfaces... but not on virtual devices.
+    #subif_name: "{ifname}.{vlan.access_id}"
+    #native_routed: False
+  evpn:
+    irb: True
+    asymmetrical_irb: True
+  gateway:
+    protocol: [ anycast, vrrp ]
+  mpls:
+    ldp: True
+    vpn: True
+external:
+  image: none
+graphite.icon: switch
