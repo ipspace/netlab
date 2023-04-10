@@ -68,7 +68,7 @@ nodes:
 
 ## Using File Binds
 
-You can use **clab.binds** to map container paths to host file system paths. Host file paths (dictionary keys) in **clab.binds** might contain dots which would trigger the expansion of keys-with-dots into hierarchical dictionary. To prevent that, all host file paths should have at least one '/' character, for example:
+You can use **clab.binds** to map container paths to host file system paths, for example:
 
 ```
 nodes:
@@ -77,8 +77,12 @@ nodes:
   image: ghcr.io/openconfig/gnmic:latest
   clab:
     binds:
-      './gnmic.yaml': '/app/gnmic.yaml:ro'
+      gnmic.yaml: '/app/gnmic.yaml:ro'
       '/var/run/docker.sock': '/var/run/docker.sock'
+```
+
+```{tip}
+You don't have to worry about dots in filenames: _netlab_ knows that the keys of the **‌clab.binds** and **‌clab.config_templates** dictionaries are filenames and does not expand them into hierarchical dictionaries.
 ```
 
 (clab-config-template)=

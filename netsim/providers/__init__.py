@@ -16,7 +16,7 @@ from box import Box
 from .. import common
 from ..callback import Callback
 from ..augment import devices
-from ..data import get_from_box,get_box
+from ..data import get_from_box,get_box,filemaps
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
@@ -90,27 +90,26 @@ class _Provider(Callback):
       outkey: str = 'binds') -> None:
 
     mappings = get_from_box(node,f'{self.provider}.{inkey}')
-    if mappings:
-      cur_binds = get_from_box(node,f'{self.provider}.{outkey}') or {}
-      for file,mapping in mappings.items():
-        if mapping in cur_binds.values():
-          continue
-        if not isinstance(mapping,str):
-          common.error(
-            f"Malformed extra file mapping for {self.provider}.{inkey}.{file} on node {node.name} -- should be string",
-            common.IncorrectType,
-            self.provider)
-          continue
+    if not mappings:
+      return
+    
+    map_dict = filemaps.mapping_to_dict(mappings)
+    cur_binds = get_from_box(node,f'{self.provider}.{outkey}') or []
+    bind_dict = filemaps.mapping_to_dict(cur_binds)
+    for file,mapping in map_dict.items():
+      if file in bind_dict:
+        continue
+      if not self.find_extra_template(node,file):
+        common.error(
+          f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
+          common.IncorrectValue,
+          self.provider)
+        continue
 
-        if not self.find_extra_template(node,file):
-          common.error(
-            f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
-            common.IncorrectValue,
-            self.provider)
-          continue
+      out_folder = f"{self.provider}_files/{node.name}"
+      bind_dict[f"{out_folder}/{file}"] = mapping
 
-        out_folder = f"{self.provider}_files/{node.name}"
-        node[self.provider][outkey][f"{out_folder}/{file}"] = mapping
+    node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
 
   def create_extra_files(
       self,
@@ -126,7 +125,10 @@ class _Provider(Callback):
     sys_folder = str(common.get_moddir())+"/"
     out_folder = f"{self.provider}_files/{node.name}"
 
-    for file,mapping in binds.items():
+    bind_dict = filemaps.mapping_to_dict(binds)
+    for file,mapping in bind_dict.items():
+      if not out_folder in file:                  # Skip files that are not mapped into the temporary provider folder
+        continue
       file_name = file.replace(out_folder+"/","")
       template_name = self.find_extra_template(node,file_name)
       if template_name:
