@@ -7,34 +7,25 @@ This command uses the lab topology or the snapshot file created by **netlab up**
 ## Usage
 
 ```
-usage: netlab down [-h] [--defaults DEFAULTS] [-d DEVICE] [-p PROVIDER] [-s SETTINGS]
-                   [-v] [--cleanup] [--snapshot SNAPSHOT]
-                   [topology]
+usage: netlab down [-h] [-v] [--cleanup] [--force] [--snapshot [SNAPSHOT]]
 
 Destroy the virtual lab
 
-positional arguments:
-  topology              Topology file (default: topology.yml)
-
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --defaults DEFAULTS   Local topology defaults file
-  -d DEVICE, --device DEVICE
-                        Default device type
-  -p PROVIDER, --provider PROVIDER
-                        Override virtualization provider
-  -s SETTINGS, --set SETTINGS
-                        Additional parameters added to topology file
   -v, --verbose         Verbose logging (where applicable)
   --cleanup             Remove all configuration files created by netlab create
-  --snapshot SNAPSHOT   Transformed topology snapshot file
+  --force               Force shutdown or cleanup (use at your own risk)
+  --snapshot [SNAPSHOT]
+                        Transformed topology snapshot file
 ```
 
 Notes:
 
 * **netlab down** needs transformed topology data to find the virtualization provider and link (bridge) names.
-* **netlab down** reads the transformed topology from `netlab.snapshot.yml` file created by **netlab up** or **netlab create** unless you specify the topology file name or any of the `-d`, `-p` or `-s` flags.
+* **netlab down** reads the transformed topology from `netlab.snapshot.yml` file created by **netlab up** or **netlab create**. You can specify a different snapshot file name, but you really should not.
 * Use the `--cleanup` flag to delete all Ansible-, Vagrant- or containerlab-related configuration files.
+* Use the `--force` flag with the `--cleanup` flag if you want to clean up the directory even when the virtualization provider fails during the shutdown process.
 
 ## Conflict Resolution
 

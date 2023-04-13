@@ -12,10 +12,9 @@ import os
 import sys
 from box import Box
 
-from . import topology_parse_args, load_snapshot_or_topology, external_commands,fs_cleanup
-from . import lab_status_change, lab_status_update,get_lab_id
-from .. import read_topology,augment,common
-from .. import providers
+from . import external_commands
+from . import lab_status_change,get_lab_id,fs_cleanup
+from .. import read_topology,common,providers
 from ..utils import status,strings
 from .up import provider_probes
 #
@@ -23,7 +22,6 @@ from .up import provider_probes
 #
 def down_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
-    parents=[ topology_parse_args() ],
     prog="netlab down",
     description='Destroy the virtual lab')
 
@@ -39,15 +37,18 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store_true',
     help='Remove all configuration files created by netlab create')
   parser.add_argument(
+    '--force',
+    dest='force',
+    action='store_true',
+    help='Force shutdown or cleanup (use at your own risk)')
+  parser.add_argument(
     '--snapshot',
     dest='snapshot',
     action='store',
     nargs='?',
+    default='netlab.snapshot.yml',
     const='netlab.snapshot.yml',
     help='Transformed topology snapshot file')
-  parser.add_argument(
-    dest='topology', action='store', nargs='?',
-    help='Topology file (default: topology.yml)')
 
   return parser.parse_args(args)
 
@@ -113,18 +114,13 @@ def remove_lab_status(topology: Box) -> None:
 
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
-  topology = load_snapshot_or_topology(args)
+  if not os.path.isfile(args.snapshot):
+    print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
+          "Looks like no lab was started from this directory")
+    sys.exit(1)
 
-  if args.topology:
-    print(f"Reading lab topology from {args.topology}")
-  else:
-    if not os.path.isfile(args.snapshot):
-      print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
-            "Looks like no lab was started from this directory")
-      sys.exit(1)
-
-    print(f"Reading transformed lab topology from snapshot file {args.snapshot}")
-
+  print(f"Reading transformed lab topology from snapshot file {args.snapshot}")
+  topology = read_topology.read_yaml(filename=args.snapshot)
   if topology is None:
     common.fatal('... could not read the lab topology, aborting')
     return
@@ -132,7 +128,11 @@ def run(cli_args: typing.List[str]) -> None:
   mismatch = lab_dir_mismatch(topology)
 
   lab_status_change(topology,f'lab shutdown requested{" in conflicting directory" if mismatch else ""}')
-  provider_probes(topology)
+  try:
+    provider_probes(topology)
+  except:
+    if not args.force:
+      return
 
   p_provider = topology.provider
   p_module = providers._Provider.load(p_provider,topology.defaults.providers[p_provider])
@@ -141,10 +141,18 @@ def run(cli_args: typing.List[str]) -> None:
 
   for s_provider in topology[p_provider].providers:
     lab_status_change(topology,f'stopping {s_provider} provider')
-    stop_provider_lab(topology,p_provider,s_provider)
+    try:
+      stop_provider_lab(topology,p_provider,s_provider)
+    except:
+      if not args.force:
+        return
     print()
 
-  stop_provider_lab(topology,p_provider)
+  try:
+    stop_provider_lab(topology,p_provider)
+  except:
+    if not args.force:
+      return
 
   if args.cleanup:
     external_commands.print_step(3,"Cleanup configuration files",spacing = True)
