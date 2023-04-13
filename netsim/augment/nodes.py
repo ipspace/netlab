@@ -229,6 +229,10 @@ def validate_node_provider(n: Box, topology: Box) -> bool:
   if not 'provider' in n:
     return True
 
+  if n.provider == topology.get('provider',None):
+    n.pop('provider',None)
+    return True
+
   if not n.provider in topology.defaults.providers:
     common.error(
       f'Invalid provider {n.provider} specified in node {n.name}',
