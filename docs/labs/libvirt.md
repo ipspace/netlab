@@ -28,8 +28,10 @@ You have to use the following box names when installing or building the Vagrant 
 | Virtual network device | Vagrant box name            |
 | ---------------------- | --------------------------- |
 | Arista vEOS            | arista/veos                 |
+| Aruba CX               | aruba/cx                    |
 | Cisco ASAv             | cisco/asav                  |
 | Cisco IOSv             | cisco/iosv                  |
+| Cisco IOS XR           | cisco/iosxr                 |
 | Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Dell OS10              | dell/os10                   |
@@ -56,6 +58,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 ## Building Your Own Boxes
 
 * [Arista vEOS](eos.md)
+* [Aruba CX](arubacx.md)
 * [Cisco ASAv](asav.md)
 * [Cisco IOSv](iosv.md)
 * [Cisco CSR](csr.md)
@@ -142,6 +145,7 @@ The virtual machines are batched based on their order in **‌nodes** list/dicti
    :hidden:
 
    eos.md
+   arubacx.md
    asav.md
    csr.md
    iosv.md
