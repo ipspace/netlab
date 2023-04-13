@@ -10,6 +10,7 @@ import importlib.util
 
 from box import Box
 from .. import common
+from ..utils.templates import get_moddir
 from .. import data
 
 def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
@@ -62,7 +63,7 @@ def init(topology: Box) -> None:
   topology.Plugin = []
   for pname in topology.plugin:
     plugin = None
-    search_path = ('.',common.netsim_package_path+'/extra')
+    search_path = ('.',str(get_moddir() / 'extra'))
     for path in search_path:
       if not plugin:
         plugin = load_plugin_from_path(path,pname)

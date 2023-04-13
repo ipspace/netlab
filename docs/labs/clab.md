@@ -118,6 +118,16 @@ nodes:
 
 Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon``` from ```some_daemon.j2``` (the template could be either in current directory or ```linux``` subdirectory) and maps it to ```/etc/some_daemon.cf``` within the container file system.
 
+### Jinja2 Filters Available in Custom Configuration Files
+
+The custom configuration files are generated within _netlab_ and can therefore use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import **ipaddr** family of filters, making filters like **ipv4**, **ipv6** or **ipaddr** available in custom configuration file templates.
+
+```{warning}
+Ansible developers love to restructure stuff and move it into different directories. This functionality works with two implementations  of **ipaddr** filters (tested on Ansible 2.10 and Ansible 7.4/ Ansible Core 2.14) but might break in the future -- we're effectively playing whack-a-mole with Ansible developers.
+```
+
+[^HB]: Installing Ansible with Homebrew or into a separate virtual environment won't work -- _netlab_ has to be able to import Ansible modules
+
 ## Using Other Containerlab Node Parameters
 
 Default *netlab* settings support these additional *containerlab* parameters:
