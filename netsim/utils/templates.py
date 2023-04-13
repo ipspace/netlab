@@ -12,7 +12,7 @@ from box import Box,BoxList
 from .log import debug_active
 
 ansible_filter_map: dict = {}
-ANSIBLE_DEBUG = True
+ANSIBLE_DEBUG = False
 
 #
 # Find path to the module directory (needed for various templates)
@@ -102,7 +102,6 @@ add_ansible_filter_directory: Get all filters from an Ansible plugins/filter dir
 def add_ansible_filter_directory(module: typing.Any) -> None:
   try:
     for fname in list(pathlib.Path(module.__path__[0]).glob('*.py')):
-      print(f'fname: {fname}')
       if fname.name == '__init__.py':
         continue
       filter_name = module.__package__ + '.' + fname.name.replace('.py','')
