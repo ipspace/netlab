@@ -31,6 +31,7 @@ def null_to_string(d: typing.Dict) -> None:
 #
 
 def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: bool = False) -> typing.Optional[typing.Any]:
+  print('WARNING: get_from_box is deprecated, please fix your plugins')
   if isinstance(selector,str):
     selector = selector.split('.')
 
@@ -57,15 +58,11 @@ def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: 
 #
 
 def get_global_parameter(topology: Box, selector: str) -> typing.Optional[typing.Any]:
-  value = get_from_box(topology,selector)
-  if value is None:
-    return get_from_box(topology.defaults,selector)
-  else:
-    return value
+  return topology.get(selector,None) or topology.defaults.get(selector,None)
 
 def get_global_settings(topology: Box, selector: str) -> typing.Optional[typing.Any]:
-  g_set = get_from_box(topology,selector)
-  d_set = get_from_box(topology.defaults,selector)
+  g_set = topology.get(selector,None)
+  d_set = topology.defaults.get(selector,None)
 
   if d_set:                                                           # Found default settings
     if 'attributes' in d_set:                                         # ... filter them down to actual global attributes
