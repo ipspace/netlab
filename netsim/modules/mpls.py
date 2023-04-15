@@ -79,7 +79,7 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
         module='mpls'):
       return False
 
-    node.mpls[feature] = Box({})
+    node.mpls[feature] = data.get_empty_box()
     for af in node.af:
       node.mpls[feature][af] = session_list
   elif isinstance(node.mpls[feature],Box):

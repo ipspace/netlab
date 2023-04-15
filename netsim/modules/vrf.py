@@ -268,15 +268,14 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
     if not vrf_loopback:                                                    # ... nope, move on
       continue
 
-    ifdata = Box({
+    ifdata = data.get_box({
       'virtual_interface': True,
       'type': "loopback",
       'name': f'VRF Loopback {vrfname}',
       'ifindex': node.interfaces[-1].ifindex + 1,
       'ifname': loopback_name.format(vrfidx=v.vrfidx,ifindex=v.vrfidx),     # Use VRF-specific and generic loopback index
       'neighbors': [],
-      'vrf': vrfname,
-    },default_box=True,box_dots=True)
+      'vrf': vrfname,})
 
     if isinstance(vrf_loopback,bool):
       vrfaddr = addressing.get(topology.pools, ['vrf_loopback'])

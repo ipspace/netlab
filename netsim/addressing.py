@@ -56,7 +56,7 @@ from box import Box
 
 # Related modules
 from . import common
-from .data import get_empty_box,null_to_string
+from .data import get_empty_box,get_box,null_to_string
 from .data.validate import validate_attributes
 
 def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
@@ -73,9 +73,9 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
       return False
 
   if not pfx:
-    return Box({},default_box=True,box_dots=True)
+    return get_empty_box()
   if not isinstance(pfx,dict):
-    return Box({ 'ipv4': normalize_ip(pfx) },default_box=True,box_dots=True)
+    return get_box({ 'ipv4': normalize_ip(pfx) })
   for af in 'ipv4','ipv6':
     if af in pfx:
       if not pfx[af] or 'unnumbered' in pfx:  # If 'unnumbered' is set, ipv4/ipv6 will be based on loopback afs (per node)
@@ -86,16 +86,16 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
   return pfx
 
 def rebuild_prefix(pfx: typing.Union[dict,Box]) -> Box:
-  out_pfx = Box({})
+  out_pfx = get_empty_box()
   for af in ('ipv4','ipv6'):
     if af in pfx:
       out_pfx[af] = str(pfx[af]) if not isinstance(pfx[af],bool) else pfx[af]
   return out_pfx
 
 def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Optional[Box] = None) -> Box:
-  addrs = addr_pools or Box({},default_box=True)
-  defaults = defaults or Box({},default_box=True)
-  legacy = Box({},default_box=True)
+  addrs = addr_pools or get_empty_box()
+  defaults = defaults or get_empty_box()
+  legacy = get_empty_box()
 
   legacy.lan = { 'ipv4': defaults.get('lan','10.0.0.0/16'), 'prefix': defaults.get('lan_subnet',24) }
   if not 'lan' in defaults and not 'lan' in addrs:
@@ -127,7 +127,7 @@ def validate_pools(addrs: Box, topology: Box) -> None:
       module='addressing')
 
   if not addrs:       # pragma: no cover (pretty hard not to have address pools)
-    addrs = Box({})
+    addrs = get_empty_box()
   for k in ('lan','loopback'):
     if not k in addrs:          # pragma: no cover (lan and loopback pools are always created in setup_pools)
       common.error(
@@ -284,7 +284,7 @@ def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typi
   if p:
     return get_pool_prefix(pools,p,n)
   else:
-    return Box({})                        # pragma: no cover -- can't figure out how to get here
+    return get_empty_box()                # pragma: no cover -- can't figure out how to get here
 
 def setup(topology: Box) -> None:
   defaults = topology.defaults
@@ -316,9 +316,9 @@ def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
     return empty_box
 
   supported_af = ['ipv4','ipv6']
-  prefix_list = Box({})
+  prefix_list = get_empty_box()
   if not isinstance(prefix,Box):
-    return Box({ 'ipv4' : netaddr.IPNetwork(prefix) })
+    return get_box({ 'ipv4' : netaddr.IPNetwork(prefix) })
 
   if 'ip' in prefix:                                  # Deal with legacy 'ip' address family -- rename it to ipv4
     if 'ipv4' in prefix:

@@ -92,7 +92,7 @@ bgp_neighbor: Create BGP neighbor data structure
 * extra_data - anything else we might want to pass to the neighbor data structure
 """
 def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typing.Optional[dict] = None) -> typing.Optional[Box]:
-  ngb = Box(extra_data or {},default_box=True,box_dots=True)
+  ngb = data.get_box(extra_data or {})
   ngb.name = n.name
   ngb["as"] = n.bgp.get("as")
   ngb["type"] = ctype
@@ -203,7 +203,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
                               neighbor.get('bgp.local_as',None) or
                               neighbor_real_as )
       except:                                                         # Neighbor could have bgp set to False
-        neighbor_local_as = None
+        neighbor_local_as = neighbor_real_as
 
       if not neighbor_local_as:                                       # Neighbor has no usable BGP AS number, move on
         continue
@@ -211,7 +211,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if node_as == neighbor_real_as and node_local_as == neighbor_local_as:
         continue                                                      # Routers in the same AS + no local-as trickery => nothing to do here
 
-      extra_data = Box({})
+      extra_data = data.get_empty_box()
       extra_data.ifindex = l.ifindex
 
       # Figure out whether both neighbors have IPv6 LLA and/or unnumbered IPv4 interfaces
@@ -344,7 +344,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
     return                                                                      # ... it's insane, get out of here
 
   node.bgp.neighbors = []
-  bgp_sessions = node.bgp.get('sessions') or Box(BGP_DEFAULT_SESSIONS)
+  bgp_sessions = node.bgp.get('sessions') or data.get_box(BGP_DEFAULT_SESSIONS)
   if not validate_bgp_sessions(node,bgp_sessions,'sessions'):
     return
 
@@ -369,7 +369,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
         'bgp')
       return
 
-  activate = node.bgp.get('activate') or Box(BGP_DEFAULT_SESSIONS)
+  activate = node.bgp.get('activate') or data.get_box(BGP_DEFAULT_SESSIONS)
   if not validate_bgp_sessions(node,activate,'activate'):
     return
 
@@ -407,7 +407,7 @@ def process_as_list(topology: Box) -> None:
   except Exception as ex:
     return
 
-  node_data = Box({},default_box=True,box_dots=True)
+  node_data = data.get_empty_box()
   node_list = list(topology.nodes.keys())
   for asn,as_data in topology.bgp.as_list.items():
     if not isinstance(as_data,Box):

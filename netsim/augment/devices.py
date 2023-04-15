@@ -7,6 +7,7 @@ import typing
 from box import Box
 
 from .. import common
+from .. import data
 
 """
 Get generic device attribute:
@@ -51,11 +52,11 @@ Get device feature flags -- uses get_device_attribute but returns a Box to keep 
 def get_device_features(node: Box, defaults: Box) -> Box:
   features = get_device_attribute(node,'features',defaults)
   if not features:
-    return Box({},default_box=True,box_dots=True)
+    return data.get_empty_box()
 
   if not isinstance(features,Box):
     common.fatal('Device features for device type {node.device} should be a dictionary')
-    return Box({})
+    return data.get_empty_box()
 
   return features
 

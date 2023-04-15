@@ -10,7 +10,7 @@ from .. import common
 # I had enough -- here's a function that returns a box with proper default settings
 
 def get_box(init: dict) -> Box:
-  return Box(init,default_box=True,box_dots=True)
+  return Box(init,default_box=True,default_box_none_transform=False,box_dots=True)
 
 def get_empty_box() -> Box:
   return get_box({})

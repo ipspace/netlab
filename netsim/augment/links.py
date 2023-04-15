@@ -28,7 +28,7 @@ def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
           common.IncorrectValue,
           'links')
         continue
-      n = Box({ 'node': n },default_box=True,box_dots=True)
+      n = data.get_box({ 'node': n })
       
     if not isinstance(n,Box):          # Still facing non-dict data type?
       common.error(                     # ... report an error
@@ -211,7 +211,7 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     ifdata.ifname = utils.strings.eval_format(ifname_format,ifdata)
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
-  pdata = Box(pdata,box_dots=True,default_box=True)                     # Create a copy of the provider interface data
+  pdata = data.get_box(pdata)                     # Create a copy of the provider interface data
   if 'name' in pdata:
     pdata.name = utils.strings.eval_format(pdata.name,ifdata)
 
@@ -347,7 +347,7 @@ def assign_link_prefix(
     return pfx_list
 
   if 'unnumbered' in link:                                # User requested an unnumbered link
-    link.prefix = Box({ 'unnumbered': True })
+    link.prefix = data.get_box({ 'unnumbered': True })
     return link.prefix
 
   if must_be_string(link,'pool',link_path):
@@ -656,7 +656,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
     ifdata = interface_data(
                 link=link,
                 link_attr=link_attr_propagate.union(ndict[node].get('module',[])) - set(defaults.attributes.link_module_no_propagate),
-                ifdata=Box(value))
+                ifdata=data.get_box(value))
     set_interface_name(ifdata,link,intf_cnt)
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
     node_intf = add_node_interface(ndict[node],ifdata,defaults)   # Attach new interface to its node
@@ -678,7 +678,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
         continue
       remote_node = remote_if['node']                             # Remote node name in a handier format
       remote_ifdata = remote_if['data']                           # ... and a pointer to remote interface data
-      ngh_data = Box({ 'ifname': remote_ifdata.ifname, 'node': remote_node })
+      ngh_data = data.get_box({ 'ifname': remote_ifdata.ifname, 'node': remote_node })
       #
       # Find relevant modules that have interface attributes
       mods_with_attr = set([ m for m in ndict[remote_node].get('module',[])

@@ -14,6 +14,7 @@ import netaddr
 
 from .. import common
 from .. import addressing
+from .. import data
 
 # Build routing protocol address families
 #
@@ -177,7 +178,7 @@ def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
       if not 'active' in node.vrfs[l.vrf][proto]:                           # Assume there are no IGP neighbors in this VRF
         node.vrfs[l.vrf][proto].active = False
       node.vrfs[l.vrf][proto] = node[proto] + node.vrfs[l.vrf][proto]       # Add node IGP parameters to VRF IGP parameters
-      node.vrfs[l.vrf][proto].interfaces.append(Box(l))                     # Append a copy of the interface data
+      node.vrfs[l.vrf][proto].interfaces.append(data.get_box(l))            # Append a copy of the interface data
       l.pop(proto,None)                                                     # ... and remove global IGP parameters from interface
                                                                             # Next we need to find if the VRF instance of IGP matters
       for neighbor in l.neighbors:                                          # ... iterate over the list of neighbors
