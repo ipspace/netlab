@@ -58,11 +58,21 @@ def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: 
 #
 
 def get_global_parameter(topology: Box, selector: str) -> typing.Optional[typing.Any]:
-  return topology.get(selector,None) or topology.defaults.get(selector,None)
+  try:
+    return topology.get(selector,None) or topology.defaults.get(selector,None)
+  except:
+    return None
 
 def get_global_settings(topology: Box, selector: str) -> typing.Optional[typing.Any]:
-  g_set = topology.get(selector,None)
-  d_set = topology.defaults.get(selector,None)
+  try:                                                                # Wrapping 'get' operations in tries
+    g_set = topology.get(selector,None)                               # ... because they may fail if an intermediate
+  except:                                                             # ... value is not a dictionary
+    g_set = None
+
+  try:
+    d_set = topology.defaults.get(selector,None)
+  except:
+    d_set = None
 
   if d_set:                                                           # Found default settings
     if 'attributes' in d_set:                                         # ... filter them down to actual global attributes

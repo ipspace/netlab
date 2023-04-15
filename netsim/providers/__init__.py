@@ -16,7 +16,7 @@ from box import Box
 from .. import common
 from ..callback import Callback
 from ..augment import devices
-from ..data import get_from_box,get_box
+from ..data import get_box
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
@@ -89,9 +89,9 @@ class _Provider(Callback):
       inkey: str = 'config_templates',
       outkey: str = 'binds') -> None:
 
-    mappings = get_from_box(node,f'{self.provider}.{inkey}')
+    mappings = node.get(f'{self.provider}.{inkey}',None)
     if mappings:
-      cur_binds = get_from_box(node,f'{self.provider}.{outkey}') or {}
+      cur_binds = node.get(f'{self.provider}.{outkey}',{})
       for file,mapping in mappings.items():
         if mapping in cur_binds.values():
           continue
@@ -119,7 +119,7 @@ class _Provider(Callback):
       inkey: str = 'config_templates',
       outkey: str = 'binds') -> None:
 
-    binds = get_from_box(node,f'{self.provider}.{outkey}')
+    binds = node.get(f'{self.provider}.{outkey}',None)
     if not binds:
       return
 

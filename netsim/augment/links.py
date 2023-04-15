@@ -281,11 +281,19 @@ def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
   return ifdata
 
 """
+Get gateway ID -- return None if not set or if 'gateway' is not a dict
+"""
+def get_gateway_id(link: Box) -> typing.Optional[int]:
+  if not isinstance(link.get('gateway',None),Box):
+    return None
+  return link.gateway.get('id',None)
+
+"""
 Set FHRP (anycast/VRRP/...) gateway on a link
 """
 
 def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> None:
-  gwid = data.get_from_box(link,'gateway.id')
+  gwid = get_gateway_id(link)
   if not gwid:                                                        # No usable gateway ID, nothing to do
     return
 
@@ -385,7 +393,7 @@ def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool],
   if isinstance(pfx,bool):
     return 'unnumbered'
 
-  gwid = data.get_from_box(link,'gateway.id') or 0                    # Get link gateway ID (if set) --- must be int for min to work
+  gwid = get_gateway_id(link) or 0                                    # Get link gateway ID (if set) --- must be int for min to work
   if link.type == 'p2p' and not gwid:                                 # P2P allocation policy cannot be used with default gateway
     return 'p2p' if pfx.first != pfx.last else 'error'
 
@@ -481,7 +489,7 @@ If the interface address is set, validate that it's a valid address (can't be in
 def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) -> None:
   for intf in link.interfaces:
     if not af in intf:            # No static address, set it to link bool value or use loopback AF presence for old-style unnumbereds
-      intf[af] = pfx if isinstance(pfx,bool) else bool(data.get_from_box(ndict[intf.node],f'loopback.{af}'))
+      intf[af] = pfx if isinstance(pfx,bool) else bool(ndict[intf.node].get(f'loopback.{af}',False))
     elif data.is_true_int(intf[af]):
       common.error(
         f'Node {intf.node} is using host index {intf[af]} for {af} on an unnumbered link',
@@ -490,7 +498,7 @@ def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) 
 
 def IPAM_sequential(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
   start = 1 if pfx.last != pfx.first + 1 else 0
-  gwid = data.get_from_box(link,'gateway.id')
+  gwid = get_gateway_id(link)
   for count,intf in enumerate(link.interfaces):
     if count + start == gwid:                                   # Would the next address overlap with gateway ID
       start = start + 1                                         # ... no big deal, just move the starting point ;)
@@ -566,7 +574,7 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
 
     if allocation_policy == 'error':                                      # Something went wrong, cannot assing IP addresses
       rq = f'{len(link.interfaces)} nodes'
-      if data.get_from_box(link,'gateway.id'):
+      if get_gateway_id(link):
         rq = rq + f' plus first-hop gateway'
       common.error(
         f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}\n' + \

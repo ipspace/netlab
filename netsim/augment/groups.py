@@ -336,7 +336,11 @@ def create_bgp_autogroups(topology: Box) -> None:
     if not 'bgp' in n_module:                                   # Looks like this node does not care about BGP
       continue
 
-    n_bgpas = data.get_from_box(n_data,'bgp.as') or g_bgpas     # Get node-level or global BGP AS
+    try:
+      n_bgpas = n_data.get('bgp.as') or g_bgpas                 # Get node-level or global BGP AS
+    except:
+      n_bgpas = g_bgpas
+
     if not n_bgpas:
       continue
 

@@ -17,7 +17,6 @@ from . import usage
 from .. import augment, common, read_topology
 from .. import __version__
 from ..utils import status
-from ..data import get_from_box
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
@@ -125,7 +124,7 @@ lab_status_update -- generic lab status callback
 """
 
 def get_lab_id(topology: Box) -> str:
-  return str(get_from_box(topology,'defaults.multilab.id') or 'default')
+  return topology.get('defaults.multilab.id','default')
 
 def lab_status_update(
       topology: Box,
