@@ -35,8 +35,8 @@ class YAML(_TopologyOutput):
         cleantopo.pop('defaults')
       elif fmt == 'noaddr':
         cleantopo.pop('addressing')
-      elif data.get_from_box(cleantopo,fmt):
-        result = data.get_from_box(cleantopo,fmt)
+      elif cleantopo.get(fmt,None):
+        result = cleantopo.get(fmt)
         if not isinstance(result,Box) and not isinstance(result,BoxList):
           common.fatal(f'Selecting {fmt} did not result in a usable dictionary, aborting')
           return

@@ -10,7 +10,6 @@ from box import Box
 
 # Related modules
 from .. import common
-from ..data import get_from_box
 from ..callback import Callback
 from ..augment import devices
 

@@ -44,10 +44,11 @@ def short_ifname(n : str) -> str:
 def nodes_items(topology: Box) -> list:
     r = []
     for name,n in topology.nodes.items():
-        node_icon = ( data.get_from_box(n,'graphite.icon') or 
-            data.get_from_box(topology,f'defaults.devices.{n.device}.graphite.icon') or 
+        node_icon = (
+            n.get('graphite.icon',None) or
+            topology.get(f'defaults.devices.{n.device}.graphite.icon',None) or
             DEFAULT_NODE_ICON )
-        graph_level = data.get_from_box(n,'graphite.level') or 1
+        graph_level = n.get('graphite.level',1)
         node_group = "tier-1"
         node_as = n.get('bgp', {}).get('as')
         if node_as:
@@ -71,7 +72,7 @@ def nodes_items(topology: Box) -> list:
             # Create fake node
             # Inherit graph level and group from first node (l.interfaces[0].node)
             node_item = topology.nodes[l.interfaces[0].node]
-            graph_level = data.get_from_box(node_item,'graphite.level') or 1
+            graph_level = node_item.get('graphite.level',1)
             node_group = "tier-1"
             node_as = node_item.get('bgp', {}).get('as')
             if node_as:
