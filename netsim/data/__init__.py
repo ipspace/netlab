@@ -94,23 +94,6 @@ def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
     b[k_list[0]] = {}
   set_dots(b[k_list[0]],k_list[1:],v)
 
-#
-# Change dotted dictionary keys into nested dictionaries
-#
-def unroll_dots(b : typing.Any) -> None:
-  if isinstance(b,dict):
-    for k in list(b.keys()):
-      unroll_dots(b[k])
-      if isinstance(k,str) and ('.' in k) and not ('/' in k):
-        v = b[k]
-        del b[k]     # If you're using Box with box_dots parameter
-        set_dots(b,k.split('.'),v)
-  elif isinstance(b,list):
-    for v in b:
-      unroll_dots(v)
-  else:
-    return
-
 """
 bool_to_defaults: 
 

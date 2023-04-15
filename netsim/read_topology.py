@@ -141,7 +141,6 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
   if common.LOGGING or common.VERBOSE:
     print("Read YAML data from %s" % (filename or "string"))
 
-  data.unroll_dots(yaml_data)
   return yaml_data
 
 def include_defaults(topo: Box, fname: str) -> None:
