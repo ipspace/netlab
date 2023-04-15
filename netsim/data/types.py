@@ -8,7 +8,6 @@ import netaddr
 import re
 from box import Box
 from .. import common
-from . import get_from_box,set_dots
 
 """
 Common error checking routines:
@@ -142,7 +141,7 @@ def get_value_to_check(
       true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_
       false_value: typing.Optional[typing.Any] = None,  # Value to use to replace _false_
       abort: bool = False) -> typing.Any:
-  value = get_from_box(parent,key)                      # Otherwise, try to get the value from the parent object
+  value = parent.get(key,None)                          # Try to get the value from the parent object
   if value is None:                                     # No value was found, now what?
     if empty_value is not None:                         # ... is there empty value for this data type?
       if create_empty is None:                          # Empty value is defined, and we'll use it to create an empty object if the caller
@@ -150,13 +149,13 @@ def get_value_to_check(
 
       if create_empty:                                  # Now for the real deal
         value = empty_value                             # ... if we should create an empty value do so
-        set_dots(parent,key.split('.'),empty_value)     # ... and store it in the parent object (dedottifying the key)
+        parent[key] = empty_value                       # ... and store it in the parent object
       else:
         if abort:                                       # Empty value was specified, 'create_empty' is False, and there's no actual value
           raise common.IncorrectValue()                 # ... raise an exception if requested
 
-    if not key in parent:                               # We can skip the validation of the key is missing.
-      return value                                      # ... if the key is there, then we have to make sure the value is valid
+    if not key in parent:                               # We can skip further processing if the key is missing.
+      return value
 
   # Handle boolean-to-data-type conversions if the value is bool and the caller specified true_value
   #

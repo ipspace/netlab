@@ -81,19 +81,6 @@ def get_global_settings(topology: Box, selector: str) -> typing.Optional[typing.
 
   return g_set                                                        # Can't merge, and we know g_set has some value
 
-#
-# Set a dictionary value specified by a list of keys
-#
-def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
-  if len(k_list) <= 1:
-    b[k_list[0]] = v
-    return
-  if not k_list[0] in b:
-    b[k_list[0]] = {}
-  elif b[k_list[0]] is None:
-    b[k_list[0]] = {}
-  set_dots(b[k_list[0]],k_list[1:],v)
-
 """
 bool_to_defaults: 
 

@@ -5,7 +5,7 @@ import typing
 from box import Box
 
 from .. import common
-from ..data import global_vars,get_from_box,set_dots
+from ..data import global_vars
 from ..data.validate import must_be_list
 
 """
@@ -140,12 +140,12 @@ def validate_object_reference_list(
     if not reference_dictionary in parent:                          # If there are no local objects, we don't need the default value
       return True
     if not create_default:																					# Do we need a default value for the list?
-    	return True
+      return True
 
     # Create the default list based on local objects
     ref_list = [ k for k,v in parent[reference_dictionary].items() if default_filter(v) ]
     if merge_topology:																							# Do we need to merge the object default list with topology value?
-      topo_ref_list = get_from_box(topology,list_name)			        # ... get global list
+      topo_ref_list = topology.get(list_name,None)    			        # ... get global list
       if not topo_ref_list is None:
         for k in topo_ref_list:																 			# ... now carefully append global list to local one retaining element order
           if not k in ref_list:																			# ... of course we could use dirty one-line tricks, but why should we?
@@ -154,7 +154,7 @@ def validate_object_reference_list(
     if not ref_list:																								# Still nothing to do? OK, get out of here
       return True
 
-    set_dots(parent,list_name.split('.'),ref_list)
+    parent[list_name] = ref_list
 
   list_ok = True
   for obj_name in ref_list:                                         # Now check whether the names of reference objects are valid
