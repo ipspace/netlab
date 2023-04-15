@@ -8,6 +8,7 @@ from box import Box
 
 from . import _Provider
 from .. import common
+from ..data import filemaps
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
   return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 and not 'external_bridge' in l.clab }
@@ -68,10 +69,21 @@ def destroy_ovs_bridge( brname: str ) -> bool:
 
 GENERATED_CONFIG_PATH = "clab_files"
 
+'''
+normalize_clab_filemaps: convert clab templates and file binds into host:target lists
+'''
+def normalize_clab_filemaps(node: Box) -> None:
+  for undot_key in ['clab.binds','clab.config_templates']:
+    if not undot_key in node:
+      continue
+    filemaps.normalize_file_mapping(node,f'nodes.{node.name}',undot_key,'clab')
+
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
+    normalize_clab_filemaps(node)
+
     self.create_extra_files_mappings(node,topology)
 
   def post_configuration_create(self, topology: Box) -> None:
