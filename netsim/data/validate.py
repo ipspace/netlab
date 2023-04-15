@@ -2,11 +2,11 @@
 # Data validation routines
 #
 
-import typing,typing_extensions
+import typing
 import builtins as _bi
 from box import Box
 from .. import common
-from . import get_from_box,set_dots,get_empty_box,get_box
+from . import get_empty_box
 
 #
 # Import functions from data.types to cope with legacy calls to must_be_something
@@ -23,7 +23,7 @@ of valid attributes, or a string (type name) if the first attribute source in th
 """
 
 ##### REMOVE AFTER ATTRIBUTE MIGRATION #####
-def make_attr_dict(atlist: typing.Union[list,Box]) -> typing.Union[Box]:
+def make_attr_dict(atlist: typing.Union[list,Box]) -> Box:
   if isinstance(atlist,list):
     return Box({ k: None for k in atlist })
 

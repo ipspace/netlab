@@ -141,7 +141,6 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
   if common.LOGGING or common.VERBOSE:
     print("Read YAML data from %s" % (filename or "string"))
 
-  data.unroll_dots(yaml_data)
   return yaml_data
 
 def include_defaults(topo: Box, fname: str) -> None:
@@ -198,23 +197,20 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
       if not "=" in s:
         common.error("Invalid CLI setting %s, should be in format key=value" % s)
       (k,v) = s.split("=")
-      if '.' in k:
-        try:
-          data.set_dots(topo,k.split('.'),v)
-        except TypeError as ex:
-          if 'nodes.' in k:
-            common.error(
-              f'Cannot set {k}:\n... nodes element must be a dictionary if you want to set values via CLI arguments',
-              common.IncorrectValue,
-              'cli')
-          elif 'links.' in k:
-            common.error(
-              f'Cannot set link value {k} through CLI arguments',
-              common.IncorrectValue,
-              'cli')
-          else:
-            common.fatal(f"Cannot set topology value {k}\n... {ex}")
-        except Exception as ex:
-          common.fatal(f"Cannot set topology value {k}\n... {ex}")
-      else:
+      try:
         topo[k] = v
+      except TypeError as ex:
+        if 'nodes.' in k:
+          common.error(
+            f'Cannot set {k}:\n... nodes element must be a dictionary if you want to set values via CLI arguments',
+            common.IncorrectValue,
+            'cli')
+        elif 'links.' in k:
+          common.error(
+            f'Cannot set link value {k} through CLI arguments',
+            common.IncorrectValue,
+            'cli')
+        else:
+          common.fatal(f"Cannot set topology value {k}\n... {ex}")
+      except Exception as ex:
+        common.fatal(f"Cannot set topology value {k}\n... {ex}")

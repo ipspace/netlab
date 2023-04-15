@@ -7,7 +7,7 @@ from box import Box
 from . import _Module,_routing,get_effective_module_attribute,_dataplane
 from .. import common
 from .. import data
-from ..data import global_vars,get_from_box,get_empty_box,get_box,get_global_parameter
+from ..data import global_vars,get_empty_box,get_box,get_global_parameter
 from ..data.validate import validate_attributes
 from ..data.types import must_be_id,must_be_list,must_be_dict
 from .. import addressing
@@ -37,20 +37,19 @@ def populate_vlan_id_set(topology: Box) -> None:
 # routed_access_vlan: Given a link with access/native VLAN, check if all nodes on the link use routed VLAN
 #
 def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
-  def_link  = get_from_box(link,'vlan.mode')
-  def_vlan  = get_from_box(topology,f'vlans.{vlan}.mode')
-  def_global = get_from_box(topology,'vlan.mode') or 'irb'
+  def_link  = link.get('vlan.mode',None)
+  def_vlan  = topology.get(f'vlans.{vlan}.mode',None)
+  def_global = topology.get('vlan.mode','irb')
 
   if common.debug_active('vlan'):
     print(f'routed_access_vlan: {link}')
     print(f'... vlan {vlan} def_mode {def_vlan}')
   for intf in link.interfaces:
-    mode = get_from_box(intf,'vlan.mode') or \
-           def_link or \
-           get_from_box(topology.nodes[intf.node],f'vlans.{vlan}.mode') or \
-           def_vlan or \
-           get_from_box(topology.nodes[intf.node],'vlan.mode') or \
-           def_global or 'irb'
+    mode = (
+      intf.get('vlan.mode',def_link) or
+      topology.nodes[intf.node].get(f'vlans.{vlan}.mode',def_vlan) or
+      topology.nodes[intf.node].get('vlan.mode',def_global) or
+      'irb')
     if mode != 'route':
       return False
 
@@ -62,14 +61,15 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
 # interface_vlan_mode: Given an interface, a node, and topology, find interface VLAN mode
 #
 def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
-  vlan = get_from_box(intf,'vlan.access') or get_from_box(intf,'vlan.native')
+  vlan = intf.get('vlan.access',None) or intf.get('vlan.native',None)
   if not vlan:
     return 'irb'
-  return get_from_box(intf,'vlan.mode') or \
-         get_from_box(node,f'vlans.{vlan}.mode') or \
-         get_from_box(node,'vlan.mode') or \
-         get_from_box(topology,f'vlans.{vlan}.mode') or \
-         get_from_box(topology,'vlan.mode') or 'irb'
+  return (
+    intf.get('vlan.mode',None) or
+    node.get(f'vlans.{vlan}.mode',None) or
+    node.get('vlan.mode',None) or
+    topology.get(f'vlans.{vlan}.mode',None) or
+    topology.get('vlan.mode',None) or 'irb' )
 
 #
 # Validate VLAN attributes and set missing attributes:
@@ -81,7 +81,7 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
-  default_fwd_mode = get_from_box(obj,'vlan.mode') or get_global_parameter(topology,'vlan.mode')
+  default_fwd_mode = obj.get('vlan.mode',None) or get_global_parameter(topology,'vlan.mode')
 
   if not 'vlans' in obj:
     return
@@ -419,7 +419,7 @@ create_vlan_link_data: Create initial link data for a VLAN member link
 Used by create_vlan_links and create_loopback_vlan_links
 """
 def create_vlan_link_data(init: typing.Union[Box,dict],vname: str, parent: typing.Any, topology: Box) -> Box:
-  link_data = Box(init,default_box=True,box_dots=True)
+  link_data = data.get_box(init)
   link_data.linkindex = topology.links[-1].linkindex + 1
   link_data.parentindex = parent
   link_data.vlan.access = vname
@@ -450,12 +450,12 @@ def create_vlan_member_interface(
       topology: Box,
       loop_index: int) -> Box:                    # selfloop_ifindex to support crazy topologies
 
-  intf_data = Box(init,default_box=True,box_dots=True)
+  intf_data = data.get_box(init)
   intf_data.node = parent_intf.node
   intf_data._selfloop_ifindex = loop_index                  # Used in find_parent_interface to disambiguate self-links
   intf_data.vlan.access = vname
 
-  if 'mode' in parent_intf.vlan and not get_from_box(intf_data,'vlan.mode'):
+  if 'mode' in parent_intf.vlan and not intf_data.get('vlan.mode',None):
     intf_data.vlan.mode = parent_intf.vlan.mode             # vlan.mode is inherited from trunk dictionary or parent interface
 
   intf_node = topology.nodes[parent_intf.node]
@@ -547,7 +547,7 @@ def create_loopback_vlan_links(topology: Box) -> None:
         link_data.prefix = prefix
 
       # Create interface data using fake parent interface
-      fake_parent = Box({'node': n.name},default_box=True,box_dots=True)
+      fake_parent = data.get_box({'node': n.name})
       intf_data = create_vlan_member_interface({},vname,fake_parent,topology,0)
 
       if interface_vlan_mode(intf_data,n,topology) == 'irb':            # We're adding loopback links only for IRB VLANs
@@ -558,10 +558,10 @@ def create_loopback_vlan_links(topology: Box) -> None:
 get_vlan_data: Get VLAN data structure (node or topology or interface neighbors)
 """
 def get_vlan_data(vlan: str, node: Box, topology: Box, intf: Box) -> typing.Optional[Box]:
-  vlan_data = get_from_box(topology,f'vlans.{vlan}') or get_from_box(node,f'vlans.{vlan}')
+  vlan_data = topology.get(f'vlans.{vlan}',None) or node.get(f'vlans.{vlan}',None)
   if not vlan_data and 'neighbors' in intf:
     for n in intf.neighbors:  # Look for local vlan in neighbor
-      vlan_data = get_from_box(topology.nodes[n.node],f'vlans.{vlan}')
+      vlan_data = topology.nodes[n.node].get(f'vlans.{vlan}',None)
       if vlan_data:
         break
   return vlan_data
@@ -570,7 +570,7 @@ def get_vlan_data(vlan: str, node: Box, topology: Box, intf: Box) -> typing.Opti
 get_vlan_mode: Get VLAN mode attribute (node or topology), default 'irb'
 """
 def get_vlan_mode(node: Box, topology: Box) -> str:
-  return get_from_box(node,'vlan.mode') or get_from_box(topology,'vlan.mode') or 'irb'
+  return node.get('vlan.mode',None) or topology.get('vlan.mode',None) or 'irb'
 
 """
 update_vlan_neighbor_list: Build a VLAN-wide list of neighbors
@@ -595,7 +595,9 @@ def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,top
       else:
         n_map[node.name].pop(af,None)
   else:
-    n_data = { 'ifname': svi_if.ifname, 'node': node.name }             # ... not yet, create neighbor data
+    n_data = data.get_box({
+               'ifname': svi_if.ifname,
+               'node': node.name })                                     # ... not yet, create neighbor data
     for af in ('ipv4','ipv6'):
       if af in svi_if:                                                  # ... copy SVI interface addresses to neighbor data
         n_data[af] = svi_if[af]
@@ -606,7 +608,7 @@ create_node_vlan: Create a local (node) copy of a VLAN used on an interface
 """
 def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box]:
   if not vlan in node.vlans:                                        # Do we have VLAN defined in the node?
-    node.vlans[vlan] = Box(topology.vlans[vlan])                    # ... no, create a copy of the global definition
+    node.vlans[vlan] = data.get_box(topology.vlans[vlan])           # ... no, create a copy of the global definition
     if not node.vlans[vlan]:                                        # pragma: no cover -- we don't have a global definition?
       common.fatal(                                                 # ... this should have been detected way earlier
         f'Unknown VLAN {vlan} used on node {node.name}','vlan')
@@ -646,8 +648,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
   iflist_len = len(node.interfaces)
   for ifidx in range(0,iflist_len):
     ifdata = node.interfaces[ifidx]
-    native_vlan = get_from_box(ifdata,'vlan.native')
-    access_vlan = get_from_box(ifdata,'vlan.access') or native_vlan
+    native_vlan = ifdata.get('vlan.native',None)
+    access_vlan = ifdata.get('vlan.access',native_vlan)
     if not access_vlan:                                                     # No access VLAN on this interface?
       continue                                                              # ... good, move on
 
@@ -668,7 +670,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       if not ifdata.vlan:                                                   # ... and VLAN dictionary if there's nothing else left
         ifdata.pop('vlan',None)
 
-      vlan_copy = { k:v for (k,v) in vlan_data.items() if not k in svi_skipattr and k != 'mode' }
+      vlan_copy = get_box({ k:v for (k,v) in vlan_data.items() if not k in svi_skipattr and k != 'mode' })
 
       if vlan_subif:
         ifdata.vlan.mode = 'route'
@@ -696,10 +698,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       if vlan_mode == 'bridge':                                             # ... and skip IP addresses for bridging-only VLANs
         skip_attr.extend(['ipv4','ipv6'])
         # continue  # JvB: in fact, skip creating SVI for L2-only VLANs
-      vlan_ifdata = Box(                                                    # Copy non-physical interface attributes into SVI interface
-        { k:v for k,v in ifdata.items() if k not in skip_attr },            # ... that will also give us IP addresses
-        default_box=True,
-        box_dots=True)
+      vlan_ifdata = data.get_box(                                           # Copy non-physical interface attributes into SVI interface
+        { k:v for k,v in ifdata.items() if k not in skip_attr })            # ... that will also give us IP addresses
       if vlan_mode:                                                         # Set VLAN forwarding mode for completness' sake
         vlan_ifdata.vlan.mode = vlan_mode
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
@@ -735,7 +735,7 @@ set_svi_neighbor_list: set SVI neighbor list from VLAN neighbor list
 def set_svi_neighbor_list(node: Box, topology: Box) -> None:
   for ifdata in node.interfaces:
     if 'vlan_name' in ifdata:
-      if get_from_box(ifdata,'vlan.routed_link'):                           # Don't update neighbors on a routed VLAN link
+      if ifdata.get('vlan.routed_link',False):                              # Don't update neighbors on a routed VLAN link
         continue
 
       vlan_data = get_vlan_data(ifdata.vlan_name,node,topology,ifdata)      # Try to get global or local VLAN data
@@ -760,7 +760,7 @@ map_trunk_vlans: build a list of VLAN IDs on trunk interfaces
 """
 def map_trunk_vlans(node: Box, topology: Box) -> None:
   for intf in node.interfaces:
-    trunk = get_from_box(intf,'vlan.trunk')
+    trunk = intf.get('vlan.trunk',None)
     if not trunk:
       continue
 
@@ -780,7 +780,7 @@ def find_parent_interface(intf: Box, node: Box, topology: Box) -> typing.Optiona
   if common.debug_active('vlan'):
     print( f"find_parent_interface node={node.name} intf.parentindex={intf.parentindex} selfloop_ifindex={intf._selfloop_ifindex}" )
 
-  candidates = [ i for i in node.interfaces if i.get('linkindex') == intf.parentindex ]
+  candidates = [ i for i in node.interfaces if i.get('linkindex',None) == intf.parentindex ]
   if candidates:
     return candidates[ 0 if len(candidates)==1 else intf._selfloop_ifindex ]
 
@@ -864,7 +864,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     ifname_data = parent_intf + intf                                  # Add parent interface data to subinterface data
     ifname_data.ifname = parent_intf.ifname                           # ... making sure ifname is coming from parent interface
 
-    old_intf = Box({ 'ifname': intf.ifname })                         # Create a fake interface with old interface name
+    old_intf = data.get_box({ 'ifname': intf.ifname })                # Create a fake interface with old interface name
     intf.ifname = subif_name.format(**ifname_data)
     intf.parent_ifindex = parent_intf.ifindex
     intf.parent_ifname = parent_intf.ifname
@@ -943,7 +943,7 @@ def check_mixed_trunks(node: Box, topology: Box) -> None:
 
     parent_intf = parent_intf_list[0]
     if parent_intf is None \
-         or get_from_box(parent_intf,'vlan.trunk_id') is None:        # No VLAN trunk left on the parent interface?
+         or parent_intf.get('vlan.trunk_id',None) is None:            # No VLAN trunk left on the parent interface?
       continue                                                        # ... cool, we're done
 
     if not parent_intf.ifindex in err_ifmap:                          # We have a problem. Do we have to generate an error?
@@ -983,12 +983,12 @@ def fix_vlan_gateways(topology: Box) -> None:
     if node.get('role') != 'host':                                    # Fix first-hop gateways only for hosts
       continue
     for intf in node.get('interfaces',[]):                            # Iterate over all interfaces
-      if get_from_box(intf,'gateway.ipv4'):                           # ... that don't have an IPv4 gateway
+      if intf.get('gateway.ipv4',None):                               # ... that don't have an IPv4 gateway
         continue
 
       gw_found = False
       for neighbor in intf.get('neighbors',[]):                       # Iterate over all neighbors trying to find first-hop gateway
-        if not get_from_box(neighbor,'gateway.ipv4'):                 # ... does the neighbor have first-hop gateway set?
+        if not neighbor.get('gateway.ipv4',None):                     # ... does the neighbor have first-hop gateway set?
           continue                                                    # ... nope, keep going
 
         n_node = topology.nodes[neighbor.node]
@@ -1018,7 +1018,7 @@ def populate_node_vlan_data(n: Box, topology: Box) -> None:
   if 'vlans' in n:                                                          # Copy topology VLAN data into node VLAN data
     for vname in n.vlans.keys():                                            # ... to cope with nodes that had VLANs defined
       if vname in topology.get('vlans',{}):                                 # ... through groups.node_data
-        topo_data = Box(topology.vlans[vname])                              # Create a copy of topology VLAN
+        topo_data = data.get_box(topology.vlans[vname])                     # Create a copy of topology VLAN
         topo_data.pop('neighbors',None)                                     # ... remove neighbors
         for m in list(topo_data.keys()):                                    # ... and irrelevant module attributes
           if not m in n.module and m in topology.module:
@@ -1088,7 +1088,7 @@ class VLAN(_Module):
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
 
-    if get_from_box(topology,'vlan.mode'):
+    if topology.get('vlan.mode',None):
       if topology.vlan.mode not in vlan_mode_kwd:     # pragma: no cover
         common.error(
           f'Invalid global vlan.mode value {topology.vlan.mode}',
@@ -1106,7 +1106,7 @@ class VLAN(_Module):
     if 'vlans' in node:
       for vname in node.vlans.keys():
         if node.vlans[vname] is None:
-          node.vlans[vname] = {}
+          node.vlans[vname] = get_empty_box()
         if vname in topology.get('vlans',{}):                                     # We have a VLAN defined globally and in a node
           for kw in ('prefix','id','vni'):                                        # These three attributes MUST NOT be different
             if not kw in node.vlans[vname]:                                       # OK, attribute not in node VLAN, move on
@@ -1128,7 +1128,7 @@ class VLAN(_Module):
     if link.get('type','') == 'vlan_member':                                      # Skip VLAN member links, we've been there...
       return
 
-    v_attr = Box({},default_box=True,box_dots=True)
+    v_attr = data.get_empty_box()
     link_ok = check_link_vlan_attributes(link,link,v_attr,topology)               # Check link-level VLAN attributes
 
     for intf in link.interfaces:
@@ -1161,11 +1161,10 @@ class VLAN(_Module):
     routed_vlan = False
     if not link_vlan is None:
       routed_vlan = routed_access_vlan(link,topology,link_vlan)
-      vlan_data = get_from_box(topology,f'vlans.{link_vlan}')                     # Get global VLAN data
+      vlan_data = topology.get(f'vlans.{link_vlan}',None)                         # Get global VLAN data
       if isinstance(vlan_data,Box):
-        vlan_data = Box({ k:v for (k,v) in vlan_data.items() \
-                                if k not in svi_skipattr },
-                        default_box=True,box_dots=True)                           # Remove VLAN-specific data
+        vlan_data = data.get_box({ k:v for (k,v) in vlan_data.items() \
+                                if k not in svi_skipattr })                       # Remove VLAN-specific data
         fix_vlan_mode_attribute(vlan_data)                                        # ... and turn mode into vlan.mode
         for (k,v) in vlan_data.items():                                           # Now add the rest to link data
           if not k in link:                                                       # ... have to do the deep merge manually as

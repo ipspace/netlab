@@ -13,7 +13,7 @@ from .. import common
 from .. import data
 from .. import modules
 from ..modules import bgp
-from ..data import get_box
+from ..data import get_box,get_empty_box
 from ..data.validate import validate_attributes
 from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
 from . import nodes
@@ -48,7 +48,7 @@ Check validity of 'groups' data structure
 '''
 def check_group_data_structure(topology: Box) -> None:
   if not 'groups' in topology:
-    topology.groups = Box({},default_box=True,box_dots=True)
+    topology.groups = get_empty_box()
 
   if must_be_dict(topology,'groups','topology',create_empty=True,module='groups') is None:
     return
@@ -185,7 +185,7 @@ def check_recursive_groups(topology : Box) -> None:
       return
 
 def reverse_topsort(topology: Box) -> list:
-  group_copy = Box(topology.groups)            # Make a copy of the group dictionary
+  group_copy = get_box(topology.groups)        # Make a copy of the group dictionary
   sort_list: typing.List[str] = []
   while group_copy:                            # Keep iterating until we got all groups in order
     for g in sorted(group_copy.keys()):        # Iterate over remaining groups
@@ -258,7 +258,7 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
 
       if common.debug_active('groups'):
         print(f'... merging node data with {name}')
-      merge_data=Box(gdata.node_data)
+      merge_data = data.get_box(gdata.node_data)
       if 'module' in topology.nodes[name]:
         for m in topo_modules:
           if not m in topology.nodes[name].module:
@@ -336,7 +336,11 @@ def create_bgp_autogroups(topology: Box) -> None:
     if not 'bgp' in n_module:                                   # Looks like this node does not care about BGP
       continue
 
-    n_bgpas = data.get_from_box(n_data,'bgp.as') or g_bgpas     # Get node-level or global BGP AS
+    try:
+      n_bgpas = n_data.get('bgp.as') or g_bgpas                 # Get node-level or global BGP AS
+    except:
+      n_bgpas = g_bgpas
+
     if not n_bgpas:
       continue
 

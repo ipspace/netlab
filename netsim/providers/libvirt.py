@@ -13,7 +13,7 @@ import tempfile
 import netaddr
 
 from .. import common
-from ..data import get_from_box,types
+from ..data import types
 from . import _Provider
 from ..augment.links import get_link_by_index
 
@@ -177,7 +177,7 @@ class Libvirt(_Provider):
       return
 
     for l in topology.links:
-      if get_from_box(l,'libvirt.provider'):
+      if l.get('libvirt.provider',None):
         l.type = 'lan'
         if not 'bridge' in l:
           l.bridge = "%s_%d" % (topology.name[0:10],l.linkindex)

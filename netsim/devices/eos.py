@@ -5,15 +5,14 @@ from box import Box
 
 from . import _Quirks
 from .. import common
-from ..data import get_from_box
 from ..augment import devices
 
 def check_mlps_vlan_bundle(node: Box) -> None:
-  if get_from_box(node,'evpn.transport') != 'mpls':                     # This quirk applies only to EVPN/MPLS
+  if node.get('evpn.transport',None) != 'mpls':                         # This quirk applies only to EVPN/MPLS
     return
 
   for vname,vdata in node.get('vlans',{}).items():
-    if not get_from_box(vdata,'evpn.bundle'):                           # Check only VLANs within a bundle
+    if not vdata.get('evpn.bundle',False):                              # Check only VLANs within a bundle
       continue
     if vdata.get('mode','') != 'bridge':                                # They must be in pure bridging mode
       common.error(
@@ -35,10 +34,10 @@ def check_shared_mac(node: Box, topology: Box) -> None:
     return
 
   for intf in node.interfaces:
-    if get_from_box(intf,'gateway.protocol') != 'anycast':              # We hope that VRRP works (not tested yet)
+    if intf.get('gateway.protocol',None) != 'anycast':                  # We hope that VRRP works (not tested yet)
       continue
 
-    if get_from_box(intf,'vlan'):                                       # Anycast works on VLAN cEOS interfaces
+    if intf.get('vlan',None):                                           # Anycast works on VLAN cEOS interfaces
       continue
 
     common.error(

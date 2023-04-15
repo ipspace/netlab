@@ -46,7 +46,7 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
   for intf in node.get('interfaces',[]):
     if not 'ipv4' in intf:
       continue                                                    # Cannot run MPLS LDP on non-IPv4 interface
-    intf_ldp = data.get_from_box(intf,'mpls.ldp')                 # ... get interface LDP status (if set)
+    intf_ldp = intf.get('mpls.ldp',None)                          # ... get interface LDP status (if set)
     if 'vrf' in intf:
       if not intf_ldp:                                            # ... VRF LDP must be enabled on individual interfaces (MPLS CSC)
         continue
@@ -79,7 +79,7 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
         module='mpls'):
       return False
 
-    node.mpls[feature] = Box({})
+    node.mpls[feature] = data.get_empty_box()
     for af in node.af:
       node.mpls[feature][af] = session_list
   elif isinstance(node.mpls[feature],Box):
@@ -148,7 +148,7 @@ def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
       # If the neighbor is also using 6PE and will enable 6PE on this session
       # ... then we don't need IPv6 BGP session --> remove it
       #
-      if n.type in (data.get_from_box(topology.nodes[n.name],'mpls.6pe') or []):
+      if n.type in topology.nodes[n.name].get('mpls.6pe',[]):
         n.pop('ipv6',None)
 
 def prune_mplsvpn_af(setting: Box, node: Box) -> None:

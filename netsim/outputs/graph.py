@@ -8,7 +8,6 @@ import os
 from box import Box
 
 from .. import common
-from ..data import get_from_box
 from ..data.validate import must_be_list
 from . import _TopologyOutput
 
@@ -84,7 +83,7 @@ def build_maps(topology: Box) -> Box:
 
   if 'bgp' in topology.get('module',[]):
     for name,n in topology.nodes.items():
-      bgp_as = get_from_box(n,'bgp.as')
+      bgp_as = n.get('bgp.as',None)
       if bgp_as:
         bgp_as = f'AS_{bgp_as}'
         maps.bgp[bgp_as].nodes[n.name] = n

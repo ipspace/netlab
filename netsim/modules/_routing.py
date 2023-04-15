@@ -14,7 +14,7 @@ import netaddr
 
 from .. import common
 from .. import addressing
-from ..data import get_from_box
+from .. import data
 
 # Build routing protocol address families
 #
@@ -178,7 +178,7 @@ def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
       if not 'active' in node.vrfs[l.vrf][proto]:                           # Assume there are no IGP neighbors in this VRF
         node.vrfs[l.vrf][proto].active = False
       node.vrfs[l.vrf][proto] = node[proto] + node.vrfs[l.vrf][proto]       # Add node IGP parameters to VRF IGP parameters
-      node.vrfs[l.vrf][proto].interfaces.append(Box(l))                     # Append a copy of the interface data
+      node.vrfs[l.vrf][proto].interfaces.append(data.get_box(l))            # Append a copy of the interface data
       l.pop(proto,None)                                                     # ... and remove global IGP parameters from interface
                                                                             # Next we need to find if the VRF instance of IGP matters
       for neighbor in l.neighbors:                                          # ... iterate over the list of neighbors
@@ -187,7 +187,11 @@ def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
           node.vrfs[l.vrf][proto].active = True
                                                                             # Cleanup IGP data
   for vdata in node.get('vrfs',{}).values():                                # ... iterate over the list of VRFs
-    if not get_from_box(vdata,f'{proto}.active'):                           # ... and if there's no record of active IGP neighbors
+    try:
+      proto_active = vdata.get(f'{proto}.active',False)                     # Get the IGP data for the VRF
+    except:                                                                 # ... assume 'not active' if get fails
+      proto_active = False
+    if not proto_active:                                                    # If there's no record of active IGP neighbors
       vdata.pop(proto,None)                                                 # ... remove the VRF IGP instance
 
 #

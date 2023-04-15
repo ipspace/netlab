@@ -23,7 +23,6 @@ from . import lab_status_update, lab_status_change, get_lab_id
 from .. import providers
 from .. import read_topology
 from ..utils import status
-from ..data import get_box,get_from_box
 
 #
 # Extra arguments for 'netlab up' command

@@ -10,7 +10,7 @@ from .. import common
 # I had enough -- here's a function that returns a box with proper default settings
 
 def get_box(init: dict) -> Box:
-  return Box(init,default_box=True,box_dots=True)
+  return Box(init,default_box=True,default_box_none_transform=False,box_dots=True)
 
 def get_empty_box() -> Box:
   return get_box({})
@@ -31,6 +31,7 @@ def null_to_string(d: typing.Dict) -> None:
 #
 
 def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: bool = False) -> typing.Optional[typing.Any]:
+  print('WARNING: get_from_box is deprecated, please fix your plugins')
   if isinstance(selector,str):
     selector = selector.split('.')
 
@@ -57,15 +58,21 @@ def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: 
 #
 
 def get_global_parameter(topology: Box, selector: str) -> typing.Optional[typing.Any]:
-  value = get_from_box(topology,selector)
-  if value is None:
-    return get_from_box(topology.defaults,selector)
-  else:
-    return value
+  try:
+    return topology.get(selector,None) or topology.defaults.get(selector,None)
+  except:
+    return None
 
 def get_global_settings(topology: Box, selector: str) -> typing.Optional[typing.Any]:
-  g_set = get_from_box(topology,selector)
-  d_set = get_from_box(topology.defaults,selector)
+  try:                                                                # Wrapping 'get' operations in tries
+    g_set = topology.get(selector,None)                               # ... because they may fail if an intermediate
+  except:                                                             # ... value is not a dictionary
+    g_set = None
+
+  try:
+    d_set = topology.defaults.get(selector,None)
+  except:
+    d_set = None
 
   if d_set:                                                           # Found default settings
     if 'attributes' in d_set:                                         # ... filter them down to actual global attributes
@@ -80,36 +87,6 @@ def get_global_settings(topology: Box, selector: str) -> typing.Optional[typing.
     return d_set + g_set                                              # Return a merged value, be careful about precedences
 
   return g_set                                                        # Can't merge, and we know g_set has some value
-
-#
-# Set a dictionary value specified by a list of keys
-#
-def set_dots(b : dict,k_list : list,v : typing.Any) -> None:
-  if len(k_list) <= 1:
-    b[k_list[0]] = v
-    return
-  if not k_list[0] in b:
-    b[k_list[0]] = {}
-  elif b[k_list[0]] is None:
-    b[k_list[0]] = {}
-  set_dots(b[k_list[0]],k_list[1:],v)
-
-#
-# Change dotted dictionary keys into nested dictionaries
-#
-def unroll_dots(b : typing.Any) -> None:
-  if isinstance(b,dict):
-    for k in list(b.keys()):
-      unroll_dots(b[k])
-      if isinstance(k,str) and ('.' in k) and not ('/' in k):
-        v = b[k]
-        del b[k]     # If you're using Box with box_dots parameter
-        set_dots(b,k.split('.'),v)
-  elif isinstance(b,list):
-    for v in b:
-      unroll_dots(v)
-  else:
-    return
 
 """
 bool_to_defaults: 

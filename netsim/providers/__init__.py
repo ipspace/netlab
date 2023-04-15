@@ -16,7 +16,7 @@ from box import Box
 from .. import common
 from ..callback import Callback
 from ..augment import devices
-from ..data import get_from_box,get_box,filemaps
+from ..data import get_box,filemaps
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
@@ -89,12 +89,12 @@ class _Provider(Callback):
       inkey: str = 'config_templates',
       outkey: str = 'binds') -> None:
 
-    mappings = get_from_box(node,f'{self.provider}.{inkey}')
+    mappings = node.get(f'{self.provider}.{inkey}',None)
     if not mappings:
       return
     
     map_dict = filemaps.mapping_to_dict(mappings)
-    cur_binds = get_from_box(node,f'{self.provider}.{outkey}') or []
+    cur_binds = node.get(f'{self.provider}.{outkey}',[])
     bind_dict = filemaps.mapping_to_dict(cur_binds)
     for file,mapping in map_dict.items():
       if file in bind_dict:
@@ -118,7 +118,7 @@ class _Provider(Callback):
       inkey: str = 'config_templates',
       outkey: str = 'binds') -> None:
 
-    binds = get_from_box(node,f'{self.provider}.{outkey}')
+    binds = node.get(f'{self.provider}.{outkey}',None)
     if not binds:
       return
 

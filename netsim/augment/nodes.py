@@ -10,6 +10,7 @@ import typing
 from box import Box
 
 from .. import common
+from .. import data
 from .. import utils
 from .. import addressing
 from .. import providers
@@ -39,20 +40,20 @@ def create_node_dict(nodes: Box) -> Box:
   if isinstance(nodes,dict):
     node_dict = nodes
   else:
-    node_dict = Box({},default_box=True,box_dots=True)
+    node_dict = data.get_empty_box()
     for n in nodes or []:
       if isinstance(n,dict):
         if not 'name' in n:
           common.error(f'Node is missing a "name" attribute: {n}',common.IncorrectValue,'nodes')
           continue
       elif isinstance(n,str):
-        n = Box({ 'name': n },default_box=True,box_dots=True)
+        n = data.get_box({ 'name': n })
       node_dict[n.name] = n
 
   for name in list(node_dict.keys()):
     ndata = node_dict[name]
     if ndata is None:
-      ndata = Box({'name': name},default_box=True)
+      ndata = data.get_box({'name': name})
     elif not isinstance(ndata,dict):
       common.error(f'Node data for node {name} must be a dictionary')
       node_dict[name] = { 'name': name, 'extra': ndata }
@@ -360,7 +361,7 @@ Return a copy of the topology (leaving original topology unchanged) with unmanag
 def ghost_buster(topology: Box) -> Box:
   common.print_verbose('Removing unmanaged devices from topology')
   # Create a copy of topology
-  topo_copy = Box(topology,default_box=True,box_dots=True)
+  topo_copy = data.get_box(topology)
   
   # Remove all nodes with "unmanaged" flag set
   topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not v.get('unmanaged',False) }  

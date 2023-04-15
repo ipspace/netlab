@@ -9,8 +9,7 @@ import typing
 from box import Box
 
 # Related modules
-from .. import common
-from ..data import get_from_box
+from .. import common,data
 from ..data.validate import must_be_list
 from ..callback import Callback
 from ..augment import devices
@@ -193,7 +192,7 @@ def merge_node_module_params(topology: Box) -> None:
 def get_propagated_global_module_params(module: str, settings: Box,mod_settings: Box) -> Box:
   global no_propagate_list
 
-  global_copy = Box(settings)                  # Make a fresh copy of the settings
+  global_copy = data.get_box(settings)         # Make a fresh copy of the settings
   no_propagate = list(no_propagate_list)       # ... and global no_propagate list
   if "no_propagate" in mod_settings:
     no_propagate.extend(mod_settings.no_propagate)
@@ -258,7 +257,7 @@ def merge_global_module_params(topology: Box) -> None:
     if not isinstance(mod_def,dict):                               # Are module defaults a dict?
       common.fatal("Defaults for module %s should be a dict" % m)  # Nope? Too bad, crash right now, we can't live like that...
 
-    default_copy = Box(mod_def)                                 # Got module defaults. Now copy them (we're gonna clobber them)
+    default_copy = data.get_box(mod_def)                        # Got module defaults. Now copy them (we're gonna clobber them)
     no_propagate = list(no_propagate_list)                      # Always remove these default attributes (and make a fresh copy of the list)
     no_propagate.extend(default_copy.get("no_propagate", []))   # ... and whatever the module wishes to be removed
     no_propagate.extend([ k for k in mod_def.keys() if "no_propagate" in k ])
@@ -333,17 +332,16 @@ Otherwise:
 
 def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> Box:
   if isinstance(a,dict):
-    attr = Box(a,default_box=True,box_dots=True)
+    attr = data.get_box(a)
     if not isinstance(attr.interface,str):
       attr.interface = list(set(attr.link) - set(attr.link_no_propagate) | set(attr.interface))
     attr.node = attr.get("node",attr["global"])
   else:
-    attr = Box({
+    attr = data.get_box({
       "global": a,
       "node": a,
       "link": a,
-      "interface": a
-    },default_box=True,box_dots=True)
+      "interface": a})
   return attr
 
 """
@@ -434,18 +432,18 @@ def copy_node_data_into_interfaces(topology: Box) -> None:
       if not mod_attr.node_copy:                                 # Any copyable attributes for this module?
         continue                                                 # ... nope, get out of here
 
-      copy_attr = Box({ k: v
+      copy_attr = data.get_box({ k: v
         for k,v in n.get(m,{}).items()
           if k in mod_attr.node_copy })                          # Build a Box of node attributes that could be copied to interfaces
 
       for intf in n.get('interfaces',[]):                        # We might have some work to do, iterate over all interfaces
         if not isinstance(intf.get(m,{}),dict):                  # ... if the interface module data is not a dict, we can't merge
           continue
-        vrf_attr = Box({})                                       # Assume we have no VRF attributes
+        vrf_attr = data.get_empty_box()                          # Assume we have no VRF attributes
         if 'vrf' in intf and mod_attr.vrf_aware:                 # Do we have to deal with VRF-aware attributes?
           vrf_mod_data = n.vrfs[intf.vrf].get(m,{})
           if not vrf_mod_data is False:                          # Deal with things like 'ospf: False' on VRF level
-            vrf_attr = Box({ k: v
+            vrf_attr = data.get_box({ k: v
               for k,v in vrf_mod_data.items()
                 if k in mod_attr.vrf_aware })                    # Build a Box of VRF attributes that could be copied to interfaces
 
@@ -470,7 +468,7 @@ def get_effective_module_attribute(
   for obj in (intf,link,node,topology,defaults):
     if obj is None:
       continue
-    value = get_from_box(obj,path)
+    value = obj.get(path,None)
     if not value:
       continue
     if not isinstance(value,Box) or not merge_dict:

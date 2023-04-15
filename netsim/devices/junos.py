@@ -9,7 +9,6 @@ from box import Box
 
 from . import _Quirks
 from .. import common
-from ..data import get_from_box
 from ..augment import devices
 
 def unit_0_trick(intf: Box, round: str ='global') -> None:

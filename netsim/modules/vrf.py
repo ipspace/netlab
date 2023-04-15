@@ -8,7 +8,7 @@ from box import Box
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from .. import common
 from .. import data
-from ..data import get_from_box,global_vars
+from ..data import global_vars
 from ..data.validate import validate_attributes
 from ..data.types import must_be_list,must_be_dict,must_be_id
 from ..augment import devices,groups,links
@@ -29,11 +29,11 @@ def populate_vrf_static_ids(topology: Box) -> None:
 # Get a usable AS number. Try bgp.as then vrf.as from node and global settings
 #
 def get_rd_as_number(obj: Box, topology: Box) -> typing.Optional[typing.Any]:
-  return \
-    get_from_box(obj,'bgp.as') or \
-    get_from_box(obj,'vrf.as') or \
-    get_from_box(topology,'bgp.as') or \
-    get_from_box(topology,'vrf.as')
+  return (
+    obj.get('bgp.as',None) or
+    obj.get('vrf.as',None) or
+    topology.get('bgp.as',None) or
+    topology.get('vrf.as',None) )
 
 #
 # Parse rd/rt value -- check whether the RD/RT value is in N:N format
@@ -141,7 +141,8 @@ def set_vrf_auto_id(vrf: Box, value: typing.Tuple[int,str]) -> None:
 #
 def get_vrf_id(vname: str, obj: Box, topology: Box) -> typing.Optional[str]:
   obj_name = 'global VRFs' if obj is topology else obj.name
-  vdata = get_from_box(topology,['vrfs',vname]) or get_from_box(obj,['vrfs',vname]) or None
+  vpath = f'vrfs.{vname}'
+  vdata = topology.get(vpath,None) or obj.get(vpath,None)
 
   if vdata is None:
     common.error(
@@ -242,8 +243,8 @@ def validate_vrf_route_leaking(node : Box) -> None:
     leaked_routes = vdata['import'] and vdata['import'] != simple_rt
     leaked_routes = leaked_routes or (vdata['export'] and vdata['export'] != simple_rt)
     if leaked_routes:
-      if not get_from_box(node,'bgp.as'):
-        if get_from_box(node,'vrf.as'):
+      if not node.get('bgp.as',None):
+        if node.get('vrf.as',None):
           node.bgp['as'] = node.vrf['as']
         else:
           common.error(
@@ -264,19 +265,18 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
                         node = node,
                         topology = topology)
   for vrfname,v in node.vrfs.items():
-    vrf_loopback = get_from_box(v,'loopback') or node_vrf_loopback          # Do we have VRF loopbacks enabled in the node or in the VRF?
+    vrf_loopback = v.get('loopback',None) or node_vrf_loopback              # Do we have VRF loopbacks enabled in the node or in the VRF?
     if not vrf_loopback:                                                    # ... nope, move on
       continue
 
-    ifdata = Box({
+    ifdata = data.get_box({
       'virtual_interface': True,
       'type': "loopback",
       'name': f'VRF Loopback {vrfname}',
       'ifindex': node.interfaces[-1].ifindex + 1,
       'ifname': loopback_name.format(vrfidx=v.vrfidx,ifindex=v.vrfidx),     # Use VRF-specific and generic loopback index
       'neighbors': [],
-      'vrf': vrfname,
-    },default_box=True,box_dots=True)
+      'vrf': vrfname,})
 
     if isinstance(vrf_loopback,bool):
       vrfaddr = addressing.get(topology.pools, ['vrf_loopback'])
@@ -463,7 +463,7 @@ class VRF(_Module):
         continue
 
       vrf_data_path = f'vrfs.{ifdata.vrf}'
-      if not get_from_box(topology,vrf_data_path) and not get_from_box(node,vrf_data_path):
+      if not topology.get(vrf_data_path,None) and not node.get(vrf_data_path,None):
         common.error(
           f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
           common.MissingValue,
@@ -529,5 +529,5 @@ class VRF(_Module):
 
     # Finally, set BGP router ID if we set BGP AS number
     #
-    if get_from_box(node,'bgp.as') and not get_from_box(node,'bgp.router_id'):
+    if node.get('bgp.as',None) and not node.get('bgp.router_id',None):
       _routing.router_id(node,'bgp',topology.pools)

@@ -127,7 +127,7 @@ def adjust_global_parameters(topology: Box) -> None:
 #
 
 def cleanup_topology(topology: Box) -> Box:
-  topo_copy = Box(topology)
+  topo_copy = Box(topology,box_dots=True)
 
   # Remove PFX generators from addressing section
   #

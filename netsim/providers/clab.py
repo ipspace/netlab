@@ -8,7 +8,7 @@ from box import Box
 
 from . import _Provider
 from .. import common
-from ..data import get_from_box,filemaps
+from ..data import filemaps
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
   return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 and not 'external_bridge' in l.clab }
@@ -88,7 +88,7 @@ class Containerlab(_Provider):
 
   def post_configuration_create(self, topology: Box) -> None:
     for n in topology.nodes.values():
-      if get_from_box(n,'clab.binds'):
+      if n.get('clab.binds',None):
         self.create_extra_files(n,topology)
 
   def pre_start_lab(self, topology: Box) -> None:
