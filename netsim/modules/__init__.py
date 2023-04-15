@@ -10,7 +10,6 @@ from box import Box
 
 # Related modules
 from .. import common
-from ..data import get_from_box
 from ..data.validate import must_be_list
 from ..callback import Callback
 from ..augment import devices
@@ -470,7 +469,7 @@ def get_effective_module_attribute(
   for obj in (intf,link,node,topology,defaults):
     if obj is None:
       continue
-    value = get_from_box(obj,path)
+    value = obj.get(path,None)
     if not value:
       continue
     if not isinstance(value,Box) or not merge_dict:

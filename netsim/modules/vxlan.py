@@ -8,7 +8,6 @@ import netaddr
 from . import _Module,get_effective_module_attribute,_dataplane
 from .. import common
 from .. import data
-from ..data import get_from_box
 from ..data.validate import must_be_int,must_be_string
 from ..augment import devices
 from .. import addressing
@@ -52,7 +51,7 @@ Inputs:
 * topology: pointer to topology so we can access global VLANs
 """
 def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
-  vxlan_vlans = get_from_box(toponode,'vxlan.vlans')
+  vxlan_vlans = toponode.get('vxlan.vlans',None)
   if not vxlan_vlans:                                             # No VXLAN-enabled VLANs in the current data object ==> nothing to do
     return
 
