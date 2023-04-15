@@ -35,10 +35,10 @@ def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
 
   try:
     modspec  = importlib.util.spec_from_file_location(module_name,module_path)
-    assert(isinstance(modspec,importlib.machinery.ModuleSpec))
+    assert(modspec is not None)
     pymodule = importlib.util.module_from_spec(modspec)
     sys.modules[module_name] = pymodule
-    assert(isinstance(modspec.loader,importlib.abc.Loader))
+    assert(modspec.loader is not None)
     modspec.loader.exec_module(pymodule)
   except:
     print(f"Cannot load plugin {module_name} from {module_path}\n{str(sys.exc_info()[1])}")
