@@ -52,14 +52,14 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
 #
 def cleanup_unicast_ip(node: Box) -> None:
   for intf in node.interfaces:
-    if not intf.get('gateway',False):                               # This interface not using FHRP or FHRP is disabled
+    if not intf.get('gateway',False):                       # This interface not using FHRP or FHRP is disabled
       continue
 
-    if intf.gateway.protocol != 'anycast':                          # Leave non-anycast FHRP implementations alone, they need node IP addresses
+    if intf.gateway.protocol != 'anycast':                  # Leave non-anycast FHRP implementations alone, they need node IP addresses
       continue
 
-    if data.get_from_box(intf,'gateway.anycast.unicast') is False:  # Are we forbidden to use unicast IP addresses together with anycast ones?
-      intf.pop('ipv4',None)                                         # No unicast with anycast ==> pop the address
+    if intf.get('gateway.anycast.unicast',None) is False:   # Are we forbidden to use unicast IP addresses together with anycast ones?
+      intf.pop('ipv4',None)                                 # No unicast with anycast ==> pop the address
 
 #
 # Default settings copied onto individual links have parameters for every known FHRP protocol.

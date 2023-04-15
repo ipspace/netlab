@@ -39,11 +39,11 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
     reference_name='VLAN',
     create_default=create,
     merge_topology=False,
-    default_filter=lambda v: False if not isinstance(v,Box) else data.get_from_box(v,'evpn.transit_vni'),
+    default_filter=lambda v: False if not isinstance(v,Box) else v.get('evpn.transit_vni',False),
     module='evpn')
 
 def enable_evpn_af(node: Box, topology: Box) -> None:
-  bgp_session = data.get_from_box(node,'evpn.session') or []
+  bgp_session = node.get('evpn.session',[])
 
   # Enable EVPN AF on all BGP neighbors with the correct session type
   # that also use EVPN module
@@ -53,9 +53,9 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
       bn.evpn = True
 
 def get_usable_evpn_asn(topology: Box) -> int:
-  asn = data.get_from_box(topology,'evpn.as') or \
-        data.get_from_box(topology,'vrf.as') or \
-        data.get_from_box(topology,'bgp.as')
+  asn = ( topology.get('evpn.as',None) or
+          topology.get('vrf.as',None) or
+          topology.get('bgp.as',None) )
 
   if asn and data.is_true_int(asn):
     return asn
@@ -124,7 +124,7 @@ def get_vlan_bundle_flag(vlan: Box, vname: str, topology: Box) -> bool:
     return False
 
   vrf = topology.vrfs[vlan.vrf]
-  if not data.get_from_box(vrf,'evpn.bundle'):                      # VRF does not have evpn.bundle attribute ==> VLAN service
+  if not vrf.get('evpn.bundle',None):                               # VRF does not have evpn.bundle attribute ==> VLAN service
     return False
 
   must_be_string(
@@ -155,7 +155,7 @@ def validate_no_node_vrf_bundle(node: Box, topology: Box) -> None:
   if not 'vrfs' in node:                                            # No VRFs defined in the node, move on
     return
   for vname,vdata in node.vrfs.items():
-    if not data.get_from_box(vdata,'evpn.bundle'):                  # EVPN bundle not set in VRF, move on
+    if not vdata.get('evpn.bundle',None):                           # EVPN bundle not set in VRF, move on
       continue
     common.error(
       f'VRF {vname} in node {node.name} cannot have evpn.bundle attribute',
@@ -171,7 +171,7 @@ def register_static_transit_vni(topology: Box) -> None:
   for vrf_name,vrf_data in topology.get('vrfs',{}).items():
     must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
 
-    transit_vni = data.get_from_box(vrf_data,'evpn.transit_vni')
+    transit_vni = vrf_data.get('evpn.transit_vni',None)
     if data.is_true_int(transit_vni):
       if transit_vni in vni_set:
         common.error(
@@ -186,7 +186,7 @@ def register_static_transit_vni(topology: Box) -> None:
       continue
 
     for vrf_name,vrf_data in n.vrfs.items():
-      if data.get_from_box(vrf_data,'evpn.transit_vni'):
+      if vrf_data.get('evpn.transit_vni',None):
         common.error(
           f'evpn.transit_vni can be specified only on global VRFs (found in {vrf_name} on {n.name}',
           common.IncorrectValue,
@@ -208,10 +208,10 @@ def vrf_transit_vni(topology: Box) -> None:
   vni_list: typing.List[int] = []                               # List of static transit VNIs
   vni_error = False                                             # "A horrible error" flag that causes abort after the first loop
   vni_count = 0                                                 # Number of VRFs with evpn.transit_vni
-  evpn_transport = data.get_from_box(topology,'evpn.transport') or 'vxlan'
+  evpn_transport = topology.get('evpn.transport','vxlan')       # Default to VXLAN transport
 
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
-    vni = data.get_from_box(vrf_data,'evpn.transit_vni')        # transit_vni makes no sense with MPLS transport
+    vni = vrf_data.get('evpn.transit_vni',None)                 # transit_vni makes no sense with MPLS transport
     if vni and evpn_transport != 'vxlan':
       common.error(
         f'evpn.transit_vni in VRF {vrf_name} is not allowed with mpls evpn.transport',
@@ -239,7 +239,7 @@ def vrf_transit_vni(topology: Box) -> None:
 
   vni_start = topology.defaults.evpn.start_transit_vni
   for vrf_name,vrf_data in topology.vrfs.items():               # Second pass: set transit VNI values for VRFs with "transit_vni: True"
-    if isinstance(data.get_from_box(vrf_data,'evpn.transit_vni'),str):
+    if isinstance(vrf_data.get('evpn.transit_vni',None),str):
       continue                                                  # Skip transit_vni string values (will be checked in third pass)
     transit_vni = must_be_int(
                     vrf_data,
@@ -255,7 +255,7 @@ def vrf_transit_vni(topology: Box) -> None:
   for vrf_name,vrf_data in topology.vrfs.items():               # Third pass: set shared VNI values across VRFs
     if vrf_data is None:                                        # Skip empty VRF definitions
       continue
-    transit_vni = data.get_from_box(vrf_data,'evpn.transit_vni')
+    transit_vni = vrf_data.get('evpn.transit_vni',None)
     if not isinstance(transit_vni,str):                         # Skip if transit_vni is not a string
       continue
     if not transit_vni in topology.vrfs:                        # Does transit VNI refer to a valid VRF name?
@@ -264,7 +264,7 @@ def vrf_transit_vni(topology: Box) -> None:
         common.IncorrectValue,
         'evpn')
       continue
-    foreign_vni = data.get_from_box(topology.vrfs,f'{transit_vni}.evpn.transit_vni')
+    foreign_vni = topology.vrfs.get(f'{transit_vni}.evpn.transit_vni',None)
     if not data.is_true_int(foreign_vni):
       common.error(
         f'evpn.transit_vni "{transit_vni}" in VRF {vrf_name} refers to a VRF that does not have a valid evpn.transit_vni',
@@ -352,13 +352,13 @@ Check whether VXLAN IRB mode is supported by the device
 """
 def check_node_vrf_irb(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
-  evpn_transport = data.get_from_box(node,'evpn.transport') or 'vxlan'
+  evpn_transport = node.get('evpn.transport','vxlan')
 
   for vrf_name,vrf_data in node.get('vrfs',{}).items():
     if not vrf_data.get('af',None):                             # Cannot do IRB without L3 addresses ;)
       continue
 
-    symmetric_irb = data.get_from_box(vrf_data,'evpn.transit_vni') or evpn_transport == 'mpls'
+    symmetric_irb = vrf_data.get('evpn.transit_vni',False) or evpn_transport == 'mpls'
     if symmetric_irb:
       if not features.evpn.irb and evpn_transport == 'vxlan':   # ... does this device support IRB?
         common.error(
@@ -385,7 +385,7 @@ Check whether the node supports the requested EVPN bundle type
 def check_node_vrf_bundle(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)      # Get device features
   for vrf_name,vrf_data in node.get('vrfs',{}).items():               # Iterate over all VRFs defined on the device
-    b_type = data.get_from_box(vrf_data,'evpn.bundle')                # Get evpn.bundle value, skip if not defined
+    b_type = vrf_data.get('evpn.bundle',None)                         # Get evpn.bundle value, skip if not defined
     if not b_type:
       continue
     if not b_type in features.evpn.bundle:                            # EVPN bundle type not supported by the device
@@ -417,7 +417,7 @@ class EVPN(_Module):
       validate_evpn_lists(n,f'nodes.{n.name}',topology,create=False)
 
     vrf_transit_vni(topology)
-    for vname in data.get_from_box(topology,'evpn.vlans') or []:
+    for vname in topology.get('evpn.vlans',[]):
       create_vlan_service(vname,topology)
 
     vrf_irb_setup(topology)
