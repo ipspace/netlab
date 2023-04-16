@@ -16,6 +16,8 @@ from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from .. import addressing
 from . import devices
 
+VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [ 'loopback', 'tunnel' ]
+
 def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
   intf_cnt  = 0
@@ -202,7 +204,10 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
 
   # When computing default ifindex, consider only non-loopback interfaces
   if not ifindex:
-   ifindex = len([intf for intf in node.interfaces if intf.get('type',None) != 'loopback']) + ifindex_offset
+   ifindex = len([
+               intf for intf in node.interfaces
+                 if not intf.get('type',None) in VIRTUAL_INTERFACE_TYPES
+                 ]) + ifindex_offset
 
   ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
 
@@ -219,31 +224,42 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     provider = devices.get_provider(node,defaults)
     ifdata[provider] = pdata
 
-def create_loopback_interface(node: Box, ifdata: Box, defaults: Box) -> None:
-  ifindex_offset = devices.get_device_attribute(node,'loopback_offset',defaults) or 0
-  ifdata.ifindex = ifindex_offset + ifdata.linkindex
+def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
+  devtype = ifdata.get('type','loopback')         # Get virtual interface type, default to loopback interface
+  ifindex_offset = (
+    devices.get_device_attribute(node,f'{devtype}_offset',defaults) or
+    1 if devtype == 'loopback' else 0)            # Loopback interfaces have to start with 1 to prevent overlap with built-in loopback
+
   ifdata.virtual_interface = True
-  ifname_format  = devices.get_device_attribute(node,'loopback_interface_name',defaults)
+  if not 'ifindex' in ifdata:
+    ifdata.ifindex = len([intf for intf in node.interfaces if intf.get('type',None) == devtype]) + ifindex_offset
+  ifname_format  = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
 
   if not ifname_format:
-    common.error(
-      f'Device {node.device}/node {node.name} does not support loopback links',
-      common.IncorrectValue,
-      'links')
-    return
+    if devtype == 'loopback':
+      common.error(
+        f'Device {node.device}/node {node.name} does not support loopback links',
+        common.IncorrectValue,
+        'links')
+      return
+    else:
+      common.error(
+        f'Need explicit interface name (ifname) for {devtype} interface on node {node.name} ({node.device})',
+        common.IncorrectValue,
+        'links')
+      return
 
   if not 'ifname' in ifdata:
     ifdata.ifname = utils.strings.eval_format(ifname_format,ifdata)
 
-  # If the device uses 'loopback_offset' then we're assuming it's large enough to prevent overlap with physical interfaces
-  # Otherwise, create fake ifindex for loopback interfaces to prevent that overlap
+  # Adjust ifindex to prevent overlap between device types
   #
-  if not ifindex_offset:
-    ifdata.ifindex = 10000 + ifdata.ifindex
+  ifindex_offset = (VIRTUAL_INTERFACE_TYPES.index(devtype)+1) * 10000
+  ifdata.ifindex += ifindex_offset
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
-  if ifdata.get('type') == 'loopback':
-    create_loopback_interface(node,ifdata,defaults)
+  if ifdata.get('type',None) in VIRTUAL_INTERFACE_TYPES:
+    create_virtual_interface(node,ifdata,defaults)
   else:
     create_regular_interface(node,ifdata,defaults)
 

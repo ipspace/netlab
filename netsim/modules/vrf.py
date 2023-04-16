@@ -253,8 +253,7 @@ def validate_vrf_route_leaking(node : Box) -> None:
             'vrf')
 
 def vrf_loopbacks(node : Box, topology: Box) -> None:
-  loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults) or \
-                  devices.get_device_attribute(node,'features.vrf.loopback_interface_name',topology.defaults)
+  loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
 
   if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
     common.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
@@ -265,18 +264,19 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
                         node = node,
                         topology = topology)
   for vrfname,v in node.vrfs.items():
-    vrf_loopback = v.get('loopback',None) or node_vrf_loopback              # Do we have VRF loopbacks enabled in the node or in the VRF?
-    if not vrf_loopback:                                                    # ... nope, move on
+    vrf_loopback = v.get('loopback',None) or node_vrf_loopback        # Do we have VRF loopbacks enabled in the node or in the VRF?
+    if not vrf_loopback:                                              # ... nope, move on
       continue
 
-    ifdata = data.get_box({
-      'virtual_interface': True,
+    # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
+    #
+    ifdata = data.get_box({                                           # Create interface data structure
       'type': "loopback",
       'name': f'VRF Loopback {vrfname}',
-      'ifindex': node.interfaces[-1].ifindex + 1,
-      'ifname': loopback_name.format(vrfidx=v.vrfidx,ifindex=v.vrfidx),     # Use VRF-specific and generic loopback index
       'neighbors': [],
       'vrf': vrfname,})
+
+    links.create_virtual_interface(node,ifdata,topology.defaults)     # Use common function to create loopback interface
 
     if isinstance(vrf_loopback,bool):
       vrfaddr = addressing.get(topology.pools, ['vrf_loopback'])
