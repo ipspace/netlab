@@ -16,7 +16,8 @@ from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from .. import addressing
 from . import devices
 
-VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [ 'loopback', 'tunnel' ]
+VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
+  'loopback', 'tunnel' ]
 
 def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
@@ -231,25 +232,27 @@ def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     1 if devtype == 'loopback' else 0)            # Loopback interfaces have to start with 1 to prevent overlap with built-in loopback
 
   ifdata.virtual_interface = True
+  ifdata.pop('bridge',None)
+
   if not 'ifindex' in ifdata:
     ifdata.ifindex = len([intf for intf in node.interfaces if intf.get('type',None) == devtype]) + ifindex_offset
   ifname_format  = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
 
-  if not ifname_format:
-    if devtype == 'loopback':
-      common.error(
-        f'Device {node.device}/node {node.name} does not support loopback links',
-        common.IncorrectValue,
-        'links')
-      return
-    else:
-      common.error(
-        f'Need explicit interface name (ifname) for {devtype} interface on node {node.name} ({node.device})',
-        common.IncorrectValue,
-        'links')
-      return
-
   if not 'ifname' in ifdata:
+    if not ifname_format:
+      if devtype == 'loopback':
+        common.error(
+          f'Device {node.device}/node {node.name} does not support loopback links',
+          common.IncorrectValue,
+          'links')
+        return
+      else:
+        print(ifdata)
+        common.error(
+          f'Need explicit interface name (ifname) for {devtype} interface on node {node.name} ({node.device})',
+          common.IncorrectValue,
+          'links')
+        return
     ifdata.ifname = utils.strings.eval_format(ifname_format,ifdata)
 
   # Adjust ifindex to prevent overlap between device types
@@ -800,12 +803,6 @@ def check_link_type(data: Box) -> bool:
       'links')
     return False
 
-  if not link_type in [ 'stub','p2p','lan','loopback','vlan_member']:
-    common.error(
-      f'Invalid link type {link_type} in {data._linkname}\n... {data}',
-      common.IncorrectValue,
-      'links')
-    return False
   return True
 
 #

@@ -15,7 +15,7 @@ from box import Box
 
 from .. import common
 from ..callback import Callback
-from ..augment import devices
+from ..augment import devices,links
 from ..data import get_box,filemaps
 
 class _Provider(Callback):
@@ -144,7 +144,6 @@ class _Provider(Callback):
     self.transform(topology)
     fname = self.get_output_name(fname,topology)
     output = common.open_output_file(fname)
-#    print(topology.nodes.to_yaml())
     output.write(common.template(self.get_root_template(),topology.to_dict(),self.get_template_path(),self.provider))
     if fname != '-':
       common.close_output_file(output)
@@ -190,7 +189,8 @@ class _Provider(Callback):
     if not 'links' in topology:
       return
 
-    topology.links = [ link for link in topology.links if link.type != 'loopback' ]
+    topology.links = [
+      link for link in topology.links if link.type not in links.VIRTUAL_INTERFACE_TYPES ]
 
 """
 Get a pointer to provider module. Cached in topology._Providers

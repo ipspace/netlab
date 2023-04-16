@@ -53,11 +53,12 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
 * **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **role** -- link role, used to select specific configuration module behavior. Typical link roles include *stub*, *passive* and *external*. Please read [](module/routing.md) for more details.
-* **type** -- [link type](#link-types) (lan, p2p, stub, loopback)
+* **type** -- [link type](#link-types) (lan, p2p, stub, loopback, tunnel)
 
 You can use most link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
 
-* **ifindex** -- optional per-node interface index used to generate the interface/port name. Useful to select specific ports to match typical network designs (example: using high-speed ports for uplinks).
+* **ifindex** -- optional per-node interface index used to generate the interface/port name. Useful to select specific ports to match typical network designs (example: using high-speed ports for uplinks) when the virtualization provider supports mapping of host interfaces into VM/container interfaces.
+* **ifname** -- target interface name. Use to create tunnel interfaces on some platforms, or to create unusual interface types.
 
 [^NOIP]: You might need links without IP configuration if you want to test VLANs, bridging, or EVPN.
 
@@ -90,7 +91,7 @@ links:
 
 ## Link Types
 
-Lab topology could contain *lan*, *p2p*, *stub* and *loopback* links. The link type could be specified with the **type** attribute; when that attribute is missing the link type is selected based on the number of devices connected to the link:
+Lab topology could contain *lan*, *p2p*, *stub*, *loopback* and *tunnel* links. The link type could be specified with the **type** attribute; when that attribute is missing the link type is selected based on the number of devices connected to the link:
 
 * Single node connected to a link ⇒ *stub* or *loopback* (see below)
 * Two nodes connected to a link ⇒ *p2p*
@@ -115,6 +116,34 @@ defaults:
   links.stub_loopback: True
   devices.iosv.features.stub_loopback: False
 ```
+
+(links-tunnel)=
+### Tunnel Links
+
+Links with **type: tunnel** can be used to create tunnel interfaces. Tunnel links are addressed in the same way as LAN links and can have any valid link/module attribute.
+
+_netlab_ assigns an IP prefix to the tunnel link, creates tunnel interfaces on nodes connected to tunnel links, assigns IP addresses to the tunnel interfaces, and copies all other link parameters into interface data. Tunnel interface name is generated from device data (when available), or specified in the **ifname** interface (node-on-link) parameter.
+
+Standard _netlab_ device configuration templates will create tunnel interfaces, and configure all _netlab_-supported parameters on them. You will have to use custom configuration templates to make tunnel interfaces operational (specifying, for example, source and destination underlay IP address and tunnel encapsulation).
+
+For example, use this topology to create a tunnel between two Cisco CSR edge routers.
+
+```
+defaults.device: csr
+nodes: [ r1, r2, r3 ]
+links:
+- r1-r2
+- r2-r3
+- r1:
+  r3:
+    ifname: Tunnel42
+  type: tunnel
+```
+
+**Notes:**
+
+* **r1** will get tunnel interface `Tunnel0` (Cisco CSR device data contains tunnel interface name template)
+* The tunnel on **r2** will be named `Tunnel42` due to **ifname** parameter.
 
 ## Link Names
 

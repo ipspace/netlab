@@ -1,0 +1,227 @@
+input:
+- topology/input/link-tunnel.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 20000
+    ifname: Tunnel13
+    ipv4: 172.16.0.1/24
+    node: r1
+  - ifindex: 20000
+    ifname: Tunnel0
+    ipv4: 172.16.0.2/24
+    node: r2
+  - ifindex: 20000
+    ifname: Tunnel0
+    ipv4: 172.16.0.3/24
+    node: r3
+  linkindex: 1
+  node_count: 3
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: tunnel
+- bridge: input_2
+  interfaces:
+  - ifindex: 20001
+    ifname: Tunnel1
+    ipv4: 172.16.1.2/24
+    node: r2
+  - ifindex: 20001
+    ifname: Tunnel1
+    ipv4: 172.16.1.3/24
+    node: r3
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: tunnel
+- bridge: input_3
+  interfaces:
+  - ifindex: 20002
+    ifname: Tunnel2
+    ipv4: 172.16.2.3/24
+    node: r3
+  linkindex: 3
+  node_count: 1
+  prefix:
+    ipv4: 172.16.2.0/24
+  type: tunnel
+- bridge: input_4
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.3.1/24
+    node: r1
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv4: 172.16.3.2/24
+    node: r2
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv4: 172.16.3.3/24
+    node: r3
+  linkindex: 4
+  node_count: 3
+  prefix:
+    ipv4: 172.16.3.0/24
+  type: lan
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 20000
+      ifname: Tunnel13
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      name: r1 -> [r2,r3]
+      neighbors:
+      - ifname: Tunnel0
+        ipv4: 172.16.0.2/24
+        node: r2
+      - ifname: Tunnel0
+        ipv4: 172.16.0.3/24
+        node: r3
+      type: tunnel
+      virtual_interface: true
+    - bridge: input_4
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.3.1/24
+      linkindex: 4
+      name: r1 -> [r2,r3]
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.2/24
+        node: r2
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.3/24
+        node: r3
+      type: lan
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08-4F-A9-00-00-01
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 2
+    interfaces:
+    - ifindex: 20000
+      ifname: Tunnel0
+      ipv4: 172.16.0.2/24
+      linkindex: 1
+      name: r2 -> [r1,r3]
+      neighbors:
+      - ifname: Tunnel13
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: Tunnel0
+        ipv4: 172.16.0.3/24
+        node: r3
+      type: tunnel
+      virtual_interface: true
+    - ifindex: 20001
+      ifname: Tunnel1
+      ipv4: 172.16.1.2/24
+      linkindex: 2
+      name: r2 -> r3
+      neighbors:
+      - ifname: Tunnel1
+        ipv4: 172.16.1.3/24
+        node: r3
+      type: tunnel
+      virtual_interface: true
+    - bridge: input_4
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 172.16.3.2/24
+      linkindex: 4
+      name: r2 -> [r1,r3]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.3.1/24
+        node: r1
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.3/24
+        node: r3
+      type: lan
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.102
+      mac: 08-4F-A9-00-00-02
+    name: r2
+  r3:
+    af:
+      ipv4: true
+    box: cisco/iosv
+    device: iosv
+    id: 3
+    interfaces:
+    - ifindex: 20000
+      ifname: Tunnel0
+      ipv4: 172.16.0.3/24
+      linkindex: 1
+      name: r3 -> [r1,r2]
+      neighbors:
+      - ifname: Tunnel13
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: Tunnel0
+        ipv4: 172.16.0.2/24
+        node: r2
+      type: tunnel
+      virtual_interface: true
+    - ifindex: 20001
+      ifname: Tunnel1
+      ipv4: 172.16.1.3/24
+      linkindex: 2
+      name: r3 -> r2
+      neighbors:
+      - ifname: Tunnel1
+        ipv4: 172.16.1.2/24
+        node: r2
+      type: tunnel
+      virtual_interface: true
+    - ifindex: 20002
+      ifname: Tunnel2
+      ipv4: 172.16.2.3/24
+      linkindex: 3
+      name: r3 -> stub
+      neighbors: []
+      type: tunnel
+      virtual_interface: true
+    - bridge: input_4
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv4: 172.16.3.3/24
+      linkindex: 4
+      name: r3 -> [r1,r2]
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 172.16.3.1/24
+        node: r1
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.3.2/24
+        node: r2
+      type: lan
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.103
+      mac: 08-4F-A9-00-00-03
+    name: r3
+provider: libvirt
