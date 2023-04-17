@@ -424,18 +424,18 @@ def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool],
     if gwid > 0:                                                      # Gateway ID at the front of the subnet -- need one extra IP
       add_extra_ip = 1
     if gwid < 0:                                                      # Don't allow node address allocation beyond last-in-subnet gateway
-      subtract_reserved_ip = min(subtract_reserved_ip,gwid)
+      subtract_reserved_ip = min(subtract_reserved_ip,gwid-1)
 
     pfx_size = pfx_size + subtract_reserved_ip
 
   max_id = max([ ndict[intf.node].id for intf in link.interfaces if intf.node in ndict ])
-  if max_id < pfx_size:                                               # If we can fit all node IDs attached to this link into the prefix
-    return 'id_based'                                                 # ... we'll use ID-based address allocation
-  if len(link.interfaces) + add_extra_ip < pfx_size:                  # Otherwise, if the prefix is big enough
-    return 'sequential'                                               # ... we'll use sequential address allocation
+  if pfx_size == 1:                                                   # Do we have a single node attached to a /32 link?
+    return 'loopback' if len(link.interfaces) == 1 else 'error'       # ... if so, we'll use loopback address allocation
 
-  if pfx_size < 2 and link.type == 'loopback':                        # Final straw: maybe we're dealing with a loopback?
-    return 'loopback'
+  if max_id <= pfx_size:                                              # If we can fit all node IDs attached to this link into the prefix
+    return 'id_based'                                                 # ... we'll use ID-based address allocation
+  if len(link.interfaces) + add_extra_ip <= pfx_size:                 # Otherwise, if the prefix is big enough
+    return 'sequential'                                               # ... we'll use sequential address allocation
 
   return 'error'
 
