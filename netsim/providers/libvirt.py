@@ -16,6 +16,7 @@ from .. import common
 from ..data import types
 from . import _Provider
 from ..augment.links import get_link_by_index
+from ..cli import is_dry_run,external_commands
 
 LIBVIRT_MANAGEMENT_NETWORK_NAME = "vagrant-libvirt"
 LIBVIRT_MANAGEMENT_BRIDGE_NAME  = "libvirt-mgmt"
@@ -103,24 +104,28 @@ def create_network_template(topology: Box) -> str:
 def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
   mgmt_net = topology.addressing.mgmt._network if topology is not None else ''
   mgmt_net = mgmt_net or LIBVIRT_MANAGEMENT_NETWORK_NAME
-  try:
-    subprocess.run(['virsh','net-destroy',mgmt_net],capture_output=True,text=True,check=False)    # Remove management network
-    subprocess.run(['virsh','net-undefine',mgmt_net],capture_output=True,text=True,check=False)   # ... if it exists
-    common.print_verbose(f'creating libvirt management network {mgmt_net}')
 
-    if topology is None:
-      net_template = get_libvirt_mgmt_template()                    # When called without topology data use the default template
-    else:
-      net_template = create_network_template(topology)              # Otherwise create a temporary XML file
-    result2 = subprocess.run(['virsh','net-define',net_template],capture_output=True,check=True,text=True)
-    if not topology is None:                                        # Remove the temporary XML file if needed
-      os.remove(net_template)
+  external_commands.run_command(
+    ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True)    # Remove management network
+  external_commands.run_command(
+    ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True)   # ... if it exists
+  common.print_verbose(f'creating libvirt management network {mgmt_net}')
 
-  except subprocess.CalledProcessError as e:
-    common.fatal(f'Exception in net handling for libvirt network {mgmt_net}: {e.returncode}\n{e.stderr}')
+  if topology is None:
+    net_template = get_libvirt_mgmt_template()                    # When called without topology data use the default template
+  else:
+    net_template = create_network_template(topology)              # Otherwise create a temporary XML file
+  external_commands.run_command(
+    ['virsh','net-define',net_template],check_result=True)
+  if not topology is None:                                        # Remove the temporary XML file if needed
+    os.remove(net_template)
+
   return
 
 def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
+  if is_dry_run():
+    print(f"DRY RUN: Assuming Linux bridge name {virsh_bridge} for libvirt network {virsh_bridge}")
+    return virsh_bridge
   try:
     result = subprocess.run(['virsh','net-info',virsh_bridge],capture_output=True,check=True,text=True)
   except:
@@ -268,9 +273,10 @@ class Libvirt(_Provider):
 
       l.bridge = linux_bridge
       common.print_verbose(f"... network {brname} maps into {linux_bridge}")
-      try:
-        subprocess.run(['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],check=True)
-      except:
+      if not external_commands.run_command(
+          ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],
+          check_result=True):
         common.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
         continue
+
       common.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")

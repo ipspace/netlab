@@ -12,7 +12,7 @@ import os
 import sys
 from box import Box
 
-from . import external_commands
+from . import external_commands, set_dry_run, is_dry_run
 from . import lab_status_change,get_lab_id,fs_cleanup
 from .. import read_topology,common,providers
 from ..utils import status,strings
@@ -36,6 +36,11 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='cleanup',
     action='store_true',
     help='Remove all configuration files created by netlab create')
+  parser.add_argument(
+    '--dry-run',
+    dest='dry_run',
+    action='store_true',
+    help='Print the commands that would be executed, but do not execute them')
   parser.add_argument(
     '--force',
     dest='force',
@@ -114,6 +119,7 @@ def remove_lab_status(topology: Box) -> None:
 
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
+  set_dry_run(args)
   if not os.path.isfile(args.snapshot):
     print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
           "Looks like no lab was started from this directory")
@@ -160,4 +166,6 @@ def run(cli_args: typing.List[str]) -> None:
 
   if not mismatch:
     remove_lab_status(topology)
-  status.unlock_directory()
+
+  if not is_dry_run():
+    status.unlock_directory()

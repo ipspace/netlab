@@ -12,6 +12,7 @@ from box import Box
 from pathlib import Path
 
 from .. import common
+from . import is_dry_run
 
 def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
   if spacing:
@@ -24,13 +25,22 @@ def stringify(cmd : typing.Union[str,list]) -> str:
     return " ".join(cmd)
   return str(cmd)
 
-def run_command(cmd : typing.Union[str,list], check_result : bool = False) -> bool:
+def run_command(
+    cmd : typing.Union[str,list],
+    check_result : bool = False,
+    ignore_errors: bool = False,
+    return_stdout: bool = False) -> typing.Union[bool,str]:
+
   if common.debug_active('cli'):
-    print("Not running: %s" % cmd)
+    print(f"Not running: {cmd}")
+    return True
+
+  if is_dry_run():
+    print(f"DRY RUN: {cmd}")
     return True
 
   if common.VERBOSE:
-    print(".. executing: %s" % cmd)
+    print(f".. executing: {cmd}")
 
   if isinstance(cmd,str):
     cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
@@ -39,14 +49,16 @@ def run_command(cmd : typing.Union[str,list], check_result : bool = False) -> bo
     result = subprocess.run(cmd,capture_output=check_result,check=True,text=True)
     if not check_result:
       return True
+    if return_stdout:
+      return result.stdout
     return result.stdout != ""
   except Exception as ex:
-    if not common.QUIET:
+    if not common.QUIET and not ignore_errors:
       print( f"Error executing {stringify(cmd)}:\n  {ex}" )
     return False
 
 def test_probe(p : str) -> bool:
-  return run_command(p,True)
+  return bool(run_command(p,check_result=True))
 
 def set_ansible_flags(cmd : list) -> list:
   if common.VERBOSE:
@@ -65,7 +77,7 @@ def run_probes(settings: Box, provider: str, step: int = 0) -> None:
   for p in settings.providers[provider].probe:
     if not test_probe(p):
       common.fatal("%s failed, aborting" % p)
-  if common.VERBOSE or step:
+  if common.VERBOSE or step and not is_dry_run():
     print(".. all tests succeeded, moving on\n")
 
 def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "test", exec_command: typing.Optional[str] = None) -> None:

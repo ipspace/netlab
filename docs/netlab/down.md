@@ -7,7 +7,7 @@ This command uses the lab topology or the snapshot file created by **netlab up**
 ## Usage
 
 ```
-usage: netlab down [-h] [-v] [--cleanup] [--force] [--snapshot [SNAPSHOT]]
+usage: netlab down [-h] [-v] [--cleanup] [--dry-run] [--force] [--snapshot [SNAPSHOT]]
 
 Destroy the virtual lab
 
@@ -15,6 +15,7 @@ options:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose logging (where applicable)
   --cleanup             Remove all configuration files created by netlab create
+  --dry-run             Print the commands that would be executed, but do not execute them
   --force               Force shutdown or cleanup (use at your own risk)
   --snapshot [SNAPSHOT]
                         Transformed topology snapshot file
