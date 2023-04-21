@@ -5,9 +5,6 @@
 # TopologyOutput class and replacing or augmenting its methods (most commonly, write)
 #
 
-import platform
-import subprocess
-import os
 import typing
 import re
 

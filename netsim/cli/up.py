@@ -8,16 +8,13 @@
 import typing
 import argparse
 import os
-import glob
-import subprocess
-import shutil
 
 from box import Box
 from pathlib import Path
 
 from .. import common
 from . import create
-from . import external_commands
+from . import external_commands, set_dry_run, is_dry_run
 from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change, get_lab_id
 from .. import providers
@@ -38,6 +35,11 @@ def up_parse_args(standalone: bool) -> argparse.ArgumentParser:
     dest='no_config',
     action='store_true',
     help='Do not configure lab devices')
+  parser.add_argument(
+    '--dry-run',
+    dest='dry_run',
+    action='store_true',
+    help='Print the commands that would be executed, but do not execute them')
   parser.add_argument(
     '--fast-config',
     dest='fast_config',
@@ -211,11 +213,13 @@ Main "lab start" process
 def run(cli_args: typing.List[str]) -> None:
   up_args_parser = up_parse_args(False)                       # Try to parse the up-specific arguments
   (args,rest) = up_args_parser.parse_known_args(cli_args)
-  if not args.snapshot:
+  set_dry_run(args)
+  if not args.snapshot and not is_dry_run():
     check_existing_lab()
 
   topology = get_topology(args,cli_args)
-  check_lab_instance(topology)
+  if not is_dry_run():
+    check_lab_instance(topology)
 
   settings = topology.defaults
   if common.QUIET:
@@ -233,7 +237,8 @@ def run(cli_args: typing.List[str]) -> None:
     common.fatal(f'race condition, lab instance already running in {topology.defaults.err_conflict}')
     return
 
-  status.lock_directory()
+  if not is_dry_run():
+    status.lock_directory()
 
   start_provider_lab(topology,p_provider)
   for s_provider in topology[p_provider].providers:

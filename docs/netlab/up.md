@@ -18,21 +18,21 @@ You can use `netlab up` to create configuration files and start the lab, or use 
 ## Usage
 
 ```text
-usage: netlab up [-h] [--log] [-q] [-v] [--debug] [--defaults DEFAULTS] [-d DEVICE]
-                 [-p PROVIDER] [--plugin PLUGIN][-s SETTINGS] 
-                 [--no-config] [--fast-config] [topology]
+usage: netlab up [-h] [--log] [-q] [-v] [--defaults DEFAULTS] [-d DEVICE] [-p PROVIDER]
+                 [--plugin PLUGIN] [-s SETTINGS] [--no-config] [--dry-run]
+                 [--fast-config] [--snapshot [SNAPSHOT]]
+                 [topology]
 
 Create configuration files, start a virtual lab, and configure it
 
 positional arguments:
   topology              Topology file (default: topology.yml)
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --log                 Enable basic logging
   -q, --quiet           Report only major errors
-  -v, --verbose         Verbose logging
-  --debug               Debugging (might not execute external commands)
+  -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
   --defaults DEFAULTS   Local topology defaults file
   -d DEVICE, --device DEVICE
                         Default device type
@@ -42,6 +42,7 @@ optional arguments:
   -s SETTINGS, --set SETTINGS
                         Additional parameters added to topology file
   --no-config           Do not configure lab devices
+  --dry-run             Print the commands that would be executed, but do not execute them
   --fast-config         Use fast device configuration (Ansible strategy = free)
   --snapshot [SNAPSHOT]
                         Use netlab snapshot file created by a previous lab run

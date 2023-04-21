@@ -18,6 +18,8 @@ from .. import augment, common, read_topology
 from .. import __version__
 from ..utils import status
 
+DRY_RUN: bool = False
+
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
   parser.add_argument('--log', dest='logging', action='store_true',
@@ -48,13 +50,29 @@ def topology_parse_args() -> argparse.ArgumentParser:
   parser.add_argument('-s','--set',dest='settings', action='append',help='Additional parameters added to topology file')
   return parser
 
+def set_dry_run(args: argparse.Namespace) -> None:
+  global DRY_RUN
+
+  if 'dry_run' in args:
+    DRY_RUN = args.dry_run
+  else:
+    DRY_RUN = False
+
+def is_dry_run() -> bool:
+  global DRY_RUN
+  return DRY_RUN
+
 #
 # Common file/directory cleanup routine, used by collect/clab/down
 #
 
 def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
+  global DRY_RUN
   for fname in filelist:
     if os.path.isdir(fname):
+      if DRY_RUN:
+        print(f"DRY RUN: removing directory tree {fname}")
+        continue
       if verbose:
         print(f"... removing directory tree {fname}")
       try:
@@ -62,6 +80,9 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
       except Exception as ex:
         common.fatal(f"Cannot clean up directory {fname}: {ex}")
     elif os.path.exists(fname):
+      if DRY_RUN:
+        print(f"DRY RUN: removing {fname}")
+        continue
       if verbose:
         print(f"... removing {fname}")
       try:
@@ -103,7 +124,8 @@ def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typ
 #
 
 def get_message(topology: Box, action: str, default_message: bool = False) -> typing.Optional[str]:
-  if not 'message' in topology:
+  global DRY_RUN
+  if not 'message' in topology or DRY_RUN:
     return None
 
   if isinstance(topology.message,str):                      # We have a single message
@@ -132,6 +154,8 @@ def lab_status_update(
       update: typing.Optional[dict] = None,
       cb: typing.Optional[typing.Callable] = None) -> None:
 
+  if DRY_RUN:                                               # Don't update status if we're in dry-run mode 
+    return
   lab_id = get_lab_id(topology)                             # Get the lab ID (or default)
   if not lab_id in status:
     status[lab_id].dir = os.getcwd()                        # Map lab ID into current directory
@@ -159,6 +183,10 @@ def lab_status_update(
 lab_status_change -- change current lab status
 """
 def lab_status_change(topology: Box, new_status: str) -> None:
+  global DRY_RUN
+  if DRY_RUN:                                              # Don't update status if we're in dry-run mode 
+    return
+
   status.change_status(
     topology,
     callback = lambda s,t: 
