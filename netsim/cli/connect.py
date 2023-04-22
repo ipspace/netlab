@@ -18,11 +18,12 @@ class LogLevel(IntEnum):
 
 from box import Box
 
-from . import external_commands
+from . import external_commands, set_dry_run
 
 from . import load_snapshot
 from ..outputs import common as outputs_common
 from .. import common
+from ..utils import strings
 
 #
 # CLI parser for 'netlab initial' command
@@ -136,6 +137,24 @@ def connect_to_node(node: str, rest: list, topology: Box, log_level: LogLevel = 
   else:
     common.fatal(f'Unknown connection method {connection} for host {node}',module='connect')
 
+def connect_to_tool(tool: str, rest: list, topology: Box, log_level: LogLevel = LogLevel.INFO) -> None:
+  cmds = external_commands.get_tool_command(tool,'connect',topology)
+  if cmds is None:
+    common.fatal(f'Cannot connect to {tool}: the tool has no "connect" command',module='connect')
+    return
+
+  for cmd in cmds:
+    cmd = strings.eval_format(cmd,topology)
+    exec_arg = [ 'bash', '-c', cmd ]
+    if log_level == LogLevel.DRY_RUN:
+      print(f"DRY RUN: {cmd}")
+      continue
+    if log_level == LogLevel.ARGS:
+      print(f"Executing: {exec_arg}")
+    elif log_level == LogLevel.INFO:
+      print(f"Connecting to {tool}...")
+    subprocess.run(exec_arg)
+
 def get_log_level(args: argparse.Namespace) -> LogLevel:
   if args.dry_run:
     return LogLevel.DRY_RUN
@@ -149,12 +168,16 @@ def get_log_level(args: argparse.Namespace) -> LogLevel:
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = connect_parse(cli_args)
   log_level = get_log_level(args)
+  set_dry_run(args)
+
   rest = [ f'"{arg}"' if " " in arg else arg for arg in rest ]      # Quote arguments with whitespaces
 
   topology = load_snapshot(args)
   host = args.host
   if host in topology.nodes:
     connect_to_node(host,rest,topology,log_level)
+  elif host in topology.tools:
+    connect_to_tool(host,rest,topology,log_level)
   else:
-    common.fatal(f'Unknown host {host}')
+    common.fatal(f'Unknown host or external tool {host}')
     return
