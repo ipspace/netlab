@@ -105,6 +105,19 @@ def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
 
 # Snapshot-or-topology loader (used by down)
 
+def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
+  if not os.path.isfile(args.snapshot):
+    print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
+          "Looks like no lab was started from this directory")
+    sys.exit(1)
+
+  topology = read_topology.read_yaml(filename=args.snapshot)
+  if topology is None:
+    print(f"Cannot read the topology snapshot file {args.snapshot}")
+    sys.exit(1)
+
+  return topology
+
 def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typing.Optional[Box]:
   common.set_logging_flags(args)
   if args.device or args.provider or args.settings:     # If we have -d, -p or -s flag

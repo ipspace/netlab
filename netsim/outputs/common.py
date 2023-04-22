@@ -5,6 +5,7 @@
 import typing
 from box import Box
 from ..augment import devices
+from ..data import get_empty_box
 
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
@@ -39,7 +40,7 @@ def adjust_inventory_host(
       translate: typing.Optional[dict] = None,
       ignore: typing.Optional[list] = None,
       group_vars: typing.Optional[bool] = False) -> Box:
-  host = Box({})
+  host = get_empty_box()
 
   translate = translate or topo_to_host
   ignore = ignore or topo_to_host_skip

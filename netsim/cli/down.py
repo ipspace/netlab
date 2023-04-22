@@ -13,7 +13,7 @@ import sys
 from box import Box
 
 from . import external_commands, set_dry_run, is_dry_run
-from . import lab_status_change,get_lab_id,fs_cleanup
+from . import lab_status_change,get_lab_id,fs_cleanup,load_snapshot
 from .. import read_topology,common,providers
 from ..utils import status,strings
 from .up import provider_probes
@@ -156,16 +156,9 @@ def stop_external_tools(args: argparse.Namespace, topology: Box) -> None:
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
   set_dry_run(args)
-  if not os.path.isfile(args.snapshot):
-    print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
-          "Looks like no lab was started from this directory")
-    sys.exit(1)
 
-  print(f"Reading transformed lab topology from snapshot file {args.snapshot}")
-  topology = read_topology.read_yaml(filename=args.snapshot)
-  if topology is None:
-    common.fatal('... could not read the lab topology, aborting')
-    return
+  topology = load_snapshot(args)
+  print(f"Read transformed lab topology from snapshot file {args.snapshot}")
 
   mismatch = lab_dir_mismatch(topology)
 
