@@ -67,4 +67,3 @@ Each command is a formatted string and can use parameters from the tool definiti
 
 **Notes:**
 * The mapping of container volumes and configuration files have to be done in the individual **up** commands.
-
