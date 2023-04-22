@@ -57,6 +57,9 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
 
   return parser.parse_args(args)
 
+#
+# Cleanup common configuration files
+#
 def down_cleanup(topology: Box, verbose: bool = False) -> None:
   p_provider = topology.provider
   cleanup_list = topology.defaults.providers[p_provider].cleanup or []
@@ -71,7 +74,25 @@ def down_cleanup(topology: Box, verbose: bool = False) -> None:
   cleanup_list.append('netlab.snapshot.yml')
   fs_cleanup(cleanup_list,verbose)
 
-def stop_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = None) -> None:
+#
+# Cleanup tool configuration directories and other tool-related stuff
+#
+def tool_cleanup(topology: Box, verbose: bool = False) -> None:
+  for tool in topology.tools.keys():
+    cmds = external_commands.get_tool_command(tool,'cleanup',topology) or []
+    cmds.append(f'sudo rm -fr {tool}')
+    external_commands.execute_tool_commands(cmds,topology)
+    if not is_dry_run():
+      print(f"... cleaned up {tool} data")
+
+#
+# Stop the provider-specific workloads
+#
+def stop_provider_lab(
+      topology: Box,
+      pname: str,
+      sname: typing.Optional[str] = None,
+      step: int = 2) -> None:
   p_name = sname or pname
   p_topology = providers.select_topology(topology,p_name)
   p_module   = providers._Provider.load(p_name,topology.defaults.providers[p_name])
@@ -81,7 +102,7 @@ def stop_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = N
     exec_command = topology.defaults.providers[pname][sname].stop
 
   p_module.call('pre_stop_lab',p_topology)
-  external_commands.stop_lab(topology.defaults,p_name,2,"netlab down",exec_command)
+  external_commands.stop_lab(topology.defaults,p_name,step,"netlab down",exec_command)
   p_module.call('post_stop_lab',p_topology)
 
 '''
@@ -117,6 +138,21 @@ def remove_lab_status(topology: Box) -> None:
     topology,
     callback = lambda s,t: s.pop(lab_id,None))
 
+"""
+Stop external tools
+"""
+def stop_external_tools(args: argparse.Namespace, topology: Box) -> None:
+  lab_status_change(topology,f'stopping external tools')
+  for tool in topology.tools.keys():
+    cmds = external_commands.get_tool_command(tool,'down',topology)
+    if cmds is None:
+      continue
+    external_commands.execute_tool_commands(cmds,topology)
+    if not is_dry_run():
+      print(f"... {tool} tool stopped")
+
+  lab_status_change(topology,f'external tools stopped')
+
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
   set_dry_run(args)
@@ -135,10 +171,16 @@ def run(cli_args: typing.List[str]) -> None:
 
   lab_status_change(topology,f'lab shutdown requested{" in conflicting directory" if mismatch else ""}')
   try:
-    provider_probes(topology)
+    provider_probes(topology,1)
   except:
     if not args.force:
       return
+
+  stop_step = 2
+  if 'tools' in topology:
+    external_commands.print_step(stop_step,"Stopping external tools",spacing=True)
+    stop_step = stop_step + 1
+    stop_external_tools(args,topology)
 
   p_provider = topology.provider
   p_module = providers._Provider.load(p_provider,topology.defaults.providers[p_provider])
@@ -148,20 +190,27 @@ def run(cli_args: typing.List[str]) -> None:
   for s_provider in topology[p_provider].providers:
     lab_status_change(topology,f'stopping {s_provider} provider')
     try:
-      stop_provider_lab(topology,p_provider,s_provider)
+      stop_provider_lab(topology,p_provider,s_provider,step=stop_step)
+      stop_step = stop_step + 1
     except:
       if not args.force:
         return
     print()
 
   try:
-    stop_provider_lab(topology,p_provider)
+    stop_provider_lab(topology,p_provider,step=stop_step)
+    stop_step = stop_step + 1
   except:
     if not args.force:
       return
 
   if args.cleanup:
-    external_commands.print_step(3,"Cleanup configuration files",spacing = True)
+    if 'tools' in topology:
+      external_commands.print_step(stop_step,"Cleanup tool configurations",spacing=True)
+      stop_step = stop_step + 1
+      tool_cleanup(topology,True)
+
+    external_commands.print_step(stop_step,"Cleanup configuration files",spacing=True)
     down_cleanup(topology,True)
 
   if not mismatch:

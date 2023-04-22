@@ -32,7 +32,8 @@ def print_structured_dict(d: Box, prefix: str = '') -> None:
 # eval_format: emulate f'strings' evaluated on a data structure
 #
 def eval_format(fmt: str, data: dict) -> str:
-  return str(eval(f"f'{fmt}'",dict(data)))                            # An awful hack to use f-string specified in a string variable
+  fmt = fmt.replace("'","\\'")                    # Escape single quotes to prevent eval crashes
+  return str(eval(f"f'{fmt}'",dict(data)))        # An awful hack to use f-string specified in a string variable
 
 """
 confirm: print the prompt and wait for a yes/no answer

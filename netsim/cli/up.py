@@ -36,6 +36,11 @@ def up_parse_args(standalone: bool) -> argparse.ArgumentParser:
     action='store_true',
     help='Do not configure lab devices')
   parser.add_argument(
+    '--no-tools',
+    dest='no_tools',
+    action='store_true',
+    help='Do not start the external tools')
+  parser.add_argument(
     '--dry-run',
     dest='dry_run',
     action='store_true',
@@ -160,12 +165,12 @@ delete it.
 """
 Execute provider probes
 """
-def provider_probes(topology: Box) -> None:
+def provider_probes(topology: Box, step: int = 2) -> None:
   p_provider = topology.provider
 
-  external_commands.run_probes(topology.defaults,p_provider,2)
+  external_commands.run_probes(topology.defaults,p_provider,step)
   for s_provider in topology[p_provider].providers:
-    external_commands.run_probes(topology.defaults,s_provider,2)
+    external_commands.run_probes(topology.defaults,s_provider,step)
 
 """
 Start lab topology for a single provider
@@ -208,6 +213,43 @@ def recreate_secondary_config(topology: Box, p_provider: str, s_provider: str) -
   sp_module.create(s_topology,filename)                               # ... and create the new configuration file
 
 """
+Deploy initial configuration
+"""
+def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
+  if args.no_config:
+    print("\nInitial configuration skipped, run 'netlab initial' to configure the devices")
+    return
+
+  lab_status_change(topology,f'deploying initial configuration')
+  external_commands.deploy_configs(4,"netlab up",args.fast_config)
+  message = get_message(topology,'up',False)
+  if message:
+    print(f"\n\n{message}")
+  lab_status_change(topology,f'initial configuration complete')
+
+"""
+Deploy external tools
+"""
+def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
+  if not 'tools' in topology:
+    return
+  if args.no_tools:
+    print("\nExternal tools not started, start them manually")
+    return
+
+  print ("\nStarting external tools...")
+  lab_status_change(topology,f'starting external tools')
+  for tool in topology.tools.keys():
+    cmds = external_commands.get_tool_command(tool,'up',topology)
+    if cmds is None:
+      continue
+    external_commands.execute_tool_commands(cmds,topology)
+    if not is_dry_run():
+      print(f"... {tool} tool started")
+
+  lab_status_change(topology,f'external tools started')
+
+"""
 Main "lab start" process
 """
 def run(cli_args: typing.List[str]) -> None:
@@ -246,14 +288,6 @@ def run(cli_args: typing.List[str]) -> None:
     recreate_secondary_config(topology,p_provider,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 
-  if not args.no_config:
-    lab_status_change(topology,f'deploying initial configuration')
-    external_commands.deploy_configs(4,"netlab up",args.fast_config)
-    message = get_message(topology,'up',False)
-    if message:
-      print(f"\n\n{message}")
-    lab_status_change(topology,f'initial configuration complete')
-  else:
-    print("\nInitial configuration skipped, run 'netlab initial' to configure the devices")
-
+  deploy_initial_config(args,topology)
+  start_external_tools(args,topology)
   lab_status_change(topology,'started')
