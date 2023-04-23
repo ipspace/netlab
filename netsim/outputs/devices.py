@@ -1,5 +1,5 @@
 #
-# Create Ansible inventory
+# Create devices inventory in YAML format
 #
 import typing
 

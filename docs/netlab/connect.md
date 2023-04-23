@@ -5,32 +5,31 @@
 ## Usage
 
 ```text
-usage: netlab connect [-h] [-v] host
+usage: netlab connect [-h] [-v] [-q] [--dry-run] [--snapshot [SNAPSHOT]] host
 
-Connect to a network device
+Connect to a network device or an external tool
 
 positional arguments:
-  host           Device to connect to
+  host                  Device or tool to connect to
 
-optional arguments:
-  -h, --help     show this help message and exit
-  -v, --verbose  Verbose logging
-  -d, --devices  Use netlab-devices.yml as inventory source
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Verbose logging
+  -q, --quiet           No logging
+  --dry-run             Print the commands that would be executed, but do not execute them
+  --snapshot [SNAPSHOT]
+                        Transformed topology snapshot file
 
 The rest of the arguments are passed to SSH or docker exec command
 ```
 
-## Collecting Inventory Data
+## Collecting Device Data
 
-When run with `--devices` argument, **netlab connect** reads inventory data from `netlab-devices.yml` file[^1]. You can override the default file name with `NETLAB_DEVICES` environment variable.
-
-In all other cases, **netlab connect** uses **ansible-inventory** command to fetch device data from Ansible inventory.
-
-[^1]: *netlab-devices.yml* inventory uses Ansible naming convention and contains information very similar to what **ansible-inventory** would return.
+**netlab connect** uses the lab snapshot file (default: `netlab.snapshot.yml`) to read device information. You can overwrite the default snapshot file with the `--snapshot` command line parameter.
 
 ## Using Inventory Data
 
-**netlab connect** command uses the following device inventory variables:
+**netlab connect** command uses the following device data (most of it derived from device **group_vars**):
 
 * `ansible_connection`: Use **docker exec** if the connection is set to `docker`[^cd]. Use **ssh** if the connection is set to `ssh`, `paramiko`[^cp], `network_cli`[^cc] or `netconf`[^cn]. Fail for all other connection types.
 * `ansible_host`: IP address or alternate FQDN for the lab device (default: host name specified on the command line)
@@ -49,6 +48,8 @@ In all other cases, **netlab connect** uses **ansible-inventory** command to fet
 ## Executing a Single Command
 
 Command line parameters specified after the device name are passed to **ssh** or **docker exec** command, allowing you to execute a single command on a lab device.
+
+If you want to process the results of the command executed on a lab device, use **netlab connect -q** to remove the "_we are going to connect to device X_" message.
 
 ## Handling SSH Keys
 

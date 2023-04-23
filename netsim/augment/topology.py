@@ -12,7 +12,8 @@ from box import Box
 
 from .. import common
 from .. import data
-from ..data.validate import must_be_list,validate_attributes,must_be_string
+from ..data.validate import validate_attributes
+from ..data.types import must_be_list,must_be_string,must_be_dict
 
 #
 # Extend link/node/global attribute lists with extra attributes
@@ -72,6 +73,8 @@ def check_required_elements(topology: Box) -> None:
 
   if not 'name' in topology:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
+    for bad_char in (' ','.'):
+      topo_name = topo_name.replace(bad_char,'_')
     topology.name = topo_name
 
   if 'module' in topology:
@@ -92,6 +95,42 @@ def check_global_elements(topology: Box) -> None:
     modules=topology.get('module',[]),              # ... against topology modules
     module='topology',                              # Function is called from 'nodes' module
     extra_attributes = providers)                   # Allow provider-specific settings (not checked at the moment)
+
+"""
+Check the 'tools' section of the topology file
+
+* Tools section must be a dictionary
+"""
+def check_tools(topology: Box) -> None:
+  if not 'tools' in topology:
+    return
+
+  for tool in topology.tools.keys():                # Iterate over tools     
+    must_be_dict(                                   # Make sure the tool configuration is a dictionary    
+      parent=topology.tools,
+      key=tool,path=f'topology.tools',
+      create_empty=True,
+      module='topology')
+    if not isinstance(topology.tools[tool],dict):   # Skip if we have an error
+      continue
+    if not tool in topology.defaults.tools:         # Check that the tool is valid
+      common.error(
+        f'Invalid tool {tool}\n... valid tools are {",".join(topology.defaults.tools.keys())}',
+        common.IncorrectValue,
+        'topology')
+      continue
+    if not 'runtime' in topology.tools[tool]:       # Check that the tool has a runtime defined
+      topology.tools[tool].runtime = 'docker'       # Default is Docker
+
+    # Merge tool defaults and tool-specific settings, then check that the runtime is valid
+    #
+    tool_data = topology.defaults.tools[tool] + topology.tools[tool] 
+    if not tool_data[tool_data.runtime] or not 'up' in tool_data[tool_data.runtime]:            
+      valid_runtimes = [k for k in tool_data.keys() if 'up' in k ]
+      common.error(
+        f'Invalid runtime {tool_data.runtime} for tool {tool}\n... valid runtimes are {",".join(valid_runtimes)}',
+        common.IncorrectValue,
+        'topology')
 
 #
 # Find virtualization provider, set provider and defaults.provider to that value

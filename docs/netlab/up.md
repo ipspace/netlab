@@ -19,7 +19,7 @@ You can use `netlab up` to create configuration files and start the lab, or use 
 
 ```text
 usage: netlab up [-h] [--log] [-q] [-v] [--defaults DEFAULTS] [-d DEVICE] [-p PROVIDER]
-                 [--plugin PLUGIN] [-s SETTINGS] [--no-config] [--dry-run]
+                 [--plugin PLUGIN] [-s SETTINGS] [--no-config] [--no-tools] [--dry-run]
                  [--fast-config] [--snapshot [SNAPSHOT]]
                  [topology]
 
@@ -42,6 +42,7 @@ options:
   -s SETTINGS, --set SETTINGS
                         Additional parameters added to topology file
   --no-config           Do not configure lab devices
+  --no-tools            Do not start the external tools
   --dry-run             Print the commands that would be executed, but do not execute them
   --fast-config         Use fast device configuration (Ansible strategy = free)
   --snapshot [SNAPSHOT]
@@ -57,6 +58,10 @@ Do not use the `--fast-config` option with custom configuration templates that m
 **netlab up** command checks the netlab status file (default: `~/.netlab/status.yml`) to verify that the current lab instance (default: `default`) is not running in another directory. You cannot start two copies of the same lab instance (even if they're using different directories) due to potential management MAC/IP address overlap. If you want to run multiple lab instances on the same server, use the **‌[multilab](../plugins/multilab.md)** plugin.
 
 **netlab up** command also uses the `netlab.lock` file in the current directory before invoking **netlab create** process to ensure you cannot accidentally overwrite provider configuration files. If you want to resume a failed lab startup process (usually caused by VM timeouts), use **netlab up --snapshot** command which skips the **netlab create** process.
+
+```{tip}
+**netlab up --dry-run** command recreates the configuration files and cannot be used in a directory with a running lab. Use **netlab up --snapshot --dry-run** to display the commands that were used to start the lab.
+```
 
 ## Provider-Specific Initialization
 

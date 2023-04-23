@@ -67,7 +67,7 @@ def run(cli_args: typing.List[str],
     args.devices = None
 
   if not args.output:
-    args.output = ['provider','yaml=netlab.snapshot.yml']
+    args.output = ['provider','yaml=netlab.snapshot.yml','tools']
     args.output.append('devices' if args.devices else 'ansible:dirs')
   elif args.devices:
     common.error('--output and --devices flags are mutually exclusive',common.IncorrectValue,'create')

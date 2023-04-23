@@ -27,6 +27,7 @@ def transform_setup(topology: Box) -> None:
   augment.devices.augment_device_settings(topology)
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('init',topology)
+  augment.topology.check_tools(topology)
   common.exit_on_error()
 
   augment.topology.extend_attribute_list(topology.defaults)             # Attributes have to be extended before group init

@@ -2,17 +2,13 @@
 # Run external commands from netlab CLI
 #
 import typing
-import argparse
 import os
-import glob
 import subprocess
-import shutil
-
 from box import Box
-from pathlib import Path
 
 from .. import common
 from . import is_dry_run
+from ..utils import strings
 
 def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
   if spacing:
@@ -112,3 +108,26 @@ def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test",
     exec_command = settings.providers[provider].stop
   if not run_command(exec_command):
     common.fatal(f"{exec_command} failed, aborting...",command)
+#
+# Get a list of external tool commands to execute
+#
+def get_tool_command(tool: str, cmd: str, topology: Box) -> typing.Optional[list]:
+  tdata = topology.defaults.tools[tool] + topology.tools[tool]
+  topology[tool] = tdata                       # Enable 'tool.param' syntax in tool commands
+  runtime = tdata.runtime or 'docker'
+  if not runtime in tdata:
+    print("... skipping {tool} tool, no {runtime} runtime configuration")
+    return None
+  if not tdata[runtime][cmd]:
+    print("... skipping {tool} tool, no {runtime} {cmd} command")
+    return None
+  cmds = tdata[runtime][cmd]
+  return cmds if isinstance(cmds,list) else [ cmds ]
+
+#
+# Execute external tool commands
+#
+def execute_tool_commands(cmds: list, topology: Box) -> None:
+  for cmd in cmds:
+    cmd = strings.eval_format(cmd,topology)
+    run_command(cmd = [ 'bash', '-c', cmd ],check_result=True)

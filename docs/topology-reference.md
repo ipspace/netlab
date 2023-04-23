@@ -16,6 +16,7 @@ Other topology elements include:
 * **groups** -- optional [groups of nodes](groups.md)
 * **module** -- default list of [modules](modules.md) used by this network topology. You can use device-level **module** attribute to override this setting for individual nodes.
 * **plugin** -- list of [plugins](plugins.md) used by this topology.
+* **tools** -- dictionary of [external network management tools](extools.md) deployed after the lab has been started and configured.
 
 Finally, you can set these topology-level parameters:
 
@@ -28,7 +29,9 @@ Finally, you can set these topology-level parameters:
 * All elements apart from **nodes** are optional -- missing **links** element indicates a topology without inter-node links (just the management interfaces)
 * Default values of **defaults** and **addressing** elements are taken from [default settings](defaults.md).
 * List of modules is used to specify additional initial configuration elements (example: OSPF routing)
-* Default topology name is the directory name.
+* Default topology name is the directory name[^RBC].
+
+[^RBC]: The first twelve characters of the directory name are used. Spaces and dots within the directory name are replaced with underscores.
 
 You'll find sample topology files in the [tutorials](tutorials.md).
 
@@ -42,6 +45,7 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    groups.md
    addressing.md
    modules.md
+   extools.md
    plugins.md
    providers.md
    components.md

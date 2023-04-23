@@ -20,6 +20,7 @@ The easiest way to get started is to [add support for a new platform for an exis
    device-box.md
    device-features.md
    devices.md
+   extools.md
    unnumbered.md
    doubt.md
 ```
