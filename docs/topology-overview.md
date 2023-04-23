@@ -26,6 +26,9 @@ Topology description file is a YAML file with these top-level elements:
 **provider** (optional)
 : Virtualization provider (*libvirt*, *virtualbox*, *clab* or *external*). Default value: *libvirt*.
 
+**tools** (optional)
+: [External network management tools](extools.md) deployed together with the lab topology
+
 Sounds confusing? The following sample topology file should help you grasp the concepts. You might also want to [explore the tutorials](tutorials.md).
 
 Want to know more? Please explore the [lab topology reference](topology-reference.md) documentation.
@@ -40,8 +43,7 @@ We'll start with the list of nodes. All devices will run Arista EOS, so we'll sp
 
 ```
 ---
-defaults:
-  device: eos
+defaults.device: eos
 
 nodes:
 - e1
@@ -78,8 +80,7 @@ Here is the complete topology file that you could use to build the virtual netwo
 
 ```
 ---
-defaults:
-  device: eos
+defaults.device: eos
 
 nodes: [ e1, c1, c2, e2 ]
 
@@ -95,3 +96,23 @@ links:
 ```
 
 [^1]: The **nodes** list has been transformed to an inline list to make the example at least marginally interesting.
+
+Finally, we'll run OSPF between the four devices. Optional configuration module are specified with the **module** parameter; adding OSPF is as easy as adding a single **module: [ ospf ]** line to the topology file:
+
+```
+---
+defaults.device: eos
+module: [ ospf ]
+
+nodes: [ e1, c1, c2, e2 ]
+
+links:
+- e1-c1
+- e1-c2
+- c1:
+  e2:
+  bandwidth: 1000
+- c2:
+  e2:
+  bandwidth: 1000
+```
