@@ -27,7 +27,7 @@ tools:
 
 You can configure individual tools using parameters in the tool-specific dictionary. Some of these parameters are system-defined, others are defined by the tool creator. System-defined parameters include:
 
-* **runtime** -- execution environment. The only supported value is *docker* (Docker container dynamically pulled from a container repository). If you want to start the tools on the Linux host, define *local* execution environment ([details](dev/extools.md).
+* **runtime** -- execution environment. The only supported value is *docker* (Docker container dynamically pulled from a container repository). If you want to start the tools on the Linux host, define *local* execution environment ([details](dev/extools.md)).
 
 For the list of tool-specific parameters see the [descriptions of individual tools](extools-list).
 
@@ -57,5 +57,6 @@ tools:
 
 **Notes:**
 
+* Data collected by SuzieQ is stored on a lab-specific Docker volume and remains intact across lab runs until you execute the **netlab down --cleanup** command.
 * SuzieQ GUI is not yet supported
-* Data collected by SuzieQ is deleted when the lab is shut down.
+* SuzieQ supports a subset of _netlab_-supported platforms. _netlab_ does not check whether SuzieQ supports all the devices used in the lab topology.

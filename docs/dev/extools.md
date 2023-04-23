@@ -65,12 +65,22 @@ sources:
 
 The commands that have to be executed to start, stop, or connect to the tool are defined in runtime-specific dictionary that can have the following keys:
 
-* **up** -- a command or a list of commands executed as the last step of **netlab up** process to start the tool
-* **down** -- a command or a list of commands executed as the first step of **netlab down** process to stop the tool
-* **connect** -- a command or a list of commands executed by **netlab connect** command to connect to the tool.
-* **cleanup** -- a command or a list of commands executed during **netlab down --cleanup** to cleanup tool-specific data (example: delete Docker volumes).
+* **up** -- command(s) executed as the last step of **netlab up** process to start the tool
+* **down** -- command(s) executed as the first step of **netlab down** process to stop the tool
+* **connect** -- command(s) executed by **netlab connect** command to connect to the tool.
+* **cleanup** -- command(s) executed during **netlab down --cleanup** to cleanup tool-specific data (example: delete Docker volumes).
 
-Each command is evaluated as a Python f-string using transformed topology as the data to be used in the f-string, allowing you to use (for example) `{name}_tool` as the name of lab-specific Docker container. _netlab_ does no further processing of the commands; they have to include all the necessary parameters to map configuration files to containers or expose container ports.
+Each one of these parameters can be a string (execute a single command) or a list of one or more commands.
+
+Each command is evaluated as a Python f-string using transformed topology data as the variables used in the f-string, allowing you to use (for example) `{name}_tool` as the name of lab-specific Docker container. _netlab_ does no further processing of the commands; they have to include all the necessary parameters to map configuration files to containers or expose container ports.
+
+### Removing Tool Configuration Directory
+
+**netlab down --cleanup** removes the tool configuration directories, but fails to do so if the container creates additional files in that directory -- containers are often run as user **root**, and a regular user cannot remove files created by another user.
+
+If your tool creates additional files in the tool configuration directory, add **sudo rm -fr *toolname*** as one of the **cleanup** commands.
+
+### Example
 
 Example: the following dictionary (the value of **defaults.tools.suzieq**  parameter read from `netsim/tools/suzieq.yml` file) defines commands needed to start or stop SuzieQ:
 

@@ -80,7 +80,7 @@ def down_cleanup(topology: Box, verbose: bool = False) -> None:
 def tool_cleanup(topology: Box, verbose: bool = False) -> None:
   for tool in topology.tools.keys():
     cmds = external_commands.get_tool_command(tool,'cleanup',topology) or []
-    cmds.append(f'sudo rm -fr {tool}')
+    cmds.append(f'rm -fr {tool}')
     external_commands.execute_tool_commands(cmds,topology)
     if not is_dry_run():
       print(f"... cleaned up {tool} data")
