@@ -20,5 +20,4 @@ The following output modules are included in **netlab** distribution; you can cr
    d2.md
    yaml-or-json.md
    devices.md
-   graphite.md
 ```

@@ -78,8 +78,8 @@ def down_cleanup(topology: Box, verbose: bool = False) -> None:
 # Cleanup tool configuration directories and other tool-related stuff
 #
 def tool_cleanup(topology: Box, verbose: bool = False) -> None:
-  for tool in topology.tools.keys():
-    cmds = external_commands.get_tool_command(tool,'cleanup',topology) or []
+  for tool in list(topology.tools.keys()):
+    cmds = external_commands.get_tool_command(tool,'cleanup',topology,verbose=False) or []
     cmds.append(f'rm -fr {tool}')
     external_commands.execute_tool_commands(cmds,topology)
     if not is_dry_run():
@@ -143,7 +143,7 @@ Stop external tools
 """
 def stop_external_tools(args: argparse.Namespace, topology: Box) -> None:
   lab_status_change(topology,f'stopping external tools')
-  for tool in topology.tools.keys():
+  for tool in list(topology.tools.keys()):
     cmds = external_commands.get_tool_command(tool,'down',topology)
     if cmds is None:
       continue

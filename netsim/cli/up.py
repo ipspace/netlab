@@ -244,8 +244,12 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
     if cmds is None:
       continue
     external_commands.execute_tool_commands(cmds,topology)
+    msg = external_commands.get_tool_message(tool,topology)
     if not is_dry_run():
       print(f"... {tool} tool started")
+
+    if msg:
+      print(("DRY_RUN: " if is_dry_run() else "") + msg + "\n")
 
   lab_status_change(topology,f'external tools started')
 

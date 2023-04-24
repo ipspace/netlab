@@ -4,11 +4,6 @@ Some user might want to use _netlab_ with external management tools (example: Gr
 
 The external tools started with _netlab_ can access the management network and the management interfaces of lab devices. If you need access to lab links start your tool as a [Linux container with a custom image](labs/clab.md#deploying-linux-containers).
 
-```eval_rst
-.. contents:: Table of Contents
-   :local:
-```
-
 ```{warning}
 This is an experimental functionality with the following limitations:
 
@@ -29,34 +24,19 @@ You can configure individual tools using parameters in the tool-specific diction
 
 * **runtime** -- execution environment. The only supported value is *docker* (Docker container dynamically pulled from a container repository). If you want to start the tools on the Linux host, define *local* execution environment ([details](dev/extools.md)).
 
-For the list of tool-specific parameters see the [descriptions of individual tools](extools-list).
+For the list of tool-specific parameters see the individual tool description.
 
 (extools-list)=
 ## Supported Tools
 
 _netlab_ includes definitions for the following tools:
 
-* [](extools-suzieq)
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+
+   extool/graphite.md
+   extool/suzieq.md
+```
 
 It's relatively easy to add your own tools to the **defaults.tools** dictionary. Read [](dev/extools.md) for more details.
-
-(extools-suzieq)=
-### SuzieQ
-
-SuzieQ is the first open source, multi-vendor network observability platform application.
-
-* Add the following lines to the lab topology file to use SuzieQ with _netlab_:
-
-```
-tools:
-  suzieq:
-```
-
-* Use **netlab connect suzieq** command to start the SuzieQ CLI.
-* SuzieQ tool has no configurable parameters
-
-**Notes:**
-
-* Data collected by SuzieQ is stored on a lab-specific Docker volume and remains intact across lab runs until you execute the **netlab down --cleanup** command.
-* SuzieQ GUI is not yet supported
-* SuzieQ supports a subset of _netlab_-supported platforms. _netlab_ does not check whether SuzieQ supports all the devices used in the lab topology.

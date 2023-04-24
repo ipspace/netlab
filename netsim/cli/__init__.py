@@ -159,7 +159,7 @@ lab_status_update -- generic lab status callback
 """
 
 def get_lab_id(topology: Box) -> str:
-  return topology.get('defaults.multilab.id','default')
+  return topology.get('defaults.multilab.id','default') or 'default'    # id could be set to {} due to tool f-string evals
 
 def lab_status_update(
       topology: Box,

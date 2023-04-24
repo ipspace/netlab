@@ -24,10 +24,10 @@ _netlab_ does not map configuration files to container mount points; you have to
 
 Tool-specific configuration files are created during the **netlab create** process using **tools** output module (which becomes another default output module to use with **netlab create** or **netlab up**).
 
-The **tools** output module iterates over the list of tools used by the current topology and executes actions specified in tool-specific **config** list. Every entry in that list must contain the following parameters:
+The **tools** output module iterates over the list of tools used by the current topology and executes actions specified in tool-specific **config** list. Every entry in that list must contain the **dest** parameter (destination file name) and one of the following parameters:
 
-* **dest** -- destination file name
-* **template** -- the name of the source Jinja2 template.
+* **template** -- filename of the source Jinja2 template.
+* **render** -- the name of the custom format recognized by the tool-specific Python module (example in `netsim/tools/graphite.py`)
 
 ```{tip}
 The template file for a tool included with _netlab_ must be in the `netsim/tools/_toolname_` directory. Template files for user-defined tools can be in `tools/_toolname_` directory within the lab directory or user's home directory
@@ -66,6 +66,7 @@ sources:
 The commands that have to be executed to start, stop, or connect to the tool are defined in runtime-specific dictionary that can have the following keys:
 
 * **up** -- command(s) executed as the last step of **netlab up** process to start the tool
+* **message** -- text message to display after the **up** commands have been executed, or if **netlab connect** is used on a tool that has no **connect** command.
 * **down** -- command(s) executed as the first step of **netlab down** process to stop the tool
 * **connect** -- command(s) executed by **netlab connect** command to connect to the tool.
 * **cleanup** -- command(s) executed during **netlab down --cleanup** to cleanup tool-specific data (example: delete Docker volumes).

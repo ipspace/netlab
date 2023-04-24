@@ -138,9 +138,13 @@ def connect_to_node(node: str, rest: list, topology: Box, log_level: LogLevel = 
     common.fatal(f'Unknown connection method {connection} for host {node}',module='connect')
 
 def connect_to_tool(tool: str, rest: list, topology: Box, log_level: LogLevel = LogLevel.INFO) -> None:
-  cmds = external_commands.get_tool_command(tool,'connect',topology)
+  cmds = external_commands.get_tool_command(tool,'connect',topology,verbose=False)
   if cmds is None:
-    common.fatal(f'Cannot connect to {tool}: the tool has no "connect" command',module='connect')
+    msg = external_commands.get_tool_message(tool,topology)
+    if not msg:
+      common.fatal(f'Cannot connect to {tool}: the tool has no "connect" command',module='connect')
+    else:
+      print(msg)
     return
 
   for cmd in cmds:

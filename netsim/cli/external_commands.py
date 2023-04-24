@@ -108,20 +108,35 @@ def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test",
     exec_command = settings.providers[provider].stop
   if not run_command(exec_command):
     common.fatal(f"{exec_command} failed, aborting...",command)
+
+#
+# Get a runtime-related parameter for a tool
+#
+def get_tool_runtime_param(tool: str, param: str, verbose: bool, topology: Box) -> typing.Optional[typing.Any]:
+  tdata = topology.defaults.tools[tool] + topology.tools[tool]
+  runtime = tdata.runtime or 'docker'
+  if not runtime in tdata:
+    if verbose:
+      print(f"... skipping {tool} tool, no {runtime} runtime configuration")
+    return None
+
+  tdata = tdata[runtime] + tdata
+  topology[tool] = tdata                       # Enable 'tool.param' syntax in tool commands
+  if not tdata[param]:
+    if verbose:
+      print(f"... skipping {tool} tool, no {runtime} {param} command")
+    return None
+
+  return tdata[param]
+
 #
 # Get a list of external tool commands to execute
 #
-def get_tool_command(tool: str, cmd: str, topology: Box) -> typing.Optional[list]:
-  tdata = topology.defaults.tools[tool] + topology.tools[tool]
-  topology[tool] = tdata                       # Enable 'tool.param' syntax in tool commands
-  runtime = tdata.runtime or 'docker'
-  if not runtime in tdata:
-    print("... skipping {tool} tool, no {runtime} runtime configuration")
+def get_tool_command(tool: str, cmd: str, topology: Box,verbose: bool = True) -> typing.Optional[list]:
+  cmds = get_tool_runtime_param(tool,cmd,verbose,topology)
+  if cmds is None:
     return None
-  if not tdata[runtime][cmd]:
-    print("... skipping {tool} tool, no {runtime} {cmd} command")
-    return None
-  cmds = tdata[runtime][cmd]
+  
   return cmds if isinstance(cmds,list) else [ cmds ]
 
 #
@@ -131,3 +146,13 @@ def execute_tool_commands(cmds: list, topology: Box) -> None:
   for cmd in cmds:
     cmd = strings.eval_format(cmd,topology)
     run_command(cmd = [ 'bash', '-c', cmd ],check_result=True)
+
+#
+# Get the "how to connect to the tool" message
+#
+def get_tool_message(tool: str, topology: Box) -> typing.Optional[str]:
+  msg = get_tool_runtime_param(tool,'message',False,topology)
+  if msg is None:
+    return None
+
+  return strings.eval_format(msg,topology)

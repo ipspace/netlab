@@ -10,37 +10,17 @@ from pathlib import Path
 
 from .. import common
 from . import _TopologyOutput,check_writeable
+from ..tools import _ToolOutput
 from .common import adjust_inventory_host
 from ..utils import templates
 
-def create(nodes: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
-  inventory = Box({},default_box=True,box_dots=True)
-
-  if addressing:
-    inventory.all.vars.pools = addressing
-    for name,pool in inventory.all.vars.pools.items():
-      for k in list(pool.keys()):
-        if ('_pfx' in k) or ('_eui' in k):
-          del pool[k]
-
-  for name,node in nodes.items():
-    inventory[name] = adjust_inventory_host(
-                        node = node,
-                        defaults = defaults,
-                        ignore = ['name'],
-                        group_vars = True)
-
-  return inventory
-
-def write_yaml(data: Box, fname: str, header: str) -> None:
-  dirname = os.path.dirname(fname)
-  if dirname and not os.path.exists(dirname):
-    os.makedirs(dirname)
-
-  with open(fname,"w") as output:
-    output.write(header)
-    output.write(common.get_yaml_string(data))
-    output.close()
+def render_tool_config(tool: str, fmt: str, topology: Box) -> str:
+    output_module = _ToolOutput.load(tool)
+    if output_module:
+      return output_module.write(topology,fmt)
+    else:
+      common.error(f'Cannot load tool-specific module tools.{tool}')
+      return ""
 
 def create_tool_config(tool: str, topology: Box) -> None:
   tdata = topology.defaults.tools[tool] + topology.tools[tool]
@@ -56,21 +36,28 @@ def create_tool_config(tool: str, topology: Box) -> None:
       common.error(f'No destination file specified for tool configuration\n... tool {tool}\n... config {config}')
       continue
     fname = f'{tool}/{config.dest}'
-    if 'template' in config:
+    if 'render' in config:
+      config_text = render_tool_config(tool,config.render,topology)
+      config_src  = f'rendering "{config.render}" format'
+    elif 'template' in config:
+      template = config.template
       config_text = templates.template(
                       j2=config.template,
                       data=topo_data,
                       path=f'tools/{tool}',
                       user_template_path=f'tools/{tool}')
-      try:
-        with open(fname,"w") as output:
-          output.write(config_text)
-          output.close()
-        print(f'Created {fname} from template {config.template}')
-      except Exception as e:
-        common.error(f'Error writing tool configuration file {fname}\n... {e}')
+      config_src  = f'from {config.template} template'
     else:
       common.error(f'Unknown tool configuration type\n... tool {tool}\n... config {config}')
+      continue
+
+    try:
+      with open(fname,"w") as output:
+        output.write(config_text)
+        output.close()
+      print(f'Created {fname} {config_src}')
+    except Exception as e:
+      common.error(f'Error writing tool configuration file {fname}\n... {e}')
 
 class ToolConfigs(_TopologyOutput):
 
@@ -87,6 +74,7 @@ class ToolConfigs(_TopologyOutput):
       topo_copy.nodes[node] = adjust_inventory_host(
                                 node=topo_copy.nodes[node],
                                 defaults=topology.defaults,
+                                ignore=[ 'name' ],
                                 group_vars=True)
     for tool in topo_copy.tools.keys():
       create_tool_config(tool,topo_copy)
