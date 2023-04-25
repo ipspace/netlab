@@ -5,11 +5,11 @@ Some user might want to use _netlab_ with external management tools (example: Gr
 The external tools started with _netlab_ can access the management network and the management interfaces of lab devices. If you need access to lab links start your tool as a [Linux container with a custom image](labs/clab.md#deploying-linux-containers).
 
 ```{warning}
-This is an experimental functionality with the following limitations:
-
-* Tools are started as Docker containers. You have to run your labs on a Linux server with Docker; you can use **‌netlab install containerlab** to install Docker.
-* You can use external tools with *‌libvirt* provider, but not with *‌containerlab* or multi-provider topologies due to the way Docker isolates container bridges. This limitation will be fixed in a future release.
+* Tools are started as Docker containers. You have to run your labs on a Linux server with Docker to use external tools with _netlab_.[^DI]
+* When using containers as lab devices _netlab_ connects tool containers to the lab management network and they get IPv4 addresses from the beginning of the management IPv4 prefix. Do not change [**addressing.mgmt.start** parameter](addressing.md) to a very low value when using external tools.
 ```
+
+[^DI]: You can use **netlab install containerlab** to install Docker on a Ubuntu server.
 
 ## Using the External Tools
 

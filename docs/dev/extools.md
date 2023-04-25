@@ -30,10 +30,11 @@ The **tools** output module iterates over the list of tools used by the current 
 * **render** -- the name of the custom format recognized by the tool-specific Python module (example in `netsim/tools/graphite.py`)
 
 ```{tip}
-The template file for a tool included with _netlab_ must be in the `netsim/tools/_toolname_` directory. Template files for user-defined tools can be in `tools/_toolname_` directory within the lab directory or user's home directory
+* The template file for a tool included with _netlab_ must be in the `netsim/tools/_toolname_` directory. Template files for user-defined tools can be in `tools/_toolname_` directory within the lab directory or user's home directory
+* The value of the **render** parameter is passed to the tool-specific module and can be used to create different configuration files.
 ```
 
-The following definition (the value of **defaults.tools.suzieq**  parameter read from `netsim/tools/suzieq.yml` file) creates SuzieQ inventory file `suzieq/suzieq-inventory.yml` using `netsim/tools/suzieq/suzieq.inventory.j2` template from the `networklab` Python package:
+The following definition[^SQPV] creates SuzieQ inventory file `suzieq/suzieq-inventory.yml` using `netsim/tools/suzieq/suzieq.inventory.j2` template from the `networklab` Python package:
 
 ```
 runtime: docker     # Default: start SuzieQ in a Docker container
@@ -41,6 +42,19 @@ config:
 - dest: suzieq-inventory.yml
   template: suzieq.inventory.j2
 ```
+
+[^SQPV]: The value of **defaults.tools.suzieq**  parameter read from `netsim/tools/suzieq.yml` file
+
+Similarly, the following definition[^GFPV] creates Graphite configuration file using `netsim.tools.graphite` module:
+
+```
+runtime: docker     # Default: start in a Docker container
+config:
+- dest: graphite-default.json
+  render: graphite
+```
+
+[^GFPV]: The value of **defaults.tools.graphite**  parameter read from `netsim/tools/graphite.yml` file
 
 ### Using Topology Values in Configuration File Templates
 
@@ -54,7 +68,7 @@ sources:
   hosts:
 {% for nn,nd in nodes.items() if nd.ansible_connection == 'network_cli' %}
   - url: ssh://{{ nd.ansible_user }}:{{ nd.ansible_ssh_pass }}@{{ 
-            nd.ansible_host }}:{{ nd.ansible_ssh_port or '22' }}/ devtype={{ nd.ansible_network_os }}
+            nd.ansible_host }}:{{ nd.ansible_ssh_port or '22' }}/
 {% endfor %}
 ```
 
@@ -73,24 +87,19 @@ The commands that have to be executed to start, stop, or connect to the tool are
 
 Each one of these parameters can be a string (execute a single command) or a list of one or more commands.
 
+### Using Topology Variables in Tool Commands
+
 Each command is evaluated as a Python f-string using transformed topology data as the variables used in the f-string, allowing you to use (for example) `{name}_tool` as the name of lab-specific Docker container. _netlab_ does no further processing of the commands; they have to include all the necessary parameters to map configuration files to containers or expose container ports.
 
-### Removing Tool Configuration Directory
-
-**netlab down --cleanup** removes the tool configuration directories, but fails to do so if the container creates additional files in that directory -- containers are often run as user **root**, and a regular user cannot remove files created by another user.
-
-If your tool creates additional files in the tool configuration directory, add **sudo rm -fr *toolname*** as one of the **cleanup** commands.
-
-### Example
-
-Example: the following dictionary (the value of **defaults.tools.suzieq**  parameter read from `netsim/tools/suzieq.yml` file) defines commands needed to start or stop SuzieQ:
+For example, the following dictionary[^SQPV] defines commands needed to start or stop SuzieQ:
 
 ```
 runtime: docker     # Default: start in a Docker container
 docker:
   up:
     docker run --rm -itd --name '{name}_suzieq'
-      -v '{name}_suzieq':/home/suzieq/parquet
+      {sys.docker_net}
+      -v '{name}_suzieq':/parquet
       -v './suzieq':/suzieq
       netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
   connect:
@@ -101,9 +110,21 @@ docker:
     docker volume rm '{name}_suzieq'
 ```
 
-Notes:
-* The **up** command maps SuzieQ configuration directory and a lab-specific volume into container mount points.
+**Notes:**
+* The **up** command uses **docker run** to start the container and maps SuzieQ configuration directory and a lab-specific volume into container mount points. The `sys.docker_net` parameter is explained in the next section.
 * SuzieQ container executes **bash** as the default command. Parameters of **docker run** command are therefore Bash parameters.
 * **connect** command uses **docker exec** to execute another command in the same container (start SuzieQ CLI).
 * **docker exec** command specifies the full path to the **suzieq-cli** command because the default path in the SuzieQ container does not include `/usr/local/bin`.
 * **cleanup** command deletes the volume created with the **docker run** command.
+
+### Running External Tools with Lab Containers
+
+External tools have to be connected to the same Docker network as the management interface of the lab containers. The default name of that network is `netlab_mgmt` but it can change if you use [multilab plugin](../plugins/multilab.md).
+
+_netlab_ prepares the `--network=_name_` parameter that you have to include with the **docker run** in the `sys.docker_net` topology variable. Include `{sys.docker_net}` parameter in any **docker run** command if you want your containers to communicate with the lab devices over the management network.
+
+### Removing Tool Configuration Directory
+
+**netlab down --cleanup** removes the tool configuration directories, but fails to do so if the container creates additional files in that directory -- containers are often run as user **root**, and a regular user cannot remove files created by another user.
+
+If your tool creates additional files in the tool configuration directory, add **sudo rm -fr *toolname*** as one of the **cleanup** commands.

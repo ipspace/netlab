@@ -109,9 +109,9 @@ def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test",
   if not run_command(exec_command):
     common.fatal(f"{exec_command} failed, aborting...",command)
 
-#
-# Get a runtime-related parameter for a tool
-#
+"""
+Get a runtime-related parameter for a tool
+"""
 def get_tool_runtime_param(tool: str, param: str, verbose: bool, topology: Box) -> typing.Optional[typing.Any]:
   tdata = topology.defaults.tools[tool] + topology.tools[tool]
   runtime = tdata.runtime or 'docker'
@@ -129,9 +129,9 @@ def get_tool_runtime_param(tool: str, param: str, verbose: bool, topology: Box) 
 
   return tdata[param]
 
-#
-# Get a list of external tool commands to execute
-#
+"""
+Get a list of external tool commands to execute
+"""
 def get_tool_command(tool: str, cmd: str, topology: Box,verbose: bool = True) -> typing.Optional[list]:
   cmds = get_tool_runtime_param(tool,cmd,verbose,topology)
   if cmds is None:
@@ -139,10 +139,23 @@ def get_tool_command(tool: str, cmd: str, topology: Box,verbose: bool = True) ->
   
   return cmds if isinstance(cmds,list) else [ cmds ]
 
+"""
+Check if the current topology uses docker in any way: does it have clab as primary or secondary provider?
+"""
+def docker_is_used(topology: Box) -> bool:
+  if topology.provider == 'clab':
+    return True
+
+  return 'clab' in topology[topology.provider].providers
+
 #
 # Execute external tool commands
 #
 def execute_tool_commands(cmds: list, topology: Box) -> None:
+  topology.sys.docker_net = ""
+  if docker_is_used(topology):
+    topology.sys.docker_net = f"--network={topology.addressing.mgmt.get('_network',None) or 'netlab_mgmt'}"
+
   for cmd in cmds:
     cmd = strings.eval_format(cmd,topology)
     run_command(cmd = [ 'bash', '-c', cmd ],check_result=True)
