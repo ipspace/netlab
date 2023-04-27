@@ -1,10 +1,12 @@
 Release notes
 =============
 
-**[Release 1.5.2](release-1.5.2) (2023-XX-XX)**
+**[Release 1.5.2](release-1.5.2) (2023-04-27)**
 
+* [External network management tools](extools.md)
 * [Aruba AOS-CX Support](platforms.md)
 * [Reusable topology components](components.md)
+* [Tunnel interfaces](links-tunnel)
 * Add '--force' flag to '[netlab down](netlab/down.md)' command
 * Use [Ansible filters in netlab templating system](labs/clab.md#jinja2-filters-available-in-custom-configuration-files) (#781)
 * Deploy [per-node custom configuration templates](dev/config/deploy.md#finding-custom-configuration-templates)
