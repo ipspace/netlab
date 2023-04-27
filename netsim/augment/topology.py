@@ -105,6 +105,12 @@ def check_tools(topology: Box) -> None:
   if not 'tools' in topology:
     return
 
+  try:
+    must_be_dict(topology,'tools','',module='topology',abort=True)
+  except:
+    topology.pop('tools')
+    return
+
   for tool in topology.tools.keys():                # Iterate over tools     
     must_be_dict(                                   # Make sure the tool configuration is a dictionary    
       parent=topology.tools,
