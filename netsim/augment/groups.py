@@ -71,7 +71,9 @@ def check_group_data_structure(topology: Box) -> None:
 
   list_of_modules = modules.list_of_modules(topology)
   group_attr = topology.defaults.attributes.group
-  providers = list(topology.defaults.providers.keys())
+
+  extra = list(topology.defaults.providers.keys())        # Allow provider-specific node attributes
+  extra.extend(list(topology.get('tools',{}).keys()))     # ... plus tool-specific attributes
   for grp,gdata in topology.groups.items():
     must_be_id(parent=None,key=grp,path=f'NOATTR:group name {grp}',module='groups')
     if must_be_dict(topology.groups,grp,'topology.groups',create_empty=True,module='groups') is None:
@@ -79,7 +81,7 @@ def check_group_data_structure(topology: Box) -> None:
 
     gpath=f'topology.groups.{grp}'
     g_modules = gdata.get('module',[])
-    if g_modules:                          # Modules specified in the group -- we know what these nodes will use
+    if g_modules:                           # Modules specified in the group -- we know what these nodes will use
       gm_source = 'group'
     else:
       gm_source = 'topology'
@@ -94,7 +96,7 @@ def check_group_data_structure(topology: Box) -> None:
       module='groups',
       modules=g_modules,
       module_source=gm_source,
-      extra_attributes=providers)          # Allow provider-specific settings (not checked at the moment)
+      extra_attributes=extra)               # Allow provider- and tool-specific settings (not checked at the moment)
 
     if not 'members' in gdata:
       gdata.members = []
@@ -118,7 +120,7 @@ def check_group_data_structure(topology: Box) -> None:
         module='groups',
         modules=g_modules,
         module_source=gm_source,
-        extra_attributes=providers)          # Allow provider-specific settings (not checked at the moment)
+        extra_attributes=extra)              # Allow provider- and tool-specific settings (not checked at the moment)
 
       for k in ('module','device'):          # Check that the 'module' or 'device' attributes are not in node_data
         if k in gdata.node_data:

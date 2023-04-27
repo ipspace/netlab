@@ -73,7 +73,8 @@ Validate node attributes
 def validate(topology: Box) -> None:
   for n_name,n_data in topology.nodes.items():
     must_be_id(parent=None,key=n_name,path=f'NOATTR:node name {n_name}',module='nodes')
-    providers = list(topology.defaults.providers.keys())
+    extra = list(topology.defaults.providers.keys())        # Allow provider-specific node attributes
+    extra.extend(list(topology.get('tools',{}).keys()))     # ... plus tool-specific attributes
     validate_attributes(
       data=n_data,                                    # Validate node data
       topology=topology,
@@ -82,7 +83,7 @@ def validate(topology: Box) -> None:
       attr_list=['node'],                             # We're checking node attributes
       modules=n_data.get('module',[]),                # ... against node modules
       module='nodes',                                 # Function is called from 'nodes' module
-      extra_attributes = providers)                   # Allow provider-specific settings (not checked at the moment)
+      extra_attributes=extra)                         # Allow provider- and tool-specific settings
 
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:
