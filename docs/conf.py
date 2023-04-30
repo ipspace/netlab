@@ -18,8 +18,8 @@ from recommonmark.transform import AutoStructify
 
 # -- Project information -----------------------------------------------------
 
-project = 'Network Simulation Tools'
-copyright = '2020–2022 Ivan Pepelnjak, Jeroen van Bemmel, Stefano Sasso, and other contributors'
+project = 'netlab'
+copyright = '2020–2023 Ivan Pepelnjak, Jeroen van Bemmel, Stefano Sasso, and other contributors'
 author = 'Ivan Pepelnjak'
 
 

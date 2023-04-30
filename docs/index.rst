@@ -1,26 +1,26 @@
-ipSpace.net Virtual Networking Labs Tool
+netlab: a Virtual Networking Labbing Tool
 =========================================
 
-The `ipSpace.net virtual networking labs tool <https://github.com/ipspace/netlab>`_ will help you be more proficient once you decide to drop GUI-based virtual networking labs and build your labs using CLI and infrastructure-as-code principles.
+*netlab* will help you be more proficient once you decide to drop GUI-based virtual networking labs
+and build your labs using CLI and infrastructure-as-code principles.
 
-*netlab* will help you:
+Using *netlab* you can:
 
 * Describe high-level lab topology in YAML format without worrying about the specific implementation details
 * Use the same lab topology with multiple virtualization providers (Virtualbox, KVM/libvirt, Docker containers)
-* Create Vagrant configuration files and Ansible inventory from the lab topology
+* Create Vagrant- and containerlab configuration files and Ansible inventory from the lab topology
+* Configure IP addressing, routing protocols, VLANs, VRFs, and other networking technologies in your lab
 
-Based on your lab topology the :doc:`netlab create<netlab/create>` command will:
+Based on your lab topology the :doc:`netlab up<netlab/up>` command will:
 
-* Create an IPv4 and IPv6 addressing plan for your lab
+* Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, MPLS/VPN and EVPN routing design
 * Prepare all the necessary configuration files to start the lab
-
-Once the lab is started you can use the :doc:`netlab initial <netlab/initial>` command to:
-
-* Deploy initial configurations (interfaces, IP addresses, usernames...) to your lab devices
-* Configure OSPF, IS-IS, BGP and SR-MPLS in your lab.
-
-To make your life even easier, use :doc:`netlab up <netlab/up>` command to create configuration
-files, start the lab, and deploy device configurations.
+* Start the lab using Vagrant or containerlab
+* Create additional virtual networking infrastructure needed to support your lab
+* Deploy initial configurations (interfaces, IPv4 and IPv6 addresses, usernames...) to your lab devices
+* Configure VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, VRRP, anycast gateways,
+  MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
+* Start external network management tools specified in lab topology like Graphite or SuzieQ
 
 When the lab is fully configured you could:
 
