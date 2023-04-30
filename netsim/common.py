@@ -3,14 +3,12 @@
 #
 import sys
 import typing
-import warnings
-import argparse
-import os
-import textwrap
-import pathlib
+import box
 
-from jinja2 import Environment, PackageLoader, FileSystemLoader, StrictUndefined, make_logging_undefined
-from box import Box,BoxList
+if box.__version__ < '7.0':
+  print("FATAL ERROR: python-box version 7.0 or higher required, use 'pip3 install --upgrade python-box' to install")
+  sys.exit(1)
+
 from .data.global_vars import get_topology
 
 from .utils.log import LOGGING, VERBOSE, DEBUG, QUIET, RAISE_ON_ERROR, WARNING
@@ -40,11 +38,11 @@ ruamel_attrs: typing.Final[dict] = {'version': (1,1)}
 
 def get_yaml_string(x : typing.Any) -> str:
   global ruamel_attrs
-  if isinstance(x, Box) or isinstance(x,BoxList):
+  if isinstance(x, box.Box) or isinstance(x,box.BoxList):
     return x.to_yaml(ruamel_attrs=ruamel_attrs)
   if isinstance(x,dict):
-    return Box(x).to_yaml(ruamel_attrs=ruamel_attrs)
+    return box.Box(x).to_yaml(ruamel_attrs=ruamel_attrs)
   elif isinstance(x,list):
-    return BoxList(x).to_yaml(ruamel_attrs=ruamel_attrs)
+    return box.BoxList(x).to_yaml(ruamel_attrs=ruamel_attrs)
   else:
     return str(x)
