@@ -17,6 +17,7 @@ from .. import providers
 from . import devices
 from ..data.validate import validate_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id
+from ..data import global_vars
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
 MAX_NODE_ID: typing.Final[int] = 250
@@ -72,7 +73,12 @@ Validate node attributes
 """
 def validate(topology: Box) -> None:
   for n_name,n_data in topology.nodes.items():
-    must_be_id(parent=None,key=n_name,path=f'NOATTR:node name {n_name}',module='nodes')
+    must_be_id(
+      parent=None,
+      key=n_name,
+      path=f'NOATTR:node name {n_name}',
+      max_length=global_vars.get_const('MAX_NODE_ID_LENGTH',16),
+      module='nodes')
     extra = list(topology.defaults.providers.keys())        # Allow provider-specific node attributes
     extra.extend(list(topology.get('tools',{}).keys()))     # ... plus tool-specific attributes
     validate_attributes(
