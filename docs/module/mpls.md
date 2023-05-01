@@ -32,6 +32,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Juniper vMX           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Nokia SR OS           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 
 **Notes:**
@@ -47,11 +48,13 @@ The following table describes per-platform support of individual MPLS label dist
 | Cisco IOS XE          |   ✅   |    ✅   |    ❌    |
 | Mikrotik RouterOS 6   |   ❌   |    ❌   |    ❌    |
 | Mikrotik RouterOS 7   |   ❌   |    ❌   |    ❌    |
+| Nokia SR OS           |   ❌   |    ❌   |    ❌    |
 | VyOS                  |   ❌   |    ❌   |    ❌    |
 
 **Notes**
 * Cisco IOS merges labeled and unlabeled BGP routes.
 * You might have to disable unlabeled address families on Arista EOS
+* Nokia SR OS supports these features, but not implemented in Netlab yet
 
 (mpls-l3vpn-supported-platforms)=
 ### BGP/MPLS L3VPN
@@ -66,6 +69,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Juniper vMX           |   ✅  |   ✅  |
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ❌  |
+| Nokia SR OS           |   ✅  |   ✅  |
 | VyOS                  |   ✅  |   ✅  |
 
 **Notes**
@@ -86,7 +90,7 @@ The following table describes per-platform support of individual MPLS label dist
 
 ## Configurable Global and Node Parameters
 
-* **mpls.ldp** -- enable LDP on intra-AS links (see [common routing protocol features](routing.md)) for more details. 
+* **mpls.ldp** -- enable LDP on intra-AS links (see [common routing protocol features](routing.md)) for more details.
 * **mpls.bgp** -- enable BGP Labeled Unicast address families. BGP-LU is disabled by default.
 * **mpls.vpn** -- enable VPNv4 and VPNv6 address families. BGP/MPLS L3VPN is disabled by default.
 * **mpls.6pe** -- enable 6PE on IBGP and/or EBGP sessions (default: IBGP only). 6PE is disabled by default.
@@ -167,4 +171,3 @@ nodes:
 ## Configurable 6PE Parameters
 
 **mpls.6pe** is a global or node parameter that could be a boolean (*True* to enable 6PE on IBGP sessions) or a list of session types (*ibgp* and/or *ebgp*).
-
