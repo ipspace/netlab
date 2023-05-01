@@ -18,3 +18,28 @@ updates:
      evpn: True
 
 {%  endfor %}
+
+{# Configure EVPN parameters for VLANs, TODO bundles #}
+{% if vlans is defined %}
+{%   for vname,vdata in vlans.items() if vdata.evpn.evi is defined %}
+- path: configure/service/vpls[service-name=vlan{{ vdata.id }}]
+  val:
+   bgp:
+   - bgp-instance: 1
+     # route-distinguisher: "{{ vdata.evpn.rd }}" # use auto-rd
+     route-target:
+      export: "target:{{ vdata.evpn.export[0] }}"
+      import: "target:{{ vdata.evpn.import[0] }}"
+
+   bgp-evpn:
+    evi: {{ vdata.evpn.evi }}
+    mpls:
+    - bgp-instance: 1
+      admin-state: enable
+      ecmp: 32
+      ingress-replication-bum-label: True
+      auto-bind-tunnel:
+       resolution: any
+       ecmp: 32
+{%   endfor %}
+{% endif %}
