@@ -1,6 +1,14 @@
 # Supported Platforms
 
-*netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)):
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 1
+   :local:
+```
+
+## Supported Virtual Network Devices
+
+*netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)). If you want to use an unsupported device in a *netlab*-managed lab, use [an unknown device](platform-unknown) or [contribute a new device implementation](dev/devices.md).
 
 | Virtual network device                    | netlab device type |
 | ----------------------------------------- | ------------------ |
@@ -288,3 +296,16 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | VyOS                  |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
+
+(platform-unknown)=
+## Unknown Devices
+
+You can use device type **unknown** to add unsupported devices to a *netlab*-managed virtual lab. *netlab* assumes an unknown device supports all configuration modules and will prepare the data structures and Ansible inventory you need to configure the device.
+
+Unknown devices are placed in the [**unprovisioned** group](group-special-names) and are not configured by the [**netlab up**](netlab/up.md) or [**netlab initial**](netlab/initial.md) commands.
+
+To add an unknown device to a lab:
+
+* Set **device** node attribute to **unknown**.
+* Specify Vagrant box name or container name with **image** node attribute.
+* Specify **clab.kind** node attribute according to [containerlab documentation](https://containerlab.dev/manual/kinds/) when using [containerlab virtualization provider](labs/clab.md).
