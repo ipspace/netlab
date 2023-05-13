@@ -221,7 +221,7 @@ class Libvirt(_Provider):
         if len(link.provider) > 1:                                  # multi-provider link. Skip it.
           continue
 
-        if len(link.interfaces) == 2:
+        if len(link.interfaces) == 2 and link.type == 'p2p':
           intf.libvirt.type = "tunnel"                              # ... found a true libvirt-only P2P link, set type to tunnel
 
         if intf.libvirt.type != 'tunnel':                           # The current link is not a tunnel link, move on
