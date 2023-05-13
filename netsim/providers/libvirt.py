@@ -218,6 +218,9 @@ class Libvirt(_Provider):
         if not 'libvirt' in link.provider:                          # Not a libvirt link? skip it
           continue
 
+        if 'libvirt' in link:                                       # Do we have libvirt-specific data on the link?
+          intf.libvirt = link.libvirt + intf.libvirt                # ... then add it to the interface data
+
         if len(link.provider) > 1:                                  # multi-provider link. Skip it.
           continue
 
@@ -274,8 +277,7 @@ class Libvirt(_Provider):
       l.bridge = linux_bridge
       common.print_verbose(f"... network {brname} maps into {linux_bridge}")
       if not external_commands.run_command(
-          ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],
-          check_result=True):
+          ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask']):
         common.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
         continue
 

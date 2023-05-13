@@ -21,6 +21,14 @@ def stringify(cmd : typing.Union[str,list]) -> str:
     return " ".join(cmd)
   return str(cmd)
 
+"""
+run_command: Execute an external command specified as a string or a list of CLI parameters
+
+Flags:
+* check_result -- return False if the command does not produce any output
+* ignore_errors -- do not print errors to the console
+* return_stdout -- return the command output instead of True/False
+"""
 def run_command(
     cmd : typing.Union[str,list],
     check_result : bool = False,
@@ -35,9 +43,7 @@ def run_command(
     print(f"DRY RUN: {cmd}")
     return True
 
-  if common.VERBOSE:
-    print(f".. executing: {cmd}")
-
+  common.print_verbose(f"run_command executing: {cmd}")
   if isinstance(cmd,str):
     cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
 

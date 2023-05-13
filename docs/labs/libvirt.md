@@ -109,6 +109,19 @@ The new Vagrant box will be copied into the *libvirt* storage pool the next time
 * P2P UDP tunnels are used for links with two nodes and link **type** set to **p2p** (default behavior for links with two nodes). P2P tunnels are transparent; you can run any layer-2 control-plane protocol (including LACP) over them.
 * *libvirt* networks are used for all other links. They are automatically created and deleted by **vagrant up** and **vagrant down** commands executed by **netlab up** and **netlab down**. **netlab up** sets the `group_fwd_mask` for all Vagrant-created Linux bridges to 0x4000 to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
 
+### Using Existing Libvirt Networks
+
+To attach lab devices to existing *libvirt* virtual networks:
+
+* Set the link **bridge** attribute to the name of an existing network.
+* Set the link **libvirt.permanent** attribute to **True** to tell *vagrant-libvirt* plugin it should not destroy the network on shutdown.
+
+You can use this functionality to attach lab devices to public networks or networks extended with VXLAN transport.
+
+```{warning}
+**vagrant destroy** command will crash if it tries to destroy an existing non-persistent *libvirt* network, stopping the **netlab down** procedure. Rerun the **netlab down** command to complete the lab shutdown/cleanup process.
+```
+
 (libvirt-mgmt)=
 ### Libvirt Management Network
 
