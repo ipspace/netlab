@@ -12,7 +12,7 @@ from box import Box
 
 from .. import common
 from .. import data
-from ..data.validate import validate_attributes
+from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_list,must_be_string,must_be_dict
 
 #
@@ -85,7 +85,9 @@ def check_required_elements(topology: Box) -> None:
     topology.defaults.name = topology.name
 
 def check_global_elements(topology: Box) -> None:
-  providers = list(topology.defaults.providers.keys())
+  # Allow provider-specific global attributes
+  providers = get_object_attributes(['providers'],topology)
+
   validate_attributes(
     data=topology,                                  # Validate node data
     topology=topology,

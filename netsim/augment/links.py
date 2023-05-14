@@ -11,7 +11,7 @@ from box import Box
 from .. import common
 from .. import data
 from .. import utils
-from ..data.validate import validate_attributes
+from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from .. import addressing
 from . import devices
@@ -142,7 +142,9 @@ def adjust_link_list(links: list, nodes: Box) -> list:
 Validate link attributes
 """
 def validate(topology: Box) -> None:
-  providers = list(topology.defaults.providers.keys())
+  # Allow provider-specific global attributes
+  providers = get_object_attributes(['providers'],topology)
+
   for l_data in topology.links:
     validate_attributes(
       data=l_data,                                    # Validate link data
@@ -164,6 +166,7 @@ def validate(topology: Box) -> None:
         data_name=f'interface',
         attr_list=['interface','link'],                 # We're checking interface or link attributes
         modules=n_data.get('module',[]),                # ... against node modules
+        extra_attributes=providers,                     # Allow provider-specific attributes in interfaces
         module_source=f'nodes.{intf.node}',
         module='links')                                 # Function is called from 'links' module
 
