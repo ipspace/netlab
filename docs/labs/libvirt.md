@@ -109,6 +109,33 @@ The new Vagrant box will be copied into the *libvirt* storage pool the next time
 * P2P UDP tunnels are used for links with two nodes and link **type** set to **p2p** (default behavior for links with two nodes). P2P tunnels are transparent; you can run any layer-2 control-plane protocol (including LACP) over them.
 * *libvirt* networks are used for all other links. They are automatically created and deleted by **vagrant up** and **vagrant down** commands executed by **netlab up** and **netlab down**. **netlab up** sets the `group_fwd_mask` for all Vagrant-created Linux bridges to 0x4000 to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
 
+(libvirt-network-external)=
+### Connecting to the Outside World
+
+Lab networks are created as private, very-isolated *libvirt* networks without a DHCP server. If you want to have a lab network connected to the outside world:
+
+* Set **libvirt.public** link attribute to **true**, or to any value [supported by *libvirt*](https://libvirt.org/formatdomain.html#direct-attachment-to-physical-interface)[^MACVTAP].
+* Set **libvirt.uplink** link attribute to the name of the Ethernet interface on your server[^IFNAME] if your Linux distribution does not use **eth0** as the name of the Ethernet interface[^U22].
+
+[^MACVTAP]: The default value for the **libvirt.public** attribute is **bridge** which creates a *[macvtap](https://virt.kernelnewbies.org/MacVTap)* interface for every node connected to the link.
+
+Example: use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
+
+```
+defaults.device: cumulus
+nodes: [ r1,r2 ]
+links:
+- r1-r2
+- r1:
+  libvirt:
+    public: True
+    uplink: enp86s0
+```
+
+[^IFNAME]: Use **ip addr** or **ifconfig** find the interface name.
+
+[^U22]: Example: Ubuntu 22.04 uses weird interface names based on underlying NIC type.
+
 ### Using Existing Libvirt Networks
 
 To attach lab devices to existing *libvirt* virtual networks:

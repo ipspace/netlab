@@ -21,17 +21,9 @@ Most box-building recipes for *libvirt* and *Virtualbox* Vagrant plugins recomme
 (external-connectivity-incoming)=
 ## Connecting to Lab Devices
 
-*libvirt* and *containerlab* [providers](../providers.md) create configuration files that connect all lab devices to a management network. Together with the [default route configured on network devices](external-connectivity-outgoing), it's always possible to reach the management IP address of every device in your lab.
+*libvirt* and *containerlab* [providers](../providers.md) create configuration files that connect all lab devices to a management network. Together with the [default route configured on network devices](external-connectivity-outgoing), it's always possible to reach the management IP address of every device in your lab, but you have to fix the routing in the external network -- the management network IPv4 prefix has to be reachable from the external network.
 
-If you need control-plane connectivity to your lab devices, consider running your workload as another virtual machine in the lab. Please see [](external-unprovisioned-devices) for more details.
-
-If you're familiar with Linux networking, you could also connect the Linux bridges created by *libvirt*[^LVB] or *containerlab*[^CLB] providers to the host TCP/IP stack or an external interface. The details are beyond the scope of this tutorial. 
-
-[^LVB]: *libvirt* provider creates Vagrant network that results in a Linux bridge for every link with more than two devices or a host attached to it.
-
-[^CLB]: *containerlab* provider creates a Linux bridge for every link with one or more than two devices attached to it.
-
-*VirtualBox* uses a different connectivity model. It maps device TCP/UDP ports into host TCP/UDP ports. The default ports mapped for each network device are **ssh**, **http** and **netconf**. It's possible to add additional forwarded ports to the **defaults.providers.virtualbox.forwarded** parameter; the details are beyond the scope of this tutorial.
+Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access to your lab network.
 
 ### Finding the Management IP Addresses
 
@@ -44,6 +36,21 @@ You could also [create an inventory of all lab devices in a single YAML](../outp
 
 [^VBS]: And SSH ports if you're using *Virtualbox*.
 
+(external-connectivity-control-plane)=
+## Control-Plane Connectivity
+
+If you need control-plane connectivity to your lab devices (for example, you'd like to run BGP with a device outside of your lab), consider running your additional devices as virtual machines in the lab. Please see [](platform-unknown) and [](external-unprovisioned-devices) for more details.
+
+To connect *libvirt* virtual machines to the outside world, [set **libvirt.public** link attribute](libvirt-network-external) on any link in your topology.
+
+Connecting containers to the outside world is trickier -- you have to connect the Linux bridges used by *containerlab*[^CLB] to the host TCP/IP stack or an external interface. The details are beyond the scope of this tutorial.
+
+[^CLB]: *containerlab* provider creates a Linux bridge for every link with one or more than two devices attached to it.
+
+*VirtualBox* uses a different connectivity model. It maps device TCP/UDP ports into host TCP/UDP ports. The default ports mapped for each network device are **ssh**, **http** and **netconf**. It's possible to add additional forwarded ports to the **defaults.providers.virtualbox.forwarded** parameter; the details are beyond the scope of this tutorial.
+
+*VirtualBox* can connect VMs to the external world. That capability is not part of _netlab_ functionality; please feel free to [submit a Pull Request](../dev/guidelines.md) implementing it.
+
 (external-unprovisioned-devices)=
 ## Unprovisioned Devices
 
@@ -54,7 +61,9 @@ The easiest way to add network management software (or any third-party workload)
 
 The lab provisioning process will configure the static routes on your VM/container to allow it to reach all other devices in your lab.
 
-The device provisioning process will fail if your VM/container does not contain the necessary Linux CLI commands (example: **ip** to add static routes). In that case, put the network management node into the [**unprovisioned** group](group-special-names), for example:
+The VM device provisioning process will fail if your VM does not contain Python (used by Ansible) or the necessary Linux CLI commands (example: **ip** to add static routes); container interface addresses and routing tables are [configured from the Linux server](clab-linux).
+
+If you want to use a VM that cannot be configured as a Linux host, put that node into the [**unprovisioned** group](group-special-names), for example:
 
 ```
 ---
@@ -73,11 +82,12 @@ groups:
 ```
 
 ```{warning}
-Devices in the **‌unprovisioned** group will not get IP addresses on interfaces other than the management interface, or static routes to the rest of the network.
+Devices in the **unprovisioned** group will not get IP addresses on interfaces other than the management interface, or static routes to the rest of the network.
 
 As they are still connected to the management network, they can always reach the management interfaces of all network devices.
 ```
 
+(external-unmanaged)=
 ## Unmanaged Devices
 
 In advanced scenarios connecting your virtual lab with the outside world, you might want to include external devices into your lab topology without managing or provisioning them[^UDC].
@@ -90,6 +100,25 @@ For example, if you want to have a BGP session with an external router:
 * Use static IP prefixes on the link between the virtual devices and the external router to ensure the virtual devices get IP addresses from the subnet configured on the external router
 * Define BGP AS numbers used by your devices and the external router -- _netlab_ will automatically build IBGP/EBGP sessions between lab devices and the external device
 * Use [**unmanaged** node attribute](node-attributes) on the external node to tell _netlab_ not to include it in Ansible inventory or Vagrant/containerlab configuration files
+
+Here is the resulting topology file using an Arista vEOS VM running BGP with an external Arista EOS switch. The lab is  using *libvirt* public network to connect the VM to the outside world:
+
+```
+defaults.device: eos
+module: [ bgp ]
+nodes:
+  vm:
+    bgp.as: 65000
+  sw:
+    unmanaged: True
+    bgp.as: 65001
+links:
+- vm:
+    ipv4: 10.42.0.2/24
+  sw:
+    ipv4: 10.42.0.1/24
+  libvirt.public: True
+```
 
 ## Managing Physical Devices
 
