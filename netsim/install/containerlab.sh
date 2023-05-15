@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Install a specific version of Containerlab
+CONTAINERLAB_VERSION="0.41.0"
+
 cat <<EOM
 Docker/Containerlab Installation Script
 =====================================================================
@@ -78,8 +82,8 @@ echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/
 echo "Install Docker Engine"
 $SUDO apt-get update
 $SUDO apt-get install -y $FLAG_QUIET docker-ce docker-ce-cli containerd.io
-echo "Install containerlab"
-$SUDO bash "-c" "$(curl -sL https://get.containerlab.dev)"
+echo "Install containerlab version $CONTAINERLAB_VERSION"
+$SUDO bash "-c" "$(curl -sL https://get.containerlab.dev)" -- -v $CONTAINERLAB_VERSION
 set +e
 G="$(groups $USER|grep docker)"
 set -e
