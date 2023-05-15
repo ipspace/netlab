@@ -321,9 +321,11 @@ def must_be_str(value: typing.Any) -> typing.Union[bool,str]:
   return True if isinstance(value,str) else 'a string'
 
 @type_test()
-def must_be_id(value: typing.Any) -> typing.Union[bool,str]:
-  if not isinstance(value,str) or not re.fullmatch('[a-zA-Z_][a-zA-Z0-9_-]{0,15}',value):
-    return 'an identifier HELP:a string containing up to 16 alphanumeric characters, numbers and underscores'
+def must_be_id(value: typing.Any, max_length: int = 16) -> typing.Union[bool,str]:
+  match_str = f'[a-zA-Z_][a-zA-Z0-9_-]{{0,{max_length - 1}}}'
+#  print(f'must_be_id: v={value} m={match_str}')
+  if not isinstance(value,str) or not re.fullmatch(match_str,value):
+    return f'a {max_length}-character identifier HELP:a string containing up to {max_length} alphanumeric characters, numbers and underscores'
 
   return True
 

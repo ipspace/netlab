@@ -100,7 +100,9 @@ Lab topology could contain *lan*, *p2p*, *stub*, *loopback* and *tunnel* links. 
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address, the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to other links are taken from *lan* pool. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the largest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links). 
+* Prefixes assigned to other links are taken from *lan* pool, unless you specified the **pool** link attribute. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the largest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links).
+
+The default link types usually work well, and you should use the **pool** attribute to specify the address pool instead of changing the link **type**. You might have to change link **type** in advanced scenarios; for example, you have to set link **type** to **lan** to use Linux bridges instead of UDP tunnels in [libvirt](labs/libvirt.md) environment.
 
 (links-loopback)=
 ### Loopback Links

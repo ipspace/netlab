@@ -294,6 +294,34 @@ def add_module_extra_parameters(topology: Box) -> None:
 ###            topology.defaults.attributes[k].append(attr)        # ... append it to the global list
 
 '''
+adjust_module_support: copy device 'supports' attribute into module 'supported_on' list
+'''
+
+def adjust_module_support(topology: Box) -> None:
+  for dname,ddata in topology.defaults.devices.items():         # Iterate through all devices
+    if not 'supports' in ddata:                                 # Old-style definition without 'supports' attribute?
+      continue
+    if ddata.supports == '*':                                   # Wildcard 'supports everything'?
+      for mname,mdata in topology.defaults.items():             # ... iterate through all default settings
+        if not 'supported_on' in mdata:                         # ... a module must have supported_on attribute
+          continue
+        if not dname in mdata.supported_on:                     # ... add device to the list of supported devices
+          mdata.supported_on.append(dname)
+      continue                                                  # ... and move on to the next device
+
+    # If we're here, we have a list of modules that the device supports
+    if not isinstance(ddata.supports,list):                     # ... but it's not a list?
+      continue                                                  # ... weird, but we can't do anything about it
+
+    for mname in ddata.supports:                                # Now iterate over the list of supported modules
+      if not mname in topology.defaults:                        # ... not a valid default attribute?
+        continue
+      if not 'supported_on' in topology.defaults[mname]:        # ... not a module?
+        continue
+      if not dname in topology.defaults[mname].supported_on:    # ... add device to the list of supported devices
+        topology.defaults[mname].supported_on.append(dname)
+
+'''
 adjust_modules: somewhat intricate multi-step config module adjustments
 
 * Set node default modules based on global modules
@@ -302,6 +330,7 @@ adjust_modules: somewhat intricate multi-step config module adjustments
 * Merge global module parametres into nodes
 '''
 def adjust_modules(topology: Box) -> None:
+  adjust_module_support(topology)
   augment_node_module(topology)
   adjust_global_modules(topology)
   if not 'module' in topology:

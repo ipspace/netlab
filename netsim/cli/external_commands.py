@@ -14,13 +14,21 @@ def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None
   if spacing:
     print()
   print("Step %d: %s" % (n,txt))
-  print("=" * 60)
+  print("=" * 72)
 
 def stringify(cmd : typing.Union[str,list]) -> str:
   if isinstance(cmd,list):
     return " ".join(cmd)
   return str(cmd)
 
+"""
+run_command: Execute an external command specified as a string or a list of CLI parameters
+
+Flags:
+* check_result -- return False if the command does not produce any output
+* ignore_errors -- do not print errors to the console
+* return_stdout -- return the command output instead of True/False
+"""
 def run_command(
     cmd : typing.Union[str,list],
     check_result : bool = False,
@@ -35,9 +43,7 @@ def run_command(
     print(f"DRY RUN: {cmd}")
     return True
 
-  if common.VERBOSE:
-    print(f".. executing: {cmd}")
-
+  common.print_verbose(f"run_command executing: {cmd}")
   if isinstance(cmd,str):
     cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
 
@@ -53,8 +59,25 @@ def run_command(
       print( f"Error executing {stringify(cmd)}:\n  {ex}" )
     return False
 
-def test_probe(p : str) -> bool:
-  return bool(run_command(p,check_result=True))
+def test_probe(p : typing.Union[str,list,Box]) -> bool:
+  if isinstance(p,str):
+    return bool(run_command(p,check_result=True))
+
+  elif isinstance(p,list):
+    for p_item in p:
+      if not test_probe(p_item):
+        return False
+    return True
+
+  elif isinstance(p,Box):
+    OK = bool(run_command(p.cmd,check_result=True,ignore_errors=True))
+    if not OK:
+      common.fatal(p.err)
+    return OK
+
+  else:
+    common.fatal(f"Internal error: invalid probe specification: {p}")
+    return False
 
 def set_ansible_flags(cmd : list) -> list:
   if common.VERBOSE:
@@ -67,7 +90,7 @@ def set_ansible_flags(cmd : list) -> list:
 
 def run_probes(settings: Box, provider: str, step: int = 0) -> None:
   if step:
-    print_step(step,"Checking virtualization provider installation",spacing = True)
+    print_step(step,f"Checking virtualization provider installation: {provider}",spacing = True)
   elif common.VERBOSE:
     print("Checking virtualization provider installation")
   for p in settings.providers[provider].probe:
@@ -103,7 +126,7 @@ def custom_configs(config : str, group: str, step : int = 4, command: str = "tes
     common.fatal("netlab config failed, aborting...",command)
 
 def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test", exec_command: typing.Optional[str] = None) -> None:
-  print_step(step,"stopping the lab",True)
+  print_step(step,f"stopping the lab: {provider}",True)
   if exec_command is None:
     exec_command = settings.providers[provider].stop
   if not run_command(exec_command):

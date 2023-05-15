@@ -1,6 +1,13 @@
 Release notes
 =============
 
+**[Release 1.5.3](release-1.5.3) (2023-05-15)**
+
+* ['unknown' device type](platform-unknown) can be used to deploy devices not yet supported by *netlab*
+* [Public *libvirt* networks](libvirt-network-external) can be used to connect labs to outside world
+* MPLS VPN support for SR OS
+* Improved virtualization provider installation testing with (hopefully) useful error messages
+
 **[Release 1.5.2](release-1.5.2) (2023-04-27)**
 
 * [External network management tools](extools.md)

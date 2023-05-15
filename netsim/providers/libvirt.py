@@ -218,13 +218,17 @@ class Libvirt(_Provider):
         if not 'libvirt' in link.provider:                          # Not a libvirt link? skip it
           continue
 
-        if len(link.provider) > 1:                                  # multi-provider link. Skip it.
+        if 'libvirt' in link:                                       # Do we have libvirt-specific data on the link?
+          intf.libvirt = link.libvirt + intf.libvirt                # ... then add it to the interface data
+          continue                                                  # ... and move on -- links with libvirt attributes
+                                                                    # ... are not tunnels
+        if len(link.provider) > 1:                                  # Skip multi-provider links
           continue
 
-        if len(link.interfaces) == 2:
+        if len(link.interfaces) == 2 and link.type == 'p2p':
           intf.libvirt.type = "tunnel"                              # ... found a true libvirt-only P2P link, set type to tunnel
 
-        if intf.libvirt.type != 'tunnel':                           # The current link is not a tunnel link, move on
+        if intf.libvirt.get('type') != 'tunnel':                    # The current link is not a tunnel link, move on
           continue
 
         link.pop("bridge",None)                                     # And now the real work starts. Pop the bridge attribute first
@@ -274,8 +278,7 @@ class Libvirt(_Provider):
       l.bridge = linux_bridge
       common.print_verbose(f"... network {brname} maps into {linux_bridge}")
       if not external_commands.run_command(
-          ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask'],
-          check_result=True):
+          ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask']):
         common.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
         continue
 

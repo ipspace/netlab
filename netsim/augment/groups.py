@@ -14,7 +14,7 @@ from .. import data
 from .. import modules
 from ..modules import bgp
 from ..data import get_box,get_empty_box
-from ..data.validate import validate_attributes
+from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
 from . import nodes
 
@@ -72,8 +72,9 @@ def check_group_data_structure(topology: Box) -> None:
   list_of_modules = modules.list_of_modules(topology)
   group_attr = topology.defaults.attributes.group
 
-  extra = list(topology.defaults.providers.keys())        # Allow provider-specific node attributes
-  extra.extend(list(topology.get('tools',{}).keys()))     # ... plus tool-specific attributes
+  # Allow provider- and tool- specific node attributes
+  extra = get_object_attributes(['providers','tools'],topology)
+
   for grp,gdata in topology.groups.items():
     must_be_id(parent=None,key=grp,path=f'NOATTR:group name {grp}',module='groups')
     if must_be_dict(topology.groups,grp,'topology.groups',create_empty=True,module='groups') is None:

@@ -4,7 +4,19 @@
 config: Vagrantfile
 start: vagrant up --provider libvirt
 stop: vagrant destroy -f
-probe: [ kvm-ok, virsh net-list, vagrant plugin list ]
+probe:
+- cmd: which kvm-ok
+  err: "KVM is not installed"
+- cmd: which virsh
+  err: "libvirt is not installed"
+- cmd: which vagrant
+  err: "vagrant is not installed"
+- cmd: [ bash, "-c", "vagrant plugin list|grep vagrant-libvirt" ]
+  err: "vagrant-libvirt plugin is not installed"
+- cmd: kvm-ok
+  err: "KVM is not enabled or not working properly"
+- cmd: virsh net-list
+  err: "You don't have access to virsh networking, your user should be in libvirt group"
 act_probe: "virsh list"
 act_title: "KVM/libvirt domains (virtual machines)"
 cleanup: [ Vagrantfile ]
@@ -15,3 +27,15 @@ clab:
   stop: sudo -E containerlab destroy --cleanup -t clab-augment.yml
   filename: clab-augment.yml
   recreate_config: True
+attributes:
+  node:
+    nic_model_type: str
+    nic_adapter_count: int
+    image: str
+  link:
+    permanent: bool
+    public: { type: str, valid_values: [ bridge, vepa, passthrough, private ], true_value: bridge }
+    provider: dict
+    uplink: str
+  global:
+    providers:

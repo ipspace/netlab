@@ -23,7 +23,7 @@
    statement:
 {% if is_import %}
 {%  for c in communities|default([]) %}
-   - sequence-id: {{ 10 + loop.index }}
+   - name: {{ 10 + loop.index }}
      match:
       bgp:
        community-set: "C{{ c|replace(':','_') }}"
@@ -31,13 +31,13 @@
 {{    accept() }}
 {%  endfor %}
 {% else %}
-   - sequence-id: 5
+   - name: 5
      match:
       protocol: bgp
       _annotate_protocol: "Accept and propagate prefixes received via BGP"
      action:
 {{    accept() }}
-   - sequence-id: 10
+   - name: 10
      match:
       prefix-set: "{{ vrf }}_export"
      action:
@@ -78,11 +78,12 @@
 
 {# Configure BGP address families globally #}
 {% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
-   {{ af }}-unicast:
-    admin-state: enable
-    multipath:
-     max-paths-level-1: 64
-     max-paths-level-2: 64 # indirect nexthops
+   afi-safi:
+   - afi-safi-name: {{ af }}-unicast
+     admin-state: enable
+     multipath:
+      max-paths-level-1: 64
+      max-paths-level-2: 64 # indirect nexthops
 {% endfor %}
 
 {# Create route export policies #}
@@ -102,17 +103,19 @@
 
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True) %}
 {% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
-   ipv4-unicast:
-    admin-state: {{ 'enable' if activate.ipv4|default(False) and ipv4 else 'disable' }}
+   afi-safi:
+   - afi-safi-name: ipv4-unicast
+     admin-state: {{ 'enable' if activate.ipv4|default(False) and ipv4 else 'disable' }}
 {% if neighbor.ipv4_rfc8950|default(False) %}
-    advertise-ipv6-next-hops: True
-    receive-ipv6-next-hops: True
+     ipv4-unicast:
+      advertise-ipv6-next-hops: True
+      receive-ipv6-next-hops: True
 {% endif %}
-   ipv6-unicast:
-    admin-state: {{ 'enable' if activate.ipv6|default(False) and ipv6 else 'disable' }}
+   - afi-safi-name: ipv6-unicast
+     admin-state: {{ 'enable' if activate.ipv6|default(False) and ipv6 else 'disable' }}
 {% if 'evpn' in neighbor and neighbor.evpn %}
-   evpn:
-    admin-state: enable # Must have at least 1 address family enabled
+   - afi-safi-name: evpn
+     admin-state: enable # Must have at least 1 address family enabled
 {% endif %}
 {% endmacro %}
 
@@ -178,22 +181,22 @@
 {% endif %}
 {% if n.local_as is defined %}
      local-as:
-     - as-number: {{ n.local_as }}
-       prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
+      as-number: {{ n.local_as }}
+      prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
 {% endif %}
 
-{% elif n[af]==True and af=='ipv6' and n.type == 'ebgp' %}
-{# BGP unnumbered for IPv6 LLA, only supported for EBGP peers and not in combination with evpn #}
+{% elif n[af]==True and af=='ipv6' %}
+{# BGP unnumbered for IPv6 LLA, not supported in combination with evpn #}
 {% if 'evpn' in n %}
 {{ raise_error | mandatory( 'EVPN not supported for BGP unnumbered peers' ) }}
 {% endif %}
 
-{% set peer_group = "ebgp-unnumbered" + (('-' + n.local_as|string()) if n.local_as is defined else '') %}
-{{ bgp_peer_group(peer_group,'ebgp',n,None) }}
+{% set peer_group = n.type + "-unnumbered" + (('-' + n.local_as|string()) if n.local_as is defined else '') %}
+{{ bgp_peer_group(peer_group,n.type,n,None) }}
 {% if n.local_as is defined %}
    local-as:
-   - as-number: {{ n.local_as }}
-     prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP AS in eBGP advertisements
+    as-number: {{ n.local_as }}
+    prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP AS in eBGP advertisements
 {% endif %}
 
 {% if n.ipv4_rfc8950|default(False) %}
@@ -236,7 +239,7 @@
 
 {% if 'sr' in module|default([]) %}
 {# Configure BGP shortcuts via SR-ISIS #}
-- path: network-instance[name={{vrf}}]/protocols/bgp/ipv4-unicast/next-hop-resolution
+- path: network-instance[name={{vrf}}]/protocols/bgp/afi-safi[afi-safi-name=ipv4-unicast]/next-hop-resolution
   val:
    ipv4-next-hops:
     tunnel-resolution:

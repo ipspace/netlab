@@ -16,7 +16,7 @@ from box import Box
 from .. import common
 from ..callback import Callback
 from ..augment import devices,links
-from ..data import get_box,filemaps
+from ..data import get_box,get_empty_box,filemaps
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:

@@ -2,11 +2,25 @@
   Bridge-based private network
 #}
 {% set ifname = defaults.providers.libvirt.vifprefix + "_" + name + "_" + l.ifindex|string %}
+{% set pubnet = l.libvirt.public|default('') if 'libvirt' in l else '' %}
+{% if pubnet %}
+    {{ name }}.vm.network :public_network,
+                  :mode => "{{ pubnet }}",
+{%   if 'uplink' in l.libvirt %}
+                  :dev => "{{ l.libvirt.uplink }}",
+{%   endif %}
+{% else %}
     {{ name }}.vm.network :private_network,
+
                   :libvirt__network_name => "{{ l.bridge }}",
                   :libvirt__forward_mode => "veryisolated",
                   :libvirt__dhcp_enabled => false,
+{% endif %}
+{% if 'libvirt' in l and l.libvirt.permanent|default(false) %}
+                  :libvirt__always_destroy => false,
+{% endif -%}
 {% if ifname|length < 16 %}
                   :libvirt__iface_name => "{{ ifname }}",
 {% endif %}
+                  :autostart => true,
                   :auto_config => false

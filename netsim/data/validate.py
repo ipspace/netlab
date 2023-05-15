@@ -22,17 +22,9 @@ Given an attribute dictionary, list of valid attribute categories, and extra att
 of valid attributes, or a string (type name) if the first attribute source in the list is a string
 """
 
-##### REMOVE AFTER ATTRIBUTE MIGRATION #####
-def make_attr_dict(atlist: typing.Union[list,Box]) -> Box:
-  if isinstance(atlist,list):
-    return Box({ k: None for k in atlist })
-
-  return atlist
-
 def get_valid_attributes(
       attributes: Box,                                      # Where to get valid attributes from
-      attr_list: typing.List[str],                          # List of valid attributes (example: ['node'] or ['link','interface'])
-      extra_attributes: typing.Optional[list] = None        # List of dynamic attributes (needed to validate node provider settings)
+      attr_list: typing.List[str]                           # List of valid attributes (example: ['node'] or ['link','interface'])
         ) -> typing.Union[str,Box]:
 
   valid = get_empty_box()
@@ -49,13 +41,11 @@ def get_valid_attributes(
         return ''                                           # ... bad karma, inconsistent validation requirements
       return add_attr
 
-    if not isinstance(add_attr,(Box,list)):
+    if not isinstance(add_attr,Box):
       common.fatal(
-        f'Internal error: Expected string or list/dictionary for {atlist} attributes\n' +
+        f'Internal error: Expected dictionary for {atlist} attributes\n' +
         f'... attributes: {attributes}')
       return ''                                             # ... dang, someone messed up. Abort, abort, abort...
-
-    add_attr = make_attr_dict(add_attr)                     # Convert attributes into a dictionary
 
     no_propagate = f'{atlist}_no_propagate'                 # No-propagate list excluded only for non-first attribute category
     if idx and no_propagate in attributes:
@@ -64,10 +54,7 @@ def get_valid_attributes(
 
     internal_atlist = f'{atlist}_internal'                  # Internal object attributes (used by links)
     if internal_atlist in attributes:                       # Add internal attributes if they exist
-      valid += make_attr_dict(attributes[internal_atlist])
-
-  if not extra_attributes is None:                      # Extend the attribute list with dynamic attributes
-    valid += make_attr_dict(extra_attributes)
+      valid += attributes[internal_atlist]
 
   return valid
 
@@ -325,7 +312,7 @@ def validate_attributes(
       module: str = 'attributes',                       # Module generating the error message (default: 'attributes')
       module_source: typing.Optional[str] = None,       # Where did we get the list of modules?
       attributes: typing.Optional[Box] = None,          # Where to get valid attributes from
-      extra_attributes: typing.Optional[list] = None    # List of dynamic attributes (needed to validate node provider settings)
+      extra_attributes: typing.Optional[Box] = None     # Dynamic attributes (needed to validate provider and tool settings)
         ) -> typing.Any: 
 
   #
@@ -335,6 +322,13 @@ def validate_attributes(
 
   if attributes is None:
     attributes = topology.defaults.attributes
+
+  if extra_attributes:
+    attributes = attributes + extra_attributes
+
+  if not isinstance(attributes,Box):
+    common.fatal('Internal error in validate_attributes: attributes is not a Box')
+    return None
 
   if not 'extra' in topology.defaults.attributes:
     build_module_extra_attributes(topology)
@@ -354,7 +348,7 @@ def validate_attributes(
   # It could be that the list of attributes tells us data should be of certain type
   # Deal with that as well (although in an awkward way that should be improved)
   #
-  valid = get_valid_attributes(attributes,attr_list,extra_attributes)
+  valid = get_valid_attributes(attributes,attr_list)
   extra_module_attr = get_extra_module_attributes(topology.defaults.attributes,attr_list)
   if isinstance(valid,str):                   # Validate data that is not a dictionary
     validate_value(                           # Use standalone value validator
@@ -441,3 +435,27 @@ def validate_attributes(
       f"Invalid {data_name} attribute '{k}' found in {data_path}",
       common.IncorrectAttr,
       module)
+
+"""
+Get object-specific attributes
+
+input: list of attribute types (example: ['providers','tools'])
+output: dict of object-specific attributes
+"""
+
+def get_object_attributes(object_type_list: typing.List[str], topology: Box) -> Box:
+  attrs = get_empty_box()
+  for o_type in object_type_list:
+    if not o_type in topology.defaults:
+      continue
+
+    object_data = topology.defaults[o_type]
+    for o_name in object_data.keys():
+      if 'attributes' in object_data[o_name]:
+        for kw,v in object_data[o_name].attributes.items():
+          attrs[kw][o_name] = v
+      else:
+        for kw in ['node','link','interface']:
+          attrs[kw][o_name] = None
+
+  return attrs

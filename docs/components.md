@@ -57,6 +57,10 @@ nodes:
 
 Whenever you include a component into a lab topology, _netlab_ creates new nodes, links, and a component-specific group that includes component- and parent node settings. The node names of the new nodes are composed from the parent node name and the component node name.
 
+```{tip}
+It's easy to exceed the maximum node name length (16 characters) when using lab components. To increase the maximum node name length, set the `defaults.const.MAX_NODE_ID_LENGTH` lab topology attribute (see also: [changing defaults](defaults.md)).
+```
+
 The above three-site lab topology would result in:
 
 * Six nodes: s1_p, s1_pe, s2_p, s2_pe, s3_p, and s3_pe

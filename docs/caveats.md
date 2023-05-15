@@ -100,7 +100,7 @@ Generic Linux device is an IP host that does not support IP forwarding or IP rou
 
 ## Nokia SR Linux
 * Only supported on top of *Containerlab*
-* Supports container image release 22.11.1 or later (due to YANG model changes)
+* Supports container image release 23.3.1 or later (due to YANG model changes)
 * Requires the latest Ansible Galaxy collection 'nokia.grpc' and its dependencies to be installed, from the git repo:
 ```
 ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
