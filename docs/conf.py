@@ -64,6 +64,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
+html_context = {}
+rtd_branch = os.environ.get("READTHEDOCS_VERSION", None)
+html_context["w_dev"] = rtd_branch == "dev"
+html_context["w_latest"] = rtd_branch == "latest"
+
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 if not on_rtd:  # only import and set the theme if we're building docs locally
