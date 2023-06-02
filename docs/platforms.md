@@ -26,6 +26,7 @@
 | FRR 7.5.0                                 | frr                |
 | Generic Linux host                        | linux              |
 | Juniper vMX                               | vmx                |
+| Juniper vPTX (vJunos EVO) [❗](caveats.html#juniper-vptx) | vptx               |
 | Juniper vSRX 3.0                          | vsrx               |
 | Mikrotik RouterOS 6 (CHR)                 | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats.html#mikrotik-routeros-7) | routeros7           |
@@ -87,6 +88,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
 | Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
 | Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats.html#juniper-vmx-in-containerlab)             |
+| Juniper vPTX                                       |          ✅           | ❌                            |            ❌            |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
 | Mikrotik RouterOS 6                                |          ✅           |              ❌               |            ❌             |
 | Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
@@ -115,6 +117,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Fortinet FortiOS           | fortios            |    1 |   1024 | virtio (*libvirt default*) |
 | Generic Linux host         | linux              |    1 |   1024 | virtio (*libvirt default*) |
 | Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio (*libvirt default*) |
+| Juniper vPTX               | vptx               |    4 |   8192 | virtio (*libvirt default*) |
 | Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio (*libvirt default*) |
 | Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000                      |
 | VyOS                       | vyos               |    2 |   1024 | virtio (*libvirt default*) |
@@ -138,6 +141,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Generic Linux         |          ✅           |           ❌           |
 | Juniper vMX           |          ✅           |           ✅           |
 | Juniper vSRX 3.0      |          ✅           |           ✅           |
+| Juniper vPTX          |          ✅           |           ✅           |
 | Mikrotik RouterOS 6   |          ✅           |           ✅           |
 | Mikrotik RouterOS 7   |          ✅           |           ✅           |
 | Nokia SR Linux        |          ✅           |           ✅           |
@@ -211,6 +215,7 @@ The following interface addresses are supported on various platforms:
 | FRR 7.5.0             |          ✅          |          ✅          |             ❌              |
 | Generic Linux         |          ✅          |          ✅          |             ❌              |
 | Juniper vMX           |          ✅          |          ✅          |             ✅              |
+| Juniper vPTX          |          ✅          |          ✅          |             ✅              |
 | Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |
 | Mikrotik RouterOS 6   |          ✅          |          ✅          |             ❌              |
 | Mikrotik RouterOS 7   |          ✅          |          ✅          |             ❌              |
@@ -240,6 +245,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
+| Juniper vPTX          | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
