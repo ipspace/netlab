@@ -30,6 +30,7 @@ VLANs are supported on these platforms:
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vMX           | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Juniper vPTX          | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vSRX 3.0      | ❌  | ❌  | ✅  | ❌ | ❌ |
 | Mikrotik RouterOS 6   | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ✅ | ✅ |

@@ -30,6 +30,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Cisco IOS XE          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Juniper vMX           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Juniper vPTX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Nokia SR OS           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
@@ -67,6 +68,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Cisco IOS XE          |   ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |
 | Juniper vMX           |   ✅  |   ✅  |
+| Juniper vPTX          |   ✅  |   ✅  |
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ❌  |
 | Nokia SR OS           |   ✅  |   ✅  |

@@ -167,6 +167,7 @@ The following system-wide features are configured on supported network operating
 | FRR 7.5.0             |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
 | Juniper vMX           |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
+| Juniper vPTX          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Juniper vSRX 3.0      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Mikrotik RouterOS 6   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
 | Mikrotik RouterOS 7   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
@@ -191,6 +192,7 @@ The following interface parameters are configured on supported network operating
 | FRR 7.5.0             |            ✅              |            ✅            | ✅ |
 | Generic Linux         |            ❌              |            ❌            | ✅ |
 | Juniper vMX           |            ✅              |            ✅            | ✅ |
+| Juniper vPTX          |            ✅              |            ✅            | ✅ |
 | Juniper vSRX 3.0      |            ✅              |            ✅            | ✅ |
 | Mikrotik RouterOS 6   |            ✅              |            ❌            | ✅ |
 | Mikrotik RouterOS 7   |            ✅              |            ❌            | ✅ |
@@ -270,6 +272,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.html#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
 | Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
 | Juniper vMX           |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |
+| Juniper vPTX          |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |
 | Juniper vSRX 3.0      |   ❌  |  ✅  |  ❌   |  ❌   |    ✅   |  ❌   |
 | Mikrotik RouterOS 6   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Mikrotik RouterOS 7   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
@@ -296,6 +299,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | FRR 7.5.0             |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Juniper vMX           |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Juniper vPTX          |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Juniper vSRX 3.0      |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Mikrotik RouterOS 6   |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Mikrotik RouterOS 7   |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
