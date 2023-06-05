@@ -178,6 +178,20 @@ def load(fname: str , local_defaults: str, sys_defaults: str) -> Box:
 
   return topology
 
+#
+# Parse values specified in CLI settings. Return string, bool or int
+#
+def transform_cli_value(v: str) -> typing.Union[int,bool,str]:
+  try:                                            # Try to parse an integer
+    return int(v)
+  except:
+    pass
+
+  if v.lower() in ['true','false']:               # Recognize True or False
+    return v.lower() == 'true'                    # ... and return the result of "do we have true?"
+  
+  return v                                        # Otherwise it's a string
+
 def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
   if args.device:
     topo.defaults.device = args.device
@@ -197,6 +211,7 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
       if not "=" in s:
         common.error("Invalid CLI setting %s, should be in format key=value" % s)
       (k,v) = s.split("=")
+      v = transform_cli_value(v)
       try:
         topo[k] = v
       except TypeError as ex:
