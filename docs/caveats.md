@@ -154,6 +154,7 @@ addressing:
 * Juniper vPTX, also known as vJunos EVO, uses Linux instead of BSD as base OS. There are some basic differences from a "default" JunOS instance, including the management interface name, which is `re0:mgmt-0`.
 * After the VM boots up, you need to wait for the *virtual FPC* to become *Online* before being able to forward packets. You can verify this with `show chassis fpc`. **NOTE**: You will be able to see the network interfaces only after the *FPC* is online.
 * It could take some times for the VM to get the DHCP address on the management interface. Be patient.
+* It seems that the DHCP Client of the management interface does not install a default route, even if received by the DHCP server.
 * The VM will complain about missing licenses. You can ignore that.
 
 ## Aruba AOS-CX
