@@ -97,6 +97,7 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
   if isinstance(l,str):                                       # String, split into a list of nodes
     link_intf = []
     for n in l.split('-'):                # ... split it into a list of nodes
+      n = n.strip()                       # ... strip leading and trailing spaces (fixing #816)
       valid_node = n in nodes
       if not valid_node:
         valid_node = len([ x for x in nodes if n.startswith(x) ]) > 0
