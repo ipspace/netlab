@@ -19,6 +19,7 @@ from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id
 from ..data import global_vars
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
+import netaddr
 
 MAX_NODE_ID: typing.Final[int] = 250
 
@@ -138,7 +139,7 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
 
   if addrs.mac_eui and not 'mac' in node.mgmt:                        # Finally, assign management MAC address
     addrs.mac_eui[5] = node.id
-    node.mgmt.mac = str(addrs.mac_eui)
+    node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_bare)
 
   if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
     common.error(
