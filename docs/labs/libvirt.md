@@ -36,6 +36,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Dell OS10              | dell/os10                   |
 | Fortinet FortiOS       | fortinet/fortios            |
+| Juniper vPTX (vJunos EVO) | juniper/vptx             |
 | Juniper vSRX 3.0       | juniper/vsrx3               |
 | Mikrotik RouterOS 6    | mikrotik/chr                |
 | Mikrotik RouterOS 7    | mikrotik/chr7               |
@@ -66,6 +67,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 * [Cisco Nexus OS](nxos.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
+* [Juniper vPTX](vptx.md)
 * [Juniper vSRX 3.0](vsrx.md)
 * [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
@@ -202,6 +204,7 @@ The virtual machines are batched based on their order in **‌nodes** list/dicti
    nxos.md
    dellos10.md
    vsrx.md
+   vptx.md
    routeros7.md
 ..
 ```
