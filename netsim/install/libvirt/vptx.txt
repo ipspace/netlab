@@ -11,16 +11,18 @@ After the system boots and displays the 'login' prompt:
   'show chassis fpc'
 * Shut down the VM with 'request system power-off' (confirm with 'yes')
 
-NOTE: the management traffic is isolated in a dedicated management VRF (mgmt_junos).
-
-NOTE: It seems that, sometimes, in a randomic way, the vPTX instance is not able to take a DHCP Address on the management interface.
-You can use the following instructions to create and install a cron script which will check every 2 minutes if the DHCP Client is failed, and in that case restarts it.
+NOTES:
+* The management traffic is isolated in a dedicated management VRF (mgmt_junos).
+* It seems that the DHCP client in the vPTX instance is randomly failing to get the IPv4 address
+  on the management interface.
+  
+You can use the following instructions to create and install a cron script in the vPTX box that
+will check if the DHCP client has failed every 2 minutes, and restart the DHCP client if needed.
 
 * Login via SSH with username 'root' and password 'Vagrant'
 * Execute the following commands:
 
 cat > /home/root/dhcp_check.sh <<EOL
-
 PATH=\$PATH:/bin:/usr/sbin
 L=/var/log/dhcp_check_hack.log
 
@@ -36,11 +38,10 @@ if [ \$? -eq 0 ]; then
   cp \$L /var/log/dhcp_check_run.log
   sleep 10
 fi
-
 EOL
 
 cat > /etc/cron.d/dhcp_check <<EOL
 */2    *       *       *       *       root    /bin/bash /home/root/dhcp_check.sh
 EOL
 
-* Shut down the VM (as above, from the junos cli)
+* Shut down the VM (as above, from the Junos CLI)
