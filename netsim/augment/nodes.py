@@ -347,6 +347,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_node_device_data(n,defaults)
 
+    n.af = {}                                                 # Nodes must have AF attribute
     if pools.loopback and n.get('role','') != 'host':
       prefix_list = addressing.get(pools,['loopback'],n.id)
       for af in prefix_list:
@@ -358,6 +359,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
             n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
           else:
             n.loopback[af] = str(prefix_list[af])
+          n.af[af] = True
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
