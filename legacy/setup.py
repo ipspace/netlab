@@ -1,10 +1,13 @@
 """ redirect netsim-tools to networklab """
 import sys
 from setuptools import setup, find_packages
+from pathlib import Path
 
 sys.path.append('..')
 
-version="1.5.3-post1"
+version="1.5.4"
+
+long_description = (Path(__file__).parent / "README.md").read_text()
 
 setup(
   name="netsim-tools",
@@ -13,6 +16,7 @@ setup(
   author="Ivan Pepelnjak",
   author_email="ip@ipspace.net",
   description="CLI-based Virtual Networking Lab Abstraction Layer",
+  long_description=long_description,
   install_requires=[f"networklab>={version}"],
   classifiers=[
     "Topic :: Utilities",
@@ -25,16 +29,3 @@ setup(
   url="https://github.com/ipspace/netlab",
   python_requires='>=3.7',  # Due to e.g. 'capture_output' in subprocess.run
 )
-
-print("""
-=======================================================================
-                          WARNING WARNING WARNING
-=======================================================================
-netsim-tools has been renamed to netlab in August 2022.
-
-The Python package netsim-tools has been renamed to networklab and is
-installed as a dependency of netsim-tools every time you install or
-upgrade netsim-tools, but we won't keep that dependency active foreer.
-
-Please stop using netsim-tools package and use networklab package.
-""")

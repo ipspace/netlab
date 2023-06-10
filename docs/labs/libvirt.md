@@ -1,6 +1,8 @@
 # Using libvirt/KVM with Vagrant
 
-*netlab* uses *Vagrant* with *vagrant-libvirt* plugin to start virtual machines in libvirt/KVM environment. To use libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
+*netlab* uses *Vagrant* with *vagrant-libvirt* plugin to start virtual machines in libvirt/KVM environment.
+
+To use libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
 
 * Install *netlab* ([Linux server](../install/linux.md), [Ubuntu virtual machine](../install/ubuntu-vm.md))
 * If you're using Ubuntu, execute **netlab install libvirt** to install KVM, libvirt, Vagrant, and vagrant-libvirt. You'll have to install the software manually on other Linux distributions.
@@ -19,6 +21,10 @@ You MUST use **netlab up** to start the lab to ensure the virtual machines get c
    :backlinks: none
 ```
 
+## Supported Versions
+
+We tested _netlab_ with Vagrant version 2.3.4 and vagrant-libvirt plugin version 0.11.2. These are also the versions installed by **netlab install libvirt** command.
+
 ## Vagrant Boxes
 
 Vagrant starts virtual machines from prepackaged VM images called *boxes*. While it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
@@ -36,6 +42,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Dell OS10              | dell/os10                   |
 | Fortinet FortiOS       | fortinet/fortios            |
+| Juniper vPTX (vJunos EVO) | juniper/vptx             |
 | Juniper vSRX 3.0       | juniper/vsrx3               |
 | Mikrotik RouterOS 6    | mikrotik/chr                |
 | Mikrotik RouterOS 7    | mikrotik/chr7               |
@@ -66,6 +73,7 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 * [Cisco Nexus OS](nxos.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
+* [Juniper vPTX](vptx.md)
 * [Juniper vSRX 3.0](vsrx.md)
 * [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
@@ -202,6 +210,7 @@ The virtual machines are batched based on their order in **‌nodes** list/dicti
    nxos.md
    dellos10.md
    vsrx.md
+   vptx.md
    routeros7.md
 ..
 ```

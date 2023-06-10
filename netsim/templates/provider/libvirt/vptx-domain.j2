@@ -1,0 +1,73 @@
+    guest_name = "{{ name }}"
+    {{ name }}.vm.guest = :tinycore
+    {{ name }}.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
+
+    {{ name }}.ssh.insert_key = false
+
+    {{ name }}.vm.boot_timeout = 6000
+
+    {{ name }}.vm.provider :libvirt do |domain|
+      domain.cpus = 4
+      domain.memory = 8192
+      domain.disk_bus = "virtio"
+      domain.driver = "kvm"
+      domain.nic_model_type = "virtio"
+      domain.graphics_type = "none"
+      domain.nested = true
+      domain.cpu_mode = "custom"
+      domain.cpu_model = "qemu64"
+      domain.cpu_feature :name => 'vmx', :policy => 'require'
+      domain.sysinfo = {
+        "bios": {
+          "vendor": "Bochs",
+          "version": "Bochs"
+        },
+        "system": {
+            "manufacturer": "Bochs",
+            "product": "Bochs",
+            "serial": "chassis_no=0:slot=0:type=1:assembly_id=0x0D20:platform=251:master=0:channelized=no"
+        },
+        "chassis": {
+          "manufacturer": "Bochs"
+        }
+      }
+
+      {% if "amd" in defaults.processor|lower %}
+      domain.cpu_mode = "custom"
+      {% endif %}
+    end
+
+    ## add 4 network interfaces required for internal communication:
+    ## - vptx_PFE_LINK
+    ## - vptx_RPIO_LINK
+    ## - vptx_RPIO_LINK
+    ## - vptx_PFE_LINK
+
+    {{ name }}.vm.network :private_network,
+                  :libvirt__network_name => "{{ name }}_pfe",
+                  :libvirt__forward_mode => "veryisolated",
+                  :libvirt__dhcp_enabled => false,
+                  :libvirt__iface_name => "{{ name }}_pfe_1",
+                  :libvirt__mtu => 9600,
+                  :auto_config => false
+    {{ name }}.vm.network :private_network,
+                  :libvirt__network_name => "{{ name }}_rpio",
+                  :libvirt__forward_mode => "veryisolated",
+                  :libvirt__dhcp_enabled => false,
+                  :libvirt__iface_name => "{{ name }}_rpio_1",
+                  :libvirt__mtu => 9600,
+                  :auto_config => false
+    {{ name }}.vm.network :private_network,
+                  :libvirt__network_name => "{{ name }}_rpio",
+                  :libvirt__forward_mode => "veryisolated",
+                  :libvirt__dhcp_enabled => false,
+                  :libvirt__iface_name => "{{ name }}_rpio_2",
+                  :libvirt__mtu => 9600,
+                  :auto_config => false
+    {{ name }}.vm.network :private_network,
+                  :libvirt__network_name => "{{ name }}_pfe",
+                  :libvirt__forward_mode => "veryisolated",
+                  :libvirt__dhcp_enabled => false,
+                  :libvirt__iface_name => "{{ name }}_pfe_2",
+                  :libvirt__mtu => 9600,
+                  :auto_config => false

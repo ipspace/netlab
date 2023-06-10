@@ -14,9 +14,13 @@
    :backlinks: none
 ```
 
-## Minimal supported version: 0.37.1 (2023-2-27)
-Version 0.37 introduced some changes to the location of generated certificate files.
-Use ```sudo containerlab version upgrade``` to upgrade to the latest version
+## Supported Versions
+
+We tested _netlab_ with _containerlab_ version 0.41.2. That's also the version installed by the **netlab install containerlab** command.
+
+Minimum supported _containerlab_ version is 0.37.1 (2023-2-27) -- that version introduced some changes to the location of generated certificate files.
+
+If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
 ## Container Images
 
@@ -27,15 +31,24 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Arista cEOS            | ceos:4.26.4M                 |
 | Cumulus VX             | networkop/cx:4.4.0           |
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |
-| FRR                    | frrouting/frr:v8.3.1         |
+| Dell OS10              | vrnetlab/vr-ftosv            |
+| FRR                    | frrouting/frr:v8.4.0         |
+| Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
+| Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
+| Microtik RouterOS 7    | vrnetlab/vr-routeros:7.6     |
 | Nokia SR Linux         | ghcr.io/nokia/srlinux:latest |
 | Nokia SR OS            | vrnetlab/vr-sros:latest      |
+| VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * Cumulus VX, FRR, and Nokia SR Linux images are automatically downloaded from Docker Hub.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS container image (requires a license), see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 
 You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Nexus 9300v and IOS XR, OpenWRT, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
+
+```{warning}
+You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
+```
 
 ## LAN Bridges
 
@@ -168,6 +181,21 @@ The initial configuration process (**[netlab initial](../netlab/initial.md)**) d
 * Static default route points to the management interface.
 
 You can therefore use any container image as a Linux node.
+
+(clab-vrnetlab)=
+## Using vrnetlab Containers
+
+_vrnetlab_ is an open-source project that packages network device virtual machines into containers. The architecture of the packaged container requires an internal network, and it seems that _vrnetlab_ (or the fork used by _containerlab_) uses IPv4 prefix 10.0.0.0/24 on that network which clashes with the _netlab_ loopback address pool.
+
+If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
+
+```
+addressing:
+  loopback:
+    ipv4: 10.255.0.0/24
+  router_id:
+    ipv4: 10.255.0.0/24
+```
 
 ```{eval-rst}
 .. toctree::

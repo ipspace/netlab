@@ -213,6 +213,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 
       extra_data = data.get_empty_box()
       extra_data.ifindex = l.ifindex
+      if 'bgp' in ngb_ifdata and isinstance(ngb_ifdata.bgp,Box):      # Copy neighbor BGP interface attributes into neighbor data
+        extra_data = ngb_ifdata.bgp + extra_data                      # ... useful for things like BGP roles
 
       # Figure out whether both neighbors have IPv6 LLA and/or unnumbered IPv4 interfaces
       #
@@ -245,10 +247,13 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
             module='bgp')
           continue
 
-      for k in ('local_as','replace_global_as'):
+      for k in ('local_as','replace_global_as'):      # Special handling for local-as attributes
+        extra_data.pop(k,None)                        # These attributes are copied from local data, not neighbor data ==> remove neighbor data
+
+        # Get local settings from link or node
         local_as_data = l.get(f'bgp.{k}',None) or node.get(f'bgp.{k}',None)
         if not local_as_data is None:
-          extra_data[k] = local_as_data
+          extra_data[k] = local_as_data               # ... and copy it into neighbor data
 
       session_type = 'localas_ibgp' if neighbor_local_as == node_local_as else 'ebgp'
       if session_type == 'localas_ibgp':

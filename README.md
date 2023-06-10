@@ -14,7 +14,7 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.5.3](https://github.com/ipspace/netlab/releases/tag/release_1.5.3), which is the only release that works with the latest *containerlab* release (0.41.0). We redesigned topology validation in release 1.5.0, resulting in potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netlab.tools/release/) first.
+The latest release is [release 1.5.4](https://github.com/ipspace/netlab/releases/tag/release_1.5.4). We redesigned topology validation in release 1.5.0, resulting in potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netlab.tools/release/) first.
 
 The latest release before the changes made in release 1.5.0 is [release 1.4.3](https://github.com/ipspace/netlab/releases/tag/release_1.4.3).
 

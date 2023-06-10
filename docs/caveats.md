@@ -136,16 +136,31 @@ Dell OS10 uses a concept of a so-called *Virtual Network* interface to try to ha
 Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface (but *anycast* gateway is supported). At the same time, *anycast* gateway is not supported on plain *ethernet* interfaces, so you need to use *VRRP* there.
 
 ## Juniper vMX in Containerlab
-Juniper vMX runs in Containerlab with the *vrnetlab* extension. See [clab docs](https://containerlab.dev/manual/kinds/vr-vmx/) for further details.
 
-Additionally, the Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. For this reason it's better to use a different subnet for the loopback addresses of your topologies with:
-```
-addressing:
-  loopback:
-    ipv4: 10.255.0.0/24
-  router_id:
-    ipv4: 10.255.0.0/24
-```
+Juniper vMX runs as a container in _containerlab_. You have to use _vrnetlab_ to build the container from a vMX disk image. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vmx/) for further details.
+
+The Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
+
+## Juniper vPTX
+
+(These are not real *caveats*, but useful informations)
+
+* Juniper vPTX, also known as vJunos EVO, uses Linux instead of BSD as base OS. There are some basic differences from a "default" JunOS instance, including the management interface name, which is `re0:mgmt-0`.
+* After the VM boots up, you need to wait for the *virtual FPC* to become *Online* before being able to forward packets. You can verify this with `show chassis fpc`. **NOTE**: You will be able to see the network interfaces only after the *FPC* is online.
+* It could take some times for the VM to get the DHCP address on the management interface. Be patient.
+* It seems that the DHCP Client of the management interface does not install a default route, even if received by the DHCP server.
+* The VM will complain about missing licenses. You can ignore that.
+
+## Juniper vSRX in Containerlab
+
+You can run Juniper vSRX as a container packaged by *vrnetlab*. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vsrx/) for further details.
+
+The Juniper vSRX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
+
+vSRX container built with *vrnetlab* uses **flow based forwarding**. You have two ways to use it:
+
+* Configure security zones, and attach interfaces and rules to them;
+* Change the mode to [**packet based forwarding**](https://supportportal.juniper.net/s/article/SRX-How-to-change-forwarding-mode-for-IPv4-from-flow-based-to-packet-based).
 
 ## Aruba AOS-CX
 

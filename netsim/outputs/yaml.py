@@ -35,23 +35,24 @@ class YAML(_TopologyOutput):
         cleantopo.pop('defaults')
       elif fmt == 'noaddr':
         cleantopo.pop('addressing')
-      elif cleantopo.get(fmt,None):
-        result = cleantopo.get(fmt)
-        if not isinstance(result,Box) and not isinstance(result,BoxList):
-          common.fatal(f'Selecting {fmt} did not result in a usable dictionary, aborting')
+      else:
+        try:
+          result = eval(fmt,cleantopo)
+        except Exception as ex:
+          common.fatal(f'Error trying to evaluate {fmt}: {str(ex)}')
           return
         cleantopo = result
         break
-      else:
-        common.error('Invalid format modifier %s' % fmt,common.IncorrectValue,modname)
 
-    common.exit_on_error()
-    if modname == 'YAML':
+    if not isinstance(cleantopo,Box) and not isinstance(cleantopo,BoxList):
+      output.write(f"{str(result)}\n")
+    elif modname == 'YAML':
       output.write(common.get_yaml_string(cleantopo))
     else:
       output.write(cleantopo.to_json(indent=2,sort_keys=True))
+
     if outfile != '-':
       common.close_output_file(output)
-      print("Created transformed topology dump in YAML format in %s" % outfile)
+      print(f"Created transformed topology dump in {modname} format in {outfile}")
     else:
       output.write("\n")

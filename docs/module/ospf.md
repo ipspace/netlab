@@ -53,6 +53,7 @@ The following table describes per-platform support of individual router-level OS
 | Fortinet FortiOS         |   ❗  |            ✅          |   ❌   |  ❌  |
 | FRR 7.5.0                |   ✅  |            ✅          |   ✅   |  ❌  |
 | Juniper vMX              |   ✅  |            ✅          |   ✅   |  ✅  |
+| Juniper vPTX             |   ✅  |            ✅          |   ✅   |  ✅  |
 | Juniper vSRX 3.0         |   ✅  |            ✅          |   ✅   |  ✅  |
 | Mikrotik RouterOS 6      |   ✅  |            ❌          |   ❌   |  ✅  |
 | Mikrotik RouterOS 7      |   ✅  |            ❌          |   ✅   |  ❌  |
@@ -81,6 +82,7 @@ The following table documents the interface-level OSPF features:
 | Fortinet FortiOS         |   ✅  |         ❗        |             ✅            |            ✅           |
 | FRR 7.5.0                |   ✅  |         ✅        |             ✅            |            ❗           |
 | Juniper vMX              |   ✅  |         ✅        |             ✅            |            ✅           |
+| Juniper vPTX             |   ✅  |         ✅        |             ✅            |            ✅           |
 | Juniper vSRX 3.0         |   ✅  |         ✅        |             ✅            |            ✅           |
 | Mikrotik RouterOS 6      |   ✅  |         ✅        |             ❌            |            ✅           |
 | Mikrotik RouterOS 7      |   ✅  |         ✅        |             ❌            |            ✅           |

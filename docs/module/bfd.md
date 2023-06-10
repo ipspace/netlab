@@ -13,6 +13,7 @@ BFD is supported on these platforms:
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Dell OS10             |  ❌  | ✅  | ❌  |
 | Juniper vMX           | ❗  | ✅  | ✅  |
+| Juniper vPTX          | ❗  | ✅  | ✅  |
 | Juniper vSRX 3.0      | ❗  | ✅  | ✅  |
 | Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |
 | Mikrotik RouterOS 7   |  ❌  | ❌  | ❌  |
