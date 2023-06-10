@@ -89,7 +89,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
 | Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats.html#juniper-vmx-in-containerlab)             |
 | Juniper vPTX                                       |          ✅           | ❌                            |            ❌            |
-| Juniper vSRX 3.0                                   |          ✅           | ✅ |            ❌             |
+| Juniper vSRX 3.0                                   |          ✅           | ✅ |            ✅[❗](caveats.html#juniper-vsrx-in-containerlab)             |
 | Mikrotik RouterOS 6                                |          ✅           |              ❌               |            ❌             |
 | Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |

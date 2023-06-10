@@ -157,6 +157,22 @@ addressing:
 * It seems that the DHCP Client of the management interface does not install a default route, even if received by the DHCP server.
 * The VM will complain about missing licenses. You can ignore that.
 
+## Juniper vSRX in Containerlab
+Juniper vSRX runs in Containerlab with the *vrnetlab* extension. See [clab docs](https://containerlab.dev/manual/kinds/vr-vsrx/) for further details.
+
+Additionally, the Juniper vSRX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. For this reason it's better to use a different subnet for the loopback addresses of your topologies with:
+```
+addressing:
+  loopback:
+    ipv4: 10.255.0.0/24
+  router_id:
+    ipv4: 10.255.0.0/24
+```
+
+By default, vSRX in containerlab runs in **flow based forwarding**. You have two ways to use it:
+* Configure security zones, and attach interfaces and rules to them
+* Change the mode to [**packet based forwarding**](https://supportportal.juniper.net/s/article/SRX-How-to-change-forwarding-mode-for-IPv4-from-flow-based-to-packet-based).
+
 ## Aruba AOS-CX
 
 * Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
