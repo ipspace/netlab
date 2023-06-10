@@ -8,6 +8,7 @@ Create detailed node-level data structures from topology
 import typing
 
 from box import Box
+import netaddr
 
 from .. import common
 from .. import data
@@ -138,7 +139,7 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
 
   if addrs.mac_eui and not 'mac' in node.mgmt:                        # Finally, assign management MAC address
     addrs.mac_eui[5] = node.id
-    node.mgmt.mac = str(addrs.mac_eui)
+    node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_unix_expanded)
 
   if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
     common.error(

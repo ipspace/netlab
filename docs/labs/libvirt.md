@@ -1,6 +1,8 @@
 # Using libvirt/KVM with Vagrant
 
-*netlab* uses *Vagrant* with *vagrant-libvirt* plugin to start virtual machines in libvirt/KVM environment. To use libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
+*netlab* uses *Vagrant* with *vagrant-libvirt* plugin to start virtual machines in libvirt/KVM environment.
+
+To use libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
 
 * Install *netlab* ([Linux server](../install/linux.md), [Ubuntu virtual machine](../install/ubuntu-vm.md))
 * If you're using Ubuntu, execute **netlab install libvirt** to install KVM, libvirt, Vagrant, and vagrant-libvirt. You'll have to install the software manually on other Linux distributions.
@@ -18,6 +20,10 @@ You MUST use **netlab up** to start the lab to ensure the virtual machines get c
    :local:
    :backlinks: none
 ```
+
+## Supported Versions
+
+We tested _netlab_ with Vagrant version 2.3.4 and vagrant-libvirt plugin version 0.11.2. These are also the versions installed by **netlab install libvirt** command.
 
 ## Vagrant Boxes
 

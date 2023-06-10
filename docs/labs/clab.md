@@ -14,9 +14,13 @@
    :backlinks: none
 ```
 
-## Minimal supported version: 0.37.1 (2023-2-27)
-Version 0.37 introduced some changes to the location of generated certificate files.
-Use ```sudo containerlab version upgrade``` to upgrade to the latest version
+## Supported Versions
+
+We tested _netlab_ with _containerlab_ version 0.41.2. That's also the version installed by the **netlab install containerlab** command.
+
+Minimum supported _containerlab_ version is 0.37.1 (2023-2-27) -- that version introduced some changes to the location of generated certificate files.
+
+If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
 ## Container Images
 
