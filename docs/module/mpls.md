@@ -63,7 +63,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
 | Arista EOS            |   ✅  |   ✅  |
-| Aruba AOS-CX          |   [❗](caveats.html#aruba-aos-cx)  |   ❌  |
+| Aruba AOS-CX          |   [❗](caveats-aruba)  |   ❌  |
 | Cisco IOS             |   ✅  |   ✅  |
 | Cisco IOS XE          |   ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |

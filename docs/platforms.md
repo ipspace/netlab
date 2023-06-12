@@ -13,26 +13,26 @@
 | Virtual network device                    | netlab device type |
 | ----------------------------------------- | ------------------ |
 | Arista vEOS                               | eos                |
-| Aruba AOS-CX [❗](caveats.html#aruba-aos-cx) | arubacx        |
+| Aruba AOS-CX [❗](caveats-aruba)          | arubacx        |
 | Cisco ASAv                                | asav               |
 | Cisco CSR 1000v                           | csr                |
 | Cisco IOSv                                | iosv               |
-| Cisco IOS XRv                             | iosxr [❗](caveats.html#caveats-iosxr)              |
+| Cisco IOS XRv                             | iosxr [❗](caveats-iosxr)              |
 | Cisco Nexus 9300v                         | nxos               |
 | Cumulus Linux 4.x/5.x                     | cumulus            |
-| Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue [❗](caveats.html#caveats-cumulus-nvue)           |
+| Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue [❗](caveats-cumulus-nvue)           |
 | Dell OS10                                 | dellos10           |
-| Fortinet FortiOS [❗](caveats.html#fortinet-fortios) | fortios            |
+| Fortinet FortiOS [❗](caveats-fortios) | fortios            |
 | FRR 7.5.0                                 | frr                |
 | Generic Linux host                        | linux              |
 | Juniper vMX                               | vmx                |
-| Juniper vPTX (vJunos EVO) [❗](caveats.html#juniper-vptx) | vptx               |
+| Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
 | Juniper vSRX 3.0                          | vsrx               |
 | Mikrotik RouterOS 6 (CHR)                 | routeros           |
-| Mikrotik RouterOS 7 (CHR) [❗](caveats.html#mikrotik-routeros-7) | routeros7           |
-| Nokia SR Linux [❗](caveats.html#nokia-sr-linux) | srlinux            |
-| Nokia SR OS [❗](caveats.html#nokia-sr-os) | sros               |
-| VyOS 1.4 [❗](caveats.html#vyos)         | vyos               |
+| Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           |
+| Nokia SR Linux [❗](caveats-srlinux) | srlinux            |
+| Nokia SR OS [❗](caveats-sros) | sros               |
+| VyOS 1.4 [❗](caveats-vyos)         | vyos               |
 
 **Notes:**
 
@@ -81,20 +81,20 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco IOS XRv                                      |          ✅           |    ❌     |            ❌             |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
-| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
-| Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats.html#cumulus-linux-in-containerlab) |
+| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats-cumulus) |
+| Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats-cumulus) |
 | Dell OS10                                          |          ✅           |              ❌               |            ✅             |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
-| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats.html#frr)   |
-| Generic Linux (Ubuntu/Alpine)[❗](caveats.html#generic-linux) |          ✅           |              ✅               |            ✅             |
-| Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats.html#juniper-vmx-in-containerlab)             |
+| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats-frr)   |
+| Generic Linux (Ubuntu/Alpine)[❗](caveats-linux) |          ✅           |              ✅               |            ✅             |
+| Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats-vmx)             |
 | Juniper vPTX                                       |          ✅           | ❌                            |            ❌            |
-| Juniper vSRX 3.0                                   |          ✅           | ✅ |            ✅[❗](caveats.html#juniper-vsrx-in-containerlab)             |
+| Juniper vSRX 3.0                                   |          ✅           | ✅ |            ✅[❗](caveats-vsrx)             |
 | Mikrotik RouterOS 6                                |          ✅           |              ❌               |            ❌             |
 | Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
 | Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
 | Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
-| VyOS                                               |          ✅           |              ❌               |            ✅[❗](caveats.html#vyos-clab)             |
+| VyOS                                               |          ✅           |              ❌               |            ✅[❗](caveats-vyos)             |
 
 **Note:**
 
@@ -110,7 +110,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
 | Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000                     |
 | Cisco CSR 1000v            | csr                |    2 |   4096 | virtio (*libvirt default*) |
-| Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats.html#cisco-nexus-os)| e1000 |
+| Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats-nxos)| e1000 |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio (*libvirt default*) |
 | Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio (*libvirt default*) |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
@@ -165,12 +165,12 @@ The following system-wide features are configured on supported network operating
 | Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | FRR 7.5.0             |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
-| Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats.html#lldp)   |             ✅              |             ✅              |
+| Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats-linux)   |             ✅              |             ✅              |
 | Juniper vMX           |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Juniper vPTX          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Juniper vSRX 3.0      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| Mikrotik RouterOS 6   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
-| Mikrotik RouterOS 7   |    ✅     |     ✅      | ✅[❗](caveats.html#mikrotik-routeros-6) |             ✅              |             ✅              |
+| Mikrotik RouterOS 6   |    ✅     |     ✅      | ✅[❗](caveats-routeros6) |             ✅              |             ✅              |
+| Mikrotik RouterOS 7   |    ✅     |     ✅      | ✅[❗](caveats-routeros7) |             ✅              |             ✅              |
 | Nokia SR Linux        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Nokia SR OS           |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
@@ -182,8 +182,8 @@ The following interface parameters are configured on supported network operating
 | Arista EOS            |            ✅              |            ✅            | ✅ |
 | Aruba AOS-CX          |            ✅              |            ❌            | ✅ |
 | Cisco ASAv            |            ✅              |            ❌            | ✅ |
-| Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats.html#cisco-ios) |
-| Cisco IOS XRv         |            ✅              |            ✅ [❗](caveats.html#caveats-iosxr)           | ✅ |
+| Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats-iosv) |
+| Cisco IOS XRv         |            ✅              |            ✅ [❗](caveats-iosxr)           | ✅ |
 | Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
 | Cumulus Linux         |            ✅              |            ✅            | ✅ |
 | Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
@@ -207,7 +207,7 @@ The following interface addresses are supported on various platforms:
 | Arista EOS            |          ✅          |          ✅          |             ✅              |
 | Aruba AOS-CX          |          ✅          |          ✅          |             ❌              |
 | Cisco ASAv            |          ✅          |          ✅          |             ❌              |
-| Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats.html#cisco-ios)        |
+| Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats-iosv)        |
 | Cisco IOS XRv         |          ✅          |          ✅          |             ✅              |
 | Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
 | Cumulus Linux         |          ✅          |          ✅          |             ✅              |
@@ -232,7 +232,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 [^NSM]: Use **[netlab show module-support](netlab/show.md)** command to display the current system settings
 
-| Operating system      | [OSPF](module/ospf.html) | [IS-IS](module/isis.html) | [EIGRP](module/eigrp.html) | [BGP](module/bgp.html) | [BFD](module/bfd.html) | [EVPN](module/evpn.html) | [FHRP](module/gateway.html) |
+| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [EIGRP](module/eigrp.md) | [BGP](module/bgp.md) | [BFD](module/bfd.md) | [EVPN](module/evpn.md) | [FHRP](module/gateway.md) |
 | --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅   |  ❌   |   ❌   | ✅  | ✅  | ✅  | ✅  |
@@ -243,8 +243,8 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
-| Dell OS10             | [❗](caveats.html#dell-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
-| Fortinet FortiOS      | [❗](caveats.html#fortinet-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
+| Dell OS10             | [❗](caveats-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| Fortinet FortiOS      | [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
 | FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Juniper vPTX          | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
@@ -261,15 +261,15 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 (platform-dataplane-support)=
 The following data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
 
-| Operating system      | VLAN | VRF | VXLAN | MPLS | SR-MPLS | SRv6 |
+| Operating system      | [VLAN](module/vlan.md) | [VRF](module/vrf.md) | [VXLAN](module/vxlan.md) | [MPLS](module/mpls.md) | [SR-MPLS](module/sr-mpls.md) | [SRv6](module/srv6.md) |
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
 | Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
-| Aruba AOS-CX          |  ✅  | ✅  |  [✅](caveats.html#aruba-aos-cx)   | [❗](caveats.html#aruba-aos-cx)   |    ❌    |  ❌   |
+| Aruba AOS-CX          |  ✅  | ✅  |  ✅[❗](caveats-aruba)   | [❗](caveats-aruba)   |    ❌    |  ❌   |
 | Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
 | Cisco IOS XE          |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
-| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module/vrf.html#platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
+| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module-vrf-platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
 | Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
 | Juniper vMX           |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |
 | Juniper vPTX          |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |

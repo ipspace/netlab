@@ -36,8 +36,7 @@ source_parsers = {
 source_suffix = ['.rst', '.md']
 
 extensions = [
-  'myst_parser',
-  'sphinx_markdown_tables'
+  'myst_parser'
 ]
 
 myst_heading_anchors = 3
@@ -87,6 +86,7 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_css_files = [ 'css/custom.css' ]
 
 sys.path.insert(0, os.path.abspath('netlab'))
 

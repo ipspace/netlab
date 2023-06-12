@@ -23,7 +23,7 @@ The module is supported on these platforms:
 | Cisco IOSv            |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
-| Dell OS10             | ✅ [❗](../caveats.html#dell-os10)  | ✅ [❗](../caveats.html#dell-os10)  | ✅ [❗](../caveats.html#dell-os10)  |
+| Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  | ❌  | ❌  |
 | VyOS                  | ❌  | ✅  | ✅  |

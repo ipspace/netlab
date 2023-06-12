@@ -24,11 +24,11 @@ VLANs are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Aruba AOS-CX          | ✅  | ✅  | ❌  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Cisco CSR 1000v       | ✅  | ✅  | ❌[❗](../caveats.html#caveats-csr)   | ✅ | ✅ |
+| Cisco CSR 1000v       | ✅  | ✅  | ❌[❗](caveats-csr)   | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
-| FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅ | ✅ |
+| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vMX           | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vPTX          | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vSRX 3.0      | ❌  | ❌  | ✅  | ❌ | ❌ |
