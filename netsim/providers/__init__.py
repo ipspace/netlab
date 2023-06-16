@@ -243,7 +243,8 @@ def select_topology(topology: Box, provider: str) -> Box:
   topology = get_box(topology)                      # Create a copy of the topology
   for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
     if topology.nodes[n].provider != provider:
-      topology.nodes.pop(n,None)
+      topology.nodes[n].unmanaged = True
+#      topology.nodes.pop(n,None)
 
   topology.links = [ l for l in topology.links if provider in l.provider ]      # Retain only the links used by current provider
   return topology
