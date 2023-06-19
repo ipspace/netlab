@@ -9,6 +9,7 @@ import platform
 import subprocess
 import os
 import typing
+import pathlib
 
 # Related modules
 from box import Box
@@ -107,7 +108,7 @@ class _Provider(Callback):
         continue
 
       out_folder = f"{self.provider}_files/{node.name}"
-      bind_dict[f"{out_folder}/{file}"] = mapping
+      bind_dict[f"{out_folder}/{file}"] = mapping         # note: node_files directory is flat
 
     node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
 
@@ -133,12 +134,16 @@ class _Provider(Callback):
       template_name = self.find_extra_template(node,file_name)
       if template_name:
         node_data = node + { 'hostvars': topology.nodes }
+        if '/' in file_name:                      # Create subdirectory in out_folder if needed
+          pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
         common.write_template(
           in_folder=os.path.dirname(template_name),
           j2=os.path.basename(template_name),
           data=node_data.to_dict(),
           out_folder=out_folder, filename=file_name)
         print( f"Created {out_folder}/{file_name} from {template_name.replace(sys_folder,'')}, mapped to {node.name}:{mapping}" )
+      else:
+        common.error(f"Cannot find template for {file_name} on node {node.name}",common.MissingValue,'provider')
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
@@ -238,7 +243,8 @@ def select_topology(topology: Box, provider: str) -> Box:
   topology = get_box(topology)                      # Create a copy of the topology
   for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
     if topology.nodes[n].provider != provider:
-      topology.nodes.pop(n,None)
+      topology.nodes[n].unmanaged = True
+#      topology.nodes.pop(n,None)
 
   topology.links = [ l for l in topology.links if provider in l.provider ]      # Retain only the links used by current provider
   return topology

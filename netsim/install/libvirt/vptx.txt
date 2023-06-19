@@ -1,0 +1,47 @@
+Creating initial configuration for Juniper vPTX (vJunos EVO)
+===============================================
+
+Initial configuration for the vPTX device is prepared in a bootstrap disk image (pre-install hook).
+After the system boots and displays the 'login' prompt:
+
+* Login with username 'vagrant' and password 'Vagrant'
+* Verify that the VM got a management IP address with 
+  'show interfaces terse | match re0'
+* Verify that the FPC 0 is online with 
+  'show chassis fpc'
+* Shut down the VM with 'request system power-off' (confirm with 'yes')
+
+NOTES:
+* The management traffic is isolated in a dedicated management VRF (mgmt_junos).
+* It seems that the DHCP client in the vPTX instance is randomly failing to get the IPv4 address
+  on the management interface.
+  
+You can use the following instructions to create and install a cron script in the vPTX box that
+will check if the DHCP client has failed every 2 minutes, and restart the DHCP client if needed.
+
+* Login via SSH with username 'root' and password 'Vagrant'
+* Execute the following commands:
+
+cat > /home/root/dhcp_check.sh <<EOL
+PATH=\$PATH:/bin:/usr/sbin
+L=/var/log/dhcp_check_hack.log
+
+date > \$L
+
+cli -c "show dhcp client binding" >> \$L 2>&1
+
+cli -c "show dhcp client binding" | grep "re0:mgmt-0" | grep FAIL > /dev/null 2>&1
+
+if [ \$? -eq 0 ]; then
+  echo "DHCP IN FAIL STATE. RESTARTING PROCESS." >> \$L
+  cli -c "restart dhcp-managerd" > /dev/null 2>&1
+  cp \$L /var/log/dhcp_check_run.log
+  sleep 10
+fi
+EOL
+
+cat > /etc/cron.d/dhcp_check <<EOL
+*/2    *       *       *       *       root    /bin/bash /home/root/dhcp_check.sh
+EOL
+
+* Shut down the VM (as above, from the Junos CLI)

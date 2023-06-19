@@ -1,6 +1,12 @@
 Release notes
 =============
 
+**[Release 1.5.4](release-1.5.4) (2023-06-10)**
+
+* [Juniper vPTX/vEVO](platforms.md) support by Stefano Sasso (initial configuration, IPv4+IPv6, OSPFv2/v3, IS-IS, BGP, BFD, VLANs, VRFs, MPLS, SR-MPLS)
+* [Juniper vSRX](platforms.md) can be run as a *vrnetlab*-packaged container (by Stefano Sasso)
+* Documentation migrated to [netlab.tools](https://netlab.tools)
+
 **[Release 1.5.3](release-1.5.3) (2023-05-15)**
 
 * ['unknown' device type](platform-unknown) can be used to deploy devices not yet supported by *netlab*

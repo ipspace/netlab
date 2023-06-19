@@ -11,6 +11,7 @@ import pathlib
 import glob
 import subprocess
 import shutil
+import sys
 
 from box import Box
 
@@ -93,6 +94,20 @@ def stop_vagrant_network() -> None:
     result = subprocess.run(['virsh','net-undefine',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
   except:
     pass
+
+def lp_preinstall_hook(args: argparse.Namespace,settings: Box) -> None:
+  devdata = settings.devices[args.device]
+  if not 'pre_install' in devdata.libvirt:
+    return
+  print("Running pre-install hooks")
+  pre_inst_script = common.get_moddir() / "install/libvirt" / devdata.libvirt.pre_install / "run.sh"
+
+  if not os.access(pre_inst_script, os.X_OK):
+    print(" - run file not executable - skipping.")
+    return
+
+  abort_on_failure(pre_inst_script)
+  print("... done\n")
 
 def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
@@ -242,6 +257,8 @@ best not to damage the original virtual disk).
 
   vm_cleanup('vm_box')
   start_vagrant_network()
+  if not 'preinstall' in skip:
+    lp_preinstall_hook(args,settings)
   if not 'disk' in skip:
     lp_create_vm_disk(args)
   if not 'iso' in skip:

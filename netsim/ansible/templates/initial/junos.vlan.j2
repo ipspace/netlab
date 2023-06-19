@@ -1,5 +1,6 @@
 {#
 # RAW interfaces with flexible vlan tagging, + VLAN TAGS
+# In case of vPTX, handle here only the L3 Subintfs
 #}
 
 interfaces {
@@ -20,7 +21,7 @@ interfaces {
 
 {%   endif %}
 
-{%   if l.junos_interface != 'irb' and l.junos_unit == '0' %}
+{%   if l.junos_interface != 'irb' and l.junos_unit == '0' and l._vlan_master is defined and l._vlan_mode|default('') == 'route' %}
 {# This is the ethernet subinterface 0 #}
 {# -> we need to check if it's a "native vlan routed port", if yes #}
 {# -> we need to set native-vlan-id on the basic interface, and report the vlan id on the subunit #}
@@ -43,7 +44,9 @@ interfaces {
 {%     endif %}
 {%   endif %}
 
-{%   if l.junos_interface != 'irb' and l.junos_unit == '0' and l._vlan_master is defined and l.vlan.access_id is defined %}
+{%   if netlab_device_type != 'vptx' %}
+
+{%     if l.junos_interface != 'irb' and l.junos_unit == '0' and l._vlan_master is defined and l.vlan.access_id is defined %}
 {# this is a irb port in access mode on unit 0 #}
   {{ l.junos_interface }} {
     flexible-vlan-tagging;
@@ -53,6 +56,8 @@ interfaces {
   {{ l.ifname }} {
     vlan-id {{ l.vlan.access_id }};
   }
+
+{%     endif %}
 
 {%   endif %}
 

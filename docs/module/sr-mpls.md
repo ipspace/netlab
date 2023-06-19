@@ -30,6 +30,7 @@ SR-MPLS is implemented on the following platforms:
 | Arista EOS            |   ✅  |  ✅  |  ✅   |  ❌   |
 | Cisco IOS XE          |   ✅  |  ❌   |  ✅   |  ❌   |
 | Juniper vMX           |   ✅  |  ✅  |  ✅   |  ❌   |
+| Juniper vPTX          |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vSRX          |   ✅  |  ✅  |  ✅   |  ❌   |
 | Nokia SR Linux        |   ✅  |  ✅  |  ✅   |  ❌   |
 | Nokia SR OS           |   ✅  |  ✅  |  ✅   |  ❌   |

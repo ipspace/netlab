@@ -153,23 +153,7 @@ def stop_external_tools(args: argparse.Namespace, topology: Box) -> None:
 
   lab_status_change(topology,f'external tools stopped')
 
-def run(cli_args: typing.List[str]) -> None:
-  args = down_parse(cli_args)
-  set_dry_run(args)
-
-  topology = load_snapshot(args)
-  print(f"Read transformed lab topology from snapshot file {args.snapshot}")
-
-  mismatch = lab_dir_mismatch(topology)
-
-  lab_status_change(topology,f'lab shutdown requested{" in conflicting directory" if mismatch else ""}')
-  try:
-    provider_probes(topology,1)
-  except:
-    if not args.force:
-      return
-
-  stop_step = 2
+def stop_all(topology: Box, args: argparse.Namespace, stop_step: int) -> int:
   if 'tools' in topology:
     external_commands.print_step(stop_step,"Stopping external tools",spacing=True)
     stop_step = stop_step + 1
@@ -187,15 +171,40 @@ def run(cli_args: typing.List[str]) -> None:
       stop_step = stop_step + 1
     except:
       if not args.force:
-        return
+        sys.exit(1)
     print()
 
   try:
+    lab_status_change(topology,f'stopping {p_provider} provider')
     stop_provider_lab(topology,p_provider,step=stop_step)
     stop_step = stop_step + 1
   except:
     if not args.force:
+      sys.exit(1)
+
+  return stop_step
+
+def run(cli_args: typing.List[str]) -> None:
+  args = down_parse(cli_args)
+  set_dry_run(args)
+
+  topology = load_snapshot(args)
+  print(f"Read transformed lab topology from snapshot file {args.snapshot}")
+
+  mismatch = lab_dir_mismatch(topology)
+
+  probes_OK = True
+  lab_status_change(topology,f'lab shutdown requested{" in conflicting directory" if mismatch else ""}')
+  try:
+    provider_probes(topology,1)
+  except:
+    probes_OK = False
+    if not args.force:
       return
+
+  stop_step = 2
+  if probes_OK:
+    stop_step = stop_all(topology,args,stop_step)
 
   if args.cleanup:
     if 'tools' in topology:

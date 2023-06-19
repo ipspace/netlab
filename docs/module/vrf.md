@@ -24,8 +24,9 @@ VRFs are supported on these platforms:
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | Dell OS10             | ✅  | ✅  | ✅  | ✅  | ✅  |
-| FRR [❗](../caveats.html#caveats-frr-config) | ✅  | ✅  | ✅  | ✅  | ✅  |
+| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Juniper vMX         | ✅  | ✅  | ✅  | ✅  |  ✅  |
+| Juniper vPTX        | ✅  | ✅  | ✅  | ✅  |  ✅  |
 | Juniper vSRX 3.0    | ✅  | ✅  | ✅  | ✅  |  ✅  |
 | Mikrotik RouterOS 6 | ✅  | ✅  | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7 | ✅  | ✅  | ✅  | ✅  |  ✅  |

@@ -8,6 +8,7 @@ Create detailed node-level data structures from topology
 import typing
 
 from box import Box
+import netaddr
 
 from .. import common
 from .. import data
@@ -138,7 +139,7 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
 
   if addrs.mac_eui and not 'mac' in node.mgmt:                        # Finally, assign management MAC address
     addrs.mac_eui[5] = node.id
-    node.mgmt.mac = str(addrs.mac_eui)
+    node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_unix_expanded)
 
   if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
     common.error(
@@ -347,6 +348,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_node_device_data(n,defaults)
 
+    n.af = {}                                                 # Nodes must have AF attribute
     if pools.loopback and n.get('role','') != 'host':
       prefix_list = addressing.get(pools,['loopback'],n.id)
       for af in prefix_list:
@@ -358,6 +360,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
             n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
           else:
             n.loopback[af] = str(prefix_list[af])
+          n.af[af] = True
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)

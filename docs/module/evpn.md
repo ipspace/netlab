@@ -23,7 +23,7 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  |  ❌  |  ✅  | [❌](caveats.html#aruba-aos-cx)  |
+| Aruba AOS-CX       | ✅  |  ❌  |  ✅  | ❌[❗](caveats-aruba)  |
 | Cisco Nexus OS     | ✅  |  ❌  |  ❌  | ✅  |
 | Cumulus Linux      | ✅  |  ❌  | ✅  | ✅  |
 | Dell OS 10         | ✅  |  ❌  |  ✅  | ✅  |
