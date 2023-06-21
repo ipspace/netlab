@@ -169,17 +169,25 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
     return
 
   asn = None
-  obj_name = 'global VRFs' if obj is topology else obj.name
+  is_global = obj is topology
+  obj_name = 'global VRFs' if is_global else obj.name
 
-  for vname,vdata in obj.vrfs.items():
-    if vrf_needs_id(vdata):
-      asn = asn or get_rd_as_number(obj,topology)
-      if not asn:
-        common.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
-          common.MissingValue,
-          'vrf')
-        return
-      set_vrf_auto_id(vdata,get_next_vrf_id(asn))
+  for vname,vdata in obj.vrfs.items():                      # Iterate over object VRFs
+    if not vrf_needs_id(vdata):                             # Skip if the ID/RD is set
+      continue
+
+    if not is_global and vname in topology.get('vrfs',{}):  # Can we copy the global values?
+      vdata.id = topology.vrfs[vname].id                    # ... we have to copy individual values because
+      vdata.rd = topology.vrfs[vname].rd                    # ... we cannot simply merge global into node data
+      continue                                              # ... before post-transform
+
+    asn = asn or get_rd_as_number(obj,topology)
+    if not asn:
+      common.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
+        common.MissingValue,
+        'vrf')
+      return
+    set_vrf_auto_id(vdata,get_next_vrf_id(asn))
 
 #
 # Set import/export route targets
@@ -188,14 +196,19 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
   if not 'vrfs' in obj:
     return None
 
-  obj_name = 'global VRFs' if obj is topology else obj.name
+  is_global = obj is topology
+  obj_name = 'global VRFs' if is_global else obj.name
   obj_id   = 'vrfs' if obj is topology else f'nodes.{obj.name}.vrfs'
   asn      = None
 
   for vname,vdata in obj.vrfs.items():
     for rtname in ['import','export']:
       if not rtname in vdata:
-        vdata[rtname] = [ vdata.rd ]
+        if not is_global and vname in topology.get('vrfs',{}):        # Copy global RT into node RT if available
+          vdata[rtname] = topology.vrfs[vname][rtname]                # ... see set_vrf_ids for detailed description
+          continue                                                    # ... of this hack
+
+        vdata[rtname] = [ vdata.rd ]                                  # No usable parent RT, set RT to RD
         continue
 
       must_be_list(vdata,rtname,f'{obj_id}.{vname}')
@@ -419,12 +432,12 @@ class VRF(_Module):
         return
       node.vrfs = {}     # Prepare to pull in global vrfs
 
-    if not must_be_dict(
+    if must_be_dict(
         parent=node,
         key='vrfs',
         path=f'nodes.{node.name}',
         create_empty=False,
-        module='vrf'):                                # Check that we're dealing with a VRF dictionary and return if there's none
+        module='vrf') is False:                            # Check that we're dealing with a VRF dictionary and return if there's none
       return
 
     for vname in set(list(node.vrfs.keys()) + vlan_vrfs):  # Filter out duplicates
@@ -441,8 +454,8 @@ class VRF(_Module):
         module_source=f'nodes.{node.name}',
         module='vrf')                                 # Function is called from 'vrf' module
 
-      if 'vrfs' in topology and vname in topology.vrfs:
-        node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
+#      if 'vrfs' in topology and vname in topology.vrfs:
+#        node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
 
     set_vrf_ids(node,topology)
     set_import_export_rt(node,topology)
