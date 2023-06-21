@@ -14,6 +14,28 @@ from ..data.types import must_be_list,must_be_dict,must_be_id
 from ..augment import devices,groups,links
 from .. import addressing
 
+#
+# get_node_vrf_data: an abstraction layer that returns node-level VRF data structure
+# as it would appear after the node_post_transform hook
+#
+# You have to use this function instead of 'node or global data' logic whenever you need
+# node VRF data before VRF node_post_transform hook is executed
+#
+
+def get_node_vrf_data(vname: str, node: Box, topology: Box) -> typing.Optional[Box]:
+  topo_data = topology.get('vrfs').get(vname,None)    # Get global VRF data (or none if there's no global data)
+  if not vname in node.get('vrfs',{}):                # If there's no node VRF data
+    return topo_data                                  # ... return global value whatever it is
+  else:
+    node_data = node.vrfs[vname]                      # We have some node VRF data, and we assume it's a Box
+    topo_data = topo_data or {}                       # Global data must be a dict/Box or the merge will fail
+    return topo_data + node_data                      # Now merge global+node data
+                                                      # ... note that the result will always be a Box
+
+#
+# Build the global data structures needed for ID/RD allocation and populate
+# them with preconfigured global- and node VRF data
+#
 def populate_vrf_static_ids(topology: Box) -> None:
   for k in ('id','rd'):
     _dataplane.create_id_set(f'vrf_{k}')
