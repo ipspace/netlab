@@ -420,7 +420,7 @@ Used by create_vlan_links and create_loopback_vlan_links
 """
 def create_vlan_link_data(init: typing.Union[Box,dict],vname: str, parent: typing.Any, topology: Box) -> Box:
   link_data = data.get_box(init)
-  link_data.linkindex = topology.links[-1].linkindex + 1
+  link_data.linkindex = links.get_next_linkindex(topology)
   link_data.parentindex = parent
   link_data.vlan.access = vname
   link_data.vlan_name = vname
@@ -1085,6 +1085,9 @@ class VLAN(_Module):
       except:
         return
 
+      if not 'links' in topology:                 # Make sure there's a 'links' element in topology
+        topology.links = []                       # ... so the various link-related hooks are called and we get 
+                                                  # ... VLAN subinterfaces
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
 
