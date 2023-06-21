@@ -1,0 +1,49 @@
+!
+router bgp {{ bgp.as }}
+!
+! Password
+{% for n in bgp.neighbors if n.password is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+ neighbor {{ n[af] }} password {{ n.password }}
+{%   endfor %}
+{% endfor %}
+!
+! Global address families
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+ address-family {{ af }}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{%     if n.allowas_in is defined %}
+  neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
+{%     endif %}
+{%     if n.as_override is defined %}
+  neighbor {{ n[af] }} as-override
+{%     endif %}
+{%     if n.default_originate is defined %}
+  neighbor {{ n[af] }} default-originate
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+{%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
+{%         if loop.first %}
+ address-family {{ af }} vrf {{ vname }}
+{%         endif %}
+{%         if n.password is defined %}
+  neighbor {{ n[af] }} password {{ n.password }}
+{%         endif %}
+{%         if n.allowas_in is defined %}
+  neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
+{%         endif %}
+{%         if n.as_override is defined %}
+  neighbor {{ n[af] }} as-override
+{%         endif %}
+{%         if n.default_originate is defined %}
+  neighbor {{ n[af] }} default-originate
+{%         endif %}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
