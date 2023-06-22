@@ -25,6 +25,21 @@ router bgp {{ bgp.as }}
 {%   endfor %}
 {% endfor %}
 
+{% for n in bgp.neighbors if n.evpn|default(False) and n.type == 'ebgp' %}
+{%  if loop.first %}
+ address-family l2vpn evpn
+{%  endif %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%     if n.allowas_in is defined %}
+  neighbor {{ peer }} allowas-in {{ n.allowas_in }}
+{%     endif %}
+{%     if n.as_override is defined %}
+  neighbor {{ peer }} as-override
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
 {% if vrfs is defined %}
 {%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
 {%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
