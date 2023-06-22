@@ -895,7 +895,7 @@ Link index utility functions:
 '''
 
 def get_next_linkindex(topology: Box) -> int:
-  if not 'links' in topology:
+  if not topology.links:
     topology.links = []
     return topology.defaults.get('link_index',1)
 
