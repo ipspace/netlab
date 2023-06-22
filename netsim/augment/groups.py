@@ -293,21 +293,23 @@ def export_group_node_data(
   for gname,gdata in topology.groups.items():
     #
     # Find groups with node_data dictionaries
+    # and check that the key within node_data dictionary we're interested in is also a dictionary
+    #
     if must_be_dict(gdata,f'node_data.{key}',f'groups.{gname}',module=module,create_empty=False):
-      for obj_name in list(gdata.node_data[key].keys()):
-        if gdata.node_data[key][obj_name] is None:
-          gdata.node_data[key][obj_name] = {}
-        obj_data =  gdata.node_data[key][obj_name]
+      for obj_name in list(gdata.node_data[key].keys()):              # Iterate over VLANs/VRFs within the group
+        if gdata.node_data[key][obj_name] is None:                    # ... replace None values with
+          gdata.node_data[key][obj_name] = {}                         # ... empty dictionaries
+        obj_data =  gdata.node_data[key][obj_name]                    # Now get the data to work with
         if not obj_name in topology[key] or topology[key][obj_name] is None:
-          topology[key][obj_name] = {}
-        for attr in unique_keys:
+          topology[key][obj_name] = {}                                # Make sure global object is also a dictionary
+        for attr in unique_keys:                                      # Check whether we have an overlap in unique keys
           if attr in topology[key][obj_name] and attr in obj_data and \
-             topology[key][obj_name][attr] != obj_data[attr]:                          # Unique key present on both ends and not equal
+             topology[key][obj_name][attr] != obj_data[attr]:         # Unique key present on both ends and not equal
             common.error(
               f'Cannot redefine {key} attribute {attr} for {key}.{obj_name} from node_data in group {gname}',
               common.IncorrectValue,
               module)
-        for attr in copy_keys:
+        for attr in copy_keys:                                        # Finally, copy missing values from group to global object
           if attr in obj_data and attr not in topology[key][obj_name]:
             topology[key][obj_name][attr] = obj_data[attr]
 
