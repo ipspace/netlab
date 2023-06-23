@@ -1,0 +1,72 @@
+message: |
+  This test case builds a minimal 1-node fabric with eBGP EVPN/VXLAN to a pair of hosts using the same AS. 
+  The hosts are doing VLAN/VXLAN encap/decap, the single spine switch is an IP router running eBGP, and EVPN eBGP RR (just to forward routes)
+
+  Assuming the 'vxlan-bridging' test case succeeded, this test case validates that EVPN works with eBGP-only between hosts, and that
+  'allowas_in' is correctly applied to the EVPN protocol too
+
+  * both hosts should be able to ping each other on each VLAN, i.e.
+    docker exec -it clab-evpn-h1 vtysh -c "ping 172.16.0.2"
+    docker exec -it clab-evpn-h1 vtysh -c "ping 172.16.1.2"
+
+  To change the devices under test, use netlab up -d parameter
+
+defaults:
+ provider: clab
+ device: frr
+ interfaces.mtu: 1550 # Increased for VXLAN
+ vxlan.start_vni: 20000
+
+plugin: [ ebgp.utils ] # for allowas_in
+
+groups:
+  hosts:
+    members: [ h1, h2 ]
+    module: [ vlan,vxlan,bgp,evpn ]
+    node_data:
+      bgp.as: 65002 # same AS on every host requires allowas_in
+  spines:
+    members: [ spine ]
+    device: srlinux # Not all devices support RR for eBGP peers
+    module: [ bgp,evpn ]
+    node_data:
+      bgp.rr: True # one way to pass eBGP EVPN routes between leaves
+      bgp.as: 65001
+
+vlans:
+ red:
+  bgp: False
+ blue:
+  bgp: False
+
+bgp.as: 65000
+evpn.vlans: [ red, blue ]
+
+bgp.sessions: # create only eBGP sessions
+  ipv4: [ ebgp ]
+  ipv6: [ ebgp ]
+
+evpn.session: ebgp
+
+nodes:
+  h1:
+  h2:
+  spine:
+
+links:
+- h1:
+   bgp.allowas_in: True
+  spine:
+- h2:
+   bgp.allowas_in: True
+  spine:
+
+# Stub links to emulate VMs and provide IPs to ping from/to
+- h1:
+  vlan.access: red
+- h2:
+  vlan.access: red
+- h1:
+  vlan.access: blue
+- h2:
+  vlan.access: blue
