@@ -2,7 +2,7 @@
 
 Some user might want to use _netlab_ with external management tools (example: Graphite, SuzieQ, Prometheus...). _netlab_ can automatically generate the configuration files for these tools and start them as the last step in the **netlab up** process (after the lab has been configured).
 
-The external tools started with _netlab_ can access the management network and the management interfaces of lab devices. If you need access to lab links start your tool as a [Linux container with a custom image](labs/clab.md#deploying-linux-containers).
+The external tools started with _netlab_ can access the management network and the management interfaces of lab devices. If you need access to lab links start your tool as a [Linux container with a custom image](clab-linux).
 
 ```{warning}
 * Tools are started as Docker containers. You have to run your labs on a Linux server with Docker to use external tools with _netlab_.[^DI]

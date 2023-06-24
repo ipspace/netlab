@@ -1,5 +1,12 @@
 # Platform Caveats
 
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
 (caveats-iosv)=
 ## Cisco IOSv
 
@@ -72,27 +79,6 @@ devices.cumulus.libvirt.memory: 2048
 ## FRR
 
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
-
-(caveats-linux)=
-## Generic Linux
-
-*Generic Linux device* is a Linux VM running Ubuntu 20.04 or an Alpine/Python container. To use any other Linux distribution, add **image** attribute with the name of Vagrant box or Docker container to the node data[^GL]; the only requirements are working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration.
-
-[^GL]: You can also set the **defaults.devices.linux._provider_.image** attribute to change the Vagrant box for all Linux hosts in your lab.
-
-### Host Routing
-
-Generic Linux device is an IP host that does not support IP forwarding or IP routing protocols. It uses static routes set up as follows:
-
-* IPv4 default route points to Vagrant management interface (set by Vagrant/DHCP).
-* IPv6 default route points to whichever adjacent device is sending IPv6 Route Advertisement messages (default Linux behavior).
-* IPv4 static routes for all IPv4 address pools defined in lab topology point to the first neighbor on the first non-management interface.
-
-**Corollary:** Linux devices SHOULD have a single P2P link to an adjacent network device. If you encounter problems using any other lab topology, please submit a Pull Request fixing it instead of complaining ;)
-
-### LLDP
-
-* LLDP on Generic Linux is started in Ubuntu VMs but not in Alpine containers.
 
 (caveats-routeros6)=
 ## Mikrotik RouterOS 6

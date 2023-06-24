@@ -24,7 +24,7 @@
 | Dell OS10                                 | dellos10           |
 | Fortinet FortiOS [❗](caveats-fortios) | fortios            |
 | FRR 7.5.0                                 | frr                |
-| Generic Linux host                        | linux              |
+| [Generic Linux host](labs/linux.md)       | linux              |
 | Juniper vMX                               | vmx                |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
 | Juniper vSRX 3.0                          | vsrx               |
@@ -86,7 +86,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Dell OS10                                          |          ✅           |              ❌               |            ✅             |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
 | FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats-frr)   |
-| Generic Linux (Ubuntu/Alpine)[❗](caveats-linux) |          ✅           |              ✅               |            ✅             |
+| Generic Linux (Ubuntu/Alpine)[❗](labs/linux.md) |          ✅           |              ✅               |            ✅             |
 | Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats-vmx)             |
 | Juniper vPTX                                       |          ✅           | ❌                            |            ❌            |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ✅[❗](caveats-vsrx)             |
@@ -165,7 +165,7 @@ The following system-wide features are configured on supported network operating
 | Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | FRR 7.5.0             |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
-| Generic Linux         |    ✅     |     ✅      |  ✅[❗](caveats-linux)   |             ✅              |             ✅              |
+| Generic Linux         |    ✅     |     ✅      |  ✅[❗](linux-lldp)   |             ✅              |             ✅              |
 | Juniper vMX           |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Juniper vPTX          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Juniper vSRX 3.0      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
