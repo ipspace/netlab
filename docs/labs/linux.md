@@ -26,9 +26,14 @@ The default gateway on a subnet is set by the [gateway module](../module/gateway
 
 [^NH]: A device that does not have **role** set to **host**. A Linux node is usually a **host** and cannot be used as a default gateway.
 
+(linux-forwarding)=
 ## Packet Forwarding on Linux Hosts
 
-_netlab_ disables IPv4 and IPv6 packet forwarding on Linux devices<!-- with **role** set to **host** or **gateway**-->.
+IPv4 and IPv6 packet forwarding on Linux devices is controlled with the **role** node parameter:
+
+* **host** (default): a Linux device does not perform packet forwarding and cannot be the default gateway for other hosts.
+* **gateway**: a Linux device does not perform packet forwarding but acts as the default gateway for other hosts. You will have to install a proxy (or a similar solution) for inter-subnet packet forwarding.
+* **router**: A Linux device performs packet forwarding but does not run routing protocols. Use **frr** or **cumulus** device if you want to run routing protocols on a Linux server.
 
 (linux-lldp)=
 ## LLDP
