@@ -23,7 +23,7 @@
 | Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue [❗](caveats-cumulus-nvue)           |
 | Dell OS10                                 | dellos10           |
 | Fortinet FortiOS [❗](caveats-fortios) | fortios            |
-| FRR 7.5.0                                 | frr                |
+| FRRouting (FRR)                           | frr                |
 | [Generic Linux host](labs/linux.md)       | linux              |
 | Juniper vMX                               | vmx                |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
@@ -85,8 +85,8 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats-cumulus) |
 | Dell OS10                                          |          ✅           |              ❌               |            ✅             |
 | Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
-| FRR 7.5.0                                          |          ❌           |              ❌               |   ✅[❗](caveats-frr)   |
-| Generic Linux (Ubuntu/Alpine)[❗](labs/linux.md) |          ✅           |              ✅               |            ✅             |
+| FRR | ✅[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
+| Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) |          ✅           |              ✅               |            ✅             |
 | Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats-vmx)             |
 | Juniper vPTX                                       |          ✅           | ❌                            |            ❌            |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ✅[❗](caveats-vsrx)             |
@@ -115,6 +115,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio (*libvirt default*) |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
 | Fortinet FortiOS           | fortios            |    1 |   1024 | virtio (*libvirt default*) |
+| FRR                        | frr                |    1 |   1024 | virtio (*libvirt default*) |
 | Generic Linux host         | linux              |    1 |   1024 | virtio (*libvirt default*) |
 | Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio (*libvirt default*) |
 | Juniper vPTX               | vptx               |    4 |   8192 | virtio (*libvirt default*) |
@@ -137,7 +138,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Cumulus Linux         |          ✅           |           ✅           |
 | Dell OS10             |          ✅           |           ✅           |
 | Fortinet FortiOS      |          ✅           |           ✅           |
-| FRR container         |          ✅           |           ❌           |
+| FRR                   |  ✅[❗](caveats-frr)  |           ❌           |
 | Generic Linux         |          ✅           |           ❌           |
 | Juniper vMX           |          ✅           |           ✅           |
 | Juniper vSRX 3.0      |          ✅           |           ✅           |
@@ -164,7 +165,7 @@ The following system-wide features are configured on supported network operating
 | Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| FRR 7.5.0             |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
+| FRR                   |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
 | Generic Linux         |    ✅     |     ✅      |  ✅[❗](linux-lldp)   |             ✅              |             ✅              |
 | Juniper vMX           |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
 | Juniper vPTX          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
@@ -189,7 +190,7 @@ The following interface parameters are configured on supported network operating
 | Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
 | Dell OS10             |            ✅              |            ❌            | ✅ |
 | Fortinet FortiOS      |            ✅              |            ✅            | ❌ |
-| FRR 7.5.0             |            ✅              |            ✅            | ✅ |
+| FRR                   |            ✅              |            ✅            | ✅ |
 | Generic Linux         |            ❌              |            ❌            | ✅ |
 | Juniper vMX           |            ✅              |            ✅            | ✅ |
 | Juniper vPTX          |            ✅              |            ✅            | ✅ |
@@ -214,7 +215,7 @@ The following interface addresses are supported on various platforms:
 | Cumulus Linux 5.0 (NVUE) |       ✅          |          ✅          |             ✅              |
 | Dell OS10             |          ✅          |          ✅          |             ❌              |
 | Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |
-| FRR 7.5.0             |          ✅          |          ✅          |             ❌              |
+| FRR                   |          ✅          |          ✅          |             ❌              |
 | Generic Linux         |          ✅          |          ✅          |             ❌              |
 | Juniper vMX           |          ✅          |          ✅          |             ✅              |
 | Juniper vPTX          |          ✅          |          ✅          |             ✅              |
@@ -245,7 +246,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
 | Dell OS10             | [❗](caveats-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
 | Fortinet FortiOS      | [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
-| FRR 7.5.0             | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
+| FRR                   | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Juniper vPTX          | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
@@ -271,6 +272,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 | Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module-vrf-platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
 | Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
+| FRR                   |  ✅  | ✅  |  ✅   |   ✅  |    ❌   |  ❌   |
 | Juniper vMX           |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |
 | Juniper vPTX          |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |
 | Juniper vSRX 3.0      |   ❌  |  ✅  |  ❌   |  ❌   |    ✅   |  ❌   |
@@ -296,7 +298,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
-| FRR 7.5.0             |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
+| FRR                   |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | Juniper vMX           |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Juniper vPTX          |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |

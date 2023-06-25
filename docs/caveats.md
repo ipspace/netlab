@@ -79,6 +79,8 @@ devices.cumulus.libvirt.memory: 2048
 ## FRR
 
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
+* VM version of FRR is a Ubuntu VM. FRR package is downloaded and installed during the initial configuration process.
+* You can change FRR default profile with **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 
 (caveats-routeros6)=
 ## Mikrotik RouterOS 6
