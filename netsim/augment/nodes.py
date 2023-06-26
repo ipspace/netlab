@@ -90,6 +90,7 @@ def validate(topology: Box) -> None:
       attr_list=['node'],                             # We're checking node attributes
       modules=n_data.get('module',[]),                # ... against node modules
       module='nodes',                                 # Function is called from 'nodes' module
+      ignored=['_','netlab_'],                        # Ignore attributes starting with _ or netlab_
       extra_attributes=extra)                         # Allow provider- and tool-specific settings
 
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:

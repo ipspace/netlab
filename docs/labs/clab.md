@@ -35,12 +35,13 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | FRR                    | frrouting/frr:v8.4.0         |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
 | Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
+| Linux[❗](clab-linux)  | python:3.9-alpine            |
 | Mikrotik RouterOS 7    | vrnetlab/vr-routeros:7.6     |
 | Nokia SR Linux         | ghcr.io/nokia/srlinux:latest |
 | Nokia SR OS            | vrnetlab/vr-sros:latest      |
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
-* Cumulus VX, FRR, and Nokia SR Linux images are automatically downloaded from Docker Hub.
+* Cumulus VX, FRR, Linux, and Nokia SR Linux images are automatically downloaded from Docker Hub.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS container image (requires a license), see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 
@@ -171,17 +172,6 @@ defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 * **\_network**: The Docker network name (default: `netlab_mgmt`)
 * **\_bridge**: The name of the underlying Linux bridge (default: unspecified, created by Docker)
 
-(clab-linux)=
-## Deploying Linux Containers
-
-The initial configuration process (**[netlab initial](../netlab/initial.md)**) does not rely on commands executed within Linux containers:
-
-* The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process from the ```templates/provider/clab/frr/hosts.j2``` template (see [](clab-config-template)).
-* Interface IP addresses and static routes to in-lab default gateway are configured with **ip** commands executed on the Linux host but within the container network namespace.
-* Static default route points to the management interface.
-
-You can therefore use any container image as a Linux node.
-
 (clab-vrnetlab)=
 ## Using vrnetlab Containers
 
@@ -204,5 +194,6 @@ addressing:
    :hidden:
 
    ceos.md
+   linux.md
 ..
 ```

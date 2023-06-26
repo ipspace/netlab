@@ -32,11 +32,32 @@ systemctl restart systemd-resolved
 # Set persistent hostname
 hostnamectl set-hostname {{ inventory_hostname }}
 
+NEED_APT_UPDATE=YES
+{% if netlab_net_tools|default(False) %}
+#
+# Install net-tools (arp, route...)
+#
+if which arp; then
+  echo "net-tools already installed"
+else
+  apt-get update -qq
+  apt-get install -qq net-tools
+  NEED_APT_UPDATE=
+fi
+{% endif %}
+{% if netlab_lldp_enable|default(False) %}
 #
 # Enable LLDP
 #
-apt-get update -qq
-apt-get install -qq lldpd net-tools
+if systemctl is-active --quiet lldpd.service; then
+  echo "LLDP already installed"
+else
+  if "$NEED_APT_UPDATE"; then
+    apt-get update -qq
+  fi
+  apt-get install -qq lldpd
+fi
+
 cat <<CONFIG >/etc/lldpd.d/system.conf
 configure lldp tx-interval 30
 configure lldp tx-hold 3
@@ -44,11 +65,14 @@ configure system interface pattern *,!eth0,eth*
 CONFIG
 systemctl enable lldpd
 systemctl restart lldpd
+{% endif %}
 
-# Sysctl
+# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+#
+{% set pkt_fwd = "1" if role|default("host") == "router" else "0" %}
 cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-net.ipv4.ip_forward=0
-net.ipv6.conf.all.forwarding=0
+net.ipv4.ip_forward={{ pkt_fwd }}
+net.ipv6.conf.all.forwarding={{ pkt_fwd }}
 
 {%   if loopback.ipv6 is defined %}
 net.ipv6.conf.lo.disable_ipv6=0

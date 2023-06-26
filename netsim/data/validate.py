@@ -312,7 +312,8 @@ def validate_attributes(
       module: str = 'attributes',                       # Module generating the error message (default: 'attributes')
       module_source: typing.Optional[str] = None,       # Where did we get the list of modules?
       attributes: typing.Optional[Box] = None,          # Where to get valid attributes from
-      extra_attributes: typing.Optional[Box] = None     # Dynamic attributes (needed to validate provider and tool settings)
+      extra_attributes: typing.Optional[Box] = None,    # Dynamic attributes (needed to validate provider and tool settings)
+      ignored: typing.Optional[list] = ['_']            # Ignored prefixes
         ) -> typing.Any: 
 
   #
@@ -325,6 +326,9 @@ def validate_attributes(
 
   if extra_attributes:
     attributes = attributes + extra_attributes
+
+  if not ignored:
+    ignored = ['_']
 
   if not isinstance(attributes,Box):
     common.fatal('Internal error in validate_attributes: attributes is not a Box')
@@ -383,7 +387,7 @@ def validate_attributes(
     return
 
   for k in data.keys():
-    if k.startswith('_'):                               # Skip internal attributes
+    if any(k.startswith(i) for i in ignored):           # Skip internal attributes
       continue
 
     if k in valid:

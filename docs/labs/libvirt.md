@@ -44,6 +44,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Fortinet FortiOS       | fortinet/fortios            |
 | Juniper vPTX (vJunos EVO) | juniper/vptx             |
 | Juniper vSRX 3.0       | juniper/vsrx3               |
+| [Linux](linux.md)      | generic/ubuntu2004          |
 | Mikrotik RouterOS 6    | mikrotik/chr                |
 | Mikrotik RouterOS 7    | mikrotik/chr7               |
 
@@ -211,6 +212,7 @@ The virtual machines are batched based on their order in **‌nodes** list/dicti
    dellos10.md
    vsrx.md
    vptx.md
+   linux.md
    routeros7.md
 ..
 ```
