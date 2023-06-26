@@ -7,8 +7,8 @@ updates:
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else l.vlan.access_id|default(0) -%}
 
 {# 1. Create the interface, configure tagging for vlan_members or trunk ports with native vlans #}
-- path: interface[name={{if_name}}]
-  val:
+- path: /interface[name={{if_name}}]
+  value:
 {% if l.vlan.trunk_id is defined %}
 {% set _desc = l.name|default("without a name") | replace('->','~')|regex_replace('[\\[\\]]','') %}
    description: "Trunk port {{ _desc }} native={{ l.vlan.native|default("not set") }}"
@@ -47,8 +47,8 @@ updates:
 {# Use only vlan.id in name, such that svi interfaces (irb0.nnnn) can be associated #}
 {% set vlan_mode = l.vlan.mode|default('irb') %}
 {% if (l.type in ['vlan_member','lan'] and vlan_mode!='route') or (l.type=='svi' and vlan_mode=='irb') %}
-- path: network-instance[name=vlan{{ if_index }}]
-  val:
+- path: /network-instance[name=vlan{{ if_index }}]
+  value:
    type: mac-vrf
 {% if l.name is defined %}
    description: "{{ l.name | replace('->','~')|regex_replace('[\\[\\]]','') }}"
@@ -59,8 +59,8 @@ updates:
 
 {# Add L3 interfaces to IP VRF #}
 {% if l.ipv4 is defined or l.ipv6 is defined %}
-- path: network-instance[name={{ l.vrf|default('default') }}]
-  val:
+- path: /network-instance[name={{ l.vrf|default('default') }}]
+  value:
    type: {{ 'default' if l.vrf|default('default')=='default' else 'ip-vrf' }}
    interface:
    - name: {{ if_name }}.{{ if_index }}
