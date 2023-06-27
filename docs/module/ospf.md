@@ -21,7 +21,7 @@ Supported OSPF features:
 * Unnumbered point-to-point interfaces
 * [Passive interfaces](routing.md#passive-interfaces)
 * [Static router ID](routing.md#router-id)
-* BFD
+* BFD (optionally with RFC9355 strict mode)
 * VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
 
 Missing features:
@@ -39,27 +39,27 @@ Need one of those? Create a plugin and contribute it.
 
 The following table describes per-platform support of individual router-level OSPF features:
 
-| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  |
-| ------------------------ | :---: | :---------------------: | :----: | :--: |
-| Arista EOS               |   ✅  |            ✅          |   ✅   |  ✅  |
-| Aruba AOS-CX             |   ✅  |            ✅          |   ✅   |  ✅  |
-| Cisco IOS                |   ✅  |            ✅          |   ✅   |  ✅  |
-| Cisco IOS XRv            |   ✅  |            ✅          |   ✅   |  ❌   |
-| Cisco IOS XE             |   ✅  |            ✅          |   ✅   |  ✅  |
-| Cisco Nexus OS           |   ✅  |            ✅          |   ✅  |  ✅  |
-| Cumulus Linux            |   ✅  |            ✅          |   ✅  |  ❌  |
-| Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅          |   ❌   |  ❌  |
-| Dell OS10 ([❗](caveats-os10))            |   ✅  |            ✅          |   ✅   |  ✅  |
-| Fortinet FortiOS         |   [❗](caveats-fortios)  |            ✅          |   ❌   |  ❌  |
-| FRR 7.5.0                |   ✅  |            ✅          |   ✅   |  ❌  |
-| Juniper vMX              |   ✅  |            ✅          |   ✅   |  ✅  |
-| Juniper vPTX             |   ✅  |            ✅          |   ✅   |  ✅  |
-| Juniper vSRX 3.0         |   ✅  |            ✅          |   ✅   |  ✅  |
-| Mikrotik RouterOS 6      |   ✅  |            ❌          |   ❌   |  ✅  |
-| Mikrotik RouterOS 7      |   ✅  |            ❌          |   ✅   |  ❌  |
-| Nokia SR Linux           |   ✅  |            ✅          |   ✅   |  ✅  |
-| Nokia SR OS              |   ✅  |            ✅          |   ✅   |  ✅  |
-| VyOS                     |   ✅  |            ✅          |   ✅   |  ✅  |
+| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  | BFD Strict-Mode |
+| ------------------------ | :---: | :---------------------: | :----: | :--: | :-------------: |
+| Arista EOS               |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌
+| Cisco IOS XE             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌
+| Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌
+| Dell OS10 ([❗](caveats-os10))            |   ✅  |            ✅          |   ✅   |  ✅  |       ❌
+| Fortinet FortiOS         |   [❗](caveats-fortios)  |            ✅          |   ❌   |  ❌  |       ❌
+| FRR 7.5.0                |   ✅  |            ✅           |   ✅   |  ❌  |       ❌
+| Juniper vMX              |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Juniper vPTX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Juniper vSRX 3.0         |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Mikrotik RouterOS 6      |   ✅  |            ❌           |   ❌   |  ✅  |       ❌
+| Mikrotik RouterOS 7      |   ✅  |            ❌           |   ✅   |  ❌  |       ❌
+| Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ✅  |       ✅
+| VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
 
 **Notes:**
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
@@ -97,6 +97,7 @@ The following table documents the interface-level OSPF features:
 ## Global Parameters
 
 * **ospf.reference_bandwidth** sets the OSPF auto-cost reference bandwidth (in Mbps) for all devices in the network.
+* **ospf.bfd.strict** enables RFC9355 BFD Strict-Mode (default: False)
 
 ## Node Parameters
 
