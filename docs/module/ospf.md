@@ -39,27 +39,27 @@ Need one of those? Create a plugin and contribute it.
 
 The following table describes per-platform support of individual router-level OSPF features:
 
-| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  | BFD Strict-Mode |
+| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  | BFD<br/>Strict-Mode |
 | ------------------------ | :---: | :---------------------: | :----: | :--: | :-------------: |
-| Arista EOS               |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌
-| Cisco IOS XE             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌
-| Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌
-| Dell OS10 ([❗](caveats-os10))            |   ✅  |            ✅          |   ✅   |  ✅  |       ❌
-| Fortinet FortiOS         |   [❗](caveats-fortios)  |            ✅          |   ❌   |  ❌  |       ❌
-| FRR 7.5.0                |   ✅  |            ✅           |   ✅   |  ❌  |       ❌
-| Juniper vMX              |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Juniper vPTX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Juniper vSRX 3.0         |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Mikrotik RouterOS 6      |   ✅  |            ❌           |   ❌   |  ✅  |       ❌
-| Mikrotik RouterOS 7      |   ✅  |            ❌           |   ✅   |  ❌  |       ❌
-| Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
-| Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ✅  |       ✅
-| VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌
+| Arista EOS               |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
+| Cisco IOS XE             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
+| Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌          |
+| Dell OS10 ([❗](caveats-os10)) |   ✅  |       ✅          |   ✅   |  ✅  |       ❌          |
+| Fortinet FortiOS         |   [❗](caveats-fortios)  | ✅   |   ❌   |  ❌  |       ❌          |
+| FRR 7.5.0                |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
+| Juniper vMX              |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Juniper vPTX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Juniper vSRX 3.0         |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Mikrotik RouterOS 6      |   ✅  |            ❌           |   ❌   |  ✅  |       ❌          |
+| Mikrotik RouterOS 7      |   ✅  |            ❌           |   ✅   |  ❌  |       ❌          |
+| Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ✅  |       ✅          |
+| VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 
 **Notes:**
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
@@ -71,14 +71,14 @@ The following table documents the interface-level OSPF features:
 | ------------------------ | :---: | :---------------: | :------------------------: | :---------------------: |
 | Arista EOS               |   ✅  |         ✅        |             ✅            |            ✅           |
 | Aruba AOS-CX             |   ✅  |         ✅        |             ❌            |            ✅           |
-| Cisco IOS                |   ✅  |         ✅        |             [❗](caveats-iosv)            |            ✅           |
+| Cisco IOS                |   ✅  |         ✅        |     [❗](caveats-iosv)    |            ✅           |
 | Cisco IOS XE             |   ✅  |         ✅        |             ✅            |            ✅           |
-| Cisco IOS XRv             |   ✅  |         ✅        |             ✅            |            ✅           |
+| Cisco IOS XRv            |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cisco Nexus OS           |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cumulus Linux            |   ✅  |         ✅        |             ✅            |            ✅           |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |         ✅        |             ✅            |            ✅           |
 | Dell OS10                |   ✅  |         ✅        |             ❌            |            ✅           |
-| Fortinet FortiOS         |   ✅  |         [❗](caveats-fortios)        |             ✅            |            ✅           |
+| Fortinet FortiOS         |   ✅  | [❗](caveats-fortios) |         ✅            |            ✅           |
 | FRR 7.5.0                |   ✅  |         ✅        |             ✅            |            ❗           |
 | Juniper vMX              |   ✅  |         ✅        |             ✅            |            ✅           |
 | Juniper vPTX             |   ✅  |         ✅        |             ✅            |            ✅           |
