@@ -7,19 +7,25 @@
 {% macro ospf_interface(l) %}
 {{ declare_router(l,sub_path="/"+ospfv+"[ospf-instance="+pid|string + "]") }}
   val:
-{% if ospf.reference_bandwidth is defined %}
+{%  if ospf.reference_bandwidth is defined %}
    reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
-{% endif %}
+{%  endif %}
    admin-state: enable
    area:
    - area-id: "{{ l.ospf.area }}"
      interface:
      - interface-name: "{{ if_name(l.ifname) }}"
-{% if l.ospf.passive|default(False) %}
+{%  if l.ospf.passive|default(False) %}
        passive: True
-{% endif %}
+{%  endif %}
 {%  if l.ospf.bfd|default(False) %}
-       bfd-liveness: { }
+       bfd-liveness: {% if not ospf.strict_bfd|default(False) %}{ }
+{%     else +%}
+        strict: True
+{%      if ospf.strict_bfd_delay|default(0) > 0 %}
+        strict-mode-holddown: {{ ospf.strict_bfd_delay }}
+{%      endif %}
+{%     endif %}
 {%  endif %}
        # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 {# TODO: Add support for multi-area adjacencies and 'secondary' interface-type #}
