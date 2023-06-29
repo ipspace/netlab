@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+{% for intf in interfaces if 'gateway' in intf %}
+{%   if intf.gateway.protocol == 'anycast' %}
+{%    set ifname = "any-" + intf.ifname %}
+ip link add {{ ifname }} link {{ intf.ifname }} addrgenmode none type macvlan mode bridge
+ip link set {{ ifname }} address {{ intf.gateway.anycast.mac|hwaddr('linux') }}
+
+# Stop the interface from responding to ARPs for the virtual IP
+echo 1 > /proc/sys/net/ipv4/conf/{{ intf.ifname }}/arp_ignore
+
+{%    for i in ['ipv4','ipv6'] if i in intf.gateway %}
+ip addr add {{ intf.gateway[i] }} dev {{ ifname }}
+{%    endfor %}
+ip link set dev {{ ifname }} up
+{%   elif intf.gateway.protocol == 'vrrp' %}
+{%    set id = intf.gateway.vrrp.group|default(1)|int %}
+{%    for i in ['4','6'] if ('ipv'+i) in intf.gateway %}
+{%     set ifname = "vrrp"+i+"-"+id %}
+ip link add {{ ifname }} link {{ intf.ifname }} addrgenmode random type macvlan mode bridge
+ip link set {{ ifname }} address 00:00:5e:00:{{ '01' if i=='4' else '02' }}:{{ '%02x' % id }}
+ip addr add {{ intf.gateway['ipv'+i] }} dev {{ ifname }}
+ip link set dev {{ ifname }} up
+{%    endfor %}
+{%   endif %}
+{% endfor %}
+
+cat >/tmp/gateway_config <<CONFIG
+{% for intf in interfaces if 'gateway' in intf %}
+interface {{ intf.ifname }}
+{% if intf.gateway.protocol == 'vrrp' %}
+{%   for af in 'ipv4','ipv6' if af in intf.gateway %}
+  vrrp {{ intf.gateway.vrrp.group }} {{ af|replace('ipv4','ip') }} {{ intf.gateway[af]|ipaddr('address') }}
+{%   endfor %}
+{%     if 'priority' in intf.gateway.vrrp %}
+  vrrp {{ intf.gateway.vrrp.group }} priority {{ intf.gateway.vrrp.priority }}
+{%     endif %}
+{%     if intf.gateway.vrrp.preempt|default(False) %}
+  vrrp {{ intf.gateway.vrrp.group }} preempt
+{%     endif %}
+{% endif %}
+{% endfor %}
+do write
+CONFIG
+if [ -s /tmp/gateway_config ]; then
+  vtysh -f /tmp/gateway_config
+fi
