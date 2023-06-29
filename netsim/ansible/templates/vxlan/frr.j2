@@ -3,11 +3,13 @@
 set -e # Exit immediately when any command fails
 #
 
+{% set use_evpn = vxlan.flooding|default('') == 'evpn' %}
+
 {% macro create_vxlan_interface(vni,br_name,vrf=None,mtu=1500) %}
 ip link add vxlan{{ vni }} type vxlan \
   id {{ vni }} \
   dstport 4789 \
-  local {{ vxlan.vtep }} {{ 'nolearning' if vxlan.flooding|default('') == 'evpn' else '' }}
+  local {{ vxlan.vtep }} {{ 'nolearning' if use_evpn else '' }}
 #
 # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
 if [ ! -e /sys/devices/virtual/net/{{ br_name}} ]; then
@@ -16,7 +18,12 @@ ip link set up dev {{ br_name }}
 fi
 brctl addif {{ br_name }} vxlan{{ vni }}
 brctl stp {{ br_name }} off
-ip link set mtu {{ mtu }} dev vxlan{{ vni }}
+# Do not generate ipv6 link-local address for VXLAN devices
+ip link set mtu {{ mtu }} addrgenmode none dev vxlan{{ vni }}
+{% if use_evpn %}
+# Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+bridge link set dev vxlan{{ vni }} learning off
+{% endif %}
 ip link set up dev vxlan{{ vni }}
 {% if vrf %}
 ip link set {{ br_name }} master {{ vrf }}
