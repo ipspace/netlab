@@ -5,12 +5,14 @@
 #
 import typing
 import argparse
-import os
-import glob
+import textwrap
 from box import Box
 
 from .. import common
 from .. import read_topology
+from .. import data
+
+DEVICES_TO_SKIP = ['none','unknown']
 
 def print_table(
       heading: typing.List[str],
@@ -47,40 +49,56 @@ def print_table(
 
 def show_images(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
-  heading.extend(settings.providers.keys())
+  heading.extend([ p for p in settings.providers.keys() if p != 'external'])
 
   rows = []
+  result = data.get_empty_box()
   for device in sorted(settings.devices.keys()):
-    if device == 'none':
+    if device in DEVICES_TO_SKIP:
       continue
 
-    if args.device and device != args.device:
+    if device != args.device and args.device != '*':
       continue
 
     row = [ device ]
     for p in heading[1:]:
-      row.append(settings.devices[device][p].get("image",""))
+      p_image = settings.devices[device][p].get("image","")
+      row.append(p_image)
+      if p_image:
+        result[device][p] = p_image
+
     rows.append(row)
 
-  print((args.device or "Device") + " image names by virtualization provider")
-  print("")
-  print_table(heading,rows)
+  if args.format == 'table':
+    print((args.device or "Device") + " image names by virtualization provider")
+    print("")
+    print_table(heading,rows)
+  elif args.format in ['text','yaml']:
+    print(common.get_yaml_string(result))
 
 def show_devices(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device','description']
 
   rows = []
+  result = data.get_empty_box()
   for device in sorted(settings.devices.keys()):
     dev_data = settings.devices[device]
-    if device == 'none' or not 'description' in dev_data:
+    if device in DEVICES_TO_SKIP:
+      continue
+
+    if device != args.device and args.device != '*':
       continue
 
     row = [ device,dev_data.description ]
     rows.append(row)
+    result[device] = dev_data.description
 
-  print('Virtual network devices supported by netlab')
-  print("")
-  print_table(heading,rows,inter_row_line=False)
+  if args.format == 'table':
+    print('Virtual network devices supported by netlab')
+    print("")
+    print_table(heading,rows,inter_row_line=False)
+  elif args.format in ['text','yaml']:
+    print(common.get_yaml_string(result))
 
 def show_module_support(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
@@ -88,27 +106,61 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
   heading.extend(mod_list)
 
   rows = []
+  result = data.get_empty_box()
   for device in sorted(settings.devices.keys()):
-    if device == 'none':
+    if device in DEVICES_TO_SKIP:
       continue
 
-    if args.device and device != args.device:
+    if device != args.device and args.device != '*':
       continue
 
-    row = [ device ]
-    for m in heading[1:]:
-      value = "x".center(len(m)) if device in settings[m].supported_on else ""
-      row.append(value)
-    rows.append(row)
+    if args.format == 'table':
+      row = [ device ]
+      for m in heading[1:]:
+        value = "x".center(len(m)) if device in settings[m].supported_on else ""
+        row.append(value)
+      rows.append(row)
+    else:
+      dev_mods = [ m for m in mod_list if device in settings[m].supported_on ]
+      result[device] = dev_mods
+      if args.format == 'text':
+        print(f'{device}: {",".join(dev_mods)}')
 
-  print("Configuration modules supported by " + (args.device or "individual devices"))
-  print("")
-  print_table(heading,rows)
+  if args.format == 'table':
+    print("Configuration modules supported by " + (args.device or "individual devices"))
+    print("")
+    print_table(heading,rows)
+  elif args.format == 'yaml':
+    print(common.get_yaml_string(result))
+
+def show_modules(settings: Box, args: argparse.Namespace) -> None:
+  mod_list = sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
+  result = data.get_empty_box()
+
+  if args.format == 'table':
+    print("netlab Configuration modules and supported devices")
+    print("=" * 75)
+
+  for m in mod_list:
+    dev_list = [ d for d in settings[m].supported_on if not d in DEVICES_TO_SKIP ]
+    if args.format == 'text':
+      print(f'{m}: {",".join(dev_list)}')
+    elif args.format == 'table':
+      print(f'{m}:')
+      print(textwrap.TextWrapper(
+        initial_indent="  ",
+        subsequent_indent="  ").fill(", ".join(dev_list)))
+    else:
+      result[m] = settings[m].dev_list
+
+  if args.format == 'yaml':
+    print(common.get_yaml_string(result))
 
 show_dispatch = {
   'images': show_images,
   'devices': show_devices,
-  'module-support': show_module_support
+  'module-support': show_module_support,
+  'modules': show_modules
 }
 
 #
@@ -123,12 +175,20 @@ def show_parse(args: typing.List[str]) -> argparse.Namespace:
     '-d','--device',
     dest='device',
     action='store',
+    default='*',
     help='Display information for a single device')
   parser.add_argument(
     '--system',
     dest='system',
     action='store_true',
     help='Display system information (without user defaults)')
+  parser.add_argument(
+    '--format',
+    dest='format',
+    action='store',
+    choices=['table','text','yaml'],
+    default='table',
+    help='Output format (table, text, yaml)')
   parser.add_argument(
     dest='action',
     action='store',

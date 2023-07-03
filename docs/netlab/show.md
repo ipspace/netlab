@@ -4,17 +4,19 @@
 
 * **devices** -- Valid device types
 * **images** -- Vagrant box names or container names for all supported devices or a single device
+* **module** -- Configuration modules
 * **module-support** -- Configuration modules support matrix
 
 ## Usage
 
 ```
-usage: netlab show [-h] [-d DEVICE] [--system] {images,devices,module-support}
+usage: netlab show [-h] [-d DEVICE] [--system] [--format {table,text,yaml}]
+                   {images,devices,module-support,modules}
 
 Display default settings
 
 positional arguments:
-  {images,devices,module-support}
+  {images,devices,module-support,modules}
                         Select the system information to display
 
 options:
@@ -22,6 +24,8 @@ options:
   -d DEVICE, --device DEVICE
                         Display information for a single device
   --system              Display system information (without user defaults)
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
 ```
 
 ## Examples
@@ -68,6 +72,51 @@ eos image names by virtualization provider
 +========+=============+=============+==============+
 | eos    | arista/veos | arista/veos | ceos:4.26.4M |
 +--------+-------------+-------------+--------------+
+```
+
+Configuration modules overview:
+
+```
+$ netlab show modules
+netlab Configuration modules and supported devices
+===========================================================================
+bfd:
+  srlinux, sros, iosv, csr, nxos, eos, vyos, arubacx
+bgp:
+  cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, asav, vsrx, vyos,
+  routeros, srlinux, sros, dellos10, routeros7, vmx, iosxr, arubacx,
+  vptx
+eigrp:
+  csr, iosv, nxos
+evpn:
+  sros, srlinux, frr, eos, vyos, dellos10, cumulus, nxos, arubacx,
+  vptx
+gateway:
+  eos, cumulus, iosv, csr, nxos, sros, srlinux, vyos, dellos10,
+  arubacx
+isis:
+  eos, frr, csr, iosv, nxos, asav, vsrx, srlinux, sros, vyos, vmx,
+  iosxr, vptx
+mpls:
+  eos, iosv, csr, routeros, vyos, routeros7, sros, vmx, vsrx, frr,
+  vptx, arubacx
+ospf:
+  arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos,
+  vsrx, vyos, routeros, srlinux, sros, dellos10, routeros7, vmx,
+  iosxr, arubacx, vptx
+sr:
+  csr, eos, srlinux, sros, vsrx, vmx, vptx
+srv6:
+  sros
+vlan:
+  eos, iosv, csr, vyos, dellos10, srlinux, routeros, nxos, frr,
+  cumulus, sros, routeros7, vmx, vsrx, arubacx, vptx
+vrf:
+  eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos,
+  srlinux, frr, cumulus, sros, routeros7, vmx, vsrx, arubacx, vptx
+vxlan:
+  eos, nxos, vyos, csr, dellos10, srlinux, frr, cumulus, sros,
+  arubacx, vptx
 ```
 
 Configuration modules available for Arista EOS:
