@@ -9,8 +9,9 @@
 
 ## Usage
 
-```
-usage: netlab show [-h] [-d DEVICE] [--system] [--format {table,text,yaml}]
+```text
+usage: netlab show [-h] [-d DEVICE] [-m MODULE] [--system]
+                   [--format {table,text,yaml}]
                    {images,devices,module-support,modules}
 
 Display default settings
@@ -23,6 +24,8 @@ options:
   -h, --help            show this help message and exit
   -d DEVICE, --device DEVICE
                         Display information for a single device
+  -m MODULE, --module MODULE
+                        Display information for a single module
   --system              Display system information (without user defaults)
   --format {table,text,yaml}
                         Output format (table, text, yaml)
@@ -171,4 +174,44 @@ Configuration modules supported by individual devices
 +--------------+-----+------+------+-------+-----+----+------+------+
 | vyos         | x   |      | x    |       |     |    |      |      |
 +--------------+-----+------+------+-------+-----+----+------+------+
+```
+
+EVPN features supported by individual devices:
+
+```text
+$ netlab show modules -m evpn
+Devices and features supported by evpn module
+
++----------+-----+------------------+------------+
+| device   | irb | asymmetrical_irb | bundle     |
++==========+=====+==================+============+
+| sros     |  x  |        x         |            |
++----------+-----+------------------+------------+
+| srlinux  |  x  |        x         |            |
++----------+-----+------------------+------------+
+| frr      |  x  |                  |            |
++----------+-----+------------------+------------+
+| eos      |  x  |        x         | vlan_aware |
++----------+-----+------------------+------------+
+| vyos     |  x  |        x         |            |
++----------+-----+------------------+------------+
+| dellos10 |  x  |        x         |            |
++----------+-----+------------------+------------+
+| cumulus  |  x  |        x         |            |
++----------+-----+------------------+------------+
+| nxos     |  x  |                  |            |
++----------+-----+------------------+------------+
+| arubacx  |  x  |        x         |            |
++----------+-----+------------------+------------+
+| vptx     |     |                  |            |
++----------+-----+------------------+------------+
+
+Notes:
+* All devices listed in the table support evpn configuration module.
+* Some devices might not support any module-specific additional feature
+
+Feature legend:
+* irb: Supports symmetrical IRB (routing on ingress and egress)
+* asymmetrical_irb: Support asymmetrical IRB (routing on ingress, bridging on egress)
+* bundle: EVPN bundle service support
 ```

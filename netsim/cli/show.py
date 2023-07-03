@@ -100,9 +100,19 @@ def show_devices(settings: Box, args: argparse.Namespace) -> None:
   elif args.format in ['text','yaml']:
     print(common.get_yaml_string(result))
 
+def get_modlist(settings: Box, args: argparse.Namespace) -> list:
+  if args.module:
+    if settings[args.module].supported_on:
+      return [ args.module ]
+    else:
+      common.fatal(f'Unknown module: {args.module}')
+      return []
+    
+  return sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
+
 def show_module_support(settings: Box, args: argparse.Namespace) -> None:
   heading = ['device']
-  mod_list = sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
+  mod_list = get_modlist(settings,args)
   heading.extend(mod_list)
 
   rows = []
@@ -122,7 +132,11 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
       rows.append(row)
     else:
       dev_mods = [ m for m in mod_list if device in settings[m].supported_on ]
-      result[device] = dev_mods
+      if args.device and args.format == 'yaml':
+        for m in mod_list:
+          result[m] = settings.devices[device].features.get(m,True)
+      else:
+        result[device] = dev_mods
       if args.format == 'text':
         print(f'{device}: {",".join(dev_mods)}')
 
@@ -133,25 +147,93 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
   elif args.format == 'yaml':
     print(common.get_yaml_string(result))
 
+def get_feature_list(features: Box,prefix: str = '') -> list:
+  f_list = []
+  for k in features.keys():
+    if isinstance(features[k],dict):
+      f_list.extend(get_feature_list(features[k],k+'.'))
+    else:
+      f_list.append(prefix+k)
+
+  return f_list
+
+def show_module_features(settings: Box, args: argparse.Namespace) -> None:
+  m = args.module
+  heading = ['device']
+  heading.extend(get_feature_list(settings[m].features))
+
+  rows = []
+  need_notes = False
+
+  for d in settings[m].supported_on:
+    if d in DEVICES_TO_SKIP:
+      continue
+    row = [ d ]
+
+    has_feature = False
+    for f in heading[1:]:
+      value = settings.devices[d].features[m].get(f,None)
+      if value is None:
+        value = ""
+      elif isinstance(value,bool):
+        value = "x" if value else ""
+      elif isinstance(value,list):
+        value = ",".join(value)
+
+      if value:
+        has_feature = True
+
+      value = value.center(len(f))
+      row.append(value)
+    rows.append(row)
+    if not has_feature:
+      need_notes = True
+
+  print_table(heading,rows)
+
+  if need_notes:
+    print(f"""
+Notes:
+* All devices listed in the table support {m} configuration module.
+* Some devices might not support any module-specific additional feature""")
+    
+  print("")
+  print("Feature legend:")
+  for f in heading[1:]:
+    print(f"* {f}: {settings[m].features[f]}")
+
 def show_modules(settings: Box, args: argparse.Namespace) -> None:
-  mod_list = sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
+  mod_list = get_modlist(settings,args)
   result = data.get_empty_box()
 
   if args.format == 'table':
-    print("netlab Configuration modules and supported devices")
-    print("=" * 75)
+    if args.module:
+      if settings[args.module].features:
+        print(f"Devices and features supported by {args.module} module")
+      else:
+        print(f"Devices supported by {args.module} module")
+      print("")
+    else:
+      print("netlab Configuration modules and supported devices")
+      print("=" * 75)
 
   for m in mod_list:
     dev_list = [ d for d in settings[m].supported_on if not d in DEVICES_TO_SKIP ]
     if args.format == 'text':
       print(f'{m}: {",".join(dev_list)}')
+    elif args.format == 'table' and args.module and settings[args.module].features:
+      show_module_features(settings,args)
     elif args.format == 'table':
       print(f'{m}:')
       print(textwrap.TextWrapper(
         initial_indent="  ",
         subsequent_indent="  ").fill(", ".join(dev_list)))
     else:
-      result[m] = settings[m].dev_list
+      if args.module and settings[args.module].features:
+        for d in dev_list:
+          result[d] = settings.devices[d].features[m]
+      else:
+        result[m] = settings[m].dev_list
 
   if args.format == 'yaml':
     print(common.get_yaml_string(result))
@@ -177,6 +259,11 @@ def show_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store',
     default='*',
     help='Display information for a single device')
+  parser.add_argument(
+    '-m','--module',
+    dest='module',
+    action='store',
+    help='Display information for a single module')
   parser.add_argument(
     '--system',
     dest='system',
