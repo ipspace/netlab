@@ -133,7 +133,7 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
     else:
       dev_mods = [ m for m in mod_list if device in settings[m].supported_on ]
       if args.device and args.format == 'yaml':
-        for m in mod_list:
+        for m in dev_mods:
           result[m] = settings.devices[device].features.get(m,True)
       else:
         result[device] = dev_mods
