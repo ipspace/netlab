@@ -11,6 +11,7 @@ from box import Box
 from .. import common
 from .. import read_topology
 from .. import data
+from ..augment import main
 
 DEVICES_TO_SKIP = ['none','unknown']
 
@@ -133,8 +134,11 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
     else:
       dev_mods = [ m for m in mod_list if device in settings[m].supported_on ]
       if args.device and args.format == 'yaml':
-        for m in mod_list:
-          result[m] = settings.devices[device].features.get(m,True)
+        for m in dev_mods:
+          f_value = settings.devices[device].features.get(m,True)
+          if f_value is None or (not f_value and isinstance(f_value,dict)):
+            f_value = True
+          result[m] = f_value
       else:
         result[device] = dev_mods
       if args.format == 'text':
@@ -298,9 +302,11 @@ def run(cli_args: typing.List[str]) -> None:
   empty_file = "package:cli/empty.yml"
   loc_defaults = empty_file if args.system else ""
   topology = read_topology.load(empty_file,loc_defaults,"package:topology-defaults.yml")
+
   if topology is None:
     common.fatal("Cannot read system settings")
     return
 
+  main.topology_init(topology)
   settings = topology.defaults
   show_dispatch[args.action](settings,args)

@@ -94,5 +94,46 @@ Get node provider -- currently returns the default provider, but we'll do fun st
 def get_provider(node: Box, defaults: Box) -> str:
   return node.get('provider',defaults.provider)
 
+"""
+Build module supported_on lists based on device features settings
+"""
+def build_module_support_lists(topology: Box) -> None:
+  sets = topology.defaults
+  devs = sets.devices
+
+  for dname in list(devs.keys()):                           # Iterate over all known devices
+    ddata = devs[dname]
+    if not 'features' in ddata:                             # Skip devices without features
+      continue
+
+    for m in list(ddata.features.keys()):                   # Iterate over device features
+      if not m in sets:
+        continue                                            # Weird feature name, skip it
+
+      mdata = sets[m]                                       # Get module data
+      if not 'attributes' in mdata:                         # Is this a valid module?
+        continue                                            # ... not without attributes
+
+      if not 'supported_on' in mdata:                       # Create 'supported_on' list if needed
+        mdata.supported_on = []
+
+      if ddata.feature[m] is False and dname in mdata.supported_on:       
+        mdata.supported_on.remove(dname)                    # The device DOES NOT support the module
+        ddata.features.pop(m)                               # Remove the feature so it won't crash the transformation
+        continue
+
+      if not dname in mdata.supported_on:                   # Append device to module support list if needed
+        mdata.supported_on.append(dname)
+
+      f_value = ddata.features[m]
+      if f_value is None or f_value is True:                # Normalize features to dicts
+        ddata.features[m] = {}
+
+"""
+Initial device setting augmentation:
+
+* Build supported_on module lists
+* Future: Inherit device data from parent devices
+"""
 def augment_device_settings(topology: Box) -> None:
-  pass
+  build_module_support_lists(topology)
