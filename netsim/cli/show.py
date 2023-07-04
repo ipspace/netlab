@@ -157,7 +157,7 @@ def get_feature_list(features: Box,prefix: str = '') -> list:
 
   return f_list
 
-def show_module_features(settings: Box, args: argparse.Namespace) -> None:
+def show_module_features(settings: Box, args: argparse.Namespace,dev_list: list) -> None:
   m = args.module
   heading = ['device']
   heading.extend(get_feature_list(settings[m].features))
@@ -165,7 +165,7 @@ def show_module_features(settings: Box, args: argparse.Namespace) -> None:
   rows = []
   need_notes = False
 
-  for d in settings[m].supported_on:
+  for d in sorted(dev_list):
     if d in DEVICES_TO_SKIP:
       continue
     row = [ d ]
@@ -203,9 +203,12 @@ Notes:
     print(f"* {f}: {settings[m].features[f]}")
 
 def show_modules(settings: Box, args: argparse.Namespace) -> None:
-  mod_list = get_modlist(settings,args)
-  result = data.get_empty_box()
+  if args.module == 'initial':
+    mod_list = [ args.module ]
+  else:
+    mod_list = get_modlist(settings,args)
 
+  result = data.get_empty_box()
   if args.format == 'table':
     if args.module:
       if settings[args.module].features:
@@ -218,11 +221,15 @@ def show_modules(settings: Box, args: argparse.Namespace) -> None:
       print("=" * 75)
 
   for m in mod_list:
-    dev_list = [ d for d in settings[m].supported_on if not d in DEVICES_TO_SKIP ]
+    if m == 'initial':
+      dev_list = [ d for d in settings.devices.keys() if not d in DEVICES_TO_SKIP ]
+    else:
+      dev_list = [ d for d in settings[m].supported_on if not d in DEVICES_TO_SKIP ]
+
     if args.format == 'text':
       print(f'{m}: {",".join(dev_list)}')
     elif args.format == 'table' and args.module and settings[args.module].features:
-      show_module_features(settings,args)
+      show_module_features(settings,args,dev_list)
     elif args.format == 'table':
       print(f'{m}:')
       print(textwrap.TextWrapper(
