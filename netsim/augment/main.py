@@ -14,9 +14,13 @@ from .. import modules
 from .. import devices as quirks
 from ..data import global_vars
 
-def transform_setup(topology: Box) -> None:
+def topology_init(topology: Box) -> None:
   global_vars.init(topology)
   augment.config.attributes(topology)
+  augment.devices.augment_device_settings(topology)
+
+def transform_setup(topology: Box) -> None:
+  topology_init(topology)
   augment.topology.check_required_elements(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   if 'links' in topology:
@@ -24,7 +28,6 @@ def transform_setup(topology: Box) -> None:
 
   augment.components.expand_components(topology)
 
-  augment.devices.augment_device_settings(topology)
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('init',topology)
   augment.topology.check_tools(topology)

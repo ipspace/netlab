@@ -11,6 +11,7 @@ from box import Box
 from .. import common
 from .. import read_topology
 from .. import data
+from ..augment import main
 
 DEVICES_TO_SKIP = ['none','unknown']
 
@@ -298,9 +299,11 @@ def run(cli_args: typing.List[str]) -> None:
   empty_file = "package:cli/empty.yml"
   loc_defaults = empty_file if args.system else ""
   topology = read_topology.load(empty_file,loc_defaults,"package:topology-defaults.yml")
+
   if topology is None:
     common.fatal("Cannot read system settings")
     return
 
+  main.topology_init(topology)
   settings = topology.defaults
   show_dispatch[args.action](settings,args)
