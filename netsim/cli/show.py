@@ -135,7 +135,10 @@ def show_module_support(settings: Box, args: argparse.Namespace) -> None:
       dev_mods = [ m for m in mod_list if device in settings[m].supported_on ]
       if args.device and args.format == 'yaml':
         for m in dev_mods:
-          result[m] = settings.devices[device].features.get(m,True)
+          f_value = settings.devices[device].features.get(m,True)
+          if f_value is None or (not f_value and isinstance(f_value,dict)):
+            f_value = True
+          result[m] = f_value
       else:
         result[device] = dev_mods
       if args.format == 'text':

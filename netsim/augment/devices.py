@@ -101,11 +101,12 @@ def build_module_support_lists(topology: Box) -> None:
   sets = topology.defaults
   devs = sets.devices
 
-  for dname,ddata in devs.items():                          # Iterate over all known devices
+  for dname in list(devs.keys()):                           # Iterate over all known devices
+    ddata = devs[dname]
     if not 'features' in ddata:                             # Skip devices without features
       continue
 
-    for m in ddata.features:                                # Iterate over device features
+    for m in list(ddata.features.keys()):                   # Iterate over device features
       if not m in sets:
         continue                                            # Weird feature name, skip it
 
@@ -118,10 +119,15 @@ def build_module_support_lists(topology: Box) -> None:
 
       if ddata.feature[m] is False and dname in mdata.supported_on:       
         mdata.supported_on.remove(dname)                    # The device DOES NOT support the module
+        ddata.features.pop(m)                               # Remove the feature so it won't crash the transformation
         continue
 
       if not dname in mdata.supported_on:                   # Append device to module support list if needed
         mdata.supported_on.append(dname)
+
+      f_value = ddata.features[m]
+      if f_value is None or f_value is True:                # Normalize features to dicts
+        ddata.features[m] = {}
 
 """
 Initial device setting augmentation:
