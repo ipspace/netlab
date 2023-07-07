@@ -18,6 +18,8 @@ from .. import common
 from ..callback import Callback
 from ..augment import devices,links
 from ..data import get_box,get_empty_box,filemaps
+from ..utils import files as _files
+from ..utils import templates,log,strings
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
@@ -38,10 +40,10 @@ class _Provider(Callback):
     return 'templates/provider/' + self.provider
 
   def get_full_template_path(self) -> str:
-    return str(common.get_moddir()) + '/' + self.get_template_path()
+    return str(_files.get_moddir()) + '/' + self.get_template_path()
 
   def find_extra_template(self, node: Box, fname: str) -> typing.Optional[str]:
-    return common.find_file(fname+'.j2',[ f'./{node.device}','.',f'{ self.get_full_template_path() }/{node.device}'])
+    return _files.find_file(fname+'.j2',[ f'./{node.device}','.',f'{ self.get_full_template_path() }/{node.device}'])
 
   def get_output_name(self, fname: typing.Optional[str], topology: Box) -> str:
     if fname:
@@ -123,7 +125,7 @@ class _Provider(Callback):
     if not binds:
       return
 
-    sys_folder = str(common.get_moddir())+"/"
+    sys_folder = str(_files.get_moddir())+"/"
     out_folder = f"{self.provider}_files/{node.name}"
 
     bind_dict = filemaps.mapping_to_dict(binds)
@@ -136,11 +138,17 @@ class _Provider(Callback):
         node_data = node + { 'hostvars': topology.nodes }
         if '/' in file_name:                      # Create subdirectory in out_folder if needed
           pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
-        common.write_template(
-          in_folder=os.path.dirname(template_name),
-          j2=os.path.basename(template_name),
-          data=node_data.to_dict(),
-          out_folder=out_folder, filename=file_name)
+        try:
+          templates.write_template(
+            in_folder=os.path.dirname(template_name),
+            j2=os.path.basename(template_name),
+            data=node_data.to_dict(),
+            out_folder=out_folder, filename=file_name)
+        except Exception as ex:
+          log.fatal(
+            text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
+            module=self.provider)
+
         print( f"Created {out_folder}/{file_name} from {template_name.replace(sys_folder,'')}, mapped to {node.name}:{mapping}" )
       else:
         common.error(f"Cannot find template for {file_name} on node {node.name}",common.MissingValue,'provider')
@@ -148,8 +156,20 @@ class _Provider(Callback):
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
     fname = self.get_output_name(fname,topology)
+    tname = self.get_root_template()
+    try:
+      r_text = templates.render_template(
+        data=topology.to_dict(),
+        j2_file=tname,
+        path=self.get_template_path(),
+        extra_path=_files.get_search_path(self.provider))
+    except Exception as ex:
+      log.fatal(
+        text=f"Error rendering {fname} from {tname}\n{strings.extra_data_printout(str(ex))}",
+        module=self.provider)
+
     output = common.open_output_file(fname)
-    output.write(common.template(self.get_root_template(),topology.to_dict(),self.get_template_path(),self.provider))
+    output.write(r_text)
     if fname != '-':
       common.close_output_file(output)
       print("Created provider configuration file: %s" % fname)

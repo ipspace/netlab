@@ -11,6 +11,8 @@ from .. import common
 from . import _TopologyOutput,check_writeable
 from ..augment import nodes
 from ..augment import devices
+from ..utils import templates,strings,log
+from ..utils import files as _files
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
@@ -194,7 +196,18 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
     inventory_file = 'hosts.yml'
 
   with open(config_file,"w") as output:
-    output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates','ansible'))
+    try:
+      cfg_text = templates.render_template(
+                  j2_file='ansible.cfg.j2',
+                  data={'inventory': inventory_file or 'hosts.yml'},
+                  path='templates',
+                  extra_path=_files.get_search_path('ansible'))
+    except Exception as ex:
+      log.fatal(
+        text=f"Error rendering ansible.cfg\n{strings.extra_data_printout(str(ex))}",
+        module='ansible')
+
+    output.write(cfg_text)
     output.close()
     if not common.QUIET:
       print("Created Ansible configuration file: %s" % config_file)

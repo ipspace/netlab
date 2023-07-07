@@ -10,7 +10,7 @@ import importlib.util
 
 from box import Box
 from .. import common
-from ..utils.templates import get_moddir
+from ..utils.files import get_moddir
 from .. import data
 
 def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
