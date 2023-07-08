@@ -68,7 +68,6 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
   clab = read_topology.read_yaml(infile)
   if not clab:
     common.fatal("Cannot read clab.yml configuration file, aborting")
-    return
 
   clab_yml = common.get_yaml_string(clab)
   if not ('topology' in clab and 'nodes' in clab.topology):
@@ -129,7 +128,6 @@ def run(cli_args: typing.List[str]) -> None:
 
   if not settings:
     common.fatal("Cannot read the system defaults","clab")
-    return
 
   if cli_args[0] == 'tarball':
     clab_tarball(cli_args[1:],settings)

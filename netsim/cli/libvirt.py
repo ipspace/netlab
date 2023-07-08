@@ -311,7 +311,6 @@ def run(cli_args: typing.List[str]) -> None:
   topology = read_topology.load("package:cli/empty.yml","","package:topology-defaults.yml")
   if not topology:
     common.fatal("Cannot read the system defaults","libvirt")
-    return
 
   if not cli_args:
     libvirt_usage()

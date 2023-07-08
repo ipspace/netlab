@@ -107,7 +107,6 @@ def get_modlist(settings: Box, args: argparse.Namespace) -> list:
       return [ args.module ]
     else:
       common.fatal(f'Unknown module: {args.module}')
-      return []
     
   return sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
 

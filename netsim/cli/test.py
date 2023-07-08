@@ -88,11 +88,9 @@ def run(cli_args: typing.List[str]) -> None:
   settings = read_topology.read_yaml('package:topology-defaults.yml')
   if not cli_args:
     common.fatal("Specify the virtualization environment to test or use -h to get help","test")
-    return
 
   if not settings:
     common.fatal("Cannot read the global defaults","test")
-    return
 
   args = test_parse(cli_args,settings)
   if os.path.exists(args.workdir):
