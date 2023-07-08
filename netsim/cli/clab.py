@@ -16,6 +16,7 @@ from box import Box
 
 from .. import common
 from .. import read_topology
+from ..utils import files as _files
 from . import external_commands
 from . import collect
 from . import fs_cleanup
@@ -89,9 +90,7 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
   if final_clab_yml == clab_yml:
     common.fatal(f'No relevant configuration files were found in {configs} directory, aborting')
 
-  output = common.open_output_file(outfile)
-  output.write(final_clab_yml)
-  output.close()
+  _files.create_file_from_text(outfile,final_clab_yml)
 
 def clab_tarball(cli_args: typing.List[str], settings: Box) -> None:
   args = tarball_parse(cli_args,settings)

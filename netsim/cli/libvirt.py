@@ -160,9 +160,9 @@ window and follow the instructions.
   vm_cleanup('vm_box')
 
 def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
-  with open("metadata.json","w") as metadata:
-    metadata.write('{"provider":"libvirt","format":"qcow2","virtual_size":4}\n')
-    metadata.close()
+  _files.create_file_from_text(
+    fname="metadata.json",
+    txt='{"provider":"libvirt","format":"qcow2","virtual_size":4}\n')
   print("Downloading vagrant-libvirt create_box.sh script")
   abort_on_failure('curl -O https://raw.githubusercontent.com/vagrant-libvirt/vagrant-libvirt/master/tools/create_box.sh')
 
@@ -223,9 +223,13 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
 }
 """)
   print("Creating box metadata in box.json")
-  with open("box.json","w") as metadata:
-    metadata.write(json.substitute(boxname=boxname,description=description,version=version,device=args.device,path=os.getcwd()))
-    metadata.close()
+  _files.create_file_from_text(
+    fname="box.json",
+    txt=json.substitute(
+      boxname=boxname,
+      description=description,
+      version=version,
+      device=args.device,path=os.getcwd()))
   print("""
 
 Importing Vagrant box

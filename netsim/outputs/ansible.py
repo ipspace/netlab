@@ -138,10 +138,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
   if dirname and not os.path.exists(dirname):
     os.makedirs(dirname)
 
-  with open(fname,"w") as output:
-    output.write(header)
-    output.write(common.get_yaml_string(data))
-    output.close()
+  _files.create_file_from_text(fname,header+"\n"+strings.get_yaml_string(data))
 
 min_inventory_data = [ 'id','ansible_host','ansible_port','ansible_connection','ansible_user','ansible_ssh_pass' ]
 
@@ -195,22 +192,20 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
   if not inventory_file:
     inventory_file = 'hosts.yml'
 
-  with open(config_file,"w") as output:
-    try:
-      cfg_text = templates.render_template(
-                  j2_file='ansible.cfg.j2',
-                  data={'inventory': inventory_file or 'hosts.yml'},
-                  path='templates',
-                  extra_path=_files.get_search_path('ansible'))
-    except Exception as ex:
-      log.fatal(
-        text=f"Error rendering ansible.cfg\n{strings.extra_data_printout(str(ex))}",
-        module='ansible')
+  try:
+    cfg_text = templates.render_template(
+                j2_file='ansible.cfg.j2',
+                data={'inventory': inventory_file or 'hosts.yml'},
+                path='templates',
+                extra_path=_files.get_search_path('ansible'))
+  except Exception as ex:
+    log.fatal(
+      text=f"Error rendering ansible.cfg\n{strings.extra_data_printout(str(ex))}",
+      module='ansible')
 
-    output.write(cfg_text)
-    output.close()
-    if not common.QUIET:
-      print("Created Ansible configuration file: %s" % config_file)
+  _files.create_file_from_text(config_file,cfg_text)
+  if not common.QUIET:
+    print("Created Ansible configuration file: %s" % config_file)
 
 class AnsibleInventory(_TopologyOutput):
 

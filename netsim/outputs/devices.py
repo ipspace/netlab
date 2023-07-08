@@ -11,6 +11,7 @@ from box import Box
 from .. import common
 from . import _TopologyOutput,check_writeable
 from .common import adjust_inventory_host
+from ..utils import files as _files
 
 def create(nodes: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
@@ -36,7 +37,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
   if dirname and not os.path.exists(dirname):
     os.makedirs(dirname)
 
-  with open(fname,"w") as output:
+  with _files.open_output_file(fname) as output:
     output.write(header)
     output.write(common.get_yaml_string(data))
     output.close()

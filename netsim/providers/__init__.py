@@ -168,14 +168,12 @@ class _Provider(Callback):
         text=f"Error rendering {fname} from {tname}\n{strings.extra_data_printout(str(ex))}",
         module=self.provider)
 
-    output = common.open_output_file(fname)
-    output.write(r_text)
+    _files.create_file_from_text(fname,r_text)
     if fname != '-':
-      common.close_output_file(output)
       print("Created provider configuration file: %s" % fname)
       self.post_configuration_create(topology)
     else:
-      output.write("\n")
+      print("\n")
 
   def post_start_lab(self, topology: Box) -> None:
     pass

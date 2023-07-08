@@ -7,7 +7,6 @@ import pathlib
 from box import Box
 import jinja2
 
-from .. import common
 from .. import data
 from ..augment import topology
 from ..utils import files as _files
@@ -24,9 +23,9 @@ class REPORT(_TopologyOutput):
     if hasattr(self,'filenames'):
       outfile = self.filenames[0]
       if len(self.filenames) > 1:
-        common.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),common.IncorrectValue,modname)
+        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,modname)
 
-    output = common.open_output_file(outfile)
+    output = _files.open_output_file(outfile)
 
     extra_path = _files.get_search_path("reports")
     for fmt in self.format:
@@ -55,7 +54,7 @@ class REPORT(_TopologyOutput):
       except jinja2.exceptions.TemplateNotFound:
         log.error(
           text=f'Cannot find "{fmt}" in any of the report directories',
-          category=common.IncorrectValue,
+          category=log.IncorrectValue,
           module='report',
           hint='source')
       except Exception as ex:

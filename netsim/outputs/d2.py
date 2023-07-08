@@ -7,10 +7,11 @@ import yaml
 import os
 from box import Box
 
-from .. import common
 from ..data import get_box
 from ..data.validate import must_be_list
 from . import _TopologyOutput
+from ..utils import files as _files
+from ..utils import log
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into
@@ -160,9 +161,9 @@ def add_groups(maps: Box, groups: list, topology: Box) -> None:
     if g in groups:
       for n in v.members:
         if n in placed_hosts:
-          common.error(
+          log.error(
             f'Cannot create overlapping graph clusters: node {n} is in two groups',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'graph')
           continue
         else:
@@ -170,7 +171,7 @@ def add_groups(maps: Box, groups: list, topology: Box) -> None:
           placed_hosts.append(n)
 
 def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
-  f = common.open_output_file(fname)
+  f = _files.open_output_file(fname)
   maps = build_maps(topology)
 
   if 'groups' in settings:
@@ -227,10 +228,10 @@ def bgp_session(f : typing.TextIO, node: Box, session: Box, settings: Box, rr_se
 
 def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
   if not 'bgp' in topology.get('module',{}):
-    common.error('BGP graph format can only be used to draw topologies using BGP')
+    log.error('BGP graph format can only be used to draw topologies using BGP',module='d2')
     return False
 
-  f = common.open_output_file(fname)
+  f = _files.open_output_file(fname)
 
   rr_session = settings.get('rr_sessions',False)
   if g_format is not None and len(g_format) > 1:
@@ -276,7 +277,7 @@ class Graph(_TopologyOutput):
     if hasattr(self,'filenames'):
       graphfile = self.filenames[0]
       if len(self.filenames) > 1:
-        common.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),common.IncorrectValue,'graph')
+        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,'d2')
 
     if self.format:
       output_format = self.format[0]
@@ -286,4 +287,4 @@ class Graph(_TopologyOutput):
         print("Created graph file %s in %s format" % (graphfile, output_format))
     else:
       formats = ', '.join(graph_dispatch.keys())
-      common.error('Unknown graph format, use one of %s' % formats,common.IncorrectValue,'graph')
+      log.error('Unknown graph format, use one of %s' % formats,log.IncorrectValue,'d2')

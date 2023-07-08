@@ -58,9 +58,7 @@ def create_tool_config(tool: str, topology: Box) -> None:
       continue
 
     try:
-      with open(fname,"w") as output:
-        output.write(config_text)
-        output.close()
+      _files.create_file_from_text(fname,config_text)
       print(f'Created {fname} {config_src}')
     except Exception as e:
       common.error(f'Error writing tool configuration file {fname}\n... {e}')

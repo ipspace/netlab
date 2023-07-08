@@ -8,7 +8,7 @@ import pathlib
 from jinja2 import Environment, PackageLoader, FileSystemLoader, StrictUndefined, make_logging_undefined
 
 from .log import debug_active,fatal
-from .files import get_moddir
+from .files import get_moddir,create_file_from_text
 
 ansible_filter_map: dict = {}
 ANSIBLE_DEBUG = False
@@ -75,9 +75,7 @@ def write_template(in_folder: str, j2: str, data: typing.Dict, out_folder: str, 
 
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
-  with open(out_file,mode='w') as output:
-    output.write(r_text)
-    output.close()
+  create_file_from_text(out_file,r_text)
 
 """
 get_ansible_filter_map: Get a map of ansible filters to be used in jinja2 templates
