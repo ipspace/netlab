@@ -4,17 +4,18 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 
 ## Creating the Lab
 
-* **[netlab up](up.md)** creates configuration files from lab topology, starts the virtual lab, and deploys initial device configurations
-* **[netlab down](down.md)** destroys the virtual lab
-* **[netlab create](create.md)** creates virtualization provider and network automation configuration files (usually `Vagrantfile`, `hosts.yml` and `ansible.cfg`)
+* **[netlab up](up.md)** creates configuration files from lab topology, starts the virtual lab, and deploys initial device configurations.
+* **[netlab down](down.md)** destroys the virtual lab.
+* **[netlab create](create.md)**, usually executed as part of **netlab up** process, creates virtualization provider and network automation configuration files (usually `Vagrantfile`, `hosts.yml` and `ansible.cfg`). It can also be used to create other output formats (graphs, reports, or YAML/JSON printouts).
 * **[netlab restart](restart.md)** stops and restarts the lab, including lab topology reconfiguration and recreation of configuration files if you changed the lab topology definition.
 
 ## Configuring and Controlling the Lab
 
+* **[netlab connect](connect.md)** uses the transformed lab topology data to find IP address, username, and password of specified lab device or [external tool](../extools.md), and uses SSH or **docker exec** to connect to the lab device/tool.
 * **‌[netlab status](status.md)** display the state of lab instances running on the current server
-* **[netlab initial](initial.md)** uses an internal Ansible playbook to deploy initial device configurations to lab devices
+* **[netlab report‌](report.md)** creates a report (example: node/link addressing) from the transformed lab topology data.
+* **[netlab initial](initial.md)** uses an internal Ansible playbook to deploy initial device configurations to lab devices. It's usually executed as part of **netlab up** command.
 * **[netlab config](config.md)** creates custom configuration snippets from Jinja2 templates and uses an internal Ansible playbook to deploy them to lab devices
-* **[netlab connect](connect.md)** relies on Ansible inventory created with **netlab create** to find IP address, username, and password of specified lab device, and uses SSH or **docker exec** to connect to the lab device.
 * **[netlab collect](collect.md)** uses Ansible device facts (or equivalent functionality implemented with Ansible modules) to collect device configurations and store them into specified directory.
 
 ## Utility Commands
@@ -39,6 +40,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab down <down.md>
    netlab initial <initial.md>
    netlab install <install.md>
+   netlab report <report.md>
    netlab restart <restart.md>
    netlab show <show.md>
    netlab status <status.md>

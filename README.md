@@ -44,5 +44,8 @@ The latest release before the changes made in release 1.5.0 is [release 1.4.3](h
 **netlab connect**
 : Use SSH or **docker exec** to [connect to a lab device](https://netlab.tools/netlab/connect/) using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords specified in lab topology or *netlab* device defaults.
 
+**netlab report**
+: Creates a report from the transformed lab topology data.  [More details](https://netlab.tools/netlab/report/)
+
 **netlab show**
-: Display system settings in tabular format. [More details](https://netlab.tools/netlab/show/)
+: Display system settings in tabular, text, or YAML format. [More details](https://netlab.tools/netlab/show/)
