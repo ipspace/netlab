@@ -9,7 +9,9 @@ The *report* output module tries to use the **defaults.outputs.report.*rname*** 
 _netlab_ ships with the following built-in reports:
 
 * **addressing** -- Node/interface addressing report in text format
-* **addressing.html** -- Node/interface addressing report in HTML format
+* **addressing.html** -- Node/interface and link/interface addressing report in HTML format
+* **addressing.node.html** -- Node/interface addressing report in HTML format
+* **addressing.link.html** -- Link/interface addressing report in HTML format
 
 ## Generating HTML reports
 
