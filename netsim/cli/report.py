@@ -1,7 +1,7 @@
 #
-# netlab connect command
+# netlab report command
 #
-# Connect to a lab device using SSH or Docker
+# Create a text or HTML report from the current lab topology
 #
 import typing
 import os
