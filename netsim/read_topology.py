@@ -20,6 +20,7 @@ except ImportError:
 from . import common
 from . import data
 from .data import types
+from .utils import files as _files
 
 """
 Utility routines for include_yaml functionality
@@ -31,7 +32,7 @@ def get_traversable_path(dir_name : str) -> typing.Any:
     pkg_files: typing.Any = None
 
     if not new_resources:
-      pkg_files = pathlib.Path(common.get_moddir())
+      pkg_files = pathlib.Path(_files.get_moddir())
     else:
       package = '.'.join(__name__.split('.')[:-1])
       pkg_files = resources.files(package)        # type: ignore

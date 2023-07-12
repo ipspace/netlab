@@ -2,7 +2,21 @@
 # Common routines for create-topology script
 #
 import textwrap
-from box import Box
+import typing
+from box import Box,BoxList
+
+ruamel_attrs: typing.Final[dict] = {'version': (1,1)}
+
+def get_yaml_string(x : typing.Any) -> str:
+  global ruamel_attrs
+  if isinstance(x, Box) or isinstance(x,BoxList):
+    return x.to_yaml(ruamel_attrs=ruamel_attrs)
+  if isinstance(x,dict):
+    return Box(x).to_yaml(ruamel_attrs=ruamel_attrs)
+  elif isinstance(x,list):
+    return BoxList(x).to_yaml(ruamel_attrs=ruamel_attrs)
+  else:
+    return str(x)
 
 def extra_data_printout(s : str, width: int = 70) -> str:
   lines = []

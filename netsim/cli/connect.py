@@ -184,4 +184,3 @@ def run(cli_args: typing.List[str]) -> None:
     connect_to_tool(host,rest,topology,log_level)
   else:
     common.fatal(f'Unknown host or external tool {host}')
-    return

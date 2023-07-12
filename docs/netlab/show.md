@@ -4,24 +4,31 @@
 
 * **devices** -- Valid device types
 * **images** -- Vagrant box names or container names for all supported devices or a single device
+* **module** -- Configuration modules
 * **module-support** -- Configuration modules support matrix
 
 ## Usage
 
-```
-usage: netlab show [-h] [-d DEVICE] [--system] {images,devices,module-support}
+```text
+usage: netlab show [-h] [-d DEVICE] [-m MODULE] [--system]
+                   [--format {table,text,yaml}]
+                   {images,devices,module-support,modules}
 
 Display default settings
 
 positional arguments:
-  {images,devices,module-support}
+  {images,devices,module-support,modules}
                         Select the system information to display
 
 options:
   -h, --help            show this help message and exit
   -d DEVICE, --device DEVICE
                         Display information for a single device
+  -m MODULE, --module MODULE
+                        Display information for a single module
   --system              Display system information (without user defaults)
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
 ```
 
 ## Examples
@@ -68,6 +75,51 @@ eos image names by virtualization provider
 +========+=============+=============+==============+
 | eos    | arista/veos | arista/veos | ceos:4.26.4M |
 +--------+-------------+-------------+--------------+
+```
+
+Configuration modules overview:
+
+```
+$ netlab show modules
+netlab Configuration modules and supported devices
+===========================================================================
+bfd:
+  srlinux, sros, iosv, csr, nxos, eos, vyos, arubacx
+bgp:
+  cumulus, cumulus_nvue, eos, frr, csr, iosv, nxos, asav, vsrx, vyos,
+  routeros, srlinux, sros, dellos10, routeros7, vmx, iosxr, arubacx,
+  vptx
+eigrp:
+  csr, iosv, nxos
+evpn:
+  sros, srlinux, frr, eos, vyos, dellos10, cumulus, nxos, arubacx,
+  vptx
+gateway:
+  eos, cumulus, iosv, csr, nxos, sros, srlinux, vyos, dellos10,
+  arubacx
+isis:
+  eos, frr, csr, iosv, nxos, asav, vsrx, srlinux, sros, vyos, vmx,
+  iosxr, vptx
+mpls:
+  eos, iosv, csr, routeros, vyos, routeros7, sros, vmx, vsrx, frr,
+  vptx, arubacx
+ospf:
+  arcos, cumulus, cumulus_nvue, eos, fortios, frr, csr, iosv, nxos,
+  vsrx, vyos, routeros, srlinux, sros, dellos10, routeros7, vmx,
+  iosxr, arubacx, vptx
+sr:
+  csr, eos, srlinux, sros, vsrx, vmx, vptx
+srv6:
+  sros
+vlan:
+  eos, iosv, csr, vyos, dellos10, srlinux, routeros, nxos, frr,
+  cumulus, sros, routeros7, vmx, vsrx, arubacx, vptx
+vrf:
+  eos, iosv, csr, routeros, dellos10, vyos, cumulus_nvue, nxos,
+  srlinux, frr, cumulus, sros, routeros7, vmx, vsrx, arubacx, vptx
+vxlan:
+  eos, nxos, vyos, csr, dellos10, srlinux, frr, cumulus, sros,
+  arubacx, vptx
 ```
 
 Configuration modules available for Arista EOS:
@@ -122,4 +174,106 @@ Configuration modules supported by individual devices
 +--------------+-----+------+------+-------+-----+----+------+------+
 | vyos         | x   |      | x    |       |     |    |      |      |
 +--------------+-----+------+------+-------+-----+----+------+------+
+```
+
+EVPN features supported by individual devices:
+
+```text
+$ netlab show modules -m evpn
+Devices and features supported by evpn module
+
++----------+-----+------------------+------------+
+| device   | irb | asymmetrical_irb | bundle     |
++==========+=====+==================+============+
+| sros     |  x  |        x         |            |
++----------+-----+------------------+------------+
+| srlinux  |  x  |        x         |            |
++----------+-----+------------------+------------+
+| frr      |  x  |                  |            |
++----------+-----+------------------+------------+
+| eos      |  x  |        x         | vlan_aware |
++----------+-----+------------------+------------+
+| vyos     |  x  |        x         |            |
++----------+-----+------------------+------------+
+| dellos10 |  x  |        x         |            |
++----------+-----+------------------+------------+
+| cumulus  |  x  |        x         |            |
++----------+-----+------------------+------------+
+| nxos     |  x  |                  |            |
++----------+-----+------------------+------------+
+| arubacx  |  x  |        x         |            |
++----------+-----+------------------+------------+
+| vptx     |     |                  |            |
++----------+-----+------------------+------------+
+
+Notes:
+* All devices listed in the table support evpn configuration module.
+* Some devices might not support any module-specific additional feature
+
+Feature legend:
+* irb: Supports symmetrical IRB (routing on ingress and egress)
+* asymmetrical_irb: Support asymmetrical IRB (routing on ingress, bridging on egress)
+* bundle: EVPN bundle service support
+```
+
+Device support for various initial configuration features:
+
+```text
+$ netlab show modules -m initial
+Devices and features supported by initial module
+
++--------------+------------+-----------------+----------+
+| device       | system_mtu | ipv4.unnumbered | ipv6.lla |
++==============+============+=================+==========+
+| arubacx      |            |                 |          |
++--------------+------------+-----------------+----------+
+| asav         |            |                 |          |
++--------------+------------+-----------------+----------+
+| csr          |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| cumulus      |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| cumulus_nvue |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| dellos10     |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| eos          |     x      |        x        |    x     |
++--------------+------------+-----------------+----------+
+| fortios      |            |                 |          |
++--------------+------------+-----------------+----------+
+| frr          |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| iosv         |            |                 |    x     |
++--------------+------------+-----------------+----------+
+| iosxr        |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| linux        |            |                 |          |
++--------------+------------+-----------------+----------+
+| nxos         |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| routeros     |            |                 |          |
++--------------+------------+-----------------+----------+
+| routeros7    |            |                 |          |
++--------------+------------+-----------------+----------+
+| srlinux      |     x      |        x        |    x     |
++--------------+------------+-----------------+----------+
+| sros         |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| vmx          |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| vptx         |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| vsrx         |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+| vyos         |            |        x        |    x     |
++--------------+------------+-----------------+----------+
+
+Notes:
+* All devices listed in the table support initial configuration module.
+* Some devices might not support any module-specific additional feature
+
+Feature legend:
+* system_mtu: System-wide MTU setting
+* ipv4.unnumbered: Unnumbered IPv4 interfaces
+* ipv6.lla: IPv6 LLA-only interfaces
 ```

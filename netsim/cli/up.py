@@ -72,7 +72,6 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
     topology = read_topology.read_yaml(filename=args.snapshot)
     if topology is None:
       common.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
-      return Box({})                                          # pragma: no-cover
 
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
   else:                                                       # No snapshot file, use 'netlab create' parser
@@ -281,7 +280,6 @@ def run(cli_args: typing.List[str]) -> None:
   status_start_lab(topology)
   if 'err_conflict' in topology.defaults:
     common.fatal(f'race condition, lab instance already running in {topology.defaults.err_conflict}')
-    return
 
   if not is_dry_run():
     status.lock_directory()

@@ -94,5 +94,72 @@ Get node provider -- currently returns the default provider, but we'll do fun st
 def get_provider(node: Box, defaults: Box) -> str:
   return node.get('provider',defaults.provider)
 
+"""
+process_device_inheritance: for devices with 'parent' attribute merge parent settings with the
+device settings.
+
+The main work is done in the process_child_device function that is called recursively to process
+multi-level inheritance. Please note that the circular references are broken at a random place
+in the ring because the 'parent' attribute is removed before the recursive call
+"""
+def process_child_device(dname: str, devices: Box) -> None:
+  if not 'parent' in devices[dname]:                        # This device is not a child device, nothing to do
+    return
+  
+  p_device = devices[dname].parent                          # Remember the parent device
+  devices[dname].pop('parent',None)                         # ... and remove it to break potential circular references
+
+  process_child_device(p_device,devices)                    # Process inheritance in parent device
+  devices[dname] = devices[p_device] + devices[dname]       # ... and merge parent settings with the child device
+
+  data.remove_null_values(devices[dname])                   # Finally, remove null values from the resulting dictionary
+
+def process_device_inheritance(topology: Box) -> None:
+  devices = topology.defaults.devices
+  for dname in list(devices.keys()):
+    process_child_device(dname,devices)
+
+"""
+Build module supported_on lists based on device features settings
+"""
+def build_module_support_lists(topology: Box) -> None:
+  sets = topology.defaults
+  devs = sets.devices
+
+  for dname in list(devs.keys()):                           # Iterate over all known devices
+    ddata = devs[dname]
+    if not 'features' in ddata:                             # Skip devices without features
+      continue
+
+    for m in list(ddata.features.keys()):                   # Iterate over device features
+      if not m in sets:
+        continue                                            # Weird feature name, skip it
+
+      mdata = sets[m]                                       # Get module data
+      if not 'attributes' in mdata:                         # Is this a valid module?
+        continue                                            # ... not without attributes
+
+      if not 'supported_on' in mdata:                       # Create 'supported_on' list if needed
+        mdata.supported_on = []
+
+      if ddata.feature[m] is False and dname in mdata.supported_on:       
+        mdata.supported_on.remove(dname)                    # The device DOES NOT support the module
+        ddata.features.pop(m)                               # Remove the feature so it won't crash the transformation
+        continue
+
+      if not dname in mdata.supported_on:                   # Append device to module support list if needed
+        mdata.supported_on.append(dname)
+
+      f_value = ddata.features[m]
+      if f_value is None or f_value is True:                # Normalize features to dicts
+        ddata.features[m] = {}
+
+"""
+Initial device setting augmentation:
+
+* Build supported_on module lists
+* Future: Inherit device data from parent devices
+"""
 def augment_device_settings(topology: Box) -> None:
-  pass
+  process_device_inheritance(topology)
+  build_module_support_lists(topology)
