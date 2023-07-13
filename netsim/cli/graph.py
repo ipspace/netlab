@@ -4,19 +4,7 @@
 # Connect a graph description for Graphviz or D2
 #
 import typing
-import os
-import sys
 import argparse
-import subprocess
-from enum import IntEnum
-
-class LogLevel(IntEnum):
-  NONE = 0
-  INFO = 1
-  ARGS = 2
-  DRY_RUN = 3
-
-from box import Box
 
 from . import load_snapshot
 from ..outputs import _TopologyOutput

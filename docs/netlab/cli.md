@@ -26,21 +26,22 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 * **‌[netlab status](status.md)** display the state of lab instances running on the current server
 * **[netlab report‌](report.md)** creates a report (example: node/link addressing) from the transformed lab topology data.
 * **[netlab graph](graph.md)** creates a graph description of physical or BGP topology in Graphviz or D2 format
+* **[netlab inspect](inspect.md)** helps you inspect data structures in transformed lab topology
+* **[netlab show](show)** displays system- or user default settings
 
 ## Device Configuration Commands
 
 * **[netlab initial](initial.md)** uses an internal Ansible playbook to deploy initial device configurations to lab devices. It's usually executed as part of **netlab up** command.
 * **[netlab config](config.md)** creates custom configuration snippets from Jinja2 templates and uses an internal Ansible playbook to deploy them to lab devices. It's usually executed as part of **netlab up** command.
 
-## Utility Commands
+## Installation Commands
 
 * **[netlab install](install.md)** installs additional Ubuntu software, Ansible, and libvirt/vagrant.
 * **[netlab test](test.md)** tests virtual lab installation
-* **[netlab show](show)** displays system settings
+* **netlab libvirt** [builds Vagrant boxes](../labs/libvirt.md#building-your-own-boxes) for *[vagrant-libvirt](../labs/libvirt.md)* provider.
 
 ## Provider-Specific Commands
 
-* **netlab libvirt** [builds Vagrant boxes](../labs/libvirt.md#building-your-own-boxes) for *[vagrant-libvirt](../labs/libvirt.md)* provider.
 * **[netlab clab](clab.md)** contains containerlab-related utilities
 
 ## Individual netlab Commands
@@ -58,6 +59,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab down <down.md>
    netlab graph <graph.md>
    netlab initial <initial.md>
+   netlab inspect <inspect.md>
    netlab install <install.md>
    netlab report <report.md>
    netlab restart <restart.md>

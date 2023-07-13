@@ -38,7 +38,7 @@ class YAML(_TopologyOutput):
         cleantopo.pop('addressing')
       else:
         try:
-          result = eval(fmt,cleantopo)
+          result = eval(fmt,cleantopo) if fmt != '.' else cleantopo
         except Exception as ex:
           log.fatal(f'Error trying to evaluate {fmt}: {str(ex)}')
           return
