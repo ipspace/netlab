@@ -114,17 +114,32 @@ def create_network_template(topology: Box) -> str:
 def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
   mgmt_net = topology.addressing.mgmt._network if topology is not None else ''
   mgmt_net = mgmt_net or LIBVIRT_MANAGEMENT_NETWORK_NAME
+  create_net = True
 
-  external_commands.run_command(
-    ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True)    # Remove management network
-  external_commands.run_command(
-    ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True)   # ... if it exists
-  log.print_verbose(f'creating libvirt management network {mgmt_net}')
+  if topology is not None and topology.addressing.mgmt._permanent:
+    net_list = external_commands.run_command(
+      ['virsh','net-list'],check_result=True,return_stdout=True)
+    if isinstance(net_list,str):
+      create_net = not mgmt_net in net_list
+  else:
+    if log.debug_active('libvirt'):
+      print(f"Deleting libvirt management network {mgmt_net}")
+    external_commands.run_command(
+      ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True)    # Remove management network
+    external_commands.run_command(
+      ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True)   # ... if it exists
+
+  if not create_net:
+    return
+
+  if not log.QUIET:
+    print(f'creating libvirt management network {mgmt_net}')
 
   if topology is None:
     net_template = get_libvirt_mgmt_template()                    # When called without topology data use the default template
   else:
     net_template = create_network_template(topology)              # Otherwise create a temporary XML file
+
   external_commands.run_command(
     ['virsh','net-define',net_template],check_result=True)
   if not topology is None:                                        # Remove the temporary XML file if needed

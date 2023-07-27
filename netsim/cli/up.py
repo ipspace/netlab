@@ -12,14 +12,13 @@ import os
 from box import Box
 from pathlib import Path
 
-from .. import common
 from . import create
 from . import external_commands, set_dry_run, is_dry_run
 from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change, get_lab_id
 from .. import providers
 from .. import read_topology
-from ..utils import status
+from ..utils import status,log
 
 #
 # Extra arguments for 'netlab up' command
@@ -67,11 +66,11 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
 
   if args.snapshot:                                           # If we're using the snapshot file...
     args = up_args_parser.parse_args(cli_args)                # ... and reparse
-    common.set_logging_flags(args)                            # ... use these arguments to set logging flags and read the snapshot
+    log.set_logging_flags(args)                               # ... use these arguments to set logging flags and read the snapshot
 
     topology = read_topology.read_yaml(filename=args.snapshot)
     if topology is None:
-      common.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
+      log.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
 
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
   else:                                                       # No snapshot file, use 'netlab create' parser
@@ -134,7 +133,7 @@ Otherwise use 'netlab status' to check the status of labs running on this machin
 If you are sure that no other lab is running in this directory, remove the
 netlab.lock file manually and retry.
 ''')
-  common.fatal('Cannot start another lab in the same directory')
+  log.fatal('Cannot start another lab in the same directory')
 
 """
 check_lab_instance -- print an error message if the lab instance is already running in a different directory
@@ -159,7 +158,7 @@ You can stop the other lab instance with 'netlab status cleanup {lab_id}'.
 If you think your netlab status file is corrupt, use 'netlab status reset' to
 delete it.
 ''')
-  common.fatal(f'aborting "netlab up" request')
+  log.fatal(f'aborting "netlab up" request')
 
 """
 Execute provider probes
@@ -192,7 +191,10 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
 
   exec_list = exec_command if isinstance(exec_command,list) else [ exec_command ]
   for cmd in exec_list:
-    external_commands.start_lab(topology.defaults,sname or pname,3,"netlab up",cmd)
+    print(f"provider {p_name}: executing {cmd}")
+    if not external_commands.run_command(cmd):
+      log.fatal(f"{cmd} failed, aborting...","netlab up")
+
   p_module.call('post_start_lab',p_topology)
 
   lab_status_change(topology,f'{p_name} workload started')
@@ -214,13 +216,13 @@ def recreate_secondary_config(topology: Box, p_provider: str, s_provider: str) -
 """
 Deploy initial configuration
 """
-def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
+def deploy_initial_config(args: argparse.Namespace, topology: Box, step: int) -> None:
   if args.no_config:
     print("\nInitial configuration skipped, run 'netlab initial' to configure the devices")
     return
 
   lab_status_change(topology,f'deploying initial configuration')
-  external_commands.deploy_configs(4,"netlab up",args.fast_config)
+  external_commands.deploy_configs(step,"netlab up",args.fast_config)
   message = get_message(topology,'up',False)
   if message:
     print(f"\n\n{message}")
@@ -229,14 +231,14 @@ def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
 """
 Deploy external tools
 """
-def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
+def start_external_tools(args: argparse.Namespace, topology: Box, step: int) -> None:
   if not 'tools' in topology:
     return
   if args.no_tools:
     print("\nExternal tools not started, start them manually")
     return
 
-  print ("\nStarting external tools...")
+  external_commands.print_step(step,f"Starting external tools")
   lab_status_change(topology,f'starting external tools')
   for tool in topology.tools.keys():
     cmds = external_commands.get_tool_command(tool,'up',topology)
@@ -267,7 +269,7 @@ def run(cli_args: typing.List[str]) -> None:
     check_lab_instance(topology)
 
   settings = topology.defaults
-  if common.QUIET:
+  if log.QUIET:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
   provider_probes(topology)
@@ -279,17 +281,21 @@ def run(cli_args: typing.List[str]) -> None:
 
   status_start_lab(topology)
   if 'err_conflict' in topology.defaults:
-    common.fatal(f'race condition, lab instance already running in {topology.defaults.err_conflict}')
+    log.fatal(f'race condition, lab instance already running in {topology.defaults.err_conflict}')
 
   if not is_dry_run():
     status.lock_directory()
 
+  step = 3
+  external_commands.print_step(step,f"Starting the lab: {p_provider}")
   start_provider_lab(topology,p_provider)
+
   for s_provider in topology[p_provider].providers:
-    print()
+    step += 1
+    external_commands.print_step(step,f"Starting the lab: {s_provider}",spacing=True)
     recreate_secondary_config(topology,p_provider,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 
-  deploy_initial_config(args,topology)
-  start_external_tools(args,topology)
+  deploy_initial_config(args,topology,step+1)
+  start_external_tools(args,topology,step+2)
   lab_status_change(topology,'started')

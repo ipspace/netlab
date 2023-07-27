@@ -161,17 +161,19 @@ You can use this functionality to attach lab devices to public networks or netwo
 (libvirt-mgmt)=
 ### Libvirt Management Network
 
-*vagrant-libvirt* plugin a dedicated uses *libvirt* network to connect the VM management interfaces to the host TCP/IP stack. **netlab up** command creates that network before executing **vagrant up** to ensure the network contains desired DHCP mappings. The management network is automatically deleted when you execute **netlab down** (recommended) or **vagrant destroy**.
+*vagrant-libvirt* plugin uses a dedicated *libvirt* network to connect the VM management interfaces to the host TCP/IP stack. **netlab up** command creates that network before executing **vagrant up** to ensure the network contains the expected DHCP mappings. The management network is automatically deleted when you execute **netlab down** (recommended) or **vagrant destroy**.
 
 You can change the parameters of the management network in the **addressing.mgmt** pool:
 
 * **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
 * **\_network**: The *libvirt* network name (default: `vagrant-libvirt`)
 * **\_bridge**: The name of the underlying Linux bridge (default: `libvirt-mgmt`)
+* **\_permanent**: set to `True` to use an existing *libvirt* network as the management network. **netlab up** will create the network if it does not exist and tell Vagrant not to remove it when the lab is stopped.
 
-```{note}
-**netlab up** uses XML definition in `templates/provider/libvirt/vagrant-libvirt.xml` to create the management network. If you'd like to change the management network parameters, create a custom XML definition file in `libvirt/vagrant-libvirt.xml` in current directory, `~/.netlab` directory or `/etc/netlab` directory.
-```
+**Important caveats:**
+
+* **netlab up** uses XML definition in `templates/provider/libvirt/vagrant-libvirt.xml` within the Python package directory ([source file](https://github.com/ipspace/netlab/blob/master/netsim/templates/provider/libvirt/vagrant-libvirt.xml)) to create the management network. If you'd like to change the management network parameters, create a custom XML definition file in `libvirt/vagrant-libvirt.xml` in current directory, `~/.netlab` directory or `/etc/netlab` directory.
+* If you want to use an existing libvirt network as the management network, make sure it has the same static DHCP mappings as the management network created by **netlab up** command.
 
 ## Starting Virtual Machines in Batches
 
