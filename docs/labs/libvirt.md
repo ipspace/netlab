@@ -121,7 +121,7 @@ The new Vagrant box will be copied into the *libvirt* storage pool the next time
 (libvirt-network-external)=
 ### Connecting to the Outside World
 
-Lab networks are created as private, very-isolated *libvirt* networks without a DHCP server. If you want to have a lab network connected to the outside world:
+Lab networks are created as private, very-isolated *libvirt* networks without a DHCP server. If you want to have a lab network connected to the outside world set the **libvirt.public** and/or **libvirt.uplink** link attributes (setting one of them is enough):
 
 * Set **libvirt.public** link attribute to **true**, or to any value [supported by *libvirt*](https://libvirt.org/formatdomain.html#direct-attachment-to-physical-interface)[^MACVTAP].
 * Set **libvirt.uplink** link attribute to the name of the Ethernet interface on your server[^IFNAME] if your Linux distribution does not use **eth0** as the name of the Ethernet interface[^U22].
@@ -137,7 +137,6 @@ links:
 - r1-r2
 - r1:
   libvirt:
-    public: True
     uplink: enp86s0
 ```
 

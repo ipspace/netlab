@@ -68,6 +68,29 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3 ]
 ```
 
+## Connecting to the Outside World
+
+Lab links are modeled as point-to-point *veth* links or as links to internal Linux bridges. If you want to have a lab link connected to the outside world, set **clab.uplink** to the name of the Ethernet interface on your server[^IFNAME].
+
+Example: use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
+
+```
+defaults.device: cumulus
+provider: clab
+nodes: [ r1,r2 ]
+links:
+- r1-r2
+- r1:
+  clab:
+    uplink: enp86s0
+```
+
+[^IFNAME]: Use **ip addr** or **ifconfig** find the interface name.
+
+```{note}
+In multi-provider topologies set the **uplink** parameter only for the primary provider (the one specified in topology-level **provider** attribute); netlab copies the **uplink** parameter  to all secondary providers during the lab topology transformation process.
+```
+
 ## Container Runtime Support
 
 Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**. The runtime to use can be configured globally or per node, for example:

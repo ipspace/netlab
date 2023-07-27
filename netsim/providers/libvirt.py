@@ -201,11 +201,24 @@ class Libvirt(_Provider):
   post_transform hook: mark multi-provider links as LAN links
   """
   def pre_transform(self, topology: Box) -> None:
-    _Provider.pre_transform(self,topology)
     if not 'links' in topology:
+      _Provider.pre_transform(self,topology)
       return
 
+    for l in topology.links:                                     # Set 'uplink' attribute on 'public' links
+      if not l.get('libvirt.public',False):                      # Skip links without 'public' attribute
+        continue
+      if l.get('libvirt.uplink',''):                             # Skip links with 'uplink' attribute
+        continue
+      l.libvirt.uplink = 'eth0'                                  # Default uplink name is eth0
+
+    _Provider.pre_transform(self,topology)
+
     for l in topology.links:
+      if l.get('libvirt.uplink',None):                           # Set 'public' attribute if the link has an uplink
+        if not 'public' in l.libvirt:                            # ... but no 'public' libvirt attr
+          l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
+
       if l.get('libvirt.provider',None):
         l.type = 'lan'
         if not 'bridge' in l:
@@ -222,6 +235,9 @@ class Libvirt(_Provider):
 
       if len(link.provider) <= 1:                                   # Skip single-provider links
         continue
+
+      if 'uplink' in link.libvirt or 'public' in link.libvirt:      # Is this an uplink?
+        link.pop('bridge',None)                                     # ... remove bridge name (there's no bridge)
 
       if 'clab' in link.provider:                                   # Find links with clab subprovider
         link.node_count = 999                                       # ... and fake link count to force clab to use a bridge

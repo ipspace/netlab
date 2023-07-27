@@ -203,7 +203,12 @@ class _Provider(Callback):
         if not 'provider' in node:
           continue
 
-        l[topology.provider].provider[node.provider] = True
+        p_name = topology.provider                          # Get primary and secondary provider
+        s_name = node.provider                              # ... to make the rest of the code more readable
+
+        l[p_name].provider[s_name] = True                   # Collect secondary link provider(s)
+        if 'uplink' in l[p_name]:                           # ... and copy primary uplink to secondary uplink
+          l[s_name].uplink = l[p_name].uplink
 
   """
   Generic provider pre-output transform: remove loopback links
