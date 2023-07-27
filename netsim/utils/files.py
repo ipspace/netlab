@@ -24,13 +24,22 @@ def get_curdir() -> pathlib.Path:
   return pathlib.Path(os.path.expanduser(".")).resolve()
 
 #
-# Get the usual search path
+# Get the usual search path (current directory, user home directory, system-wide settings, package settings)
+#
+# If needer, augment the search path componentswith a subdirectory path. User/system subdirectory could
+# be different from package subdirectory
 #
 
-def get_search_path(path_component: typing.Optional[str] = None) -> list:
-  path = [ get_curdir(),get_userdir(),get_sysdir(),get_moddir() ]
+def get_search_path(
+      path_component: typing.Optional[str] = None,
+      pkg_path_component: typing.Optional[str] = None) -> list:
+  path = [ get_curdir(),get_userdir(),get_sysdir() ]
   if path_component:
     path = [ pc / path_component for pc in path ]
+    pkg_path_component = pkg_path_component or path_component
+
+  path.append(get_moddir() / pkg_path_component if pkg_path_component else get_moddir())
+
   return [ str(pc) for pc in path ]
 
 #

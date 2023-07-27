@@ -169,6 +169,10 @@ You can change the parameters of the management network in the **addressing.mgmt
 * **\_network**: The *libvirt* network name (default: `vagrant-libvirt`)
 * **\_bridge**: The name of the underlying Linux bridge (default: `libvirt-mgmt`)
 
+```{note}
+**netlab up** uses XML definition in `templates/provider/libvirt/vagrant-libvirt.xml` to create the management network. If you'd like to change the management network parameters, create a custom XML definition file in `libvirt/vagrant-libvirt.xml` in current directory, `~/.netlab` directory or `/etc/netlab` directory.
+```
+
 ## Starting Virtual Machines in Batches
 
 *vagrant-libvirt* plugin tries to start all the virtual machines specified in `Vagrantfile` in parallel. The resulting strain on CPU resources might cause VM boot failures in very large topologies. As a workaround, you can configure **libvirt** virtualization provider to execute a series of `vagrant up` commands to start the virtual machines in smaller batches:

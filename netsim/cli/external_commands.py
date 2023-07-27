@@ -6,9 +6,8 @@ import os
 import subprocess
 from box import Box
 
-from .. import common
 from . import is_dry_run
-from ..utils import strings
+from ..utils import strings,log
 
 def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
   if spacing:
@@ -35,7 +34,7 @@ def run_command(
     ignore_errors: bool = False,
     return_stdout: bool = False) -> typing.Union[bool,str]:
 
-  if common.debug_active('cli'):
+  if log.debug_active('cli'):
     print(f"Not running: {cmd}")
     return True
 
@@ -43,19 +42,23 @@ def run_command(
     print(f"DRY RUN: {cmd}")
     return True
 
-  common.print_verbose(f"run_command executing: {cmd}")
+  if log.VERBOSE or log.debug_active('external'):
+    print(f"run_command executing: {cmd}")
+
   if isinstance(cmd,str):
     cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
 
   try:
     result = subprocess.run(cmd,capture_output=check_result,check=True,text=True)
+    if log.debug_active('external'):
+      print(f'... run result: {result}')
     if not check_result:
       return True
     if return_stdout:
       return result.stdout
     return result.stdout != ""
   except Exception as ex:
-    if not common.QUIET and not ignore_errors:
+    if not log.QUIET and not ignore_errors:
       print( f"Error executing {stringify(cmd)}:\n  {ex}" )
     return False
 
@@ -72,18 +75,18 @@ def test_probe(p : typing.Union[str,list,Box]) -> bool:
   elif isinstance(p,Box):
     OK = bool(run_command(p.cmd,check_result=True,ignore_errors=True))
     if not OK:
-      common.fatal(p.err)
+      log.fatal(p.err)
     return OK
 
   else:
-    common.fatal(f"Internal error: invalid probe specification: {p}")
+    log.fatal(f"Internal error: invalid probe specification: {p}")
     return False
 
 def set_ansible_flags(cmd : list) -> list:
-  if common.VERBOSE:
-    cmd.append("-" + "v" * common.VERBOSE)
+  if log.VERBOSE:
+    cmd.append("-" + "v" * log.VERBOSE)
 
-  if common.QUIET:
+  if log.QUIET:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
   return cmd
@@ -91,12 +94,12 @@ def set_ansible_flags(cmd : list) -> list:
 def run_probes(settings: Box, provider: str, step: int = 0) -> None:
   if step:
     print_step(step,f"Checking virtualization provider installation: {provider}",spacing = True)
-  elif common.VERBOSE:
+  elif log.VERBOSE:
     print("Checking virtualization provider installation")
   for p in settings.providers[provider].probe:
     if not test_probe(p):
-      common.fatal("%s failed, aborting" % p)
-  if common.VERBOSE or step and not is_dry_run():
+      log.fatal("%s failed, aborting" % p)
+  if log.VERBOSE or step and not is_dry_run():
     print(".. all tests succeeded, moving on\n")
 
 def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "test", exec_command: typing.Optional[str] = None) -> None:
@@ -104,33 +107,33 @@ def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "t
     exec_command = settings.providers[provider].start
   print_step(step,f"starting the lab -- {provider}: {exec_command}")
   if not run_command(exec_command):
-    common.fatal(f"{exec_command} failed, aborting...",cli_command)
+    log.fatal(f"{exec_command} failed, aborting...",cli_command)
 
 def deploy_configs(step : int = 3, command: str = "test", fast: typing.Optional[bool] = False) -> None:
   print_step(step,"deploying initial device configurations",spacing = True)
   cmd = ["netlab","initial"]
-  if common.VERBOSE:
-    cmd.append("-" + "v" * common.VERBOSE)
+  if log.VERBOSE:
+    cmd.append("-" + "v" * log.VERBOSE)
 
   if os.environ.get('NETLAB_FAST_CONFIG',None) or fast:
     cmd.append("--fast")
 
   if not run_command(set_ansible_flags(cmd)):
-    common.fatal("netlab initial failed, aborting...",command)
+    log.fatal("netlab initial failed, aborting...",command)
 
 def custom_configs(config : str, group: str, step : int = 4, command: str = "test") -> None:
   print_step(step,"deploying custom configuration template %s for group %s" % (config,group))
   cmd = ["netlab","config",config,"--limit",group]
 
   if not run_command(set_ansible_flags(cmd)):
-    common.fatal("netlab config failed, aborting...",command)
+    log.fatal("netlab config failed, aborting...",command)
 
 def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   print_step(step,f"stopping the lab: {provider}",True)
   if exec_command is None:
     exec_command = settings.providers[provider].stop
   if not run_command(exec_command):
-    common.fatal(f"{exec_command} failed, aborting...",command)
+    log.fatal(f"{exec_command} failed, aborting...",command)
 
 """
 Get a runtime-related parameter for a tool
