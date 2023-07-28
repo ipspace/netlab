@@ -41,11 +41,7 @@ You could also [create an inventory of all lab devices in a single YAML](../outp
 
 If you need control-plane connectivity to your lab devices (for example, you'd like to run BGP with a device outside of your lab), consider running your additional devices as virtual machines in the lab. Please see [](platform-unknown) and [](external-unprovisioned-devices) for more details.
 
-To connect *libvirt* virtual machines to the outside world, [set **libvirt.public** link attribute](libvirt-network-external) on any link in your topology.
-
-Connecting containers to the outside world is trickier -- you have to connect the Linux bridges used by *containerlab*[^CLB] to the host TCP/IP stack or an external interface. The details are beyond the scope of this tutorial.
-
-[^CLB]: *containerlab* provider creates a Linux bridge for every link with one or more than two devices attached to it.
+To connect *libvirt* virtual machines or *containerlab* containers to the outside world, set [**libvirt.uplink**](libvirt-network-external) or [**clab.uplink**](clab-network-external) link attribute on any link in your topology.
 
 *VirtualBox* uses a different connectivity model. It maps device TCP/UDP ports into host TCP/UDP ports. The default ports mapped for each network device are **ssh**, **http** and **netconf**. It's possible to add additional forwarded ports to the **defaults.providers.virtualbox.forwarded** parameter; the details are beyond the scope of this tutorial.
 
@@ -122,7 +118,7 @@ links:
 
 ## Managing Physical Devices
 
-If you want to create configurations for a prewired physical lab, use the [**external** provider](external-virtualization-provider).
+If you want to create configurations for a prewired physical lab, use the [**external** provider](../labs/external.md).
 
 Before using _netlab_ with a physical lab, you'll have to create a lab topology that specifies the specify management IP addresses and interface names for all devices in your lab. Once that's done, save the topology as a blueprint for further lab work.
 

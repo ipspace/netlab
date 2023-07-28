@@ -35,7 +35,7 @@ Release notes
 
 **[Release 1.5.0](release-1.5.0) (2023-01-28)**
 
-* [Multi-provider topologies](providers.md#combining-virtualization-providers)
+* [Multi-provider topologies](labs/multi-provider.md)
 * [Running multiple lab instances on Linux Servers](plugins/multilab.md)
 * Split large *libvirt* topology into [smaller **vagrant up** batches](labs/libvirt.md#starting-virtual-machines-in-batches)
 * [Use custom network/bridge name and IP subnet](labs/libvirt.md#libvirt-management-network) for `vagrant-libvirt` management network

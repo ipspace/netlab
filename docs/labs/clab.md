@@ -68,9 +68,10 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3 ]
 ```
 
+(clab-network-external)=
 ## Connecting to the Outside World
 
-Lab links are modeled as point-to-point *veth* links or as links to internal Linux bridges. If you want to have a lab link connected to the outside world, set **clab.uplink** to the name of the Ethernet interface on your server[^IFNAME].
+Lab links are modeled as point-to-point *veth* links or as links to internal Linux bridges. If you want to have a lab link connected to the outside world, set **clab.uplink** to the name of the Ethernet interface on your server[^IFNAME]. The minimum *containerlab* release supporting this feature is release 0.43.0.
 
 Example: use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
 

@@ -74,7 +74,7 @@ nodes:
 * **memory** -- memory allocated to the VM lab device. Not applicable for container-based devices.
 * **module** -- the list of [configuration modules](modules.md) used by this node.
 * **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU.
-* **provider** -- virtualization provider used by this node (see [](multi-providers) for more details).
+* **provider** -- virtualization provider used by this node (see [](labs/multi-provider.md) for more details).
 * **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*, for which the host **role** is set in system device defaults.
 * **unmanaged** -- whether this node should me managed/handled by *netlab* or not (useful for integrating *netlab* topologies with additional external devices which should not be configured by *netlab* itself).
 
