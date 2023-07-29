@@ -165,6 +165,8 @@ You can use this functionality to attach lab devices to public networks or netwo
 You can change the parameters of the management network in the **addressing.mgmt** pool:
 
 * **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
+* **ipv6**: Optional IPv6 management network prefix. Not set by default.
+* **start**: The offset of the first VM management IP address in the management network (default: `100`). For example, with **start** set to 50, the device with **node.id** set to 1 will get 51st IP address in the management IP prefix.
 * **\_network**: The *libvirt* network name (default: `vagrant-libvirt`)
 * **\_bridge**: The name of the underlying Linux bridge (default: `libvirt-mgmt`)
 * **\_permanent**: set to `True` to use an existing *libvirt* network as the management network. **netlab up** will create the network if it does not exist and tell Vagrant not to remove it when the lab is stopped.
@@ -173,6 +175,14 @@ You can change the parameters of the management network in the **addressing.mgmt
 
 * **netlab up** uses XML definition in `templates/provider/libvirt/vagrant-libvirt.xml` within the Python package directory ([source file](https://github.com/ipspace/netlab/blob/master/netsim/templates/provider/libvirt/vagrant-libvirt.xml)) to create the management network. If you'd like to change the management network parameters, create a custom XML definition file in `libvirt/vagrant-libvirt.xml` in current directory, `~/.netlab` directory or `/etc/netlab` directory.
 * If you want to use an existing libvirt network as the management network, make sure it has the same static DHCP mappings as the management network created by **netlab up** command.
+
+### VM Management IP Addresses
+
+The only way to assign management IP addresses to network devices started as virtual machines is through DHCP, and *vagrant* together with *libvirt* (and *dnsmasq*) provides a seamless mechanism to do so.
+
+*netlab* creates static DHCP mappings in the management network ([see above](libvirt-mgmt)) and asks *vagrant-libvirt* to set the MAC address of the VM management interface to a well-known value, ensuring that each VM gets the expected management IP address assigned by *netlab* based on the [device node ID](node-augment) and the **[start](address-pool-specs)** parameter of the [**mgmt** address pool](../addressing.md).
+
+If you want your virtual machines to have fixed management IP addresses (for example, to be accessed from an external management tool), change the **addressing.mgmt** parameters, set node **id** parameters to the desired values, and let *netlab* do the rest of the work.
 
 ## Starting Virtual Machines in Batches
 
