@@ -144,6 +144,8 @@ links:
 
 [^U22]: Example: Ubuntu 22.04 uses weird interface names based on underlying NIC type.
 
+Finally, if you want to connect the management network to the outside world, create the management network [based on an existing Linux bridge](libvirt-mgmt) that is already connected to the outside world or enable port forwarding.
+
 ### Using Existing Libvirt Networks
 
 To attach lab devices to existing *libvirt* virtual networks:
@@ -183,6 +185,30 @@ The only way to assign management IP addresses to network devices started as vir
 *netlab* creates static DHCP mappings in the management network ([see above](libvirt-mgmt)) and asks *vagrant-libvirt* to set the MAC address of the VM management interface to a well-known value, ensuring that each VM gets the expected management IP address assigned by *netlab* based on the [device node ID](node-augment) and the **[start](address-pool-specs)** parameter of the [**mgmt** address pool](../addressing.md).
 
 If you want your virtual machines to have fixed management IP addresses (for example, to be accessed from an external management tool), change the **addressing.mgmt** parameters, set node **id** parameters to the desired values, and let *netlab* do the rest of the work.
+
+### Port Forwarding
+
+*netlab* supports *vagrant-libvirt* port forwarding -- mapping of TCP ports on VM management IP address to ports on the host. You can use port forwarding to access the lab devices via the host external IP address without exposing the management network to the outside world.
+
+Port forwarding is disabled by default and can be enabled by configuring the **defaults.providers.libvirt.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf, gnmi), dictionary values are start values of host ports. *netlab* assigns a unique host port to every VM forwarded port based on the start value and VM node ID.
+
+For example, when given the following topology...
+
+```
+defaults.providers.libvirt.forwarded:
+  ssh: 2000
+
+defaults.device: cumulus
+nodes:
+  r1:
+  r2:
+    id: 42
+```
+
+... *netlab* maps:
+    
+* SSH port on management interface of R1 to host port 2001 (R1 gets default node ID 1)
+* SSH port on management interface of R2 to host port 2042 (R2 has static ID 42)
 
 ## Starting Virtual Machines in Batches
 
