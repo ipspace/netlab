@@ -8,6 +8,7 @@ The following settings can be displayed:
 * **images** -- Vagrant box names or container names for all supported devices or a single device
 * **module** -- Configuration modules
 * **module-support** -- Configuration modules support matrix
+* **providers** -- Virtualization providers
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -463,4 +464,68 @@ evpn configuration module support
 +--------------+------+
 | vyos         |  x   |
 +--------------+------+
+```
+
+## Display Virtualization Providers
+
+```text
+$ netlab show providers -h
+usage: netlab show providers [-h] [--system] [--format {table,text,yaml}] [-p PROVIDER]
+
+Display supported virtualization providers
+
+options:
+  -h, --help            show this help message and exit
+  --system              Display system information (without user defaults)
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
+  -p PROVIDER, --provider PROVIDER
+                        Display the status of the selected virtualization provider
+```
+
+**Examples:**
+
+* Display a summary of virtualization providers and their state (executed on a Linux box with libvirt, KVM, vagrant, containerlab and Docker installed):
+
+```text
+$ netlab show providers
+Supported virtualization providers
+
++------------+--------------------------+--------+
+| provider   | description              | status |
++============+==========================+========+
+| clab       | containerlab with Docker | OK     |
+| external   | External devices         | OK     |
+| libvirt    | Vagrant with libvirt/KVM | OK     |
+| virtualbox | Vagrant with Virtualbox  | N/A    |
++------------+--------------------------+--------+
+```
+
+* Display the state of an installed provider (libvirt/KVM was installed on the host where the command was executed):
+
+```text
+$ netlab show providers -p libvirt
+Status of libvirt (Vagrant with libvirt/KVM):
+
+Executing: which kvm-ok
+Executing: which virsh
+Executing: which vagrant
+Executing: ['bash', '-c', 'vagrant plugin list|grep vagrant-libvirt']
+Executing: kvm-ok
+Executing: virsh net-list
+
+Status: OK
+```
+
+* Display the state of a failed/missing provider (Virtualbox was not installed on the host where the command was executed):
+
+```text
+$ netlab show providers -p virtualbox
+Status of virtualbox (Vagrant with Virtualbox):
+
+Executing: VBoxManage -h
+Error executing VBoxManage -h:
+  [Errno 2] No such file or directory: 'VBoxManage'
+
+Status: N/A
 ```

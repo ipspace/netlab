@@ -24,8 +24,7 @@ def parser_add_module(parser: argparse.ArgumentParser) -> None:
     action='store',
     help='Display information for a single module')
 
-def show_common_parser(action: str, content: str) -> argparse.ArgumentParser:
-  global show_dispatch
+def show_empty_parser(action: str, content: str) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(
     prog=f'netlab show {action}',
     description=f'Display {content}')
@@ -34,6 +33,10 @@ def show_common_parser(action: str, content: str) -> argparse.ArgumentParser:
     dest='system',
     action='store_true',
     help='Display system information (without user defaults)')
+  return parser
+
+def show_common_parser(action: str, content: str) -> argparse.ArgumentParser:
+  parser = show_empty_parser(action, content)
   parser.add_argument(
     '--format',
     dest='format',

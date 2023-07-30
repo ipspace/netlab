@@ -62,19 +62,19 @@ def run_command(
       print( f"Error executing {stringify(cmd)}:\n  {ex}" )
     return False
 
-def test_probe(p : typing.Union[str,list,Box]) -> bool:
+def test_probe(p : typing.Union[str,list,Box],quiet : bool = False) -> bool:
   if isinstance(p,str):
-    return bool(run_command(p,check_result=True))
+    return bool(run_command(p,check_result=True,ignore_errors=quiet))
 
   elif isinstance(p,list):
     for p_item in p:
-      if not test_probe(p_item):
+      if not test_probe(p_item,quiet):
         return False
     return True
 
   elif isinstance(p,Box):
     OK = bool(run_command(p.cmd,check_result=True,ignore_errors=True))
-    if not OK:
+    if not OK and not quiet:
       log.fatal(p.err)
     return OK
 
