@@ -1,6 +1,15 @@
 Release notes
 =============
 
+**[Release 1.6.0](release-1.6.0) (2023-07-XX)**
+
+* New commands: **[netlab report](netlab/report.md)**, **[netlab graph](netlab/graph.md)** and **[netlab inspect](netlab/inspect.md)**
+* Improved **[netlab show](netlab/show.md)** command
+* New reports: node and link addressing
+* [Connect containers to outside world](clab-network-external) through *macvlan* interfaces
+* [Host-to-VM port forwarding](libvirt-port-forwarding) in *libvirt* environment
+* Nokia SR OS OSPF P2MP support
+
 **[Release 1.5.4](release-1.5.4) (2023-06-10)**
 
 * [Juniper vPTX/vEVO](platforms.md) support by Stefano Sasso (initial configuration, IPv4+IPv6, OSPFv2/v3, IS-IS, BGP, BFD, VLANs, VRFs, MPLS, SR-MPLS)
@@ -341,12 +350,20 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.6.md
    release/1.5.md
    release/1.4.md
    release/1.3.md
    release/1.2.md
    release/1.1.md
    release/1.0.md
+```   
+
+```eval_rst
+.. toctree::
+   :caption: Older releases
+   :maxdepth: 1
+
    release/0.9.md
    release/0.8.md
    release/0.7.md

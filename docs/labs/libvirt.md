@@ -186,6 +186,7 @@ The only way to assign management IP addresses to network devices started as vir
 
 If you want your virtual machines to have fixed management IP addresses (for example, to be accessed from an external management tool), change the **addressing.mgmt** parameters, set node **id** parameters to the desired values, and let *netlab* do the rest of the work.
 
+(libvirt-port-forwarding)=
 ### Port Forwarding
 
 *netlab* supports *vagrant-libvirt* port forwarding -- mapping of TCP ports on VM management IP address to ports on the host. You can use port forwarding to access the lab devices via the host external IP address without exposing the management network to the outside world.
