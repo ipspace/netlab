@@ -9,6 +9,7 @@ The following settings can be displayed:
 * **module** -- Configuration modules
 * **module-support** -- Configuration modules support matrix
 * **outputs** -- Output modules used by the **[netlab create](create.md)** command
+* **reports** -- Report templates shipped with _netlab_
 * **providers** -- Virtualization providers
 
 The system settings can be displayed as a table, as raw text that is easy to parse in automation scripts, and as YAML data that can be used by third-party utilities. See usage guidelines  and examples in individual command descriptions for more details.
@@ -489,7 +490,6 @@ Display output modules for the "netlab create" command
 
 options:
   -h, --help            show this help message and exit
-  --system              Display system information (without user defaults)
   --format {table,text,yaml}
                         Output format (table, text, yaml)
 ```
@@ -514,6 +514,47 @@ Supported output modules
 | yaml     | Inspect transformed data in YAML format                |
 +----------+--------------------------------------------------------+
 ```
+
+(Show-reports)=
+## Display Report Templates
+
+The **netlab show reports** command displays the report templates that can be used with the **[netlab report](report.md)** command.
+
+```text
+usage: netlab show reports [-h] [--format {table,text,yaml}]
+
+Display available system reports
+
+options:
+  -h, --help            show this help message and exit
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
+```
+
+Example: display available report templates
+
+```text
+$ netlab show reports
+
+text reports
+
++------------+---------------------------+
+| report     | description               |
++============+===========================+
+| addressing | Node/interface addressing |
++------------+---------------------------+
+
+HTML reports
+
++----------------------+------------------------------------+
+| report               | description                        |
++======================+====================================+
+| addressing-link.html | Link/interface addressing          |
+| addressing-node.html | Node/interface addressing          |
+| addressing.html      | Node/interface and link addressing |
++----------------------+------------------------------------+
+```
+
 
 (show-providers)=
 ## Display Virtualization Providers

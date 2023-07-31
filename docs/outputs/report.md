@@ -13,6 +13,10 @@ _netlab_ ships with the following built-in reports:
 * **addressing.node.html** -- Node/interface addressing report in HTML format
 * **addressing.link.html** -- Link/interface addressing report in HTML format
 
+```{note}
+The **[netlab show reports](show-reports)** command displays up-to-date list of available system reports
+```
+
 ## Generating HTML reports
 
 If a report name includes `.html`, _netlab_ assumes the template generates HTML markup and adds HTML wrapper generated from `page.html.j2` to the generated text. The `page.html.j2` template included with _netlab_ contains the `head` and `body` HTML tags and a simple CSS style definition.

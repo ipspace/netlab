@@ -12,7 +12,7 @@ from ...outputs import _TopologyOutput
 from . import show_common_parser
 
 def parse() -> argparse.ArgumentParser:
-  parser = show_common_parser('outputs','output modules for the "netlab create" command')
+  parser = show_common_parser('outputs','output modules for the "netlab create" command',system_only=False)
   return parser
 
 def show(settings: Box, args: argparse.Namespace) -> None:

@@ -19,6 +19,8 @@ options:
                         Transformed topology snapshot file
 ```
 
+**Note:** the **[netlab show reports](show-reports)** command displays up-to-date list of available system reports
+
 ## Examples
 
 * **netlab report addressing** creates lab addressing report in text format on standard output (printed to the screen)

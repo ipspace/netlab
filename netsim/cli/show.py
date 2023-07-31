@@ -21,6 +21,7 @@ from .show_commands import images as _images
 from .show_commands import modules as _modules
 from .show_commands import module_support as _mod_support
 from .show_commands import outputs as _outputs
+from .show_commands import reports as _reports
 from .show_commands import providers as _providers
 
 show_dispatch: dict = {
@@ -43,6 +44,10 @@ show_dispatch: dict = {
   'outputs': {
     'exec':  _outputs.show,
     'parse': _outputs.parse
+  },
+  'reports': {
+    'exec':  _reports.show,
+    'parse': _reports.parse
   },
   'providers': {
     'exec':  _providers.show,
@@ -80,7 +85,7 @@ def run(cli_args: typing.List[str]) -> None:
   args = parse_show_args(cli_args)
 
   empty_file = "package:cli/empty.yml"
-  loc_defaults = empty_file if args.system else ""
+  loc_defaults = empty_file if 'system' in args and args.system else ""
   topology = read_topology.load(empty_file,loc_defaults,"package:topology-defaults.yml")
 
   if topology is None:
