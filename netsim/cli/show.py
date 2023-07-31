@@ -20,6 +20,7 @@ from .show_commands import devices as _devices
 from .show_commands import images as _images
 from .show_commands import modules as _modules
 from .show_commands import module_support as _mod_support
+from .show_commands import outputs as _outputs
 from .show_commands import providers as _providers
 
 show_dispatch: dict = {
@@ -38,6 +39,10 @@ show_dispatch: dict = {
   'modules': {
     'exec':  _modules.show,
     'parse': _modules.parse
+  },
+  'outputs': {
+    'exec':  _outputs.show,
+    'parse': _outputs.parse
   },
   'providers': {
     'exec':  _providers.show,

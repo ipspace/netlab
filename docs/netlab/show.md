@@ -1,6 +1,6 @@
 # Display System Information
 
-**netlab show** displays system settings in a tabular, text, or YAML format. The command can display system settings (as shipped with the *networklab* package) or system settings augmented with [user defaults](../defaults.md).
+**netlab show** command displays system settings in a tabular, text, or YAML format. The command can display system settings (as shipped with the *networklab* package) or system settings augmented with [user defaults](../defaults.md).
 
 The following settings can be displayed:
 
@@ -8,7 +8,10 @@ The following settings can be displayed:
 * **images** -- Vagrant box names or container names for all supported devices or a single device
 * **module** -- Configuration modules
 * **module-support** -- Configuration modules support matrix
+* **outputs** -- Output modules used by the **[netlab create](create.md)** command
 * **providers** -- Virtualization providers
+
+The system settings can be displayed as a table, as raw text that is easy to parse in automation scripts, and as YAML data that can be used by third-party utilities. See usage guidelines  and examples in individual command descriptions for more details.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -18,6 +21,8 @@ The following settings can be displayed:
 ```
 
 ## Display Supported Devices
+
+The **netlab show devices** command displays _netlab_-supported devices together with short descriptions.
 
 ```text
 usage: netlab show devices [-h] [--system] [--format {table,text,yaml}] [-d DEVICE]
@@ -75,6 +80,8 @@ eos: Arista vEOS VM or cEOS container
 
 ## Display Device Images
 
+The **netlab show images** command displays built-in box/container names for supported network devices. If you want to use different Vagrant box names or container names, change them in [user defaults](../defaults.md) or in [lab topology](node-attributes).
+
 ```text
 usage: netlab show images [-h] [--system] [--format {table,text,yaml}] [-d DEVICE]
 
@@ -115,6 +122,8 @@ cumulus:
 ```
 
 ## Display Configuration Modules
+
+The **netlab show modules** command displays available configuration modules and devices supported by each configuration module. When displaying a single module, the command lists optional features supported by that module and the devices implementing them.
 
 ```text
 usage: netlab show modules [-h] [--system] [--format {table,text,yaml}] [-m MODULE]
@@ -274,7 +283,7 @@ vyos:
   irb: true
 ```
 
-* Display device support for various initial configuration features:
+* When using the `initial` pseudo-module, the command displays device support for various initial configuration features:
 
 ```text
 $ netlab show modules -m initial
@@ -337,6 +346,8 @@ Feature legend:
 ```
 
 ## Display Device Module Support
+
+The **netlab show module-support** command displays configuration modules supported by individual devices.
 
 ```text
 usage: netlab show module-support [-h] [--system] [--format {table,text,yaml}]
@@ -466,7 +477,54 @@ evpn configuration module support
 +--------------+------+
 ```
 
+(show-outputs)=
+## Display Output Modules
+
+The **netlab show outputs** command displays [output formats](../outputs/index.md) supported by the **[netlab create](create.md)** command.
+
+```text
+usage: netlab show outputs [-h] [--system] [--format {table,text,yaml}]
+
+Display output modules for the "netlab create" command
+
+options:
+  -h, --help            show this help message and exit
+  --system              Display system information (without user defaults)
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
+```
+
+Example: display output modules as a table
+
+```text
+$ netlab show outputs
+Supported output modules
+
++----------+--------------------------------------------------------+
+| module   | description                                            |
++==========+========================================================+
+| ansible  | Ansible inventory and configuration file               |
+| d2       | Topology graph in D2 format                            |
+| devices  | Create simple device inventory as a YAML file          |
+| graph    | Topology graph in graphviz format                      |
+| json     | Inspect transformed data in JSON format                |
+| provider | Create virtualization provider configuration file(s)   |
+| report   | Create a report from the transformed lab topology data |
+| tools    | Create configuration files for external tools          |
+| yaml     | Inspect transformed data in YAML format                |
++----------+--------------------------------------------------------+
+```
+
+(show-providers)=
 ## Display Virtualization Providers
+
+The **netlab show providers** command displays supported virtualization providers and their status:
+
+* OK: the provider is installed and operational
+* FAIL: the provider is installed, but not working correcty
+* N/A: the provider is probably not installed
+
+Use the `-p` option to display commands used to probe the operational state of an individual provider, and their results.
 
 ```text
 $ netlab show providers -h

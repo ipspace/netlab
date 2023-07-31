@@ -209,6 +209,8 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
 
 class AnsibleInventory(_TopologyOutput):
 
+  DESCRIPTION :str = 'Ansible inventory and configuration file'
+
   def write(self, topology: Box) -> None:
     check_writeable('Ansible inventory')
     hostfile = self.settings.hostfile or 'hosts.yml'

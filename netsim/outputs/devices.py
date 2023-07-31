@@ -72,6 +72,8 @@ def read_inventory(host: str, filename: typing.Optional[str] = None) -> typing.O
 
 class DeviceInventory(_TopologyOutput):
 
+  DESCRIPTION :str = 'Create simple device inventory as a YAML file'
+
   def write(self, topology: Box) -> None:
     check_writeable('netlab-devices.yml')
     hostfile = self.settings.hostfile or 'netlab-devices.yml'

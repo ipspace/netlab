@@ -6,7 +6,16 @@ import pathlib
 import os
 import sys
 import typing
+import fnmatch
+
 from . import log
+
+try:
+  from importlib import resources
+  new_resources = hasattr(resources,'files')
+except ImportError:
+  new_resources = False
+  import importlib_resources as resources         # type: ignore
 
 #
 # Find paths to module, user and system directory (needed for various templates)
@@ -52,6 +61,37 @@ def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
       return candidate
 
   return None
+
+#
+# Get a list of files matching a glob pattern
+#
+def get_globbed_files(path: typing.Any, glob: str) -> list:
+  if isinstance(path,pathlib.Path):
+    return [ str(fname) for fname in list(path.glob(glob)) ]
+  else:
+    file_names = list(path.iterdir())
+    return fnmatch.filter(file_names,glob)
+
+#
+# Get a path object that can be used to find files in a file system or in the package
+#
+
+def get_traversable_path(dir_name : str) -> typing.Any:
+  if 'package:' in dir_name:
+    dir_name = dir_name.replace('package:','')
+    pkg_files: typing.Any = None
+
+    if not new_resources:
+      pkg_files = pathlib.Path(get_moddir())
+    else:
+      package = '.'.join(__name__.split('.')[:-2])
+      pkg_files = resources.files(package)        # type: ignore
+    if dir_name == '':
+      return pkg_files
+    else:
+      return pkg_files.joinpath(dir_name)
+  else:
+    return pathlib.Path(dir_name)
 
 #
 # Open, close, and write to file (or STDOUT)

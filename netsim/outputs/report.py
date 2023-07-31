@@ -56,6 +56,8 @@ def render(fmt: str, settings: Box, topo: Box) -> str:
 
 class REPORT(_TopologyOutput):
 
+  DESCRIPTION :str = 'Create a report from the transformed lab topology data'
+
   def write(self, topo: Box) -> None:
     global EXTRA_PATH
     EXTRA_PATH = _files.get_search_path("reports")

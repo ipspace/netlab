@@ -268,6 +268,8 @@ def set_d2_attr(topology: Box) -> None:
 
 class Graph(_TopologyOutput):
 
+  DESCRIPTION :str = 'Topology graph in D2 format'
+
   def write(self, topology: Box) -> None:
     graphfile = self.settings.filename or 'graph.d2'
     output_format = 'topology'

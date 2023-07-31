@@ -1,5 +1,5 @@
 #
-# netlab show devices command -- display supported devices
+# netlab show providers command -- display virtualization providers
 #
 
 import argparse
@@ -77,7 +77,10 @@ def show_table(settings: Box, args: argparse.Namespace) -> None:
     print('Supported virtualization providers')
     print("")
     strings.print_table(heading,rows,inter_row_line=False)
-  elif args.format in ['text','yaml']:
+  elif args.format == 'text':
+    for p,d in result.items():
+      print(f"{p} ({d.description}): {d.status}")
+  else:
     print(strings.get_yaml_string(result))
 
 def show(settings: Box, args: argparse.Namespace) -> None:

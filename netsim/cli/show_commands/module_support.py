@@ -1,7 +1,5 @@
 #
-# netlab config command
-#
-# Deploy custom configuration template to network devices
+# netlab show module-support command -- display configuration module support per device
 #
 
 import argparse

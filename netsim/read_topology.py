@@ -6,49 +6,14 @@ import sys
 import typing
 import argparse
 import pathlib
-import fnmatch
 
 from box import Box
-try:
-  from importlib import resources
-  new_resources = hasattr(resources,'files')
-except ImportError:
-  new_resources = False
-  import importlib_resources as resources         # type: ignore
 
 # Related modules
 from . import common
 from . import data
 from .data import types
 from .utils import files as _files
-
-"""
-Utility routines for include_yaml functionality
-"""
-
-def get_traversable_path(dir_name : str) -> typing.Any:
-  if 'package:' in dir_name:
-    dir_name = dir_name.replace('package:','')
-    pkg_files: typing.Any = None
-
-    if not new_resources:
-      pkg_files = pathlib.Path(_files.get_moddir())
-    else:
-      package = '.'.join(__name__.split('.')[:-1])
-      pkg_files = resources.files(package)        # type: ignore
-    if dir_name == '':
-      return pkg_files
-    else:
-      return pkg_files.joinpath(dir_name)
-  else:
-    return pathlib.Path(dir_name)
-
-def get_globbed_files(path: typing.Any, glob: str) -> list:
-  if isinstance(path,pathlib.Path):
-    return [ str(fname) for fname in list(path.glob(glob)) ]
-  else:
-    file_names = list(path.iterdir())
-    return fnmatch.filter(file_names,glob)
 
 """
 include_yaml: Include YAML snippets at any position within a YAML file
@@ -83,8 +48,8 @@ def include_yaml(data: Box, source_file: str) -> None:
       file_path = os.path.dirname(os.path.expanduser(inc_name))
     else:
       file_path = inc_path + ('/' if '/' in inc_path else '') + os.path.dirname(inc_name)
-    traversable = get_traversable_path(file_path)                           # Get a traversable object
-    inc_files = get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
+    traversable = _files.get_traversable_path(file_path)                           # Get a traversable object
+    inc_files = _files.get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
     if not inc_files:
       common.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
       return
@@ -120,7 +85,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
     return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
 
   if "package:" in filename:
-    pkg_files = get_traversable_path('package:')
+    pkg_files = _files.get_traversable_path('package:')
     with pkg_files.joinpath(filename.replace("package:","")).open('r') as fid:
       pkg_data = read_yaml(string=fid.read())
       if not pkg_data is None:

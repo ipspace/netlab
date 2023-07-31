@@ -1,38 +1,47 @@
 #
-# netlab show devices command -- display supported devices
+# netlab show outputs command -- display output modules
 #
 
 import argparse
+import os
 from box import Box
 
-from ...utils import strings
+from ...utils import strings,log,files as _files
 from ... import data
-from . import show_common_parser,parser_add_device,DEVICES_TO_SKIP
+from ...outputs import _TopologyOutput
+from . import show_common_parser
 
 def parse() -> argparse.ArgumentParser:
-  parser = show_common_parser('devices','supported devices')
-  parser_add_device(parser)
+  parser = show_common_parser('outputs','output modules for the "netlab create" command')
   return parser
 
 def show(settings: Box, args: argparse.Namespace) -> None:
-  heading = ['device','description']
+  heading = ['module','description']
 
   rows = []
   result = data.get_empty_box()
-  for device in sorted(settings.devices.keys()):
-    dev_data = settings.devices[device]
-    if device in DEVICES_TO_SKIP:
+  modpath = _files.get_traversable_path('package:outputs')  # Get output modules directory as traversable path
+  modlist = _files.get_globbed_files(modpath,'*.py')        # ... and find all Python files in that directory
+
+  for mname in sorted(modlist):                             # Iterate over Python files in 'outputs' directory
+    mname = os.path.basename(mname).split('.')[0]           # Get just the name of the output module
+    if '_' in mname:                                        # ... and skip internal files
       continue
 
-    if device != args.device and args.device != '*':
+    module = _TopologyOutput.load(mname,Box({}))            # Load the module
+    if not module:                                          # ... and skip files without a usable class
       continue
 
-    row = [ device,dev_data.description ]
+    mdesc = getattr(module,'DESCRIPTION','')                # Try to get class description
+    if not mdesc:                                           # ... skip objects without a usable description
+      continue
+
+    row = [ mname,mdesc ]
     rows.append(row)
-    result[device] = dev_data.description
+    result[mname] = mdesc
 
   if args.format == 'table':
-    print('Virtual network devices supported by netlab')
+    print('Supported output modules')
     print("")
     strings.print_table(heading,rows,inter_row_line=False)
   elif args.format in ['text','yaml']:

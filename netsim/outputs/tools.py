@@ -65,6 +65,8 @@ def create_tool_config(tool: str, topology: Box) -> None:
 
 class ToolConfigs(_TopologyOutput):
 
+  DESCRIPTION :str = 'Create configuration files for external tools'
+
   def write(self, topology: Box) -> None:
     if not 'tools' in topology:
       return
