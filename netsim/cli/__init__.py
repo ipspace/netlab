@@ -16,7 +16,7 @@ from box import Box
 from . import usage
 from .. import augment, common, read_topology
 from .. import __version__
-from ..utils import status
+from ..utils import status as _status
 
 DRY_RUN: bool = False
 
@@ -158,9 +158,6 @@ lab_status_update -- generic lab status callback
 * Merge status dictionary or perform status-specific callback
 """
 
-def get_lab_id(topology: Box) -> str:
-  return topology.get('defaults.multilab.id','default') or 'default'    # id could be set to {} due to tool f-string evals
-
 def lab_status_update(
       topology: Box,
       status: Box,
@@ -169,7 +166,7 @@ def lab_status_update(
 
   if DRY_RUN:                                               # Don't update status if we're in dry-run mode 
     return
-  lab_id = get_lab_id(topology)                             # Get the lab ID (or default)
+  lab_id = _status.get_lab_id(topology)                     # Get the lab ID (or default)
   if not lab_id in status:
     status[lab_id].dir = os.getcwd()                        # Map lab ID into current directory
   if not 'providers' in status[lab_id]:                     # Initialize provider list
@@ -200,7 +197,7 @@ def lab_status_change(topology: Box, new_status: str) -> None:
   if DRY_RUN:                                              # Don't update status if we're in dry-run mode 
     return
 
-  status.change_status(
+  _status.change_status(
     topology,
     callback = lambda s,t: 
       lab_status_update(t,s,

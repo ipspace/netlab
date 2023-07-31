@@ -48,6 +48,9 @@ def run_command(
   if isinstance(cmd,str):
     cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
 
+  if not cmd:                                               # Skip empty commands
+    return True
+
   try:
     result = subprocess.run(cmd,capture_output=check_result,check=True,text=True)
     if log.debug_active('external'):

@@ -15,10 +15,10 @@ from pathlib import Path
 from . import create
 from . import external_commands, set_dry_run, is_dry_run
 from . import common_parse_args, get_message
-from . import lab_status_update, lab_status_change, get_lab_id
+from . import lab_status_update, lab_status_change
 from .. import providers
 from .. import read_topology
-from ..utils import status,log
+from ..utils import log,status as _status
 
 #
 # Extra arguments for 'netlab up' command
@@ -88,7 +88,7 @@ Lab status routines:
 """
 
 def lab_status_start(status: Box, topology: Box) -> None:
-  lab_id = get_lab_id(topology)                             # Get the lab ID (or default)
+  lab_id = _status.get_lab_id(topology)                     # Get the lab ID (or default)
   if lab_id in status:
     if status[lab_id].dir != os.getcwd():
       lab_status_update(topology,status,
@@ -103,12 +103,12 @@ def lab_status_start(status: Box, topology: Box) -> None:
       'providers': [] })
 
 def status_start_lab(topology: Box) -> None:
-  status.change_status(
+  _status.change_status(
     topology,
     callback = lambda s,t: lab_status_start(s,t))
 
 def status_start_provider(topology: Box, provider: str) -> None:
-  status.change_status(
+  _status.change_status(
     topology,
     callback = lambda s,t: 
       lab_status_update(t,s,
@@ -119,7 +119,7 @@ def status_start_provider(topology: Box, provider: str) -> None:
 check_existing_lab -- print an command-specific error message if there'a s lab already running in this directory
 """
 def check_existing_lab() -> None:
-  if not status.is_directory_locked():
+  if not _status.is_directory_locked():
     return
   
   print(f'''
@@ -139,8 +139,8 @@ netlab.lock file manually and retry.
 check_lab_instance -- print an error message if the lab instance is already running in a different directory
 """
 def check_lab_instance(topology: Box) -> None:
-  lab_id = get_lab_id(topology)                   # Get the current lab instance ID from lab topology
-  lab_states = status.read_status(topology)       # Read the state of existing lab instances
+  lab_id = _status.get_lab_id(topology)           # Get the current lab instance ID from lab topology
+  lab_states = _status.read_status(topology)      # Read the state of existing lab instances
 
   if not lab_id in lab_states:                    # If this lab instance is not running ==> OK
     return
@@ -284,7 +284,7 @@ def run(cli_args: typing.List[str]) -> None:
     log.fatal(f'race condition, lab instance already running in {topology.defaults.err_conflict}')
 
   if not is_dry_run():
-    status.lock_directory()
+    _status.lock_directory()
 
   step = 3
   external_commands.print_step(step,f"Starting the lab: {p_provider}")
