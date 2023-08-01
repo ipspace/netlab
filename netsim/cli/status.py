@@ -157,4 +157,3 @@ def run(cli_args: typing.List[str]) -> None:
     action_map[args.action](topology,args,lab_states)
   else:
     common.fatal(f'Unknown action {args.action}')
-    return

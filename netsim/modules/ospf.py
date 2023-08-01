@@ -58,7 +58,26 @@ class OSPF(_Module):
     features = devices.get_device_features(node,topology.defaults)
 
     _routing.router_id(node,'ospf',topology.pools)
+    
+    # If strict BFD is requested, check if the node supports it
+    if isinstance(node.get('ospf.bfd',None),Box) and node.get('ospf.bfd.strict',False):
+      if features.get('ospf.strict_bfd',False):
+        if 'bfd' in node.get('module',[]):
+          node.ospf.strict_bfd = True
+          node.ospf.strict_bfd_delay = node.get('ospf.bfd.strict_delay',0)
+        else:
+          common.error(
+            f'{node.name} uses strict BFD with OSPF without enabling the "bfd" module',
+            common.IncorrectValue,
+            'ospf')
+      else:
+        common.error(
+          f'{node.name} uses strict BFD with OSPF which is not supported by {node.device} device',
+          common.IncorrectValue,
+          'ospf')
+
     bfd.bfd_link_state(node,'ospf')
+
     #
     # Cleanup routing protocol from external/disabled interfaces
     for intf in node.get('interfaces',[]):

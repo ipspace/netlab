@@ -13,7 +13,7 @@ import sys
 from box import Box
 
 from . import external_commands, set_dry_run, is_dry_run
-from . import lab_status_change,get_lab_id,fs_cleanup,load_snapshot
+from . import lab_status_change,fs_cleanup,load_snapshot
 from .. import read_topology,common,providers
 from ..utils import status,strings
 from .up import provider_probes
@@ -109,7 +109,7 @@ def stop_provider_lab(
 lab_dir_mismatch -- check if the lab instance is running in the current directory
 '''
 def lab_dir_mismatch(topology: Box) -> bool:
-  lab_id = get_lab_id(topology)
+  lab_id = status.get_lab_id(topology)
   lab_status = status.read_status(topology)       # Find current running instance(s)
   if not lab_id in lab_status:                    # This could be a lab instance from pre-status days
     return False                                  # ... in which case we can shut it down
@@ -127,16 +127,6 @@ directory, but you might impact the running lab instance.
     common.fatal('aborting lab shutdown request')
 
   return True
-
-'''
-Remove the lab instance/directory from the status file
-'''
-def remove_lab_status(topology: Box) -> None:
-  lab_id = get_lab_id(topology)
-
-  status.change_status(
-    topology,
-    callback = lambda s,t: s.pop(lab_id,None))
 
 """
 Stop external tools
@@ -216,7 +206,7 @@ def run(cli_args: typing.List[str]) -> None:
     down_cleanup(topology,True)
 
   if not mismatch:
-    remove_lab_status(topology)
+    status.remove_lab_status(topology)
 
   if not is_dry_run():
     status.unlock_directory()

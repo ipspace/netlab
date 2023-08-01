@@ -58,14 +58,29 @@ topology:
 {% if links|default([]) %}
 {# Define bridges for links with less (stub) or more than 2 nodes #}
 {% set bridge_type = defaults.providers.clab.bridge_type|default('bridge') %}
-{% for b in links|rejectattr('node_count','eq',2)|map(attribute='bridge')|unique %}
+{% for b in links|rejectattr('node_count','eq',2)|selectattr('bridge','defined')|map(attribute='bridge')|unique %}
     {{ b }}:
       kind: {{ bridge_type }}
 {% endfor %}
 
   links:
 {% for l in links %}
-{% if (l.bridge is not defined) or l.node_count==2 %}
+{% if l.clab is defined and l.clab.uplink|default(False) %}
+{#
+    Uplink ==> create MACVTAP endpoint
+#}
+{%   for n in nodes.values() if not (n.unmanaged|default(False)) %}
+{%     for nl in n.interfaces|default([]) if nl.linkindex|default(0) == l.linkindex %}
+{%       set clab = nl.clab|default({}) %}
+  - endpoints:
+    - "{{ n.name }}:{{ clab.name|default(nl.ifname) }}"
+    - "macvlan:{{ l.clab.uplink }}"
+{%     endfor %}
+{%   endfor %}
+{% elif (l.bridge is not defined) or l.node_count==2 %}
+{#
+    point-to-point link between two containers
+#}
   - endpoints:
 {%   for n in nodes.values() if not (n.unmanaged|default(False)) %}
 {%     for nl in n.interfaces|default([]) if nl.linkindex|default(0) == l.linkindex %}
@@ -74,6 +89,9 @@ topology:
 {%     endfor %}
 {%   endfor %}
 {% else %}
+{#
+    link with more or less than two endpoints, or a multi-provider link
+#}
 {%   for n in nodes.values() if not (n.unmanaged|default(False)) %}
 {%     for nl in n.interfaces|default([]) if nl.linkindex|default(0) == l.linkindex %}
 {%       set clab = nl.clab|default({}) %}

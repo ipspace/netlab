@@ -1,54 +1,68 @@
 #
 # Common routines for create-topology script
 #
-import sys
 import typing
 import os
 import pathlib
 
 from jinja2 import Environment, PackageLoader, FileSystemLoader, StrictUndefined, make_logging_undefined
-from box import Box,BoxList
 
-from .log import debug_active
+from .log import debug_active,fatal
+from .files import get_moddir,create_file_from_text
 
 ansible_filter_map: dict = {}
 ANSIBLE_DEBUG = False
 
-#
-# Find path to the module directory (needed for various templates)
-#
-def get_moddir() -> pathlib.Path:
-  return pathlib.Path(__file__).resolve().parent.parent
+def add_ansible_filters(ENV: Environment) -> None:
+  for k,v in ansible_filter_map.items():
+    ENV.filters[k] = v
 
-#
-# Find a file in a search path
-#
-def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
-  for dirname in search_path:
-    candidate = os.path.join(dirname, path)
-    if os.path.exists(candidate):
-      return candidate
+"""
+Render a Jinja2 template
 
-  return None
+Template parameters:
+* j2_file -- the name of the Jinja2 file
+* j2_text -- the template text (potentially from a topology setting)
 
-def template(j2: str , data: typing.Dict, path: str, user_template_path: typing.Optional[str] = None) -> str:
+Path parameters:
+* template_path -- fully specified template path, overrides any other combo
+* path -- relative path to search in package directory or current/absolute directory
+* user_template_path -- subdirectory of user directories to search (current, home)
+"""
+
+def render_template(
+      data: typing.Dict,
+      j2_file: typing.Optional[str] = None,
+      j2_text: typing.Optional[str] = None,
+      path: typing.Optional[str] = None,
+      extra_path: typing.Optional[list] = None) -> str:
+
   global ansible_filter_map
   load_ansible_filters()
 
-  if path [0] in ('.','/'):                             # Absolute path or path relative to current directory?
-    template_path = [ path ]
-  else:                                                 # Path relative to netsim module, add module path to it
-    template_path = [ str(get_moddir() / path) ]
-  if not user_template_path is None:
-    template_path = [ './' + user_template_path, os.path.expanduser('~/.netlab/'+user_template_path) ] + template_path
+  template_path = []
+  if path is not None:
+    if path [0] in ('.','/'):                             # Absolute path or path relative to current directory?
+      template_path = [ path ]
+    else:                                                 # Path relative to netsim module, add module path to it
+      template_path = [ str(get_moddir() / path) ]
+
+  if extra_path is not None:
+    template_path = extra_path + template_path
   if debug_active('template'):
-    print(f"TEMPLATE PATH for {j2}: {template_path}")
+    print(f"TEMPLATE PATH for {j2_file or 'text'}: {template_path}")
   ENV = Environment(loader=FileSystemLoader(template_path), \
           trim_blocks=True,lstrip_blocks=True, \
           undefined=make_logging_undefined(base=StrictUndefined))
-  for k,v in ansible_filter_map.items():
-    ENV.filters[k] = v
-  template = ENV.get_template(j2)
+  add_ansible_filters(ENV)
+  if j2_file is not None:
+    template = ENV.get_template(j2_file)
+  elif j2_text is not None:
+    template = ENV.from_string(j2_text)
+  else:
+    fatal('Internal error: Call to template function with missing J2 file and J2 text, aborting')
+    return ""
+
   return template.render(**data)
 
 #
@@ -57,10 +71,11 @@ def template(j2: str , data: typing.Dict, path: str, user_template_path: typing.
 def write_template(in_folder: str, j2: str, data: typing.Dict, out_folder: str, filename: str) -> None:
   if debug_active('template'):
     print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
+  r_text = render_template(data=data,j2_file=j2,path=in_folder)       # Make sure we fail before creating any file(s)
+
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
-  with open(out_file,mode='w') as output:
-    output.write(template(j2,data,in_folder))
+  create_file_from_text(out_file,r_text)
 
 """
 get_ansible_filter_map: Get a map of ansible filters to be used in jinja2 templates

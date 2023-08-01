@@ -34,7 +34,6 @@ def inventory(name: str) -> typing.Optional[dict]:
       return json.loads(result.stdout)
     except:
       common.fatal('Cannot parse JSON data returned by ansible-inventory','inventory')
-    return None
 
   except:
     try:
@@ -44,13 +43,10 @@ def inventory(name: str) -> typing.Optional[dict]:
 
     common.fatal('Cannot get Ansible inventory data for %s with ansible-inventory. Is the host name correct?' % name,'inventory')
 
-  return None
-
 def playbook(name: str, args: typing.List[str]) -> None:
   pbname = find_playbook(name)
   if not pbname:
     common.fatal("Cannot find Ansible playbook %s, aborting" % name)
-    return
 
   if common.VERBOSE:
     print("Running Ansible playbook %s" % pbname)

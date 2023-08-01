@@ -27,24 +27,15 @@ def null_to_string(d: typing.Dict) -> None:
       d[k] = ""
 
 #
-# Safe get from a hierarchical dictionary (won't create new objects)
+# Recursively remove null values from a box
 #
 
-def get_from_box(b: Box, selector: typing.Union[str,typing.List[str]], partial: bool = False) -> typing.Optional[typing.Any]:
-  print('WARNING: get_from_box is deprecated, please fix your plugins')
-  if isinstance(selector,str):
-    selector = selector.split('.')
-
-  for idx,k in enumerate(selector):
-    if not k in b:
-      return b if partial and idx > 0 else None   # return partial result if request assuming we got at least one match before
-
-    if not isinstance(b[k],dict):                                       # we are at a leaf node
-      return b[k] if partial or idx == len(selector) - 1 else None      # ... return the value if we're at the end of
-                                                                        # ... the chain or accept partial lookup
-    b = b[k]
-
-  return b
+def remove_null_values(d: Box) -> None:
+  for k in list(d.keys()):                                  # Iterate over box keys
+    if d[k] is None:
+      d.pop(k)                                              # Remove null values
+    elif isinstance(d[k],Box):
+      remove_null_values(d[k])                              # ... and recurse into child boxes
 
 #
 # Get a global setting or corresponding system default. Use for attributes that are not propagated or early in the

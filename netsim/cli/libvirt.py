@@ -17,9 +17,10 @@ from box import Box
 
 from .. import common
 from .. import read_topology
-from ..utils import strings,status
+from ..utils import strings,status,templates,log
 from . import external_commands
 from ..providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
+from ..utils import files as _files
 
 def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   devs = [ k for k in settings.devices.keys() if settings.devices[k].libvirt.create or settings.devices[k].libvirt.create_template ]
@@ -100,7 +101,7 @@ def lp_preinstall_hook(args: argparse.Namespace,settings: Box) -> None:
   if not 'pre_install' in devdata.libvirt:
     return
   print("Running pre-install hooks")
-  pre_inst_script = common.get_moddir() / "install/libvirt" / devdata.libvirt.pre_install / "run.sh"
+  pre_inst_script = _files.get_moddir() / "install/libvirt" / devdata.libvirt.pre_install / "run.sh"
 
   if not os.access(pre_inst_script, os.X_OK):
     print(" - run file not executable - skipping.")
@@ -115,7 +116,7 @@ def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
     return
   print("Creating bootstrap ISO image")
 
-  isodir = common.get_moddir() / "install/libvirt" / devdata.libvirt.create_iso
+  isodir = _files.get_moddir() / "install/libvirt" / devdata.libvirt.create_iso
   shutil.rmtree('iso',ignore_errors=True)
   shutil.copytree(isodir,'iso')
   if os.path.exists('bootstrap.iso'):
@@ -141,7 +142,17 @@ window and follow the instructions.
     abort_on_failure(cmd)
   elif devdata.libvirt.create_template:
     data = get_template_data(devdata)
-    template = common.template(devdata.libvirt.create_template,data,"install/libvirt",)
+    tname = devdata.libvirt.create_template
+    try:
+      template = templates.render_template(
+                  j2_file=tname,
+                  data=data,
+                  path="install/libvirt")
+    except Exception as ex:
+      log.fatal(
+        text=f"Error rendering {tname}\n{strings.extra_data_printout(str(ex))}",
+        module='libvirt')
+
     pathlib.Path("template.xml").write_text(template)
     abort_on_failure("virsh define template.xml")
     abort_on_failure("virsh start --console vm_box")
@@ -149,9 +160,9 @@ window and follow the instructions.
   vm_cleanup('vm_box')
 
 def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
-  with open("metadata.json","w") as metadata:
-    metadata.write('{"provider":"libvirt","format":"qcow2","virtual_size":4}\n')
-    metadata.close()
+  _files.create_file_from_text(
+    fname="metadata.json",
+    txt='{"provider":"libvirt","format":"qcow2","virtual_size":4}\n')
   print("Downloading vagrant-libvirt create_box.sh script")
   abort_on_failure('curl -O https://raw.githubusercontent.com/vagrant-libvirt/vagrant-libvirt/master/tools/create_box.sh')
 
@@ -212,9 +223,13 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
 }
 """)
   print("Creating box metadata in box.json")
-  with open("box.json","w") as metadata:
-    metadata.write(json.substitute(boxname=boxname,description=description,version=version,device=args.device,path=os.getcwd()))
-    metadata.close()
+  _files.create_file_from_text(
+    fname="box.json",
+    txt=json.substitute(
+      boxname=boxname,
+      description=description,
+      version=version,
+      device=args.device,path=os.getcwd()))
   print("""
 
 Importing Vagrant box
@@ -270,7 +285,7 @@ best not to damage the original virtual disk).
     lp_create_box(args,settings)
 
 def config_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
-  moddir = common.get_moddir()
+  moddir = _files.get_moddir()
   devs = map(
     lambda x: pathlib.Path(x).stem,
     glob.glob(str(moddir / "install/libvirt/*txt")))
@@ -286,7 +301,7 @@ def config_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
 
 def libvirt_config(cli_args: typing.List[str], settings: Box) -> None:
   args = config_parse(cli_args,settings)
-  helpfile = common.get_moddir() / "install/libvirt" / (args.device+".txt")
+  helpfile = _files.get_moddir() / "install/libvirt" / (args.device+".txt")
   print(helpfile.read_text())
 
 def libvirt_usage() -> None:
@@ -296,7 +311,6 @@ def run(cli_args: typing.List[str]) -> None:
   topology = read_topology.load("package:cli/empty.yml","","package:topology-defaults.yml")
   if not topology:
     common.fatal("Cannot read the system defaults","libvirt")
-    return
 
   if not cli_args:
     libvirt_usage()

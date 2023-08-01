@@ -1,6 +1,15 @@
 Release notes
 =============
 
+**[Release 1.6.0](release-1.6.0) (2023-08-01)**
+
+* New commands: **[netlab report](netlab/report.md)**, **[netlab graph](netlab/graph.md)** and **[netlab inspect](netlab/inspect.md)**
+* New reports: node and link addressing, lab wiring, management IP addresses and credentials
+* Improved **[netlab show](netlab/show.md)** command can display [configuration modules](modules.md), [output modules](outputs/index.md), [virtualization providers](providers.md) and reports
+* [Connect containers to outside world](clab-network-external) through *macvlan* interfaces
+* Host-to-lab-device port forwarding with [*libvirt*](libvirt-port-forwarding) and *[containerlab](clab-port-forwarding)*
+* Nokia SR OS OSPF P2MP support
+
 **[Release 1.5.4](release-1.5.4) (2023-06-10)**
 
 * [Juniper vPTX/vEVO](platforms.md) support by Stefano Sasso (initial configuration, IPv4+IPv6, OSPFv2/v3, IS-IS, BGP, BFD, VLANs, VRFs, MPLS, SR-MPLS)
@@ -35,7 +44,7 @@ Release notes
 
 **[Release 1.5.0](release-1.5.0) (2023-01-28)**
 
-* [Multi-provider topologies](providers.md#combining-virtualization-providers)
+* [Multi-provider topologies](labs/multi-provider.md)
 * [Running multiple lab instances on Linux Servers](plugins/multilab.md)
 * Split large *libvirt* topology into [smaller **vagrant up** batches](labs/libvirt.md#starting-virtual-machines-in-batches)
 * [Use custom network/bridge name and IP subnet](labs/libvirt.md#libvirt-management-network) for `vagrant-libvirt` management network
@@ -341,12 +350,20 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.6.md
    release/1.5.md
    release/1.4.md
    release/1.3.md
    release/1.2.md
    release/1.1.md
    release/1.0.md
+```   
+
+```eval_rst
+.. toctree::
+   :caption: Older releases
+   :maxdepth: 1
+
    release/0.9.md
    release/0.8.md
    release/0.7.md

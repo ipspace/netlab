@@ -51,7 +51,6 @@ def install_parse(args: typing.List[str]) -> argparse.Namespace:
 def run(cli_args: typing.List[str]) -> None:
   if not cli_args:
     common.fatal("Specify an installation script to run or use -h to get help","install")
-    return
 
   args = install_parse(cli_args)
 

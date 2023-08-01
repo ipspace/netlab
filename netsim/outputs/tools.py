@@ -12,7 +12,8 @@ from .. import common
 from . import _TopologyOutput,check_writeable
 from ..tools import _ToolOutput
 from .common import adjust_inventory_host
-from ..utils import templates
+from ..utils import templates,strings,log
+from ..utils import files as _files
 
 def render_tool_config(tool: str, fmt: str, topology: Box) -> str:
     output_module = _ToolOutput.load(tool)
@@ -41,25 +42,30 @@ def create_tool_config(tool: str, topology: Box) -> None:
       config_src  = f'rendering "{config.render}" format'
     elif 'template' in config:
       template = config.template
-      config_text = templates.template(
-                      j2=config.template,
-                      data=topo_data,
-                      path=f'tools/{tool}',
-                      user_template_path=f'tools/{tool}')
+      try:
+        config_text = templates.render_template(
+                        j2_file=config.template,
+                        data=topo_data,
+                        path=f'tools/{tool}',
+                        extra_path=_files.get_search_path(f'tools/{tool}'))
+      except Exception as ex:
+        log.fatal(
+          text=f"Error rendering {config.template}\n{strings.extra_data_printout(str(ex))}",
+          module='libvirt')
       config_src  = f'from {config.template} template'
     else:
       common.error(f'Unknown tool configuration type\n... tool {tool}\n... config {config}')
       continue
 
     try:
-      with open(fname,"w") as output:
-        output.write(config_text)
-        output.close()
+      _files.create_file_from_text(fname,config_text)
       print(f'Created {fname} {config_src}')
     except Exception as e:
       common.error(f'Error writing tool configuration file {fname}\n... {e}')
 
 class ToolConfigs(_TopologyOutput):
+
+  DESCRIPTION :str = 'Create configuration files for external tools'
 
   def write(self, topology: Box) -> None:
     if not 'tools' in topology:

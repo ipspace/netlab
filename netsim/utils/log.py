@@ -39,7 +39,7 @@ class FatalError(Warning):
 class ErrorAbort(Exception):
   pass
 
-def fatal(text: str, module: str = 'netlab') -> None:
+def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
   global err_count
   err_count = err_count + 1
   if RAISE_ON_ERROR:

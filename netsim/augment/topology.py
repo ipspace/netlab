@@ -178,6 +178,9 @@ def cleanup_topology(topology: Box) -> Box:
 
   # Remove PFX generators from addressing section
   #
+  if not 'addressing' in topo_copy:
+    return topo_copy
+
   for k,v in topo_copy.addressing.items():
     for p in list(v.keys()):
       if "_pfx" in p or "_eui" in p:
