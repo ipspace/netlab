@@ -1,11 +1,11 @@
 {# description: Lab wiring (used with external provider) #}
-*** EXTERNAL TOPOLOGY SUMMARY ***
+LAB TOPOLOGY SUMMARY
 
 LAB NAME: {{ name }}
 
-{% for l in links if l.type=='p2p' %}
+{% for l in links if l.type=='p2p' or l.node_count == 2 %}
 {%   if loop.first %}
-PHYSICAL P2P LINKS:
+POINT-TO-POINT LINKS:
 
 |-----------------|---------------|-------------|--------------------|------------------|
 | Link Name       | Origin Device | Origin Port | Destination Device | Destination Port |
@@ -19,9 +19,9 @@ PHYSICAL P2P LINKS:
 
 {% set row_count = [] %}
 {% for node_name, n in nodes.items() %}
-{%   for l in n.interfaces if l.type=='lan' %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length > 1 %}
 {%     if not row_count %}
-PHYSICAL LAN LINKS:
+LAN LINKS:
 
 |---------------|-------------|-----------------|----------------------|
 | Origin Device | Origin Port | Link Name (NET) | Description          |
@@ -33,4 +33,22 @@ PHYSICAL LAN LINKS:
 {% endfor %}
 {% if row_count %}
 |---------------|-------------|-----------------|----------------------|
+{% endif %}
+
+{% set row_count = [] %}
+{% for node_name, n in nodes.items() %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length == 0 %}
+{%     if not row_count %}
+STUB LINKS:
+
+|---------------|-------------|----------------------|
+| Origin Device | Origin Port | Description          |
+|---------------|-------------|----------------------|
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+| {{ "%-13s" | format(node_name) }} | {{ "%-11s" | format(l.ifname) }} | {{ "%-20s" | format(l.name|default('')) }} |
+{%   endfor %}
+{% endfor %}
+{% if row_count %}
+|---------------|-------------|----------------------|
 {% endif %}
