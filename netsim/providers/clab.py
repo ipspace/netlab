@@ -6,7 +6,7 @@ import typing
 import shutil
 from box import Box
 
-from . import _Provider
+from . import _Provider,get_forwarded_ports
 from .. import common
 from ..data import filemaps
 from ..cli import is_dry_run,external_commands
@@ -70,6 +70,16 @@ def destroy_ovs_bridge( brname: str ) -> bool:
 
 GENERATED_CONFIG_PATH = "clab_files"
 
+def add_forwarded_ports(node: Box, fplist: list) -> None:
+  if not fplist:
+    return
+  
+  node.clab.ports = node.clab.ports or []                       # Make sure the list of forwarded ports is a list
+  for port_map in fplist:                                       # Iterate over forwarded port mappings
+    port_map_string = f'{port_map[0]}:{port_map[1]}'            # Build the containerlab-compatible map entry
+    if not port_map_string in node.clab.ports:                  # ... and add it to the list of forwarded ports
+      node.clab.ports.append(port_map_string)                   # ... if the user didn't do it manually
+
 '''
 normalize_clab_filemaps: convert clab templates and file binds into host:target lists
 '''
@@ -86,6 +96,10 @@ class Containerlab(_Provider):
     normalize_clab_filemaps(node)
 
     self.create_extra_files_mappings(node,topology)
+
+    node_fp = get_forwarded_ports(node,topology)
+    if node_fp:
+      add_forwarded_ports(node,node_fp)
 
   def post_configuration_create(self, topology: Box) -> None:
     for n in topology.nodes.values():

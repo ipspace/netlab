@@ -112,6 +112,35 @@ You can change the IPv4/IPv6 address of a device management interface with the *
 
 It's much better to use the **addressing.mgmt** pool **ipv4**/**ipv6**/**start** parameters to adjust the address range used for management IP addresses, and rely on *netlab* to assign management IP addresses to containers based on [device node ID](node-augment).
 
+(clab-port-forwarding)=
+### Port Forwarding
+
+*netlab* supports container port forwarding -- mapping of TCP ports on the container management IP address to ports on the host. You can use port forwarding to access the lab devices via the host external IP address without exposing the management network to the outside world.
+
+```{warning}
+Some containers do not run a SSH server and cannot be accessed via SSH even if you set up port forwarding for the SSH port.
+```
+
+Port forwarding is disabled by default and can be enabled by configuring the **defaults.providers.clab.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf), dictionary values are start values of host ports. *netlab* assigns a unique host port to every forwarded container port based on the start value and container node ID.
+
+For example, when given the following topology...
+
+```
+defaults.providers.clab.forwarded:
+  ssh: 2000
+
+defaults.device: eos
+nodes:
+  r1:
+  r2:
+    id: 42
+```
+
+... *netlab* maps:
+    
+* SSH port on management interface of R1 to host port 2001 (R1 gets default node ID 1)
+* SSH port on management interface of R2 to host port 2042 (R2 has static ID 42)
+
 (clab-vrnetlab)=
 ### Using vrnetlab Containers
 

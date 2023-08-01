@@ -23,16 +23,18 @@ Most box-building recipes for *libvirt* and *Virtualbox* Vagrant plugins recomme
 
 *libvirt* and *containerlab* [providers](../providers.md) create configuration files that connect all lab devices to a management network. Together with the [default route configured on network devices](external-connectivity-outgoing), it's always possible to reach the management IP address of every device in your lab, but you have to fix the routing in the external network -- the management network IPv4 prefix has to be reachable from the external network.
 
-Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access to your lab network.
+Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access to your lab network or port forwarding to map VM/container management TCP ports to the host ports. Port forwarding is always used with [Virtualbox](../labs/virtualbox.md), and configurable with [libvirt](libvirt-port-forwarding) and [containerlab](clab-port-forwarding) providers. Use **netlab report mgmt** to display the host-to-lab-device TCP port mapping.
 
 ### Finding the Management IP Addresses
 
-You could use Ansible inventory to find the management IP addresses[^VBS]:
+**netlab report mgmt** command displays the management IP addresses[^VBS] of the lab devices, protocol used to configure the devices (SSH, NETCONF or docker), and the username/password used by _netlab_ to configure the device.
+
+Alternatively, you could use Ansible inventory to find the same information:
 
 * Run `ansible-inventory --host _device-name_` to display the Ansible variables for the specified lab device.
 * Look for **ansible_host** variable or **ipv4** value in **mgmt** dictionary.
 
-You could also [create an inventory of all lab devices in a single YAML](../outputs/devices.md) file with `netlab create -o devices`. The resulting file (default: `netlab-devices.yml`) contains a dictionary of all lab devices. Use the dictionary value for a lab device like you would use the results of `ansible-inventory` command.
+Finally, you could display node information in YAML format with the **[netlab inspect --node _nodename_](../netlab/inspect.md)** command, or analyze the  **nodes** dictionary in the `netlab.snapshot.yml` file with `yq` or a custom script.
 
 [^VBS]: And SSH ports if you're using *Virtualbox*.
 

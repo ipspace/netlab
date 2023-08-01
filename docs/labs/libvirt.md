@@ -191,7 +191,7 @@ If you want your virtual machines to have fixed management IP addresses (for exa
 
 *netlab* supports *vagrant-libvirt* port forwarding -- mapping of TCP ports on VM management IP address to ports on the host. You can use port forwarding to access the lab devices via the host external IP address without exposing the management network to the outside world.
 
-Port forwarding is disabled by default and can be enabled by configuring the **defaults.providers.libvirt.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf, gnmi), dictionary values are start values of host ports. *netlab* assigns a unique host port to every VM forwarded port based on the start value and VM node ID.
+Port forwarding is disabled by default and can be enabled by configuring the **defaults.providers.libvirt.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf), dictionary values are start values of host ports. *netlab* assigns a unique host port to every VM forwarded port based on the start value and VM node ID.
 
 For example, when given the following topology...
 
