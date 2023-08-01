@@ -1,13 +1,13 @@
 Release notes
 =============
 
-**[Release 1.6.0](release-1.6.0) (2023-07-XX)**
+**[Release 1.6.0](release-1.6.0) (2023-08-01)**
 
 * New commands: **[netlab report](netlab/report.md)**, **[netlab graph](netlab/graph.md)** and **[netlab inspect](netlab/inspect.md)**
-* Improved **[netlab show](netlab/show.md)** command
-* New reports: node and link addressing
+* New reports: node and link addressing, lab wiring, management IP addresses and credentials
+* Improved **[netlab show](netlab/show.md)** command can display [configuration modules](modules.md), [output modules](outputs/index.md), [virtualization providers](providers.md) and reports
 * [Connect containers to outside world](clab-network-external) through *macvlan* interfaces
-* [Host-to-VM port forwarding](libvirt-port-forwarding) in *libvirt* environment
+* Host-to-lab-device port forwarding with [*libvirt*](libvirt-port-forwarding) and *[containerlab](clab-port-forwarding)*
 * Nokia SR OS OSPF P2MP support
 
 **[Release 1.5.4](release-1.5.4) (2023-06-10)**
