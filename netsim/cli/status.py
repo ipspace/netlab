@@ -10,10 +10,7 @@ import subprocess
 
 from box import Box
 
-from .. import common
-from .. import read_topology
-from ..utils import status
-from ..utils import strings
+from ..utils import status, strings, log, read as _read
 
 from . import external_commands
 from . import down
@@ -139,7 +136,7 @@ command only when you're absolutely sure that the lab status shown by
     os.remove(lab_status_file)
     print('Lab status file removed')
   except Exception as ex:
-    common.fatal(f'Cannot remove lab status file: {ex}')
+    log.fatal(f'Cannot remove lab status file: {ex}')
 
 action_map = {
   'list': display_active_labs,
@@ -149,11 +146,11 @@ action_map = {
 }
 
 def run(cli_args: typing.List[str]) -> None:
-  topology = read_topology.load("package:cli/empty.yml","","package:topology-defaults.yml")
+  topology = _read.load("package:cli/empty.yml","","package:topology-defaults.yml")
   lab_states = status.read_status(topology)
   args = status_parse(cli_args)
-  common.set_logging_flags(args)
+  log.set_logging_flags(args)
   if args.action in action_map:
     action_map[args.action](topology,args,lab_states)
   else:
-    common.fatal(f'Unknown action {args.action}')
+    log.fatal(f'Unknown action {args.action}')

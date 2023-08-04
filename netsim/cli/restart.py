@@ -8,7 +8,6 @@ import argparse
 
 from box import Box
 
-from .. import common
 from . import down, up
 from . import common_parse_args
 

@@ -14,9 +14,9 @@ import typing
 from box import Box
 
 from . import usage
-from .. import augment, common, read_topology
+from .. import augment
 from .. import __version__
-from ..utils import status as _status
+from ..utils import status as _status, log, read as _read
 
 DRY_RUN: bool = False
 
@@ -79,7 +79,7 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
       try:
         shutil.rmtree(fname)
       except Exception as ex:
-        common.fatal(f"Cannot clean up directory {fname}: {ex}")
+        log.fatal(f"Cannot clean up directory {fname}: {ex}")
     elif os.path.exists(fname):
       if DRY_RUN:
         print(f"DRY RUN: removing {fname}")
@@ -89,19 +89,19 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
       try:
         os.remove(fname)
       except Exception as ex:
-        common.fatal(f"Cannot remove {fname}: {ex}")
+        log.fatal(f"Cannot remove {fname}: {ex}")
 
 # Common topology loader (used by create and down)
 
 def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
-  common.set_logging_flags(args)
-  topology = read_topology.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
+  log.set_logging_flags(args)
+  topology = _read.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
 
   if args.settings or args.device or args.provider or args.plugin:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)
-    read_topology.add_cli_args(topology,args)
+    _read.add_cli_args(topology,args)
 
-  common.exit_on_error()
+  log.exit_on_error()
   return topology
 
 # Snapshot-or-topology loader (used by down)
@@ -112,7 +112,7 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
           "Looks like no lab was started from this directory")
     sys.exit(1)
 
-  topology = read_topology.read_yaml(filename=args.snapshot)
+  topology = _read.read_yaml(filename=args.snapshot)
   if topology is None:
     print(f"Cannot read the topology snapshot file {args.snapshot}")
     sys.exit(1)
@@ -120,7 +120,7 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
   return topology
 
 def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typing.Optional[Box]:
-  common.set_logging_flags(args)
+  log.set_logging_flags(args)
   if args.device or args.provider or args.settings:     # If we have -d, -p or -s flag
     if not args.topology:                               # ... then the user wants to use the topology file
       args.topology = 'topology.yml'                    # ... so let's set the default value if needed
@@ -128,11 +128,11 @@ def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typ
   if args.topology:
     topology = load_topology(args)
     augment.main.transform(topology)
-    common.exit_on_error()
+    log.exit_on_error()
     return topology
   else:
     args.snapshot = args.snapshot or 'netlab.snapshot.yml'
-    return read_topology.read_yaml(filename=args.snapshot)
+    return _read.read_yaml(filename=args.snapshot)
 
 # get_message: get action-specific message from topology file
 #
@@ -146,7 +146,7 @@ def get_message(topology: Box, action: str, default_message: bool = False) -> ty
     return topology.message if default_message else None    # If the action is OK with getting the default message return it
 
   if not isinstance(topology.message,Box):                  # Otherwise we should be dealing with a dict
-    common.fatal('topology message should be a string or a dict')
+    log.fatal('topology message should be a string or a dict')
 
   return topology.message.get(action,None)                  # Return action-specific message if it exists
 
@@ -249,15 +249,15 @@ def lab_commands() -> None:
   try:
     mod = importlib.import_module("."+cmd,__name__)
   except Exception as ex:
-    common.fatal(f"Error importing {__name__}.{cmd}: {ex}")
+    log.fatal(f"Error importing {__name__}.{cmd}: {ex}")
 
   if mod:
     if hasattr(mod,'run'):
       mod.run(sys.argv[arg_start:])   # type: ignore
       return
     else:
-      common.fatal(f"Module {__name__}.{cmd} does not have a valid entry point")
+      log.fatal(f"Module {__name__}.{cmd} does not have a valid entry point")
   else:
-    common.fatal(f'Could not import module {__name__}.{cmd}')
+    log.fatal(f'Could not import module {__name__}.{cmd}')
 
   sys.exit(1)

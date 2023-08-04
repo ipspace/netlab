@@ -10,10 +10,9 @@ import pathlib
 from box import Box
 
 # Related modules
-from . import common
-from . import data
-from .data import types
-from .utils import files as _files
+from .. import data
+from ..data import types
+from ..utils import log, files as _files
 
 """
 include_yaml: Include YAML snippets at any position within a YAML file
@@ -51,13 +50,13 @@ def include_yaml(data: Box, source_file: str) -> None:
     traversable = _files.get_traversable_path(file_path)                           # Get a traversable object
     inc_files = _files.get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
     if not inc_files:
-      common.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
+      log.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
       return
 
     for file_name in inc_files:
       yaml_data = read_yaml(filename=file_name)
       if yaml_data is None:
-        common.fatal(f'Cannot read {file_name} that should be included into {source_file}')
+        log.fatal(f'Cannot read {file_name} that should be included into {source_file}')
         return
       data[os.path.splitext(os.path.basename(file_name))[0]] = yaml_data
 
@@ -75,10 +74,10 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
       yaml_data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False)
       return yaml_data
     except:                                                                    # pragma: no cover -- can't get here unless there's a package error
-      common.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
+      log.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
       return None
   elif filename is None:
-    common.fatal("read_yaml: have no idea what to do") # pragma: no cover -- sanity check
+    log.fatal("read_yaml: have no idea what to do") # pragma: no cover -- sanity check
     return None
 
   if filename in read_cache:
@@ -94,7 +93,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
       return pkg_data
   else:
     if not os.path.isfile(filename):
-      if common.LOGGING or common.VERBOSE:
+      if log.LOGGING or log.VERBOSE:
         print("YAML file %s does not exist" % filename) # pragma: no cover -- too hard to test to bother
       return None
     try:
@@ -102,9 +101,9 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
       include_yaml(yaml_data,filename)
       read_cache[filename] = Box(yaml_data)
     except:
-      common.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
+      log.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
 
-  if common.LOGGING or common.VERBOSE:
+  if log.LOGGING or log.VERBOSE:
     print("Read YAML data from %s" % (filename or "string"))
 
   return yaml_data
@@ -118,15 +117,15 @@ def include_defaults(topo: Box, fname: str) -> None:
 def load(fname: str , local_defaults: str, sys_defaults: str) -> Box:
   topology = read_yaml(fname)
   if topology is None:
-    common.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
+    log.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
   assert topology is not None
   topology.input = [ fname ]
   if not 'includes' in topology:
     topology.includes = [ 'defaults', 'global_defaults' ]
   if not isinstance(topology.includes,list):
-    common.error( \
+    log.error( \
       "Topology 'includes' element (if present) should be a list", \
-      category=common.IncorrectValue,module="topology")
+      category=log.IncorrectValue,module="topology")
     topology.includes = []
 
   if 'defaults' in topology.includes:
@@ -166,32 +165,32 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
     topo.provider = args.provider
 
   if args.plugin:
-    if common.debug_active('plugin'):
+    if log.debug_active('plugin'):
       print(f'Adding plugins from CLI arguments: {args.plugin}')
     types.must_be_list(parent=topo,key='plugin',path='',create_empty=True)
-    common.exit_on_error()
+    log.exit_on_error()
     topo.plugin.extend(args.plugin)
 
   if args.settings:
     for s in args.settings:
       if not "=" in s:
-        common.error("Invalid CLI setting %s, should be in format key=value" % s)
+        log.error("Invalid CLI setting %s, should be in format key=value" % s)
       (k,v) = s.split("=")
       v = transform_cli_value(v)
       try:
         topo[k] = v
       except TypeError as ex:
         if 'nodes.' in k:
-          common.error(
+          log.error(
             f'Cannot set {k}:\n... nodes element must be a dictionary if you want to set values via CLI arguments',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'cli')
         elif 'links.' in k:
-          common.error(
+          log.error(
             f'Cannot set link value {k} through CLI arguments',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'cli')
         else:
-          common.fatal(f"Cannot set topology value {k}\n... {ex}")
+          log.fatal(f"Cannot set topology value {k}\n... {ex}")
       except Exception as ex:
-        common.fatal(f"Cannot set topology value {k}\n... {ex}")
+        log.fatal(f"Cannot set topology value {k}\n... {ex}")

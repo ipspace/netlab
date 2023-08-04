@@ -12,7 +12,7 @@ import re
 from box import Box
 
 from ..utils import status,log
-from ..callback import Callback
+from ..utils.callback import Callback
 
 '''
 check_writeable -- check if the current directory is writeable (does not have netlab.lock file)

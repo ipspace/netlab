@@ -28,16 +28,16 @@ def parse():
                   help='Expected topology file name')
   args = parser.parse_args()
 
-  common.VERBOSE = False
-  common.LOGGING = False
+  log.VERBOSE = False
+  log.LOGGING = False
   return args
 
 def main():
   args = parse()
   topology = read_topology.load(args.topology,None,args.defaults)
-  common.exit_on_error()
+  log.exit_on_error()
   augment.main.transform(topology)
-  common.exit_on_error()
+  log.exit_on_error()
 
   result = utils.transformation_results_yaml(topology)
   expected = pathlib.Path('exp-'+args.topology).read_text()

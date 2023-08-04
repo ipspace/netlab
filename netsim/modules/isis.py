@@ -5,7 +5,7 @@ from box import Box
 
 from . import _Module,_routing
 from . import bfd
-from .. import common
+from ..utils import log
 from ..augment import devices
 from ..data import validate
 
@@ -18,9 +18,9 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
         (af in l and isinstance(l[af],bool) and l[af])
 
     if is_unnumbered and not features.isis.unnumbered[af]:
-      common.error(
+      log.error(
         f'Device {node.device} used on node {node.name} cannot run IS-IS over {"unnumbered" if af == "ipv4" else "LLA"} {af} interfaces',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'interfaces')
       return False
 
@@ -30,10 +30,10 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
     if unnum_v4 and \
         len(l.neighbors) > 1 and \
         not features.isis.unnumbered.network:
-      common.error(
+      log.error(
         f'Device {node.device} used on node {node.name} cannot run IS-IS over\n'+
         f'.. unnumbered multi-access interfaces (link {l.name})',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'interfaces')
       OK = False
 
@@ -58,7 +58,7 @@ class ISIS(_Module):
         _routing.passive(l,'isis')
         err = _routing.network_type(l,'isis',['point-to-point'])
         if err:
-          common.error(f'{err}\n... node {node.name} link {l}')
+          log.error(f'{err}\n... node {node.name} link {l}')
       validate.must_be_string(
         l,'isis.type',f'nodes.{node.name}.interfaces.{l.ifname}',module='isis',valid_values=isis_type)
 

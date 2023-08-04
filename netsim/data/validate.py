@@ -5,8 +5,7 @@
 import typing
 import builtins as _bi
 from box import Box
-from .. import common
-from . import get_empty_box
+from ..utils import log
 
 #
 # Import functions from data.types to cope with legacy calls to must_be_something
@@ -14,6 +13,7 @@ from .types import must_be_list,must_be_dict,must_be_string,must_be_int,must_be_
 
 # We also need to import the whole data.types module to be able to do validation function lookup
 from . import types as _tv
+from . import get_empty_box
 
 """
 get_valid_attributes
@@ -28,6 +28,7 @@ def get_valid_attributes(
         ) -> typing.Union[str,Box]:
 
   valid = get_empty_box()
+
   for idx,atlist in enumerate(attr_list):                   # Build a list of all valid (global) attributes for the object
     if not atlist in attributes:
       continue
@@ -35,14 +36,14 @@ def get_valid_attributes(
 
     if isinstance(add_attr,str):                            # Got a specific data type?
       if valid:                                             # Have we already collected something?
-        common.fatal(
+        log.fatal(
           f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
           f'... attributes: {attributes}')
         return ''                                           # ... bad karma, inconsistent validation requirements
       return add_attr
 
     if not isinstance(add_attr,Box):
-      common.fatal(
+      log.fatal(
         f'Internal error: Expected dictionary for {atlist} attributes\n' +
         f'... attributes: {attributes}')
       return ''                                             # ... dang, someone messed up. Abort, abort, abort...
@@ -127,9 +128,9 @@ def validate_dictionary(
   OK = True
   for k in data.keys():                                             # Iterate over the elements
     if not k in data_type:                                          # ... and report elements with invalid name
-      common.error(
+      log.error(
         f'Incorrect {data_name} attribute {k} in {parent_path}',
-        common.IncorrectAttr,
+        log.IncorrectAttr,
         module)
       OK = False
     else:                                                           # For valid elements, validate them
@@ -174,7 +175,7 @@ def validate_value(
               context=context,
               module=module)
       if abort:
-        raise common.IncorrectType()
+        raise log.IncorrectType()
     return value
 
   return validation_function(
@@ -240,9 +241,9 @@ def validate_item(
     }
 
   if not 'type' in data_type:                                         # The required data type is a true dict, but the data is not
-    common.error(
+    log.error(
       f'{data_name} attribute {parent_path}.{key} should be a dictionary, found {type(data).__name__}',
-      common.IncorrectType,
+      log.IncorrectType,
       module)
     return False
 
@@ -255,14 +256,14 @@ def validate_item(
 
   if not validation_function:                                         # No validation function, have to compare type names
     if not hasattr(_bi,dt_name):                                      # Is the requested data type a well-known type/class?
-      common.fatal(f'Invalid data type {dt_name} found when trying to validate {data_name} attribute {parent_path}.{key}')
+      log.fatal(f'Invalid data type {dt_name} found when trying to validate {data_name} attribute {parent_path}.{key}')
       return False                                                    # pragma: no cover
 
     dt_ref = getattr(_bi,dt_name)                                     # Get pointer to desired data type
     if not isinstance(data,dt_ref):                                   # ... and check if the current object is an instance of it
-      common.error(
+      log.error(
         f'{data_name} attribute {parent_path}.{key} should be {dt_name}, found {type(data).__name__}',
-        common.IncorrectType,
+        log.IncorrectType,
         module)
       return False
 
@@ -331,7 +332,7 @@ def validate_attributes(
     ignored = ['_']
 
   if not isinstance(attributes,Box):
-    common.fatal('Internal error in validate_attributes: attributes is not a Box')
+    log.fatal('Internal error in validate_attributes: attributes is not a Box')
     return None
 
   if not 'extra' in topology.defaults.attributes:
@@ -343,7 +344,7 @@ def validate_attributes(
   if not list_of_modules:
     list_of_modules = [ m for m in topology.defaults.keys() if 'supported_on' in topology.defaults[m] ]
 
-  if common.debug_active('validate'):
+  if log.debug_active('validate'):
     print(f'validate {data_path} against {attr_list} attributes + {modules} modules from {module_source}')
 
   #
@@ -380,9 +381,9 @@ def validate_attributes(
   if data is None:
     return {}                                           # Can't validate attributes of None, but maybe the caller can fix this
   if not isinstance(data,Box):
-    common.error(
+    log.error(
       f'Cannot validate attributes in {data_path} -- that should have been a dictionary, found {type(data).__name__}',
-      common.IncorrectType,
+      log.IncorrectType,
       'validate')
     return
 
@@ -422,22 +423,22 @@ def validate_attributes(
       continue
 
     if k in list_of_modules and not modules is None:
-      common.error(
+      log.error(
         f"{data_path} uses an attribute from module {k} which is not enabled in {module_source}",
-        common.IncorrectAttr,
+        log.IncorrectAttr,
         module)
       continue
 
     if k in extra_module_attr and not modules is None:
-      common.error(
+      log.error(
         f"Attribute '{k}' used in {data_path} is defined by module {extra_module_attr[k]} which is not enabled",
-        common.IncorrectAttr,
+        log.IncorrectAttr,
         module)
       continue
 
-    common.error(
+    log.error(
       f"Invalid {data_name} attribute '{k}' found in {data_path}",
-      common.IncorrectAttr,
+      log.IncorrectAttr,
       module)
 
 """
@@ -449,6 +450,7 @@ output: dict of object-specific attributes
 
 def get_object_attributes(object_type_list: typing.List[str], topology: Box) -> Box:
   attrs = get_empty_box()
+
   for o_type in object_type_list:
     if not o_type in topology.defaults:
       continue

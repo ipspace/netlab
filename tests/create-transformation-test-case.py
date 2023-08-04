@@ -37,9 +37,9 @@ def main():
   args = parse()
   print(f"Reading {args.topology}")
   topology = netsim.read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")
-  netsim.common.exit_on_error()
+  netsim.log.exit_on_error()
   netsim.augment.main.transform(topology)
-  netsim.common.exit_on_error()
+  netsim.log.exit_on_error()
 
   dfname = args.xpand or (args.topology.replace("/input/","/expected/"))
   create_expected_results_file(topology,dfname)

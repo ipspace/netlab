@@ -8,7 +8,8 @@ import sys
 import argparse
 
 from . import common_parse_args, topology_parse_args
-from .. import read_topology,common,augment
+from .. import augment
+from ..utils import log, strings, read as _read
 from ..augment.main import transform_setup
 
 #
@@ -32,14 +33,14 @@ def read_topology_parse(args: typing.List[str]) -> argparse.Namespace:
 
 def run(cli_args: typing.List[str]) -> None:
   args = read_topology_parse(cli_args)
-  common.set_logging_flags(args)
-  topology = read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")
+  log.set_logging_flags(args)
+  topology = _read.load(args.topology,args.defaults,"package:topology-defaults.yml")
 
   if 'settings' in args:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)
-    read_topology.add_cli_args(topology,args)
+    _read.add_cli_args(topology,args)
 
-  common.exit_on_error()
+  log.exit_on_error()
 
   transform_setup(topology)
-  args.output.write(common.get_yaml_string(topology))
+  args.output.write(strings.get_yaml_string(topology))

@@ -9,9 +9,8 @@ import os
 from box import Box
 
 # Related modules
-from .. import common
-from ..callback import Callback
-from ..augment import devices
+from ..utils.callback import Callback
+from ..utils import log
 
 class _Quirks(Callback):
 
@@ -25,12 +24,12 @@ class _Quirks(Callback):
     if obj:
       return obj(data)
     else:
-      common.fatal(f'Cannot load {device} quirks, aborting')
+      log.fatal(f'Cannot load {device} quirks, aborting')
       return None
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    common.fatal(f'{node.device} quirks module does not implement device_quirks method')
+    log.fatal(f'{node.device} quirks module does not implement device_quirks method')
 
 """
 Callback transformation routines
@@ -46,7 +45,7 @@ mod_load: typing.Dict = {}
 def device_quirk(node: Box, topology: Box, method: str = 'device_quirks') -> None:
   global mod_load
 
-  if common.debug_active('quirks'):
+  if log.debug_active('quirks'):
     print(f'Processing {method} device quirks')
   device = node.device
 

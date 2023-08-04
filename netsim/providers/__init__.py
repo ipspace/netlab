@@ -14,8 +14,7 @@ import pathlib
 # Related modules
 from box import Box
 
-from .. import common
-from ..callback import Callback
+from ..utils.callback import Callback
 from ..augment import devices,links
 from ..data import get_box,get_empty_box,filemaps
 from ..utils import files as _files
@@ -103,9 +102,9 @@ class _Provider(Callback):
       if file in bind_dict:
         continue
       if not self.find_extra_template(node,file):
-        common.error(
+        log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
-          common.IncorrectValue,
+          log.IncorrectValue,
           self.provider)
         continue
 
@@ -151,7 +150,7 @@ class _Provider(Callback):
 
         print( f"Created {out_folder}/{file_name} from {template_name.replace(sys_folder,'')}, mapped to {node.name}:{mapping}" )
       else:
-        common.error(f"Cannot find template for {file_name} on node {node.name}",common.MissingValue,'provider')
+        log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)

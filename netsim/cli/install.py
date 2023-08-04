@@ -10,7 +10,7 @@ import glob
 import subprocess
 from pathlib import Path
 
-from .. import common
+from ..utils import log
 
 #
 # CLI parser for 'netlab install' command
@@ -50,7 +50,7 @@ def install_parse(args: typing.List[str]) -> argparse.Namespace:
 
 def run(cli_args: typing.List[str]) -> None:
   if not cli_args:
-    common.fatal("Specify an installation script to run or use -h to get help","install")
+    log.fatal("Specify an installation script to run or use -h to get help","install")
 
   args = install_parse(cli_args)
 

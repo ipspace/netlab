@@ -17,8 +17,7 @@ from . import external_commands, set_dry_run, is_dry_run
 from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change
 from .. import providers
-from .. import read_topology
-from ..utils import log,status as _status
+from ..utils import log,status as _status, read as _read
 
 #
 # Extra arguments for 'netlab up' command
@@ -68,7 +67,7 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
     args = up_args_parser.parse_args(cli_args)                # ... and reparse
     log.set_logging_flags(args)                               # ... use these arguments to set logging flags and read the snapshot
 
-    topology = read_topology.read_yaml(filename=args.snapshot)
+    topology = _read.read_yaml(filename=args.snapshot)
     if topology is None:
       log.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
 

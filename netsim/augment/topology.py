@@ -10,7 +10,7 @@ Topology-level transformation:
 import os
 from box import Box
 
-from .. import common
+from ..utils import log
 from .. import data
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_list,must_be_string,must_be_dict
@@ -27,9 +27,9 @@ def extend_attribute_list(settings: Box, attribute_path: str = 'topology.default
       if k in always_valid:                            # ... some extensions are always valid (needed for modules)
         settings.attributes[k] = []                    # ... in which case we have to start with an empty list
       else:                                            # ... for everything else, throw an error
-        common.error(
+        log.error(
           f'Invalid extra_attribute {k} -- not present in configurable {attribute_path} attributes',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'topology')
 
     must_be_list(                                      # Make sure the extension is a list so it's safe to iterate over
@@ -37,7 +37,7 @@ def extend_attribute_list(settings: Box, attribute_path: str = 'topology.default
       key = k,
       path = f'{attribute_path}.extra_attributes.{k}')
 
-    common.exit_on_error()
+    log.exit_on_error()
 
     for v in settings.extra_attributes[k]:             # Have to iterate over values in the custom attribute list
       if not v in settings.attributes[k]:              # ... to prevent duplicate values in attribute lists
@@ -62,14 +62,14 @@ def check_required_elements(topology: Box) -> None:
   invalid_topo = False
   for rq in ['nodes']:
     if not rq in topology:
-      common.error(f"Lab topology is missing mandatory {rq} element",category=common.MissingValue,module="topology")
+      log.error(f"Lab topology is missing mandatory {rq} element",category=log.MissingValue,module="topology")
       invalid_topo = True
     elif not topology.get(rq):
-      common.error(f"Required topology element {rq} is empty",category=common.MissingValue,module="topology")
+      log.error(f"Required topology element {rq} is empty",category=log.MissingValue,module="topology")
       invalid_topo = True
 
   if invalid_topo:
-    common.fatal("Fatal topology errors, aborting")
+    log.fatal("Fatal topology errors, aborting")
 
   if not 'name' in topology:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
@@ -122,9 +122,9 @@ def check_tools(topology: Box) -> None:
     if not isinstance(topology.tools[tool],dict):   # Skip if we have an error
       continue
     if not tool in topology.defaults.tools:         # Check that the tool is valid
-      common.error(
+      log.error(
         f'Invalid tool {tool}\n... valid tools are {",".join(topology.defaults.tools.keys())}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'topology')
       continue
     if not 'runtime' in topology.tools[tool]:       # Check that the tool has a runtime defined
@@ -135,9 +135,9 @@ def check_tools(topology: Box) -> None:
     tool_data = topology.defaults.tools[tool] + topology.tools[tool] 
     if not tool_data[tool_data.runtime] or not 'up' in tool_data[tool_data.runtime]:            
       valid_runtimes = [k for k in tool_data.keys() if 'up' in k ]
-      common.error(
+      log.error(
         f'Invalid runtime {tool_data.runtime} for tool {tool}\n... valid runtimes are {",".join(valid_runtimes)}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'topology')
 
 #
@@ -153,15 +153,15 @@ def adjust_global_parameters(topology: Box) -> None:
     topology.defaults.provider = topology.provider
 
   if not topology.provider:
-    common.fatal('Virtualization provider is not defined in either "provider" or "defaults.provider" elements')
+    log.fatal('Virtualization provider is not defined in either "provider" or "defaults.provider" elements')
 
   if not must_be_string(topology,'provider','',module='topology'):
-    common.exit_on_error()
+    log.exit_on_error()
 
   providers = topology.defaults.providers
   if not topology.provider in providers:
     plist = ', '.join(providers.keys())
-    common.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (topology.provider,plist))
+    log.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (topology.provider,plist))
 
   # Adjust defaults with provider-specific defaults
   #
