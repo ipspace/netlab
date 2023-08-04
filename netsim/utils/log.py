@@ -142,7 +142,7 @@ def set_flag(
   VERBOSE = verbose if verbose is not None else VERBOSE
   LOGGING = logging if logging is not None else LOGGING
   WARNING = warning if warning is not None else WARNING
-  RAISE_ON_ERROR = raise_error  if raise_error is not None else RAISE_ON_ERROR
+  RAISE_ON_ERROR = raise_error if raise_error is not None else RAISE_ON_ERROR
 
   return {
     'debug': DEBUG,

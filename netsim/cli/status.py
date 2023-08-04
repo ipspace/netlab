@@ -146,7 +146,7 @@ action_map = {
 }
 
 def run(cli_args: typing.List[str]) -> None:
-  topology = _read.load("package:cli/empty.yml","","package:topology-defaults.yml")
+  topology = _read.system_defaults()
   lab_states = status.read_status(topology)
   args = status_parse(cli_args)
   log.set_logging_flags(args)

@@ -306,7 +306,7 @@ def libvirt_usage() -> None:
   print("Usage: netlab libvirt package|config --help")
 
 def run(cli_args: typing.List[str]) -> None:
-  topology = _read.load("package:cli/empty.yml","","package:topology-defaults.yml")
+  topology = _read.system_defaults()
   if not topology:
     log.fatal("Cannot read the system defaults","libvirt")
 

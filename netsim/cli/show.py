@@ -84,8 +84,8 @@ def run(cli_args: typing.List[str]) -> None:
   args = parse_show_args(cli_args)
 
   empty_file = "package:cli/empty.yml"
-  loc_defaults = empty_file if 'system' in args and args.system else ""
-  topology = _read.load(empty_file,loc_defaults,"package:topology-defaults.yml")
+  user_defaults: typing.Optional[list] = [] if 'system' in args and args.system else None
+  topology = _read.load(empty_file,user_defaults=user_defaults)
 
   if topology is None:
     log.fatal("Cannot read system settings")

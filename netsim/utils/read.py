@@ -11,8 +11,11 @@ from box import Box
 
 # Related modules
 from .. import data
-from ..data import types
+from ..data import types as _types
 from ..utils import log, files as _files
+
+USER_DEFAULTS: typing.Final[list] = ['./topology-defaults.yml','~/.netlab.yml','~/topology-defaults.yml']
+SYSTEM_DEFAULTS: typing.Final[list] = ['/etc/netlab/defaults.yml','package:topology-defaults.yml']
 
 """
 include_yaml: Include YAML snippets at any position within a YAML file
@@ -80,6 +83,9 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
     log.fatal("read_yaml: have no idea what to do") # pragma: no cover -- sanity check
     return None
 
+  if log.debug_active('defaults'):
+    print(f"Reading {filename}")
+
   if filename in read_cache:
     return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
 
@@ -114,35 +120,115 @@ def include_defaults(topo: Box, fname: str) -> None:
     topo.input.append(fname)
     topo.defaults = defaults + topo.defaults
 
-def load(fname: str , local_defaults: str, sys_defaults: str) -> Box:
+#
+# Build the list of defaults
+#
+# The defaults are taken from defaults.sources.list (if exists) or constructed from 
+#
+# * Extra topology-specific sources (defaults.sources.extra)
+# * User defaults (defaults.sources.user or API argument or USER_DEFAULTS)
+# * System defaults (defaults.sources.system or API argument or SYSTEM_DEFAULTS)
+#
+# The user and system defaults should almost never be used, the viable exceptions are:
+#
+# * Test harness -- error cases
+# * netlab show --system command
+#
+
+def build_defaults_list(
+      topology: Box,
+      user_defaults: typing.Optional[list] = None, 
+      system_defaults: typing.Optional[list] = None) -> list:
+
+  global USER_DEFAULTS,SYSTEM_DEFAULTS
+  defaults_list = []
+  if _types.must_be_list(
+        parent=topology,
+        key='defaults.sources.list',
+        path='',
+        true_value=USER_DEFAULTS + SYSTEM_DEFAULTS):
+    return topology.defaults.sources.list
+
+  if _types.must_be_list(
+        parent=topology,
+        key='defaults.sources.extra',
+        path=''):
+    defaults_list.extend(topology.defaults.sources.extra)
+
+  if user_defaults is None:
+    user_defaults = USER_DEFAULTS
+
+  if _types.must_be_list(
+        parent=topology,
+        key='defaults.sources.user',
+        path='',
+        true_value=user_defaults):
+    defaults_list.extend(topology.defaults.sources.user)
+  else:
+    defaults_list.extend(user_defaults)
+
+  if system_defaults is None:
+    system_defaults = SYSTEM_DEFAULTS
+
+  if _types.must_be_list(
+        parent=topology,
+        key='defaults.sources.system',
+        path='',
+        true_value=system_defaults):
+    defaults_list.extend(topology.defaults.sources.system)
+  else:
+    defaults_list.extend(system_defaults)
+
+  return defaults_list
+
+#
+# Load the topology and defaults
+#
+# * Read the topology from fname
+# * Build the list of defaults
+# * Merge all defaults with the topology
+#
+def load(
+      fname: str,
+      user_defaults: typing.Optional[list] = None, 
+      system_defaults: typing.Optional[list] = None,
+      relative_topo_name: typing.Optional[bool] = False) -> Box:
+
+  if not relative_topo_name and fname.find('package:') != 0:
+    fname = str(_files.absolute_path(fname))
+
   topology = read_yaml(fname)
   if topology is None:
     log.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
-  assert topology is not None
+
   topology.input = [ fname ]
-  if not 'includes' in topology:
-    topology.includes = [ 'defaults', 'global_defaults' ]
-  if not isinstance(topology.includes,list):
-    log.error( \
-      "Topology 'includes' element (if present) should be a list", \
-      category=log.IncorrectValue,module="topology")
-    topology.includes = []
-
-  if 'defaults' in topology.includes:
-    if local_defaults:
-      include_defaults(topology,local_defaults)
+  if 'includes' in topology:                                # includes topology element SHOULD NOT BE USED
+    if log.RAISE_ON_ERROR:                                  # ... and if we're under test harness
+      raise log.IncorrectValue                              # ... raise a hard error
     else:
-      dir_defaults = os.path.dirname(os.path.abspath(fname))+"/topology-defaults.yml"
-      for defname in (dir_defaults,'~/.netlab.yml','~/topology-defaults.yml'):
-        user_defaults  = os.path.expanduser(defname)
-        if os.path.isfile(user_defaults):
-          include_defaults(topology,user_defaults)
+      log.fatal('The "includes" topology element shall not be used')
 
-  if sys_defaults and 'global_defaults' in topology.includes:
-    include_defaults(topology,sys_defaults)
+  # Now build the list of default sources
+  defaults_list = build_defaults_list(topology,user_defaults,system_defaults)
+
+  if log.debug_active('defaults'):
+    print(f"Defaults from {defaults_list}")
+
+  for dfname in defaults_list:
+    if dfname.find('package:') != 0:                        # Is this a package file?
+      dfname = str(_files.absolute_path(dfname,fname))      # ... nope, find absolute path based on topology file name
+      if not os.path.isfile(dfname):                        # And if the file doesn't exist
+        continue                                            # ... skip it
+
+    include_defaults(topology,dfname)                       # Merge the defaults
 
   return topology
 
+#
+# Read just the system defaults
+#
+def system_defaults() -> Box:
+  return load("package:cli/empty.yml",user_defaults=[])
 #
 # Parse values specified in CLI settings. Return string, bool or int
 #
@@ -167,7 +253,7 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
   if args.plugin:
     if log.debug_active('plugin'):
       print(f'Adding plugins from CLI arguments: {args.plugin}')
-    types.must_be_list(parent=topo,key='plugin',path='',create_empty=True)
+    _types.must_be_list(parent=topo,key='plugin',path='',create_empty=True)
     log.exit_on_error()
     topo.plugin.extend(args.plugin)
 
