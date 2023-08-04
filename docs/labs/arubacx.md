@@ -13,7 +13,7 @@ Aruba AOS-CX 10 is supported by the **netlab libvirt package** command. To build
 
 ## Aruba AOS-CX download notes
 
-The *Aruba AOS-CX 10 Switch Simulator* image can be download from the *Aruba Support Portal* (after user registration), searching for: `Aruba_AOS-CX_Switch_Simulator`. In example, release 10.11.0001 can be downloaded from [here](https://asp.arubanetworks.com/downloads/software/RmlsZTpiMTBhNjJiYS03MjY2LTExZWQtYTU3OS03YjYxYWI3NmUyMjE%3D).
+The *Aruba AOS-CX 10 Switch Simulator* image can be download from the *Aruba Support Portal* (after user registration), searching for: `Aruba_AOS-CX_Switch_Simulator`. In example, release 10.12 can be downloaded from [here](https://asp.arubanetworks.com/downloads/software/RmlsZTpkOGRiYjc2Ni0wMTdkLTExZWUtYTY3Yi00Zjg4YjUyOWExMzQ%3D).
 
 ## Initial Device Configuration
 
