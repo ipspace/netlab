@@ -20,6 +20,15 @@ from ..utils import status as _status, log, read as _read
 
 DRY_RUN: bool = False
 
+def parser_add_debug(parser: argparse.ArgumentParser) -> None:
+  parser.add_argument('--debug', dest='debug', action='store',nargs='*',
+                  choices=[
+                    'all','addr','cli','links','libvirt','modules','plugin','template',
+                    'vlan','vrf','quirks','validate','addressing','groups','quirks','status',
+                    'external','defaults'
+                  ],
+                  help=argparse.SUPPRESS)
+
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
   parser.add_argument('--log', dest='logging', action='store_true',
@@ -31,19 +40,13 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser.add_argument('--warning', dest='warning', action='store_true',help=argparse.SUPPRESS)
   parser.add_argument('--raise_on_error', dest='raise_on_error', action='store_true',help=argparse.SUPPRESS)
   if debugging:
-    parser.add_argument('--debug', dest='debug', action='store',nargs='*',
-                    choices=[
-                      'all','addr','cli','links','libvirt','modules','plugin','template',
-                      'vlan','vrf','quirks','validate','addressing','groups','quirks','status',
-                      'external'
-                    ],
-                    help=argparse.SUPPRESS)
+    parser_add_debug(parser)
 
   return parser
 
 def topology_parse_args() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common topology arguments',add_help=False)
-  parser.add_argument('--defaults', dest='defaults', action='store',
+  parser.add_argument('--defaults', dest='defaults', action='store',nargs='*',
                   help='Local topology defaults file')
   parser.add_argument('-d','--device', dest='device', action='store', help='Default device type')
   parser.add_argument('-p','--provider', dest='provider', action='store',help='Override virtualization provider')
@@ -95,7 +98,7 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
 
 def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   log.set_logging_flags(args)
-  topology = _read.load(args.topology.name,args.defaults,"package:topology-defaults.yml")
+  topology = _read.load(args.topology.name,args.defaults)
 
   if args.settings or args.device or args.provider or args.plugin:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)

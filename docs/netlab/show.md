@@ -79,6 +79,7 @@ $ netlab show devices -d eos --format yaml
 eos: Arista vEOS VM or cEOS container
 ```
 
+(netlab-show-images)=
 ## Display Device Images
 
 The **netlab show images** command displays built-in box/container names for supported network devices. If you want to use different Vagrant box names or container names, change them in [user defaults](../defaults.md) or in [lab topology](node-attributes).
@@ -122,6 +123,7 @@ cumulus:
   virtualbox: CumulusCommunity/cumulus-vx:4.3.0
 ```
 
+(netlab-show-modules)=
 ## Display Configuration Modules
 
 The **netlab show modules** command displays available configuration modules and devices supported by each configuration module. When displaying a single module, the command lists optional features supported by that module and the devices implementing them.

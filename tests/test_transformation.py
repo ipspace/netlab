@@ -18,8 +18,8 @@ from netsim.utils import log,strings,read as _read
 from netsim import augment
 from netsim.outputs import _TopologyOutput,ansible
 
-def run_test(fname,local_defaults="topology-defaults.yml",sys_defaults="package:topology-defaults.yml"):
-  topology = _read.load(fname,local_defaults,sys_defaults)
+def run_test(fname):
+  topology = _read.load(fname,relative_topo_name=True)
   log.exit_on_error()
   augment.main.transform(topology)
   log.exit_on_error()
@@ -78,21 +78,6 @@ def test_error_cases():
     log.err_count = 0
     with pytest.raises(log.ErrorAbort):
       topo = run_test(test_case)
-
-"""
-With the expanded default settings, it became impractical to run test cases
-without the defaults. These test cases have been migrated into errors
-
-@pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_minimal_cases():
-  print("Starting minimal (no-default) test cases")
-  log.set_flag(raise_error = True)
-  for test_case in list(glob.glob('minimal_errors/*yml')):
-    print("Test case: %s" % test_case)
-    log.err_count = 0
-    with pytest.raises(log.ErrorAbort):
-      run_test(test_case,None,None)
-"""
 
 if __name__ == "__main__":
   test_transformation_cases("/tmp")

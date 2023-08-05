@@ -7,7 +7,7 @@ import typing
 import sys
 import argparse
 
-from . import common_parse_args, topology_parse_args
+from . import common_parse_args, topology_parse_args, parser_add_debug
 from .. import augment
 from ..utils import log, strings, read as _read
 from ..augment.main import transform_setup
@@ -29,12 +29,14 @@ def read_topology_parse(args: typing.List[str]) -> argparse.Namespace:
     default=sys.stdout,
     action='store',
     help='Output file')
+  
+  parser_add_debug(parser)
   return parser.parse_args(args)
 
 def run(cli_args: typing.List[str]) -> None:
   args = read_topology_parse(cli_args)
   log.set_logging_flags(args)
-  topology = _read.load(args.topology,args.defaults,"package:topology-defaults.yml")
+  topology = _read.load(args.topology,args.defaults)
 
   if 'settings' in args:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)
