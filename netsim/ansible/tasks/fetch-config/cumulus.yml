@@ -4,10 +4,18 @@
 - command: vtysh -c wr
   become: true
 - fetch:
-    src: "{{ item }}"
+    src: "{{ file }}"
     dest: "{{ config_dir }}/{{ inventory_hostname }}/"
     flat: yes
   become: True
+  loop_control:
+    loop_var: file
   loop:
   - /etc/frr/frr.conf
-  - /etc/network/interfaces
+- command: ifquery -a
+  register: ifquery
+- copy:
+    content: |
+      {{ ifquery.stdout }}
+    dest: "{{ config_dir }}/{{ inventory_hostname }}/interfaces"
+  delegate_to: localhost
