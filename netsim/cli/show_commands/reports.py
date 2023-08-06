@@ -44,14 +44,15 @@ def get_description(fname: str) -> typing.Optional[str]:
 
 type_heading :dict = {
   'html': 'HTML reports',
-  'text': 'text reports'
+  'text': 'text reports',
+  'md'  : 'Markdown reports',
 }
 
 def print_result_table(result: Box) -> None:
   global type_heading
   heading = ['report','description']
 
-  for r_type in ['text','html']:                            # Iterate over known report types
+  for r_type in type_heading.keys():                        # Iterate over known report types
     if not r_type in result:                                # Skip types that have no relevant report
       continue
   
@@ -74,7 +75,8 @@ def show(settings: Box, args: argparse.Namespace) -> None:
     if r_desc is None:                                      # ... skip the file if it has no usable description
       continue
 
-    r_type = 'html' if 'html.j2' in r_name else 'text'      # Get report type
+    # Get report type
+    r_type = 'html' if '.html.j2' in r_name else 'md' if '.md.j2' in r_name else 'text'      
     r_id = os.path.basename(r_name).split('.')[0]           # report ID: file name up to the first dot
     r_name = os.path.basename(r_name).replace('.j2','')     # report name: file name without .j2
 
