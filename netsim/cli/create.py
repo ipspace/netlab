@@ -10,7 +10,8 @@ import textwrap
 from box import Box
 
 from . import common_parse_args, topology_parse_args, load_topology
-from .. import read_topology,augment,common
+from .. import augment
+from ..utils import log, read as _read
 from ..outputs import _TopologyOutput
 
 #
@@ -70,17 +71,17 @@ def run(cli_args: typing.List[str],
     args.output = ['provider','yaml=netlab.snapshot.yml','tools']
     args.output.append('devices' if args.devices else 'ansible:dirs')
   elif args.devices:
-    common.error('--output and --devices flags are mutually exclusive',common.IncorrectValue,'create')
+    log.error('--output and --devices flags are mutually exclusive',log.IncorrectValue,'create')
 
   topology = load_topology(args)
   augment.main.transform(topology)
-  common.exit_on_error()
+  log.exit_on_error()
 
   for output_format in args.output:
     output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format.split(':')[0]])
     if output_module:
       output_module.write(topology)
     else:
-      common.error('Unknown output format %s' % output_format,common.IncorrectValue,'create')
+      log.error('Unknown output format %s' % output_format,log.IncorrectValue,'create')
 
   return topology

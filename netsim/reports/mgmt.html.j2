@@ -1,0 +1,69 @@
+{# description: Device management interfaces and addresses #}
+<h1>Management Access to Lab Devices</h1>
+{% for n in nodes.values() %}
+{%- set nc = n.ansible_connection|default('') -%}
+{%- set nc = 'ssh' if nc in ['network_cli','paramiko'] else nc -%}
+{%- set ma = n.ansible_host|default('') if nc != 'docker' else '' -%}
+{%- set mp = n.ansible_port|default('') -%} 
+{%- set un = n.ansible_user|default('') if nc != 'docker' else '' -%}
+{%- set pw = n.ansible_ssh_pass|default('') if nc != 'docker' else '' -%}
+{%   if loop.first %}
+<h2>Management Interfaces and Addresses</h2>
+<table>
+  <tr>
+    <th>Node</th>
+    <th>Connection</th>
+    <th>IPv4 Address</th>
+    <th>Port</th>
+    <th>Interface name</th>
+    <th>Username</th>
+    <th>Password</th>
+  </tr>
+{%   endif %}
+  <tr>
+    <td>{{ n.name }}</td>
+    <td>{{ nc }}</td>
+    <td>{{ ma }}</td>
+    <td>{{ mp }}</td>
+    <td>{{ n.mgmt.ifname|default('') }}</td>
+    <td>{{ un }}</td>
+    <td>{{ pw }}</td>
+  </tr>
+{%   if loop.last %}
+</table>
+{%   endif %}
+{% endfor %}
+
+{% set row_count = [] %}
+{% for n in nodes.values() %}
+{%   set p = n.provider|default(provider) %}
+{%   if 'forwarded' in defaults.providers[p] %}
+{%     set fmap = defaults.providers[p].forwarded %}
+{%     if not row_count %}
+<h2>Forwarded Ports</h2>
+<p>
+Some management-plane protocols of the following lab nodes can also be reached
+through the TCP ports on the host IP address(es). Please note that this is just
+a port mapping table, most devices do not run all supported management-plane
+protocols.
+</p>
+<table>
+  <tr>
+    <th>Node</th>
+{%       for fp in defaults.ports %}
+    <th>{{ fp }}</th>
+{%       endfor %}
+  </tr>
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+  <tr>
+    <td>{{ n.name }}</td>
+{%     for fp in defaults.ports %}
+{%-  set mport = fmap[fp] + n.id if fp in fmap else '' -%}
+    <td>{{ mport }}</td>
+{%     endfor %}
+{%   endif %}
+{% endfor %}
+{% if row_count %}
+</table>
+{% endif %}

@@ -13,9 +13,8 @@ import shutil
 from box import Box
 from pathlib import Path
 
-from .. import common
 from .. import utils
-from .. import read_topology
+from ..utils import read as _read
 from . import external_commands
 
 #
@@ -57,14 +56,14 @@ def copy_topology(args: argparse.Namespace) -> None:
   try:
     shutil.copy(src_topo,"topology.yml")
   except:
-    common.fatal("Cannot copy test topology file %s into %s" % (src_topo,args.workdir))
+    utils.log.fatal("Cannot copy test topology file %s into %s" % (src_topo,args.workdir))
   if args.verbose:
     print("... done, moving on\n")
 
 def create_configs() -> None:
   external_commands.print_step(2,"creating configuration files")
   if not external_commands.run_command(["netlab","create"],True):
-    common.fatal("netlab create failed, aborting...","netlab test")
+    utils.log.fatal("netlab create failed, aborting...","netlab test")
 
 def cleanup_working_directory(args: argparse.Namespace) -> None:
   if args.verbose:
@@ -85,16 +84,16 @@ def cleanup_working_directory(args: argparse.Namespace) -> None:
     print("... done, test completed\n")
 
 def run(cli_args: typing.List[str]) -> None:
-  settings = read_topology.read_yaml('package:topology-defaults.yml')
+  settings = _read.read_yaml('package:topology-defaults.yml')
   if not cli_args:
-    common.fatal("Specify the virtualization environment to test or use -h to get help","test")
+    utils.log.fatal("Specify the virtualization environment to test or use -h to get help","test")
 
   if not settings:
-    common.fatal("Cannot read the global defaults","test")
+    utils.log.fatal("Cannot read the global defaults","test")
 
   args = test_parse(cli_args,settings)
   if os.path.exists(args.workdir):
-    common.fatal("Directory %s already exists, aborting" % args.workdir,"test")
+    utils.log.fatal("Directory %s already exists, aborting" % args.workdir,"test")
 
   if args.verbose:
     utils.log.set_logging_flags(args)
@@ -103,9 +102,9 @@ def run(cli_args: typing.List[str]) -> None:
   copy_topology(args)
   create_configs()
   if not external_commands.run_command('netlab up'):
-    common.fatal('netlab up failed, aborting','test')
+    utils.log.fatal('netlab up failed, aborting','test')
   elif not external_commands.run_command('netlab down'):
-    common.fatal('netlab down failed','test')
+    utils.log.fatal('netlab down failed','test')
 #  external_commands.start_lab(settings,args.provider,3)
 #  external_commands.deploy_configs(4)
 #  external_commands.stop_lab(settings,args.provider,5)

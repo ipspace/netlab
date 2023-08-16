@@ -153,4 +153,4 @@ def load_ansible_filters() -> None:
     add_ansible_filter_directory(filters)
     return
 
-  add_filters(get_ansible_filter_map('ansible_collections.ansible.netcommon.plugins.filter.ipaddr'))
+  add_filters(get_ansible_filter_map('ansible_collections.ansible.netlog.plugins.filter.ipaddr'))

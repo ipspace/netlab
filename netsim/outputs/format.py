@@ -3,7 +3,8 @@
 # output module. We kept the old module (pointing to the new one) in case
 # someone already used it in their workflow.
 #
+import typing
 from .report import REPORT
 
 class FORMAT(REPORT):
-  pass
+  DESCRIPTION :typing.Any = None

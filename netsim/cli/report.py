@@ -7,7 +7,7 @@ import typing
 import argparse
 
 from . import load_snapshot
-from ..outputs import _TopologyOutput
+from ..outputs import _TopologyOutput, common as outputs_common
 from ..utils import strings,log
 
 #
@@ -41,9 +41,16 @@ def run(cli_args: typing.List[str]) -> None:
   report_module = _TopologyOutput.load(
                      f'report:{args.report}={args.output or "-"}',
                      topology.defaults.outputs.report)
-  if report_module:
-    report_module.write(topology)
-    if args.output:
-      print(f'Created {args.report} report in {args.output}')
-  else:
+  if not report_module:
     log.fatal('Cannot load the reporting output module, aborting')
+
+  for n in list(topology.nodes.keys()):                     # Add group variables to topology nodes
+    topology.nodes[n] = outputs_common.adjust_inventory_host(
+                          node=topology.nodes[n],
+                          ignore=[ 'no-fields' ],
+                          defaults=topology.defaults,
+                          group_vars=True)
+
+  report_module.write(topology)
+  if args.output:
+    print(f'Created {args.report} report in {args.output}')

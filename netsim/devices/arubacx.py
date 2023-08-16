@@ -8,8 +8,8 @@
 from box import Box
 
 from . import _Quirks
-from .. import common
 from ..augment import devices
+from ..utils import log
 
 class ARUBACX(_Quirks):
 
@@ -20,9 +20,9 @@ class ARUBACX(_Quirks):
         ospfidx = 2
         for vrf in node.get('vrfs', {}).keys():
             if ospfidx > 63:
-                common.error(
+                log.error(
                     f'Too many VRFs with OSPF in ({node.name}).\n',
-                    common.IncorrectType,
+                    log.IncorrectType,
                     'quirks')
                 return
             node.vrfs[vrf]['ospfidx'] = ospfidx

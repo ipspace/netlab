@@ -14,8 +14,7 @@ import pathlib
 # Related modules
 from box import Box
 
-from .. import common
-from ..callback import Callback
+from ..utils.callback import Callback
 from ..augment import devices,links
 from ..data import get_box,get_empty_box,filemaps
 from ..utils import files as _files
@@ -103,9 +102,9 @@ class _Provider(Callback):
       if file in bind_dict:
         continue
       if not self.find_extra_template(node,file):
-        common.error(
+        log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
-          common.IncorrectValue,
+          log.IncorrectValue,
           self.provider)
         continue
 
@@ -151,7 +150,7 @@ class _Provider(Callback):
 
         print( f"Created {out_folder}/{file_name} from {template_name.replace(sys_folder,'')}, mapped to {node.name}:{mapping}" )
       else:
-        common.error(f"Cannot find template for {file_name} on node {node.name}",common.MissingValue,'provider')
+        log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
@@ -203,7 +202,12 @@ class _Provider(Callback):
         if not 'provider' in node:
           continue
 
-        l[topology.provider].provider[node.provider] = True
+        p_name = topology.provider                          # Get primary and secondary provider
+        s_name = node.provider                              # ... to make the rest of the code more readable
+
+        l[p_name].provider[s_name] = True                   # Collect secondary link provider(s)
+        if 'uplink' in l[p_name]:                           # ... and copy primary uplink to secondary uplink
+          l[s_name].uplink = l[p_name].uplink
 
   """
   Generic provider pre-output transform: remove loopback links
@@ -266,3 +270,22 @@ def select_topology(topology: Box, provider: str) -> Box:
 
   topology.links = [ l for l in topology.links if provider in l.provider ]      # Retain only the links used by current provider
   return topology
+
+"""
+get_forwarded_ports -- build a list of forwarded ports for the specified node
+"""
+def get_forwarded_ports(node: Box, topology: Box) -> list:
+  p = devices.get_provider(node,topology.defaults)
+  fmap = topology.defaults.providers[p].get('forwarded',{})     # Provider-specific forwarded ports
+  if not fmap:                                                  # No forwarded ports?
+    return []                                                   # ... return an empty list
+
+  pmap = topology.defaults.ports                                # Mappings of port names into TCP numbers
+  node_fp = []                                                  # Forwarded ports for the current node
+
+  for fp,fstart in fmap.items():                                # Iterate over forwarded ports
+    if not fp in pmap:                                          # Is the port we're trying to forward known to netlab?
+      continue                                                  # ... nope, bad luck, move on
+    node_fp.append([ fstart + node.id, pmap[fp]])               # Append [host,device] port mapping
+
+  return node_fp

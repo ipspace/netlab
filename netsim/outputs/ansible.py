@@ -7,7 +7,6 @@ import yaml
 import os
 from box import Box
 
-from .. import common
 from . import _TopologyOutput,check_writeable
 from ..augment import nodes
 from ..augment import devices
@@ -131,7 +130,7 @@ def dump(data: Box) -> None:
   print("Ansible inventory data")
   print("===============================")
   inventory = create(data)
-  print(common.get_yaml_string(inventory))
+  print(strings.get_yaml_string(inventory))
 
 def write_yaml(data: Box, fname: str, header: str) -> None:
   dirname = os.path.dirname(fname)
@@ -162,7 +161,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
     gvars = inventory[g].pop('vars',None)
     if gvars:
       write_yaml(gvars,'group_vars/%s/topology.yml' % g,header)
-      if not common.QUIET:
+      if not log.QUIET:
         print("Created group_vars for %s" % g)
 
     if 'hosts' in inventory[g]:
@@ -179,7 +178,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
             vars_host[item] = hosts[h][item]
 
         write_yaml(vars_host,'host_vars/%s/topology.yml' % h,header)
-        if not common.QUIET:
+        if not log.QUIET:
           print("Created host_vars for %s" % h)
         hosts[h] = min_host
 
@@ -204,10 +203,12 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
       module='ansible')
 
   _files.create_file_from_text(config_file,cfg_text)
-  if not common.QUIET:
+  if not log.QUIET:
     print("Created Ansible configuration file: %s" % config_file)
 
 class AnsibleInventory(_TopologyOutput):
+
+  DESCRIPTION :str = 'Ansible inventory and configuration file'
 
   def write(self, topology: Box) -> None:
     check_writeable('Ansible inventory')
@@ -220,7 +221,7 @@ class AnsibleInventory(_TopologyOutput):
       if len(self.filenames) > 1:
         configfile = self.filenames[1]
       if len(self.filenames) > 2:
-        common.error('Extra output filename(s) ignored: %s' % str(self.filenames[2:]),common.IncorrectValue,'ansible')
+        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[2:]),log.IncorrectValue,'ansible')
 
     if self.format:
       output_format = self.format[0]

@@ -5,7 +5,7 @@ import typing
 from box import Box
 
 from . import _Module,get_effective_module_attribute
-from .. import common
+from ..utils import log, strings
 from .. import data
 from ..augment.nodes import reserve_id
 from ..augment import devices
@@ -39,9 +39,9 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
     proto_list.append(gw_proto)
     if not gw_proto in features.gateway.protocol:
       OK = False
-      common.error(
+      log.error(
         f'Node {node.name} ({node.device}) does not support gateway protocol {gw_proto}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'gateway')
 
   return OK
@@ -90,18 +90,18 @@ class FHRP(_Module):
   def module_init(self, topology: Box) -> None:
     gw = data.get_global_settings(topology,'gateway')
     if not gw or gw is None:
-      common.error(
+      log.error(
         f'Global/default gateway parameters are missing. We need at least a gateway ID',
-        common.IncorrectType,
+        log.IncorrectType,
         'gateway')
       return
 
     check_gw_protocol(gw,'topology.gateway',topology)
 
     if not data.is_true_int(gw.id):
-      common.error(
+      log.error(
         f'Global/default gateway.id parameter is missing or not integer',
-        common.IncorrectType,
+        log.IncorrectType,
         'gateway')
       return
 
@@ -127,26 +127,26 @@ class FHRP(_Module):
 
     for k in ('id','protocol'):
       if not k in link.gateway or not link.gateway[k]:
-        common.error(
+        log.error(
           f'Gateway attribute {k} is missing in {link._linkname}\n' + \
-          common.extra_data_printout(common.format_structured_dict(link)),
-          common.MissingValue,
+          strings.extra_data_printout(strings.format_structured_dict(link)),
+          log.MissingValue,
           'gateway')
         return
 
     if not data.is_true_int(link.gateway.id):
-      common.error(
+      log.error(
         f'Gateway.id parameter in {link._linkname} must be an integer\n' + \
-          common.extra_data_printout(common.format_structured_dict(link)),
-        common.IncorrectType,
+          strings.extra_data_printout(strings.format_structured_dict(link)),
+        log.IncorrectType,
         'gateway')
       return
 
     if link.gateway.id == -1:
-        common.error(
+        log.error(
           f'Cannot use -1 as the gateway ID in {link._linkname} -- that would be the broadcast address\n' + \
-          common.extra_data_printout(common.format_structured_dict(link)),
-          common.IncorrectValue,
+          strings.extra_data_printout(strings.format_structured_dict(link)),
+          log.IncorrectValue,
           'gateway')
 
   def node_post_transform(self, node: Box, topology: Box) -> None:

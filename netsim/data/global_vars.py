@@ -30,7 +30,7 @@ get -- get a pointer to a global Box (referenced by name) hidden in topology
 
 def get(varname: str) -> Box:
   if _globals is None:
-    from ..common import fatal
+    from ..utils.log import fatal
     from ..data import get_empty_box
 
     fatal(f'Trying to get global variable {varname} before the global_vars subsystem is initialized')

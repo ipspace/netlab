@@ -12,7 +12,7 @@ import argparse
 from jinja2 import Environment, FileSystemLoader, Undefined, StrictUndefined, make_logging_undefined
 
 import netsim.common
-import netsim.read_topology
+from netsim.utils import read as _read, log
 import netsim.augment
 import utils
 
@@ -36,10 +36,10 @@ def parse():
 def main():
   args = parse()
   print(f"Reading {args.topology}")
-  topology = netsim.read_topology.load(args.topology,args.defaults,"package:topology-defaults.yml")
-  netsim.common.exit_on_error()
+  topology = _read.load(args.topology,user_defaults=[],relative_topo_name=True)
+  log.exit_on_error()
   netsim.augment.main.transform(topology)
-  netsim.common.exit_on_error()
+  log.exit_on_error()
 
   dfname = args.xpand or (args.topology.replace("/input/","/expected/"))
   create_expected_results_file(topology,dfname)

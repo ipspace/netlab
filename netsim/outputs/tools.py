@@ -8,7 +8,6 @@ import sys
 from box import Box
 from pathlib import Path
 
-from .. import common
 from . import _TopologyOutput,check_writeable
 from ..tools import _ToolOutput
 from .common import adjust_inventory_host
@@ -20,7 +19,7 @@ def render_tool_config(tool: str, fmt: str, topology: Box) -> str:
     if output_module:
       return output_module.write(topology,fmt)
     else:
-      common.error(f'Cannot load tool-specific module tools.{tool}')
+      log.error(f'Cannot load tool-specific module tools.{tool}')
       return ""
 
 def create_tool_config(tool: str, topology: Box) -> None:
@@ -34,7 +33,7 @@ def create_tool_config(tool: str, topology: Box) -> None:
   print(f'Created {tool} configuration directory')
   for config in tdata.config:
     if not 'dest' in config:
-      common.error(f'No destination file specified for tool configuration\n... tool {tool}\n... config {config}')
+      log.error(f'No destination file specified for tool configuration\n... tool {tool}\n... config {config}')
       continue
     fname = f'{tool}/{config.dest}'
     if 'render' in config:
@@ -54,23 +53,25 @@ def create_tool_config(tool: str, topology: Box) -> None:
           module='libvirt')
       config_src  = f'from {config.template} template'
     else:
-      common.error(f'Unknown tool configuration type\n... tool {tool}\n... config {config}')
+      log.error(f'Unknown tool configuration type\n... tool {tool}\n... config {config}')
       continue
 
     try:
       _files.create_file_from_text(fname,config_text)
       print(f'Created {fname} {config_src}')
     except Exception as e:
-      common.error(f'Error writing tool configuration file {fname}\n... {e}')
+      log.error(f'Error writing tool configuration file {fname}\n... {e}')
 
 class ToolConfigs(_TopologyOutput):
+
+  DESCRIPTION :str = 'Create configuration files for external tools'
 
   def write(self, topology: Box) -> None:
     if not 'tools' in topology:
       return
 
     if hasattr(self,'filenames'):
-      common.error('Tools output module does not accept extra parameters')
+      log.error('Tools output module does not accept extra parameters')
 
     check_writeable('tools')
     topo_copy = topology.copy()

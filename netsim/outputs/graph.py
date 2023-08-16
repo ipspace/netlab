@@ -204,6 +204,8 @@ graph_dispatch = {
 
 class Graph(_TopologyOutput):
 
+  DESCRIPTION :str = 'Topology graph in graphviz format'
+
   def write(self, topology: Box) -> None:
     graphfile = self.settings.filename or 'graph.dot'
     output_format = 'topology'

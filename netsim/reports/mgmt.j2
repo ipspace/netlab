@@ -1,0 +1,56 @@
+{# description: Device management interfaces and addresses #}
+MANAGEMENT ACCESS TO LAB DEVICES
+
+{% for n in nodes.values() %}
+{%- set nc = n.ansible_connection|default('') -%}
+{%- set nc = 'ssh' if nc in ['network_cli','paramiko'] else nc -%}
+{%- set ma = n.ansible_host|default('') if nc != 'docker' else '' -%}
+{%- set mp = n.ansible_port|default('') -%} 
+{%- set un = n.ansible_user|default('') if nc != 'docker' else '' -%}
+{%- set pw = n.ansible_ssh_pass|default('') if nc != 'docker' else '' -%}
+{%   if loop.first %}
+MANAGEMENT INTERFACES AND ADDRESES
+
+|{{ '-' * 17 }}|{{ '-' * 12 }}|{{ '-' * 17 }}|{{ '-' * 7 }}|{{ '-' * 17 }}|{{ '-' * 17 }}|{{ '-' * 17 }}|
+| {{ '%-15s' % 'Node' }} | {{ '%-10s' % 'Connection' }} | {{ '%-15s' % 'IPv4 Address' }} | {{ '%-5s' % 'Port' }} | {{ '%-15s' % 'Interface name' }} | {{ '%-15s' % 'Username' }} | {{ '%-15s' % 'Password' }} |
+|{{ '-' * 17 }}|{{ '-' * 12 }}|{{ '-' * 17 }}|{{ '-' * 7 }}|{{ '-' * 17 }}|{{ '-' * 17 }}|{{ '-' * 17 }}|
+{%   endif %}
+| {{ "%-15s" % n.name }} | {{ "%-10s" % nc }} | {{ "%-15s" % ma }} | {{ "%-5s" % mp }} | {{ "%-15s" % n.mgmt.ifname|default('') }} | {{ "%-15s" % un }} | {{ "%-15s" % pw }} |
+{%   if loop.last %}
+|{{ '-' * 17 }}|{{ '-' * 12 }}|{{ '-' * 17 }}|{{ '-' * 7 }}|{{ '-' * 17 }}|{{ '-' * 17 }}|{{ '-' * 17 }}|
+{%   endif %}
+{% endfor %}
+{% set row_count = [] %}
+{% for n in nodes.values() %}
+{%   set p = n.provider|default(provider) %}
+{%   if 'forwarded' in defaults.providers[p] %}
+{%     set fmap = defaults.providers[p].forwarded %}
+{%     if not row_count %}
+
+FORWARDED PORTS:
+
+Some management-plane protocols of the following lab nodes can also be reached
+through the TCP ports on the host IP address(es). Please note that this is just
+a port mapping table, most devices do not run all supported management-plane
+protocols.
+
+|{{ '-' * 17 }}|{%- for fp in defaults.ports %}{{ '-' * 9 }}|{% endfor %}
+
+| {{ '%-15s' % 'Node' }} |
+{%- for fp in defaults.ports %} {{ '%-7s' % fp }} |{% endfor %}
+
+|{{ '-' * 17 }}|{%- for fp in defaults.ports %}{{ '-' * 9 }}|{% endfor %}
+
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+| {{ '%-15s' % n.name }} |
+{%- for fp in defaults.ports %}
+{%- set mport = fmap[fp] + n.id if fp in fmap else '' -%}
+{{ ' %-7s' % mport }} |{% endfor %}
+
+{%   endif %}
+{% endfor %}
+{% if row_count %}
+|{{ '-' * 17 }}|{%- for fp in defaults.ports %}{{ '-' * 9 }}|{% endfor %}
+
+{% endif %}

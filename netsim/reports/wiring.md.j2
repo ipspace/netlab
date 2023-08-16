@@ -1,0 +1,42 @@
+{# description: Lab wiring #}
+# LAB TOPOLOGY SUMMARY
+
+LAB NAME: {{ name }}
+
+{% for l in links if l.type=='p2p' or l.node_count == 2 %}
+{%   if loop.first %}
+## Point-to-Point Links
+
+| Link Name       | Origin Device | Origin Port | Destination Device | Destination Port |
+|-----------------|---------------|-------------|--------------------|------------------|
+{%   endif %}
+| {{ l.name|default('') }} | {{ l.interfaces[0].node }} | {{ l.interfaces[0].ifname }} | {{ l.interfaces[1].node }} | {{ l.interfaces[1].ifname }} |
+{% endfor %}
+
+{% set row_count = [] %}
+{% for node_name, n in nodes.items() %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length > 1 %}
+{%     if not row_count %}
+## LAN Links
+
+| Origin Device | Origin Port | Link Name (NET) | Description          |
+|---------------|-------------|-----------------|----------------------|
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+| {{ node_name }} | {{ l.ifname }} | {{ l.bridge }} | {{ l.name|default('') }} |
+{%   endfor %}
+{% endfor %}
+
+{% set row_count = [] %}
+{% for node_name, n in nodes.items() %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length == 0 %}
+{%     if not row_count %}
+## Stub Links
+
+| Origin Device | Origin Port | Description          |
+|---------------|-------------|----------------------|
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+| {{ node_name }} | {{ l.ifname }} | {{ l.name|default('') }} |
+{%   endfor %}
+{% endfor %}

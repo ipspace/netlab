@@ -51,7 +51,9 @@ You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in
 You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
 ```
 
-## LAN Bridges
+## Containerlab Networking
+
+### LAN Bridges
 
 For multi-access network topologies, **[netlab up](../netlab/up.md)** command automatically creates additional standard Linux bridges.
 
@@ -68,7 +70,95 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3 ]
 ```
 
-## Container Runtime Support
+(clab-network-external)=
+### Connecting to the Outside World
+
+Lab links are modeled as point-to-point *veth* links or as links to internal Linux bridges. If you want to have a lab link connected to the outside world, set **clab.uplink** to the name of the Ethernet interface on your server[^IFNAME]. The minimum *containerlab* release supporting this feature is release 0.43.0.
+
+Example: use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
+
+```
+defaults.device: cumulus
+provider: clab
+nodes: [ r1,r2 ]
+links:
+- r1-r2
+- r1:
+  clab:
+    uplink: enp86s0
+```
+
+[^IFNAME]: Use **ip addr** or **ifconfig** find the interface name.
+
+```{note}
+In multi-provider topologies set the **uplink** parameter only for the primary provider (the one specified in topology-level **provider** attribute); netlab copies the **uplink** parameter  to all secondary providers during the lab topology transformation process.
+```
+
+### Containerlab Management Network
+
+*containerlab* creates a dedicated Docker network to connect the container management interfaces to the host TCP/IP stack. You can change the parameters of the management network in the **addressing.mgmt** pool:
+
+* **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
+* **ipv6**: Optional IPv6 management network prefix. Not set by default.
+* **start**: The offset of the first management IP address in the management network (default: `100`). For example, with **start** set to 50, the device with **node.id** set to 1 will get 51st IP address in the management IP prefix.
+* **\_network**: The Docker network name (default: `netlab_mgmt`)
+* **\_bridge**: The name of the underlying Linux bridge (default: unspecified, created by Docker)
+
+### Container Management IP Addresses
+
+*netlab* assigns an IPv4 (and optionally IPv6) address to the management interface of each container regardless of whether the container supports SSH access or not. That IPv4/IPv6 address is used by *containerlab* to configure the first container interface.
+
+You can change the IPv4/IPv6 address of a device management interface with the **mgmt.ipv4**/**mgmt.ipv6** node parameter, but be aware that nobody checks whether your change will result in overlapping IP addresses.
+
+It's much better to use the **addressing.mgmt** pool **ipv4**/**ipv6**/**start** parameters to adjust the address range used for management IP addresses, and rely on *netlab* to assign management IP addresses to containers based on [device node ID](node-augment).
+
+(clab-port-forwarding)=
+### Port Forwarding
+
+*netlab* supports container port forwarding -- mapping of TCP ports on the container management IP address to ports on the host. You can use port forwarding to access the lab devices via the host external IP address without exposing the management network to the outside world.
+
+```{warning}
+Some containers do not run a SSH server and cannot be accessed via SSH even if you set up port forwarding for the SSH port.
+```
+
+Port forwarding is disabled by default and can be enabled by configuring the **defaults.providers.clab.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf), dictionary values are start values of host ports. *netlab* assigns a unique host port to every forwarded container port based on the start value and container node ID.
+
+For example, when given the following topology...
+
+```
+defaults.providers.clab.forwarded:
+  ssh: 2000
+
+defaults.device: eos
+nodes:
+  r1:
+  r2:
+    id: 42
+```
+
+... *netlab* maps:
+    
+* SSH port on management interface of R1 to host port 2001 (R1 gets default node ID 1)
+* SSH port on management interface of R2 to host port 2042 (R2 has static ID 42)
+
+(clab-vrnetlab)=
+### Using vrnetlab Containers
+
+_vrnetlab_ is an open-source project that packages network device virtual machines into containers. The architecture of the packaged container requires an internal network, and it seems that _vrnetlab_ (or the fork used by _containerlab_) uses IPv4 prefix 10.0.0.0/24 on that network which clashes with the _netlab_ loopback address pool.
+
+If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
+
+```
+addressing:
+  loopback:
+    ipv4: 10.255.0.0/24
+  router_id:
+    ipv4: 10.255.0.0/24
+```
+
+## Advanced Topics
+
+### Container Runtime Support
 
 Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**. The runtime to use can be configured globally or per node, for example:
 
@@ -80,7 +170,7 @@ nodes:
     clab.runtime: ignite
 ```
 
-## Using File Binds
+### Using File Binds
 
 You can use **clab.binds** to map container paths to host file system paths, for example:
 
@@ -146,7 +236,7 @@ Ansible developers love to restructure stuff and move it into different director
 
 [^HB]: Installing Ansible with Homebrew or into a separate virtual environment won't work -- _netlab_ has to be able to import Ansible modules
 
-## Using Other Containerlab Node Parameters
+### Using Other Containerlab Node Parameters
 
 Default *netlab* settings support these additional *containerlab* parameters:
 
@@ -162,29 +252,6 @@ To add other *containerlab* attributes to the `clab.yml` configuration file, mod
 ```
 provider: clab
 defaults.providers.clab.node_config_attributes: [ ports, env, user ]
-```
-
-## Containerlab Management Network
-
-*containerlab* creates a dedicated Docker network to connect the container management interfaces to the host TCP/IP stack. You can change the parameters of the management network in the **addressing.mgmt** pool:
-
-* **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
-* **\_network**: The Docker network name (default: `netlab_mgmt`)
-* **\_bridge**: The name of the underlying Linux bridge (default: unspecified, created by Docker)
-
-(clab-vrnetlab)=
-## Using vrnetlab Containers
-
-_vrnetlab_ is an open-source project that packages network device virtual machines into containers. The architecture of the packaged container requires an internal network, and it seems that _vrnetlab_ (or the fork used by _containerlab_) uses IPv4 prefix 10.0.0.0/24 on that network which clashes with the _netlab_ loopback address pool.
-
-If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
-
-```
-addressing:
-  loopback:
-    ipv4: 10.255.0.0/24
-  router_id:
-    ipv4: 10.255.0.0/24
 ```
 
 ```{eval-rst}

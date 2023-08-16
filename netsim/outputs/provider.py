@@ -6,8 +6,8 @@ from box import Box
 
 from . import _TopologyOutput,check_writeable
 from .. import providers
-from .. import common
 from ..augment import nodes
+from ..utils import log
 
 def get_provider_module(topology: Box, provider: str) -> providers._Provider:
   return providers._Provider.load(provider,topology.defaults.providers[provider])
@@ -18,16 +18,18 @@ def write_provider_file(topology: Box, provider: str, filename: typing.Optional[
 
 class ProviderConfiguration(_TopologyOutput):
 
+  DESCRIPTION :str = 'Create virtualization provider configuration file(s)'
+
   def write(self, topology: Box) -> None:
     check_writeable('provider configuration')
     filename = None
     if hasattr(self,'filenames'):
       filename = self.filenames[0]
       if len(self.filenames) > 1:
-        common.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),common.IncorrectValue,'provider')
+        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,'provider')
 
     if self.format:
-      common.error('Specified output format(s) %s ignored' % self.format,common.IncorrectValue,'provider')
+      log.error('Specified output format(s) %s ignored' % self.format,log.IncorrectValue,'provider')
 
     # Creates a "ghost clean" topology after transformation
     # (AKA, remove unmanaged devices)

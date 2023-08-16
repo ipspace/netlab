@@ -6,7 +6,16 @@ import pathlib
 import os
 import sys
 import typing
+import fnmatch
+
 from . import log
+
+try:
+  from importlib import resources
+  new_resources = hasattr(resources,'files')
+except ImportError:
+  new_resources = False
+  import importlib_resources as resources         # type: ignore
 
 #
 # Find paths to module, user and system directory (needed for various templates)
@@ -24,16 +33,44 @@ def get_curdir() -> pathlib.Path:
   return pathlib.Path(os.path.expanduser(".")).resolve()
 
 #
-# Get the usual search path
+# Get the usual search path (current directory, user home directory, system-wide settings, package settings)
+#
+# If needer, augment the search path componentswith a subdirectory path. User/system subdirectory could
+# be different from package subdirectory
 #
 
-def get_search_path(path_component: typing.Optional[str] = None) -> list:
-  path = [ get_curdir(),get_userdir(),get_sysdir(),get_moddir() ]
+def get_search_path(
+      path_component: typing.Optional[str] = None,
+      pkg_path_component: typing.Optional[str] = None) -> list:
+  path = [ get_curdir(),get_userdir(),get_sysdir() ]
   if path_component:
     path = [ pc / path_component for pc in path ]
+    pkg_path_component = pkg_path_component or path_component
+
+  path.append(get_moddir() / pkg_path_component if pkg_path_component else get_moddir())
+
   return [ str(pc) for pc in path ]
 
 #
+# Get absolute path to a file (handling paths relative to other files and home directories)
+#
+
+def absolute_path(fname: str, base: typing.Optional[str] = None) -> pathlib.Path:
+  if fname.find('~') == 0:                                  # Resolve home directory into an absolute path
+    fname = os.path.expanduser(fname)
+
+  if os.path.isabs(fname):                                  # If we're dealing with an absolute path
+    return pathlib.Path(fname).resolve()                    # ... return the fully-resolved path
+  
+  if base is not None:                                      # Do we need path relative to another file?
+    if not os.path.isdir(base):                             # ... or directory?
+      base = os.path.dirname(base)
+
+    return (pathlib.Path(base) / fname).resolve()           # Return fully-resolved relative path starting from base directory
+  else:
+    return pathlib.Path(fname).resolve()                    # Return fully-resolved path
+
+# 
 # Find a file in a search path
 #
 def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
@@ -43,6 +80,37 @@ def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
       return candidate
 
   return None
+
+#
+# Get a list of files matching a glob pattern
+#
+def get_globbed_files(path: typing.Any, glob: str) -> list:
+  if isinstance(path,pathlib.Path):
+    return [ str(fname) for fname in list(path.glob(glob)) ]
+  else:
+    file_names = list(path.iterdir())
+    return fnmatch.filter(file_names,glob)
+
+#
+# Get a path object that can be used to find files in a file system or in the package
+#
+
+def get_traversable_path(dir_name : str) -> typing.Any:
+  if 'package:' in dir_name:
+    dir_name = dir_name.replace('package:','')
+    pkg_files: typing.Any = None
+
+    if not new_resources:
+      pkg_files = pathlib.Path(get_moddir())
+    else:
+      package = '.'.join(__name__.split('.')[:-2])
+      pkg_files = resources.files(package)        # type: ignore
+    if dir_name == '':
+      return pkg_files
+    else:
+      return pkg_files.joinpath(dir_name)
+  else:
+    return pathlib.Path(dir_name)
 
 #
 # Open, close, and write to file (or STDOUT)

@@ -4,7 +4,7 @@
 import typing
 from box import Box
 
-from .. import common
+from ..utils import log
 from ..data import global_vars
 from ..data.validate import must_be_list
 
@@ -39,7 +39,7 @@ create a set of attributes used in that object
 def build_id_set(obj: Box, dsname: str, attr: str, objname: str) -> set:
   if dsname in obj:
     if not isinstance(obj[dsname],dict):    # pragma: no cover
-      common.fatal(f'Found a {objname}.{dsname} setting that is not a dictionary','dataplane')
+      log.fatal(f'Found a {objname}.{dsname} setting that is not a dictionary','dataplane')
       return set()
 
     return { 
@@ -86,7 +86,7 @@ def set_id_counter(name: str, start: int, max_value: int = 4096) -> int:
 def get_next_id(name: str) -> int:
 	idvar = global_vars.get(f'{name}_id')
 	if not 'next' in idvar:
-		common.fatal(f'Initial {name} value is not set, get_next_id failed')
+		log.fatal(f'Initial {name} value is not set, get_next_id failed')
 	while True:
 		if not idvar.next in idvar.value:
 			idvar.value.add(idvar.next)
@@ -94,7 +94,7 @@ def get_next_id(name: str) -> int:
 
 		idvar.next = idvar.next + 1
 		if idvar.next > idvar.max:
-			common.fatal(f'Ran out of {name} values, next value would be greater than {idvar.max}')
+			log.fatal(f'Ran out of {name} values, next value would be greater than {idvar.max}')
 
 """
 validate_object_reference_list
@@ -162,9 +162,9 @@ def validate_object_reference_list(
       continue
     if obj_name in topology.get(reference_dictionary,{}):           # ... global name is also OK
       continue
-    common.error(
+    log.error(
       f'{list_name} refers to invalid {reference_name} {obj_name} in {parent_path}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       module)
     list_ok = False
 

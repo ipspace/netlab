@@ -5,8 +5,6 @@
 import typing
 from box import Box
 
-from .. import common
-
 """
 Augment module attributes
 

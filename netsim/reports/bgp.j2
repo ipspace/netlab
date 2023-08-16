@@ -1,0 +1,111 @@
+{# description: BGP autonomous systems and neighbors #}
+{#
+   First, figure out if we need RR column
+#}
+{% set rr_count = [] %}
+{% for ndata in nodes.values() if 'bgp' in ndata and ndata.bgp.rr|default(False) %}
+{%   set ignore = rr_count.append(ndata.name) %}
+{% endfor %}
+{% set has_rr = (rr_count|length) > 0 %}
+{#
+   Set ASN report header variables
+#}
+{% set asn_fmt = "| {0:15} | {1:>15} | {3:>20} |" %}
+{% set asn_divider = "|-----------------|-----------------|----------------------|" %}
+{% set asn_legend  = "| Node/ASN        | Router ID       | Advertised prefixes  |" %}
+{% if has_rr %}
+{% set asn_fmt = "| {0:15} | {1:>15} | {2:^6} | {3:>20} |" %}
+{% set asn_divider = "|-----------------|-----------------|--------|----------------------|" %}
+{% set asn_legend  = "| Node/ASN        | Router ID       | BGP RR | Advertised prefixes  |" %}
+{% endif %}
+{#
+   Now we're ready for the ASN report
+#}
+{% for asn,ndl in nodes.values()|groupby('bgp.as') if asn %}
+{%   if loop.first %}
+AS Numbers
+=============
+{{ asn_divider }}
+{{ asn_legend }}
+{{ asn_divider }}
+{%   endif %}
+{%   set asn_len = (asn_legend|length - 4)|string %}
+{{   ("| {0:<"+asn_len+"} |").format("AS "+asn|string) }}
+{%   for ndata in ndl %}
+{%     if loop.first %}
+{{ asn_divider }}
+{%     endif %}
+{#
+    Collect prefixes advertised by the router, starting with bgp.originate
+#}
+{%     set pfx = ndata.bgp.originate|default([]) %}
+{#
+    Add loopback IPv4 to the prefix list if loopback exists, has IPv4 prefix, and
+    bgp.advertise_loopback is set
+#}
+{%     if 'loopback' in ndata and 'ipv4' in ndata.loopback and ndata.bgp.advertise_loopback|default(False) %}
+{%       set pfx = [ ndata.loopback.ipv4 ] + pfx %}
+{%     endif %}
+{#
+    Now take the first prefix (if exists) to display in the "router data" line, and leave
+    the rest for subsequent lines
+#}
+{%     set pfirst = "" %}
+{%     if pfx %}
+{%       set pfirst = pfx[0] %}
+{%       set pfx = pfx[1:] %}
+{%     endif %}
+{%     set rr_flag = 'Yes' if ndata.bgp.rr|default('') else '' %}
+{{     asn_fmt.format(ndata.name,ndata.bgp.router_id|default(''),rr_flag,pfirst) }}
+{#
+    Iterate over the list of remaining prefixes and emit one per line
+#}
+{%     for p in pfx %}
+{{       asn_fmt.format('','','',p) }}
+{%     endfor %}
+{%   endfor %}
+{{ asn_divider }}
+{% endfor %}
+{#
+   Next: Neighbors report. First, figure out if we need Local AS column
+#}
+{% set las_count = [] %}
+{% for ndata in nodes.values() if 'bgp' in ndata %}
+{%   for ngb in ndata.bgp.neighbors if ngb.local_as|default(False) %}
+{%     set ignore = las_count.append(ngb) %}
+{%   endfor %}
+{% endfor %}
+{% set has_las = (las_count|length) > 0 %}
+{#
+   Set BGP Neighbor report header variables
+#}
+{% set ngb_fmt = "| {0:15} | {1:15} | {2:>15} | {3:>11} |" %}
+{% set ngb_divider = "|-----------------|-----------------|-----------------|-------------|" %}
+{% set ngb_legend  = "| Node            | Neighbor        | Neighbor IPv4   | Neighbor AS |" %}
+{% if has_las %}
+{% set ngb_fmt = "| {0:15} | {1:15} | {2:>15} | {3:>11} | {4:>8} |" %}
+{% set ngb_divider = "|-----------------|-----------------|-----------------|-------------|----------|" %}
+{% set ngb_legend  = "| Node            | Neighbor        | Neighbor IPv4   | Neighbor AS | Local AS |" %}
+{% endif %}
+{#
+   Now we're ready for the BGP Neighbors report
+#}
+{% for n,d in nodes.items() if 'bgp' in d and 'neighbors' in d.bgp %}
+{%   if loop.first %}
+
+BGP Neighbors
+=============
+{{ ngb_divider }}
+{{ ngb_legend }}
+{{ ngb_divider }}
+{%   endif %}
+{%   set line_len = (ngb_legend|length - 4)|string %}
+{{   ("| {0:<"+line_len+"} |").format("{0} ({1} / AS {2})".format(n,d.bgp.router_id,d.bgp.as)) }}
+{%   for ngb in d.bgp.neighbors %}
+{%     if loop.first %}
+{{ ngb_divider }}
+{%     endif %}
+{{     ngb_fmt.format('',ngb.name,ngb.ipv4,ngb.as,ngb.local_as|default('')) }}
+{%   endfor %}
+{{ ngb_divider }}
+{% endfor %}

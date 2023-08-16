@@ -19,7 +19,7 @@ WARNING : bool = False
 AF_LIST = ['ipv4','ipv6']
 BGP_SESSIONS = ['ibgp','ebgp']
 
-err_count : int = 0
+err_count: int = 0
 
 class MissingValue(Warning):
   pass
@@ -63,7 +63,9 @@ def error(text: str, category: typing.Type[Warning] = UserWarning, module: str =
   if hint is None:                                  # No extra hints
     return
 
-  from ..common import get_topology,extra_data_printout
+  from ..data.global_vars import get_topology
+  from .strings import extra_data_printout
+
   topology = get_topology()
   if topology is None:                              # No valid topology ==> no hints
     return
@@ -140,7 +142,7 @@ def set_flag(
   VERBOSE = verbose if verbose is not None else VERBOSE
   LOGGING = logging if logging is not None else LOGGING
   WARNING = warning if warning is not None else WARNING
-  RAISE_ON_ERROR = raise_error  if raise_error is not None else RAISE_ON_ERROR
+  RAISE_ON_ERROR = raise_error if raise_error is not None else RAISE_ON_ERROR
 
   return {
     'debug': DEBUG,

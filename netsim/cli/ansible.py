@@ -9,7 +9,7 @@ import os
 import json
 from pathlib import Path
 
-from .. import common
+from ..utils import log
 
 try:
   from importlib import resources
@@ -33,22 +33,22 @@ def inventory(name: str) -> typing.Optional[dict]:
     try:
       return json.loads(result.stdout)
     except:
-      common.fatal('Cannot parse JSON data returned by ansible-inventory','inventory')
+      log.fatal('Cannot parse JSON data returned by ansible-inventory','inventory')
 
   except:
     try:
       subprocess.run(['ansible-inventory','-h'],capture_output=True,check=True)
     except Exception as ex:
-      common.fatal(f'Cannot execute ansible-inventory command\n  {ex}','inventory')
+      log.fatal(f'Cannot execute ansible-inventory command\n  {ex}','inventory')
 
-    common.fatal('Cannot get Ansible inventory data for %s with ansible-inventory. Is the host name correct?' % name,'inventory')
+    log.fatal('Cannot get Ansible inventory data for %s with ansible-inventory. Is the host name correct?' % name,'inventory')
 
 def playbook(name: str, args: typing.List[str]) -> None:
   pbname = find_playbook(name)
   if not pbname:
-    common.fatal("Cannot find Ansible playbook %s, aborting" % name)
+    log.fatal("Cannot find Ansible playbook %s, aborting" % name)
 
-  if common.VERBOSE:
+  if log.VERBOSE:
     print("Running Ansible playbook %s" % pbname)
 
   cmd = ['ansible-playbook',pbname]
@@ -57,4 +57,4 @@ def playbook(name: str, args: typing.List[str]) -> None:
   try:
     subprocess.check_call(cmd)
   except Exception as ex:
-    common.fatal(f"Executing Ansible playbook {pbname} failed:\n  {ex}")
+    log.fatal(f"Executing Ansible playbook {pbname} failed:\n  {ex}")

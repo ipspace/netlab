@@ -14,11 +14,9 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.5.4](https://github.com/ipspace/netlab/releases/tag/release_1.5.4). We redesigned topology validation in release 1.5.0, resulting in potentially breaking changes. If you're a long-time _netlab_ user, please read the [release notes](https://netlab.tools/release/) first.
+The latest release is [release 1.6.0](https://github.com/ipspace/netlab/releases/tag/release_1.6.0). It contains [numerous new features](https://netlab.tools/release/1.6/) that might have a few bugs attached to them. Should you encounter one of those creatures, please open a Github issue and use release 1.5.4. You might also want to [read the release notes](https://netlab.tools/release/).
 
-The latest release before the changes made in release 1.5.0 is [release 1.4.3](https://github.com/ipspace/netlab/releases/tag/release_1.4.3).
-
-## An overview of tools:
+## An Overview of CLI Commands
 
 **netlab up**
 : Uses **[netlab create](https://netlab.tools/netlab/create/)** to create configuration files, starts the virtual lab, and uses **[netlab initial](https://netlab.tools/netlab/initial/)** to deploy device configurations, including IP addressing, LLDP, OSPF, BGP, IS-IS, EIGRP, VRRP, VLANs, VRFs, MPLS, SR-MPLS, VXLAN, EVPN and SRv6. [More details](https://netlab.tools/netlab/up/)

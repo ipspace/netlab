@@ -8,4 +8,6 @@
 from .yaml import YAML
 
 class JSON(YAML):
+  DESCRIPTION :str = 'Inspect transformed data in JSON format'
+
   pass

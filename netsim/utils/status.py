@@ -5,10 +5,11 @@
 import typing
 import os
 import sys
+import traceback
 from box import Box
 from filelock import Timeout, FileLock
 
-from ..common import fatal, get_yaml_string,debug_active
+from ..utils import log,strings
 from ..data import get_empty_box
 
 '''
@@ -17,6 +18,12 @@ get_status_filename -- get the name of the netlab status file
 def get_status_filename(topology: Box) -> str:
   status_file = topology.defaults.lab_status_file or '~/.netlab/status.yaml'
   return os.path.expanduser(status_file)
+
+'''
+Get lab ID for multilab deployments (moved here to be used by more than just CLI routines)
+'''
+def get_lab_id(topology: Box) -> str:
+  return topology.get('defaults.multilab.id','default') or 'default'    # id could be set to {} due to tool f-string evals
 
 '''
 change_status -- change the status of a lab
@@ -36,7 +43,7 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
     if not os.path.exists(status_dir):
       os.makedirs(status_dir)
   except:
-    fatal(f'Cannot create lab status directory {status_dir}')
+    log.fatal(f'Cannot create lab status directory {status_dir}')
 
   try:                                                      # Try to lock the status file          
     lock = FileLock(lock_file, timeout=3)
@@ -45,17 +52,17 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
       try:
         status = Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
       except:
-        fatal(f'Cannot read lab status file {status_file}')
+        log.fatal(f'Cannot read lab status file {status_file}')
     else:                                                 # Otherwise, create an empty status
       status = get_empty_box()
 
     callback(status,topology)                               # Change the lab status
-    if debug_active('status'):
+    if log.debug_active('status'):
       print(f'Lab status: {status}')
     with open(status_file, 'w') as f:                       # Write the modified status          
-      f.write(get_yaml_string(status))
+      f.write(strings.get_yaml_string(status))
   except:
-    fatal(f'Cannot lock lab status file {lock_file}\n... {sys.exc_info()[0]}')
+    log.fatal(f'Cannot lock lab status file {lock_file}\n... {sys.exc_info()[0]}')
   finally:
     lock.release()
 
@@ -67,15 +74,25 @@ def read_status(topology: Box) -> Box:
   try:
     return Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
   except:
-    fatal(f'Cannot read lab status file {status_file}')
+    log.fatal(f'Cannot read lab status file {status_file}')
     return get_empty_box()
 
-lock_file: typing.Final[str] = 'netlab.lock'
+'''
+Remove the lab instance/directory from the status file
+'''
+def remove_lab_status(topology: Box) -> None:
+  lab_id = get_lab_id(topology)
+
+  change_status(
+    topology,
+    callback = lambda s,t: s.pop(lab_id,None))
 
 '''
 lock_directory -- create netlab.lock file in current directory to prevent 
                   overwriting provider configuration files or Ansible inventory
 '''
+lock_file: typing.Final[str] = 'netlab.lock'
+
 def lock_directory() -> None:
   global lock_file
   with open(lock_file, 'w') as f:

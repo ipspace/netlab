@@ -15,9 +15,7 @@ import sys
 
 from box import Box
 
-from .. import common
-from .. import read_topology
-from ..utils import strings,status,templates,log
+from ..utils import strings, status, templates, log, read as _read
 from . import external_commands
 from ..providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
 from ..utils import files as _files
@@ -52,7 +50,7 @@ def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
 
 def abort_on_failure(cmd: str) -> None:
   if not external_commands.run_command(cmd):
-    common.fatal('Aborting')
+    log.fatal('Aborting')
 
 def lp_create_vm_disk(args: argparse.Namespace) -> None:
   name = args.disk.name
@@ -176,7 +174,7 @@ def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
   boxname = devdata.libvirt.image
   if not boxname:
-    common.fatal("Libvirt box name is not set for device {args.device}")
+    log.fatal("Libvirt box name is not set for device {args.device}")
 
   print(f"""
 
@@ -308,9 +306,9 @@ def libvirt_usage() -> None:
   print("Usage: netlab libvirt package|config --help")
 
 def run(cli_args: typing.List[str]) -> None:
-  topology = read_topology.load("package:cli/empty.yml","","package:topology-defaults.yml")
+  topology = _read.system_defaults()
   if not topology:
-    common.fatal("Cannot read the system defaults","libvirt")
+    log.fatal("Cannot read the system defaults","libvirt")
 
   if not cli_args:
     libvirt_usage()
