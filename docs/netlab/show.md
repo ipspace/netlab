@@ -480,7 +480,7 @@ evpn configuration module support
 +--------------+------+
 ```
 
-(show-outputs)=
+(netlab-show-outputs)=
 ## Display Output Modules
 
 The **netlab show outputs** command displays [output formats](../outputs/index.md) supported by the **[netlab create](create.md)** command.
@@ -517,7 +517,7 @@ Supported output modules
 +----------+--------------------------------------------------------+
 ```
 
-(Show-reports)=
+(netlab-show-reports)=
 ## Display Report Templates
 
 The **netlab show reports** command displays the report templates that can be used with the **[netlab report](report.md)** command.
@@ -557,8 +557,7 @@ HTML reports
 +----------------------+------------------------------------+
 ```
 
-
-(show-providers)=
+(netlab-show-providers)=
 ## Display Virtualization Providers
 
 The **netlab show providers** command displays supported virtualization providers and their status:

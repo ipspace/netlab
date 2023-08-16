@@ -19,7 +19,7 @@ options:
                         Transformed topology snapshot file
 ```
 
-**Note:** the **[netlab show reports](show-reports)** command displays up-to-date list of available system reports
+**Note:** the **[netlab show reports](netlab-show-reports)** command displays up-to-date list of available system reports
 
 ## Examples
 
