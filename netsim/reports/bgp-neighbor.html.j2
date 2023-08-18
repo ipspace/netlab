@@ -1,0 +1,48 @@
+{# description: BGP neighbors #}
+{#
+   First, figure out if we need Local AS column
+#}
+{% set las_count = [] %}
+{% for ndata in nodes.values() if 'bgp' in ndata %}
+{%   for ngb in ndata.bgp.neighbors if ngb.local_as|default(False) %}
+{%     set ignore = las_count.append(ngb) %}
+{%   endfor %}
+{% endfor %}
+{% set has_las = (las_count|length) > 0 %}
+{% set col_count = 5 if has_las else 4 %}
+{% for n,d in nodes.items() if 'bgp' in d and 'neighbors' in d.bgp %}
+{%   if loop.first %}
+<h2>BGP Neighbors</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Node</th>
+      <th>Neighbor</th>
+      <th>Neighbor IPv4</th>
+      <th>Neighbor AS</th>
+{%     if has_las %}
+      <th>Local AS</th>
+{%     endif %}
+    </tr>
+  <thead>
+  <tbody>
+{%   endif %}
+    <tr>
+      <td colspan="{{ col_count }}"><strong>{{ n }} ({{ d.bgp.router_id }} / AS {{ d.bgp.as }})</strong></td>
+    </tr>
+{%   for ngb in d.bgp.neighbors %}
+    <tr>
+      <td></td>
+      <td>{{ ngb.name }}</td>
+      <td class='right'>{{ ngb.ipv4 }}</td>
+      <td class='right'>{{ ngb.as }}</td>
+{%     if has_las %}
+      <td class='right'>{{ ngb.local_as|default('') }}</td>
+{%     endif %}
+    </tr>
+{%   endfor %}
+{%   if loop.last %}
+  </tbody>
+</table>
+{%   endif %}
+{% endfor %}

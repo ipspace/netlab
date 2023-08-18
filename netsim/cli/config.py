@@ -10,7 +10,7 @@ import glob
 
 from . import common_parse_args
 from . import ansible
-from .. import common
+from ..utils import log
 
 #
 # CLI parser for 'netlab config' command
@@ -43,7 +43,7 @@ def run(cli_args: typing.List[str]) -> None:
        glob.glob(args.template+'.*.j2'):
       rest = ['-e','config='+args.template] + rest
     else:
-      common.fatal('Cannot find specified Jinja2 template: %s' % args.template,'config')
+      log.fatal('Cannot find specified Jinja2 template: %s' % args.template,'config')
 
   if args.verbose:
     print('Ansible playbook args: %s' % rest)

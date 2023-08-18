@@ -22,8 +22,7 @@ from . import external_commands, set_dry_run
 
 from . import load_snapshot
 from ..outputs import common as outputs_common
-from .. import common
-from ..utils import strings
+from ..utils import strings, log
 
 #
 # CLI parser for 'netlab initial' command
@@ -135,14 +134,14 @@ def connect_to_node(node: str, rest: list, topology: Box, log_level: LogLevel = 
       print(f"Using SSH to connect to a device configured with {connection} connection")
     ssh_connect(host_data,rest,log_level)
   else:
-    common.fatal(f'Unknown connection method {connection} for host {node}',module='connect')
+    log.fatal(f'Unknown connection method {connection} for host {node}',module='connect')
 
 def connect_to_tool(tool: str, rest: list, topology: Box, log_level: LogLevel = LogLevel.INFO) -> None:
   cmds = external_commands.get_tool_command(tool,'connect',topology,verbose=False)
   if cmds is None:
     msg = external_commands.get_tool_message(tool,topology)
     if not msg:
-      common.fatal(f'Cannot connect to {tool}: the tool has no "connect" command',module='connect')
+      log.fatal(f'Cannot connect to {tool}: the tool has no "connect" command',module='connect')
     else:
       print(msg)
     return
@@ -183,4 +182,4 @@ def run(cli_args: typing.List[str]) -> None:
   elif host in topology.tools:
     connect_to_tool(host,rest,topology,log_level)
   else:
-    common.fatal(f'Unknown host or external tool {host}')
+    log.fatal(f'Unknown host or external tool {host}')

@@ -52,6 +52,25 @@ def get_search_path(
   return [ str(pc) for pc in path ]
 
 #
+# Get absolute path to a file (handling paths relative to other files and home directories)
+#
+
+def absolute_path(fname: str, base: typing.Optional[str] = None) -> pathlib.Path:
+  if fname.find('~') == 0:                                  # Resolve home directory into an absolute path
+    fname = os.path.expanduser(fname)
+
+  if os.path.isabs(fname):                                  # If we're dealing with an absolute path
+    return pathlib.Path(fname).resolve()                    # ... return the fully-resolved path
+  
+  if base is not None:                                      # Do we need path relative to another file?
+    if not os.path.isdir(base):                             # ... or directory?
+      base = os.path.dirname(base)
+
+    return (pathlib.Path(base) / fname).resolve()           # Return fully-resolved relative path starting from base directory
+  else:
+    return pathlib.Path(fname).resolve()                    # Return fully-resolved path
+
+# 
 # Find a file in a search path
 #
 def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:

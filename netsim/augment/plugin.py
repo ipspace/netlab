@@ -9,7 +9,7 @@ import importlib
 import importlib.util
 
 from box import Box
-from .. import common
+from ..utils import log
 from ..utils.files import get_moddir
 from .. import data
 
@@ -42,12 +42,12 @@ def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
     modspec.loader.exec_module(pymodule)
   except:
     print(f"Cannot load plugin {module_name} from {module_path}\n{str(sys.exc_info()[1])}")
-    common.fatal('Aborting the transformation process','plugin')
+    log.fatal('Aborting the transformation process','plugin')
 
   if config_name:
     setattr(pymodule,'config_name',config_name)
 
-  if common.VERBOSE:
+  if log.VERBOSE:
     print(f"loaded plugin {module_name}")
   return pymodule
 
@@ -70,9 +70,9 @@ def init(topology: Box) -> None:
     if plugin:
       topology.Plugin.append(plugin)
     else:
-      common.error(f"Cannot find plugin {pname} in {search_path}",common.IncorrectValue,'plugin')
+      log.error(f"Cannot find plugin {pname} in {search_path}",log.IncorrectValue,'plugin')
 
-  if common.debug_active('plugin'):
+  if log.debug_active('plugin'):
     print(f'plug INIT: {topology.Plugin}')
 
 def execute(action: str, topology: Box) -> None:
@@ -82,6 +82,6 @@ def execute(action: str, topology: Box) -> None:
   for plugin in topology.Plugin:
     if hasattr(plugin,action):
       func = getattr(plugin,action)
-      if common.debug_active('plugin'):
+      if log.debug_active('plugin'):
         print(f'plug INIT: {topology.Plugin}')
       func(topology)

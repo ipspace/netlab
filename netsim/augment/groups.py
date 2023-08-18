@@ -9,7 +9,7 @@ import re
 
 from box import Box
 
-from .. import common
+from ..utils import log
 from .. import data
 from .. import modules
 from ..modules import bgp
@@ -24,14 +24,14 @@ Return members of the specified group. Recurse through child groups if needed
 def group_members(topology: Box, group: str, count: int = 0) -> list:
   members: typing.List[str] = []
   if not group in topology.groups:  # pragma: no cover (just-in case catch, impossible to get here)
-    common.error(
+    log.error(
       f'Internal error: unknown group {group}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'groups')
     return []
 
   if count > 99:                    # pragma: no cover (impossible to get here, recursive groups are checked elsewhere)
-    common.fatal(
+    log.fatal(
       'Recursive group definition, aborting',
       'groups')
 
@@ -60,9 +60,9 @@ def check_group_data_structure(topology: Box) -> None:
     if isinstance(topology.groups[grp],list):
       topology.groups[grp] = { 'members': topology.groups[grp] }
     if grp in topology.nodes:
-      common.error(
+      log.error(
         f"group {grp} is also a node name. I can't deal with that level of confusion",
-        common.IncorrectValue,
+        log.IncorrectValue,
         'groups')
 
   '''
@@ -103,7 +103,7 @@ def check_group_data_structure(topology: Box) -> None:
       gdata.members = []
 
     if grp == 'all' and gdata.members:
-      common.error('Group "all" should not have explicit members')
+      log.error('Group "all" should not have explicit members')
 
     must_be_dict(gdata,'vars',gpath,create_empty=False,module='groups')
     must_be_dict(gdata,'node_data',gpath,create_empty=False,module='groups')
@@ -125,9 +125,9 @@ def check_group_data_structure(topology: Box) -> None:
 
       for k in ('module','device'):          # Check that the 'module' or 'device' attributes are not in node_data
         if k in gdata.node_data:
-          common.error(
+          log.error(
             f'Cannot use attribute {k} in node_data in group {grp}, set it as a group attribute',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'groups')
 
     for k in list(gdata.keys()):             # Then move (validated) group node attributes into node_data
@@ -141,7 +141,7 @@ def check_group_data_structure(topology: Box) -> None:
 
     for n in gdata.members:
       if not n in topology.nodes and not n in topology.groups:
-        common.error('Member %s of group %s is not a valid node or group name' % (n,grp))
+        log.error('Member %s of group %s is not a valid node or group name' % (n,grp))
 
 '''
 Add node-level group settings to global groups
@@ -166,7 +166,7 @@ Check recursive group definitions
 
 def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Optional[list]:
   if not group in topology.groups: # pragma: no cover (if we ever get here we're seriously messed up)
-    common.fatal(
+    log.fatal(
       'Internal error: unknown group in check_recursive_chain')
     return None
 
@@ -174,7 +174,7 @@ def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Opti
   for m in topology.groups[group].members:
     if m in chain:
       chain = chain + [ m ]
-      common.error(f'Recursive group definition chain {chain}', common.IncorrectValue, 'groups')
+      log.error(f'Recursive group definition chain {chain}', log.IncorrectValue, 'groups')
       return chain
     if m in topology.groups:
       if check_recursive_chain(topology,chain,m):
@@ -211,13 +211,13 @@ def copy_group_device_module(topology: Box) -> None:
     if not 'device' in gdata and not 'module' in gdata:
       continue                                                        # This group is not interesting, move on
 
-    if common.debug_active('groups'):
+    if log.debug_active('groups'):
       print(f'Setting device/module for group {grp}')
     g_members = group_members(topology,grp)
     if not g_members:
-      common.error(
+      log.error(
         f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'groups')
       continue
 
@@ -228,7 +228,7 @@ def copy_group_device_module(topology: Box) -> None:
       ndata = topology.nodes[name]
       if 'device' in gdata and not 'device' in ndata:                 # Copy device from group data to node data
         ndata.device = gdata.device
-        if common.debug_active('groups'):
+        if log.debug_active('groups'):
           print(f'... setting {name}.device to {gdata.device}')
 
       if 'module' in gdata:                                           # Merge group modules with device modules
@@ -237,7 +237,7 @@ def copy_group_device_module(topology: Box) -> None:
           if not m in ndata.module:                                   # ... and add missing modules to nodes
             ndata.module.append(m)
 
-        if common.debug_active('groups'):
+        if log.debug_active('groups'):
           print(f'... adding module {gdata.module} to {name}. Node modules now {ndata.module}')
 
 '''
@@ -253,13 +253,13 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
       continue
 
     g_members = group_members(topology,grp)                           # Get recursive list of members
-    if common.debug_active('groups'):
+    if log.debug_active('groups'):
       print(f'copy node data {grp}: {gdata.node_data}')
     for name in g_members:                                            # Iterate over group members
       if not name in topology.nodes:                                  # Member is not a node, skip it
         continue
 
-      if common.debug_active('groups'):
+      if log.debug_active('groups'):
         print(f'... merging node data with {name}')
       merge_data = data.get_box(gdata.node_data)
       if 'module' in topology.nodes[name]:
@@ -305,9 +305,9 @@ def export_group_node_data(
         for attr in unique_keys:                                      # Check whether we have an overlap in unique keys
           if attr in topology[key][obj_name] and attr in obj_data and \
              topology[key][obj_name][attr] != obj_data[attr]:         # Unique key present on both ends and not equal
-            common.error(
+            log.error(
               f'Cannot redefine {key} attribute {attr} for {key}.{obj_name} from node_data in group {gname}',
-              common.IncorrectValue,
+              log.IncorrectValue,
               module)
         for attr in copy_keys:                                        # Finally, copy missing values from group to global object
           if attr in obj_data and attr not in topology[key][obj_name]:
@@ -328,9 +328,9 @@ def create_bgp_autogroups(topology: Box) -> None:
   for gname,gdata in topology.groups.items():                   # Sanity check: BGP autogroups should not have static members
     if re.match('as\\d+$',gname):
       if gdata.get('members',None):                             # Well, it's OK to have an empty list of members ;)
-        common.error(
+        log.error(
           f'BGP AS group {gname} should not have static members',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'groups')
 
   for n_name,n_data in topology.nodes.items():                  # Now iterate over nodes
@@ -368,17 +368,17 @@ def create_bgp_autogroups(topology: Box) -> None:
 def init_groups(topology: Box) -> None:
   check_group_data_structure(topology)
   add_node_level_groups(topology)
-  common.exit_on_error()
+  log.exit_on_error()
 
   check_recursive_groups(topology)
-  common.exit_on_error()
+  log.exit_on_error()
 
   copy_group_device_module(topology)
   copy_group_node_data(topology,'')                 # Copy all group data into nodes (potentially setting bgp.as)
   bgp.process_as_list(topology)
   create_bgp_autogroups(topology)                   # Create AS-based groups
   copy_group_node_data(topology,'as')               # And add group data from 'asxxxx' into nodes
-  common.exit_on_error()
+  log.exit_on_error()
   if not topology.groups:
     del topology['groups']
 

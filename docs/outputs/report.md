@@ -14,7 +14,7 @@ _netlab_ ships with the following built-in reports:
 * **addressing.link.html** -- Link/interface addressing report in HTML format
 
 ```{note}
-The **[netlab show reports](show-reports)** command displays up-to-date list of available system reports
+The **[netlab show reports](netlab-show-reports)** command displays up-to-date list of available system reports
 ```
 
 ## Generating HTML reports

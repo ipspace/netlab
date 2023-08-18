@@ -1,6 +1,12 @@
 Release notes
 =============
 
+**[Release 1.6.1](release-1.6.1) (2023-08-18)**
+
+* **[netlab report](netlab/report.md)** can generate Markdown markup (ideal for augmenting documentation written in Markdown)
+* BGP AS number and BGP neighbor reports (text, Markdown, HTML)
+* [Make user/system default locations configurable](defaults-locations)
+
 **[Release 1.6.0](release-1.6.0) (2023-08-01)**
 
 * New commands: **[netlab report](netlab/report.md)**, **[netlab graph](netlab/graph.md)** and **[netlab inspect](netlab/inspect.md)**

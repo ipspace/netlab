@@ -7,7 +7,7 @@ from box import Box
 
 from . import _Module,_routing
 from . import bfd
-from .. import common
+from ..utils import log
 from ..augment import devices
 
 # We need to set ospf.unnumbered if we happen to have OSPF running over an unnumbered
@@ -30,23 +30,23 @@ def ospf_unnumbered(node: Box, features: Box) -> bool:
     if is_unnumbered and 'ospf' in l:
       node.ospf.unnumbered = True
       if len(l.get('neighbors',[])) > 1:
-        common.error(
+        log.error(
           f'OSPF does not work over multi-access unnumbered IPv4 interfaces: node {node.name} link {l.name}',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'ospf')
         OK = False
       elif not len(l.get('neighbors',[])):
-        common.error(
+        log.error(
           f'Configuring OSPF on an unnumbered stub interface makes no sense: node {node.name} link {l.name}',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'ospf')
         OK = False
 
   if 'unnumbered' in node.ospf:
     if not features.ospf.unnumbered:
-      common.error(
+      log.error(
         f'Device {node.device} used on node {node.name} cannot run OSPF over unnumbered interface',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'interfaces')
       OK = False
 
@@ -66,14 +66,14 @@ class OSPF(_Module):
           node.ospf.strict_bfd = True
           node.ospf.strict_bfd_delay = node.get('ospf.bfd.strict_delay',0)
         else:
-          common.error(
+          log.error(
             f'{node.name} uses strict BFD with OSPF without enabling the "bfd" module',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'ospf')
       else:
-        common.error(
+        log.error(
           f'{node.name} uses strict BFD with OSPF which is not supported by {node.device} device',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'ospf')
 
     bfd.bfd_link_state(node,'ospf')
@@ -85,7 +85,7 @@ class OSPF(_Module):
         _routing.passive(intf,'ospf')                       # Set passive flag on other OSPF interfaces
         err = _routing.network_type(intf,'ospf',['point-to-point','point-to-multipoint','broadcast','non-broadcast'])
         if err:
-          common.error(f'{err}\n... node {node.name} link {intf}')
+          log.error(f'{err}\n... node {node.name} link {intf}')
 
     if not ospf_unnumbered(node,features):
       return

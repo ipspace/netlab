@@ -14,8 +14,8 @@ from box import Box
 
 from . import external_commands, set_dry_run, is_dry_run
 from . import lab_status_change,fs_cleanup,load_snapshot
-from .. import read_topology,common,providers
-from ..utils import status,strings
+from .. import providers
+from ..utils import status,strings,log
 from .up import provider_probes
 #
 # CLI parser for 'netlab down' command
@@ -124,7 +124,7 @@ You could proceed if you want to clean up the netlab artifacts from this
 directory, but you might impact the running lab instance.
 ''')
   if not strings.confirm('Do you want to proceed?'):
-    common.fatal('aborting lab shutdown request')
+    log.fatal('aborting lab shutdown request')
 
   return True
 

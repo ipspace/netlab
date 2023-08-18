@@ -79,6 +79,7 @@ $ netlab show devices -d eos --format yaml
 eos: Arista vEOS VM or cEOS container
 ```
 
+(netlab-show-images)=
 ## Display Device Images
 
 The **netlab show images** command displays built-in box/container names for supported network devices. If you want to use different Vagrant box names or container names, change them in [user defaults](../defaults.md) or in [lab topology](node-attributes).
@@ -122,6 +123,7 @@ cumulus:
   virtualbox: CumulusCommunity/cumulus-vx:4.3.0
 ```
 
+(netlab-show-modules)=
 ## Display Configuration Modules
 
 The **netlab show modules** command displays available configuration modules and devices supported by each configuration module. When displaying a single module, the command lists optional features supported by that module and the devices implementing them.
@@ -478,7 +480,7 @@ evpn configuration module support
 +--------------+------+
 ```
 
-(show-outputs)=
+(netlab-show-outputs)=
 ## Display Output Modules
 
 The **netlab show outputs** command displays [output formats](../outputs/index.md) supported by the **[netlab create](create.md)** command.
@@ -515,7 +517,7 @@ Supported output modules
 +----------+--------------------------------------------------------+
 ```
 
-(Show-reports)=
+(netlab-show-reports)=
 ## Display Report Templates
 
 The **netlab show reports** command displays the report templates that can be used with the **[netlab report](report.md)** command.
@@ -555,8 +557,7 @@ HTML reports
 +----------------------+------------------------------------+
 ```
 
-
-(show-providers)=
+(netlab-show-providers)=
 ## Display Virtualization Providers
 
 The **netlab show providers** command displays supported virtualization providers and their status:

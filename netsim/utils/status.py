@@ -9,7 +9,7 @@ import traceback
 from box import Box
 from filelock import Timeout, FileLock
 
-from ..common import fatal, get_yaml_string,debug_active
+from ..utils import log,strings
 from ..data import get_empty_box
 
 '''
@@ -43,7 +43,7 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
     if not os.path.exists(status_dir):
       os.makedirs(status_dir)
   except:
-    fatal(f'Cannot create lab status directory {status_dir}')
+    log.fatal(f'Cannot create lab status directory {status_dir}')
 
   try:                                                      # Try to lock the status file          
     lock = FileLock(lock_file, timeout=3)
@@ -52,17 +52,17 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
       try:
         status = Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
       except:
-        fatal(f'Cannot read lab status file {status_file}')
+        log.fatal(f'Cannot read lab status file {status_file}')
     else:                                                 # Otherwise, create an empty status
       status = get_empty_box()
 
     callback(status,topology)                               # Change the lab status
-    if debug_active('status'):
+    if log.debug_active('status'):
       print(f'Lab status: {status}')
     with open(status_file, 'w') as f:                       # Write the modified status          
-      f.write(get_yaml_string(status))
+      f.write(strings.get_yaml_string(status))
   except:
-    fatal(f'Cannot lock lab status file {lock_file}\n... {sys.exc_info()[0]}')
+    log.fatal(f'Cannot lock lab status file {lock_file}\n... {sys.exc_info()[0]}')
   finally:
     lock.release()
 
@@ -74,7 +74,7 @@ def read_status(topology: Box) -> Box:
   try:
     return Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
   except:
-    fatal(f'Cannot read lab status file {status_file}')
+    log.fatal(f'Cannot read lab status file {status_file}')
     return get_empty_box()
 
 '''

@@ -8,13 +8,13 @@
 from box import Box
 
 from . import _Quirks
-from .. import common
+from ..utils import log
 from ..augment import devices
 
 def unit_0_trick(intf: Box, round: str ='global') -> None:
   oldname = intf.ifname
   newname = oldname + ".0"
-  if common.debug_active('quirks'):
+  if log.debug_active('quirks'):
     print(" - [{}] Found interface {}, renaming to {}".format(round, intf.ifname, newname))
   intf.ifname = newname
   intf.junos_interface = oldname
@@ -24,7 +24,7 @@ class JUNOS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    if common.debug_active('quirks'):
+    if log.debug_active('quirks'):
       print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.name))
     mods = node.get('module',[])
     # Need to understand if I need to configure unit 0 or not.

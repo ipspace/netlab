@@ -8,10 +8,9 @@ import os
 import sys
 from box import Box
 
-from .. import common
 from . import _TopologyOutput,check_writeable
 from .common import adjust_inventory_host
-from ..utils import files as _files
+from ..utils import files as _files, log, strings
 
 def create(nodes: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
@@ -39,7 +38,7 @@ def write_yaml(data: Box, fname: str, header: str) -> None:
 
   with _files.open_output_file(fname) as output:
     output.write(header)
-    output.write(common.get_yaml_string(data))
+    output.write(strings.get_yaml_string(data))
     output.close()
 
 min_inventory_data = [ 'id','ansible_host','ansible_port' ]
@@ -58,12 +57,12 @@ def write_devices(data: Box, fname: str, fmt: typing.Optional[str]) -> None:
 def read_inventory(host: str, filename: typing.Optional[str] = None) -> typing.Optional[dict]:
   filename = filename or os.getenv('NETLAB_DEVICES') or 'netlab-devices.yml'
   if not os.path.isfile(filename):
-    common.fatal('Cannot read netlab device inventory: %s does not exist')
+    log.fatal('Cannot read netlab device inventory: %s does not exist')
     return None
   try:
     data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
   except:
-    common.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
+    log.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
 
   if host in (data or {}):
     return data[host]
@@ -82,7 +81,7 @@ class DeviceInventory(_TopologyOutput):
     if hasattr(self,'filenames'):
       hostfile = self.filenames[0]
       if len(self.filenames) > 1:
-        common.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),common.IncorrectValue,'devices')
+        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,'devices')
 
     if self.format:
       output_format = self.format[0]

@@ -55,9 +55,9 @@ import netaddr
 from box import Box
 
 # Related modules
-from . import common
-from .data import get_empty_box,get_box,null_to_string
-from .data.validate import validate_attributes
+from ..data import get_empty_box,get_box,null_to_string
+from ..data.validate import validate_attributes
+from ..utils import log,strings
 
 def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
 
@@ -66,9 +66,9 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
     try:
       return str(netaddr.IPNetwork(ip)) if isinstance(ip,str) else ip
     except Exception as ex:
-      common.error(
+      log.error(
         f'Cannot parse address prefix: {ex}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'addressing')
       return False
 
@@ -130,9 +130,9 @@ def validate_pools(addrs: Box, topology: Box) -> None:
     addrs = get_empty_box()
   for k in ('lan','loopback'):
     if not k in addrs:          # pragma: no cover (lan and loopback pools are always created in setup_pools)
-      common.error(
+      log.error(
         "'%s' addressing pool is missing" % k,
-        category=common.MissingValue,
+        category=log.MissingValue,
         module='addressing')
 
   if isinstance(addrs.mgmt,dict):
@@ -142,9 +142,9 @@ def validate_pools(addrs: Box, topology: Box) -> None:
   for pool,pfx in addrs.items():
     if 'unnumbered' in pfx:
       if 'ipv4' in pfx or 'ipv6' in pfx:    # pragma: no cover -- ipv4/ipv6 prefixes have already been removed from unnumbered pools
-        common.error(
+        log.error(
           f'Pool {pool} is an unnumbered pool and cannot have IPv4 or IPv6 prefixes {pfx}',
-          category=common.IncorrectValue,
+          category=log.IncorrectValue,
           module='addressing')
         continue
     for k in ('ipv4','ipv6'):
@@ -153,13 +153,13 @@ def validate_pools(addrs: Box, topology: Box) -> None:
           try:
             network = netaddr.IPNetwork(pfx[k])
             if str(network.cidr) != pfx[k]:
-              common.error( f"pool '{pool}' is using an invalid prefix {pfx[k]} with host bits set ({str(network.cidr)})",
-                            category=common.IncorrectValue, module='addressing')
+              log.error( f"pool '{pool}' is using an invalid prefix {pfx[k]} with host bits set ({str(network.cidr)})",
+                            category=log.IncorrectValue, module='addressing')
             addrs[pool][k+'_pfx'] = network
           except:
-            common.error(
+            log.error(
               "%s prefix %s in addressing pool '%s' is invalid (%s)" % (k,pfx[k],pool,sys.exc_info()[1]),
-              category=common.IncorrectValue,
+              category=log.IncorrectValue,
               module='addressing')
             continue
 
@@ -167,47 +167,47 @@ def validate_pools(addrs: Box, topology: Box) -> None:
       try:
         addrs[pool].mac_eui = netaddr.EUI(pfx.mac)
       except:
-        common.error(
+        log.error(
           "MAC prefix %s in addressing pool '%s' is invalid (%s)" % (pfx.mac,pool,sys.exc_info()[1]),
-          category=common.IncorrectValue,
+          category=log.IncorrectValue,
           module='addressing')
         continue
 
     if 'ipv4' in pfx and 'ipv4_pfx' in pfx and pool != 'mgmt':
       if not 'prefix' in pfx:   # pragma: no cover -- default prefix was already set to /24
-        common.error(
+        log.error(
           "IPv4 prefix length is missing in '%s' addressing pool" % pool,
-          category=common.MissingValue,
+          category=log.MissingValue,
           module='addressing')
       else:
         if not isinstance(pfx['prefix'],int):
-          common.error(
+          log.error(
             "IPv4 prefix length in '%s' addressing pool is not an integer" % pool,
-            category=common.IncorrectValue,
+            category=log.IncorrectValue,
             module='addressing')
         else:
           if pfx.prefix > 32 or pfx.prefix < 1:
-            common.error(
+            log.error(
               "IPv4 subnet prefix length in '%s' addressing pool is not between 1 and 32" % pool,
-              category=common.IncorrectValue,
+              category=log.IncorrectValue,
               module='addressing')
           if pfx.prefix < pfx.ipv4_pfx.prefixlen:
-            common.error(
+            log.error(
               "IPv4 subnet prefix length in '%s' addressing pool is not longer than pool prefix" % pool,
-              category=common.IncorrectValue,
+              category=log.IncorrectValue,
               module='addressing')
 
     if 'ipv6' in pfx and 'ipv6_pfx' in pfx:
       if pfx.ipv6_pfx.prefixlen > 56:
-        common.error(
+        log.error(
           "Error in '%s' addressing pool: IPv6 pool prefix cannot be longer than /56" % pool,
-          category=common.IncorrectValue,
+          category=log.IncorrectValue,
           module='addressing')
 
   if not 'ipv4' in addrs.loopback and not 'ipv6' in addrs.loopback:
-    common.error(
+    log.error(
       "Loopback addressing pool has no IPv4 or IPv6 address prefix",
-      category=common.MissingValue,
+      category=log.MissingValue,
       module='addressing')
 
 def create_pool_generators(addrs: Box, no_copy_list: list) -> Box:
@@ -232,9 +232,9 @@ def get_pool(pools: Box, pool_list: typing.List[str]) -> typing.Optional[str]:
     if p in pools:
       return p
 
-  common.error(
+  log.error(
     f'Cannot get addressing for any of these pools: {pool_list}',
-    category=common.MissingValue,
+    category=log.MissingValue,
     module='addressing')                       # pragma: no cover (impossible to get here due to built-in default pools)
   return None                                  # pragma: no cover
 
@@ -259,21 +259,21 @@ def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
       try:
         prefixes[af] = get_nth_subnet(n,pools[p][af],pools[p][subnet_cache])
       except StopIteration:
-        common.error(
+        log.error(
           f'Cannot allocate {n}-th {af} element from {p} pool',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'addressing')
     else:                                                             # Just asking for the next available prefix
       try:
         prefixes[af] = next(pools[p][af])                             # Let's see if we can get one more
       except StopIteration:                                           # Ouch, ran out of prefixes, report that
-        common.error(
+        log.error(
           f'Ran out of {af} prefixes in {p} pool' +
-          (' (use --debug addr CLI argument to get more details)' if not common.debug_active('addr') else ''),
-          common.MissingValue,
+          (' (use --debug addr CLI argument to get more details)' if not log.debug_active('addr') else ''),
+          log.MissingValue,
           'addressing')
 
-  if common.debug_active('addressing'):
+  if log.debug_active('addressing'):
     print(f'get_pool_prefix: {p} => {prefixes}')
   return prefixes
 
@@ -291,24 +291,24 @@ def setup(topology: Box) -> None:
   null_to_string(topology.addressing)
   addrs = setup_pools(defaults.addressing + topology.addressing,defaults)
 
-  if common.debug_active('addressing'):
+  if log.debug_active('addressing'):
     print("addressing:")
-    common.print_structured_dict(addrs,'.. ')
+    strings.print_structured_dict(addrs,'.. ')
 
   validate_pools(addrs,topology)
-  common.exit_on_error()
+  log.exit_on_error()
 
   topology.pools = create_pool_generators(addrs,defaults.attributes.pool_no_copy)
   topology.addressing = addrs
 
-  if common.debug_active('addressing'):
+  if log.debug_active('addressing'):
     print("pools:")
-    common.print_structured_dict(topology.pools,'.. ')
+    strings.print_structured_dict(topology.pools,'.. ')
 
-  common.exit_on_error()
+  log.exit_on_error()
 
 def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
-  if common.debug_active('addr'):                     # pragma: no cover (debugging printout)
+  if log.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f"parse prefix: {prefix} type={type(prefix)}")
 
   empty_box = get_empty_box()
@@ -322,9 +322,9 @@ def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
 
   if 'ip' in prefix:                                  # Deal with legacy 'ip' address family -- rename it to ipv4
     if 'ipv4' in prefix:
-      common.error( \
+      log.error( \
         f'Cannot have IP and IPv4 address families in prefix {prefix}',
-        category=common.IncorrectValue,
+        category=log.IncorrectValue,
         module='addressing')
       return empty_box
 
@@ -343,10 +343,10 @@ def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
     try:
       prefix_list[af] = netaddr.IPNetwork(pfx)
     except Exception as ex:
-      common.error(f'Cannot parse {af} prefix: {prefix}\n... {ex}',common.IncorrectValue,'addressing')
+      log.error(f'Cannot parse {af} prefix: {prefix}\n... {ex}',log.IncorrectValue,'addressing')
       return empty_box
     if str(prefix_list[af]) != str(prefix_list[af].cidr):
-      common.error(f'{af} prefix contains host bits: {prefix}',common.IncorrectValue,'addressing')    
+      log.error(f'{af} prefix contains host bits: {prefix}',log.IncorrectValue,'addressing')    
 
   return prefix_list
 

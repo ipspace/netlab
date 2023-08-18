@@ -9,10 +9,9 @@ import textwrap
 import sys
 from box import Box
 
-from .. import read_topology
 from .. import data
 from ..augment import main
-from ..utils import log,strings
+from ..utils import log,read as _read
 from .usage import print_usage
 
 from .show_commands import show_common_parser
@@ -85,8 +84,8 @@ def run(cli_args: typing.List[str]) -> None:
   args = parse_show_args(cli_args)
 
   empty_file = "package:cli/empty.yml"
-  loc_defaults = empty_file if 'system' in args and args.system else ""
-  topology = read_topology.load(empty_file,loc_defaults,"package:topology-defaults.yml")
+  user_defaults: typing.Optional[list] = [] if 'system' in args and args.system else None
+  topology = _read.load(empty_file,user_defaults=user_defaults)
 
   if topology is None:
     log.fatal("Cannot read system settings")

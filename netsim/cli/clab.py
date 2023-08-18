@@ -14,9 +14,7 @@ import shutil
 
 from box import Box
 
-from .. import common
-from .. import read_topology
-from ..utils import files as _files
+from ..utils import files as _files, log, strings, read as _read
 from . import external_commands
 from . import collect
 from . import fs_cleanup
@@ -65,18 +63,18 @@ def find_config_file(n: str, cfglist: typing.List[str]) -> typing.Optional[str]:
   return None
 
 def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
-  clab = read_topology.read_yaml(infile)
+  clab = _read.read_yaml(infile)
   if not clab:
-    common.fatal("Cannot read clab.yml configuration file, aborting")
+    log.fatal("Cannot read clab.yml configuration file, aborting")
 
-  clab_yml = common.get_yaml_string(clab)
+  clab_yml = strings.get_yaml_string(clab)
   if not ('topology' in clab and 'nodes' in clab.topology):
-    common.fatal(f'Containerlab configuration file {infile} is weird: cannot find topology.nodes dictionary')
+    log.fatal(f'Containerlab configuration file {infile} is weird: cannot find topology.nodes dictionary')
 
   try:
     cfglist = os.listdir(configs)
   except Exception as ex:
-    common.fatal(f'Cannot read the contents of {configs} directory: {ex}')
+    log.fatal(f'Cannot read the contents of {configs} directory: {ex}')
 
   for n in list(clab.topology.nodes.keys()):
     cfgfile = find_config_file(n,cfglist)
@@ -85,9 +83,9 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
       print(f"Found config file for {n}: {cfgfile}")
       clab.topology.nodes[n]['startup-config'] = cfgfile
 
-  final_clab_yml = common.get_yaml_string(clab) 
+  final_clab_yml = strings.get_yaml_string(clab) 
   if final_clab_yml == clab_yml:
-    common.fatal(f'No relevant configuration files were found in {configs} directory, aborting')
+    log.fatal(f'No relevant configuration files were found in {configs} directory, aborting')
 
   _files.create_file_from_text(outfile,final_clab_yml)
 
@@ -95,7 +93,7 @@ def clab_tarball(cli_args: typing.List[str], settings: Box) -> None:
   args = tarball_parse(cli_args,settings)
 
   if not os.path.exists('clab.yml'):
-    common.fatal('Containerlab configuration file clab.yml not found, aborting...')
+    log.fatal('Containerlab configuration file clab.yml not found, aborting...')
 
   external_commands.print_step(1,"Collecting device configurations")
   os.environ["ANSIBLE_STDOUT_CALLBACK"] = "dense"
@@ -110,7 +108,7 @@ def clab_tarball(cli_args: typing.List[str], settings: Box) -> None:
   try:
     subprocess.check_call(['tar','cfz' if args.quiet else 'cvfz',tarball,'clab.config.yml',args.output])
   except Exception as ex:
-    common.fatal(f"Cannot start tar: {ex}")
+    log.fatal(f"Cannot start tar: {ex}")
 
   if args.cleanup:
     external_commands.print_step(4,"Cleanup",spacing = True)
@@ -121,13 +119,13 @@ def clab_usage() -> None:
   print("Usage: netlab clab tarball --help")
 
 def run(cli_args: typing.List[str]) -> None:
-  settings = read_topology.read_yaml('package:topology-defaults.yml')
+  settings = _read.read_yaml('package:topology-defaults.yml')
   if not cli_args:
     clab_usage()
     return
 
   if not settings:
-    common.fatal("Cannot read the system defaults","clab")
+    log.fatal("Cannot read the system defaults","clab")
 
   if cli_args[0] == 'tarball':
     clab_tarball(cli_args[1:],settings)

@@ -6,8 +6,8 @@ import typing
 
 from box import Box
 
-from .. import common
 from .. import data
+from ..utils import log
 
 """
 Get generic device attribute:
@@ -25,7 +25,7 @@ def get_device_attribute(node: Box, attr: str, defaults: Box) -> typing.Optional
   provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:    # pragma: no cover
-    common.fatal(f'Internal error: call to get_device_attribute with unknown device {devtype}')
+    log.fatal(f'Internal error: call to get_device_attribute with unknown device {devtype}')
     return None
 
   pvalue = None
@@ -55,7 +55,7 @@ def get_device_features(node: Box, defaults: Box) -> Box:
     return data.get_empty_box()
 
   if not isinstance(features,Box):
-    common.fatal('Device features for device type {node.device} should be a dictionary')
+    log.fatal('Device features for device type {node.device} should be a dictionary')
     return data.get_empty_box()
 
   return features
@@ -68,7 +68,7 @@ def get_provider_data(node: Box, defaults: Box) -> Box:
   provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:
-    common.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
+    log.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
 
   return defaults.devices[devtype].get(provider,{})
 
@@ -80,7 +80,7 @@ def get_consolidated_device_data(node: Box, defaults: Box) -> Box:
   provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:
-    common.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
+    log.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
 
   data = defaults.devices[devtype] + defaults.devices[devtype].get(provider,{})
   for p in defaults.providers.keys():
@@ -136,6 +136,9 @@ def build_module_support_lists(topology: Box) -> None:
         continue                                            # Weird feature name, skip it
 
       mdata = sets[m]                                       # Get module data
+      if not isinstance(mdata,Box):                         # Hope it's a box or something is badly messed up
+        log.fatal(f'Internal error: definition of module {mdata} is not a dictionary')
+
       if not 'attributes' in mdata:                         # Is this a valid module?
         continue                                            # ... not without attributes
 
@@ -161,5 +164,13 @@ Initial device setting augmentation:
 * Future: Inherit device data from parent devices
 """
 def augment_device_settings(topology: Box) -> None:
+  devices = topology.defaults.devices
+  if not isinstance(devices,Box):
+    log.fatal('Internal error: defaults.devices must be a dictionary')
+
+  for dname in list(devices.keys()):                        # To be on the safe side...
+    if not isinstance(devices[dname],Box):                  # ... validate device definition data type
+      log.fatal(f'Internal error: definition of device {dname} is not a dictionary')
+
   process_device_inheritance(topology)
   build_module_support_lists(topology)

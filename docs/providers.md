@@ -8,7 +8,7 @@
 * **[external](labs/external.md)** -- meta-provider you can use to configure hardware devices.
 
 ```{note}
-Use **[‌netlab show providers](show-providers)** command to display the available virtualization providers.
+Use **[‌netlab show providers](netlab-show-providers)** command to display the available virtualization providers.
 ```
 
 You can also combine [multiple virtualization providers](labs/multi-provider.md) within the same lab topology (some restrictions apply).
