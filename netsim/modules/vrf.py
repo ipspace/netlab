@@ -6,13 +6,12 @@ import netaddr
 from box import Box
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
-from .. import common
+from ..utils import log
 from .. import data
 from ..data import global_vars
 from ..data.validate import validate_attributes
 from ..data.types import must_be_list,must_be_dict,must_be_id
-from ..augment import devices,groups,links
-from .. import addressing
+from ..augment import devices,groups,links,addressing
 
 #
 # get_node_vrf_data: an abstraction layer that returns node-level VRF data structure
@@ -101,7 +100,7 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
   obj_name = 'global VRFs' if obj is topology else obj.name
 
   if not isinstance(obj.vrfs,dict):
-    common.error(f'VRF definition in {obj_name} is not a dictionary',common.IncorrectValue,'vrf')
+    log.error(f'VRF definition in {obj_name} is not a dictionary',log.IncorrectValue,'vrf')
     return
 
   for vname in list(obj.vrfs.keys()):
@@ -110,8 +109,8 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
     if not isinstance(obj.vrfs[vname],dict):
-      common.error(f'VRF definition for {vname} in {obj_name} should be empty or a dictionary',
-        common.IncorrectValue,
+      log.error(f'VRF definition for {vname} in {obj_name} should be empty or a dictionary',
+        log.IncorrectValue,
         'vrf')
       return
 
@@ -122,19 +121,19 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
       if isinstance(vdata.rd,int):
         asn = asn or get_rd_as_number(obj,topology)
         if not asn:
-          common.error(f'VRF {vname} in {obj_name} uses integer RD value without a usable vrf.as or bgp.as AS number',
-            common.MissingValue,
+          log.error(f'VRF {vname} in {obj_name} uses integer RD value without a usable vrf.as or bgp.as AS number',
+            log.MissingValue,
             'vrf')
           return
         vdata.rd = f'{asn}:{vdata.rd}'
       elif isinstance(vdata.rd,str):
         if parse_rdrt_value(vdata.rd) is None:
-          common.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
-            common.IncorrectValue,
+          log.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
+            log.IncorrectValue,
             'vrf')
       else:
-        common.error(f'RD value in VRF {vname} in {obj_name} must be a string or an integer',
-          common.IncorrectValue,
+        log.error(f'RD value in VRF {vname} in {obj_name} must be a string or an integer',
+          log.IncorrectValue,
           'vrf')
 
 def normalize_vrf_ids(topology: Box) -> None:
@@ -167,18 +166,18 @@ def get_vrf_id(vname: str, obj: Box, topology: Box) -> typing.Optional[str]:
   vdata = topology.get(vpath,None) or obj.get(vpath,None)
 
   if vdata is None:
-    common.error(
+    log.error(
       f'Cannot get VRF ID for unknown VRF {vname} needed in {obj_name}',
-      common.MissingValue,
+      log.MissingValue,
       'vrf')
     return None
 
   if not isinstance(vdata,Box):
-    common.fatal(f'Internal error: got a VRF definition that is not a dictionary')
+    log.fatal(f'Internal error: got a VRF definition that is not a dictionary')
     return None
 
   if not 'rd' in vdata:
-    common.fatal(f'Internal error: VRF {vname} in {obj_name} should have a RD value by now')
+    log.fatal(f'Internal error: VRF {vname} in {obj_name} should have a RD value by now')
     return None
 
   return vdata.rd
@@ -205,8 +204,8 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
 
     asn = asn or get_rd_as_number(obj,topology)
     if not asn:
-      common.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
-        common.MissingValue,
+      log.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
+        log.MissingValue,
         'vrf')
       return
     set_vrf_auto_id(vdata,get_next_vrf_id(asn))
@@ -240,21 +239,21 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
         if isinstance(rtvalue,int):         # RT can be specified as an integer, in which case ASN is prepended to it
           asn = asn or get_rd_as_number(obj,topology)
           if not asn:
-            common.error('VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
-              common.MissingValue,
+            log.error('VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
+              log.MissingValue,
               'vrf')
             continue
           rtvalue = f'{asn}:{rtvalue}'
         elif not isinstance(rtvalue,str):   # If RT is not an integer, it really should be a string
-          common.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
-            common.IncorrectValue,
+          log.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
+            log.IncorrectValue,
             'vrf')
           continue
         else:
           if ':' in rtvalue:                # If there's a colon in RT value, then we're assuming N:N format
             if parse_rdrt_value(rtvalue) is None:
-              common.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
-                common.IncorrectValue,
+              log.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
+                log.IncorrectValue,
                 'vrf')
               continue
           else:                             # Otherwise the RT value should refer to another VRF name
@@ -282,16 +281,16 @@ def validate_vrf_route_leaking(node : Box) -> None:
         if node.get('vrf.as',None):
           node.bgp['as'] = node.vrf['as']
         else:
-          common.error(
+          log.error(
             f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
-            common.MissingValue,
+            log.MissingValue,
             'vrf')
 
 def vrf_loopbacks(node : Box, topology: Box) -> None:
   loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
 
   if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
-    common.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
+    log.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
     return
 
   node_vrf_loopback = get_effective_module_attribute(
@@ -440,7 +439,7 @@ class VRF(_Module):
         module_source='topology',
         module='vrf')                                   # Function is called from 'vrf' module
 
-    common.exit_on_error()
+    log.exit_on_error()
     normalize_vrf_ids(topology)
     populate_vrf_static_ids(topology)
     set_vrf_ids(topology,topology)
@@ -499,9 +498,9 @@ class VRF(_Module):
 
       vrf_data_path = f'vrfs.{ifdata.vrf}'
       if not topology.get(vrf_data_path,None) and not node.get(vrf_data_path,None):
-        common.error(
+        log.error(
           f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
-          common.MissingValue,
+          log.MissingValue,
           'vrf')
         continue
 
@@ -522,9 +521,9 @@ class VRF(_Module):
       if 'vrf' in ifdata:
         vrf_count = vrf_count + 1
         if not node.vrfs[ifdata.vrf].rd:
-          common.error(
+          log.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} does not have a usable RD',
-            common.MissingValue,
+            log.MissingValue,
             'vrf')
           continue
 
@@ -533,7 +532,7 @@ class VRF(_Module):
             node.af[f'vpn{af}'] = True
             node.vrfs[ifdata.vrf].af[f'ip{af}'] = True
 
-    if common.debug_active('vrf'):
+    if log.debug_active('vrf'):
       print( f"vrf node_post_transform on {node.name}: counted {vrf_count} VRFs on interfaces" )
     features = devices.get_device_features(node,topology.defaults)
     if not vrf_count and ('vrf' not in features or not features.vrf.keep_module): # Remove VRF module from the node if the node has no VRFs, unless flag set
@@ -546,11 +545,11 @@ class VRF(_Module):
       # Check that all VRFs have a well-defined data structure (should be at this point, unless someone used groups.node_data)
       for k,v in node.vrfs.items():
         if v is None or not 'id' in v:
-          common.error(
+          log.error(
             f"Found invalid VRF {k} on node {node.name}. Did you mention it only in groups.node_data? You can't do that.",
-            common.IncorrectValue,
+            log.IncorrectValue,
             'vrf')
-          common.exit_on_error()
+          log.exit_on_error()
 
       # We need unique VRF index to create OSPF processes, assign in order sorted by VRF ID "for consistency"
       for v in sorted(node.vrfs.values(),key=lambda v: v.id):

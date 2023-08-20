@@ -7,10 +7,11 @@ import yaml
 import os
 from box import Box
 
-from .. import common
 from . import _TopologyOutput,check_writeable
 from ..augment import nodes
 from ..augment import devices
+from ..utils import templates,strings,log
+from ..utils import files as _files
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
@@ -129,17 +130,14 @@ def dump(data: Box) -> None:
   print("Ansible inventory data")
   print("===============================")
   inventory = create(data)
-  print(common.get_yaml_string(inventory))
+  print(strings.get_yaml_string(inventory))
 
 def write_yaml(data: Box, fname: str, header: str) -> None:
   dirname = os.path.dirname(fname)
   if dirname and not os.path.exists(dirname):
     os.makedirs(dirname)
 
-  with open(fname,"w") as output:
-    output.write(header)
-    output.write(common.get_yaml_string(data))
-    output.close()
+  _files.create_file_from_text(fname,header+"\n"+strings.get_yaml_string(data))
 
 min_inventory_data = [ 'id','ansible_host','ansible_port','ansible_connection','ansible_user','ansible_ssh_pass' ]
 
@@ -163,7 +161,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
     gvars = inventory[g].pop('vars',None)
     if gvars:
       write_yaml(gvars,'group_vars/%s/topology.yml' % g,header)
-      if not common.QUIET:
+      if not log.QUIET:
         print("Created group_vars for %s" % g)
 
     if 'hosts' in inventory[g]:
@@ -180,7 +178,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
             vars_host[item] = hosts[h][item]
 
         write_yaml(vars_host,'host_vars/%s/topology.yml' % h,header)
-        if not common.QUIET:
+        if not log.QUIET:
           print("Created host_vars for %s" % h)
         hosts[h] = min_host
 
@@ -193,13 +191,24 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
   if not inventory_file:
     inventory_file = 'hosts.yml'
 
-  with open(config_file,"w") as output:
-    output.write(common.template('ansible.cfg.j2',{ 'inventory': inventory_file or 'hosts.yml' },'templates','ansible'))
-    output.close()
-    if not common.QUIET:
-      print("Created Ansible configuration file: %s" % config_file)
+  try:
+    cfg_text = templates.render_template(
+                j2_file='ansible.cfg.j2',
+                data={'inventory': inventory_file or 'hosts.yml'},
+                path='templates',
+                extra_path=_files.get_search_path('ansible'))
+  except Exception as ex:
+    log.fatal(
+      text=f"Error rendering ansible.cfg\n{strings.extra_data_printout(str(ex))}",
+      module='ansible')
+
+  _files.create_file_from_text(config_file,cfg_text)
+  if not log.QUIET:
+    print("Created Ansible configuration file: %s" % config_file)
 
 class AnsibleInventory(_TopologyOutput):
+
+  DESCRIPTION :str = 'Ansible inventory and configuration file'
 
   def write(self, topology: Box) -> None:
     check_writeable('Ansible inventory')
@@ -212,7 +221,7 @@ class AnsibleInventory(_TopologyOutput):
       if len(self.filenames) > 1:
         configfile = self.filenames[1]
       if len(self.filenames) > 2:
-        common.error('Extra output filename(s) ignored: %s' % str(self.filenames[2:]),common.IncorrectValue,'ansible')
+        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[2:]),log.IncorrectValue,'ansible')
 
     if self.format:
       output_format = self.format[0]

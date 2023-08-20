@@ -6,25 +6,27 @@ import typing
 from box import Box
 
 from . import _Module,_routing
-from .. import common
-from ..common import AF_LIST,BGP_SESSIONS
 from .. import data
 from ..data.validate import must_be_bool,must_be_list
 from ..augment import devices
+from ..utils import log
 
-DEFAULT_BGP_LU: dict = {
+AF_LIST: typing.Final[list] = ['ipv4','ipv6']
+BGP_SESSIONS: typing.Final[list] = ['ibgp','ebgp']
+
+DEFAULT_BGP_LU: typing.Final[dict] = {
   'ipv4': [ 'ibgp','ebgp' ],
   'ipv6': [ 'ibgp','ebgp' ]
 }
 
-DEFAULT_VPN_AF: dict = {
+DEFAULT_VPN_AF: typing.Final[dict] = {
   'ipv4': [ 'ibgp' ],
   'ipv6': [ 'ibgp' ]
 }
 
-DEFAULT_6PE_AF: list = [ 'ibgp' ]
+DEFAULT_6PE_AF: typing.Final[list] = [ 'ibgp' ]
 
-FEATURE_NAME: dict = {
+FEATURE_NAME: typing.Final[dict] = {
   'ldp': 'LDP-based label distribution',
   'bgp': 'BGP Labeled Unicast',
   'vpn': 'MPLS/VPN',
@@ -33,9 +35,9 @@ FEATURE_NAME: dict = {
 
 def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
   if not 'ipv4' in node.get('af',{}):
-    common.error(
+    log.error(
       f'You cannot enable MPLS LDP on node {node.name} without IPv4 address family',
-      common.MissingValue,
+      log.MissingValue,
       'mpls')
     return
 
@@ -51,9 +53,9 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
       if not intf_ldp:                                            # ... VRF LDP must be enabled on individual interfaces (MPLS CSC)
         continue
       if not features.mpls.csc:
-        common.error(
+        log.error(
           f'Device {node.device} does not support MPLS CsC (LDP in VRF) configured on {node.name}',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'mpls')
         continue
 
@@ -100,9 +102,9 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
         return False
 
   else:
-    common.error(
+    log.error(
       f'nodes.{node.name}.mpls.{feature} parameter must be a boolean, list, or dictionary',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'mpls')
     return False
 
@@ -125,16 +127,16 @@ def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
     return
 
   if not 'ipv4' in node.bgp:
-    common.error(
+    log.error(
       f'6PE feature used on {node.name} needs IPv4 address family configured within BGP process',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'mpls')
     return
     
   if 'bgp' in node.mpls and 'ipv6' in node.mpls.bgp:
-    common.error(
+    log.error(
       f'6PE and IPv6 BGP Labeled Unicast cannot be used at the same time on {node.name}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'mpls')
     return    
 
@@ -188,9 +190,9 @@ class MPLS(_Module):
     if 'ldp' in node.mpls:
       must_be_bool(node.mpls.ldp,'disable_unlabeled',f'nodes.{node.name}.mpls.ldp')
       if not any(m in ['ospf','isis','eigrp'] for m in node.module):
-        common.error(
+        log.error(
           f'You cannot enable LDP on node {node.name} without an IGP',
-          common.MissingValue,
+          log.MissingValue,
           'mpls')
 
     data.bool_to_defaults(node.mpls,'bgp',DEFAULT_BGP_LU)
@@ -198,9 +200,9 @@ class MPLS(_Module):
     data.bool_to_defaults(node.mpls,'6pe',DEFAULT_6PE_AF)
     if 'bgp' in node.mpls or 'vpn' in node.mpls:
       if not 'bgp' in node.module:
-        common.error(
+        log.error(
           f'You cannot enable BGP-LU or MPLS/VPN on node {node.name} without BGP module',
-          common.MissingValue,
+          log.MissingValue,
           'mpls')
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
@@ -213,9 +215,9 @@ class MPLS(_Module):
 
     for fn in FEATURE_NAME.keys():
       if fn in node.mpls and not features.mpls[fn]:
-        common.error(
+        log.error(
           f'Device {node.device} used by {node.name} does not support {FEATURE_NAME[fn]}',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'mpls')
 
     if 'ldp' in node.mpls:

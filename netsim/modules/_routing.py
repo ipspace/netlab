@@ -12,8 +12,8 @@ from box import Box
 import typing
 import netaddr
 
-from .. import common
-from .. import addressing
+from ..utils import log
+from ..augment import addressing
 from .. import data
 
 # Build routing protocol address families
@@ -30,17 +30,17 @@ def routing_af(node: Box, proto: str) -> None:
       node[proto].pop('af',None)
     else:
       if not isinstance(node[proto].af,dict):
-        common.error(
+        log.error(
           f'af attribute for {proto} on node {node.name} has to be a list or a dictionary',
-          common.IncorrectValue,
+          log.IncorrectValue,
           proto)
         return
 
       for proto_af in node[proto].af.keys():
         if not proto_af in ('ipv4','ipv6'):
-          common.error(
+          log.error(
             f'Routing protocol address family has to be ipv4 and/or ipv6: {proto} on {node.name}',
-            common.IncorrectValue,
+            log.IncorrectValue,
             proto)
 
   if not 'af' in node[proto]:           # No configured AF attribute, calculate it
@@ -108,9 +108,9 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
     try:
       node[proto].router_id = str(netaddr.IPAddress(node[proto].router_id).ipv4())
     except Exception as ex:
-      common.error(
+      log.error(
         f'{proto} router_id "{node[proto].router_id}" specified on node {node.name} is not an IPv4 address',
-        common.IncorrectValue,
+        log.IncorrectValue,
         proto)
     return
 
@@ -119,9 +119,9 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
       node.router_id = str(netaddr.IPAddress(node.router_id).ipv4())
       node[proto].router_id = node.router_id
     except Exception as ex:
-      common.error(
+      log.error(
         f'router_id "{node.router_id}" specified on node {node.name} is not an IPv4 address',
-        common.IncorrectValue,
+        log.IncorrectValue,
         proto)
     return
 
@@ -130,24 +130,24 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
     return
 
   if not pools.router_id:
-    common.error(
+    log.error(
       f'Cannot create a router ID for protocol {proto} on node {node.name}: router_id addressing pool is not defined',
-      common.MissingValue,
+      log.MissingValue,
       proto)
     return
 
   pfx = addressing.get(pools,['router_id'],node.id)
   if not pfx:
-    common.error(
+    log.error(
       f'Cannot create a router ID prefix from router_id pool for protocol {proto} on node {node.name}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       proto)
     return
 
   if not pfx.get('ipv4',None):
-    common.error(
+    log.error(
       f'router_id pool did not return a usable IPv4 address to use as router ID for protocol {proto} on node {node.name}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       proto)
     return
 

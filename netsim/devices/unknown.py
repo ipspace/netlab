@@ -4,7 +4,7 @@
 from box import Box
 
 from . import _Quirks
-from .. import common
+from ..utils import log
 from ..augment import devices
 
 '''
@@ -15,8 +15,8 @@ def check_clab_device_kind(node: Box, topology: Box) -> None:
     return
   
   if not 'kind' in node.get('clab',{}):
-    common.error(
-      f'Unknown device {node.name} using containerlab provider must have clab.kind defined',common.MissingValue)
+    log.error(
+      f'Unknown device {node.name} using containerlab provider must have clab.kind defined',log.MissingValue)
 
 class Unknown(_Quirks):
 

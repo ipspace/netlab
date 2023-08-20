@@ -1,0 +1,64 @@
+# External Provider
+
+You can use *netlab* to create addressing plans and device configurations for a hardware lab **as long as the topology file contains an accurate description of the hardware lab**. 
+
+You can use any device supported by *netlab* with the **external** provider, but you might have to customize the lab topology file -- hardware devices might use:
+
+* Preconfigured management IPv4/IPv6 addresses
+* Interface names different from names used by virtual devices
+* Different access credentials.
+
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Static Management IP Addresses
+
+To specify a static management IPv4/IPv6 address for a lab device, set **mgmt.ipv4** or **mgmt.ipv6** node parameter. To set the management interface name, use **mgmt.ifname** parameter:
+
+* You SHOULD set static management IPv4/IPv6 addresses for all devices in your hardware lab.
+* You don't have to set the management interface names for most devices -- management interfaces are usually not configured during the initial device configuration process.
+
+Example:
+
+```
+nodes:
+  r1:
+    mgmt.ipv4: 10.20.30.50
+    mgmt.ifname: ether9
+```
+
+## Setting Interface Names
+
+*netlab* creates device interface names based on the naming conventions used by virtual devices. If your hardware devices use the same interface names, **and if your lab topology lists links in just the right order** to generate the desired device interface names, you don't have to specify interface names in the lab topology. In most other cases, you REALLY SHOULD specify interface names using **ifname** interface (node-to-link connection) attribute.
+
+Example:
+
+```
+links:
+- r1:
+    ifname: sfp-1
+  r2:
+    ifname: GigabitEthernet0/3
+```
+
+## Access Credentials
+
+It's STRONGLY RECOMMENDED to use usernames and passwords hardcoded into *netlab* with hardware devices (see **devices** section of [topology-defaults.yml](https://github.com/ipspace/netlab/blob/master/netsim/topology-defaults.yml) for more details).
+
+Access credentials are stored in Ansible group variables and derived from the **group_vars** section of device defaults.
+To change access credentials for a device type, set the `defaults.devices.<device>.group_vars.ansible_user` and `defaults.devices.<device>.group_vars.ansible_ssh_pass` parameters.
+
+You can also change the access credentials for individual nodes -- set **ansible_user** or **ansible_ssh_pass** node parameters, for example:
+
+```
+nodes:
+  r1:
+    mgmt.ipv4: 10.20.30.50
+    mgmt.ifname: ether9
+    ansible_user: Vagrant
+    ansible_ssh_pass: "vagrant!"
+```

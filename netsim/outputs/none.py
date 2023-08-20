@@ -5,7 +5,6 @@ import typing
 
 from box import Box
 
-from .. import common
 from . import _TopologyOutput
 
 class NONE(_TopologyOutput):

@@ -12,7 +12,7 @@ import subprocess
 from . import common_parse_args,fs_cleanup
 from . import ansible
 from . import external_commands
-from .. import common
+from ..utils import log
 
 #
 # CLI parser for 'netlab collect' command
@@ -59,13 +59,13 @@ def get_tarball_file(tarball: str) -> str:
 
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = initial_config_parse(cli_args)
-  common.set_logging_flags(args)
+  log.set_logging_flags(args)
 
   fs_cleanup([ args.output ])
   try:
     os.mkdir(args.output)
   except Exception as ex:
-    common.fatal(f"Cannot create output directory {{args.output}}: {{ex}}")
+    log.fatal(f"Cannot create output directory {{args.output}}: {{ex}}")
 
   if args.verbose:
     rest = ['-v'] + rest
@@ -90,7 +90,7 @@ def run(cli_args: typing.List[str]) -> None:
     try:
       subprocess.check_call(['tar','cfz' if args.quiet else 'cvfz',tarball,args.output])
     except Exception as ex:
-      common.fatal(f"Cannot start tar: {ex}")
+      log.fatal(f"Cannot start tar: {ex}")
 
     if args.cleanup:
       if not args.quiet:

@@ -1,0 +1,36 @@
+{# description: BGP autonomous systems #}
+{#
+   First, figure out if we need RR column
+#}
+{% set rr_count = [] %}
+{% for ndata in nodes.values() if 'bgp' in ndata and ndata.bgp.rr|default(False) %}
+{%   set ignore = rr_count.append(ndata.name) %}
+{% endfor %}
+{% set has_rr = (rr_count|length) > 0 %}
+{#
+   Now we're ready for the ASN report
+#}
+{% for asn,ndl in nodes.values()|groupby('bgp.as') if asn %}
+{%   if loop.first %}
+## BGP AS Numbers
+| Node/ASN | Router ID |{% if has_rr %} BGP RR |{% endif %} Advertised prefixes |
+|----------|----------:|{% if has_rr %}--------|{% endif %}--------------------:|
+{%   endif %}
+| **AS{{ asn }}** |{% if has_rr %}|{% endif %}|
+{%   for ndata in ndl %}
+{#
+    Collect prefixes advertised by the router, starting with bgp.originate
+#}
+{%     set pfx = ndata.bgp.originate|default([]) %}
+{#
+    Add loopback IPv4 to the prefix list if loopback exists, has IPv4 prefix, and
+    bgp.advertise_loopback is set
+#}
+{%     if 'loopback' in ndata and 'ipv4' in ndata.loopback and ndata.bgp.advertise_loopback|default(False) %}
+{%       set pfx = [ ndata.loopback.ipv4 ] + pfx %}
+{%     endif %}
+| {{ ndata.name }} | {{ ndata.bgp.router_id|default('') }} {% if has_rr
+%}| {{ '✅' if ndata.bgp.rr|default('') else '' }} {% endif 
+%}| {{ pfx|join('<br>') }} |
+{%   endfor %}
+{% endfor %}

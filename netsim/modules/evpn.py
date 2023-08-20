@@ -2,7 +2,7 @@ import typing
 
 from . import _Module,_routing,_dataplane
 from box import Box
-from .. import common
+from ..utils import log
 from .. import data
 from ..data.validate import must_be_int,must_be_dict,must_be_string
 from ..augment import devices
@@ -60,9 +60,9 @@ def get_usable_evpn_asn(topology: Box) -> int:
   if asn and data.is_true_int(asn):
     return asn
 
-  common.error(
+  log.error(
     f'Cannot get a usable global AS number to use in EVPN route targets',
-    common.IncorrectValue,
+    log.IncorrectValue,
     'evpn')
   return 0
 
@@ -82,16 +82,16 @@ def vlan_based_service(vlan: Box, vname: str, topology: Box) -> None:
 def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
   vrf_name = vlan.vrf
   if not vrf_name in topology.vrfs:
-    common.error(
+    log.error(
       f'VXLAN-enabled VLAN {vname} that is part of VLAN bundle must belong to a global VRF',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'evpn')
     return
 
   if 'evpn' in vlan:                                                # VLAN that is part of a bundle cannot have EVI/RT/RD attributes
-    common.error(
+    log.error(
       f'VLAN {vname} is part of a VLAN bundle {vrf_name} and cannot have EVPN-related attributes',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'evpn')
     return
 
@@ -157,9 +157,9 @@ def validate_no_node_vrf_bundle(node: Box, topology: Box) -> None:
   for vname,vdata in node.vrfs.items():
     if not vdata.get('evpn.bundle',None):                           # EVPN bundle not set in VRF, move on
       continue
-    common.error(
+    log.error(
       f'VRF {vname} in node {node.name} cannot have evpn.bundle attribute',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'evpn',
       hint='node_bundle')
 
@@ -174,9 +174,9 @@ def register_static_transit_vni(topology: Box) -> None:
     transit_vni = vrf_data.get('evpn.transit_vni',None)
     if data.is_true_int(transit_vni):
       if transit_vni in vni_set:
-        common.error(
+        log.error(
           f'transit VNI {transit_vni} for VRF {vrf_name} is already used elsewhere',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'evpn')
         continue
       vni_set.add(transit_vni)
@@ -187,9 +187,9 @@ def register_static_transit_vni(topology: Box) -> None:
 
     for vrf_name,vrf_data in n.vrfs.items():
       if vrf_data.get('evpn.transit_vni',None):
-        common.error(
+        log.error(
           f'evpn.transit_vni can be specified only on global VRFs (found in {vrf_name} on {n.name}',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'evpn')
 
 """
@@ -213,9 +213,9 @@ def vrf_transit_vni(topology: Box) -> None:
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
     vni = vrf_data.get('evpn.transit_vni',None)                 # transit_vni makes no sense with MPLS transport
     if vni and evpn_transport != 'vxlan':
-      common.error(
+      log.error(
         f'evpn.transit_vni in VRF {vrf_name} is not allowed with mpls evpn.transport',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'evpn')
       vni_error = True
       continue
@@ -225,9 +225,9 @@ def vrf_transit_vni(topology: Box) -> None:
     if not data.is_true_int(vni):                               # Skip non-integer values, no need to check them at this time
       continue
     if vni in vni_list:
-      common.error(
+      log.error(
         f'VRF {vrf_name} is using the same EVPN transit VNI as another VRF',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'evpn')
       continue  
     vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
@@ -259,16 +259,16 @@ def vrf_transit_vni(topology: Box) -> None:
     if not isinstance(transit_vni,str):                         # Skip if transit_vni is not a string
       continue
     if not transit_vni in topology.vrfs:                        # Does transit VNI refer to a valid VRF name?
-      common.error(
+      log.error(
         f'evpn.transit_vni "{transit_vni}" in VRF {vrf_name} does not refer to a valid VRF',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'evpn')
       continue
     foreign_vni = topology.vrfs.get(f'{transit_vni}.evpn.transit_vni',None)
     if not data.is_true_int(foreign_vni):
-      common.error(
+      log.error(
         f'evpn.transit_vni "{transit_vni}" in VRF {vrf_name} refers to a VRF that does not have a valid evpn.transit_vni',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'evpn')
       continue
     vrf_data.evpn.transit_vni = foreign_vni
@@ -313,9 +313,9 @@ def set_local_evpn_rd(node: Box) -> None:
       if not 'evpn' in o_data:
         continue                                                # Skip non-EVPN objects
       if not 'evi' in o_data.evpn:
-        common.error(
+        log.error(
           f'{obj}.{o_name} on node {node.name} has EVPN attributes but no evpn.evi ({o_data.evpn})',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'evpn')
         continue
       #
@@ -341,9 +341,9 @@ def check_asym_vlan(vrf_name: str, node: Box, topology: Box) -> None:
     if vl_name in node.get('vlans',{}):                         # Is the VLAN present on the node?
       continue                                                  # Yeah, everything OK
 
-    common.error(
+    log.error(
       f'VLAN {vl_name} -- part of VRF {vrf_name} that uses asymmetric IRB -- is not present on node {node.name}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       module='evpn',
       hint='irb_group')
 
@@ -361,18 +361,18 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
     symmetric_irb = vrf_data.get('evpn.transit_vni',False) or evpn_transport == 'mpls'
     if symmetric_irb:
       if not features.evpn.irb and evpn_transport == 'vxlan':   # ... does this device support IRB?
-        common.error(
+        log.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'evpn')
         continue
 
       vrf_data.pop('ospf',None)                                 # Remove OSPF from EVPN IRB VRF
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
-        common.error(
+        log.error(
           f'VRF {vrf_name} on {node.name} uses asymmetrical EVPN IRB which is not supported by {node.device} device',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'evpn')
         continue
 
@@ -389,9 +389,9 @@ def check_node_vrf_bundle(node: Box, topology: Box) -> None:
     if not b_type:
       continue
     if not b_type in features.evpn.bundle:                            # EVPN bundle type not supported by the device
-      common.error(
+      log.error(
         f"'{b_type}'' EVPN bundle service used in VRF {vrf_name} is not supported by device {node.device} (node: {node.name})",
-        common.IncorrectValue,
+        log.IncorrectValue,
         'evpn')
 
 class EVPN(_Module):

@@ -1,22 +1,19 @@
 #
 # Plugin API routines
 #
-import sys
 import typing
-import os
 
 from box import Box
 
-from . import common
-from . import data
-from .data.validate import must_be_list
+from ..data.validate import must_be_list
+from ..utils import log,strings
 
 def get_config_name(g: dict) -> typing.Optional[str]:
   config_name = g.get('config_name',None)
   if config_name:
     return config_name
 
-  common.fatal("Cannot get configuration template name for plugin %s" % g.get('__file__'),'plugin')
+  log.fatal("Cannot get configuration template name for plugin %s" % g.get('__file__'),'plugin')
   return None
 
 def node_config(node: Box, config_name: typing.Optional[str]) -> None:

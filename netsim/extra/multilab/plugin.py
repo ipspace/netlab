@@ -1,9 +1,6 @@
 import typing, netaddr
 from box import Box
-from netsim import common
-from netsim import utils
-from netsim import api
-from netsim import data
+from netsim import utils,data
 
 """
 Depth-first evaluation of changed parameters:
@@ -48,7 +45,7 @@ def init(topology: Box) -> None:
   abort = False
   for kw in ['id','change']:                                          # Check that we have all default parameters needed for multilab to work
     if not kw in mlab:
-      common.error(f'multilab plugin requires defaults.multilab.{kw} parameter',common.MissingValue,'multilab')
+      utils.log.error(f'multilab plugin requires defaults.multilab.{kw} parameter',utils.log.MissingValue,'multilab')
       abort = True
 
   if abort:
@@ -71,7 +68,7 @@ def init(topology: Box) -> None:
   ctx_data = data.get_box(topology)
   ctx_data.id = mlab.id
   eval_changed_parameters(mlab.change,ctx_data)                       # Evaluate changed parameters
-  if common.debug_active('plugin'):                                   # Print the results if we're debugging
+  if utils.log.debug_active('plugin'):                                # Print the results if we're debugging
     print(f'MULTILAB CHANGES\n==============\n{mlab.change.to_yaml()}')
 
   merge_changes(topology,mlab.change)                                 # And merge the changes with the topology

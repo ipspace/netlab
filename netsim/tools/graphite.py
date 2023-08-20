@@ -16,7 +16,6 @@ import typing
 import json
 from box import Box
 
-from .. import common
 from . import _ToolOutput
 
 DEFAULT_NODE_ICON = "router"

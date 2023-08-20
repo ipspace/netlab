@@ -10,12 +10,11 @@ import typing
 from box import Box
 import netaddr
 
-from .. import common
+from ..utils import log
 from .. import data
 from .. import utils
-from .. import addressing
 from .. import providers
-from . import devices
+from . import devices,addressing
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id
 from ..data import global_vars
@@ -46,7 +45,7 @@ def create_node_dict(nodes: Box) -> Box:
     for n in nodes or []:
       if isinstance(n,dict):
         if not 'name' in n:
-          common.error(f'Node is missing a "name" attribute: {n}',common.IncorrectValue,'nodes')
+          log.error(f'Node is missing a "name" attribute: {n}',log.IncorrectValue,'nodes')
           continue
       elif isinstance(n,str):
         n = data.get_box({ 'name': n })
@@ -57,7 +56,7 @@ def create_node_dict(nodes: Box) -> Box:
     if ndata is None:
       ndata = data.get_box({'name': name})
     elif not isinstance(ndata,dict):
-      common.error(f'Node data for node {name} must be a dictionary')
+      log.error(f'Node data for node {name} must be a dictionary')
       node_dict[name] = { 'name': name, 'extra': ndata }
       ndata = node_dict[name]
     else:
@@ -66,7 +65,7 @@ def create_node_dict(nodes: Box) -> Box:
     ndata.interfaces = ndata.interfaces or []   # Make sure node.interfaces is always defined
     node_dict[name] = ndata
 
-  common.exit_on_error()
+  log.exit_on_error()
   return node_dict
 
 """
@@ -99,7 +98,7 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
     if not mgmt_if:
       ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
       if not isinstance(ifname_format,str):
-        common.fatal("Missing interface name template for device type %s" % node.device)
+        log.fatal("Missing interface name template for device type %s" % node.device)
         return
 
       ifindex_offset = devices.get_device_attribute(node,'ifindex_offset',defaults)
@@ -116,9 +115,9 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
     return
 
   if not addrs:                                                       # We need a management address pool, but there's none
-    common.error(
+    log.error(
       f"Node {node.name} does not have a management IP address and there's no 'mgmt' address pool",
-      common.MissingValue,
+      log.MissingValue,
       'nodes')
     return
 
@@ -128,14 +127,14 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       continue
 
     if not addrs.get('start'):
-      common.fatal("Start offset missing in management address pool for AF %s" % af)
+      log.fatal("Start offset missing in management address pool for AF %s" % af)
 
     try:                                                              # Try to assign management address (might fail due to large ID)
       node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
     except Exception as ex:
-      common.error(
+      log.error(
         f'Cannot assign management address from prefix {str(addrs[pfx])} (starting at {addrs.start}) to node with ID {node.id}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'nodes')
 
   if addrs.mac_eui and not 'mac' in node.mgmt:                        # Finally, assign management MAC address
@@ -143,9 +142,9 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
     node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_unix_expanded)
 
   if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
-    common.error(
+    log.error(
       f'Node {node.name} does not have a usable management IP addresss',
-      common.MissingValue,
+      log.MissingValue,
       'nodes')
 
 """
@@ -157,9 +156,9 @@ def find_node_device(n: Box, topology: Box) -> bool:
     n.device = topology.defaults.device
 
   if not n.device:
-    common.error(
+    log.error(
       f'No device type specified for node {n.name} and there is no default device type',
-      common.MissingValue,
+      log.MissingValue,
       'nodes')
     return False
 
@@ -171,19 +170,19 @@ def find_node_device(n: Box, topology: Box) -> bool:
   devtype = n.device
 
   if not devtype in topology.defaults.devices:
-    common.error(f'Unknown device {devtype} in node {n.name}',common.IncorrectValue,'nodes')
+    log.error(f'Unknown device {devtype} in node {n.name}',log.IncorrectValue,'nodes')
     return False
 
   dev_def = topology.defaults.devices[devtype]
   if not isinstance(dev_def,dict):
-    common.fatal(f"Device data for device {devtype} must be a dictionary")
+    log.fatal(f"Device data for device {devtype} must be a dictionary")
 
   for kw in ['interface_name','description']:
     if not kw in dev_def:
-      common.error(
+      log.error(
         f'Device {devtype} used on node {n.name} is not a valid device type\n'+
         "... run 'netlab show devices' to display valid device types",
-        common.IncorrectValue,
+        log.IncorrectValue,
         'nodes')
       return False
 
@@ -198,7 +197,7 @@ def find_node_image(n: Box, topology: Box) -> bool:
   pdata = devices.get_provider_data(n,topology.defaults)
   if 'node' in pdata:
     if not isinstance(pdata.node,Box):    # pragma: no cover
-      common.fatal(f"Node data for device {n.device} provider {provider} must be a dictionary")
+      log.fatal(f"Node data for device {n.device} provider {provider} must be a dictionary")
       return False
     n[provider] = pdata.node + n.get(provider,{})
 
@@ -224,9 +223,9 @@ def find_node_image(n: Box, topology: Box) -> bool:
     n.box = pdata.image
     return True
 
-  common.error(
+  log.error(
     f'No image specified for device {n.device} (provider {provider}) used by node {n.name}',
-    common.MissingValue,
+    log.MissingValue,
     'nodes')
 
   return False
@@ -244,16 +243,16 @@ def validate_node_provider(n: Box, topology: Box) -> bool:
     return True
 
   if not n.provider in topology.defaults.providers:
-    common.error(
+    log.error(
       f'Invalid provider {n.provider} specified in node {n.name}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'nodes')
     return False
 
   if not n.provider in topology.defaults.providers[topology.provider]:
-    common.error(
+    log.error(
       f'Provider {n.provider} specified in node {n.name} is not compatible with lab topology provider {topology.provider}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'nodes')
     return False
 
@@ -269,7 +268,7 @@ Add provider data to nodes:
 """
 def augment_node_provider_data(topology: Box) -> None:
   if not topology.defaults.devices:
-    common.fatal('Device defaults (defaults.devices) are missing')
+    log.fatal('Device defaults (defaults.devices) are missing')
 
   for name,n in topology.nodes.items():
     if not validate_node_provider(n,topology):
@@ -287,9 +286,9 @@ Add system data to devices -- hacks that are not yet covered in the settings str
 def augment_node_system_data(topology: Box) -> None:
   if 'mtu' in topology.defaults.get('interfaces',{}):
     if not isinstance(topology.defaults.interfaces.mtu,int):            # pragma: no cover
-      common.error(
+      log.error(
         'defaults.interfaces.mtu setting should be an integer',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'topology')
     else:
       for n in topology.nodes.values():
@@ -297,9 +296,9 @@ def augment_node_system_data(topology: Box) -> None:
           n.mtu = topology.defaults.interfaces.mtu
         else:
           if not isinstance(n.mtu,int):                                 # pragma: no cover
-            common.error(
+            log.error(
               f'nodes.{n.name}.mtu setting should be an integer',
-              common.IncorrectValue,
+              log.IncorrectValue,
               'nodes')
 
 """
@@ -332,19 +331,19 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
     if not must_be_int(n,'id',f'nodes.{name}',module='nodes',min_value=1,max_value=MAX_NODE_ID):
       continue
     if not reserve_id(n.id):
-      common.error(
+      log.error(
         f'Duplicate static node ID {n.id} on node {n.name}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'nodes')
 
-  common.exit_on_error()
+  log.exit_on_error()
   set_id_counter('node_id',1,MAX_NODE_ID)
   for name,n in topology.nodes.items():
     if not 'id' in n:
       n.id = get_next_id('node_id')
 
     if not n.name: # pragma: no cover (name should have been checked way before)
-      common.fatal(f"Internal error: node does not have a name {n}",'nodes')
+      log.fatal(f"Internal error: node does not have a name {n}",'nodes')
       return
 
     augment_node_device_data(n,defaults)
@@ -355,7 +354,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
       for af in prefix_list:
         if isinstance(prefix_list[af],bool):
           if prefix_list[af]:
-            common.fatal( f"Loopback addresses must be valid IP prefixes, not 'True': {prefix_list}" )
+            log.fatal( f"Loopback addresses must be valid IP prefixes, not 'True': {prefix_list}" )
         elif not n.loopback[af]:
           if af == 'ipv6':
             n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
@@ -370,7 +369,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 Return a copy of the topology (leaving original topology unchanged) with unmanaged devices removed
 '''
 def ghost_buster(topology: Box) -> Box:
-  common.print_verbose('Removing unmanaged devices from topology')
+  log.print_verbose('Removing unmanaged devices from topology')
   # Create a copy of topology
   topo_copy = data.get_box(topology)
   

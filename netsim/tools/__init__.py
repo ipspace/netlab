@@ -11,8 +11,8 @@ import re
 # Related modules
 from box import Box
 
-from ..utils import status,log
-from ..callback import Callback
+from ..utils import log
+from ..utils.callback import Callback
 
 class _ToolOutput(Callback):
   def __init__(self) -> None:

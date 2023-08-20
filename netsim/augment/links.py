@@ -8,13 +8,11 @@ import netaddr
 from box import Box
 
 # Related modules
-from .. import common
+from ..utils import log,strings
 from .. import data
-from .. import utils
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
-from .. import addressing
-from . import devices
+from . import devices,addressing
 
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
   'loopback', 'tunnel' ]
@@ -26,28 +24,28 @@ def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
     intf_cnt = intf_cnt + 1
     if isinstance(n,str):               # Another shortcut: node name as string
       if not n in nodes:                # ... is it a valid node name?
-        common.error(                   # ... it's not, get lost
+        log.error(                   # ... it's not, get lost
           f'Interface {link._linkname}.interfaces.{intf_cnt} refers to an unknown node {n}',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'links')
         continue
       n = data.get_box({ 'node': n })
       
     if not isinstance(n,Box):          # Still facing non-dict data type?
-      common.error(                     # ... report an error
+      log.error(                     # ... report an error
         f'Interface data in {link._linkname}.interfaces[{intf_cnt}] must be a dictionary, found {type(n).__name__}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'links')
     elif not 'node' in n:               # Do we have node name in interface data?
-      common.error(                     # ... no? Too bad, throw an error
+      log.error(                     # ... no? Too bad, throw an error
         f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute\n' +
         f'... found {n}',
-        common.MissingValue,
+        log.MissingValue,
         'links')
     elif not n.node in nodes:           # Is the node name valid?
-      common.error(                     # ... it's not, get lost
+      log.error(                     # ... it's not, get lost
         f'Interface data {link._linkname}.interfaces[{intf_cnt}] refers to an unknown node {n.node}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'links')
     else:
       link_intf.append(n)               # Interface data is OK, append it to interface list
@@ -105,17 +103,17 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
       if valid_node:                      # If the node name is valid
         link_intf.append({ 'node': n })   # ... append it to the list of interfaces
       else:
-        common.error(
+        log.error(
           f'Link string {l} in {linkname} refers to an unknown node {n}',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'links')
     return data.get_box({
       'interfaces': link_intf,
       '_linkname' : linkname })
 
-  common.error(
+  log.error(
     f'Invalid type {type(l).__name__} for {linkname}',
-    common.IncorrectType,
+    log.IncorrectType,
     'links')
   return None
 
@@ -132,10 +130,10 @@ def adjust_link_list(links: list, nodes: Box) -> list:
     if not link_data is None:
       link_list.append(link_data)
 
-  if common.debug_active('links'):
+  if log.debug_active('links'):
     print("Adjusted link list")
     print("=" * 60)
-    print(common.get_yaml_string(link_list))
+    print(strings.get_yaml_string(link_list))
 
   return link_list
 
@@ -218,12 +216,12 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
 
   ifdata.ifindex = ifindex
   if ifname_format and not 'ifname' in ifdata:
-    ifdata.ifname = utils.strings.eval_format(ifname_format,ifdata)
+    ifdata.ifname = strings.eval_format(ifname_format,ifdata)
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
   pdata = data.get_box(pdata)                     # Create a copy of the provider interface data
   if 'name' in pdata:
-    pdata.name = utils.strings.eval_format(pdata.name,ifdata)
+    pdata.name = strings.eval_format(pdata.name,ifdata)
 
   if pdata:
     provider = devices.get_provider(node,defaults)
@@ -245,19 +243,19 @@ def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   if not 'ifname' in ifdata:
     if not ifname_format:
       if devtype == 'loopback':
-        common.error(
+        log.error(
           f'Device {node.device}/node {node.name} does not support loopback links',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'links')
         return
       else:
         print(ifdata)
-        common.error(
+        log.error(
           f'Need explicit interface name (ifname) for {devtype} interface on node {node.name} ({node.device})',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'links')
         return
-    ifdata.ifname = utils.strings.eval_format(ifname_format,ifdata)
+    ifdata.ifname = strings.eval_format(ifname_format,ifdata)
 
   # Adjust ifindex to prevent overlap between device types
   #
@@ -321,7 +319,7 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
     return
 
   fhrp_assigned = False
-  for af in common.AF_LIST:
+  for af in log.AF_LIST:
     if not af in pfx_list or isinstance(pfx_list[af],bool):           # No usable IPv4/IPv6 prefix, nothing to do
       continue
 
@@ -329,11 +327,11 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
       link.gateway[af] = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix[af]),link.gateway.id)
       fhrp_assigned = True
     except Exception as ex:
-      common.error(
+      log.error(
         f'Cannot generate gateway IP address on {link_path}' + \
         f' from [af] prefix {link.prefix[af]} and gateway ID {link.gateway.id}\n' + \
-        common.extra_data_printout(str(ex)),
-        common.IncorrectValue,
+        strings.extra_data_printout(str(ex)),
+        log.IncorrectValue,
         'links')
       return
 
@@ -342,11 +340,11 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
 
   for intf in link.interfaces:                                        # Copy link gateway into interface attributes
     if 'gateway' in nodes[intf.node].get('module',[]):                # ... but only for nodes using the gateway module
-      for af in common.AF_LIST:
+      for af in log.AF_LIST:
         if af in link.gateway:
           intf.gateway[af] = link.gateway[af]
 
-  if common.debug_active('links'):     # pragma: no cover (debugging)
+  if log.debug_active('links'):     # pragma: no cover (debugging)
     print(f'FHRP gateway set for {link}')
 
 """
@@ -383,9 +381,9 @@ def assign_link_prefix(
 
   if must_be_string(link,'pool',link_path):
     if not link.pool in addr_pools:
-      common.error(
+      log.error(
         f'Unknown address pool {link.pool} used in {link_path}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'links')
     pools = [ link.pool ] + pools
   else:
@@ -394,7 +392,7 @@ def assign_link_prefix(
 
   pfx_list = addressing.get(addr_pools,pools)
   link.prefix = {
-      af: str(v) if af in common.AF_LIST and not isinstance(v,bool) else v for af,v in pfx_list.items()
+      af: str(v) if af in log.AF_LIST and not isinstance(v,bool) else v for af,v in pfx_list.items()
     }
   if not link.prefix:
     link.pop('prefix',None)
@@ -473,9 +471,9 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
           intf_pfx.prefixlen = pfx.prefixlen    # If it lacks a prefix, add link prefix
         intf[af] = str(intf_pfx)                # ... and save modified/validated interface IP address
       except Exception as ex:
-        common.error(
-          f'Cannot parse {af} address {intf.af} for node {intf.node}\n'+common.extra_data_printout(str(ex)),
-          common.IncorrectValue,
+        log.error(
+          f'Cannot parse {af} address {intf.af} for node {intf.node}\n'+strings.extra_data_printout(str(ex)),
+          log.IncorrectValue,
           'links')
         return False
 
@@ -485,9 +483,9 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
       if intf_pfx.last <= intf_pfx.first + 1:   # Are we dealing with special prefix (loopback or /31)
         return True                             # ... then it's OK not to have host bits
 
-      common.error(
+      log.error(
         f'Address {intf.af} for node {intf.node} does not contain host bits',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'links')
       return False
 
@@ -496,10 +494,10 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
     intf[af] = get_nth_ip_from_prefix(pfx,node_id)
     return True
   except Exception as ex:
-    common.error(
+    log.error(
       f'Cannot assign host index {node_id} in {af} from prefix {str(pfx)} to node {intf.node}\n' + \
-          common.extra_data_printout(str(ex)),
-      common.IncorrectValue,
+          strings.extra_data_printout(str(ex)),
+      log.IncorrectValue,
       'links')
 
   return False
@@ -514,9 +512,9 @@ def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) 
     if not af in intf:            # No static address, set it to link bool value or use loopback AF presence for old-style unnumbereds
       intf[af] = pfx if isinstance(pfx,bool) else bool(ndict[intf.node].get(f'loopback.{af}',False))
     elif data.is_true_int(intf[af]):
-      common.error(
+      log.error(
         f'Node {intf.node} is using host index {intf[af]} for {af} on an unnumbered link',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'links')
 
 def IPAM_sequential(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> None:
@@ -582,11 +580,11 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       try:                                            # Parse the AF prefix
         pfx_net = netaddr.IPNetwork(pfx_list[af])
       except Exception as ex:                         # Report an error and move on if it cannot be parsed
-        common.error(
+        log.error(
           f'Cannot parse {af} prefix {pfx_list[af]} on {link._linkname}\n' + \
-            common.extra_data_printout(f'{ex}') + '\n' + \
-            common.extra_data_printout(f'{link}'),
-          common.IncorrectValue,
+            strings.extra_data_printout(f'{ex}') + '\n' + \
+            strings.extra_data_printout(f'{link}'),
+          log.IncorrectValue,
           'links')
         continue
 
@@ -599,17 +597,17 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       rq = f'{len(link.interfaces)} nodes'
       if get_gateway_id(link):
         rq = rq + f' plus first-hop gateway'
-      common.error(
+      log.error(
         f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}\n' + \
-        common.extra_data_printout(f'link data: {link}',width=90),
-        common.IncorrectValue,
+        strings.extra_data_printout(f'link data: {link}',width=90),
+        log.IncorrectValue,
         'links')
       continue
 
     if not allocation_policy in IPAM_dispatch:
-      common.error(
+      log.error(
         f'Invalid IP address allocation policy specified in prefix {pfx_list} found on {link._linkname}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'links')
     IPAM_dispatch[allocation_policy](link,af,pfx_net,ndict)               # execute IPAM policy to get AF addresses on interfaces
 
@@ -630,18 +628,18 @@ def cleanup_link_interface_AF_entries(link: Box) -> None:
         continue
 
       if data.is_true_int(intf[af]):            # Unprocessed int. Must be node index on an unnumbered link ==> error
-        common.error(
+        log.error(
           f'Interface ID for node {intf.node} did not result in a usable address on {link._linkname}\n' + \
-            common.extra_data_printout(f'{link}'),
-          common.IncorrectType,
+            strings.extra_data_printout(f'{link}'),
+          log.IncorrectType,
           'links')
         continue
 
       if not '/' in intf[af]:                   # Subnet mask is unknown
-        common.error(
+        log.error(
           f'Unknown subnet mask for {af} address {intf[af]} used by node {intf.node} on {link._linkname}\n' + \
-            common.extra_data_printout(f'{link}'),
-          common.IncorrectType,
+            strings.extra_data_printout(f'{link}'),
+          log.IncorrectType,
           'links')
         continue
 
@@ -675,7 +673,7 @@ Create node interfaces from link interfaces
 def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box) -> None:
   link_attr_propagate = get_link_propagate_attributes(defaults)
 
-  if common.debug_active('links'):     # pragma: no cover (debugging)
+  if log.debug_active('links'):     # pragma: no cover (debugging)
     print(f'\nCreate node interfaces: {link} using {link_attr_propagate}')
 
   interfaces = []
@@ -696,7 +694,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
     interfaces.append({ 'node': node, 'data': node_intf })        # Save newly-created interface for the next step
                                                                   # ... must use dict not Box as Box creates a copy of the data structure
 
-  if common.debug_active('links'):     # pragma: no cover (debugging)
+  if log.debug_active('links'):     # pragma: no cover (debugging)
     print(f'... link data: {link}')
     print(f'... interface data: {interfaces}\n')
 
@@ -772,9 +770,9 @@ def set_link_bridge_name(link: Box, defaults: Box) -> None:
   if not 'bridge' in link:
     link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex)   # max 15 chars on Linux
   elif len(link['bridge']) > 15:
-    common.error(
+    log.error(
       f'Bridge name {link["bridge"]} has more than 15 characters',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'interfaces')
 
 def check_link_type(data: Box) -> bool:
@@ -782,28 +780,28 @@ def check_link_type(data: Box) -> bool:
   link_type = data.get('type')
 
   if 'mtu' in data and not isinstance(data.mtu,int): # pragma: no cover
-    common.error(f'MTU parameter should be an integer: {data}',common.IncorrectValue,'links')
+    log.error(f'MTU parameter should be an integer: {data}',log.IncorrectValue,'links')
 
   if not link_type: # pragma: no cover (shouldn't get here)
-    common.fatal('Internal error: link type still undefined in check_link_type: %s' % data,'links')
+    log.fatal('Internal error: link type still undefined in check_link_type: %s' % data,'links')
     return False
 
   if node_cnt == 0:
-    common.error('No valid nodes on link %s' % data,common.MissingValue,'links')
+    log.error('No valid nodes on link %s' % data,log.MissingValue,'links')
     return False
 
   if link_type == 'stub' and node_cnt > 1:
-    common.error('More than one node connected to a stub link: %s' % data,common.IncorrectValue,'links')
+    log.error('More than one node connected to a stub link: %s' % data,log.IncorrectValue,'links')
     return False
 
   if link_type == 'p2p' and node_cnt != 2:
-    common.error('Point-to-point link needs exactly two nodes: %s' % data,common.IncorrectValue,'links')
+    log.error('Point-to-point link needs exactly two nodes: %s' % data,log.IncorrectValue,'links')
     return False
 
   if link_type == 'loopback' and node_cnt != 1:
-    common.error(
+    log.error(
       f'Looopback link {data._linkname} can have a single node attached\n... {data}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'links')
     return False
 
@@ -820,18 +818,18 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
       if 'ipv4' in ifdata:
         if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \
             not features.initial.ipv4.unnumbered:
-          common.error(
+          log.error(
             f'Device {ndata.device} does not support unnumbered IPv4 interfaces used on\n'+
             f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'interfaces')
       if 'ipv6' in ifdata:
         if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
             not features.initial.ipv6.lla:
-          common.error(
+          log.error(
             f'Device {ndata.device} does not support LLA-only IPv6 interfaces used on\n'+
             f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'interfaces')
 
 def set_default_gateway(link: Box, nodes: Box) -> None:
@@ -846,7 +844,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
 #  if 'vlan_name' in link:                                 # Do not try to set first-hop gateways on VLAN links, VLAN module will do that
 #    return
 
-  if common.debug_active('links'):
+  if log.debug_active('links'):
     print(f'Set DGW for {link}')
   if not 'gateway' in link:
     gateway = None
@@ -858,11 +856,11 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
     return
 
   if not 'gateway' in link or not isinstance(link.gateway,Box) or not 'ipv4' in link.gateway: # Didn't find a usable gateway, exit
-    if common.debug_active('links'):
+    if log.debug_active('links'):
       print('... not found')
     return
 
-  if common.debug_active('links'):
+  if log.debug_active('links'):
     print(f'... DGW: {link.gateway}')
 
   for ifdata in link.interfaces:                          # Copy link gateway to all hosts attached to the link
@@ -934,9 +932,9 @@ def expand_groups(topology: Box) -> None:
   for link in list(topology.links):                 # Iterate over existing links (that's why we have to cast it as a list)
     if not 'group' in link:                         # Not a group link, move on
       if 'members' in link:
-        common.error(
+        log.error(
           f'Link {link._linkname} is not a group link, but has a "members" list',
-          common.IncorrectValue,
+          log.IncorrectValue,
           'links')
       continue
 
@@ -951,9 +949,9 @@ def expand_groups(topology: Box) -> None:
       continue
 
     if not must_be_list(parent=link,key='members',path=link._linkname,create_empty=False,module='links'):
-      common.error(                                 # Make sure 'members' is a list
+      log.error(                                 # Make sure 'members' is a list
         f'Group link {link._linkname} has no members',
-        common.MissingValue,
+        log.MissingValue,
         'links')
       continue                                      # Report error and skip otherwise
 

@@ -7,7 +7,7 @@ import functools
 import netaddr
 import re
 from box import Box
-from .. import common
+from ..utils import log
 
 """
 Common error checking routines:
@@ -60,9 +60,9 @@ def wrong_type_message(
   else:
     path = f'attribute {path}'
 
-  common.error(
+  log.error(
     f'{path} must be {expected}{ctxt}',
-    common.IncorrectValue if wrong_value else common.IncorrectType,
+    log.IncorrectValue if wrong_value else log.IncorrectType,
     module or 'topology')
   return
 
@@ -87,13 +87,13 @@ def check_valid_values(
 
   path = get_element_path(path,key)
   ctxt = f'\n... context: {context}' if context else ''
-  common.error(
+  log.error(
     f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}',
-    common.IncorrectValue,
+    log.IncorrectValue,
     module or 'topology')
 
   if abort:
-    raise common.IncorrectValue()
+    raise log.IncorrectValue()
   return False
 
 """
@@ -152,7 +152,7 @@ def get_value_to_check(
         parent[key] = empty_value                       # ... and store it in the parent object
       else:
         if abort:                                       # Empty value was specified, 'create_empty' is False, and there's no actual value
-          raise common.IncorrectValue()                 # ... raise an exception if requested
+          raise log.IncorrectValue()                 # ... raise an exception if requested
 
     if not key in parent:                               # We can skip further processing if the key is missing.
       return value
@@ -205,14 +205,14 @@ def post_validation(
           value=value,context=context,
           module=module)
       if abort:
-        raise common.IncorrectType()
+        raise log.IncorrectType()
       return None
   elif isinstance(expected,types.FunctionType):
     value = expected(value)
     if not parent is None:
       parent[key] = value
   else:
-    common.fatal(f'Validator function {test_function} returned unexpected value {expected}')
+    log.fatal(f'Validator function {test_function} returned unexpected value {expected}')
 
   return value
 

@@ -12,15 +12,17 @@ import pathlib
 import tempfile
 import netaddr
 
-from .. import common
 from ..data import types
+from ..utils import log
+from ..utils import files as _files
 from . import _Provider
 from ..augment.links import get_link_by_index
 from ..cli import is_dry_run,external_commands
 
-LIBVIRT_MANAGEMENT_NETWORK_NAME = "vagrant-libvirt"
-LIBVIRT_MANAGEMENT_BRIDGE_NAME  = "libvirt-mgmt"
-LIBVIRT_MANAGEMENT_NETWORK_FILE = "templates/provider/libvirt/vagrant-libvirt.xml"
+LIBVIRT_MANAGEMENT_NETWORK_NAME  = "vagrant-libvirt"
+LIBVIRT_MANAGEMENT_BRIDGE_NAME   = "libvirt-mgmt"
+LIBVIRT_MANAGEMENT_TEMPLATE_PATH = "templates/provider/libvirt"
+LIBVIRT_MANAGEMENT_TEMPLATE_NAME = "vagrant-libvirt.xml"
 LIBVIRT_MANAGEMENT_SUBNET       = "192.168.121.0/24"
 
 """
@@ -77,16 +79,24 @@ Create a virsh net-define XML file from vagrant-libvirt XML template:
 """
 
 def get_libvirt_mgmt_template() -> str:
-  return str(pathlib.Path(__file__).parent.parent.joinpath(LIBVIRT_MANAGEMENT_NETWORK_FILE).resolve())
+  search_path = _files.get_search_path("libvirt",LIBVIRT_MANAGEMENT_TEMPLATE_PATH)
+  xml_file = _files.find_file(LIBVIRT_MANAGEMENT_TEMPLATE_NAME,search_path)
+  if not xml_file:
+    log.fatal('Internal error: cannot find {LIBVIRT_MANAGEMENT_TEMPLATE_NAME}')
+
+  return xml_file
 
 def create_network_template(topology: Box) -> str:
   net_template_xml = get_libvirt_mgmt_template()
+  if log.debug_active('libvirt'):
+    print(f"Template XML: {net_template_xml}")
+
   mgmt = topology.addressing.mgmt
   try:
     with open(net_template_xml) as xfile:
       xml = xfile.read()
   except Exception as ex:
-    common.fatal(f'Cannot open/read XML definition of vagrant-libvirt network {str(sys.exc_info()[1])}')
+    log.fatal(f'Cannot open/read XML definition of vagrant-libvirt network {str(sys.exc_info()[1])}')
 
   if mgmt._network:
     xml = xml.replace(LIBVIRT_MANAGEMENT_NETWORK_NAME,mgmt._network)
@@ -104,17 +114,32 @@ def create_network_template(topology: Box) -> str:
 def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
   mgmt_net = topology.addressing.mgmt._network if topology is not None else ''
   mgmt_net = mgmt_net or LIBVIRT_MANAGEMENT_NETWORK_NAME
+  create_net = True
 
-  external_commands.run_command(
-    ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True)    # Remove management network
-  external_commands.run_command(
-    ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True)   # ... if it exists
-  common.print_verbose(f'creating libvirt management network {mgmt_net}')
+  if topology is not None and topology.addressing.mgmt._permanent:
+    net_list = external_commands.run_command(
+      ['virsh','net-list'],check_result=True,return_stdout=True)
+    if isinstance(net_list,str):
+      create_net = not mgmt_net in net_list
+  else:
+    if log.debug_active('libvirt'):
+      print(f"Deleting libvirt management network {mgmt_net}")
+    external_commands.run_command(
+      ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True)    # Remove management network
+    external_commands.run_command(
+      ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True)   # ... if it exists
+
+  if not create_net:
+    return
+
+  if not log.QUIET:
+    print(f'creating libvirt management network {mgmt_net}')
 
   if topology is None:
     net_template = get_libvirt_mgmt_template()                    # When called without topology data use the default template
   else:
     net_template = create_network_template(topology)              # Otherwise create a temporary XML file
+
   external_commands.run_command(
     ['virsh','net-define',net_template],check_result=True)
   if not topology is None:                                        # Remove the temporary XML file if needed
@@ -126,20 +151,19 @@ def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
   if is_dry_run():
     print(f"DRY RUN: Assuming Linux bridge name {virsh_bridge} for libvirt network {virsh_bridge}")
     return virsh_bridge
-  try:
-    result = subprocess.run(['virsh','net-info',virsh_bridge],capture_output=True,check=True,text=True)
-  except:
-    common.error('Cannot run net-info for libvirt network %s' % virsh_bridge, module='libvirt')
+  result = external_commands.run_command(
+    ['virsh','net-info',virsh_bridge],check_result=True,return_stdout=True)
+  if not isinstance(result,str):
+    log.error('Cannot run net-info for libvirt network %s' % virsh_bridge, module='libvirt')
     return None
 
   match = None
-  if result and result.returncode == 0:
-    match = re.search("Bridge:\\s+(.*)$",result.stdout,flags=re.MULTILINE)
+  match = re.search("Bridge:\\s+(.*)$",result,flags=re.MULTILINE)
 
   if match:
     return match.group(1)
   else:
-    common.error(f'Cannot get Linux bridge name for libvirt network {virsh_bridge}', module='libvirt')
+    log.error(f'Cannot get Linux bridge name for libvirt network {virsh_bridge}', module='libvirt')
 
   return None
 
@@ -156,7 +180,7 @@ def create_vagrant_batches(topology: Box) -> None:
 
   types.must_be_int(libvirt_defaults,'batch_size','defaults.providers.libvirt',module='libvirt',min_value=1,max_value=50)
   types.must_be_int(libvirt_defaults,'batch_interval','defaults.providers.libvirt',module='libvirt',min_value=1,max_value=1000)
-  common.exit_on_error()
+  log.exit_on_error()
 
   batch_size = libvirt_defaults.batch_size
   start_cmd  = libvirt_defaults.start
@@ -177,11 +201,24 @@ class Libvirt(_Provider):
   post_transform hook: mark multi-provider links as LAN links
   """
   def pre_transform(self, topology: Box) -> None:
-    _Provider.pre_transform(self,topology)
     if not 'links' in topology:
+      _Provider.pre_transform(self,topology)
       return
 
+    for l in topology.links:                                     # Set 'uplink' attribute on 'public' links
+      if not l.get('libvirt.public',False):                      # Skip links without 'public' attribute
+        continue
+      if l.get('libvirt.uplink',''):                             # Skip links with 'uplink' attribute
+        continue
+      l.libvirt.uplink = 'eth0'                                  # Default uplink name is eth0
+
+    _Provider.pre_transform(self,topology)
+
     for l in topology.links:
+      if l.get('libvirt.uplink',None):                           # Set 'public' attribute if the link has an uplink
+        if not 'public' in l.libvirt:                            # ... but no 'public' libvirt attr
+          l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
+
       if l.get('libvirt.provider',None):
         l.type = 'lan'
         if not 'bridge' in l:
@@ -198,6 +235,9 @@ class Libvirt(_Provider):
 
       if len(link.provider) <= 1:                                   # Skip single-provider links
         continue
+
+      if 'uplink' in link.libvirt or 'public' in link.libvirt:      # Is this an uplink?
+        link.pop('bridge',None)                                     # ... remove bridge name (there's no bridge)
 
       if 'clab' in link.provider:                                   # Find links with clab subprovider
         link.node_count = 999                                       # ... and fake link count to force clab to use a bridge
@@ -235,7 +275,7 @@ class Libvirt(_Provider):
 
         remote_if_list = [ rif for rif in link.interfaces if rif.node != node.name or rif.ifindex != intf.ifindex ]
         if len(remote_if_list) != 1:                                # There should be only one remote interface attached to this link
-          common.fatal(
+          log.fatal(
             f'Cannot find remote interface for P2P link\n... node {node.name}\n... intf {intf}\n... link {link}\n... iflist {remote_if_list}')
           return
 
@@ -243,20 +283,21 @@ class Libvirt(_Provider):
         intf.remote_ifindex = remote_if.ifindex                     # ... and copy its ifindex
         intf.remote_id = topology.nodes[remote_if.node].id          # ... and node ID
         if not intf.remote_id:
-          common.fatal(
+          log.fatal(
             f'Cannot find remote node ID on a P2P link\n... node {node.name}\n... intf {intf}\n... link {link}')
           return
 
   def pre_start_lab(self, topology: Box) -> None:
-    common.print_verbose('pre-start hook for libvirt')
+    log.print_verbose('pre-start hook for libvirt')
     # Starting from vagrant-libvirt 0.7.0, the destroy actions deletes all the networking
     #  including the "vagrant-libvirt" management network.
     #  Let's re-create it if missing!
+    os.environ["LIBVIRT_DEFAULT_URI"] = "qemu:///system"            # Create system-wide libvirt networks
     create_vagrant_network(topology)
     create_vagrant_batches(topology)
 
   def post_start_lab(self, topology: Box) -> None:
-    common.print_verbose('libvirt lab has started, fixing Linux bridges')
+    log.print_verbose('libvirt lab has started, fixing Linux bridges')
     mgmt_bridge = get_linux_bridge_name(topology.addressing.mgmt._network or LIBVIRT_MANAGEMENT_NETWORK_NAME)
     if mgmt_bridge:
       topology.addressing.mgmt._bridge = mgmt_bridge
@@ -268,7 +309,7 @@ class Libvirt(_Provider):
       if not 'libvirt' in l.provider:                               # Not a libvirt link, skip it
         continue
 
-      if common.debug_active('libvirt'):
+      if log.debug_active('libvirt'):
         print('libvirt post_start_lab: fixing Linux bridge for link {l}')
 
       linux_bridge = get_linux_bridge_name(brname)
@@ -276,10 +317,10 @@ class Libvirt(_Provider):
         continue
 
       l.bridge = linux_bridge
-      common.print_verbose(f"... network {brname} maps into {linux_bridge}")
+      log.print_verbose(f"... network {brname} maps into {linux_bridge}")
       if not external_commands.run_command(
           ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask']):
-        common.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
+        log.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
         continue
 
-      common.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")
+      log.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")

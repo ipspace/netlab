@@ -8,18 +8,18 @@ from box import Box
 import netaddr
 
 from . import _Module,_routing
-from .. import common
 from .. import data
 from ..data.validate import must_be_int,must_be_list,must_be_dict
 from ..augment import devices
+from ..utils import log
 
 def check_bgp_parameters(node: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
   if not "as" in node.bgp:
-    common.error(
+    log.error(
       f"Node {node.name} has BGP enabled but no AS number specified",
-      common.MissingValue,
+      log.MissingValue,
       'bgp')
     return
 
@@ -32,15 +32,15 @@ def check_bgp_parameters(node: Box) -> None:
     elif isinstance(bgp_comm,list):
       node.bgp.community = { 'ibgp' : bgp_comm, 'ebgp': bgp_comm }
     elif not(isinstance(bgp_comm,dict)):
-      common.error(
+      log.error(
         f"bgp.community attribute in node {node.name} should be a string, a list, or a dictionary (found: {bgp_comm})",
-        common.IncorrectType,
+        log.IncorrectType,
         'bgp')
       return
 
     for k in node.bgp.community.keys():
       if not k in ['ibgp','ebgp']:
-        common.error("Invalid BGP community setting in node %s: %s" % (node.name,k))
+        log.error("Invalid BGP community setting in node %s: %s" % (node.name,k))
       else:
         must_be_list(
           parent=node.bgp.community,
@@ -56,9 +56,9 @@ def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
   OK = True
   for k in list(sessions.keys()):
     if not k in BGP_VALID_AF:
-      common.error(
+      log.error(
         f'Invalid address family in bgp.{attribute} in node {node.name}',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'bgp')
       OK = False
     else:
@@ -176,15 +176,15 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 
     if node_as != node_local_as:
       if not features.bgp.local_as:
-        common.error(
+        log.error(
           text=f'{node.name} (device {node.device}) does not support BGP local AS (interface {l.name})',
-          category=common.IncorrectValue,
+          category=log.IncorrectValue,
           module='bgp')
         continue
       if l.get('vrf',None) and not features.bgp.vrf_local_as:
-        common.error(
+        log.error(
           text=f'{node.name} (device {node.device}) does not support BGP local AS for EBGP sessions in VRF {l.vrf}',
-          category=common.IncorrectValue,
+          category=log.IncorrectValue,
           module='bgp')
         continue
 
@@ -230,9 +230,9 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if ipv6_lla or rfc8950:
         extra_data.local_if = l.ifname                                # Set local_if to indicate IPv6 LLA EBGP session
         if not features.bgp.ipv6_lla:                                 # IPv6_LLA feature flag has to be set even for IPv4 unnumbered EBGP
-          common.error(
+          log.error(
             text=f'{node.name} (device {node.device}) does not support EBGP sessions over auto-generated IPv6 LLA (interface {l.name})',
-            category=common.IncorrectValue,
+            category=log.IncorrectValue,
             module='bgp')
           continue
 
@@ -241,9 +241,9 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         if not 'ipv6' in l:                                           # ... and enable IPv6 on the interface in case a device needs an
           l.ipv6 = True                                               # ... explicit configuration of IPv6 LLA
         if not features.bgp.rfc8950:
-          common.error(
+          log.error(
             text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over IPv6 LLA EBGP sessions (interface {l.name})',
-            category=common.IncorrectValue,
+            category=log.IncorrectValue,
             module='bgp')
           continue
 
@@ -258,9 +258,9 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       session_type = 'localas_ibgp' if neighbor_local_as == node_local_as else 'ebgp'
       if session_type == 'localas_ibgp':
         if not features.bgp.local_as_ibgp:
-          common.error(
+          log.error(
             text=f'You cannot use BGP local-as to create an IBGP session with {ngb_name} on {node.name} (device {node.device})',
-            category=common.IncorrectValue,
+            category=log.IncorrectValue,
             module='bgp')
           continue
 
@@ -324,9 +324,9 @@ def build_bgp_rr_clusters(topology: Box) -> None:
         try:
           n.bgp.rr_cluster_id = str(netaddr.IPAddress(n.bgp.rr_cluster_id).ipv4())
         except Exception as ex:
-          common.error(
+          log.error(
             f'BGP cluster ID {n.bgp.rr_cluster_id} configured on node {n.name} cannot be converted into an IPv4 address',
-            common.IncorrectValue,
+            log.IncorrectValue,
             'bgp')
 
 """
@@ -345,7 +345,7 @@ BGP_DEFAULT_SESSIONS: typing.Final[dict] = {
 
 def build_bgp_sessions(node: Box, topology: Box) -> None:
   if not isinstance(node.get('bgp',None),Box) or not node.get('bgp.as',None):   # Sanity check
-    common.fatal(f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???')
+    log.fatal(f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???')
     return                                                                      # ... it's insane, get out of here
 
   node.bgp.neighbors = []
@@ -368,9 +368,9 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
   if 'activate' in node.bgp:
     if not features.bgp.activate_af:
-      common.error(
+      log.error(
         f'node {node.name} (device {node.device}) does not support configurable activation of default BGP address families',
-        common.IncorrectValue,
+        log.IncorrectValue,
         'bgp')
       return
 
@@ -416,36 +416,36 @@ def process_as_list(topology: Box) -> None:
   node_list = list(topology.nodes.keys())
   for asn,as_data in topology.bgp.as_list.items():
     if not isinstance(as_data,Box):
-      common.error(
+      log.error(
         f"Invalid value in bgp.as_list for ASN {asn}\n" + \
         f"... Each ASN in a BGP as_list must be a dictionary with (at least) members key:\n"+
         f"... Found: {as_data}",
-        common.IncorrectValue,
+        log.IncorrectValue,
         'bgp')
       continue
 
     must_be_list(as_data,'members',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
     must_be_list(as_data,'rr',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
     if not as_data.members:
-      common.error(
+      log.error(
         f"BGP as_list for ASN {asn} does not have a valid list of members",
-        common.IncorrectValue,
+        log.IncorrectValue,
         'bgp')
       continue
 
     for n in as_data.members:
       if 'as' in node_data[n]:
-        common.error(
+        log.error(
           f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
-          common.IncorrectValue)
+          log.IncorrectValue)
         continue
       node_data[n]["as"] = asn
 
     for n in as_data.get('rr',{}):
       if node_data[n]["as"] != asn:
-        common.error(
+        log.error(
           "Node %s is specified as route reflector in AS %s but is not in member list" % (n,asn),
-          common.IncorrectValue)
+          log.IncorrectValue)
         continue
       node_data[n].rr = True
 
@@ -453,9 +453,9 @@ def process_as_list(topology: Box) -> None:
     if name in node_data:
       node_as = node.bgp.get("as",None)
       if node_as and node_as != node_data[name]["as"]:
-        common.error(
+        log.error(
           "Node %s has AS %s but is also in member list of AS %s" % (node.name,node_as,node_data[node.name]["as"]),
-          common.IncorrectValue)
+          log.IncorrectValue)
         continue
 
       node.bgp = node_data[name] + node.bgp
@@ -520,7 +520,7 @@ class BGP(_Module):
   #
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if not "bgp" in node:   # pragma: no cover (this should have been caught in check_bgp_parameters)
-      common.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
+      log.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
       return
     build_bgp_sessions(node,topology)
     bgp_set_advertise(node,topology)

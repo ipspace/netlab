@@ -6,11 +6,10 @@ from box import Box
 import netaddr
 
 from . import _Module,get_effective_module_attribute,_dataplane
-from .. import common
+from ..utils import log
 from .. import data
 from ..data.validate import must_be_int,must_be_string
-from ..augment import devices
-from .. import addressing
+from ..augment import addressing
 
 """
 register_static_vni -- register all static VNIs
@@ -63,9 +62,9 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
     vpath = f'{obj_path}.vlans.{vname}'
     if vname in topology.get('vlans',{}) and toponode != topology:
       if 'vni' in topology.vlans[vname] and 'vni' in vlan_data:
-        common.error(
+        log.error(
           f'Cannot define VXLAN VNI for a global VLAN {vname} within node {toponode.name} VLAN data',
-          common.IncorrectType,
+          log.IncorrectType,
           'vxlan')
       continue
 
@@ -96,16 +95,16 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
 #
 def node_set_vtep(node: Box, topology: Box) -> bool:
   if topology.defaults.vxlan.use_v6_vtep and not 'ipv6' in node.loopback:
-    common.error(
+    log.error(
       f'You want to use IPv6 VTEP -- VXLAN module needs an IPv6 address on loopback interface of {node.name}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'vxlan')
     return False
 
   if not 'ipv4' in node.loopback and not topology.defaults.vxlan.use_v6_vtep:
-    common.error(
+    log.error(
       f'VXLAN module needs an IPv4 address on loopback interface of {node.name}',
-      common.IncorrectValue,
+      log.IncorrectValue,
       'vxlan')
     return False
 
@@ -173,9 +172,9 @@ class VXLAN(_Module):
       if not 'vxlan' in ndata.get('module',[]):                     # Skip nodes without VXLAN module
         continue
       if not ndata.interfaces:
-        common.error(
+        log.error(
           f'VXLAN-enabled node {name} should be connected to at least one link',
-          common.MissingValue,
+          log.MissingValue,
           'vxlan')
         continue
       if not 'vlans' in ndata:                                      # Skip VXLAN-enabled nodes without VLANs

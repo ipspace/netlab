@@ -1,0 +1,77 @@
+{# description: Lab wiring (used with external provider) #}
+<h1>Lab Topology Summary</h1>
+<p>Lab name: {{ name }}</p>
+
+{% for l in links if l.type=='p2p' or l.node_count == 2 %}
+{%   if loop.first %}
+<h2>Point-to-Point Links</h2>
+<table>
+  <tr>
+    <th>Link Name</th>
+    <th>Origin Device</th>
+    <th>Origin Port</th>
+    <th>Destination Device</th>
+    <th>Destination Port</th>
+  </tr>
+{%   endif %}
+  <tr>
+    <td>{{ l.name|default('') }}</td>
+    <td>{{ l.interfaces[0].node }}</td>
+    <td>{{ l.interfaces[0].ifname }}</td>
+    <td>{{ l.interfaces[1].node }}</td>
+    <td>{{ l.interfaces[1].ifname }}</td>
+  </tr>
+{%   if loop.last %}
+</table>
+{%   endif %}
+{% endfor %}
+
+{% set row_count = [] %}
+{% for node_name, n in nodes.items() %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length > 1 %}
+{%     if not row_count %}
+<h2>LAN Links</h2>
+<table>
+  <tr>
+    <th>Origin Device</th>
+    <th>Origin Port</th>
+    <th>Link Name (NET)</th>
+    <th>Description</th>
+  </tr>
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+  <tr>
+    <td>{{ node_name }}</td>
+    <td>{{ l.ifname }}</td>
+    <td>{{ l.bridge }}</td>
+    <td>{{ l.name|default('') }}</td>
+  </tr>
+{%   endfor %}
+{% endfor %}
+{% if row_count %}
+</table>
+{% endif %}
+
+{% set row_count = [] %}
+{% for node_name, n in nodes.items() %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length == 0 %}
+{%     if not row_count %}
+<h2>Stub Links</h2>
+<table>
+  <tr>
+    <th>Origin Device</th>
+    <th>Origin Port</th>
+    <th>Description</th>
+  </tr>
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+  <tr>
+    <td>{{ node_name }}</td>
+    <td>{{ l.ifname }}</td>
+    <td>{{ l.name|default('') }}</td>
+  </tr>
+{%   endfor %}
+{% endfor %}
+{% if row_count %}
+</table>
+{% endif %}

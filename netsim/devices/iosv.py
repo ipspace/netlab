@@ -4,7 +4,7 @@
 from box import Box
 
 from . import _Quirks
-from .. import common
+from ..utils import log
 from ..augment import devices
 
 # Cisco IOSv does not support VRRP on BVI interfaces. Go figure...
@@ -17,9 +17,9 @@ def check_vrrp_bvi(node: Box, topology: Box) -> None:
     if intf.get('type',None) != 'svi':                                  # Not a BVI interface, move on
       continue
 
-    common.error(
+    log.error(
       f'Cisco IOSv cannot run VRRP on BVI interfaces.',
-      common.IncorrectType,
+      log.IncorrectType,
       'quirks')
     return
 

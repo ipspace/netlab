@@ -1,0 +1,24 @@
+{# description: BGP neighbors #}
+{#
+   First, figure out if we need Local AS column
+#}
+{% set las_count = [] %}
+{% for ndata in nodes.values() if 'bgp' in ndata %}
+{%   for ngb in ndata.bgp.neighbors if ngb.local_as|default(False) %}
+{%     set ignore = las_count.append(ngb) %}
+{%   endfor %}
+{% endfor %}
+{% set has_las = (las_count|length) > 0 %}
+{% for n,d in nodes.items() if 'bgp' in d and 'neighbors' in d.bgp %}
+{%   if loop.first %}
+## BGP Neighbors
+| Node | Neighbor | Neighbor IPv4 | Neighbor AS {% if has_las %}| Local AS {% endif %}|
+|------|----------|--------------:|------------:{% if has_las %}|---------:{% endif %}|
+{%   endif %}
+| **{{ n }}** ({{ d.bgp.router_id }} / AS {{ d.bgp.as }}) |
+{%   for ngb in d.bgp.neighbors %}
+| | {{ ngb.name }} | {{ ngb.ipv4 }} | {{ ngb.as }} {% if has_las 
+%}| {{ ngb.local_as|default('') }} {% endif 
+%}|
+{%   endfor %}
+{% endfor %}

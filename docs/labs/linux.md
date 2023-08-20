@@ -35,6 +35,35 @@ IPv4 and IPv6 packet forwarding on Linux devices is controlled with the **role**
 * **gateway**: a Linux device does not perform packet forwarding but acts as the default gateway for other hosts. You will have to install a proxy (or a similar solution) for inter-subnet packet forwarding.
 * **router**: A Linux device performs packet forwarding but does not run routing protocols. Use **frr** or **cumulus** device if you want to run routing protocols on a Linux server.
 
+(linux-loopback)=
+## Loopback Interface
+
+_netlab_ does not configure a global loopback IP address on Linux nodes with **role** set to **host** (the default _netlab_ setting).
+
+A loopback IP address is [allocated](../example/addressing-tutorial.md#loopback-addresses) to a Linux node if you set **role** to any other value, and the initial configuration script configures an additional IP address on the **lo** interface, for example:
+
+```
+vagrant@host:~$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet 10.0.0.1/32 scope global lo
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 08:4f:a9:00:00:01 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.121.101/24 brd 192.168.121.255 scope global dynamic eth0
+       valid_lft 3587sec preferred_lft 3587sec
+    inet6 fe80::a4f:a9ff:fe00:1/64 scope link
+       valid_lft forever preferred_lft forever
+3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 52:54:00:50:03:5a brd ff:ff:ff:ff:ff:ff
+    inet 10.1.0.1/30 brd 10.1.0.3 scope global eth1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::5054:ff:fe50:35a/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
 (linux-lldp)=
 ## LLDP
 

@@ -1,27 +1,54 @@
-*** EXTERNAL TOPOLOGY SUMMARY ***
+{# description: Lab wiring (used with external provider) #}
+LAB TOPOLOGY SUMMARY
 
 LAB NAME: {{ name }}
 
-PHYSICAL P2P LINKS:
+{% for l in links if l.type=='p2p' or l.node_count == 2 %}
+{%   if loop.first %}
+POINT-TO-POINT LINKS:
 
 |-----------------|---------------|-------------|--------------------|------------------|
 | Link Name       | Origin Device | Origin Port | Destination Device | Destination Port |
 |-----------------|---------------|-------------|--------------------|------------------|
-{% for l in links if l.type=='p2p' %}
+{%   endif %}
 | {{ "%-15s" | format(l.name|default('')) }} | {{ "%-13s" | format(l.interfaces[0].node) }} | {{ "%-11s" | format(l.interfaces[0].ifname) }} | {{ "%-18s" | format(l.interfaces[1].node) }} | {{ "%-16s" | format(l.interfaces[1].ifname) }} |
+{%   if loop.last %}
 |-----------------|---------------|-------------|--------------------|------------------|
+{%   endif %}
 {% endfor %}
 
-
-PHYSICAL LAN LINKS:
+{% set row_count = [] %}
+{% for node_name, n in nodes.items() %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length > 1 %}
+{%     if not row_count %}
+LAN LINKS:
 
 |---------------|-------------|-----------------|----------------------|
 | Origin Device | Origin Port | Link Name (NET) | Description          |
 |---------------|-------------|-----------------|----------------------|
-{% for node_name, n in nodes.items() %}
-{% for l in n.interfaces if l.type=='lan' %}
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
 | {{ "%-13s" | format(node_name) }} | {{ "%-11s" | format(l.ifname) }} | {{ "%-15s" | format(l.bridge) }} | {{ "%-20s" | format(l.name|default('')) }} |
+{%   endfor %}
+{% endfor %}
+{% if row_count %}
 |---------------|-------------|-----------------|----------------------|
+{% endif %}
+
+{% set row_count = [] %}
+{% for node_name, n in nodes.items() %}
+{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length == 0 %}
+{%     if not row_count %}
+STUB LINKS:
+
+|---------------|-------------|----------------------|
+| Origin Device | Origin Port | Description          |
+|---------------|-------------|----------------------|
+{%     endif %}
+{%     set rowx = row_count.append(1) %}
+| {{ "%-13s" | format(node_name) }} | {{ "%-11s" | format(l.ifname) }} | {{ "%-20s" | format(l.name|default('')) }} |
+{%   endfor %}
 {% endfor %}
-{% endfor %}
-{{ "\n" }}
+{% if row_count %}
+|---------------|-------------|----------------------|
+{% endif %}

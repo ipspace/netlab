@@ -3,7 +3,7 @@
 Adding new devices to *netlab* shouldn't be too hard:
 
 * [Figure out the device image to use](#device-images)
-* [Create device settings file](#system-settings) including [Ansible variables](#using-your-device-with-ansible-playbooks)
+* [Create device settings file](dev-device-parameters) including [Ansible variables](#using-your-device-with-ansible-playbooks)
 * Add [Ansible task lists](#configuring-the-device) to deploy and fetch device configurations
 * Add [initial](#initial-device-configuration)- and [module-specific](#configuration-modules) configuration templates
 * [Test and document your work](#test-your-changes)
@@ -30,7 +30,7 @@ Please publish the recipe (it's OK to add it to *netlab* documentation under *in
 [^1]: That was one of the reasons ArcOS was taken off the list of supported platforms.
 
 (dev-device-parameters)=
-## System Settings
+## Device Parameters (System Settings)
 
 After building a Vagrant box or a container, you have to integrate it with *netlab*. Start with *device name*:
 
@@ -103,6 +103,45 @@ Device parameters file can also include numerous *features*. You'll find feature
 
 After creating the device parameters file, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.
 
+### Device Setting Inheritance
+
+If you're adding a new device that is very similar to another device (example: Cisco IOSv/CSR1KV or Juniper vSRX/vMX/vPTX) use _device setting inheritance_:
+
+* Specify new device as a subtype of an existing device with the **parent: _device_** setting.
+* Specify modified device parameters in the new device's YAML configuration file.
+* Set parameters that exist on the parent device but do not exist on the child device to `None` by specifying an empty value in the YAML file.
+
+For example, Cisco CSR 1000v supports unnumbered IPv4 interfaces (IOSv does not) but does not support all VLAN modes that can be implemented in IOSv. It also uses different interface names and supports SR-MPLS and VXLAN.
+
+The changes between the two devices are described with the following YAML data structure:
+
+```yaml
+description: Cisco CSR 1000v
+parent: iosv
+interface_name: GigabitEthernet{ifindex}
+ifindex_offset: 2
+virtualbox:
+  image: cisco/csr1000v
+group_vars:
+  netlab_device_type: csr
+node:
+  min_mtu: 1500
+features:
+  initial:
+    ipv4:
+      unnumbered: true
+  isis:
+    unnumbered:
+      ipv4: true
+  sr: true
+  vlan:
+    model: switch
+    svi_interface_name: BDI{vlan}
+    mixed_trunk:
+    native_routed:
+    subif_name:
+  vxlan: true
+```
 ## Vagrant Template File
 
 If you'll use a Vagrant box to start the network device as a VM, you have to add a template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for more details.

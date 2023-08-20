@@ -9,6 +9,13 @@ libvirt:
     virt-install --connect=qemu:///system --name=vm_box --arch=x86_64 --cpu host --vcpus=2 --hvm
       --ram=4096 --network=network:vagrant-libvirt,model=virtio --graphics none --import
       --disk path=vm.qcow2,format=qcow2,bus=ide
+clab:
+  image: vrnetlab/vr-aoscx:20230531220439
+  mtu: 1500
+  node:
+    kind: vr-aoscx
+  interface:
+    name: eth{ifindex}
 group_vars:
   ansible_network_os: arubanetworks.aoscx.aoscx
   ansible_connection: network_cli
@@ -17,11 +24,21 @@ group_vars:
   ansible_ssh_pass: admin
   netlab_device_type: arubacx
 features:
+  bfd: true
   bgp:
-    local_as: True
-    vrf_local_as: True
-    local_as_ibgp: True
-    activate_af: True
+    activate_af: true
+    local_as: true
+    local_as_ibgp: true
+    vrf_local_as: true
+  evpn:
+    asymmetrical_irb: true
+    irb: true
+  gateway:
+    protocol: [ anycast, vrrp ]
+  mpls:
+    ldp: true
+    vpn: true
+  ospf: true
   vlan:
     #model: l3-switch
     model: switch
@@ -29,14 +46,8 @@ features:
     # ArubaOS-CX supports subinterfaces... but not on virtual devices.
     #subif_name: "{ifname}.{vlan.access_id}"
     #native_routed: False
-  evpn:
-    irb: True
-    asymmetrical_irb: True
-  gateway:
-    protocol: [ anycast, vrrp ]
-  mpls:
-    ldp: True
-    vpn: True
+  vrf: true
+  vxlan: true
 external:
   image: none
 graphite.icon: switch
