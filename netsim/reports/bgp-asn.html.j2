@@ -1,17 +1,16 @@
-{# description: BGP autonomous systems #}
+{# description: BGP autonomous systems (needs Ansible) #}
+{% import 'bgp-prefix.include.j2' as bcode %}
 {#
    First, figure out if we need RR column
 #}
-{% set rr_count = [] %}
-{% for ndata in nodes.values() if 'bgp' in ndata and ndata.bgp.rr|default(False) %}
-{%   set ignore = rr_count.append(ndata.name) %}
-{% endfor %}
-{% set has_rr = (rr_count|length) > 0 %}
-{% set col_count = 4 if has_rr else 3 %}
+{% set cols = namespace(rr=false) %}
+{{- bcode.asn_columns(nodes,cols) -}}
+{% set col_count = 4 if cols.rr else 3 %}
 {#
    Now we're ready for the ASN report
 #}
-{% for asn,ndl in nodes.values()|groupby('bgp.as') if asn %}
+{% set bnodes = nodes.values()|selectattr('bgp','defined')|selectattr('bgp.as','defined') %}
+{% for asn,ndl in bnodes|groupby('bgp.as') if asn %}
 {%   if loop.first %}
 <h2>BGP AS Numbers</h2>
 <table>
@@ -19,7 +18,7 @@
     <tr>
       <th>Node/ASN</th>
       <th>Router ID</th>
-{%     if has_rr %}
+{%     if cols.rr %}
       <th>BGP RR</th>
 {%     endif %}
       <th>Advertised prefixes</th>
@@ -32,20 +31,13 @@
     </tr>
 {%   for ndata in ndl %}
 {#
-    Collect prefixes advertised by the router, starting with bgp.originate
+    Collect prefixes advertised by the router
 #}
-{%     set pfx = ndata.bgp.originate|default([]) %}
-{#
-    Add loopback IPv4 to the prefix list if loopback exists, has IPv4 prefix, and
-    bgp.advertise_loopback is set
-#}
-{%     if 'loopback' in ndata and 'ipv4' in ndata.loopback and ndata.bgp.advertise_loopback|default(False) %}
-{%       set pfx = [ ndata.loopback.ipv4 ] + pfx %}
-{%     endif %}
+{%     set pfx = [] %}{{ bcode.build_pfx_list(ndata,pfx) -}}
     <tr>
       <td>{{ ndata.name }}</td>
       <td class='center'>{{ ndata.bgp.router_id|default('') }}</td>
-{%     if has_rr %}
+{%     if cols.rr %}
       <td class='center'>{{ '✅' if ndata.bgp.rr|default('') else '' }}</td>
 {%     endif %}
       <td class='right'>{{ pfx|join('<br>') }}</td>
@@ -55,4 +47,6 @@
   </tbody>
 </table>
 {%   endif %}
+{% else %}
+<p>BGP ASN report is empty: no BGP routers in this lab topology</p>
 {% endfor %}

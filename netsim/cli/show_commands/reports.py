@@ -71,6 +71,8 @@ def show(settings: Box, args: argparse.Namespace) -> None:
   r_list = _files.get_globbed_files(r_path,'*.j2')          # ... and find all Jinja2 files in that directory
 
   for r_name in sorted(r_list):                             # Iterate over report templates
+    if '.include' in r_name:                                # Skip include files
+      continue
     r_desc = get_description(r_name)                        # Get report description
     if r_desc is None:                                      # ... skip the file if it has no usable description
       continue
