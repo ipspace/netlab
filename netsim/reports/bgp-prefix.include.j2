@@ -11,14 +11,22 @@
     bgp.advertise_loopback is set
 #}
 {%     for af in ['ipv4','ipv6'] if 'loopback' in ndata and af in ndata.loopback and ndata.bgp.advertise_loopback|default(False) %}
-{%       set ignore = pfx.append(ndata.loopback[af]|ipaddr('subnet')) %}
+{%       if 'ipaddr' is filter %}
+{%         set ignore = pfx.append(ndata.loopback[af]|ipaddr('subnet')) %}
+{%       else %}
+{%         set ignore = pfx.append(ndata.loopback[af]) %}
+{%       endif %}
 {%     endfor %}
 {#
     Add interfaces with bgp.advertise attribute to the prefix list
 #}
 {%     for intf in ndata.interfaces if 'bgp' in intf and intf.bgp.advertise|default(False) %}
 {%       for af in ['ipv4','ipv6'] if af in intf and intf[af] is string %}
-{%         set ignore = pfx.append(intf[af]|ipaddr('subnet')) %}
+{%         if 'ipaddr' is filter %}
+{%           set ignore = pfx.append(intf[af]|ipaddr('subnet')) %}
+{%         else %}
+{%           set ignore = pfx.append(intf[af]) %}
+{%         endif %}
 {%       endfor %}
 {%     endfor %}
 {%- endmacro -%}
