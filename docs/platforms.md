@@ -75,7 +75,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Virtual network device | Vagrant<br />Libvirt | Vagrant<br />Virtualbox | Containerlab |
 | -------------------------------------------------- | :-: | :-: | :-: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
-| Aruba AOS-CX                                       |          ✅           |              ❌               |            ❌             |
+| Aruba AOS-CX                                       |          ✅           |              ❌               |            ✅             |
 | Cisco ASAv                                         |          ✅           |              ❌               |            ❌             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
 | Cisco IOS XRv                                      |          ✅           |    ❌     |            ❌             |
