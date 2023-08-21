@@ -21,7 +21,7 @@ defaults.devices.eos.clab.image: "ceos:4.27.2F"
 Alternatively, if you want to use the same cEOS image in all your labs, add the following line to `~/.netlab.yml` file (replacing `ceos:4.27.2F` with your image tag).
 
 ```
-devices.eos.clab.image: "ceos.4.27.2F"
+devices.eos.clab.image: "ceos:4.27.2F"
 ```
 
 ## Option 2: Download the container using eos-downloader
