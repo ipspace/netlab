@@ -8,7 +8,8 @@
 {#
    Now we're ready for the ASN report
 #}
-{% for asn,ndl in nodes.values()|groupby('bgp.as') if asn %}
+{% set bnodes = nodes.values()|selectattr('bgp','defined')|selectattr('bgp.as','defined') %}
+{% for asn,ndl in bnodes|groupby('bgp.as') if asn %}
 {%   if loop.first %}
 ## BGP AS Numbers
 | Node/ASN | Router ID |{% if cols.rr %} BGP RR |{% endif %} Advertised prefixes |
@@ -24,4 +25,6 @@
 %}| {{ '✅' if ndata.bgp.rr|default('') else '' }} {% endif 
 %}| {{ pfx|join('<br>') }} |
 {%   endfor %}
+{% else %}
+No BGP routers in this lab topology
 {% endfor %}
