@@ -1,0 +1,121 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+evpn:
+  session:
+  - ibgp
+groups:
+  as65000:
+    members:
+    - a
+input:
+- topology/input/evpn-vlan-attr.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 172.16.1.1/24
+    node: a
+  linkindex: 1
+  node_count: 1
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: stub
+module:
+- vlan
+- bgp
+- evpn
+name: input
+nodes:
+  a:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: arista/veos
+    device: eos
+    evpn:
+      session:
+      - ibgp
+    id: 1
+    interfaces:
+    - bgp:
+        advertise: true
+      bridge: input_1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 172.16.1.1/24
+      linkindex: 1
+      name: a -> stub
+      neighbors: []
+      type: stub
+    - bgp:
+        advertise: true
+      bridge_group: 1
+      ifindex: 3
+      ifname: Vlan1000
+      ipv4: 172.16.0.1/24
+      name: VLAN red (1000)
+      neighbors: []
+      role: stub
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - vlan
+    - bgp
+    - evpn
+    name: a
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        evpn:
+          evi: 10
+          rd: 10.0.0.1:10
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+provider: libvirt
+vlans:
+  red:
+    evpn:
+      evi: 10
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: Vlan1000
+      ipv4: 172.16.0.1/24
+      node: a
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.0.0/24
