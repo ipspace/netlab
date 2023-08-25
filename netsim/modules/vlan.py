@@ -632,8 +632,11 @@ create_svi_interfaces: for every physical interface with access VLAN, create an 
 """
 
 def create_svi_interfaces(node: Box, topology: Box) -> dict:
-  skip_ifattr = list(topology.defaults.vlan.attributes.phy_ifattr)
-  skip_ifattr.extend(topology.defaults.providers.keys())
+  # skip_ifattr = list(topology.defaults.vlan.attributes.phy_ifattr)
+  # skip_ifattr.extend(topology.defaults.providers.keys())
+
+  copy_ifattr = list(topology.defaults.vlan.attributes.copy_ifattr) # removed 'pool'
+  cleanup_ifattr = copy_ifattr + list(topology.defaults.vlan.attributes.cleanup_ifattr)
 
   vlan_ifmap: dict = {}
 
@@ -690,14 +693,15 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
         'vlan')
       return vlan_ifmap
 
-    if not access_vlan in vlan_ifmap:                                       # Do we need to create a SVI interface?
-      skip_attr = list(skip_ifattr)                                         # Create a local copy of the attribute skip list
+    if access_vlan not in vlan_ifmap:                                       # Do we need to create a SVI interface?
+      # skip_attr = list(skip_ifattr)                                         # Create a local copy of the attribute skip list
       vlan_mode = ifdata.vlan.get('mode','') or vlan_data.get('mode','')    # Get VLAN forwarding mode
-      if vlan_mode == 'bridge':                                             # ... and skip IP addresses for bridging-only VLANs
-        skip_attr.extend(['ipv4','ipv6'])
+      # if vlan_mode == 'bridge':                                             # ... and skip IP addresses for bridging-only VLANs
+      #  skip_attr.extend(['ipv4','ipv6'])
         # continue  # JvB: in fact, skip creating SVI for L2-only VLANs
       vlan_ifdata = data.get_box(                                           # Copy non-physical interface attributes into SVI interface
-        { k:v for k,v in ifdata.items() if k not in skip_attr })            # ... that will also give us IP addresses
+        { k:ifdata[k] for k in copy_ifattr if k in ifdata })                # ... that will also give us IP addresses
+      print( f"JvB: copied {vlan_ifdata}" )
       if vlan_mode:                                                         # Set VLAN forwarding mode for completness' sake
         vlan_ifdata.vlan.mode = vlan_mode
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
@@ -719,8 +723,9 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
 
     update_vlan_neighbor_list(access_vlan,ifdata,vlan_ifdata,node,topology)
 
-    for attr in list(ifdata.keys()):                                        # Clean up physical interface data
-      if not attr in skip_ifattr:
+    for attr in cleanup_ifattr:                                             # Clean up physical interface data
+      if attr in ifdata:
+        print( f"JvB: cleanup {attr}" )
         ifdata.pop(attr,None)
 
     ifdata.vlan.access_id = vlan_data.id                                    # Add VLAN ID to interface data to simplify config templates
@@ -814,9 +819,12 @@ def remove_vlan_from_trunk(parent_intf: Box, vlan_id: int) -> None:
 rename_vlan_subinterfaces: rename or remove interfaces created from VLAN pseudo-links
 """
 def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
-  skip_ifattr = list(topology.defaults.vlan.attributes.phy_ifattr)
-  skip_ifattr.extend(topology.defaults.providers.keys())
-  keep_subif_attr = topology.defaults.vlan.attributes.keep_subif
+  # skip_ifattr = list(topology.defaults.vlan.attributes.phy_ifattr)
+  # skip_ifattr.extend(topology.defaults.providers.keys())
+  cleanup_ifattr = list(topology.defaults.vlan.attributes.cleanup_subif)
+  cleanup_ifattr.extend(topology.defaults.providers.keys())
+
+  # keep_subif_attr = topology.defaults.vlan.attributes.keep_subif
 
   features = devices.get_device_features(node,topology.defaults)
   if 'switch' in features.vlan.model:                             # No need for VLAN subinterfaces, remove non-routed vlan_member interfaces
@@ -829,7 +837,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     if intf.type != 'vlan_member':
       continue
 
-    if not 'router' in features.vlan.model and not 'l3-switch' in features.vlan.model:
+    if 'router' not in features.vlan.model and 'l3-switch' not in features.vlan.model:
       #
       # The only way to get here is to have a routed VLAN in a VLAN trunk on a device that
       # does not support VLAN subinterfaces
@@ -877,8 +885,8 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
           for n in intf.neighbors:
             rename_neighbor_interface(topology.nodes[n.node],node.name,old_intf.ifname,intf.ifname)
 
-    for attr in skip_ifattr:
-      if attr in intf and not attr in keep_subif_attr:
+    for attr in cleanup_ifattr:
+      if attr in intf: # and attr not in keep_subif_attr:
         intf.pop(attr,None)
 
     if intf.vlan.access_id in parent_intf.vlan.get('trunk_id',[]):    # Remove subinterface VLAN from parent interface trunk list
