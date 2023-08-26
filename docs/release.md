@@ -1,6 +1,16 @@
 Release notes
 =============
 
+**[Release 1.6.2](release-1.6.2) (2023-08-26)**
+
+* [Support for ArubaOS-CX with containerlab](platforms.md#supported-virtual-network-devices)
+* Display a subset of available reports in **[netlab show reports](netlab-show-reports)** command
+* Display warnings in reports relying on **ipaddr** Ansible filter
+* Add IPv6 prefixes and neighbors to BGP reports
+* Add IPv6 column to text addressing report
+* Make some report columns optional to reduce the report width
+* Implement [inter-VRF route leaking](module/vrf.md#platform-support) for Cumulus/FRR
+
 **[Release 1.6.1](release-1.6.1) (2023-08-18)**
 
 * **[netlab report](netlab/report.md)** can generate Markdown markup (ideal for augmenting documentation written in Markdown)
