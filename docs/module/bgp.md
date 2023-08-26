@@ -1,6 +1,6 @@
 # BGP Configuration Module
 
-This configuration module configures BGP routing process and BGP neighbors on most [supported platforms](../platforms.md). The configuration module sets up BGP sessions according to these simple design rules:
+This configuration module configures BGP routing process and BGP neighbors on most [supported platforms](platform-routing-support). The configuration module sets up BGP sessions according to these simple design rules:
 
 * EBGP sessions are established between directly-connected IP addresses on every link where the connected routers belong to different autonomous systems. Parallel sessions are established for all address families (IPv4, IPv6) configured on the link.
 * IBGP sessions are established between loopback interfaces of routers in the same autonomous system. Parallel sessions are established for all address families configured on the loopback interfaces.
@@ -10,7 +10,7 @@ This configuration module configures BGP routing process and BGP neighbors on mo
 More interesting BGP topologies can be created with [custom plugins](../plugins.md).
 
 ```{note}
-Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on BGP autonomous systems and BGP neighbors. Use **[‌netlab show reports](netlab-show-reports)** command to display available reports.
+Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on BGP autonomous systems and BGP neighbors. Use **[‌netlab show reports bgp](netlab-show-reports)** command to display available BGP reports.
 ```
 
 ```eval_rst
@@ -42,7 +42,7 @@ _netlab_ BGP configuration module supports these features:
 
 ## Platform Support
 
-[Platforms supporting BGP configuration module](platform-routing-support) support most of the functionality mentioned above with the following exceptions:
+_netlab_ supports most BGP features on [all platforms supporting BGP configuration module](platform-routing-support), with the following exceptions:
 
 * Cumulus Linux 5.2.0 using NVUE cannot configure IBGP sessions between loopback interfaces. Please [see caveats for more details](caveats-cumulus-nvue).
 

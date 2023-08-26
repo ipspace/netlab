@@ -1,0 +1,54 @@
+{#
+    Build a list of BGP prefixes advertised by a router
+#}
+{%- macro build_pfx_list(ndata,pfx) -%}
+{#
+    Start with the bgp.originate list
+#}
+{%  set ignore = pfx.extend(ndata.bgp.originate|default([])) %}
+{#
+    Add loopback to the prefix list if loopback exists, has IPv4/IPv6 prefix, and
+    bgp.advertise_loopback is set
+#}
+{%     for af in ['ipv4','ipv6'] if 'loopback' in ndata and af in ndata.loopback and ndata.bgp.advertise_loopback|default(False) %}
+{%       if 'ipaddr' is filter %}
+{%         set ignore = pfx.append(ndata.loopback[af]|ipaddr('subnet')) %}
+{%       else %}
+{%         set ignore = pfx.append(ndata.loopback[af]) %}
+{%       endif %}
+{%     endfor %}
+{#
+    Add interfaces with bgp.advertise attribute to the prefix list
+#}
+{%     for intf in ndata.interfaces if 'bgp' in intf and intf.bgp.advertise|default(False) %}
+{%       for af in ['ipv4','ipv6'] if af in intf and intf[af] is string %}
+{%         if 'ipaddr' is filter %}
+{%           set ignore = pfx.append(intf[af]|ipaddr('subnet')) %}
+{%         else %}
+{%           set ignore = pfx.append(intf[af]) %}
+{%         endif %}
+{%       endfor %}
+{%     endfor %}
+{%- endmacro -%}
+
+{#
+    Build the list of columns needed for the BGP neighbor report
+#}
+{%- macro neigbor_columns(nodes,cols) -%}
+{% for ndata in nodes.values() if 'bgp' in ndata %}
+{%   for ngb in ndata.bgp.neighbors %}
+{%     set cols.las = cols.las or ngb.local_as|default(False) %}
+{%     set cols.ipv4 = cols.ipv4 or ('ipv4' in ngb) %}
+{%     set cols.ipv6 = cols.ipv6 or ('ipv6' in ngb) %}
+{%   endfor %}
+{% endfor %}
+{%- endmacro -%}
+
+{#
+    Build the list of columns needed for the BGP ASN report
+#}
+{%- macro asn_columns(nodes,cols) -%}
+{% for ndata in nodes.values() if 'bgp' in ndata and ndata.bgp.rr|default(False) %}
+{%   set cols.rr = true %}
+{% endfor %}
+{%- endmacro -%}

@@ -1,15 +1,14 @@
 {# description: BGP neighbors #}
+{% import 'bgp-prefix.include.j2' as bcode %}
 {#
-   First, figure out if we need Local AS column
+   First, figure out which columns we need
 #}
-{% set las_count = [] %}
-{% for ndata in nodes.values() if 'bgp' in ndata %}
-{%   for ngb in ndata.bgp.neighbors if ngb.local_as|default(False) %}
-{%     set ignore = las_count.append(ngb) %}
-{%   endfor %}
-{% endfor %}
-{% set has_las = (las_count|length) > 0 %}
-{% set col_count = 5 if has_las else 4 %}
+{% set cols = namespace(las=false,ipv4=false,ipv6=false) %}
+{{- bcode.neigbor_columns(nodes,cols) -}}
+{% set col_count = 3 + (1 if cols.las else 0) + (1 if cols.ipv4 else 0) + (1 if cols.ipv6 else 0) %}
+{#
+   Now we're ready for the report
+#}
 {% for n,d in nodes.items() if 'bgp' in d and 'neighbors' in d.bgp %}
 {%   if loop.first %}
 <h2>BGP Neighbors</h2>
@@ -18,9 +17,14 @@
     <tr>
       <th>Node</th>
       <th>Neighbor</th>
-      <th>Neighbor IPv4</th>
       <th>Neighbor AS</th>
-{%     if has_las %}
+{%     if cols.ipv4 %}
+      <th>Neighbor IPv4</th>
+{%     endif %}
+{%     if cols.ipv6 %}
+      <th>Neighbor IPv6</th>
+{%     endif %}
+{%     if cols.las %}
       <th>Local AS</th>
 {%     endif %}
     </tr>
@@ -34,9 +38,14 @@
     <tr>
       <td></td>
       <td>{{ ngb.name }}</td>
-      <td class='right'>{{ ngb.ipv4 }}</td>
       <td class='right'>{{ ngb.as }}</td>
-{%     if has_las %}
+{%     if cols.ipv4 %}
+      <td class='right'>{{ ngb.ipv4|default('') }}</td>
+{%     endif %}
+{%     if cols.ipv6 %}
+      <td class='right'>{{ ngb.ipv6|default('') }}</td>
+{%     endif %}
+{%     if cols.las %}
       <td class='right'>{{ ngb.local_as|default('') }}</td>
 {%     endif %}
     </tr>
@@ -45,4 +54,6 @@
   </tbody>
 </table>
 {%   endif %}
+{% else %}
+<p>BGP neighbor report is empty: no BGP routers in this lab topology</p>
 {% endfor %}

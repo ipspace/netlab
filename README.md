@@ -14,7 +14,10 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.6.1](https://github.com/ipspace/netlab/releases/tag/release_1.6.1). It contains [numerous new features](https://netlab.tools/release/1.6/) that might have a few bugs attached to them. Should you encounter one of those creatures, please open a Github issue and use release 1.5.4. You might also want to [read the release notes](https://netlab.tools/release/).
+The latest release is [release 1.6.2](https://github.com/ipspace/netlab/releases/tag/release_1.6.2); if you prefer an older one, use release 1.5.4. You might also want to [read the release notes](https://netlab.tools/release/).
+<!--
+It contains [numerous new features](https://netlab.tools/release/1.6/) that might have a few bugs attached to them. Should you encounter one of those creatures, please open a Github issue and use release 1.5.4.
+--> 
 
 ## An Overview of CLI Commands
 

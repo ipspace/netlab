@@ -16,23 +16,13 @@ router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
 {% endfor %}
 {% for af in ['ipv4','ipv6'] if vdata.af[af]|default(False) %}
  address-family {{ af }} unicast
+  redistribute connected
   label vpn export auto
   export vpn
   import vpn
   rd vpn export {{ vdata.rd }}
-{%   for rt in vdata.import %}
-  rt vpn import {{ rt }}
-{%   endfor %}
-{%   for rt in vdata.export %}
-  rt vpn export {{ rt }}
-{%   endfor %}
-{# Direct VRF-to-VRF import for local route leaking. Use this or VPN code. #}
-  redistribute connected
-{%   for rt in vdata.import %}
-{%     for exp_name,exp_data in vrfs.items() if rt in exp_data.export and exp_name != vname %}
-  import vrf {{ exp_name }}
-{%     endfor %}
-{%   endfor %}
+  rt vpn import {{ vdata.import|join(" ") }}
+  rt vpn export {{ vdata.export|join(" ") }}
 {%   if af == 'ipv4' and 'ospf' in vdata %}
   redistribute ospf
 {%   endif %}

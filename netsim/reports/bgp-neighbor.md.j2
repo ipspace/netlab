@@ -1,24 +1,34 @@
 {# description: BGP neighbors #}
+{% import 'bgp-prefix.include.j2' as bcode %}
 {#
-   First, figure out if we need Local AS column
+   First, figure out if we need IPv4, IPv6, and Local AS columns
 #}
-{% set las_count = [] %}
-{% for ndata in nodes.values() if 'bgp' in ndata %}
-{%   for ngb in ndata.bgp.neighbors if ngb.local_as|default(False) %}
-{%     set ignore = las_count.append(ngb) %}
-{%   endfor %}
-{% endfor %}
-{% set has_las = (las_count|length) > 0 %}
+{% set cols = namespace(las=false,ipv4=false,ipv6=false) %}
+{{- bcode.neigbor_columns(nodes,cols) -}}
+{#
+   Now we're ready for the report
+#}
 {% for n,d in nodes.items() if 'bgp' in d and 'neighbors' in d.bgp %}
 {%   if loop.first %}
 ## BGP Neighbors
-| Node | Neighbor | Neighbor IPv4 | Neighbor AS {% if has_las %}| Local AS {% endif %}|
-|------|----------|--------------:|------------:{% if has_las %}|---------:{% endif %}|
+{# Legend #}
+| Node | Router ID /<br />Neighbor | Router AS/<br />Neighbor AS {% 
+  if cols.ipv4 %}| Neighbor IPv4 {% endif %}{% 
+  if cols.ipv6 %}| Neighbor IPv6 {% endif %}{% 
+  if cols.las %}| Local AS {% endif %}|
+{# Columns #}
+|------|---------------------------|----------------------------:{% 
+  if cols.ipv4 %}|--------------:{% endif %}{%
+  if cols.ipv6 %}|--------------:{% endif %}{%
+  if cols.las %}|---------:{% endif %}|
 {%   endif %}
-| **{{ n }}** ({{ d.bgp.router_id }} / AS {{ d.bgp.as }}) |
+| **{{ n }}** | {{ d.bgp.router_id }} | {{ d.bgp.as }} |
 {%   for ngb in d.bgp.neighbors %}
-| | {{ ngb.name }} | {{ ngb.ipv4 }} | {{ ngb.as }} {% if has_las 
-%}| {{ ngb.local_as|default('') }} {% endif 
-%}|
+| | {{ ngb.name }} | {{ ngb.as }} {%
+  if cols.ipv4 %}| {{ ngb.ipv4|default('') }} {% endif %}{%
+  if cols.ipv6 %}| {{ ngb.ipv6|default('') }} {% endif %}{%
+  if cols.las %}| {{ ngb.local_as|default('') }} {% endif %}|
 {%   endfor %}
+{% else %}
+No BGP routers in this lab topology
 {% endfor %}
