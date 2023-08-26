@@ -14,6 +14,12 @@ from . import show_common_parser
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('reports','available system reports',system_only=False)
+  parser.add_argument(
+    nargs='?',
+    dest='match',
+    action='store',
+    help='Display report names containing the specified string')
+
   return parser
 
 #
@@ -48,6 +54,19 @@ type_heading :dict = {
   'md'  : 'Markdown reports',
 }
 
+def print_subset_table(result: Box) -> None:
+  heading = ['format','report','description']
+  rows = []
+  last_type = ''
+
+  for r_type in result.keys():                              # Iterate over collected report types
+    for n,d in result[r_type].items():                      # Build results table from results dictionary
+      row_type = '' if last_type == r_type else r_type      # Display report format only when it changes
+      last_type = r_type
+      rows.append([ row_type,d.name,d.desc ])
+
+  strings.print_table(heading,rows,inter_row_line=False)    # Print the results
+
 def print_result_table(result: Box) -> None:
   global type_heading
   heading = ['report','description']
@@ -73,6 +92,10 @@ def show(settings: Box, args: argparse.Namespace) -> None:
   for r_name in sorted(r_list):                             # Iterate over report templates
     if '.include' in r_name:                                # Skip include files
       continue
+
+    if args.match and not args.match in r_name:             # Skip reports not matching the name filter
+      continue
+
     r_desc = get_description(r_name)                        # Get report description
     if r_desc is None:                                      # ... skip the file if it has no usable description
       continue
@@ -87,6 +110,9 @@ def show(settings: Box, args: argparse.Namespace) -> None:
       'desc': r_desc }                                      # Save the results
 
   if args.format == 'table':
-    print_result_table(result)
+    if args.match:
+      print_subset_table(result)
+    else:
+      print_result_table(result)
   elif args.format in ['text','yaml']:
     print(strings.get_yaml_string(result))
