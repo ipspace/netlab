@@ -4,13 +4,13 @@
 
 The following settings can be displayed:
 
-* **devices** -- Supported devices
-* **images** -- Vagrant box names or container names for all supported devices or a single device
-* **module** -- Configuration modules
-* **module-support** -- Configuration modules support matrix
-* **outputs** -- Output modules used by the **[netlab create](create.md)** command
-* **reports** -- Report templates shipped with _netlab_
-* **providers** -- Virtualization providers
+* **[devices](netlab-show-devices)** -- Supported devices
+* **[images](netlab-show-images)** -- Vagrant box names or container names for all supported devices or a single device
+* **[module](netlab-show-modules)** -- Configuration modules
+* **[module-support](netlab-show-module-support)** -- Configuration modules support matrix
+* **[outputs](netlab-show-outputs)** -- Output modules used by the **[netlab create](create.md)** command
+* **[reports](netlab-show-reports)** -- Report templates shipped with _netlab_
+* **[providers](netlab-show-providers)** -- Virtualization providers
 
 The system settings can be displayed as a table, as raw text that is easy to parse in automation scripts, and as YAML data that can be used by third-party utilities. See usage guidelines  and examples in individual command descriptions for more details.
 
@@ -21,6 +21,7 @@ The system settings can be displayed as a table, as raw text that is easy to par
    :backlinks: none
 ```
 
+(netlab-show-devices)=
 ## Display Supported Devices
 
 The **netlab show devices** command displays _netlab_-supported devices together with short descriptions.
@@ -348,6 +349,7 @@ Feature legend:
 * ipv6.lla: IPv6 LLA-only interfaces
 ```
 
+(netlab-show-module-support)=
 ## Display Device Module Support
 
 The **netlab show module-support** command displays configuration modules supported by individual devices.
@@ -523,9 +525,12 @@ Supported output modules
 The **netlab show reports** command displays the report templates that can be used with the **[netlab report](report.md)** command.
 
 ```text
-usage: netlab show reports [-h] [--format {table,text,yaml}]
+usage: netlab show reports [-h] [--format {table,text,yaml}] [match]
 
 Display available system reports
+
+positional arguments:
+  match                 Display report names containing the specified string
 
 options:
   -h, --help            show this help message and exit
@@ -533,30 +538,68 @@ options:
                         Output format (table, text, yaml)
 ```
 
-Example: display available report templates
+**Examples**
+
+* Display all available report templates[^R162]
+
+[^R162]: Printout produced with _netlab_ release 1.6.2. The list of reports might be longer by now.
 
 ```text
 $ netlab show reports
 
-text reports
-
-+------------+---------------------------+
-| report     | description               |
-+============+===========================+
-| addressing | Node/interface addressing |
-+------------+---------------------------+
-
 HTML reports
 
-+----------------------+------------------------------------+
-| report               | description                        |
-+======================+====================================+
-| addressing-link.html | Link/interface addressing          |
-| addressing-node.html | Node/interface addressing          |
-| addressing.html      | Node/interface and link addressing |
-+----------------------+------------------------------------+
++----------------------+--------------------------------------------+
+| report               | description                                |
++======================+============================================+
+| addressing-link.html | Link/interface addressing                  |
+| addressing-node.html | Node/interface addressing                  |
+| addressing.html      | Node/interface and link addressing         |
+| bgp-asn.html         | BGP autonomous systems (needs Ansible)     |
+| bgp-neighbor.html    | BGP neighbors                              |
+| bgp.html             | BGP autonomous systems and neighbors       |
+| mgmt.html            | Device management interfaces and addresses |
+| wiring.html          | Lab wiring (used with external provider)   |
++----------------------+--------------------------------------------+
+
+text reports
+
++------------+------------------------------------------------------+
+| report     | description                                          |
++============+======================================================+
+| addressing | Node/interface addressing                            |
+| bgp        | BGP autonomous systems and neighbors (needs Ansible) |
+| mgmt       | Device management interfaces and addresses           |
+| wiring     | Lab wiring (used with external provider)             |
++------------+------------------------------------------------------+
+
+Markdown reports
+
++-----------------+----------------------------------------+
+| report          | description                            |
++=================+========================================+
+| addressing.md   | Node/interface addressing              |
+| bgp-asn.md      | BGP autonomous systems (needs Ansible) |
+| bgp-neighbor.md | BGP neighbors                          |
+| wiring.md       | Lab wiring                             |
++-----------------+----------------------------------------+
 ```
 
+* Display BGP reports
+
+```
+$ netlab show reports bgp
++--------+-------------------+------------------------------------------------------+
+| format | report            | description                                          |
++========+===================+======================================================+
+| html   | bgp-asn.html      | BGP autonomous systems (needs Ansible)               |
+|        | bgp-neighbor.html | BGP neighbors                                        |
+|        | bgp.html          | BGP autonomous systems and neighbors                 |
+| md     | bgp-asn.md        | BGP autonomous systems (needs Ansible)               |
+|        | bgp-neighbor.md   | BGP neighbors                                        |
+| text   | bgp               | BGP autonomous systems and neighbors (needs Ansible) |
++--------+-------------------+------------------------------------------------------+
+```
 (netlab-show-providers)=
 ## Display Virtualization Providers
 

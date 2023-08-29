@@ -10,7 +10,7 @@ This configuration module configures BGP routing process and BGP neighbors on mo
 More interesting BGP topologies can be created with [custom plugins](../plugins.md).
 
 ```{note}
-Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on BGP autonomous systems and BGP neighbors. Use **[‌netlab show reports](netlab-show-reports)** command to display available reports.
+Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on BGP autonomous systems and BGP neighbors. Use **[‌netlab show reports bgp](netlab-show-reports)** command to display available BGP reports.
 ```
 
 ```eval_rst
