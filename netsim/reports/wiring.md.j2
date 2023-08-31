@@ -1,4 +1,7 @@
 {# description: Lab wiring #}
+{% import 'wiring-columns.include.j2' as wcode %}
+{% set cols = namespace(p2p_name=false,lan_name=false) %}
+{{- wcode.wiring_columns(links,cols) -}}
 # LAB TOPOLOGY SUMMARY
 
 LAB NAME: {{ name }}
@@ -7,10 +10,13 @@ LAB NAME: {{ name }}
 {%   if loop.first %}
 ## Point-to-Point Links
 
-| Link Name       | Origin Device | Origin Port | Destination Device | Destination Port |
-|-----------------|---------------|-------------|--------------------|------------------|
+{% if cols.p2p_name %}| Link Name       {%
+endif %}| Origin Device | Origin Port | Destination Device | Destination Port |
+{% if cols.p2p_name %}|-----------------{%
+endif %}|---------------|-------------|--------------------|------------------|
 {%   endif %}
-| {{ l.name|default('') }} | {{ l.interfaces[0].node }} | {{ l.interfaces[0].ifname }} | {{ l.interfaces[1].node }} | {{ l.interfaces[1].ifname }} |
+{% if cols.p2p_name %}| {{ l.name|default('') }} {%
+endif %}| {{ l.interfaces[0].node }} | {{ l.interfaces[0].ifname }} | {{ l.interfaces[1].node }} | {{ l.interfaces[1].ifname }} |
 {% endfor %}
 
 {% set row_count = [] %}
@@ -29,7 +35,7 @@ LAB NAME: {{ name }}
 
 {% set row_count = [] %}
 {% for node_name, n in nodes.items() %}
-{%   for l in n.interfaces if l.type=='lan' and l.neighbors|length == 0 %}
+{%   for l in n.interfaces if l.type in ['lan','stub'] and l.neighbors|length == 0 %}
 {%     if not row_count %}
 ## Stub Links
 
