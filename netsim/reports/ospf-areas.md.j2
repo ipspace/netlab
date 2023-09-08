@@ -1,0 +1,34 @@
+{# description: OSPF areas, nodes and interfaces #}
+{% import 'ospf-utils.include.j2' as ocode %}
+
+{%- macro header(flag) -%}
+{%-  call ocode.header(flag) -%}
+| Router | Interface | IPv4 Address | Neighbor(s) |
+|--------|-----------|-------------:|-------------|
+{%-  endcall -%}
+{%- endmacro -%}
+{#
+   First, build a list of OSPF areas
+#}
+{% set areas = [] %}
+{% set af = 'ipv4' %}
+{{- ocode.get_areas(areas,nodes,af) -}}
+{% set flags = namespace(first=True) %}
+{% for area in areas|sort %}
+
+### OSPF Area {{ area }}
+
+{%   set flags.first = True %}
+{%   for name,n in nodes.items() if 'ospf' in n %}
+{%     call ocode.loopback(n,area,af,flags) %}
+{{-      header(flags) -}}
+| {{ name }} | Loopback | {{ n.loopback[af] }} | |
+{%     endcall %}
+{%     call ocode.interfaces(n,nodes,area,af,flags) %}
+{{-      header(flags) -}}
+{%       set intf = flags.intf %}
+| {{ name if flags.node != name else '' }} | {{ intf.ifname }} | {{ intf[af] }} | {{ 
+  'passive' if intf.ospf.passive|default(False) else flags.ngb|join(',') }} |
+{%     endcall %}
+{%   endfor %}
+{% endfor %}

@@ -9,6 +9,10 @@ This configuration module configures OSPFv2 and OSPFv3 routing processes on most
    :backlinks: none
 ```
 
+```{note}
+Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on OSPF areas, routers, and interfaces. Use **[‌netlab show reports ospf](netlab-show-reports)** command to display available OSPF reports.
+```
+
 ## Supported Features
 
 Supported OSPF features:
