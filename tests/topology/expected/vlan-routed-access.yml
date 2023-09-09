@@ -13,7 +13,6 @@ links:
       mode: route
   - ifindex: 1
     ifname: Ethernet1
-    ipv4: 172.16.0.2/24
     node: s1
     vlan:
       access: red
@@ -31,7 +30,6 @@ links:
   interfaces:
   - ifindex: 2
     ifname: Ethernet2
-    ipv4: 172.16.0.2/24
     node: s1
     vlan:
       access: red
@@ -51,6 +49,17 @@ links:
   type: lan
   vlan:
     access: red
+- bridge: input_3
+  interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.1.2/24
+    node: s1
+  linkindex: 3
+  node_count: 1
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: stub
 module:
 - vlan
 - ospf
@@ -73,7 +82,6 @@ nodes:
       name: r1 -> [s1,r2]
       neighbors:
       - ifname: Vlan1000
-        ipv4: 172.16.0.2/24
         node: s1
       - ifname: Ethernet1
         ipv4: 172.16.0.3/24
@@ -132,7 +140,6 @@ nodes:
         ipv4: 172.16.0.1/24
         node: r1
       - ifname: Vlan1000
-        ipv4: 172.16.0.2/24
         node: s1
       ospf:
         area: 0.0.0.0
@@ -189,10 +196,20 @@ nodes:
       vlan:
         access: red
         access_id: 1000
-    - bridge_group: 1
+    - bridge: input_3
       ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.1.2/24
+      linkindex: 3
+      name: s1 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: true
+      type: stub
+    - bridge_group: 1
+      ifindex: 4
       ifname: Vlan1000
-      ipv4: 172.16.0.2/24
       name: VLAN red (1000) -> [r1,r2]
       neighbors:
       - ifname: GigabitEthernet0/1
@@ -201,14 +218,10 @@ nodes:
       - ifname: Ethernet1
         ipv4: 172.16.0.3/24
         node: r2
-      ospf:
-        area: 0.0.0.0
-        cost: 10
-        passive: false
       type: svi
       virtual_interface: true
       vlan:
-        mode: irb
+        mode: bridge
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
@@ -230,7 +243,7 @@ nodes:
       red:
         bridge_group: 1
         id: 1000
-        mode: irb
+        mode: bridge
         ospf:
           cost: 10
         prefix:
@@ -248,7 +261,6 @@ vlans:
       ipv4: 172.16.0.1/24
       node: r1
     - ifname: Vlan1000
-      ipv4: 172.16.0.2/24
       node: s1
     - ifname: Ethernet1
       ipv4: 172.16.0.3/24
