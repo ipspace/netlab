@@ -106,21 +106,20 @@ nodes:
 
 ### Containerlab Attributes
 
-* **clab.kind** -- [containerlab device kind](https://containerlab.dev/manual/kinds/). Set in the system defaults for all supported devices.
+When using network devices with *containerlab*, you might have to set these node attributes:
+
 * **clab.type** -- device *type* when supported by containerlab (example: [SR Linux](https://containerlab.dev/manual/kinds/srl/#types))
-* **clab.env** -- container environment variables. Used in system defaults to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations).
 * **clab.license** -- license file needed for a network device running under containerlab. Used by Nokia SR OS.
 
-For a full list of supported Containerlab attributes, have a look at [this definition](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22)) for the 'clab provider'.
+You will probably have to set other *containerlab* attributes if you want to run networking-related tools or daemons as Docker containers within your lab. For more details, please read the [*containerlab* provider documentation](labs/clab.md).
 
-Example Containerlab defaults and node specific overrides:
+Example: set node type and license file for Nokia SR OS
 ```yaml
 ---
 defaults.devices.sros.clab:
   image: vrnetlab/vr-sros:23.3.R3
   mtu: 1500
   node:
-    kind: vr-sros
     type: ixr-ec
     license: ../../sros/license-sros23.3.R3.txt
 

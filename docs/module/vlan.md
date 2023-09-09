@@ -237,8 +237,10 @@ links:
 Finally, you can set the parameters of an individual routed VLAN subinterface within the **vlan.trunk** link- or interface- dictionary.
 
 ```{warning}
-Don't try to set VLAN interface parameters on access or trunk links; you might get unexpected results.
+You cannot set VLAN interface parameters for bridged or IRB VLANs on access or trunk links. Most physical interface parameters[^PIFX] are ignored when creating the VLAN interface, and removed from the physical interface.
 ```
+
+[^PIFX]: ... apart from IPv4/IPv6 addresses and **gateway** link parameters set during the data transformation.
 
 (module-vlan-trunk-attributes)=
 ### Modifying Attributes of VLANs in a VLAN Trunk

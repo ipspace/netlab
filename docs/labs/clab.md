@@ -238,14 +238,17 @@ Ansible developers love to restructure stuff and move it into different director
 
 ### Using Other Containerlab Node Parameters
 
-Default *netlab* settings support these additional *containerlab* parameters:
+You can also change these *containerlab* parameters:
 
-* **clab.type** to set node type (used by Nokia SR OS and Nokia SR Linux)
-* **clab.env** to set container environment (used by Arista EOS to set Ethernet interface names)
+* **clab.kind** -- [containerlab device kind](https://containerlab.dev/manual/kinds/). Set in the system defaults for all supported devices, use it only to specify the device type for [unknown devices](platform-unknown).
+* **clab.type** to set node type (used by Nokia SR OS and Nokia SR Linux).
+* **clab.env** to set container environment (used to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations))
 * **clab.ports** to map container ports to host ports
 * **clab.cmd** to execute a command in a container.
 
 String values (for example command to execute specified in **clab.cmd**) are put into single quotes when written into `clab.yml` containerlab configuration file -- make sure you're not using single quotes in your command line.
+
+You can find the full list of supported Containerlab attributes in the [system defaults](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22) or print it with the `netlab inspect defaults.providers.clab.attributes` command.
 
 To add other *containerlab* attributes to the `clab.yml` configuration file, modify **defaults.providers.clab.node_config_attributes** settings, for example:
 
