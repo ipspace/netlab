@@ -15,24 +15,24 @@
 | Arista vEOS                               | eos                |
 | Aruba AOS-CX [❗](caveats-aruba)          | arubacx        |
 | Cisco ASAv                                | asav               |
-| Cisco CSR 1000v                           | csr                |
-| Cisco IOSv                                | iosv               |
-| Cisco IOS XRv                             | iosxr [❗](caveats-iosxr)              |
-| Cisco Nexus 9300v                         | nxos               |
-| Cumulus Linux 4.x/5.x                     | cumulus            |
-| Cumulus Linux 5.0 (NVUE)                            | cumulus_nvue [❗](caveats-cumulus-nvue)           |
-| Dell OS10                                 | dellos10           |
-| Fortinet FortiOS [❗](caveats-fortios) | fortios            |
-| FRRouting (FRR)                           | frr                |
+| Cisco CSR 1000v [❗](caveats-csr)         | csr                |
+| Cisco IOSv [❗](caveats-iosv)             | iosv               |
+| Cisco IOS XRv  [❗](caveats-iosxr)        | iosxr              |
+| Cisco Nexus 9300v [❗](caveats-nxos)      | nxos               |
+| Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus            |
+| Cumulus Linux 5.0 (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue           |
+| Dell OS10 [❗](caveats-os10).             | dellos10           |
+| Fortinet FortiOS [❗](caveats-fortios)    | fortios            |
+| FRRouting (FRR) [❗](caveats-frr)         | frr                |
 | [Generic Linux host](labs/linux.md)       | linux              |
-| Juniper vMX                               | vmx                |
+| Juniper vMX [❗](caveats-vmx)             | vmx                |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
-| Juniper vSRX 3.0                          | vsrx               |
-| Mikrotik RouterOS 6 (CHR)                 | routeros           |
+| Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
+| Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           |
-| Nokia SR Linux [❗](caveats-srlinux) | srlinux            |
-| Nokia SR OS [❗](caveats-sros) | sros               |
-| VyOS 1.4 [❗](caveats-vyos)         | vyos               |
+| Nokia SR Linux [❗](caveats-srlinux)      | srlinux            |
+| Nokia SR OS [❗](caveats-sros)            | sros               |
+| VyOS 1.4 [❗](caveats-vyos)               | vyos               |
 
 **Notes:**
 
