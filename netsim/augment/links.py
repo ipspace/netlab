@@ -484,7 +484,7 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
         return True                             # ... then it's OK not to have host bits
 
       log.error(
-        f'Address {intf.af} for node {intf.node} does not contain host bits',
+        f'Address {intf[af]} for node {intf.node} does not contain host bits',
         log.IncorrectValue,
         'links')
       return False
