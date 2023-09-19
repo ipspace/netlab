@@ -51,7 +51,7 @@ The following table describes per-platform support of individual router-level OS
 | Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
 | Cisco IOS XE             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
+| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌          |
 | Dell OS10 ([❗](caveats-os10)) |   ✅  |       ✅          |   ✅   |  ✅  |       ❌          |
 | Fortinet FortiOS         |   [❗](caveats-fortios)  | ✅   |   ❌   |  ❌  |       ❌          |

@@ -7,21 +7,23 @@ BFD is supported on these platforms:
 | Operating system      | Configurable<br>timers | OSPF | IS-IS |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  | ❌  |
+| Aruba AOS-CX          | ✅  | ✅  |  ❌  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
-| Dell OS10             |  ❌  | ✅  | ❌  |
-| Juniper vMX           | ❗  | ✅  | ✅  |
-| Juniper vPTX          | ❗  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ❗  | ✅  | ✅  |
+| Cumulus Linux         | ✅❗| ✅  |  ❌  |
+| Dell OS10             |  ❌  | ✅  |  ❌  |
+| Juniper vMX           | ✅❗| ✅  | ✅  |
+| Juniper vPTX          | ✅❗| ✅  | ✅  |
+| Juniper vSRX 3.0      | ✅❗| ✅  | ✅  |
 | Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |
-| Mikrotik RouterOS 7   |  ❌  | ❌  | ❌  |
+| Mikrotik RouterOS 7   |  ❌  |  ❌  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
-| VyOS                  | ✅❗ | ✅  | ✅  |
+| VyOS                  | ✅❗| ✅  | ✅  |
 
 **Notes:**
+* Cumulus Linux configures BFD as part of OSPFv2/OSPFv3 configuration.
 * Junos configuration template configures BFD timers within routing protocol configuration, not in individual interfaces
 * VyOS configuration template configures BFD timers only at global level
 
