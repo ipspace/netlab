@@ -67,6 +67,7 @@ html_context = {}
 rtd_branch = os.environ.get("READTHEDOCS_VERSION", None)
 html_context["w_dev"] = rtd_branch == "dev"
 html_context["w_latest"] = rtd_branch == "latest"
+html_show_sphinx = False
 
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
