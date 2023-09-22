@@ -24,11 +24,18 @@
       keychain: "peer-{{n.name}}"
 
 - path: system/authentication/keychain[name=peer-{{n.name}}]
+{% if n.tcp_ao|default('x')=='' or bgp.tcp_ao|default('')=='' %}
+{%  set type = 'tcp-md5' %}
+{%  set algorithm = 'md5' %}
+{% else %}
+{%  set type = 'tcp-ao' %} {# Note: Not yet supported in R23.7 #}
+{%  set algorithm = n.tcp_ao | default( bgp.tcp_ao ) %} 
+{% endif %}
   val:
-   type: tcp-md5
+   type: "{{ type }}"
    key:
    - index: 0
-     algorithm: md5
+     algorithm: "{{ algorithm }}"
      authentication-key: "{{ n.password }}"
 {%   endif %}
 {%- endmacro %}

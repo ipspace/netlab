@@ -4,6 +4,7 @@ from netsim import api
 
 """
 Adds a custom bgp.{allowas_in,as_override,default_originate} as link->node (interface) attribute
+Also adds tcp_ao attribute as global and per-link option
 """
 def init(topology: Box) -> None:
     attr = topology.defaults.bgp.attributes
@@ -12,11 +13,19 @@ def init(topology: Box) -> None:
     attr.interface.default_originate = 'bool'
     attr.link.password = 'str'
 
+    # Add global, node and per-link tcp_ao option (see RFC5925 - https://datatracker.ietf.org/doc/html/rfc5925)
+    tcp_ao_algorithm = { 'type': 'str', 
+                         'valid_values': ['aes-128-cmac','hmac-sha-1',''], 
+                         'true_value': 'hmac-sha-1' } # Default to most common algo
+    attr['global'].tcp_ao = tcp_ao_algorithm
+    attr['node'].tcp_ao = tcp_ao_algorithm
+    attr['link'].tcp_ao = tcp_ao_algorithm
+
 def pre_link_transform(topology: Box) -> None:
     # Error if BGP module is not loaded
-    if not 'bgp' in topology.module:
+    if 'bgp' not in topology.module:
         log.error(
-            f'BGP Module is not loaded.',
+            'BGP Module is not loaded.',
             log.IncorrectValue,
             'ebgp_utils')
 

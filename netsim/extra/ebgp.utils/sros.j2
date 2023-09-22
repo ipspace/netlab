@@ -1,0 +1,62 @@
+# See https://documentation.nokia.com/sr/23-7-1/books/system-management/security-system-management.html?hl=tcp%20enhanced%20authentication%20option
+
+{% macro ebgp_neighbor(n,af,vrf) -%}
+{% set path = "router[router-name=Base]" if not vrf else "service/vprn[service-name="+vrf+"]" %}
+- path: configure/{{ path }}/bgp
+  val:
+{% if n.type=='ebgp' and af=='ipv6' and n.ipv6|default(0) == True %}
+   group:
+   - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
+{% else %}
+   neighbor:
+   - ip-address: {{ n[af]|ipaddr('address') }}
+{% endif %}
+{% if n.default_originate|default(False) %}
+{%   set activate = n.activate|default( {'ipv4':True,'ipv6':True} ) %}
+     send-default:
+      ipv4: {{ activate.ipv4|default(False) }}
+      ipv6: {{ activate.ipv6|default(False) }}
+{% endif %}
+{%   if n.allowas_in is defined %}
+     # allow-own-as: {{ n.allowas_in|int }}
+{%   endif %}
+{%   if n.as_override|default(False) %}
+     as-override: True
+{%   endif %}
+{%   if n.password is defined and (n.type!='ebgp' or n.ipv6|default('') is string) %}
+{%    if n.tcp_ao|default('x')=='' or bgp.tcp_ao|default('')=='' %}
+     authentication-key: "{{ n.password }}"
+{%    else %}
+     authentication-keychain: "peer-{{n.name}}"
+
+- path: configure/system/security/keychains/keychain[keychain-name=peer-{{n.name}}]
+  val:
+   bidirectional:
+    entry:
+    - keychain-entry-index: 0
+      authentication-key: "{{ n.password }}"
+      algorithm: "{{ n.tcp_ao | default( bgp.tcp_ao ) }}-96"
+      begin-time: "{{ now(utc=True,fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+   tcp-option-number:
+    receive: tcp-ao
+    send: tcp-ao
+{%    endif %}
+{%   endif %}
+{%- endmacro %}
+
+updates:
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined and (n[af] is string or (af=='ipv6' and n.ipv6)) %}
+{{     ebgp_neighbor(n,af,vrf=None) -}}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors if n[af] is defined and (n[af] is string or (af=='ipv6' and n.ipv6)) %}
+{{       ebgp_neighbor(n,af,vname) -}}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
