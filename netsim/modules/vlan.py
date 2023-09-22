@@ -52,7 +52,7 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
       return False
 
   if log.debug_active('vlan'):
-    print(f'... VLAN is routed (returning True)')
+    print('... VLAN is routed (returning True)')
   return True
 
 #
@@ -81,7 +81,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
   default_fwd_mode = obj.get('vlan.mode',None) or get_global_parameter(topology,'vlan.mode')
 
-  if not 'vlans' in obj:
+  if 'vlans' not in obj:
     return
 
   for vname in list(obj.vlans.keys()):
@@ -615,7 +615,7 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
       if not m in node.module and m in topology.module:             # ... it's safe to use direct references, everyone is using VLAN module
         node.vlans[vlan].pop(m,None)
 
-  if not 'mode' in node.vlans[vlan]:                                # Make sure vlan.mode is set
+  if not 'mode' in node.vlans[vlan] or node.get('vlan.mode',None):  # Make sure vlan.mode is set, apply any override
     node.vlans[vlan].mode = get_vlan_mode(node,topology)
 
   if not 'bridge_group' in node.vlans[vlan]:                        # Set bridge group in VLAN data
