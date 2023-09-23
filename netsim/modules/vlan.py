@@ -614,6 +614,9 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
     for m in list(node.vlans[vlan].keys()):                         # Remove irrelevant module parameters
       if not m in node.module and m in topology.module:             # ... it's safe to use direct references, everyone is using VLAN module
         node.vlans[vlan].pop(m,None)
+    node_mode = node.get('vlan.mode',None)                          # When copying global VLANs into node VLANs
+    if not node_mode is None:                                       # ... make sure node vlan.mode takes precedence
+      node.vlans[vlan].mode = node_mode                             # ... over global VLAN vlan.mode
 
   if not 'mode' in node.vlans[vlan]:                                # Make sure vlan.mode is set
     node.vlans[vlan].mode = get_vlan_mode(node,topology)
@@ -1087,14 +1090,6 @@ class VLAN(_Module):
                                                   # ... VLAN subinterfaces
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
-
-    if topology.get('vlan.mode',None):
-      if topology.vlan.mode not in vlan_mode_kwd:     # pragma: no cover
-        log.error(
-          f'Invalid global vlan.mode value {topology.vlan.mode}',
-          log.IncorrectValue,
-          'vlan')
-        return
 
     populate_vlan_id_set(topology)
 
