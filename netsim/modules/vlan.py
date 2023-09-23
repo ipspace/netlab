@@ -637,9 +637,6 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
     for m in list(node.vlans[vlan].keys()):                         # Remove irrelevant module parameters
       if not m in node.module and m in topology.module:             # ... it's safe to use direct references, everyone is using VLAN module
         node.vlans[vlan].pop(m,None)
-    node_mode = node.get('vlan.mode',None)                          # When copying global VLANs into node VLANs
-    if not node_mode is None:                                       # ... make sure node vlan.mode takes precedence
-      node.vlans[vlan].mode = node_mode                             # ... over global VLAN vlan.mode
 
   set_node_vlan_mode(node.vlans[vlan],node,vlan_data,topology)      # Set VLAN forwarding mode
 
