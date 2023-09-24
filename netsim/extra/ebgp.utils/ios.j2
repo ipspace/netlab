@@ -1,17 +1,13 @@
+{% macro ebgp_session(n,af) -%}
+{%   if n.password is defined %}
+  neighbor {{ n[af] }} password {{ n.password }}
+{%   endif %}
+{%   if n.gtsm is defined %}
+  neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
+{%   endif %}
+{%- endmacro %}
 !
-router bgp {{ bgp.as }}
-!
-! Password
-{% for n in bgp.neighbors if n.password is defined %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
- neighbor {{ n[af] }} password {{ n.password }}
-{%   endfor %}
-{% endfor %}
-!
-! Global address families
-{% for af in ['ipv4','ipv6'] if af in bgp %}
- address-family {{ af }}
-{%   for n in bgp.neighbors if n[af] is defined %}
+{% macro ebgp_neighbor(n,af) -%}
 {%     if n.allowas_in is defined %}
   neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
 {%     endif %}
@@ -21,9 +17,23 @@ router bgp {{ bgp.as }}
 {%     if n.default_originate is defined %}
   neighbor {{ n[af] }} default-originate
 {%     endif %}
+{%- endmacro %}
+!
+router bgp {{ bgp.as }}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     ebgp_session(n,af) }}
 {%   endfor %}
 {% endfor %}
-
+!
+! Global address families
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+ address-family {{ af }}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_neighbor(n,af) }}
+{%   endfor %}
+{% endfor %}
+!
 {% if vrfs is defined %}
 {%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
 {%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
@@ -31,18 +41,8 @@ router bgp {{ bgp.as }}
 {%         if loop.first %}
  address-family {{ af }} vrf {{ vname }}
 {%         endif %}
-{%         if n.password is defined %}
-  neighbor {{ n[af] }} password {{ n.password }}
-{%         endif %}
-{%         if n.allowas_in is defined %}
-  neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
-{%         endif %}
-{%         if n.as_override is defined %}
-  neighbor {{ n[af] }} as-override
-{%         endif %}
-{%         if n.default_originate is defined %}
-  neighbor {{ n[af] }} default-originate
-{%         endif %}
+{{         ebgp_session(n,af) }}
+{{         ebgp_neighbor(n,af) }}
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}

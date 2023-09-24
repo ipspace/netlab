@@ -40,9 +40,9 @@ def post_transform(topology: Box) -> None:
         continue
 
       # Iterate over all link/interface attributes that have to be copied into neighbors
-      for attr in ('as_override','allowas_in','default_originate','password'):
-        attr_value = intf.bgp.get(attr,None)
-        if not attr_value:                                  # Attribute not on the interface, move on
+      for attr in ('as_override','allowas_in','default_originate','password','gtsm'):
+        attr_value = intf.bgp.get(attr,None) or ndata.bgp.get(attr,None)
+        if not attr_value:                                  # Attribute not defined in node or interface, move on
           continue
         
         # Iterate over all BGP neighbors trying to find neighbors on this interface
