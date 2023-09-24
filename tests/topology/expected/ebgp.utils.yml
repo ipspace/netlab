@@ -1,0 +1,279 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65001:
+    members:
+    - r1
+  as65002:
+    members:
+    - r2
+    - r3
+input:
+- topology/input/ebgp.utils.yml
+- package:topology-defaults.yml
+links:
+- bgp:
+    password: Secret
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+- bgp:
+    password: Secret
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.5/30
+    node: r1
+  - bgp:
+      allowas_in: 1
+    ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.6/30
+    node: r3
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
+module:
+- bgp
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65002
+        default_originate: true
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: r2
+        password: Secret
+        type: ebgp
+      - activate:
+          ipv4: true
+        allowas_in: 1
+        as: 65002
+        default_originate: true
+        ifindex: 2
+        ipv4: 10.1.0.6
+        name: r3
+        password: Secret
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: arista/veos
+    config:
+    - ebgp.utils
+    device: eos
+    id: 1
+    interfaces:
+    - bgp:
+        default_originate: true
+        password: Secret
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - bgp:
+          password: Secret
+        ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: r2
+      role: external
+      type: p2p
+    - bgp:
+        default_originate: true
+        password: Secret
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: r1 -> r3
+      neighbors:
+      - bgp:
+          allowas_in: 1
+          password: Secret
+        ifname: Ethernet1
+        ipv4: 10.1.0.6/30
+        node: r3
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - bgp
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65002
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: {}
+        ipv4: 10.0.0.3
+        name: r3
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65001
+        default_originate: true
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        password: Secret
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: arista/veos
+    config:
+    - ebgp.utils
+    device: eos
+    id: 2
+    interfaces:
+    - bgp:
+        password: Secret
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - bgp:
+          default_originate: true
+          password: Secret
+        ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - bgp
+    name: r2
+  r3:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65002
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: {}
+        ipv4: 10.0.0.2
+        name: r2
+        type: ibgp
+      - activate:
+          ipv4: true
+        allowas_in: 1
+        as: 65001
+        default_originate: true
+        ifindex: 1
+        ipv4: 10.1.0.5
+        name: r1
+        password: Secret
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: arista/veos
+    config:
+    - ebgp.utils
+    device: eos
+    id: 3
+    interfaces:
+    - bgp:
+        allowas_in: 1
+        password: Secret
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: r3 -> r1
+      neighbors:
+      - bgp:
+          default_originate: true
+          password: Secret
+        ifname: Ethernet2
+        ipv4: 10.1.0.5/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    module:
+    - bgp
+    name: r3
+plugin:
+- ebgp.utils
+provider: libvirt
