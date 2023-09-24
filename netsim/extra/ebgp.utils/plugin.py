@@ -1,6 +1,7 @@
 from box import Box
 from netsim.utils import log
 from netsim import api
+from netsim.augment import devices
 
 def pre_link_transform(topology: Box) -> None:
   # Error if BGP module is not loaded
@@ -9,6 +10,19 @@ def pre_link_transform(topology: Box) -> None:
       'BGP Module is not loaded.',
       log.IncorrectValue,
       'ebgp_utils')
+
+'''
+check_device_attribute_support -- using device BGP features, check whether the
+device supports the attribute applied to a BGP neighbor
+'''
+def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box) -> None:
+  features = devices.get_device_features(ndata,topology.defaults)
+  if features.bgp.get(attr,None):
+    return
+  
+  log.error(
+    f'Attribute {attr} used on BGP neighbor {neigh.name} is not supported by node {ndata.name} (device {ndata.device})',
+    log.IncorrectValue,'ebgp.utils')
 
 '''
 post_transform hook
@@ -34,6 +48,7 @@ def post_transform(topology: Box) -> None:
         # Iterate over all BGP neighbors trying to find neighbors on this interface
         for neigh in ndata.get('bgp', {}).get('neighbors', []):
           if neigh.ifindex == intf.ifindex and neigh.type == 'ebgp':
+            check_device_attribute_support(attr,ndata,neigh,topology)
             neigh[attr] = attr_value                        # Found the neighbor, set neighbor attribute
             api.node_config(ndata,config_name)              # And remember that we have to do extra configuration
 
