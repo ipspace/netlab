@@ -12,6 +12,7 @@ from box import Box
 from ..utils import log, read as _read
 from ..utils.files import get_moddir
 from .. import data
+from . import config
 
 '''
 merge_plugin_defaults: Merge plugin defaults with topology defaults
@@ -28,6 +29,7 @@ def merge_plugin_defaults(defaults: typing.Optional[Box], topology: Box) -> None
   if not defaults:
     return
   
+  config.process_copy_requests(defaults)
   important_stuff = None
   if 'important' in defaults:
     important_stuff = defaults.important
