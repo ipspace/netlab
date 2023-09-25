@@ -35,22 +35,37 @@ def post_transform(topology: Box) -> None:
   config_name = api.get_config_name(globals())              # Get the plugin configuration name
 
   for n, ndata in topology.nodes.items():
-    for intf in ndata.interfaces:
-      if not isinstance(intf.get('bgp',None),Box):
-        continue
+    if not 'bgp' in ndata.module:                           # Skip nodes not running BGP
+      continue
 
-      # Iterate over all link/interface attributes that have to be copied into neighbors
-      for attr in ('as_override','allowas_in','default_originate','password','gtsm'):
-        attr_value = intf.bgp.get(attr,None) or ndata.bgp.get(attr,None)
+    # Cleanup ebgp.utils attributes with local significance from neighbors
+    for attr in topology.defaults.bgp.attributes.ebgp_utils.local:
+      for neigh in ndata.get('bgp', {}).get('neighbors', []):
+        neigh.pop(attr,None)
+
+      for vdata in ndata.get('vrfs',{}):
+        if not vdata.get('bgp.neighbors',None):
+          continue
+        for neigh in vdata.bgp.neighbors:
+          neigh.pop(attr,None)
+
+    # Iterate over all ebgp.utils link/interface attributes
+    for intf in ndata.interfaces:
+#      print(f'node: {ndata.name} intf {intf.ifname} / {intf.ifindex}')
+      for attr in topology.defaults.bgp.attributes.ebgp_utils.attr:
+        attr_value = intf.get('bgp',{}).get(attr,None) or ndata.bgp.get(attr,None)
         if not attr_value:                                  # Attribute not defined in node or interface, move on
           continue
         
+#        print(f'.. attr {attr} value {attr_value}')
         # Iterate over all BGP neighbors trying to find neighbors on this interface
         for neigh in ndata.get('bgp', {}).get('neighbors', []):
-          if neigh.ifindex == intf.ifindex and neigh.type == 'ebgp':
+#          print(f'.... neighbor: {neigh.name} {neigh.ifindex} {neigh.type}')
+          if neigh.type == 'ebgp' and neigh.ifindex == intf.ifindex:
             check_device_attribute_support(attr,ndata,neigh,topology)
             neigh[attr] = attr_value                        # Found the neighbor, set neighbor attribute
             api.node_config(ndata,config_name)              # And remember that we have to do extra configuration
+#            print(f'...... setting value {neigh}')
 
         if 'vrf' not in intf:                               # Not a VRF interface?
            continue                                         # ... great, move on
