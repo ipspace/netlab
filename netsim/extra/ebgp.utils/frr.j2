@@ -1,27 +1,19 @@
+{% macro ebgp_session(n,af) -%}
+{%   if n.password is defined %}
+ neighbor {{ n[af] }} password {{ n.password }}
+{%   endif %}
+{%   if n.gtsm is defined %}
+ neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
+{%   endif %}
+{%   if n.timers is defined %}
+ neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+{%   endif %}
+{%- endmacro %}
 !
 router bgp {{ bgp.as }}
-{#
-   MD5 passwords
-#}
-{% for n in bgp.neighbors if n.password is defined %}
-{%   if loop.first %}
-!
-! Password
-{%   endif %}
+{% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
- neighbor {{ n[af] }} password {{ n.password }}
-{%   endfor %}
-{% endfor %}
-{#
-   GTSM
-#}
-{% for n in bgp.neighbors if n.gtsm is defined %}
-{%   if loop.first %}
-!
-! GTSM
-{%   endif %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
- neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
+{{     ebgp_session(n,af) }}
 {%   endfor %}
 {% endfor %}
 !
@@ -65,9 +57,7 @@ router bgp {{ bgp.as }}
 {%         if loop.first %}
  address-family {{ af }} vrf {{ vname }}
 {%         endif %}
-{%         if n.password is defined %}
-  neighbor {{ peer }} password {{ n.password }}
-{%         endif %}
+{{         ebgp_session(n,af) }}
 {%         if n.allowas_in is defined %}
   neighbor {{ peer }} allowas-in {{ n.allowas_in }}
 {%         endif %}
