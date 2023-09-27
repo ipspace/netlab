@@ -5,13 +5,13 @@
 
 # First, extend the attribute values
 defaults.attributes.vlan:
-  mode.valid_values: [ bridge, irb, route, g_irb, vl_irb, n_irb ]
+  mode.valid_values: [ bridge, irb, route, g_irb, vl_irb, n_irb, n_bridge, vl_route ]
 
 defaults.vlan.attributes:
   global.mode.valid_values: [ bridge, irb, route, g_irb, vl_irb ]
   node.mode:
     type: str
-    valid_values: [ bridge, irb, route, n_irb ]
+    valid_values: [ bridge, irb, route, n_irb, n_bridge ]
 
 defaults.device: frr
 module: [ vlan ]
@@ -24,6 +24,8 @@ vlans:
   green:
     mode: vl_irb          # Another VLAN with explicit mode
   orange:                 # Used to test interface-specific override
+  black:
+    mode: vl_route        # Used to test a node level override to bridge in a trunk
 
 nodes:
   s1:
@@ -33,6 +35,8 @@ nodes:
       green:
         mode: bridge      # VLAN-specific mode must take precedence over anything else
       red:                # Let's see what happens if we have node VLAN without the "mode" attribute
+  s3:
+    vlan.mode: n_bridge   # Node overriding global and per-vlan mode setting
 
 links:
 - s1:
@@ -44,6 +48,7 @@ links:
     red:
     blue:
     green:
+    black:
 - s1:
   s2:
     vlan.trunk:
@@ -51,3 +56,6 @@ links:
         vlan.mode: route
   vlan.trunk:
     orange:
+- s1:
+  s3:
+  vlan.trunk: [ red, blue, black ]

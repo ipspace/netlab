@@ -30,6 +30,7 @@ links:
     node: s1
     vlan:
       trunk:
+        black: {}
         blue: {}
         green: {}
         red: {}
@@ -38,6 +39,7 @@ links:
     node: s2
     vlan:
       trunk:
+        black: {}
         blue: {}
         green: {}
         red: {}
@@ -47,6 +49,7 @@ links:
   type: p2p
   vlan:
     trunk:
+      black: {}
       blue: {}
       green: {}
       red: {}
@@ -72,6 +75,32 @@ links:
   vlan:
     trunk:
       orange: {}
+- interfaces:
+  - ifindex: 4
+    ifname: eth4
+    node: s1
+    vlan:
+      trunk:
+        black: {}
+        blue: {}
+        red: {}
+  - ifindex: 1
+    ifname: eth1
+    node: s3
+    vlan:
+      trunk:
+        black: {}
+        blue: {}
+        red: {}
+  linkindex: 4
+  node_count: 2
+  prefix: {}
+  type: p2p
+  vlan:
+    trunk:
+      black: {}
+      blue: {}
+      red: {}
 module:
 - vlan
 name: input
@@ -98,7 +127,7 @@ nodes:
       neighbors:
       - ifname: eth2
         node: s2
-      subif_index: 3
+      subif_index: 4
       type: p2p
     - ifindex: 3
       ifname: eth3
@@ -110,6 +139,24 @@ nodes:
       subif_index: 1
       type: p2p
     - ifindex: 4
+      ifname: eth4
+      linkindex: 4
+      name: s1 -> s3
+      neighbors:
+      - ifname: eth1
+        node: s3
+      subif_index: 3
+      type: p2p
+    - ifindex: 5
+      ifname: eth2.1004
+      parent_ifindex: 2
+      parent_ifname: eth2
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: black
+        access_id: 1004
+    - ifindex: 6
       ifname: eth2.1001
       parent_ifindex: 2
       parent_ifname: eth2
@@ -118,7 +165,7 @@ nodes:
       vlan:
         access: blue
         access_id: 1001
-    - ifindex: 5
+    - ifindex: 7
       ifname: eth2.1002
       parent_ifindex: 2
       parent_ifname: eth2
@@ -127,7 +174,7 @@ nodes:
       vlan:
         access: green
         access_id: 1002
-    - ifindex: 6
+    - ifindex: 8
       ifname: eth2.1000
       parent_ifindex: 2
       parent_ifname: eth2
@@ -136,7 +183,7 @@ nodes:
       vlan:
         access: red
         access_id: 1000
-    - ifindex: 7
+    - ifindex: 9
       ifname: eth3.1003
       parent_ifindex: 3
       parent_ifname: eth3
@@ -145,34 +192,83 @@ nodes:
       vlan:
         access: orange
         access_id: 1003
+    - ifindex: 10
+      ifname: eth4.1004
+      parent_ifindex: 4
+      parent_ifname: eth4
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: black
+        access_id: 1004
+    - ifindex: 11
+      ifname: eth4.1001
+      parent_ifindex: 4
+      parent_ifname: eth4
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: blue
+        access_id: 1001
+    - ifindex: 12
+      ifname: eth4.1000
+      parent_ifindex: 4
+      parent_ifname: eth4
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
     - bridge_group: 1
-      ifindex: 8
+      ifindex: 13
       ifname: vlan1000
       ipv4: 172.16.0.1/24
-      name: VLAN red (1000) -> [s2]
+      name: VLAN red (1000) -> [s2,s3]
       neighbors:
       - ifname: vlan1000
         ipv4: 172.16.0.2/24
         node: s2
+      - ifname: vlan1000
+        ipv4: 172.16.0.3/24
+        node: s3
       type: svi
       virtual_interface: true
       vlan:
         mode: vl_irb
     - bridge_group: 2
-      ifindex: 9
+      ifindex: 14
+      ifname: vlan1004
+      ipv4: 172.16.4.1/24
+      name: VLAN black (1004) -> [s2,s3]
+      neighbors:
+      - ifname: vlan1004
+        ipv4: 172.16.4.2/24
+        node: s2
+      - ifname: vlan1004
+        ipv4: 172.16.4.3/24
+        node: s3
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: vl_route
+    - bridge_group: 3
+      ifindex: 15
       ifname: vlan1001
       ipv4: 172.16.1.1/24
-      name: VLAN blue (1001) -> [s2]
+      name: VLAN blue (1001) -> [s2,s3]
       neighbors:
       - ifname: vlan1001
         ipv4: 172.16.1.2/24
         node: s2
+      - ifname: vlan1001
+        ipv4: 172.16.1.3/24
+        node: s3
       type: svi
       virtual_interface: true
       vlan:
         mode: g_irb
-    - bridge_group: 3
-      ifindex: 10
+    - bridge_group: 4
+      ifindex: 16
       ifname: vlan1002
       ipv4: 172.16.2.1/24
       name: VLAN green (1002) -> [s2]
@@ -183,8 +279,8 @@ nodes:
       virtual_interface: true
       vlan:
         mode: vl_irb
-    - bridge_group: 4
-      ifindex: 11
+    - bridge_group: 5
+      ifindex: 17
       ifname: vlan1003
       ipv4: 172.16.3.1/24
       name: VLAN orange (1003) -> [s2]
@@ -206,24 +302,31 @@ nodes:
     - vlan
     name: s1
     vlan:
-      max_bridge_group: 4
+      max_bridge_group: 5
     vlans:
-      blue:
+      black:
         bridge_group: 2
+        id: 1004
+        mode: vl_route
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.4.0/24
+      blue:
+        bridge_group: 3
         id: 1001
         mode: g_irb
         prefix:
           allocation: id_based
           ipv4: 172.16.1.0/24
       green:
-        bridge_group: 3
+        bridge_group: 4
         id: 1002
         mode: vl_irb
         prefix:
           allocation: id_based
           ipv4: 172.16.2.0/24
       orange:
-        bridge_group: 4
+        bridge_group: 5
         id: 1003
         mode: g_irb
         prefix:
@@ -258,7 +361,7 @@ nodes:
       neighbors:
       - ifname: eth2
         node: s1
-      subif_index: 3
+      subif_index: 4
       type: p2p
     - ifindex: 3
       ifname: eth3
@@ -270,6 +373,15 @@ nodes:
       subif_index: 1
       type: p2p
     - ifindex: 4
+      ifname: eth2.1004
+      parent_ifindex: 2
+      parent_ifname: eth2
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: black
+        access_id: 1004
+    - ifindex: 5
       ifname: eth2.1001
       parent_ifindex: 2
       parent_ifname: eth2
@@ -278,7 +390,7 @@ nodes:
       vlan:
         access: blue
         access_id: 1001
-    - ifindex: 5
+    - ifindex: 6
       ifname: eth2.1002
       parent_ifindex: 2
       parent_ifname: eth2
@@ -287,7 +399,7 @@ nodes:
       vlan:
         access: green
         access_id: 1002
-    - ifindex: 6
+    - ifindex: 7
       ifname: eth2.1000
       parent_ifindex: 2
       parent_ifname: eth2
@@ -296,8 +408,8 @@ nodes:
       vlan:
         access: red
         access_id: 1000
-    - bridge_group: 4
-      ifindex: 7
+    - bridge_group: 5
+      ifindex: 8
       ifname: eth3.1003
       ipv4: 172.16.3.2/24
       name: s2 -> [s1]
@@ -313,33 +425,55 @@ nodes:
         access_id: 1003
         mode: route
     - bridge_group: 1
-      ifindex: 8
+      ifindex: 9
       ifname: vlan1000
       ipv4: 172.16.0.2/24
-      name: VLAN red (1000) -> [s1]
+      name: VLAN red (1000) -> [s1,s3]
       neighbors:
       - ifname: vlan1000
         ipv4: 172.16.0.1/24
         node: s1
+      - ifname: vlan1000
+        ipv4: 172.16.0.3/24
+        node: s3
       type: svi
       virtual_interface: true
       vlan:
         mode: n_irb
     - bridge_group: 2
-      ifindex: 9
-      ifname: vlan1001
-      ipv4: 172.16.1.2/24
-      name: VLAN blue (1001) -> [s1]
+      ifindex: 10
+      ifname: vlan1004
+      ipv4: 172.16.4.2/24
+      name: VLAN black (1004) -> [s1,s3]
       neighbors:
-      - ifname: vlan1001
-        ipv4: 172.16.1.1/24
+      - ifname: vlan1004
+        ipv4: 172.16.4.1/24
         node: s1
+      - ifname: vlan1004
+        ipv4: 172.16.4.3/24
+        node: s3
       type: svi
       virtual_interface: true
       vlan:
         mode: n_irb
     - bridge_group: 3
-      ifindex: 10
+      ifindex: 11
+      ifname: vlan1001
+      ipv4: 172.16.1.2/24
+      name: VLAN blue (1001) -> [s1,s3]
+      neighbors:
+      - ifname: vlan1001
+        ipv4: 172.16.1.1/24
+        node: s1
+      - ifname: vlan1001
+        ipv4: 172.16.1.3/24
+        node: s3
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: n_irb
+    - bridge_group: 4
+      ifindex: 12
       ifname: vlan1002
       name: VLAN green (1002) -> [s1]
       neighbors:
@@ -360,11 +494,28 @@ nodes:
     - vlan
     name: s2
     vlan:
-      max_bridge_group: 4
+      max_bridge_group: 5
       mode: n_irb
     vlans:
-      blue:
+      black:
         bridge_group: 2
+        id: 1004
+        mode: n_irb
+        neighbors:
+        - ifname: vlan1004
+          ipv4: 172.16.4.2/24
+          node: s2
+        - ifname: vlan1004
+          ipv4: 172.16.4.1/24
+          node: s1
+        - ifname: vlan1004
+          ipv4: 172.16.4.3/24
+          node: s3
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.4.0/24
+      blue:
+        bridge_group: 3
         id: 1001
         mode: n_irb
         neighbors:
@@ -374,18 +525,21 @@ nodes:
         - ifname: vlan1001
           ipv4: 172.16.1.1/24
           node: s1
+        - ifname: vlan1001
+          ipv4: 172.16.1.3/24
+          node: s3
         prefix:
           allocation: id_based
           ipv4: 172.16.1.0/24
       green:
-        bridge_group: 3
+        bridge_group: 4
         id: 1002
         mode: bridge
         prefix:
           allocation: id_based
           ipv4: 172.16.2.0/24
       orange:
-        bridge_group: 4
+        bridge_group: 5
         id: 1003
         mode: n_irb
         neighbors:
@@ -405,10 +559,182 @@ nodes:
         prefix:
           allocation: id_based
           ipv4: 172.16.0.0/24
+  s3:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: frr
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      linkindex: 4
+      name: s3 -> s1
+      neighbors:
+      - ifname: eth4
+        node: s1
+      subif_index: 3
+      type: p2p
+    - ifindex: 2
+      ifname: eth1.1004
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: black
+        access_id: 1004
+    - ifindex: 3
+      ifname: eth1.1001
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: blue
+        access_id: 1001
+    - ifindex: 4
+      ifname: eth1.1000
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 5
+      ifname: vlan1004
+      ipv4: 172.16.4.3/24
+      name: VLAN black (1004) -> [s2,s1]
+      neighbors:
+      - ifname: vlan1004
+        ipv4: 172.16.4.2/24
+        node: s2
+      - ifname: vlan1004
+        ipv4: 172.16.4.1/24
+        node: s1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: n_bridge
+    - bridge_group: 2
+      ifindex: 6
+      ifname: vlan1001
+      ipv4: 172.16.1.3/24
+      name: VLAN blue (1001) -> [s2,s1]
+      neighbors:
+      - ifname: vlan1001
+        ipv4: 172.16.1.2/24
+        node: s2
+      - ifname: vlan1001
+        ipv4: 172.16.1.1/24
+        node: s1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: n_bridge
+    - bridge_group: 3
+      ifindex: 7
+      ifname: vlan1000
+      ipv4: 172.16.0.3/24
+      name: VLAN red (1000) -> [s2,s1]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.2/24
+        node: s2
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: s1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: n_bridge
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    module:
+    - vlan
+    name: s3
+    vlan:
+      max_bridge_group: 3
+      mode: n_bridge
+    vlans:
+      black:
+        bridge_group: 1
+        id: 1004
+        mode: n_bridge
+        neighbors:
+        - ifname: vlan1004
+          ipv4: 172.16.4.2/24
+          node: s2
+        - ifname: vlan1004
+          ipv4: 172.16.4.1/24
+          node: s1
+        - ifname: vlan1004
+          ipv4: 172.16.4.3/24
+          node: s3
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.4.0/24
+      blue:
+        bridge_group: 2
+        id: 1001
+        mode: n_bridge
+        neighbors:
+        - ifname: vlan1001
+          ipv4: 172.16.1.2/24
+          node: s2
+        - ifname: vlan1001
+          ipv4: 172.16.1.1/24
+          node: s1
+        - ifname: vlan1001
+          ipv4: 172.16.1.3/24
+          node: s3
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      red:
+        bridge_group: 3
+        id: 1000
+        mode: n_bridge
+        neighbors:
+        - ifname: vlan1000
+          ipv4: 172.16.0.2/24
+          node: s2
+        - ifname: vlan1000
+          ipv4: 172.16.0.1/24
+          node: s1
+        - ifname: vlan1000
+          ipv4: 172.16.0.3/24
+          node: s3
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
 provider: libvirt
 vlan:
   mode: g_irb
 vlans:
+  black:
+    host_count: 0
+    id: 1004
+    mode: vl_route
+    neighbors:
+    - ifname: vlan1004
+      ipv4: 172.16.4.2/24
+      node: s2
+    - ifname: vlan1004
+      ipv4: 172.16.4.1/24
+      node: s1
+    - ifname: vlan1004
+      ipv4: 172.16.4.3/24
+      node: s3
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.4.0/24
   blue:
     host_count: 0
     id: 1001
@@ -419,6 +745,9 @@ vlans:
     - ifname: vlan1001
       ipv4: 172.16.1.1/24
       node: s1
+    - ifname: vlan1001
+      ipv4: 172.16.1.3/24
+      node: s3
     prefix:
       allocation: id_based
       ipv4: 172.16.1.0/24
@@ -459,6 +788,9 @@ vlans:
     - ifname: vlan1000
       ipv4: 172.16.0.1/24
       node: s1
+    - ifname: vlan1000
+      ipv4: 172.16.0.3/24
+      node: s3
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24
