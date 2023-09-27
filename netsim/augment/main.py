@@ -5,12 +5,14 @@
 import sys
 
 from box import Box
+from packaging import version, specifiers
 
 from ..utils import log
 from .. import augment
 from .. import providers
 from .. import modules
 from .. import devices as quirks
+from .. import __version__
 from ..data import global_vars
 from . import addressing
 
@@ -19,9 +21,28 @@ def topology_init(topology: Box) -> None:
   augment.config.attributes(topology)
   augment.devices.augment_device_settings(topology)
 
+def check_version(topology: Box) -> None:
+  if 'version' not in topology:
+    return
+  try:
+    topo_version = str(topology.version)
+    if not '=' in topo_version and not '>' in topo_version and not '<' in topo_version:
+      topo_version = f'>= {topo_version}'
+    topo_spec = specifiers.SpecifierSet(topo_version)
+  except:
+    log.fatal(f'Invalid version specified {topology.version} specified in lab topology\n{str(sys.exc_info()[1])}')
+
+  netlab_version = version.Version(__version__)
+  if 'dev' in __version__:          # Workaround: dev versions are not considered to be 'later than' previous releases :(
+    netlab_version = version.Version(netlab_version.base_version)
+
+  if not netlab_version in topo_spec:
+    log.fatal(f'Lab topology cannot be processed with netlab version {__version__}, requires {topology.version}')
+
 def transform_setup(topology: Box) -> None:
   topology_init(topology)
   augment.topology.check_required_elements(topology)
+  check_version(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   if 'links' in topology:
     augment.links.links_init(topology)

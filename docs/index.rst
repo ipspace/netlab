@@ -38,6 +38,21 @@ Getting Started
 * Choose the virtualization method you'd like to use to build your lab
 * Follow the `instructions in the installation guide <install.html#building-the-lab-environment>`_ to build your lab environment
 
+More information
+----------------
+* After installing *netlab* you might want to :doc:`follow the tutorials <tutorials>`
+* Read the `blog posts <https://blog.ipspace.net/tag/netlab.html>`_ describing *netlab* features and use cases
+* Explore `BGP configuration labs <https://ipspace.github.io/bgplab/>`_ built with *netlab*
+* Need even more examples? You'll find them in 
+  `netlab examples repository <https://github.com/ipspace/netlab-examples>`_
+* `Sample topology files <https://github.com/ipspace/netlab/tree/dev/tests/integration>`_
+  we're using for integration testing might also be interesting
+* Want to see the source code? It's `on github <https://github.com/ipspace/netlab>`_
+* Want to ask a question or report a bug? Open a 
+  `discussion <https://github.com/ipspace/netlab/discussions>`_ or
+  `an issue <https://github.com/ipspace/netlab/issues>`_ in
+  `netlab GitHub repository <https://github.com/ipspace/netlab>`_
+
 .. toctree::
    :caption: Installation Guides
    :maxdepth: 2

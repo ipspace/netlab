@@ -1,8 +1,18 @@
+{% macro ebgp_session(n,af) -%}
+{%   if n.password is defined %}
+  neighbor {{ n[af] }} password {{ n.password }}
+{%   endif %}
+{%   if n.gtsm is defined %}
+  neighbor {{ n[af] }} ttl maximum-hops {{ n.gtsm }}
+{%   endif %}
+{%   if n.timers is defined %}
+  neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+{%   endif %}
+{%- endmacro %}
+
 {% macro ebgp_neighbor(n,af) -%}
-{%   if n.default_originate is defined and n.default_originate|lower == 'always' %}
+{%   if n.default_originate is defined %}
   neighbor {{ n[af] }} default-originate always
-{%   elif n.default_originate is defined and n.default_originate %}
-  neighbor {{ n[af] }} default-originate
 {%   endif %}
 {%   if n.allowas_in is defined %}
   neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
@@ -10,13 +20,16 @@
 {%   if n.as_override is defined %}
   neighbor {{ n[af] }} as-path remote-as replace out
 {%   endif %}
-{%   if n.password is defined %}
-  neighbor {{ n[af] }} password {{ n.password }}
-{%   endif %}
 {%- endmacro %}
 
 !
 router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_session(n,af) -}}
+{%   endfor %}
+{% endfor %}
+!
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined %}
 {%     if loop.first %}
@@ -29,6 +42,12 @@ router bgp {{ bgp.as }}
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
  vrf {{ vname }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_session(n,af) -}}
+{%   endfor %}
+{% endfor %}
+!
 {%   for af in ['ipv4','ipv6'] %}
 {%     for n in vdata.bgp.neighbors if n[af] is defined %}
 {%       if loop.first %}

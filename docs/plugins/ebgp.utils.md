@@ -1,26 +1,31 @@
 # EBGP Utilities
 
-The **ebgp.utils** plugin (contributed by Stefano Sasso) implements several EBGP nerd knobs, including: **allowas_in**, **as_override**, **default_originate** and MD5 **password**:
+The **ebgp.utils** plugin (contributed by Stefano Sasso) implements several EBGP nerd knobs, including:
 
-* **bgp.allowas_in** is an interface (node-to-link attachment) attribute that takes an integer value between 1 and 10. A *true* value sets it to 1.
-* **bgp.as_override** is an interface (node-to-link attachment) boolean attribute.
-* **bgp.default_originate** is an interface (node-to-link attachment) attribute (True/False/*always*).
-* **bgp.password** is a link-level string attribute.
+* **bgp.allowas_in** is an interface (node-to-link attachment) attribute that controls whether a BGP router accepts one or more copies of its own AS number in incoming update. It takes an integer value between 1 and 10. A *true* value sets it to 1.
+* **bgp.as_override** is an interface (node-to-link attachment) boolean attribute that controls whether a BGP router replaces peer AS with its own AS.
+* **bgp.default_originate** is a boolean attribute that controls whether a BGP router advertises a default route to its neighbor(s). It can be specified on global, node, link or interface level.
+* **bgp.gtsm** is an integer attribute that enables the Generic TTL Security Mechanism (GTSM). It can be specified on global, node, link or interface level and takes an integer value between 1 and 254. A *true* value sets it to 1 (remote router can be up to one hop away).
+* **bgp.password** is a string attribute that can be specified on global, node, link or interface level. It specifies the MD5 password used on EBGP sessions.
+* **bgp.timers** is a dictionary of BGP timers that can be specified on global, node, link or interface level. It has three elements:
 
-The plugin includes Jinja2 templates for Cisco IOS, Arista EOS and VyOS.
+	* **bgp.timers.keepalive** -- keepalive timer in seconds
+	* **bgp.timers.hold** -- hold timer in seconds
+	* **bgp.timers.min_hold** -- minimum hold timer accepted from the remote node. Used only on devices where the minimum hold timer can be specified per BGP neighbor.
 
-| Operating system         | allowas_in | as_override | password | default_originate |
-| ------------------------ | :--------: | :---------: | :------: | :---------------: |
-| Arista EOS               |      ✅    |     ✅      |    ✅    |    ✅    |
-| Cisco IOS                |      ✅    |     ✅      |    ✅    |    ✅    |
-| Juniper vMX              |      ❌    |     ✅      |    ✅    |    ❌    |
-| Juniper vPTX             |      ❌    |     ✅      |    ✅    |    ❌    |
-| Juniper vSRX 3.0         |      ❌    |     ✅      |    ✅    |    ❌    |
-| Mikrotik RouterOS 7      |      ✅    |     ✅      |    ✅    |    ✅    |
-| VyOS                     |      ✅    |     ✅      |    ✅    |    ✅    |
+The plugin includes Jinja2 templates for the following platforms:
 
-**NOTES**:
-* VyOS always originates a defaults when *default_originate* is set. Arista EOS originates a default only if present in the routing table, unless *always* is specified.
+| Operating system    | allowas_in | AS<br>override | password | default<br>originate | GTSM | BGP<br>timers |
+| ------------------- | :--------: | :---------: | :------: | :---------------: | :--: | :--: |
+| Arista EOS          |      ✅    |     ✅      |    ✅    |     ✅                | ✅  | ✅  |
+| Cisco IOSv / IOS-XE |      ✅    |     ✅      |    ✅    |    ✅                | ✅  | ✅  |
+| Cumulus Linux       |      ✅    |     ✅      |    ✅    |    ✅                | ✅  | ✅  |
+| FRR                 |      ✅    |     ✅      |    ✅    |    ✅                | ✅  | ✅  |
+| Juniper vMX/vPTX/vSRX |     ❌    |     ✅      |    ✅    |    ❌                 |  ❌  |  ❌  |
+| Mikrotik RouterOS 7 |      ✅    |     ✅      |    ✅    |    ✅                |  ❌  |  ❌  |
+| Nokia SR Linux      |      ✅    |     ✅      |    ✅    |    ✅                |  ❌  |  ❌  |
+| Nokia SR OS         |      ✅    |     ✅      |    ✅    |    ✅                |  ❌  |  ❌  |
+| VyOS                |      ✅    |     ✅      |    ✅    |    ✅                |  ❌  |  ❌  |
 
 ## Test Topology
 
@@ -35,6 +40,10 @@ plugin: [ ebgp.utils ]
 vrfs:
   red:
   blue:
+
+bgp.timers:
+  hold: 10
+  keepalive: 3
 
 nodes:
   y1:
@@ -52,7 +61,7 @@ links:
   y2:
     vrf: red
     bgp.allowas_in: True
-    bgp.default_originate: always
+    bgp.default_originate: True
 - y1:
     vrf: blue
   y2:

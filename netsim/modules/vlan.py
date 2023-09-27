@@ -372,6 +372,21 @@ def fix_vlan_mode_attribute(data: Box) -> None:
     data.vlan.mode = data.mode
     data.pop('mode',None)
 
+"""
+set_node_vlan_mode: Set the forwarding mode for the node-level VLAN using the following precedence rules:
+
+* forwarding mode specified in node-level VLAN
+* node-level 'vlan.mode' attribute
+* global VLAN 'mode' atribute
+* Topology.level 'vlan.mode' attribute
+* 'irb' as the value-of-last-resort
+"""
+def set_node_vlan_mode(n_vlan: Box, node: Box, g_vlan: Box, topology: Box) -> None:
+#  print(f'SNVM: {node.name} {n_vlan} {g_vlan}')
+  n_vlan.mode = n_vlan.mode or \
+                node.get('vlan.mode',None) or \
+                g_vlan.get('mode',None) or \
+                topology.get('vlan.mode',None) or 'irb'
 
 """
 set_link_vlan_prefix: copy link attributes from VLAN for access/native VLAN links
@@ -605,18 +620,25 @@ def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,top
 create_node_vlan: Create a local (node) copy of a VLAN used on an interface
 """
 def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box]:
+  if vlan in topology.get('vlans',{}):
+    vlan_data = data.get_box(topology.vlans[vlan])                  # Get a copy of global VLAN definition
+  else:
+    vlan_data = data.get_empty_box()
+
   if not vlan in node.vlans:                                        # Do we have VLAN defined in the node?
-    node.vlans[vlan] = data.get_box(topology.vlans[vlan])           # ... no, create a copy of the global definition
-    if not node.vlans[vlan]:                                        # pragma: no cover -- we don't have a global definition?
-      log.fatal(                                                 # ... this should have been detected way earlier
+    if not vlan_data:                                               # pragma: no cover -- we don't have a global definition?
+      log.fatal(                                                    # ... this should have been detected way earlier
         f'Unknown VLAN {vlan} used on node {node.name}','vlan')
       return None
+
+    node.vlans[vlan] = vlan_data                                    # Copy global VLAN data into node VLAN data
+    node.vlans[vlan].pop('mode',None)                               # Remove forwarding mode (so it doesn't become node VLAN default)
+
     for m in list(node.vlans[vlan].keys()):                         # Remove irrelevant module parameters
       if not m in node.module and m in topology.module:             # ... it's safe to use direct references, everyone is using VLAN module
         node.vlans[vlan].pop(m,None)
 
-  if not 'mode' in node.vlans[vlan]:                                # Make sure vlan.mode is set
-    node.vlans[vlan].mode = get_vlan_mode(node,topology)
+  set_node_vlan_mode(node.vlans[vlan],node,vlan_data,topology)      # Set VLAN forwarding mode
 
   if not 'bridge_group' in node.vlans[vlan]:                        # Set bridge group in VLAN data
     if not node.vlan.max_bridge_group:                              # ... current counter is in node.vlan dictionary
@@ -1020,6 +1042,9 @@ def populate_node_vlan_data(n: Box, topology: Box) -> None:
         for m in list(topo_data.keys()):                                    # ... and irrelevant module attributes
           if not m in n.module and m in topology.module:
             topo_data.pop(m,None)
+
+        set_node_vlan_mode(n.vlans[vname],n,topo_data,topology)             # Set node-level VLAN forwarding mode
+
         n.vlans[vname] = topo_data + n.vlans[vname]                         # ... now merge with the VLAN data
 
 """
@@ -1088,14 +1113,6 @@ class VLAN(_Module):
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vlans','vlan',copy_keys=['id','vni'])
 
-    if topology.get('vlan.mode',None):
-      if topology.vlan.mode not in vlan_mode_kwd:     # pragma: no cover
-        log.error(
-          f'Invalid global vlan.mode value {topology.vlan.mode}',
-          log.IncorrectValue,
-          'vlan')
-        return
-
     populate_vlan_id_set(topology)
 
     if 'vlans' in topology:
@@ -1120,7 +1137,9 @@ class VLAN(_Module):
               log.IncorrectValue,
               'vlan')
 
-          node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]           # Merge topology VLAN info into node VLAN info
+          # Set node-level VLAN forwarding mode and merge topology VLAN data into node VLAN data
+          set_node_vlan_mode(node.vlans[vname],node,topology.vlans[vname],topology)
+          node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
 
     validate_vlan_attributes(node,topology)
 
