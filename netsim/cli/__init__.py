@@ -27,7 +27,7 @@ def parser_add_debug(parser: argparse.ArgumentParser) -> None:
                     'vlan','vrf','quirks','validate','addressing','groups','quirks','status',
                     'external','defaults'
                   ],
-                  help=argparse.SUPPRESS)
+                  help='Debug specific transformation logic')
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)

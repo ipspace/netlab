@@ -43,16 +43,16 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
     print(f'routed_access_vlan: {link}')
     print(f'... vlan {vlan} def_mode {def_vlan}')
   for intf in link.interfaces:
+    node_vlan_mode = topology.nodes[intf.node].get('vlan.mode',def_vlan)
     mode = (
       intf.get('vlan.mode',def_link) or
-      topology.nodes[intf.node].get(f'vlans.{vlan}.mode',def_vlan) or
-      topology.nodes[intf.node].get('vlan.mode',def_global) or
-      'irb')
+      topology.nodes[intf.node].get(f'vlans.{vlan}.mode',node_vlan_mode) or
+      def_global)
     if mode != 'route':
       return False
 
   if log.debug_active('vlan'):
-    print(f'... VLAN is routed (returning True)')
+    print('... VLAN is routed (returning True)')
   return True
 
 #
