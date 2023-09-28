@@ -43,11 +43,13 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
     print(f'routed_access_vlan: {link}')
     print(f'... vlan {vlan} def_mode {def_vlan}')
   for intf in link.interfaces:
+    # Test rewritten based on #882 by jbemmel
     mode = (
+      intf.get('_vlan_mode',None) or
       intf.get('vlan.mode',def_link) or
-      topology.nodes[intf.node].get(f'vlans.{vlan}.mode',def_vlan) or
-      topology.nodes[intf.node].get('vlan.mode',def_global) or
-      'irb')
+      topology.nodes[intf.node].get(f'vlans.{vlan}.mode',None) or
+      topology.nodes[intf.node].get('vlan.mode',None) or 
+      def_vlan or def_global or 'irb')
     if mode != 'route':
       return False
 
@@ -63,6 +65,7 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
   if not vlan:
     return 'irb'
   return (
+    intf.get('_vlan_mode',None) or
     intf.get('vlan.mode',None) or
     node.get(f'vlans.{vlan}.mode',None) or
     node.get('vlan.mode',None) or
@@ -479,6 +482,14 @@ def create_vlan_member_interface(
   return intf_data
 
 """
+"""
+def set_access_vlan_interface_mode(link: Box, vlan: str, topology: Box) -> None:
+  for intf in link.interfaces:
+    if 'vlan' in intf:
+      intf_node = topology.nodes[intf.node]
+      intf._vlan_mode = interface_vlan_mode(intf,intf_node,topology)
+
+"""
 create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
 """
 def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
@@ -501,12 +512,13 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
       for intf in link.interfaces:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = create_vlan_member_interface(intf.vlan.trunk[vname] or {},vname,intf,topology,selfloop_ifindex)
-          selfloop_ifindex = selfloop_ifindex + 1
           intf_node = topology.nodes[intf.node]
+          intf_data._vlan_mode = interface_vlan_mode(intf_data,intf_node,topology)
+          selfloop_ifindex = selfloop_ifindex + 1
 
           # Still no usable IP prefix? Try to get it from the node VLAN pool, but only if VLAN is not in bridge mode
           if not prefix and vname in intf_node.get('vlans',{}):
-            if interface_vlan_mode(intf_data,intf_node,topology) != 'bridge':
+            if intf_data._vlan_mode != 'bridge':
               prefix = topology.node[intf.node].vlans[vname].get('prefix',None)
 
           link_data.interfaces.append(intf_data)            # Append the interface to vlan link
@@ -1179,6 +1191,7 @@ class VLAN(_Module):
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
     if not link_vlan is None:
+      set_access_vlan_interface_mode(link,link_vlan,topology)
       routed_vlan = routed_access_vlan(link,topology,link_vlan)
       vlan_data = topology.get(f'vlans.{link_vlan}',None)                         # Get global VLAN data
       if isinstance(vlan_data,Box):
