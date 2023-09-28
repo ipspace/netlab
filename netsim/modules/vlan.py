@@ -35,27 +35,19 @@ def populate_vlan_id_set(topology: Box) -> None:
 # routed_access_vlan: Given a link with access/native VLAN, check if all nodes on the link use routed VLAN
 #
 def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
-  def_link  = link.get('vlan.mode',None)
-  def_vlan  = topology.get(f'vlans.{vlan}.mode',None)
-  def_global = topology.get('vlan.mode','irb')
-
-  if log.debug_active('vlan'):
-    print(f'routed_access_vlan: {link}')
-    print(f'... vlan {vlan} def_mode {def_vlan}')
+  routed_vlan = False                               # Assume we don't have a routed VLAN
   for intf in link.interfaces:
-    # Test rewritten based on #882 by jbemmel
-    mode = (
-      intf.get('_vlan_mode',None) or
-      intf.get('vlan.mode',def_link) or
-      topology.nodes[intf.node].get(f'vlans.{vlan}.mode',None) or
-      topology.nodes[intf.node].get('vlan.mode',None) or 
-      def_vlan or def_global or 'irb')
-    if mode != 'route':
+    intf_mode = intf.get('_vlan_mode',None)
+    if intf_mode is None:                           # Not a VLAN-enabled device
+      continue
+
+    routed_vlan = True                              # If we survive the loop we have a routed VLAN
+    if intf_mode != 'route':
       return False
 
   if log.debug_active('vlan'):
-    print(f'... VLAN is routed (returning True)')
-  return True
+    print(f'... Routed VLAN {vlan} on link {link}')
+  return routed_vlan
 
 #
 # interface_vlan_mode: Given an interface, a node, and topology, find interface VLAN mode
