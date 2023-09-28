@@ -1,0 +1,89 @@
+# This is a regression test for #881 that tries to address all possible combinations
+# of link-, node- and vlan forwarding modes, in particular with mode = route
+#
+
+defaults.device: frr
+module: [ vlan ]
+
+vlans:
+  red:
+    mode: route           # red VLAN is primarily routed
+  blue:
+    mode: bridge          # blue one is primarily bridged
+  green:                  # and green is IRB
+
+nodes:
+  h:
+    device: linux         # A host -- needed to check we don't set _vlan_mode on host interfaces
+  rt:
+  sw:
+    vlans:
+      red:
+        mode: bridge      # Change a routed VLAN into bridged one
+  br:
+    vlan.mode: bridge     # And set the default VLAN mode to bridge
+
+links:
+- h:                      # Test that the _vlan_mode setting does not apply to host interface
+  rt:                     # Should be a routed link
+  vlan.access: red
+  name: Host access link
+#  disable: True
+- h:                      # Should be a bridged VLAN
+  sw:
+  vlan.access: red
+  name: Host access link to a switch
+#  disable: True
+- h:                      # Should be a bridged VLAN
+  br:
+  vlan.access: red
+  name: Host access link to a bridge
+#  disable: True
+- sw:
+  br:
+  vlan.trunk:
+    red:                  # This one should be routed on S1 and bridged on S2
+    blue:                 # This one should be bridged everywhere
+    green:                # and this one should be a regular VLAN interface on S1 and S2
+  name: Simple trunk
+#  disable: True
+- sw:
+  br:
+  vlan.access: red        # This one should be routed on S1 and bridged on S2
+  name: Access link to switch
+#  disable: True
+- sw:
+  br:
+  vlan.mode: route
+  vlan.trunk:             # All three VLANs in the trunk should be routed on both ends due to link vlan.mode
+    red:
+    blue:
+    green:
+  name: Routed trunk
+#  disable: True
+- sw:
+  br:
+  vlan.access: red
+  vlan.mode: route        # This one should be routed on both ends
+#  disable: True
+- sw:                     # Adding trunk between a switch and a bridge just for the fun of it ;)
+  br:
+  vlan.trunk:
+    red:
+    blue:
+    green:
+  name: Trunk between switch and bridge
+#  disable: True
+- rt:
+  br:
+  vlan.trunk:
+    red:                  # This one should be routed on S1 and bridged on S3
+    blue:                 # This one should be bridged everywhere
+    green:                # and this one should be a regular VLAN interface on S1 and bridged on S3
+  name: Trunk with bridge
+#  disable: True
+- rt:
+  br:
+  vlan.access: red        # This one should be routed on S1 and bridged on S3
+  name: Access link to bridge
+#  disable: True
