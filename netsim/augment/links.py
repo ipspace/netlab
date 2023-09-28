@@ -128,6 +128,8 @@ def adjust_link_list(links: list, nodes: Box) -> list:
     link_cnt = link_cnt + 1
     link_data = adjust_link_object(l,f'links[{link_cnt}]',nodes)
     if not link_data is None:
+      if link_data.get('disable',False) is True:
+        continue
       link_list.append(link_data)
 
   if log.debug_active('links'):
