@@ -1,13 +1,26 @@
 updates:
-{% for af in ['ipv4','ipv6'] if mpls.vpn[af] is defined %}
-{%   set vpnaf = 'vpn' + af.replace('ip','') %}
-{%   for n in bgp.neighbors if n[vpnaf] is defined %}
+
+{% if 'ebgp' in mpls.vpn %}
 - path: configure/router[router-name=Base]
   val:
    bgp:
-    neighbor:
-    - ip-address: "{{ n[af] }}"
-      family:
-       vpn-{{ af }}: True
+    inter-as-vpn: True
+    split-horizon: True  # Prevent routes to be reflected back to best-route peer
+    # next-hop-resolution defaults to LDP for VPN routes, could enable RSVP and others
+{% endif %}
+
+{% for af in ['ipv4','ipv6'] if mpls.vpn[af] is defined %}
+{%   set vpnaf = 'vpn' + af.replace('ip','') %}
+{%   for n in bgp.neighbors if n[vpnaf] is defined and n.type in mpls.vpn[af] %}
+
+{# Assuming no need to (re)create peer group #}
+{%   set peer_group = 'ebgp' if n.type=='ebgp' else 'ibgp-local-as' if n.type=='localas_ibgp' else ('ibgp-'+af) %}
+- path: configure/router[router-name=Base]/bgp/neighbor[ip-address={{ n[vpnaf] }}]
+  val:
+   description: "{{ n.name }}"
+   group: "{{ peer_group }}" 
+   peer-as: {{ n.as }}
+   family:
+    vpn-{{ af }}: True
 {%   endfor %}
 {% endfor %}
