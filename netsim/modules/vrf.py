@@ -204,7 +204,7 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
 
     asn = asn or get_rd_as_number(obj,topology)
     if not asn:
-      log.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
+      log.error(f'Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
         log.MissingValue,
         'vrf')
       return
@@ -218,7 +218,6 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
     return None
 
   is_global = obj is topology
-  obj_name = 'global VRFs' if is_global else obj.name
   obj_id   = 'vrfs' if obj is topology else f'nodes.{obj.name}.vrfs'
   asn      = None
 
@@ -239,20 +238,20 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
         if isinstance(rtvalue,int):         # RT can be specified as an integer, in which case ASN is prepended to it
           asn = asn or get_rd_as_number(obj,topology)
           if not asn:
-            log.error('VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
+            log.error(f'VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
               log.MissingValue,
               'vrf')
             continue
           rtvalue = f'{asn}:{rtvalue}'
         elif not isinstance(rtvalue,str):   # If RT is not an integer, it really should be a string
-          log.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
+          log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
             log.IncorrectValue,
             'vrf')
           continue
         else:
           if ':' in rtvalue:                # If there's a colon in RT value, then we're assuming N:N format
             if parse_rdrt_value(rtvalue) is None:
-              log.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
+              log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
                 log.IncorrectValue,
                 'vrf')
               continue

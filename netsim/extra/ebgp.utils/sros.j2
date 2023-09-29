@@ -23,6 +23,11 @@
 {%   if n.as_override|default(False) %}
      as-override: True
 {%   endif %}
+{%   if 'multihop' in n %}
+     multihop: {{ n.multihop|int }}
+     local-address: "{{ loopback[af if af!='vpnv4' else 'ipv4']|ipaddr('address') }}"
+     description: "{{ n.name }} (multihop={{n.multihop|int}})"
+{%   endif %}
 {%   if n.password is defined and (n.type!='ebgp' or n.ipv6|default('') is string) %}
 {%    if n.tcp_ao|default('x')=='' or bgp.tcp_ao|default('')=='' %}
      authentication-key: "{{ n.password }}"
@@ -45,7 +50,7 @@
 {%- endmacro %}
 
 updates:
-{% for af in ['ipv4','ipv6'] %}
+{% for af in ['ipv4','ipv6','vpnv4'] %}
 {%   for n in bgp.neighbors if n[af] is defined and (n[af] is string or (af=='ipv6' and n.ipv6)) %}
 {{     ebgp_neighbor(n,af,vrf=None) -}}
 {%   endfor %}
