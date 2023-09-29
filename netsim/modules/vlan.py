@@ -1046,20 +1046,15 @@ def fix_vlan_gateways(topology: Box) -> None:
 
 """
 populate_node_vlan_data -- merge topology VLANs into node VLANs that were copied from groups.node_data
+
+This routine is just an iteration wrapper around populate_node_vlan
 """
 def populate_node_vlan_data(n: Box, topology: Box) -> None:
-  if 'vlans' in n:                                                          # Copy topology VLAN data into node VLAN data
-    for vname in n.vlans.keys():                                            # ... to cope with nodes that had VLANs defined
-      if vname in topology.get('vlans',{}):                                 # ... through groups.node_data
-        topo_data = data.get_box(topology.vlans[vname])                     # Create a copy of topology VLAN
-        topo_data.pop('neighbors',None)                                     # ... remove neighbors
-        for m in list(topo_data.keys()):                                    # ... and irrelevant module attributes
-          if not m in n.module and m in topology.module:
-            topo_data.pop(m,None)
+  if not 'vlans' in n:                                                    # No node VLANs, no worries
+    return
 
-        set_node_vlan_mode(n.vlans[vname],n,topo_data,topology)             # Set node-level VLAN forwarding mode
-
-        n.vlans[vname] = topo_data + n.vlans[vname]                         # ... now merge with the VLAN data
+  for vname in n.vlans.keys():                                            # Go through node VLANs
+    populate_node_vlan(vname,n,topology)
 
 """
 create_vlan_access_links -- create VLAN access links based on VLAN 'links' attribute
