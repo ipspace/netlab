@@ -49,23 +49,6 @@ def routed_access_vlan(link: Box, topology: Box, vlan: str) -> bool:
     print(f'... Routed VLAN {vlan} on link {link}')
   return routed_vlan
 
-#
-# interface_vlan_mode: Given an interface, a node, and topology, find interface VLAN mode
-#
-# FIX!!! streamlining interface_vlan_mode failed, we must be doing something wrong
-#
-def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
-  vlan = intf.get('vlan.access',None) or intf.get('vlan.native',None)
-  if not vlan:
-    return 'irb'
-  return (
-    intf.get('_vlan_mode',None) or
-    intf.get('vlan.mode',None) or
-    node.get(f'vlans.{vlan}.mode',None) or
-    node.get('vlan.mode',None) or
-    topology.get(f'vlans.{vlan}.mode',None) or
-    topology.get('vlan.mode',None) or 'irb' )
-
 """
 validate_global_node_match -- when a VLAN is defined globally and in the node, validate that the
 addressing prefix, VLAN ID and VNI match
@@ -437,6 +420,47 @@ def populate_node_vlan(vlan: str, node: Box, topology: Box) -> Box:
   return node.vlans[vlan]
 
 """
+compute_interface_vlan_mode: Given an interface, a node, and topology, find interface VLAN mode
+"""
+def compute_interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
+  vlan = intf.get('vlan.access',None) or intf.get('vlan.native',None)
+  if not vlan:
+    return 'irb'
+  return (
+    intf.get('_vlan_mode',None) or
+    intf.get('vlan.mode',None) or
+    node.get(f'vlans.{vlan}.mode',None) or
+    node.get('vlan.mode',None) or
+    topology.get(f'vlans.{vlan}.mode',None) or
+    topology.get('vlan.mode',None) or 'irb' )
+
+"""
+set_access_vlan_interface_mode -- set the _vlan_mode for all VLAN-enabled interfaces attached to a link
+"""
+def set_access_vlan_interface_mode(link: Box, vlan: str, topology: Box) -> None:
+  for intf in link.interfaces:
+    if 'vlan' in intf:
+      intf_node = topology.nodes[intf.node]
+      intf._vlan_mode = compute_interface_vlan_mode(intf,intf_node,topology)
+
+"""
+get_vlan_interface_mode -- get the VLAN interface mode for the specified interface
+
+This function is just a safety wrapper around 'get _vlan_mode'
+"""
+def get_vlan_interface_mode(intf: Box) -> typing.Optional[str]:
+  mode = intf.get('_vlan_mode',None)
+  if mode is not None:
+    return mode
+
+  # We might also be dealing with a VLAN-enabled node that is attached as a non-VLAN interface
+  vlan = intf.get('vlan.access',None) or intf.get('vlan.native',None)
+  if not vlan:
+    return None
+
+  raise log.ErrorAbort('get_vlan_interface_mode called on an interface witout _vlan_mode')
+
+"""
 set_link_vlan_prefix: copy link attributes from VLAN for access/native VLAN links
 
 * We're assuming the attributes passed VLAN validity checks, so it's safe to
@@ -520,19 +544,12 @@ def create_vlan_member_interface(
     intf_data.vlan.mode = parent_intf.vlan.mode             # vlan.mode is inherited from trunk dictionary or parent interface
 
   intf_node = topology.nodes[parent_intf.node]
-  if interface_vlan_mode(intf_data,intf_node,topology) == 'bridge':     # Is this VLAN interface in bridge mode?
-    intf_data.ipv4 = False                                              # ... if so, disable addressing on this interface
+  intf_data._vlan_mode = compute_interface_vlan_mode(intf_data,intf_node,topology)
+  if intf_data._vlan_mode == 'bridge':                      # Is this VLAN interface in bridge mode?
+    intf_data.ipv4 = False                                  # ... if so, disable addressing on this interface
     intf_data.ipv6 = False
 
   return intf_data
-
-"""
-"""
-def set_access_vlan_interface_mode(link: Box, vlan: str, topology: Box) -> None:
-  for intf in link.interfaces:
-    if 'vlan' in intf:
-      intf_node = topology.nodes[intf.node]
-      intf._vlan_mode = interface_vlan_mode(intf,intf_node,topology)
 
 """
 create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
@@ -558,7 +575,6 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
         if 'vlan' in intf and vname in intf.vlan.get('trunk',{}):
           intf_data = create_vlan_member_interface(intf.vlan.trunk[vname] or {},vname,intf,topology,selfloop_ifindex)
           intf_node = topology.nodes[intf.node]
-          intf_data._vlan_mode = interface_vlan_mode(intf_data,intf_node,topology)
           selfloop_ifindex = selfloop_ifindex + 1
 
           # Still no usable IP prefix? Try to get it from the node VLAN pool, but only if VLAN is not in bridge mode
@@ -620,7 +636,7 @@ def create_loopback_vlan_links(topology: Box) -> None:
       fake_parent = data.get_box({'node': n.name})
       intf_data = create_vlan_member_interface({},vname,fake_parent,topology,0)
 
-      if interface_vlan_mode(intf_data,n,topology) == 'irb':            # We're adding loopback links only for IRB VLANs
+      if intf_data._vlan_mode == 'irb':                                 # We're adding loopback links only for IRB VLANs
         link_data.interfaces.append(intf_data)
         topology.links.append(link_data)
 
@@ -723,7 +739,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
     if not access_vlan:                                                     # No access VLAN on this interface?
       continue                                                              # ... good, move on
 
-    routed_intf = interface_vlan_mode(ifdata,node,topology) == 'route'      # Identify routed VLAN interfaces
+    routed_intf = get_vlan_interface_mode(ifdata) == 'route'                # Identify routed VLAN interfaces
     vlan_subif  = routed_intf and ifdata.get('type','') == 'vlan_member'    # ... and VLAN-based subinterfaces
 
     vlan_data = create_node_vlan(node,access_vlan,topology)
@@ -1253,7 +1269,7 @@ class VLAN(_Module):
       for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
         intf_node = topology.nodes[intf.node]
         if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
-          if interface_vlan_mode(intf,intf_node,topology) == 'bridge':            # ... that is in bridge mode on the current access VLAN?
+          if get_vlan_interface_mode(intf) == 'bridge':                           # ... that is in bridge mode on the current access VLAN?
             intf.ipv4 = False                                                     # ... if so, disable addressing on this interface
             intf.ipv6 = False
 
