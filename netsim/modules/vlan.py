@@ -66,6 +66,27 @@ def interface_vlan_mode(intf: Box, node: Box, topology: Box) -> str:
     topology.get(f'vlans.{vlan}.mode',None) or
     topology.get('vlan.mode',None) or 'irb' )
 
+"""
+validate_global_node_match -- when a VLAN is defined globally and in the node, validate that the
+addressing prefix, VLAN ID and VNI match
+"""
+def validate_global_node_match(vname: str, node: Box, topology: Box) -> bool:
+  OK = True
+  for kw in ('prefix','id','vni'):                # These three attributes MUST NOT be different
+    if not kw in node.vlans[vname]:               # OK, attribute not in node VLAN, move on
+      continue
+
+    if kw in topology.vlans[vname] and node.vlans[vname][kw] == topology.vlans[vname][kw]:
+      continue                                    # Overlap, but the attributes match. OK...
+
+    log.error(
+      f'Cannot set {kw} for VLAN {vname} on node {node.name} -- VLAN is defined globally',
+      log.IncorrectValue,
+      'vlan')
+    OK = False
+
+  return OK
+
 #
 # Validate VLAN attributes and set missing attributes:
 #
@@ -1147,27 +1168,26 @@ class VLAN(_Module):
       create_vlan_access_links(topology)
       validate_vlan_attributes(topology,topology)
 
+  """
+  In the node_pre_transform we perform basic attribute checks and merge global and node VLAN data.
+  This merge is executed before the node module list is completely built and therefore cannot delete
+  the global VLAN attributes that are not used by the current node modules.
+
+  Do not try to 'optimize' this code and use 'populate_node_vlan' function to merge the data!
+  """
   def node_pre_transform(self, node: Box, topology: Box) -> None:
-    if 'vlans' in node:
-      for vname in node.vlans.keys():
-        if node.vlans[vname] is None:
-          node.vlans[vname] = get_empty_box()
-        if vname in topology.get('vlans',{}):                                     # We have a VLAN defined globally and in a node
-          for kw in ('prefix','id','vni'):                                        # These three attributes MUST NOT be different
-            if not kw in node.vlans[vname]:                                       # OK, attribute not in node VLAN, move on
-              continue
+    if not 'vlans' in node:
+      return
 
-            if kw in topology.vlans[vname] and node.vlans[vname][kw] == topology.vlans[vname][kw]:
-              continue                                                            # Overlap, but the attributes match. OK...
+    for vname in node.vlans.keys():
+      if node.vlans[vname] is None:
+        node.vlans[vname] = get_empty_box()
+      if vname in topology.get('vlans',{}):                 # We have a VLAN defined globally and in a node
+        validate_global_node_match(vname,node,topology)     # Validate that the global and node attributes match
 
-            log.error(
-              f'Cannot set {kw} for VLAN {vname} on node {node.name} -- VLAN is defined globally',
-              log.IncorrectValue,
-              'vlan')
-
-          # Set node-level VLAN forwarding mode and merge topology VLAN data into node VLAN data
-          set_node_vlan_mode(node.vlans[vname],node,topology.vlans[vname],topology)
-          node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
+        # Set node-level VLAN forwarding mode and merge topology VLAN data into node VLAN data
+        set_node_vlan_mode(node.vlans[vname],node,topology.vlans[vname],topology)
+        node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
 
     validate_vlan_attributes(node,topology)
 
