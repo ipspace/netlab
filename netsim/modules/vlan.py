@@ -1150,12 +1150,16 @@ def cleanup_vlan_flags(topology: Box) -> None:
 
   for n in topology.nodes.values():
     for intf in n.interfaces:
-      for int_attr in ['vlan_name','_global_merge']:
-        intf.pop(int_attr,None)
+      for int_attr in ['vlan_name','_global_merge']:        # vlan_name is available in other attributes
+        intf.pop(int_attr,None)                             # ... and _global_merge was propagated from VLAN data
+      if '_vlan_mode' in intf:
+        intf.vlan.mode = intf._vlan_mode                    # Copy _vlan_mode into vlan.mode
+        intf.pop('_vlan_mode',None)                         # ... and remove _vlan_mode
+
     if 'vlans' in n:
       for vdata in n.vlans.values():
-        for int_attr in ['_global_merge','neighbors']:
-          vdata.pop(int_attr,None)
+        for int_attr in ['_global_merge','neighbors']:      # Remove merge flag and neighbors from node VLANs
+          vdata.pop(int_attr,None)                          # ... see discussion #887 for details
 
 class VLAN(_Module):
 
