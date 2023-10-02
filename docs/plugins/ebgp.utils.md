@@ -7,7 +7,7 @@ The **ebgp.utils** plugin (contributed by Stefano Sasso) implements several EBGP
 * **bgp.as_override** is an interface (node-to-link attachment) boolean attribute that controls whether a BGP router replaces peer AS with its own AS.
 * **bgp.default_originate** is a boolean attribute that controls whether a BGP router advertises a default route to its neighbor(s). It can be specified on global, node, link or interface level.
 * **bgp.gtsm** is an integer attribute that enables the Generic TTL Security Mechanism (GTSM). It can be specified on global, node, link or interface level and takes an integer value between 1 and 254. A *true* value sets it to 1 (remote router can be up to one hop away).
-* **bgp.multihop** and **bgp.vpn.multihop** is a dictionary of neighbor=hopcount key/values to create multihop EBGP sessions for ipv4/6
+* **bgp.multihop** is a list of neighbor-pairs or dicts to create multihop EBGP sessions for ipv4/6, similar to **links**
 and VPN-v4 address families
 * **bgp.password** is a string attribute that can be specified on global, node, link or interface level. It specifies the MD5 password used on EBGP sessions.
 * **bgp.timers** is a dictionary of BGP timers that can be specified on global, node, link or interface level. It has three elements:
