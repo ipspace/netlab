@@ -47,7 +47,7 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     else:
       return None
 
-  module: typing.Optional[object] = None
+  pymodule: typing.Optional[object] = None
   config_name = None
 
   plugin_is_dir = os.path.isdir(module_path)

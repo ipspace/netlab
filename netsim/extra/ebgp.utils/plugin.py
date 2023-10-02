@@ -2,6 +2,8 @@ from box import Box
 from netsim.utils import log
 from netsim import api
 from netsim.augment import devices
+from netsim.augment.links import adjust_link_object
+from netsim.data.validate import must_be_int
 
 import netaddr
 
@@ -27,17 +29,57 @@ def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: 
     log.IncorrectValue,'ebgp.utils')
 
 '''
+Based on globally defined bgp.multihop, create virtual multihop interfaces for the bgp 
+module to create sessions from
+
+This needs to run after loopback interfaces have been created, with IP addresses 
+(in augment/nodes.transform)
+'''
+def post_node_transform(topology: Box) -> None:
+  config_name = api.get_config_name(globals())     # Get the plugin configuration name
+
+  def loopback_ips(n:Box):
+    return { k:str(netaddr.IPNetwork(n.loopback[k]).ip) 
+             for k in ['ipv4','ipv6'] if k in n.get('loopback',{}) }
+
+  def add_interface(n1:Box, n2:Box, session:Box) -> None:
+    ifindex = len(n1.interfaces) + 1
+    n1.interfaces.append( {
+      'type': 'multihop',
+      'ifindex': ifindex,
+      'ifname': f"multihop-{n1.name}-{n2.name}",
+      'virtual_interface': True,
+      'neighbors': [ { 'node': n2.name, 'ifindex': ifindex, **loopback_ips(n2) } ],
+      **loopback_ips(n1),
+      # Attributes validated by code below, not specifically against list of session attributes
+      'bgp': { k:v for k,v in session.items() if k not in ['interfaces','_linkname'] }
+    })
+    api.node_config(n1,config_name)
+
+  for i,s in enumerate(topology.get('bgp.multihop',{})):
+    name = f'bgp-multihop[{i}]'
+    session = adjust_link_object(s,name,topology.nodes)
+    if not must_be_int(session,key='ttl',path=name,min_value=1,max_value=255):
+      continue
+    session.ttl = session.get('ttl',64)
+
+    n1 = topology.nodes[session.interfaces[0].node]
+    n2 = topology.nodes[session.interfaces[1].node]
+
+    add_interface(n1,n2,session)
+    add_interface(n2,n1,session)
+
+'''
 post_transform hook
 
 As we're applying interface attributes to BGP sessions, we have to copy
 interface BGP parameters supported by this plugin into BGP neighbor parameters
 '''
-
 def post_transform(topology: Box) -> None:
   config_name = api.get_config_name(globals())              # Get the plugin configuration name
 
   for n, ndata in topology.nodes.items():
-    if not 'bgp' in ndata.module:                           # Skip nodes not running BGP
+    if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
       continue
 
     # Cleanup ebgp.utils attributes with local significance from neighbors
@@ -55,7 +97,9 @@ def post_transform(topology: Box) -> None:
     for intf in ndata.interfaces:
 #      print(f'node: {ndata.name} intf {intf.ifname} / {intf.ifindex}')
       for attr in topology.defaults.bgp.attributes.ebgp_utils.attr:
-        attr_value = intf.get('bgp',{}).get(attr,None) or ndata.get('bgp', {}).get(attr,None)
+        attr_value = (intf.get('bgp',{}).get(attr,None) 
+                      or ndata.get('bgp', {}).get(attr,None) 
+                      or topology.get('bgp', {}).get(attr,None))
         if not attr_value:                                  # Attribute not defined in node or interface, move on
           continue
         
@@ -78,50 +122,5 @@ def post_transform(topology: Box) -> None:
             neigh[attr] = attr_value                        # Found the neighbor, set neighbor attribute
             api.node_config(ndata,config_name)              # And remember that we have to do extra configuration
 
-    # Create EBGP multihop sessions if requested
-    for key in ['bgp','bgp.vpn']:
-      if 'multihop' in ndata.get(key, {}):
-        if not ndata.get('bgp',{}).get('neighbors',[]):
-          ndata.bgp.neighbors = []
-        for neigh,multihop in ndata[key].multihop.items():
-          if neigh not in topology.nodes:
-            log.error( 
-              f'multihop: Neighbor {neigh} not found for node {ndata.name} (device {ndata.device})',
-              log.IncorrectValue,'ebgp.utils')
-          nb = topology.nodes[neigh]
-          if 'bgp' not in nb:
-            log.error( 
-              f'multihop: Neighbor {neigh} does not have BGP enabled for node {ndata.name} (device {ndata.device})',
-              log.IncorrectValue,'ebgp.utils')
-          feature = 'multihop' if key=='bgp' else 'vpn.multihop'
-          check_device_attribute_support(feature,ndata,nb,topology)
-          check_device_attribute_support(feature,nb,ndata,topology)
- 
-          if multihop is True:
-            multihop = 64
-          elif int(multihop) < 1 or int(multihop) > 255:
-            log.error( 
-              f'multihop: Value {multihop} is out of range [1..255] from node {ndata.name} (device {ndata.device}) to {neigh}',
-              log.IncorrectValue,'ebgp.utils')
-          def add_multihop_neighbor(n1,n2):
-            neighbor_data = {
-              'name': n2.name,
-              'as': n2.bgp.get('as'),
-              'type': "ebgp",
-              'multihop': int(multihop)
-            }
-            af_count = 0
-            for af in ["ipv4","ipv6"]:
-              if af in n2.loopback:
-                neighbor_data['vpnv4' if key=='bgp.vpn' else af] = str(netaddr.IPNetwork(n2.loopback[af]).ip)
-                af_count = af_count + 1
-            if af_count==0:
-              log.error( 
-                f'multihop: Neighbor {n2.name} does not have a suitable ipv4/v6 loopback IP for node {n1.name} (device {n1.device})',
-                log.IncorrectValue,'ebgp.utils')
-            n1.bgp.neighbors.append(neighbor_data)
-            api.node_config(n1,config_name)
- 
-          # Add session on both sides
-          add_multihop_neighbor(ndata,nb)
-          add_multihop_neighbor(nb,ndata)
+    # Cleanup any multihop sessions
+    ndata.pop('bgp.multihop',None)
