@@ -57,11 +57,18 @@ def check_group_data_structure(topology: Box) -> None:
   Transform group-as-list into group-as-dictionary
   '''
   for grp in topology.groups.keys():
+    if topology.groups[grp] is None:
+      log.error(
+        f"Definition of group '{grp}' must be a dictionary",
+        log.IncorrectType,
+        'groups')
+      return
+
     if isinstance(topology.groups[grp],list):
       topology.groups[grp] = { 'members': topology.groups[grp] }
     if grp in topology.nodes:
       log.error(
-        f"group {grp} is also a node name. I can't deal with that level of confusion",
+        f"group '{grp}' is also a node name. I can't deal with that level of confusion",
         log.IncorrectValue,
         'groups')
 
