@@ -104,7 +104,7 @@ def init(topology: Box) -> None:
     if plugin:                                                # If we found the plugin, add it to the list of active plugins
       topology.Plugin.append(plugin)
     else:
-      log.error(f"Cannot find plugin {pname} in {search_path}",log.IncorrectValue,'plugin')
+      log.error(f"Cannot find plugin {pname}\nSearch path: {search_path}",log.IncorrectValue,'plugin')
 
   if log.debug_active('plugin'):
     print(f'plug INIT: {topology.Plugin}')
