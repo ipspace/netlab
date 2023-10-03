@@ -63,7 +63,7 @@ def get_usable_evpn_asn(topology: Box) -> int:
   log.error(
     f'Cannot get a usable global AS number to use in EVPN route targets',
     log.IncorrectValue,
-    'evpn')
+    'evpn',hint='asn')
   return 0
 
 def vlan_based_service(vlan: Box, vname: str, topology: Box) -> None:
