@@ -41,7 +41,7 @@ def validate_components(topology: Box) -> None:
     if 'nodes' in cdata:
       cdata.nodes = nodes.create_node_dict(cdata.nodes)
     if 'links' in cdata:
-      cdata.links = links.adjust_link_list(cdata.links,cdata.nodes)
+      cdata.links = links.adjust_link_list(cdata.links,cdata.nodes,linkname_format=f'components.{cname}.links[{{link_cnt}}]')
 
 '''
 validate_include -- validate an include request
