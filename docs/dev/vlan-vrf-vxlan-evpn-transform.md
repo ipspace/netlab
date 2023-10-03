@@ -11,13 +11,6 @@ The **transform_after** settings cause the hooks to be called in the VLAN -> VRF
    :backlinks: entry
 ```
 
-## pre_validate (future)
-
-* VLAN module ensures the **vlans** dictionaries (global + nodes) has no *None* values and sensible names
-* VRF module ensures the **vrfs** dictionaries (global + nodes) has no *None* values and sensible names
-
-The pre_validate hooks are called based on topology attributes, not based on **module** settings.
-
 ## init
 
 ### EVPN
@@ -31,17 +24,29 @@ The pre_validate hooks are called based on topology attributes, not based on **m
 Module:
 * Create global VLANs based on group VLAN data
 * Collect static VLAN IDs
-* Validate VLAN attributes: forwarding mode, VLAN ID
+* Validate VLAN attributes: forwarding mode, VLAN ID, link attributes, module-specific VLAN/link attributes
 * Auto-assign VLAN IDs to VLANs without a valid ID
+* Create VLAN access links in the lab topology from **vlans._name_.links** list
 * Allocate IP prefixes to VLANs
 
 Node:
 * Merge global VLAN data with node VLAN data
+* Validate VLAN attributes (see above)
+* Allocate IP prefixes to node-only VLANs
 
 Link:
 * Validate link-level VLAN attribute: valid combinations of access/trunk/native VLANs, valid VLAN names in **vlan.\*** link- and interface attributes
-* Create VLAN member links out of a VLAN trunk
-* Deal with odd bits-and-pieces like routed-only VLANs or disabled interface addresses on bridge-only VLANs
+
+For trunk links: create VLAN member links out of a VLAN trunk
+* For every VLAN in the trunk, create a `vlan_member` link
+* Process `vlan_member` link like it would be an access link
+
+For access links:
+* Set the VLAN forwarding mode (`_vlan_mode`) for every interface attached to the link (see [VLAN module documentation](../module/vlan.md) for precedence details)
+* Add VLAN data to link data
+* For routed VLAN links, set link VLAN mode to **route**
+* For non-routed links, set link prefix based on VLAN prefix
+* Disable interface addresses on bridge-only VLANs or on bridge-only interfaces
 
 ### VRF
 
@@ -84,6 +89,13 @@ Create VLAN- and VRF services:
 * Assign EVPN RD/RT to EVPN-enabled VLANs and -bundles (with RT based on some global AS, not per node AS)
 * Assign **evpn.evi** to EVPN-enabled VRFs
 
+## pre_link_transform
+
+### VLAN
+
+Module:
+* Create loopback VLAN links: for every node that has a VLAN configured but does not participate in that VLAN with a physical interface, create a fake member link with a fake interface attached to it.
+
 ## post_link_transform
 
 ### VLAN
@@ -97,7 +109,7 @@ Module:
 * Check for mixed (bridged+routed) trunks
 * Set neighbors for SVI interfaces
 * Remove VLAN member links from topology links
-* Cleanup temporary VLAN attributes in links and nodes
+* Cleanup temporary VLAN attributes in links and nodes -- remove `vlan_name` from links and interfaces, `_global_merge` from VLANs and interfaces, `neighbors` from node VLANs, and `_vlan_mode` from interfaces. Also: copy interface `_vlan_mode` into interface `vlan.mode`.
 * Fix VLAN-wide default gateways
 
 ### VRF
