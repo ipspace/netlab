@@ -1,0 +1,42 @@
+message: |
+  This sample topology implements the craziest possible EVPN design:
+  running EVPN EBGP session between loopback interfaces advertised
+  with underlay EBGP sessions.
+
+  Amazingly, it works (at least with Arista EOS)
+
+provider: clab
+defaults.device: eos
+plugin: [ ebgp.multihop ]
+
+groups:
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+  leaves:
+    members: [ leaf1, leaf2 ]
+    module: [ vlan, vxlan, bgp, evpn ]
+
+vlans:
+  red:
+    mode: bridge
+    links: [ h1-leaf1, h2-leaf2 ]                     # The VLAN switch-to-host access links 
+
+bgp:
+  as: 65000                                           # The AS used for EVPN route targets
+  community.ebgp: [ standard, extended ]              # We need extended communities on EBGP sessions for EVPN to work
+  multihop:
+    sessions: [ leaf1-leaf2 ]                         # We'll establish multihop EBGP session between EVPN nodes
+    activate: 
+      ipv4: [ evpn ]                                  # ... but run only EVPN AF over it
+
+nodes:
+  leaf1:
+    bgp.as: 65001                                     # Each switch has a different AS
+  leaf2:
+    bgp.as: 65002
+  h1:
+  h2:
+
+links:
+- leaf1-leaf2                                         # Underlay EBGP session is established over this link
