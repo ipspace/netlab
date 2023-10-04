@@ -7,6 +7,7 @@
    :maxdepth: 1
 
    plugins/ebgp.utils.md
+   plugins/ebgp.multihop.md
    plugins/multilab.md
 ```
 

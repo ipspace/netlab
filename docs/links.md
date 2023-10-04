@@ -15,6 +15,7 @@ You can use all four link formats in the same topology file -- they are always c
    :local:
 ```
 
+(link-formats)=
 ## Sample Link Formats
 
 The following simple topology file contains typical variants of specifying nodes connected to a link. For more details, read the extensive [link definition examples](example/link-definition.md)
