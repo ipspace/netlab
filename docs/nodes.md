@@ -81,10 +81,12 @@ nodes:
 
 [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
 
+(nodes-provider-attributes)=
 ## Provider-Specific Node Attributes
 
 Some node attributes are used only with specific *netlab* virtualization provider. These attributes can be specified at node level as `<provider>.<attribute>`, or as default with `defaults.devices.<device>.<provider>.node.<attribute>`.
 
+(nodes-provider-attributes-libvirt)=
 ### Libvirt Attributes
 
 * **libvirt.nic_model** -- *libvirt* virtual NIC model used by the VM lab device. See *libvirt* and *KVM* documentation for supported values; the most common settings are *virtio* (*libvirt* default) and *e1000*. Other supported values include *rtl8139*, *pcnet*, *ne2k_pci*, *i82559er*, *i82557b*, *i82551* and *ne2k_isa*.
@@ -104,6 +106,7 @@ nodes:
 
 [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **nic_model** for all devices that can be run as virtual machines.
 
+(nodes-provider-attributes-clab)=
 ### Containerlab Attributes
 
 When using network devices with *containerlab*, you might have to set these node attributes:

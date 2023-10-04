@@ -39,6 +39,7 @@ links:
 
 **Note:** You have to use the dictionary format of link definition when you want to specify additional link parameters.
 
+(link-attributes)=
 ## Link Attributes
 
 A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netlab* data transformation routines:
