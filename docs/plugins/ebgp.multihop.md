@@ -2,6 +2,19 @@
 
 The **ebgp.multihop** plugin adds support for multihop EBGP sessions established between loopback interfaces of routers in different autonomous systems.
 
+The plugin implements multihop EBGP sessions in the global routing table. VRF multihop EBGP sessions are not implemented yet.
+
+## Supported Platforms
+
+The plugin includes Jinja2 templates for the following platforms:
+
+| Operating system    | Global<br>sessions | VRF<br>sessions |
+| ------------------- | :--: | :--: |
+| Arista EOS          |  ✅  |  ❌   |
+| Cisco IOSv / IOS-XE |  ✅  |  ❌   |
+| Cumulus Linux       |  ✅  |  ❌   |
+| FRR                 |  ✅  |  ❌   |
+
 ## Specifying Multihop EBGP Sessions
 
 Multihop EBGP sessions are specified in the global **bgp.multihop.sessions** list. Individual elements of the list can take any valid [link format](link-formats), from strings to dictionaries, for example:
