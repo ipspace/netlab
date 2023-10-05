@@ -55,5 +55,5 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    components.md
    defaults.md
    topology/hierarchy.md
-   extend-attributes.md
+   customize.md
 ```
