@@ -1,5 +1,9 @@
-{% macro ebgp_session(n,af) -%}
-{%   if n.password is defined %}
+{% macro ebgp_session(n,af,bgp) -%}
+{%   if n.tcp_ao is defined %}
+{%     set idx = bgp._ao_secrets.index(n.password) + 1 %}
+{%     set algo = { 'aes-128-cmac': 'aes-128-cmac-96', 'hmac-sha-1': 'hmac-sha1-96' } %}
+  neighbor {{ n[af] }} password shared-secret profile tcp-ao-{{ idx }} algorithm {{ algo[n.tcp_ao] }}
+{%   elif n.password is defined %}
   neighbor {{ n[af] }} password {{ n.password }}
 {%   endif %}
 {%   if n.gtsm is defined %}
@@ -23,10 +27,18 @@
 {%- endmacro %}
 
 !
+{% for pwd in bgp._ao_secrets|default([]) %}
+{%   if loop.first %}
+management security
+{%   endif %}
+  session shared-secret profile tcp-ao-{{ loop.index }}
+    secret 0 {{ pwd }} infinite
+!
+{% endfor %}
 router bgp {{ bgp.as }}
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined %}
-{{     ebgp_session(n,af) -}}
+{{     ebgp_session(n,af,bgp) -}}
 {%   endfor %}
 {% endfor %}
 !
@@ -44,7 +56,7 @@ router bgp {{ bgp.as }}
  vrf {{ vname }}
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined %}
-{{     ebgp_session(n,af) -}}
+{{     ebgp_session(n,af,bgp) -}}
 {%   endfor %}
 {% endfor %}
 !
