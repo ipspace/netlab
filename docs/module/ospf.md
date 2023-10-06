@@ -9,6 +9,10 @@ This configuration module configures OSPFv2 and OSPFv3 routing processes on most
    :backlinks: none
 ```
 
+```{note}
+Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on OSPF areas, routers, and interfaces. Use **[‌netlab show reports ospf](netlab-show-reports)** command to display available OSPF reports.
+```
+
 ## Supported Features
 
 Supported OSPF features:
@@ -47,7 +51,7 @@ The following table describes per-platform support of individual router-level OS
 | Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
 | Cisco IOS XE             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
+| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌          |
 | Dell OS10 ([❗](caveats-os10)) |   ✅  |       ✅          |   ✅   |  ✅  |       ❌          |
 | Fortinet FortiOS         |   [❗](caveats-fortios)  | ✅   |   ❌   |  ❌  |       ❌          |

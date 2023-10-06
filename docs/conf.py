@@ -46,7 +46,8 @@ myst_enable_extensions = [
     "html_admonition",
     "replacements",
     "smartquotes",
-    "tasklist"
+    "tasklist",
+    "attrs_block"
 ]
 
 # Add any paths that contain templates here, relative to this directory.

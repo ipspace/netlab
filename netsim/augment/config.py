@@ -4,6 +4,7 @@
 
 import typing
 from box import Box
+from ..utils import log
 
 """
 Augment module attributes
@@ -52,6 +53,46 @@ def adjust_attributes(
       child=attr.get('interface',None),
       copy_list=node_copy)
 
+'''
+copy_attributes: Copy attribute definitions between various attribute namespaces
+
+An attribute definition is copied/merged if:
+
+* The attribute contains 'copy' keyword
+* The attribute exists in the target namespace
+'''
+def copy_attributes(attr: Box) -> None:
+  for ns in attr.keys():                                              # Iterate over attribute namespaces
+    if not isinstance(attr[ns],Box):                                  # This is clearly not an attribute namespace
+      continue
+    for attr_name in attr[ns].keys():                                 # Now iterate over attribute names
+      if not isinstance(attr[ns][attr_name],Box):                     # Clearly not something that could request a copy
+        continue
+      if 'copy' not in attr[ns][attr_name]:                           # Do we have a copy request?
+        continue
+      source_ns = attr[ns][attr_name]['copy']                         # Source namespace
+      if not source_ns in attr:                                       # Unknown source namespace? Ignore the request
+        log.error(
+          'Incorrect source attribute namespace {source_ns} specified for {ns} attribute {attr_name}',
+          log.IncorrectValue,'attributes')
+        continue
+      if not isinstance(attr[source_ns],Box):                         # Source NS not a box. Weird, skip it
+        log.error(
+          'Source attribute namespace {source_ns} specified for {ns} attribute {attr_name} is not a dictionary',
+          log.IncorrectValue,'attributes')
+        continue
+      attr[ns][attr_name] = attr[source_ns][attr_name]                # Seems legit, copy attribute
+
+'''
+process_copy_requests: process 'copy attribute' requests from a late defaults data structure
+'''
+def process_copy_requests(defaults: Box) -> None:
+  for def_name,def_data in defaults.items():                          # Iterate over default values
+    if not isinstance(def_data,Box):                                  # Value not a dictionary => nothing to do
+      continue
+    if not 'attributes' in def_data:                                  # No attributes in this value => skip it
+      continue
+    copy_attributes(def_data.attributes)                              # Seems OK, process copy attribute requests
 
 def attributes(topology: Box) -> None:
   defaults=topology.defaults

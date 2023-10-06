@@ -117,7 +117,7 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
     'links')
   return None
 
-def adjust_link_list(links: list, nodes: Box) -> list:
+def adjust_link_list(links: list, nodes: Box, linkname_format: str = 'links[{link_cnt}]') -> list:
   link_list: list = []
 
   if not(links):
@@ -126,8 +126,11 @@ def adjust_link_list(links: list, nodes: Box) -> list:
   link_cnt = 0
   for l in links:
     link_cnt = link_cnt + 1
-    link_data = adjust_link_object(l,f'links[{link_cnt}]',nodes)
+    linkname = linkname_format.format(link_cnt=link_cnt)
+    link_data = adjust_link_object(l,linkname,nodes)
     if not link_data is None:
+      if link_data.get('disable',False) is True:
+        continue
       link_list.append(link_data)
 
   if log.debug_active('links'):
@@ -484,7 +487,7 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
         return True                             # ... then it's OK not to have host bits
 
       log.error(
-        f'Address {intf.af} for node {intf.node} does not contain host bits',
+        f'Address {intf[af]} for node {intf.node} does not contain host bits',
         log.IncorrectValue,
         'links')
       return False

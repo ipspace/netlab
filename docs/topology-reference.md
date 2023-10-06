@@ -18,11 +18,15 @@ Other topology elements include:
 * **plugin** -- list of [plugins](plugins.md) used by this topology.
 * **tools** -- dictionary of [external network management tools](extools.md) deployed after the lab has been started and configured.
 
+(topology-reference-extra-elements)=
 Finally, you can set these topology-level parameters:
 
 * **provider** -- virtualization provider (default: libvirt)
 * **message** -- a help message to display after successful **[netlab initial](netlab/initial.md)** or **[netlab up](netlab/up.md)** commands. You can use that message to tell the end-user how to use the lab (example: [VLAN integration test cases](https://github.com/ipspace/netlab/tree/master/tests/integration/vlan)).
 * **name** -- topology name (used in bridge names)
+* **version** -- minimum *netlab* version required to use this lab topology[^MNV]. You can use either a simple version number or Python module version specification (example: `>= 1.6.3`).
+
+[^MNV]: This functionality was implemented in release 1.6.3. Older _netlab_ releases will report an invalid top-level parameter, ancient releases might just ignore the **version** top-level parameter.
 
 **Notes:**
 
@@ -51,5 +55,5 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    components.md
    defaults.md
    topology/hierarchy.md
-   extend-attributes.md
+   customize.md
 ```

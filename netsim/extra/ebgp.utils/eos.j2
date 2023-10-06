@@ -1,8 +1,22 @@
+{% macro ebgp_session(n,af,bgp) -%}
+{%   if n.tcp_ao is defined %}
+{%     set idx = bgp._ao_secrets.index(n.password) + 1 %}
+{%     set algo = { 'aes-128-cmac': 'aes-128-cmac-96', 'hmac-sha-1': 'hmac-sha1-96' } %}
+  neighbor {{ n[af] }} password shared-secret profile tcp-ao-{{ idx }} algorithm {{ algo[n.tcp_ao] }}
+{%   elif n.password is defined %}
+  neighbor {{ n[af] }} password {{ n.password }}
+{%   endif %}
+{%   if n.gtsm is defined %}
+  neighbor {{ n[af] }} ttl maximum-hops {{ n.gtsm }}
+{%   endif %}
+{%   if n.timers is defined %}
+  neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+{%   endif %}
+{%- endmacro %}
+
 {% macro ebgp_neighbor(n,af) -%}
-{%   if n.default_originate is defined and n.default_originate|lower == 'always' %}
+{%   if n.default_originate is defined %}
   neighbor {{ n[af] }} default-originate always
-{%   elif n.default_originate is defined and n.default_originate %}
-  neighbor {{ n[af] }} default-originate
 {%   endif %}
 {%   if n.allowas_in is defined %}
   neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
@@ -10,13 +24,24 @@
 {%   if n.as_override is defined %}
   neighbor {{ n[af] }} as-path remote-as replace out
 {%   endif %}
-{%   if n.password is defined %}
-  neighbor {{ n[af] }} password {{ n.password }}
-{%   endif %}
 {%- endmacro %}
 
 !
+{% for pwd in bgp._ao_secrets|default([]) %}
+{%   if loop.first %}
+management security
+{%   endif %}
+  session shared-secret profile tcp-ao-{{ loop.index }}
+    secret 0 {{ pwd }} infinite
+!
+{% endfor %}
 router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_session(n,af,bgp) -}}
+{%   endfor %}
+{% endfor %}
+!
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined %}
 {%     if loop.first %}
@@ -29,6 +54,12 @@ router bgp {{ bgp.as }}
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
  vrf {{ vname }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_session(n,af,bgp) -}}
+{%   endfor %}
+{% endfor %}
+!
 {%   for af in ['ipv4','ipv6'] %}
 {%     for n in vdata.bgp.neighbors if n[af] is defined %}
 {%       if loop.first %}

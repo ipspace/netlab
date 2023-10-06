@@ -1,0 +1,41 @@
+{# description: OSPF areas, nodes and interfaces #}
+{% import 'ospf-utils.include.j2' as ocode %}
+{% set row_fmt = "| {0:15} | {1:15} | {2:>15} | {3:20} |" %}
+{% set row_sep = "|" + "-"*17+ "|" + "-"*17 + "|" + "-"*17 + "|" + "-" * 22 + "|" %}
+{%- macro header(flag) -%}
+{%-  call ocode.header(flag) -%}
+{{ row_sep }}
+{{ row_fmt.format("Router","Interface","IPv4 Address","Neighbor(s)") }}
+{{ row_sep }}
+{%-  endcall -%}
+{%- endmacro -%}
+{#
+   First, build a list of OSPF areas
+#}
+{% set areas = [] %}
+{% set af = 'ipv4' %}
+{{- ocode.get_areas(areas,nodes,af) -}}
+{% set flags = namespace(first=True,node='') %}
+{% for area in areas|sort %}
+
+OSPF Area {{ area }}
+
+{%   set flags.first = True %}
+{%   for name,n in nodes.items() if 'ospf' in n %}
+{%     set flags.node = '' %}
+{%     call ocode.loopback(n,area,af,flags) %}
+{{-      header(flags) -}}
+{{ row_fmt.format(name,"Loopback",n.loopback[af],"") }}
+{%     endcall %}
+{%     call ocode.interfaces(n,nodes,area,af,flags) %}
+{{-      header(flags) -}}
+{%       set intf = flags.intf %}
+{%       set ngb_string = 'passive' if intf.ospf.passive|default(False) else flags.ngb|join(',') %}
+{%       set ngb_string = ngb_string[:19] %}
+{{ row_fmt.format(name if flags.node != name else '',intf.ifname,intf[af],ngb_string) }}
+{%     endcall %}
+{%     if flags.node == name %}
+{{ row_sep }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}

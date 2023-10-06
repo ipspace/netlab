@@ -1,0 +1,53 @@
+#
+# This test case checks the propagation/inheritance of 
+# VLAN forwarding mode settings
+#
+
+# First, extend the attribute values
+defaults.attributes.vlan:
+  mode.valid_values: [ bridge, irb, route, g_irb, vl_irb, n_irb ]
+
+defaults.vlan.attributes:
+  global.mode.valid_values: [ bridge, irb, route, g_irb, vl_irb ]
+  node.mode:
+    type: str
+    valid_values: [ bridge, irb, route, n_irb ]
+
+defaults.device: frr
+module: [ vlan ]
+vlan.mode: g_irb
+
+vlans:
+  red:
+    mode: vl_irb          # Explicit mode set for a VLAN
+  blue:                   # VLAN inherits forwarding mode from the global mode
+  green:
+    mode: vl_irb          # Another VLAN with explicit mode
+  orange:                 # Used to test interface-specific override
+
+nodes:
+  s1:
+  s2:
+    vlan.mode: n_irb      # All VLANs on S2 are set to n_irb
+    vlans:
+      green:
+        mode: bridge      # VLAN-specific mode must take precedence over anything else
+      red:                # Let's see what happens if we have node VLAN without the "mode" attribute
+
+links:
+- s1:
+  s2:
+  vlan.access: red
+- s1:
+  s2:
+  vlan.trunk:
+    red:
+    blue:
+    green:
+- s1:
+  s2:
+    vlan.trunk:
+      orange:
+        vlan.mode: route
+  vlan.trunk:
+    orange:

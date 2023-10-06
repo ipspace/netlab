@@ -236,6 +236,7 @@ Ansible developers love to restructure stuff and move it into different director
 
 [^HB]: Installing Ansible with Homebrew or into a separate virtual environment won't work -- _netlab_ has to be able to import Ansible modules
 
+(clab-other-parameters)=
 ### Using Other Containerlab Node Parameters
 
 You can also change these *containerlab* parameters:

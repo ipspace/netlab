@@ -113,3 +113,16 @@ is_true_int: work around the Python stupidity of bools being ints
 
 def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
   return isinstance(data,int) and not isinstance(data,bool)
+
+"""
+find_in_list: Find if any of the specified elements is in list, return index or None
+"""
+
+def find_in_list(value: list, target: list) -> typing.Optional[int]:
+  for v in value:
+    try:
+      return target.index(v)
+    except:
+      continue
+
+  return None

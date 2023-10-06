@@ -9,11 +9,37 @@ import importlib
 import importlib.util
 
 from box import Box
-from ..utils import log
+from ..utils import log, read as _read
 from ..utils.files import get_moddir
 from .. import data
+from . import config
 
-def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
+'''
+merge_plugin_defaults: Merge plugin defaults with topology defaults
+
+We cannot simply overwrite the topology defaults with plugin defaults as the
+defaults might have been changed by the user, so we're using a dirty trick:
+
+* Topology defaults are augmented with plugin defaults (which means the global
+  defaults take precedence)
+* Whatever is really important should be in the 'important' dictionary and will
+  take precedence over anything else
+'''
+def merge_plugin_defaults(defaults: typing.Optional[Box], topology: Box) -> None:
+  if not defaults:
+    return
+  
+  config.process_copy_requests(defaults)
+  important_stuff = None
+  if 'important' in defaults:
+    important_stuff = defaults.important
+    defaults.pop('important')
+
+  topology.defaults = defaults + topology.defaults
+  if important_stuff is not None:
+    topology.defaults = topology.defaults + important_stuff
+
+def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optional[object]:
   module_path = path+'/'+plugin
   if not os.path.exists(module_path):
     if os.path.exists(module_path+'.py'):
@@ -24,7 +50,9 @@ def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
   module: typing.Optional[object] = None
   config_name = None
 
-  if os.path.isdir(module_path):
+  plugin_is_dir = os.path.isdir(module_path)
+  if plugin_is_dir:
+    dir_path = module_path
     module_path = module_path + '/plugin.py'
     config_name = plugin
     if not os.path.exists(module_path):
@@ -47,6 +75,11 @@ def load_plugin_from_path(path: str, plugin: str) -> typing.Optional[object]:
   if config_name:
     setattr(pymodule,'config_name',config_name)
 
+  if plugin_is_dir:
+    defaults_file = dir_path + '/defaults.yml'
+    if os.path.exists(defaults_file):
+      merge_plugin_defaults(_read.read_yaml(defaults_file),topology)
+
   if log.VERBOSE:
     print(f"loaded plugin {module_name}")
   return pymodule
@@ -61,16 +94,17 @@ def init(topology: Box) -> None:
     return
 
   topology.Plugin = []
-  for pname in topology.plugin:
-    plugin = None
-    search_path = ('.',str(get_moddir() / 'extra'))
+  for pname in topology.plugin:                               # Iterate over all plugins
+    search_path = ('.',str(get_moddir() / 'extra'))           # Search in current directory and 'extra' package directory
     for path in search_path:
-      if not plugin:
-        plugin = load_plugin_from_path(path,pname)
-    if plugin:
+      plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
+      if plugin:                                              # Got it, get out of the loop
+        break
+
+    if plugin:                                                # If we found the plugin, add it to the list of active plugins
       topology.Plugin.append(plugin)
     else:
-      log.error(f"Cannot find plugin {pname} in {search_path}",log.IncorrectValue,'plugin')
+      log.error(f"Cannot find plugin {pname}\nSearch path: {search_path}",log.IncorrectValue,'plugin')
 
   if log.debug_active('plugin'):
     print(f'plug INIT: {topology.Plugin}')

@@ -1,0 +1,56 @@
+{%- macro header(flag) -%}
+{% if flag.first %}
+{{ caller () }}
+{%  set flag.first = False %}
+{% endif %}
+{%- endmacro -%}
+
+{#
+   Collect a list of OSPF areas
+#}
+{%- macro get_areas(areas,nodes,af) -%}
+{% for name,n in nodes.items() if 'ospf' in n and 'area' in n.ospf %}
+{%   if 'loopback' in n and af in n.loopback and not n.ospf.area|string in areas %}
+{%     set ignore = areas.append(n.ospf.area|string) %}
+{%   endif %}
+{%   for intf in n.interfaces 
+         if 'ospf' in intf and 'area' in intf.ospf
+         and not intf.ospf.area|string in areas 
+         and af in intf and intf[af] is string %}
+{%     set ignore = areas.append(intf.ospf.area|string) %}
+{%   endfor %}
+{% endfor %}
+{%- endmacro -%}
+
+{#
+   Get OSPF-enabled neighbors on an interface
+#}
+{%- macro get_neighbors(ngb,intf,nodes) -%}
+{%   for n in intf.neighbors if 'ospf' in nodes[n.node] and not n in ngb %}
+{%     set ignore = ngb.append(n.node) %}
+{%   endfor %}
+{%- endmacro -%}
+
+{#
+   Print loopback interface
+#}
+{%- macro loopback(n,area,af,flags) %}
+{%     if 'area' in n.ospf and 'loopback' in n and n.ospf.area|string == area and af in n.loopback %}
+{{-      caller() -}}
+{%       set flags.node = n.name %}
+{%     endif %}
+{%- endmacro -%}
+
+{#
+   Iterate over interfaces
+#}
+{%- macro interfaces(n,nodes,area,af,flags) %}
+{%   for intf in n.interfaces 
+         if 'ospf' in intf and 'area' in intf.ospf and intf.ospf.area|string == area and af in intf %}
+{%     set flags.ngb = [] %}
+{%     set flags.intf = intf %}
+{{-    get_neighbors(flags.ngb,intf,nodes) -}}
+{{-    caller() -}}
+{%     set flags.node = n.name %}
+{%   endfor %}
+{%- endmacro -%}

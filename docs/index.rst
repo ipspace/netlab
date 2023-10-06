@@ -87,6 +87,7 @@ More information
    providers.md
    defaults.md
    outputs/index.md
+   customize.md
 ..
 
 .. toctree::

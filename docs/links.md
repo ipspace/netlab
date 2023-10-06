@@ -15,6 +15,7 @@ You can use all four link formats in the same topology file -- they are always c
    :local:
 ```
 
+(link-formats)=
 ## Sample Link Formats
 
 The following simple topology file contains typical variants of specifying nodes connected to a link. For more details, read the extensive [link definition examples](example/link-definition.md)
@@ -38,12 +39,14 @@ links:
 
 **Note:** You have to use the dictionary format of link definition when you want to specify additional link parameters.
 
+(link-attributes)=
 ## Link Attributes
 
 A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netlab* data transformation routines:
 
 * **bandwidth** -- link bandwidth. Used to configure interface bandwidth when supported by the connected device(s).
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
+* **disable** -- remove the link from the lab topology when set to `True`. You can use this attribute to simplify the topology when debugging it[^CIN].
 * **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
 * **group** -- [link group](link-groups) identifier
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
@@ -54,6 +57,8 @@ A dictionary describing an individual link contains *node names* as well as *add
 * **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **role** -- link role, used to select specific configuration module behavior. Typical link roles include *stub*, *passive* and *external*. Please read [](module/routing.md) for more details.
 * **type** -- [link type](#link-types) (lan, p2p, stub, loopback, tunnel)
+
+[^CIN]: Disabled links are removed from lab topology, which might cause changes in interface names.
 
 You can use most link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
 
