@@ -72,6 +72,11 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     print(f"Cannot load plugin {module_name} from {module_path}\n{str(sys.exc_info()[1])}")
     log.fatal('Aborting the transformation process','plugin')
 
+  redirect = getattr(pymodule,'_redirect',None)
+  if isinstance(redirect,str):
+    topology.plugin = [ redirect if p == plugin else p for p in topology.plugin ]
+    return load_plugin_from_path(path,redirect,topology)
+
   if config_name:
     setattr(pymodule,'config_name',config_name)
 
@@ -94,7 +99,7 @@ def init(topology: Box) -> None:
     return
 
   topology.Plugin = []
-  for pname in topology.plugin:                               # Iterate over all plugins
+  for pname in list(topology.plugin):                         # Iterate over all plugins
     search_path = ('.',str(get_moddir() / 'extra'))           # Search in current directory and 'extra' package directory
     for path in search_path:
       plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
