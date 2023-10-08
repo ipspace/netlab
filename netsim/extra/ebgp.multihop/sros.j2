@@ -1,0 +1,28 @@
+{% macro ebgp_session(n,af,vrf) -%}
+{%   if n.multihop is defined %}
+{% set path = "router[router-name=Base]" if not vrf else "service/vprn[service-name="+vrf+"]" %}
+- path: configure/{{ path }}/bgp
+  val:
+   neighbor:
+   - ip-address: {{ n[af]|ipaddr('address') }}
+     multihop: {{ n.multihop|int }}
+     local-address: "{{ loopback[af.replace('vpn','ip')]|ipaddr('address') }}"
+     description: "{{ n.name }} (multihop={{n.multihop|int}})"
+{%   endif %}
+{%- endmacro %}
+
+{% for af in ['ipv4','ipv6','vpnv4','vpnv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_session(n,af,None) -}}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%     for af in ['ipv4','ipv6','vpnv4','vpnv6'] %}
+{%       for n in bgp.neighbors if n[af] is defined %}
+{{         ebgp_session(n,af,vname) -}}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
