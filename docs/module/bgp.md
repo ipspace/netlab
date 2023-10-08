@@ -40,6 +40,11 @@ _netlab_ BGP configuration module supports these features:
 * Static **router-id** and **cluster-id**
 * Interaction with OSPF or IS-IS (IGP is disabled on external links)
 
+Even more BGP features are implemented in the following plugins:
+
+* [](../plugins/ebgp.utils.md) plugin
+* [](../plugins/ebgp.multihop.md) plugin
+
 ## Platform Support
 
 _netlab_ supports most BGP features on [all platforms supporting BGP configuration module](platform-routing-support), with the following exceptions:
@@ -326,6 +331,7 @@ nodes:
    :maxdepth: 1
 
    ../plugins/ebgp.utils.md
+   ../plugins/ebgp.multihop.md
 ```
 
 ## More Examples

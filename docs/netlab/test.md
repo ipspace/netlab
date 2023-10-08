@@ -5,15 +5,15 @@
 ## Usage
 
 ```text
-usage: netlab test [-h] [-w WORKDIR] [-v] {libvirt,virtualbox,clab}
+usage: netlab test [-h] [-w WORKDIR] [-v] {clab,virtualbox,grpc,libvirt}
 
 Test virtual lab installation
 
 positional arguments:
-  {libvirt,virtualbox,clab}
-                        Run tests for the specified provider
+  {clab,virtualbox,grpc,libvirt}
+                        Run tests for the specified provider/environment
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -w WORKDIR, --work-directory WORKDIR
                         Working directory (default: test)

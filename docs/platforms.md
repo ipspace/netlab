@@ -127,6 +127,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 
 Ansible playbooks included with **netlab** can deploy and collect device configuration on these network operating systems:
 
+(platform-config-support)=
 | Operating system      | Deploy configuration | Collect configuration |
 | --------------------- | :------------------: | :-------------------: |
 | Arista EOS            |          ✅           |           ✅           |

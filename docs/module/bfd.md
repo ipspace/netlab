@@ -2,6 +2,7 @@
 
 This configuration module configures the basic BFD ([RFC5880](https://datatracker.ietf.org/doc/html/rfc5880)) parameters. To configure fast failover with BFD, use the routing protocol [configuration modules](../module-reference.md). At the moment you can use BFD with  [IS-IS](isis.md) and [OSPF](ospf.md).
 
+(bfd-platform)=
 BFD is supported on these platforms:
 
 | Operating system      | Configurable<br>timers | OSPF | IS-IS |

@@ -1,6 +1,17 @@
 Release notes
 =============
 
+**[Release 1.6.3](release-1.6.3) (2023-10-xx)**
+
+* [EBGP multihop sessions](plugins/ebgp.multihop.md)
+* [ebgp.utils plugin](plugins/ebgp.utils.md) supports TCP-AO, configurable BGP timers, and Generic TTL Security Mechanism (TTL session protection)
+* [OSPF reports](module/ospf.md)
+* Shorter version of [BGP neighbor report](module/bgp.md)
+* [BFD on Cumulus Linux](bfd-platform)
+
+{.text-right}
+[More features...](release-1.6.3)
+
 **[Release 1.6.2](release-1.6.2) (2023-08-26)**
 
 * [Support for ArubaOS-CX with containerlab](platforms.md#supported-virtual-network-devices)
@@ -26,6 +37,9 @@ Release notes
 * Host-to-lab-device port forwarding with [*libvirt*](libvirt-port-forwarding) and *[containerlab](clab-port-forwarding)*
 * Nokia SR OS OSPF P2MP support
 
+{.text-right}
+[More features...](release-1.6.0)
+
 **[Release 1.5.4](release-1.5.4) (2023-06-10)**
 
 * [Juniper vPTX/vEVO](platforms.md) support by Stefano Sasso (initial configuration, IPv4+IPv6, OSPFv2/v3, IS-IS, BGP, BFD, VLANs, VRFs, MPLS, SR-MPLS)
@@ -39,14 +53,17 @@ Release notes
 * MPLS VPN support for SR OS
 * Improved virtualization provider installation testing with (hopefully) useful error messages
 
+{.text-right}
+[More features...](release-1.5.3)
+
 **[Release 1.5.2](release-1.5.2) (2023-04-27)**
 
 * [External network management tools](extools.md)
 * [Aruba AOS-CX Support](platforms.md)
 * [Reusable topology components](components.md)
 * [Tunnel interfaces](links-tunnel)
-* Add '--force' flag to '[netlab down](netlab/down.md)' command
-* Use [Ansible filters in netlab templating system](labs/clab.md#jinja2-filters-available-in-custom-configuration-files) (#781)
+* Add `--force flag to '[netlab down](netlab/down.md)' command
+* Use [Ansible filters in netlab templating system](labs/clab.md#jinja2-filters-available-in-custom-configuration-files)
 * Deploy [per-node custom configuration templates](dev/config/deploy.md#finding-custom-configuration-templates)
 
 **[Release 1.5.1](release-1.5.1) (2023-04-02)**
@@ -65,6 +82,9 @@ Release notes
 * Split large *libvirt* topology into [smaller **vagrant up** batches](labs/libvirt.md#starting-virtual-machines-in-batches)
 * [Use custom network/bridge name and IP subnet](labs/libvirt.md#libvirt-management-network) for `vagrant-libvirt` management network
 * ['loopback' link type](links.md#loopback-links) can be used to create additional loopback interfaces
+
+{.text-right}
+[More features...](release-1.5.0)
 
 **[Release 1.4.3](release-1.4.3) (2023-01-12)**
 

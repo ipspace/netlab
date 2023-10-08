@@ -15,6 +15,7 @@ You can use all four link formats in the same topology file -- they are always c
    :local:
 ```
 
+(link-formats)=
 ## Sample Link Formats
 
 The following simple topology file contains typical variants of specifying nodes connected to a link. For more details, read the extensive [link definition examples](example/link-definition.md)
@@ -38,6 +39,7 @@ links:
 
 **Note:** You have to use the dictionary format of link definition when you want to specify additional link parameters.
 
+(link-attributes)=
 ## Link Attributes
 
 A dictionary describing an individual link contains *node names* as well as *additional link attributes*. These link attributes are predefined and used by *netlab* data transformation routines:
