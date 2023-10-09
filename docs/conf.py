@@ -36,7 +36,8 @@ source_parsers = {
 source_suffix = ['.rst', '.md']
 
 extensions = [
-  'myst_parser'
+  'myst_parser',
+  'sphinxcontrib.jquery'
 ]
 
 myst_heading_anchors = 3
