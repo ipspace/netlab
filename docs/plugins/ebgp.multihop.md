@@ -14,6 +14,8 @@ The plugin includes Jinja2 templates for the following platforms:
 | Cisco IOSv / IOS-XE |  ✅  |  ❌   |
 | Cumulus Linux       |  ✅  |  ❌   |
 | FRR                 |  ✅  |  ❌   |
+| Nokia SR Linux      |  ✅  |  ✅   |
+| Nokia SR OS         |  ✅  |  ✅   |
 
 ## Specifying Multihop EBGP Sessions
 
