@@ -9,9 +9,9 @@ _config_name = 'ebgp.multihop'
 _execute_after = [ 'ebgp.utils', 'bgp.session' ]
 
 def pre_transform(topology: Box) -> None:
-  config_name  = api.get_config_name(globals())        # Get the plugin configuration name
+  global _config_name
   session_idx  = data.find_in_list(['ebgp.utils','bgp.session'],topology.plugin)
-  multihop_idx = data.find_in_list([ config_name ],topology.plugin)
+  multihop_idx = data.find_in_list([ _config_name ],topology.plugin)
 
   if session_idx is not None and session_idx > multihop_idx:
     log.error(
@@ -132,14 +132,14 @@ post_transform processing:
 * Augment address family activation
 '''
 def post_transform(topology: Box) -> None:
-  config_name = api.get_config_name(globals())        # Get the plugin configuration name
+  global _config_name
   for ndata in topology.nodes.values():
     intf_count = len(ndata.interfaces)
     ndata.interfaces = [ intf for intf in ndata.interfaces if not intf.get('_bgp_session',None) ]
 
     if len(ndata.interfaces) != intf_count:           # Did the interface count change?
       check_multihop_support(ndata,topology)
-      api.node_config(ndata,config_name)              # We must have some multihop sessions, add extra config
+      api.node_config(ndata,_config_name)             # We must have some multihop sessions, add extra config
       augment_af_activation(ndata,topology)
 
   topology.links = [ link for link in topology.links if not link.get('_bgp_session',None) ]

@@ -79,6 +79,7 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
 
   if config_name:
     setattr(pymodule,'config_name',config_name)
+    setattr(pymodule,'_config_name',config_name)
 
   if plugin_is_dir:
     defaults_file = dir_path + '/defaults.yml'
@@ -147,5 +148,5 @@ def execute(action: str, topology: Box) -> None:
     if hasattr(plugin,action):
       func = getattr(plugin,action)
       if log.debug_active('plugin'):
-        print(f'plug INIT: {topology.Plugin}')
+        print(f'plug {action}: {plugin}')
       func(topology)

@@ -6,6 +6,26 @@ bgp:
     ibgp:
     - standard
     - extended
+  multihop:
+    sessions:
+    - _linkname: bgp.multihop[1]
+      bgp:
+        password: Funny
+      interfaces:
+      - _bgp_session: true
+        bgp:
+          multihop: 255
+        ifindex: 20000
+        ifname: Tunnel0
+        ipv4: 10.0.0.2/32
+        node: r2
+      - _bgp_session: true
+        bgp:
+          multihop: 255
+        ifindex: 20000
+        ifname: Tunnel0
+        ipv4: 10.0.0.3/32
+        node: r3
   next_hop_self: true
   password: Secret
 groups:
@@ -15,6 +35,8 @@ groups:
   as65002:
     members:
     - r2
+  as65003:
+    members:
     - r3
 input:
 - topology/input/ebgp.utils.yml
@@ -22,11 +44,11 @@ input:
 links:
 - interfaces:
   - ifindex: 1
-    ifname: eth1
+    ifname: Ethernet1
     ipv4: 10.1.0.1/30
     node: r1
   - ifindex: 1
-    ifname: eth1
+    ifname: Ethernet1
     ipv4: 10.1.0.2/30
     node: r2
   linkindex: 1
@@ -39,13 +61,13 @@ links:
     password: SomethingElse
   interfaces:
   - ifindex: 2
-    ifname: eth2
+    ifname: Ethernet2
     ipv4: 10.1.0.5/30
     node: r1
   - bgp:
       allowas_in: 1
     ifindex: 1
-    ifname: eth1
+    ifname: Ethernet1
     ipv4: 10.1.0.6/30
     node: r3
   linkindex: 2
@@ -84,7 +106,7 @@ nodes:
         type: ebgp
       - activate:
           ipv4: true
-        as: 65002
+        as: 65003
         default_originate: true
         ifindex: 2
         ipv4: 10.1.0.6
@@ -94,19 +116,19 @@ nodes:
       next_hop_self: true
       password: Secret
       router_id: 10.0.0.1
-    box: vyos/current
+    box: arista/veos
     config:
     - ebgp.utils
-    device: vyos
+    device: eos
     id: 1
     interfaces:
     - ifindex: 1
-      ifname: eth1
+      ifname: Ethernet1
       ipv4: 10.1.0.1/30
       linkindex: 1
       name: r1 -> r2
       neighbors:
-      - ifname: eth1
+      - ifname: Ethernet1
         ipv4: 10.1.0.2/30
         node: r2
       role: external
@@ -114,7 +136,7 @@ nodes:
     - bgp:
         password: SomethingElse
       ifindex: 2
-      ifname: eth2
+      ifname: Ethernet2
       ipv4: 10.1.0.5/30
       linkindex: 2
       name: r1 -> r3
@@ -122,7 +144,7 @@ nodes:
       - bgp:
           allowas_in: 1
           password: SomethingElse
-        ifname: eth1
+        ifname: Ethernet1
         ipv4: 10.1.0.6/30
         node: r3
       role: external
@@ -130,7 +152,7 @@ nodes:
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
-      ifname: eth0
+      ifname: Management1
       ipv4: 192.168.121.101
       mac: 08:4f:a9:00:00:01
     module:
@@ -152,34 +174,38 @@ nodes:
       neighbors:
       - activate:
           ipv4: true
-        as: 65002
-        ipv4: 10.0.0.3
-        name: r3
-        type: ibgp
-      - activate:
-          ipv4: true
         as: 65001
         ifindex: 1
         ipv4: 10.1.0.1
         name: r1
         password: Secret
         type: ebgp
+      - activate:
+          ipv4: true
+        as: 65003
+        ifindex: 20000
+        ipv4: 10.0.0.3
+        multihop: 255
+        name: r3
+        password: Secret
+        type: ebgp
       next_hop_self: true
       password: Secret
       router_id: 10.0.0.2
-    box: vyos/current
+    box: arista/veos
     config:
     - ebgp.utils
-    device: vyos
+    - ebgp.multihop
+    device: eos
     id: 2
     interfaces:
     - ifindex: 1
-      ifname: eth1
+      ifname: Ethernet1
       ipv4: 10.1.0.2/30
       linkindex: 1
       name: r2 -> r1
       neighbors:
-      - ifname: eth1
+      - ifname: Ethernet1
         ipv4: 10.1.0.1/30
         node: r1
       role: external
@@ -187,7 +213,7 @@ nodes:
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
-      ifname: eth0
+      ifname: Management1
       ipv4: 192.168.121.102
       mac: 08:4f:a9:00:00:02
     module:
@@ -198,7 +224,7 @@ nodes:
       ipv4: true
     bgp:
       advertise_loopback: true
-      as: 65002
+      as: 65003
       community:
         ebgp:
         - standard
@@ -209,12 +235,6 @@ nodes:
       neighbors:
       - activate:
           ipv4: true
-        as: 65002
-        ipv4: 10.0.0.2
-        name: r2
-        type: ibgp
-      - activate:
-          ipv4: true
         allowas_in: 1
         as: 65001
         ifindex: 1
@@ -222,27 +242,37 @@ nodes:
         name: r1
         password: SomethingElse
         type: ebgp
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 20000
+        ipv4: 10.0.0.2
+        multihop: 255
+        name: r2
+        password: Secret
+        type: ebgp
       next_hop_self: true
       password: Secret
       router_id: 10.0.0.3
-    box: vyos/current
+    box: arista/veos
     config:
     - ebgp.utils
-    device: vyos
+    - ebgp.multihop
+    device: eos
     id: 3
     interfaces:
     - bgp:
         allowas_in: 1
         password: SomethingElse
       ifindex: 1
-      ifname: eth1
+      ifname: Ethernet1
       ipv4: 10.1.0.6/30
       linkindex: 2
       name: r3 -> r1
       neighbors:
       - bgp:
           password: SomethingElse
-        ifname: eth2
+        ifname: Ethernet2
         ipv4: 10.1.0.5/30
         node: r1
       role: external
@@ -250,7 +280,7 @@ nodes:
     loopback:
       ipv4: 10.0.0.3/32
     mgmt:
-      ifname: eth0
+      ifname: Management1
       ipv4: 192.168.121.103
       mac: 08:4f:a9:00:00:03
     module:
@@ -258,4 +288,5 @@ nodes:
     name: r3
 plugin:
 - ebgp.utils
+- ebgp.multihop
 provider: libvirt
