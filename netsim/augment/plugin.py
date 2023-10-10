@@ -9,8 +9,8 @@ import importlib
 import importlib.util
 
 from box import Box
-from ..utils import log, read as _read
-from ..utils.files import get_moddir
+from ..utils import log, read as _read, sort as _sort
+from ..utils.files import get_moddir,get_search_path
 from .. import data
 from . import config
 
@@ -89,6 +89,30 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     print(f"loaded plugin {module_name}")
   return pymodule
 
+'''
+Sort plugins based on their _requires and _execute_after attributes
+
+Input:
+* List of plugins in topology.plugin
+* Loaded plugins (in the same order) in topology.Plugin
+
+The sorting function has to build a dictionary of plugin modules, sort the plugin names,
+and rebuild the list of loaded plugins.
+'''
+def sort_plugins(topology: Box) -> None:
+  if not topology.get('plugin',[]):                           # No plugins, no sorting ;)
+    return
+
+  pmap: dict = {}
+  for (idx,p) in enumerate(topology.plugin):                  # Build the name-to-module mappings
+    pmap[p] = topology.Plugin[idx]
+
+  # Sort the plugin names based on their dependencies
+  topology.plugin = _sort.dependency(
+                      topology.plugin,
+                      lambda p: getattr(pmap[p],'_requires',[]) + getattr(pmap[p],'_execute_after',[]))
+  topology.Plugin = [ pmap[p] for p in topology.plugin ]      # And rebuild the list of plugin modules
+
 def init(topology: Box) -> None:
   data.types.must_be_list(parent=topology,key='defaults.plugin',path='',create_empty=True)    # defaults.plugin must be a list (if present)
   if topology.defaults.plugin:                                                                # If we have default plugins...
@@ -99,8 +123,8 @@ def init(topology: Box) -> None:
     return
 
   topology.Plugin = []
+  search_path = get_search_path(pkg_path_component='extra')   # Search the usual places plus the 'extra' package directory
   for pname in list(topology.plugin):                         # Iterate over all plugins
-    search_path = ('.',str(get_moddir() / 'extra'))           # Search in current directory and 'extra' package directory
     for path in search_path:
       plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
       if plugin:                                              # Got it, get out of the loop
@@ -111,6 +135,7 @@ def init(topology: Box) -> None:
     else:
       log.error(f"Cannot find plugin {pname}\nSearch path: {search_path}",log.IncorrectValue,'plugin')
 
+  sort_plugins(topology)
   if log.debug_active('plugin'):
     print(f'plug INIT: {topology.Plugin}')
 

@@ -5,6 +5,9 @@ from netsim.augment import devices
 from netsim.augment import links
 from netsim.data.validate import validate_attributes
 
+_config_name = 'ebgp.multihop'
+_execute_after = [ 'ebgp.utils', 'bgp.session' ]
+
 def pre_transform(topology: Box) -> None:
   config_name  = api.get_config_name(globals())        # Get the plugin configuration name
   session_idx  = data.find_in_list(['ebgp.utils','bgp.session'],topology.plugin)
