@@ -105,6 +105,7 @@ More information
    :hidden:
 
    dev/guidelines.md
+   dev/plugins.md
    dev/config/index.md
    dev/advanced.md
    roadmap/index.md
