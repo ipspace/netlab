@@ -41,12 +41,12 @@ bgp.multihop.sessions:
   r2:
 ```
 
-## Integration with ebgp.utils plugin
+## Integration with bgp.session plugin
 
-EBGP multihop plugin works together with [](ebgp.utils.md) plugin, but has to be listed after it in the list of plugins:
+EBGP multihop plugin works together with [](bgp.session.md), but has to be listed after it in the list of plugins:
 
 ```
-plugins: [ ebgp.utils, ebgp.multihop ]
+plugins: [ bgp.session, ebgp.multihop ]
 
 bgp.multihop.sessions:
 - r1:
@@ -54,10 +54,10 @@ bgp.multihop.sessions:
   r2:
 ```
 
-You can specify any attribute supported by **ebgp.utils** plugin on an EBGP multihop session (assuming you included both plugins in your topology).
+You can specify any attribute supported by **bgp.session** plugin on an EBGP multihop session (assuming you included both plugins in your topology).
 
 ```
-plugins: [ ebgp.utils, ebgp.multihop ]
+plugins: [ bgp.session, ebgp.multihop ]
 
 bgp.multihop.sessions:
 - r1:
