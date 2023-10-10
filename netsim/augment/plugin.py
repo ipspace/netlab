@@ -9,7 +9,7 @@ import importlib
 import importlib.util
 
 from box import Box
-from ..utils import log, read as _read, sort as _sort
+from ..utils import log, read as _read, sort as _sort, strings
 from ..utils.files import get_moddir,get_search_path
 from .. import data
 from . import config
@@ -69,7 +69,7 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     assert(modspec.loader is not None)
     modspec.loader.exec_module(pymodule)
   except:
-    print(f"Cannot load plugin {module_name} from {module_path}\n{str(sys.exc_info()[1])}")
+    print(f"Failed to load plugin {module_name} from {module_path}\nError reported by module loader: {str(sys.exc_info()[1])}")
     log.fatal('Aborting the transformation process','plugin')
 
   redirect = getattr(pymodule,'_redirect',None)
@@ -145,6 +145,7 @@ def init(topology: Box) -> None:
     return
 
   topology.Plugin = []
+  load_error = False
   search_path = get_search_path(pkg_path_component='extra')   # Search the usual places plus the 'extra' package directory
   for pname in list(topology.plugin):                         # Iterate over all plugins
     for path in search_path:
@@ -156,7 +157,14 @@ def init(topology: Box) -> None:
       check_plugin_dependencies(plugin,topology)              # ... check its dependencies
       topology.Plugin.append(plugin)                          # ... and add it to the list of active plugins
     else:
-      log.error(f"Cannot find plugin {pname}\nSearch path: {search_path}",log.IncorrectValue,'plugin')
+      load_error = True
+      log.error(
+        f"Cannot find plugin {pname}\nSearch path:\n{strings.get_yaml_string(search_path)}",
+        log.IncorrectValue,
+        'plugin')
+
+  if load_error:                                              # Skip the rest of the code on error as it might crash
+    return                                                    # ... due to discrepancy between lists of plugin names and loaded plugins
 
   sort_plugins(topology)
   if log.debug_active('plugin'):
