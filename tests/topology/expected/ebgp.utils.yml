@@ -76,13 +76,37 @@ links:
     ipv4: 10.1.0.4/30
   role: external
   type: p2p
+- bgp:
+    password: InVrf
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 3
+    ifname: Ethernet3
+    ipv4: 10.1.0.9/30
+    node: r1
+  - bgp:
+      allowas_in: 1
+    ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.10/30
+    node: r2
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  role: external
+  type: p2p
+  vrf: red
 module:
 - bgp
+- vrf
 name: input
 nodes:
   r1:
     af:
       ipv4: true
+      vpnv4: true
     bgp:
       advertise_loopback: true
       as: 65001
@@ -149,6 +173,25 @@ nodes:
         node: r3
       role: external
       type: p2p
+    - bgp:
+        default_originate: true
+        password: InVrf
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: r1 -> r2
+      neighbors:
+      - bgp:
+          allowas_in: 1
+          password: InVrf
+        ifname: Ethernet2
+        ipv4: 10.1.0.10/30
+        node: r2
+        vrf: red
+      role: external
+      type: p2p
+      vrf: red
     loopback:
       ipv4: 10.0.0.1/32
     mgmt:
@@ -157,10 +200,34 @@ nodes:
       mac: 08:4f:a9:00:00:01
     module:
     - bgp
+    - vrf
     name: r1
+    vrf:
+      as: 65000
+    vrfs:
+      red:
+        af:
+          ipv4: true
+        bgp:
+          neighbors:
+          - as: 65002
+            default_originate: true
+            ifindex: 3
+            ipv4: 10.1.0.10
+            name: r2
+            password: InVrf
+            type: ebgp
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        rd: '65000:1'
+        vrfidx: 100
   r2:
     af:
       ipv4: true
+      vpnv4: true
     bgp:
       advertise_loopback: true
       as: 65002
@@ -210,6 +277,25 @@ nodes:
         node: r1
       role: external
       type: p2p
+    - bgp:
+        allowas_in: 1
+        password: InVrf
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: r2 -> r1
+      neighbors:
+      - bgp:
+          default_originate: true
+          password: InVrf
+        ifname: Ethernet3
+        ipv4: 10.1.0.9/30
+        node: r1
+        vrf: red
+      role: external
+      type: p2p
+      vrf: red
     loopback:
       ipv4: 10.0.0.2/32
     mgmt:
@@ -218,7 +304,30 @@ nodes:
       mac: 08:4f:a9:00:00:02
     module:
     - bgp
+    - vrf
     name: r2
+    vrf:
+      as: 65000
+    vrfs:
+      red:
+        af:
+          ipv4: true
+        bgp:
+          neighbors:
+          - allowas_in: 1
+            as: 65001
+            ifindex: 2
+            ipv4: 10.1.0.9
+            name: r1
+            password: InVrf
+            type: ebgp
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        rd: '65000:1'
+        vrfidx: 100
   r3:
     af:
       ipv4: true
@@ -286,7 +395,19 @@ nodes:
     module:
     - bgp
     name: r3
+    vrf:
+      as: 65000
 plugin:
 - bgp.session
 - ebgp.multihop
 provider: libvirt
+vrf:
+  as: 65000
+vrfs:
+  red:
+    export:
+    - '65000:1'
+    id: 1
+    import:
+    - '65000:1'
+    rd: '65000:1'

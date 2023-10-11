@@ -1,5 +1,5 @@
 from box import Box
-from netsim.utils import log
+from netsim.utils import log,bgp as _bgp
 from netsim import api
 from netsim.augment import devices
 
@@ -36,15 +36,9 @@ Remove session attributes with local significance from BGP neighbors
 because they are neighbors' attributes, not ours
 '''
 def cleanup_neighbor_attributes(ndata: Box, topology: Box) -> None:
-  for attr in topology.defaults.bgp.attributes.ebgp_utils.local:
-    for neigh in ndata.get('bgp', {}).get('neighbors', []):
-      neigh.pop(attr,None)
-
-    for vdata in ndata.get('vrfs',{}):
-      if not vdata.get('bgp.neighbors',None):
-        continue
-      for neigh in vdata.bgp.neighbors:
-        neigh.pop(attr,None)
+  for ngb in _bgp.neighbors(ndata):
+    for attr in topology.defaults.bgp.attributes.ebgp_utils.local:
+      ngb.pop(attr,None)
 
 '''
 Copy local session attributes to BGP neighbors because we need
@@ -52,19 +46,17 @@ them there in the configuration templates
 '''
 def copy_local_attributes(ndata: Box, topology: Box) -> None:
   config_name = api.get_config_name(globals())              # Get the plugin configuration name
+
   # Iterate over all ebgp.utils link/interface attributes
-  for intf in ndata.interfaces:
+  for (intf,ngb) in _bgp.intf_neighbors(ndata):
     for attr in topology.defaults.bgp.attributes.ebgp_utils.attr:
       attr_value = intf.get('bgp',{}).get(attr,None) or ndata.bgp.get(attr,None)
       if not attr_value:                                  # Attribute not defined in node or interface, move on
         continue
 
-      # Iterate over all BGP neighbors trying to find neighbors on this interface
-      for neigh in ndata.get('bgp', {}).get('neighbors', []):
-        if neigh.type == 'ebgp' and neigh.ifindex == intf.ifindex:
-          check_device_attribute_support(attr,ndata,neigh,topology)
-          neigh[attr] = attr_value                        # Found the neighbor, set neighbor attribute
-          api.node_config(ndata,config_name)              # And remember that we have to do extra configuration
+      check_device_attribute_support(attr,ndata,ngb,topology)
+      ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
+      api.node_config(ndata,config_name)                  # And remember that we have to do extra configuration
 
       if 'vrf' not in intf:                               # Not a VRF interface?
           continue                                         # ... great, move on
@@ -95,16 +87,9 @@ def process_tcpao_password(neigh: Box, ndata: Box) -> None:
     ndata.bgp._ao_secrets.append(pwd)
 
 def process_tcpao_secrets(ndata: Box,topology: Box) -> None:
-  for neigh in ndata.get('bgp', {}).get('neighbors', []):
-    if 'tcp_ao' in neigh:
-      process_tcpao_password(neigh,ndata)
-
-  for vdata in ndata.get('vrfs',{}):
-    if not vdata.get('bgp.neighbors',None):
-      continue
-    for neigh in vdata.bgp.neighbors:
-      if 'tcp_ao' in neigh:
-        process_tcpao_password(neigh,ndata)
+  for ngb in _bgp.neighbors(ndata):
+    if 'tcp_ao' in ngb:
+      process_tcpao_password(ngb,ndata)
 
 '''
 post_transform hook
