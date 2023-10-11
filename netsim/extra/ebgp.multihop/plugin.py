@@ -26,7 +26,7 @@ def pre_link_transform(topology: Box) -> None:
   topology.bgp.multihop.sessions = sessions
   for s in sessions:
     for attr in list(s.keys()):                       # Change session attributes into BGP link attributes
-      if attr in ['interfaces','_linkname']:          # Skip internal attributes
+      if attr in ['interfaces','_linkname','bgp']:    # Skip internal attributes and BGP attributes already within BGP namespace
         continue
       s.bgp[attr] = s[attr]                           # Turn a session attribute into 'bgp.x' attribute
       s.pop(attr,None)
@@ -48,7 +48,7 @@ def pre_link_transform(topology: Box) -> None:
     for intf in s.interfaces:
       node = topology.nodes[intf.node]
       for attr in list(intf.keys()):                  # Change interface attributes into BGP attributes
-        if attr in ['node']:                          # Skip internal attributes
+        if attr in ['node','bgp']:                    # Skip internal attributes and attributes already in BGP namespace
           continue
         intf.bgp[attr] = intf[attr]                   # Turn an interface attribute into 'bgp.x' attribute
         intf.pop(attr,None)
