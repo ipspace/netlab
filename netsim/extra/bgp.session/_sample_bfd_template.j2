@@ -1,0 +1,25 @@
+{% macro bfd_timers(bfd) -%}
+{%-   if bfd.min_tx|default(0) %}
+ interval {{ bfd.min_tx }}
+{%-     if bfd.min_rx|default(0) %}
+ min-rx {{ bfd.min_rx }}
+{%-       if bfd.multiplier|default(0) %}
+ multiplier {{ bfd.multiplier }}
+{%-       endif -%}
+{%-     endif -%}
+{%-   endif -%}
+{%- endmacro %}
+
+{% macro ebgp_session(n,af,bgp,bfd) -%}
+{%   if n.bfd is defined %}
+  neighbor {{ n[af] }} bfd {{- bfd_timers(bfd) }}
+{%   endif %}
+{%- endmacro %}
+
+{% set bfd = bfd|default({}) %}
+router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_session(n,af,bgp,bfd) -}}
+{%   endfor %}
+{% endfor %}
