@@ -1,0 +1,400 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+    - r2
+    - r3
+    - r4
+input:
+- topology/input/addressing-ipv6-prefix.yml
+- package:topology-defaults.yml
+isis:
+  area: '49.0001'
+  type: level-2
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv6: 2001:db8:1::7/64
+    node: r1
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv6: 2001:db8:1::15/64
+    node: r2
+  - ifindex: 1
+    ifname: GigabitEthernet0/1
+    ipv6: 2001:db8:1::2a/64
+    node: r3
+  linkindex: 1
+  name: Standard LAN link
+  node_count: 3
+  prefix:
+    ipv6: 2001:db8:1::/64
+  type: lan
+- interfaces:
+  - ifindex: 2
+    ifname: GigabitEthernet0/2
+    ipv6: 2001:db8:2::2/127
+    node: r1
+  - ifindex: 2
+    ifname: GigabitEthernet0/2
+    ipv6: 2001:db8:2::3/127
+    node: r2
+  linkindex: 2
+  name: Standard P2P link
+  node_count: 2
+  prefix:
+    ipv6: 2001:db8:2::2/127
+    prefix6: 127
+  type: p2p
+- interfaces:
+  - ifindex: 3
+    ifname: GigabitEthernet0/3
+    ipv6: 2001:db8:2::4/127
+    node: r2
+  - ifindex: 2
+    ifname: GigabitEthernet0/2
+    ipv6: 2001:db8:2::5/127
+    node: r3
+  linkindex: 3
+  name: Another P2P link
+  node_count: 2
+  prefix:
+    ipv6: 2001:db8:2::4/127
+    prefix6: 127
+  type: p2p
+module:
+- bgp
+- isis
+name: input
+nodes:
+  r1:
+    af:
+      ipv6: true
+      prefix6: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::15
+        name: r2
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::2a
+        name: r3
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::1
+        name: r4
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.7
+    box: cisco/iosv
+    device: iosv
+    id: 7
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv6: 2001:db8:1::7/64
+      isis:
+        passive: false
+      linkindex: 1
+      name: Standard LAN link
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv6: 2001:db8:1::15/64
+        node: r2
+      - ifname: GigabitEthernet0/1
+        ipv6: 2001:db8:1::2a/64
+        node: r3
+      type: lan
+    - ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv6: 2001:db8:2::2/127
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 2
+      name: Standard P2P link
+      neighbors:
+      - ifname: GigabitEthernet0/2
+        ipv6: 2001:db8:2::3/127
+        node: r2
+      type: p2p
+    isis:
+      af:
+        ipv6: true
+      area: '49.0001'
+      type: level-2
+    loopback:
+      ipv6: 2001:db8::7/128
+      prefix6: '128'
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.107
+      mac: 08:4f:a9:00:00:07
+    module:
+    - isis
+    - bgp
+    name: r1
+    router_id: 10.0.0.7
+  r2:
+    af:
+      ipv6: true
+      prefix6: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::7
+        name: r1
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::2a
+        name: r3
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::1
+        name: r4
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.21
+    box: cisco/iosv
+    device: iosv
+    id: 21
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv6: 2001:db8:1::15/64
+      isis:
+        passive: false
+      linkindex: 1
+      name: Standard LAN link
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv6: 2001:db8:1::7/64
+        node: r1
+      - ifname: GigabitEthernet0/1
+        ipv6: 2001:db8:1::2a/64
+        node: r3
+      type: lan
+    - ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv6: 2001:db8:2::3/127
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 2
+      name: Standard P2P link
+      neighbors:
+      - ifname: GigabitEthernet0/2
+        ipv6: 2001:db8:2::2/127
+        node: r1
+      type: p2p
+    - ifindex: 3
+      ifname: GigabitEthernet0/3
+      ipv6: 2001:db8:2::4/127
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 3
+      name: Another P2P link
+      neighbors:
+      - ifname: GigabitEthernet0/2
+        ipv6: 2001:db8:2::5/127
+        node: r3
+      type: p2p
+    isis:
+      af:
+        ipv6: true
+      area: '49.0001'
+      type: level-2
+    loopback:
+      ipv6: 2001:db8::15/128
+      prefix6: '128'
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.121
+      mac: 08:4f:a9:00:00:15
+    module:
+    - isis
+    - bgp
+    name: r2
+    router_id: 10.0.0.21
+  r3:
+    af:
+      ipv6: true
+      prefix6: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::7
+        name: r1
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::15
+        name: r2
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::1
+        name: r4
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.42
+    box: cisco/iosv
+    device: iosv
+    id: 42
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: GigabitEthernet0/1
+      ipv6: 2001:db8:1::2a/64
+      isis:
+        passive: false
+      linkindex: 1
+      name: Standard LAN link
+      neighbors:
+      - ifname: GigabitEthernet0/1
+        ipv6: 2001:db8:1::7/64
+        node: r1
+      - ifname: GigabitEthernet0/1
+        ipv6: 2001:db8:1::15/64
+        node: r2
+      type: lan
+    - ifindex: 2
+      ifname: GigabitEthernet0/2
+      ipv6: 2001:db8:2::5/127
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 3
+      name: Another P2P link
+      neighbors:
+      - ifname: GigabitEthernet0/3
+        ipv6: 2001:db8:2::4/127
+        node: r2
+      type: p2p
+    isis:
+      af:
+        ipv6: true
+      area: '49.0001'
+      type: level-2
+    loopback:
+      ipv6: 2001:db8::2a/128
+      prefix6: '128'
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.142
+      mac: 08:4f:a9:00:00:2a
+    module:
+    - isis
+    - bgp
+    name: r3
+    router_id: 10.0.0.42
+  r4:
+    af:
+      ipv6: true
+      prefix6: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::7
+        name: r1
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::15
+        name: r2
+        type: ibgp
+      - activate:
+          ipv6: true
+        as: 65000
+        ipv6: 2001:db8::2a
+        name: r3
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: cisco/iosv
+    device: iosv
+    id: 1
+    interfaces: []
+    loopback:
+      ipv6: 2001:db8::1/128
+      prefix6: '128'
+    mgmt:
+      ifname: GigabitEthernet0/0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - bgp
+    name: r4
+    router_id: 10.0.0.1
+provider: libvirt
