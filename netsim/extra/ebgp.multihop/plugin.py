@@ -13,7 +13,7 @@ def pre_transform(topology: Box) -> None:
   session_idx  = data.find_in_list(['ebgp.utils','bgp.session'],topology.plugin)
   multihop_idx = data.find_in_list([ _config_name ],topology.plugin)
 
-  if session_idx is not None and session_idx > multihop_idx:
+  if session_idx is not None and multihop_idx is not None and session_idx > multihop_idx:
     log.error(
       'ebgp.multihop plugin must be included after bgp.session/ebgp.utils plugin',
       log.IncorrectValue,'ebgp.multihop')
@@ -66,7 +66,7 @@ def pre_link_transform(topology: Box) -> None:
       if not 'loopback' in node:
         log.error(
           'Cannot establish EBGP multihop session from node {intf.name}: node has no loopback interface',
-          'ebgp.multihop',log.IncorrectValue)
+          log.IncorrectValue,'ebgp.multihop')
         continue
       for af in ['ipv4','ipv6']:
         if af in node.loopback:
