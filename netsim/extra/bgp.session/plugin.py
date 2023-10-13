@@ -1,3 +1,4 @@
+import typing
 from box import Box
 from netsim.utils import log,bgp as _bgp
 from netsim import api
@@ -18,7 +19,7 @@ def pre_link_transform(topology: Box) -> None:
 check_device_attribute_support -- using device BGP features, check whether the
 device supports the attribute applied to a BGP neighbor
 '''
-def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box) -> None:
+def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box) -> bool:
   global _config_name
 
   features = devices.get_device_features(ndata,topology.defaults)
@@ -28,15 +29,19 @@ def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: 
       f'Attribute {attr} used on BGP neighbor {neigh.name} is not supported by node {ndata.name} (device {ndata.device})',
       log.IncorrectValue,
       _config_name)
+    return False
 
   if not isinstance(enabled,list):
-    return
+    return True
 
   if not topology.provider in enabled:
     log.error(
       f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} when running with {topology.provider} provider',
       log.IncorrectValue,
       _config_name)
+    return False
+
+  return True
 
 '''
 Remove session attributes with local significance from BGP neighbors
@@ -48,22 +53,58 @@ def cleanup_neighbor_attributes(ndata: Box, topology: Box) -> None:
       ngb.pop(attr,None)
 
 '''
+Get a list of attributes to apply to IBGP or EBGP sessions
+'''
+def get_attribute_list(apply_list: typing.Any, topology: Box) -> list:
+  if apply_list is None or apply_list is True or (isinstance(apply_list,list) and '*' in apply_list):
+    return topology.defaults.bgp.attributes.ebgp_utils.attr
+
+  return list(apply_list)
+
+'''
+Apply attributes supported by bgp.session plugin to a single neighbor
+Returns False is some of the attributes are not supported
+'''
+def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], apply_list: list, topology: Box) -> bool:
+  global _config_name
+
+  OK = True
+  for attr in apply_list:
+    attr_value = None if intf is None else \
+                 intf.get('bgp',{}).get(attr,None)      # Get attribute value from interface if specified
+    attr_value = attr_value or node.bgp.get(attr,None)  # ... and try node attribute value if there's no interface value
+    if not attr_value:                                  # Attribute not defined in node or interface, move on
+      continue
+
+    # Check that the node(device) supports the desired attribute
+    OK = OK and check_device_attribute_support(attr,node,ngb,topology)
+    ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
+    api.node_config(node,_config_name)                  # And remember that we have to do extra configuration
+
+  return OK
+
+'''
 Copy local session attributes to BGP neighbors because we need
 them there in the configuration templates
 '''
 def copy_local_attributes(ndata: Box, topology: Box) -> None:
-  global _config_name
+  apply = ndata.get('bgp.session.apply',{ 'ebgp': None })     # By default we apply all session attributes only to EBGP neighbors
 
-  # Iterate over all ebgp.utils link/interface attributes
-  for (intf,ngb) in _bgp.intf_neighbors(ndata):
-    for attr in topology.defaults.bgp.attributes.ebgp_utils.attr:
-      attr_value = intf.get('bgp',{}).get(attr,None) or ndata.bgp.get(attr,None)
-      if not attr_value:                                  # Attribute not defined in node or interface, move on
-        continue
+  OK = True
+  if 'ibgp' in apply:                                         # Do we apply session attributes to IBGP neighbors?
+    apply_list = get_attribute_list(apply.ibgp,topology)      # Get attributes to apply to IBGP neighbors
+    for ngb in  _bgp.neighbors(ndata,select=['ibgp']):        # Iterate over all neighbors using node attributes
+      OK = OK and apply_neighbor_attributes(ndata,ngb,None,apply_list,topology)
 
-      check_device_attribute_support(attr,ndata,ngb,topology)
-      ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
-      api.node_config(ndata,_config_name)                 # And remember that we have to do extra configuration
+  if not OK:                                                  # Skip the second step if we encountered unsupported device
+    return                                                    # ... doesn't make sense to throw the same error(s) twice
+
+  if 'ebgp' in apply:                                         # Do we apply session attributes to EBGP neighbors?
+    apply_list = get_attribute_list(apply.ebgp,topology)      # Get attributes to apply to IBGP neighbors
+
+    # Iterate over neighbors that have associated interfaces (all EBGP neighbors are supposed to be directly connected)
+    for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
+      apply_neighbor_attributes(ndata,ngb,intf,apply_list,topology)
 
 '''
 For platforms that collect tcp_ao secrets in global management profiles

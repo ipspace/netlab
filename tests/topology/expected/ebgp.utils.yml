@@ -34,6 +34,7 @@ groups:
   as65001:
     members:
     - r1
+    - rr
   as65002:
     members:
     - r2
@@ -78,25 +79,39 @@ links:
     ipv4: 10.1.0.4/30
   role: external
   type: p2p
+- interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 10.1.0.9/30
+    node: r1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.10/30
+    node: rr
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  type: p2p
 - bgp:
     password: InVrf
   interfaces:
   - bgp:
       default_originate: true
-    ifindex: 3
-    ifname: Ethernet3
-    ipv4: 10.1.0.9/30
+    ifindex: 4
+    ifname: Ethernet4
+    ipv4: 10.1.0.13/30
     node: r1
   - bgp:
       allowas_in: 1
     ifindex: 2
     ifname: Ethernet2
-    ipv4: 10.1.0.10/30
+    ipv4: 10.1.0.14/30
     node: r2
-  linkindex: 3
+  linkindex: 4
   node_count: 2
   prefix:
-    ipv4: 10.1.0.8/30
+    ipv4: 10.1.0.12/30
   role: external
   type: p2p
   vrf: red
@@ -123,6 +138,14 @@ nodes:
       neighbors:
       - activate:
           ipv4: true
+        as: 65001
+        ipv4: 10.0.0.4
+        name: rr
+        password: Secret
+        rr: true
+        type: ibgp
+      - activate:
+          ipv4: true
         as: 65002
         default_originate: true
         ifindex: 1
@@ -142,6 +165,11 @@ nodes:
       next_hop_self: true
       password: Secret
       router_id: 10.0.0.1
+      session:
+        apply:
+          ebgp: null
+          ibgp:
+          - password
     box: arista/veos
     config:
     - bgp.session
@@ -175,20 +203,30 @@ nodes:
         node: r3
       role: external
       type: p2p
-    - bgp:
-        default_originate: true
-        password: InVrf
-      ifindex: 3
+    - ifindex: 3
       ifname: Ethernet3
       ipv4: 10.1.0.9/30
       linkindex: 3
+      name: r1 -> rr
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.10/30
+        node: rr
+      type: p2p
+    - bgp:
+        default_originate: true
+        password: InVrf
+      ifindex: 4
+      ifname: Ethernet4
+      ipv4: 10.1.0.13/30
+      linkindex: 4
       name: r1 -> r2
       neighbors:
       - bgp:
           allowas_in: 1
           password: InVrf
         ifname: Ethernet2
-        ipv4: 10.1.0.10/30
+        ipv4: 10.1.0.14/30
         node: r2
         vrf: red
       role: external
@@ -214,8 +252,8 @@ nodes:
           neighbors:
           - as: 65002
             default_originate: true
-            ifindex: 3
-            ipv4: 10.1.0.10
+            ifindex: 4
+            ipv4: 10.1.0.14
             name: r2
             password: InVrf
             type: ebgp
@@ -285,15 +323,15 @@ nodes:
         password: InVrf
       ifindex: 2
       ifname: Ethernet2
-      ipv4: 10.1.0.10/30
-      linkindex: 3
+      ipv4: 10.1.0.14/30
+      linkindex: 4
       name: r2 -> r1
       neighbors:
       - bgp:
           default_originate: true
           password: InVrf
-        ifname: Ethernet3
-        ipv4: 10.1.0.9/30
+        ifname: Ethernet4
+        ipv4: 10.1.0.13/30
         node: r1
         vrf: red
       role: external
@@ -320,7 +358,7 @@ nodes:
           - allowas_in: 1
             as: 65001
             ifindex: 2
-            ipv4: 10.1.0.9
+            ipv4: 10.1.0.13
             name: r1
             password: InVrf
             type: ebgp
@@ -399,6 +437,63 @@ nodes:
     module:
     - bgp
     name: r3
+    vrf:
+      as: 65000
+  rr:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ipv4: 10.0.0.1
+        name: r1
+        password: Secret
+        type: ibgp
+      next_hop_self: true
+      password: Secret
+      router_id: 10.0.0.4
+      rr: true
+      rr_cluster_id: 10.0.0.4
+      session:
+        apply:
+          ibgp:
+          - '*'
+    box: arista/veos
+    config:
+    - bgp.session
+    device: eos
+    id: 4
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: rr -> r1
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 10.1.0.9/30
+        node: r1
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.4/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:00:00:04
+    module:
+    - bgp
+    name: rr
     vrf:
       as: 65000
 plugin:
