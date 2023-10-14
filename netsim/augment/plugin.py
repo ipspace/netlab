@@ -135,6 +135,57 @@ def sort_plugins(topology: Box) -> None:
                       lambda p: getattr(pmap[p],'_requires',[]) + getattr(pmap[p],'_execute_after',[]))
   topology.Plugin = [ pmap[p] for p in topology.plugin ]      # And rebuild the list of plugin modules
 
+'''
+find_preceding_config: Utility function for custom config dependency sort
+
+The _sort.dependency routine needs a list of 'things' that have to be before the current 'thing' in the
+sorted output. For custom configs, that means the list of all extra configs that appear 'before' the
+current 'thing' in at least one of the nodes
+'''
+
+def find_preceding_configs(c: str, topology: Box) -> list:
+  before_set: typing.Set[str] = set()
+
+  for ndata in topology.nodes.values():                       # Iterate over all nodes (yeah, I know, we're in O(n^2) land at least)
+    if not 'config' in ndata:                                 # ... but this should be fast
+      continue
+    cfg = ndata.config                                        # Cache the config attribute value (see also: premature optimization)
+    if not c in cfg:                                          # current node not using the interesting config, move on
+      continue
+
+    before_set = before_set | set(cfg[:cfg.index(c)])         # Add all config requests before the current one to the before_set
+
+  return list(before_set)                                     # After iterating through nodes, return the list of what we collected
+
+'''
+sort_extra_config: Sort topology-wide custom configs
+
+Input:  'custom' config lists on nodes
+Output: topology-wide list of custom configurations sorted in 'at least one node has them in this order' order
+'''
+
+def sort_extra_config(topology: Box) -> list:
+  extra_set: typing.Set[str] = set()
+  for ndata in topology.nodes.values():                       # Iterate over all nodes
+    if not 'config' in ndata:                                 # Skip nodes without custom configs
+      continue
+    extra_set = extra_set | set(ndata.config)                 # and keep building the (unordered non-duplicate) set
+
+  extra_list = list(extra_set)                                # Turn set of extra configs into an unordered list
+  if not extra_list:                                          # If we got nothing useful, we were called by accident
+    return []                                                 # ... tell the caller there's nothing to do
+
+  return _sort.dependency(
+            extra_list,
+            lambda p: find_preceding_configs(p,topology))
+
+'''
+Initialize plugin subsystem:
+
+* Merge default- and topology plugins
+* Load all requested plugins (also checking the presence of their dependencies)
+* Sort plugins based on their _execute_after dependencies
+'''
 def init(topology: Box) -> None:
   data.types.must_be_list(parent=topology,key='defaults.plugin',path='',create_empty=True)    # defaults.plugin must be a list (if present)
   if topology.defaults.plugin:                                                                # If we have default plugins...
@@ -170,13 +221,20 @@ def init(topology: Box) -> None:
   if log.debug_active('plugin'):
     print(f'plug INIT: {topology.Plugin}')
 
+'''
+Execute a plugin action:
+
+* Iterate over all plugins
+* Try to get the 'action' attribute from the plugin
+* If successful, execute it.
+'''
 def execute(action: str, topology: Box) -> None:
-  if not 'Plugin' in topology:
+  if not 'Plugin' in topology:                                # No plugins, no worries
     return
 
-  for plugin in topology.Plugin:
-    if hasattr(plugin,action):
-      func = getattr(plugin,action)
-      if log.debug_active('plugin'):
+  for plugin in topology.Plugin:                              # Iterate over the loaded plugin modules
+    if hasattr(plugin,action):                                # Does the plugin have the required action?
+      func = getattr(plugin,action)                           # ... yes, fetch the function to call
+      if log.debug_active('plugin'):                          # ... do some logging to help the poor debugging souls
         print(f'plug {action}: {plugin}')
-      func(topology)
+      func(topology)                                          # ... and execute the plugin function

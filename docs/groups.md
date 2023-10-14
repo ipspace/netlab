@@ -47,9 +47,9 @@ The following groups have special meaning in *netlab*-generated Ansible inventor
 (custom-config)=
 ## Custom Configuration Templates
 
-You can building complex labs with functionality that is not yet part of *netlab* with the help of **[netlab config](netlab/config.md)** command that deploys custom configuration template to a set of lab devices. 
+You can building complex labs with functionality that is not yet part of *netlab* with the help of **[netlab config](netlab/config.md)** command that deploys a custom configuration template to a set of lab devices. 
 
-To make the deployment of custom configuration template(s) part of a regular lab creating process[^CC], use **config** group attribute that can specify either a single template or a list of templates.
+To make the deployment of custom configuration template(s) part of a regular lab initialization process[^CC], use **config** group- or node attribute that can specify either a single template or a list of templates.
 
 [^CC]: ... once your configuration templates are thoroughly tested ;)
 
@@ -67,6 +67,10 @@ groups:
     config: [ mpls-ldp.j2 ]
 
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
+```
+
+```{tip}
+**‌config** attributes from multiple overlapping groups (_anycast_ and _all_ in the above example) are merged on nodes that belong to multiple groups.
 ```
 
 The **config** parameter can also be specified on individual nodes, for example:
@@ -87,7 +91,11 @@ links: [ s1-s2, s2-s3 ]
 ```
 
 ```{tip}
-A **netlab config** command is executed by **netlab up** process for every template in every **config** parameter, regardless of whether it's specified on a group or a node. Excessive use of **config** parameters might thus result in slower lab deployment.
+Node **config** attributes are merged with the group **‌config** attributes. [Plugins](plugins.md) might append additional items to the node **‌config** attributes.
+```
+
+```{warning}
+_netlab_ sorts custom configuration templates in the order they are specified in groups and nodes to speed up their deployment. Specifying `custom: [ a,b ]` on one node and `custom: [ b,a ]` on another will result in a sorting loop and a fatal error.
 ```
 
 ## Setting Node Data in Groups

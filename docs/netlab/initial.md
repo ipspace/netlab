@@ -57,7 +57,9 @@ All other arguments are passed directly to ansible-playbook
 
 ## Initial Device Configurations
 
-Initial device configurations are created from inventory data and templates in `netsim/ansible/templates/initial` directory. Device-specific configuration template is selected using `network_device_type` or `ansible_network_os` value (making IOSv and CSR 1000v templates identical). See [](../dev/config/deploy.md) for more details.
+Initial device configurations are created from inventory data and templates in `netsim/ansible/templates/initial` directory[^USER_INIT]. Device-specific configuration template is selected using `network_device_type` or `ansible_network_os` value (making IOSv and CSR 1000v templates identical). See [](../dev/config/deploy.md) for more details.
+
+[^USER_INIT]: You can overwrite _netlab_ initial configuration templates with your own: store them in `templates/initial` directory of the current directory or `~/.netlab` directory. See [](../customize.md) for more information.
 
 The following initial configuration parameters are supported:
 
@@ -74,28 +76,23 @@ Default passwords and other default configuration parameters are supposed to be 
 
 ## Module Configurations
 
-Module-specific device configurations are created from templates in `netsim/ansible/templates/_module_` directory. Device-specific configuration template is selected using `netlab_device_type` or `ansible_network_os` value. 
+Module-specific device configurations are created from templates in `netsim/ansible/templates/_module_` directory[^USER_MOD]. Device-specific configuration template is selected using `netlab_device_type` or `ansible_network_os` value. 
+
+[^USER_MOD]: You can overwrite _netlab_ module-specific configuration templates with your own: store your templates in `templates/_module_` directory of the current directory or `~/.netlab` directory. See [](../customize.md) for more information.
 
 More details: 
 
 * [Module descriptions](../module-reference.md) contain list of supported model parameters.
 * [](../dev/config/deploy.md) describes the details of template search process
 * [](../dev/device-features.md) contains the configuration template guidelines.
+* You can [replace _netlab_ device configuration templates with your own](customize-templates)
 
 (netlab-initial-custom)=
 ## Custom Deployment Templates
 
-[Custom deployment templates](../groups.md#custom-configuration-templates) are specified in **config** group- or node parameter. `initial-config.ansible` playbook tries to find the target configuration template in user- (current) and system (`netsim/extra`) directories and uses node name, `netlab_device_type`, and `ansible_network_os` Ansible variables to allow you to create numerous device-specific configuration templates.
+[Custom deployment templates](../groups.md#custom-configuration-templates) are specified in **config** group- or node parameter. `initial-config.ansible` playbook used by **netlab initial** command tries to find the target configuration template in user-  and system (`netsim/extra`) directories and uses node name, `netlab_device_type`, and `ansible_network_os` Ansible variables to allow you to create numerous device-specific configuration templates.
 
-You'll find more details in _[](../dev/config/deploy.md)_ contributor documentation.
-
-**netlab initial** command assumes you want to deploy the custom templates in the order you specified them and therefore deploys them on a single device at a time unless you use the `--fast` parameter.
-
-```{warning}
-Numerous Ansible versions "optimize" task execution by rearranging the order of loop parameters, potentially resulting in custom configurations being applied out of order. As a workaround, the Ansible play deploying custom configuration templates executes on a single device at a time. 
-
-You can bypass that safety measure with `--fast` parameter, but don't complain if you get unexpected results.
-```
+You'll find more details in _[](dev-find-custom)_ documentation.
 
 ## Limiting the Scope of Configuration Deployments
 

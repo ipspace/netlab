@@ -6,9 +6,15 @@ You can also mix-and-match the two approaches. For example, you could have a gen
 
 ## Search Paths
 
-The Ansible playbooks try to find device-specific task lists or templates using *netlab_device_type* or *ansible_network_os* (when *netlab_device_type* is missing) Ansible variable, including a combination with *netlab_provider* (for provider-specific configuration). These variables are usually defined as device group variables in system settings.
+The Ansible playbooks used by **netlab initial** command try to find device-specific task lists or templates using *netlab_device_type* or *ansible_network_os* (when *netlab_device_type* is missing) Ansible variable, including a combination with *netlab_provider* (for provider-specific configuration). These variables are usually defined as device group variables in system settings.
 
-Ansible playbooks use the following search path to find configuration templates within `netsim/ansible/templates` directory (*config_module* is set to *initial* for initial device configuration):
+Ansible playbooks use the following search path to find configuration templates:
+
+* `templates` in current directory
+* `~/.netlab/templates`
+* `netsim/ansible/templates` Python package directory
+
+Within these directories, Ansible playbooks try to find one of these Jinja2 templates (*config_module* is set to *initial* for initial device configuration):
 
 ```
 - "{{ config_module }}/{{netlab_device_type}}-{{ netlab_provider }}.j2"
@@ -17,7 +23,7 @@ Ansible playbooks use the following search path to find configuration templates 
 - "{{ config_module }}/{{ansible_network_os}}.j2"
 ```
 
-Initial configuration deployment playbook uses this search path to find device/module specific Ansible task list within `netsim/ansible/tasks` directory (*config_module* is set to *initial* for initial device configuration):
+After finding the Jinja2 template, the initial configuration deployment playbook tries to find device/module-specific Ansible task list within `netsim/ansible/tasks` Python package directory to deploy the configuration (*config_module* is set to *initial* for initial device configuration):
 
 ```
 - "{{netlab_device_type}}/{{ config_module }}-{{ netlab_provider }}.yml"
@@ -30,14 +36,16 @@ Initial configuration deployment playbook uses this search path to find device/m
 - "deploy-config/{{ansible_network_os}}.yml"
 ```
 
+(dev-find-custom)=
 ## Finding Custom Configuration Templates
 
 The following paths are searched when looking for custom configuration templates specified in **config** list or through a plugin:
 
-* Current directory (user plugins)
+* Current directory (custom configuration templates and user plugins)
+* `~/.netlab` directory (custom configuration templates and user plugins)
 * `netsim/extra` directory (system plugins)
 
-When looking for a custom configuration template in the above search path, the following names are tried (*custom_config* is the name of custom configuration template or directory):
+When looking for a custom configuration template in the above search path, the following names are tried (*config* is the name of custom configuration template or directory):
 
 ```
 - "{{ config + '/' + inventory_hostname + '.' + netlab_device_type + '-' + netlab_provider + '.j2' }}"
