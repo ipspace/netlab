@@ -1,7 +1,7 @@
 Release notes
 =============
 
-**[Release 1.6.3](release-1.6.3) (2023-10-xx)**
+**[Release 1.6.3](release-1.6.3) (2023-10-06)**
 
 * [EBGP multihop sessions](plugins/ebgp.multihop.md)
 * [ebgp.utils plugin](plugins/ebgp.utils.md) supports TCP-AO, configurable BGP timers, and Generic TTL Security Mechanism (TTL session protection)
