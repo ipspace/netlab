@@ -49,7 +49,7 @@ because they are neighbors' attributes, not ours
 '''
 def cleanup_neighbor_attributes(ndata: Box, topology: Box) -> None:
   for ngb in _bgp.neighbors(ndata):
-    for attr in topology.defaults.bgp.attributes.ebgp_utils.local:
+    for attr in topology.defaults.bgp.attributes.session.attr:
       ngb.pop(attr,None)
 
 '''
@@ -57,7 +57,7 @@ Get a list of attributes to apply to IBGP or EBGP sessions
 '''
 def get_attribute_list(apply_list: typing.Any, topology: Box) -> list:
   if apply_list is None or apply_list is True or (isinstance(apply_list,list) and '*' in apply_list):
-    return topology.defaults.bgp.attributes.ebgp_utils.attr
+    return topology.defaults.bgp.attributes.session.attr
 
   return list(apply_list)
 

@@ -12,6 +12,25 @@
   neighbor {{ n[af] }} bfd
 {%   endif %}
 {%- endmacro %}
+
+{% macro ebgp_neighbor(n,af) -%}
+{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%   if n.allowas_in is defined %}
+  neighbor {{ peer }} allowas-in {{ n.allowas_in }}
+{%   endif %}
+{%   if n.as_override is defined %}
+  neighbor {{ peer }} as-override
+{%   endif %}
+{%   if n.default_originate is defined %}
+  neighbor {{ peer }} default-originate
+{%   endif %}
+{%   if n.remove_private_as|default([]) %}
+{%     set rpa = { 'on': '', 'replace': 'all replace-AS', 'all': 'all' } %}
+{%     for rpo in n.remove_private_as if rpo in rpa %}
+  neighbor {{ n[af] }} remove-private-AS {{ rpa[rpo] }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}
 !
 router bgp {{ bgp.as }}
 {% for n in bgp.neighbors %}
@@ -22,18 +41,11 @@ router bgp {{ bgp.as }}
 !
 ! Global address families
 {% for af in ['ipv4','ipv6'] if af in bgp %}
- address-family {{ af }}
 {%   for n in bgp.neighbors if n[af] is defined %}
-{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
-{%     if n.allowas_in is defined %}
-  neighbor {{ peer }} allowas-in {{ n.allowas_in }}
+{%     if loop.first %}
+ address-family {{ af }}
 {%     endif %}
-{%     if n.as_override is defined %}
-  neighbor {{ peer }} as-override
-{%     endif %}
-{%     if n.default_originate is defined %}
-  neighbor {{ peer }} default-originate
-{%     endif %}
+{{     ebgp_neighbor(n,af) }}
 {%   endfor %}
 {% endfor %}
 
@@ -42,13 +54,7 @@ router bgp {{ bgp.as }}
  address-family l2vpn evpn
 {%  endif %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
-{%     if n.allowas_in is defined %}
-  neighbor {{ peer }} allowas-in {{ n.allowas_in }}
-{%     endif %}
-{%     if n.as_override is defined %}
-  neighbor {{ peer }} as-override
-{%     endif %}
+{{     ebgp_neighbor(n,af) }}
 {%   endfor %}
 {% endfor %}
 
@@ -61,15 +67,7 @@ router bgp {{ bgp.as }}
  address-family {{ af }} vrf {{ vname }}
 {%         endif %}
 {{         ebgp_session(n,af) }}
-{%         if n.allowas_in is defined %}
-  neighbor {{ peer }} allowas-in {{ n.allowas_in }}
-{%         endif %}
-{%         if n.as_override is defined %}
-  neighbor {{ peer }} as-override
-{%         endif %}
-{%         if n.default_originate is defined %}
-  neighbor {{ peer }} default-originate
-{%         endif %}
+{{         ebgp_neighbor(n,af) }}
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}

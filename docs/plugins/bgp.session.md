@@ -2,6 +2,13 @@
 
 The **bgp.session** plugin (initially contributed by Stefano Sasso) implements numerous BGP session ~~nerd knobs~~ attributes, from BGP session protection to AS path manipulation.
 
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
 ## Supported BGP Attributes
 
 The plugin adds the following BGP session attributes:
@@ -12,6 +19,7 @@ The plugin adds the following BGP session attributes:
 * **bgp.default_originate** is a boolean attribute that controls whether a BGP router advertises a default route to its neighbor(s).
 * **bgp.gtsm** is an integer attribute that enables the Generic TTL Security Mechanism (GTSM). A *true* value sets it to 1 (remote router can be up to one hop away).
 * **bgp.password** is a string attribute that specifies the MD5  or TCP-AO password used on EBGP sessions.
+* **bgp.remove_private_as** is a boolean/string/list attribute that describes the desired removal of private autonomous system(s) from AS path. See [](bgp-session-remove-private-as) section for more details.
 * **bgp.tcp_ao** is an attribute that enables TCP-AO on a BGP session. The attribute value *true* enables TCP-AO with HMAC-SHA1-96 algorithm; you can specify the desired algorithm as a string value of **bgp.tcp_ao** parameter.
 * **bgp.timers** is a dictionary of BGP session timers. It has three elements:
 
@@ -29,6 +37,7 @@ BGP session attributes can be specified on global, node, link, or interface (nod
 | default_originate     |    ❌   |  ✅  |  ❌   |    ✅     |
 | gtsm                  |   ✅   |  ✅  |  ✅  |    ✅     |
 | password              |   ✅   |  ✅  |  ✅  |    ✅     |
+| remove_private_as     |    ❌   |  ❌   |  ❌   |    ✅     |
 | tcp_ao                |   ✅   |  ✅  |  ✅  |    ✅     |
 | timers                |   ✅   |  ✅  |  ✅  |    ✅     |
 
@@ -55,18 +64,18 @@ The plugin implements generic BGP session features for the following platforms:
 
 The plugin implements AS-path-mangling nerd knobs for the following platforms:
 
-| Operating system    | allowas_in | AS<br>override |
-| ------------------- | :--------: | :---------: |
-| Arista EOS          |      ✅    |     ✅      |
-| Cisco IOSv          |      ✅    |     ✅      |
-| Cisco IOS-XE        |      ✅    |     ✅      |
-| Cumulus Linux       |      ✅    |     ✅      |
-| FRR                 |      ✅    |     ✅      |
-| Juniper vMX/vPTX/vSRX |     ❌    |     ✅      |
-| Mikrotik RouterOS 7 |      ✅    |     ✅      |
-| Nokia SR Linux      |      ✅    |     ✅      |
-| Nokia SR OS         |      ✅    |     ✅      |
-| VyOS                |      ✅    |     ✅      |
+| Operating system    | Allow<br>AS in | AS<br>override | Remove<br>private AS |
+| ------------------- | :--: | :--: | :--: |
+| Arista EOS          |  ✅  |  ✅  |  ✅  |
+| Cisco IOSv          |  ✅  |  ✅  |  ✅  |
+| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |
+| FRR                 |  ✅  |  ✅  |  ✅  |
+| Juniper vMX/vPTX/vSRX | ❌  |  ✅  |   ❌  |
+| Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |
+| Nokia SR Linux      |  ✅  |  ✅  |   ❌  |
+| Nokia SR OS         |  ✅  |  ✅  |   ❌  |
+| VyOS                |  ✅  |  ✅  |   ❌  |
 
 ## Applying BGP Session Attributes to IBGP Sessions
 
@@ -104,6 +113,35 @@ bgp.session.apply:
   ibgp: [ password ]
   ebgp: [ default_originate, allowas_in, as_override ]
 ```
+
+(bgp-session-remove-private-as)=
+## Remove Private AS Options
+
+This plugin accepts the following values of the **bgp.remove_private_as** attribute.
+
+* **True** (or **on**[^QON]): enable simple removal of private AS on egress updates
+* **all**: remove all instances of private AS numbers in egress updates
+* **replace**: replace all instances of private AS number with the router's own AS number in egress updates
+* **ingress**: remove private AS numbers from ingress updates
+* **ingress-replace**: replace all private AS numbers with peer AS number in ingress updates
+
+[^QON]: You have to quote the **on** string, otherwise the Python YAML parser treats it as a boolean. For example, you have to specify `bgp.remove_private_as: [ 'on', ingress ]`
+
+You can specify the **bgp.remove_private_as** attribute as a boolean value (equivalent to **on**), as a single string value, or as a list of string values in case you have to specify egress and ingress behavior.
+
+The implementations of **neighbor remove-private-as** command vary widely across supported network devices as described in the following table:
+
+| Operating system    | on | all | replace | ingress | ingress-replace |
+| ------------------- | :--: | :--: | :--: | :--: | :--: |
+| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOSv          |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
+| Cisco IOS-XE        |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+| FRR                 |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+
+**Notes:**
+
+* Cisco IOSv/IOS-XE do not accept **all** or **replace** option when the local BGP AS number is a private AS number.
 
 ## Test Topology
 
