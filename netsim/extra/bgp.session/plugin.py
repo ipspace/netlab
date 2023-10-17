@@ -16,43 +16,6 @@ def pre_link_transform(topology: Box) -> None:
       _config_name)
 
 '''
-check_device_attribute_support -- using device BGP features, check whether the
-device supports the attribute applied to a BGP neighbor
-'''
-def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box) -> bool:
-  global _config_name
-
-  features = devices.get_device_features(ndata,topology.defaults)
-  enabled = features.bgp.get(attr,None)
-  if not enabled:
-    log.error(
-      f'Attribute {attr} used on BGP neighbor {neigh.name} is not supported by node {ndata.name} (device {ndata.device})',
-      log.IncorrectValue,
-      _config_name)
-    return False
-
-  if not isinstance(enabled,list):
-    return True
-
-  if not topology.provider in enabled:
-    log.error(
-      f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} when running with {topology.provider} provider',
-      log.IncorrectValue,
-      _config_name)
-    return False
-
-  return True
-
-'''
-Remove session attributes with local significance from BGP neighbors
-because they are neighbors' attributes, not ours
-'''
-def cleanup_neighbor_attributes(ndata: Box, topology: Box) -> None:
-  for ngb in _bgp.neighbors(ndata):
-    for attr in topology.defaults.bgp.attributes.session.attr:
-      ngb.pop(attr,None)
-
-'''
 Get a list of attributes to apply to IBGP or EBGP sessions
 '''
 def get_attribute_list(apply_list: typing.Any, topology: Box) -> list:
@@ -77,7 +40,7 @@ def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], a
       continue
 
     # Check that the node(device) supports the desired attribute
-    OK = OK and check_device_attribute_support(attr,node,ngb,topology)
+    OK = OK and _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name)
     ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
     api.node_config(node,_config_name)                  # And remember that we have to do extra configuration
 
@@ -162,7 +125,7 @@ def post_transform(topology: Box) -> None:
     if not 'bgp' in ndata.module:                           # Skip nodes not running BGP
       continue
 
-    cleanup_neighbor_attributes(ndata,topology)             # Generic neighbor attribute cleanup
+    _bgp.cleanup_neighbor_attributes(ndata,topology,topology.defaults.bgp.attributes.session.attr)
     copy_local_attributes(ndata,topology)
     process_tcpao_secrets(ndata,topology)
     process_bfd_requests(ndata,topology)
