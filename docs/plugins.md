@@ -7,6 +7,7 @@
    :maxdepth: 1
 
    plugins/bgp.session.md
+   plugins/bgp.policy.md
    plugins/ebgp.multihop.md
    plugins/multilab.md
 ```
