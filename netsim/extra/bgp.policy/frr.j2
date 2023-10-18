@@ -1,0 +1,53 @@
+{% import '_route_map_ios.j2' as routemap %}
+{% macro ebgp_neighbor(n,af) -%}
+{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%   if 'weight' in n %}
+    neighbor {{ peer }} weight {{ n.weight }}
+{%   endif %}
+{{   routemap.apply_route_map(n,af) }}
+{%- endmacro %}
+!
+{% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) -%}
+{{   routemap.common_route_map_entry(p_entry) }}
+{%- endcall %} 
+!
+router bgp {{ bgp.as }}
+!
+! Global address families
+{% if 'locpref' in bgp %}
+  bgp default local-preference {{ bgp.locpref }}
+{% endif %}
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{%     if loop.first %}
+  address-family {{ af }}
+{%     endif %}
+{{     ebgp_neighbor(n,af) }}
+{%   endfor %}
+{% endfor %}
+!
+{% for n in bgp.neighbors if n.evpn|default(False) and n.type == 'ebgp' %}
+{%  if loop.first %}
+  address-family l2vpn evpn
+{%  endif %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     ebgp_neighbor(n,af) }}
+{%   endfor %}
+{% endfor %}
+!
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+router bgp {{ bgp.as }} vrf {{ vname }}
+{% if 'locpref' in bgp %}
+  bgp default local-preference {{ bgp.locpref }}
+{% endif %}
+{%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
+{%         if loop.first %}
+  address-family {{ af }}
+{%         endif %}
+{{         ebgp_neighbor(n,af) }}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
