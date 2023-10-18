@@ -1,22 +1,22 @@
 {% import '_route_map_ios.j2' as routemap %}
-{% macro ebgp_neighbor(n,af,vrf) -%}
+{% macro ebgp_neighbor(n,af) -%}
 {%   if 'weight' in n %}
-  neighbor {{ n[af] }} weight {{ n.weight }}
+    neighbor {{ n[af] }} weight {{ n.weight }}
 {%   endif %}
-{{   routemap.apply_route_map(n,af,vrf) }}
+{{   routemap.apply_route_map(n,af) }}
 {%- endmacro %}
 !
-{% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) %}
+{% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) -%}
 {{   routemap.common_route_map_entry(p_entry) }}
-{% endcall %} 
+{%- endcall %} 
 !
 router bgp {{ bgp.as }}
 !
 ! Global address families
 {% for af in ['ipv4','ipv6'] if af in bgp %}
- address-family {{ af }}
+  address-family {{ af }}
 {%   for n in bgp.neighbors if n[af] is defined %}
-{{     ebgp_neighbor(n,af,'') }}
+{{     ebgp_neighbor(n,af) }}
 {%   endfor %}
 {% endfor %}
 !
@@ -25,9 +25,9 @@ router bgp {{ bgp.as }}
 {%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {%         if loop.first %}
- address-family {{ af }} vrf {{ vname }}
+  address-family {{ af }} vrf {{ vname }}
 {%         endif %}
-{{         ebgp_neighbor(n,af,vname) }}
+{{         ebgp_neighbor(n,af) }}
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}

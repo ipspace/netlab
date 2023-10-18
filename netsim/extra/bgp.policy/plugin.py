@@ -32,7 +32,7 @@ _compound: dict = {}
 
 '''
 Apply attributes supported by bgp.policy plugin to a single neighbor
-Returns False is some of the attributes are not supported
+Returns True if at least some relevant attributes were found
 '''
 def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool:
   global _config_name,_direct,_compound,_attr_list
@@ -42,21 +42,31 @@ def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bo
     _compound = topology.defaults.bgp.attributes.p_attr.compound
     _attr_list = _direct + list(_compound.keys())
 
-  OK = True
+  Found = False
   for attr in _attr_list:
     attr_value = intf.get('bgp',{}).get(attr,None)      # Get attribute value from interface
     if not attr_value:                                  # Attribute not defined on interface, move on
       continue
 
     # Check that the node(device) supports the desired attribute
-    OK = OK and _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name)
-    if attr in _direct:                                 # Direct attributes can be applied to neighbors
-      ngb[attr] = attr_value
-    elif attr in _compound:                             # Compound attributes have to be applied to route maps
+    if not _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name):
+      continue
+
+    Found = True
+    ngb[attr] = attr_value                              # Apply attribute value to the neighbor
+                                                        # ... some implementations can apply compound attributes directly
+    if attr in _compound:                               # Compound attributes have to be applied to route maps
       append_policy_attribute(ngb,attr,_compound[attr],attr_value)
     api.node_config(node,_config_name)                  # And remember that we have to do extra configuration
 
-  return OK
+  return Found
+
+'''
+set_policy_name -- set the neighbor-specific prefix for the policy objects needed for that neighbor
+'''
+def set_policy_name(intf: Box, ngb: Box, policy_idx: int) -> None:
+  vrf_pfx = f'vrf-{intf.vrf}-' if 'vrf' in intf else ''
+  ngb._policy_name = f'{vrf_pfx}{ngb.name}-{policy_idx}'
 
 '''
 post_transform hook
@@ -71,5 +81,8 @@ def post_transform(topology: Box) -> None:
       continue
 
     _bgp.cleanup_neighbor_attributes(ndata,topology,topology.defaults.bgp.attributes.session.attr)
+    policy_idx = 0
     for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
-      apply_policy_attributes(ndata,ngb,intf,topology)
+      policy_idx += 1
+      if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
+        set_policy_name(intf,ngb,policy_idx)                # ... set the per-neighbor policy name
