@@ -41,9 +41,12 @@ def intf_neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) 
 check_device_attribute_support -- using device BGP features, check whether the
 device supports the attribute applied to a BGP neighbor
 '''
-def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box, module: str) -> bool:
+def get_device_bgp_feature(attr: str, ndata: Box, topology: Box) -> typing.Optional[typing.Any]:
   features = devices.get_device_features(ndata,topology.defaults)
-  enabled = features.bgp.get(attr,None)
+  return features.bgp.get(attr,None)
+
+def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box, module: str) -> bool:
+  enabled = get_device_bgp_feature(attr,ndata,topology)
   if not enabled:
     log.error(
       f'Attribute {attr} used on BGP neighbor {neigh.name} is not supported by node {ndata.name} (device {ndata.device})',

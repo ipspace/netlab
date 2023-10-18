@@ -82,7 +82,20 @@ def post_transform(topology: Box) -> None:
 
     _bgp.cleanup_neighbor_attributes(ndata,topology,topology.defaults.bgp.attributes.session.attr)
     policy_idx = 0
+
+    # Get _default_locpref feature flag (could be None), then figure out if we need to copy
+    # node-level locpref to all EBGP neighbors. That thest is a bit convolutaed to make
+    # sure we don't get tripped up by None values
+    #
+    default_locpref = _bgp.get_device_bgp_feature('_default_locpref',ndata,topology)
+    copy_locpref = False if default_locpref else 'locpref' in ndata.bgp
+
+    # Now iterate over all EBGP neighbors (global and VRF) and apply bgp.policy interface
+    # attributes to the neighbors
+    #
     for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
       policy_idx += 1
+      if copy_locpref and not intf.get('bgp.locpref',False):
+        intf.bgp.locpref = ndata.bgp.locpref
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
         set_policy_name(intf,ngb,policy_idx)                # ... set the per-neighbor policy name
