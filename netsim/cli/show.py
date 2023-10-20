@@ -23,6 +23,7 @@ from .show_commands import outputs as _outputs
 from .show_commands import reports as _reports
 from .show_commands import providers as _providers
 from .show_commands import attributes as _attributes
+from .show_commands import defaults as _defaults
 
 show_dispatch: dict = {
   'images': {
@@ -56,6 +57,10 @@ show_dispatch: dict = {
   'attributes': {
     'exec':  _attributes.show,
     'parse': _attributes.parse
+  },
+  'defaults': {
+    'exec':  _defaults.show,
+    'parse': _defaults.parse
   }
 }
 

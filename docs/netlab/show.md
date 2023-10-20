@@ -5,6 +5,7 @@
 The following settings can be displayed:
 
 * **[attributes](netlab-show-attributes)** -- Supported lab topology attributes
+* **[defaults](netlab-show-defaults)** -- User/system [defaults](../defaults.md)
 * **[devices](netlab-show-devices)** -- Supported devices
 * **[images](netlab-show-images)** -- Vagrant box names or container names for all supported devices or a single device
 * **[module](netlab-show-modules)** -- Configuration modules
@@ -135,6 +136,60 @@ weight:
   max_value: 32767
   min_value: 0
   type: int
+```
+
+(netlab-show-defaults)=
+## Display User/System Defaults
+
+The **netlab show defaults** displays _netlab_ defaults collected from [user/system default files](../defaults.md):
+
+```text
+usage: netlab show defaults [-h] [--system] [--format {table,text,yaml}]
+                            [--plugin PLUGIN [PLUGIN ...]]
+                            [match]
+
+Display (a subset) of system/user defaults
+
+positional arguments:
+  match                 Display defaults within the specified subtree
+
+options:
+  -h, --help            show this help message and exit
+  --system              Display system information (without user defaults)
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
+  --plugin PLUGIN [PLUGIN ...]
+                        Add plugin attributes to the system defaults
+
+```
+
+**Notes**
+
+* The `--plugin` argument must be the last parameter on the command line -- all tokens specified after it are added to the list of plugins
+* The displayed information does not include lab-specific defaults specified in lab topology or [alternate default file locations](defaults-locations).
+* You can also display system defaults with `netlab inspect defaults` (requires a running lab) or `netlab create -o yaml:defaults` (requires a working topology file)
+
+**Examples**
+
+Display [graph output module](../outputs/graph.md) defaults (**outputs.graph**):
+
+```text
+$ netlab show defaults outputs.graph
+
+netlab default settings within the outputs.graph subtree
+=============================================================================
+
+as_clusters: true
+colors:
+  as: '#e8e8e8'
+  ebgp: '#b21a1a'
+  ibgp: '#613913'
+  node: '#ff9f01'
+  stub: '#d1bfab'
+interface_labels: false
+margins:
+  as: 16
+node_address_label: true
 ```
 
 (netlab-show-devices)=
