@@ -8,6 +8,13 @@ The data transformation has three major steps:
 * [Global](#global-data-transformation), [node](#node-data-transformation) and [link](#link-data-transformation) data transformation
 * [Final Steps and Cleanup](#final-steps-and-cleanup)
 
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
 ## Setup Phase
 
 * Read topology file
@@ -129,3 +136,35 @@ For every node using the specified module, execute **node_** hook (**node_pre_de
 ### Link-Level Module Hooks
 
 For every link that has at least one node using the specified module, execute **link_** hook (**link_pre_default**, **link_pre_transform**, **link_post_transform**).
+
+## Debugging the Transformation Process
+
+`netlab create` command (the primary user of the transformation process) has a hidden `--debug` option that sets numerous debugging flags, allowing you to debug a subset of transformation components.
+
+The following debugging flags can be used in _netlab_ release 1.6.4[^DF] to debug the core components:
+
+* **all**: turn on all debugging flags
+* **addr**: debug addressing pools
+* **addressing**: debug IPAM logic
+* **cli**: debug CLI actions
+* **defaults**: debug user/system defaults
+* **groups**: debug netlab group processing
+* **links**: debug the core link transformation code
+* **modules**: debug generic configuration module routines
+* **plugin**: debug plugin loading process and plugin calls
+* **template**: debug common Jinja2 templating routines
+* **validate**: debug the data validation logic
+
+Some modules are so complex that we gave them separate debugging flags:
+
+* **vlan**: debug VLAN module
+* **vrf**: debug VRF module
+
+You can also debug components involved in lab management process:
+
+* **external**: debug invocation of external programs
+* **libvirt**: debug _libvirt_ provider
+* **status**: debug the 'lab status' code
+* **quirks**: debug device quirks code
+
+[^DF]: Execute `netlab create --debug help` to display the up-to-date set of debugging flags. The error message will tell you `help` value is an invalid choice for the `--debug` argument but also display the valid values.
