@@ -4,6 +4,7 @@
 
 The following settings can be displayed:
 
+* **[attributes](netlab-show-attributes)** -- Supported lab topology attributes
 * **[devices](netlab-show-devices)** -- Supported devices
 * **[images](netlab-show-images)** -- Vagrant box names or container names for all supported devices or a single device
 * **[module](netlab-show-modules)** -- Configuration modules
@@ -19,6 +20,121 @@ The system settings can be displayed as a table, as raw text that is easy to par
    :depth: 2
    :local:
    :backlinks: none
+```
+
+(netlab-show-attributes)=
+## Display Supported Lab Topology Attributes
+
+The **netlab show attributes** command displays known lab topology attributes and their expected data types (please note that the optional `plugin` argument has to be the last argument in the command line):
+
+```text
+$ netlab show attributes -h
+usage: netlab show attributes [-h] [--system] [--format {table,text,yaml}] [-m MODULE]
+                              [--plugin PLUGIN [PLUGIN ...]]
+                              [match]
+
+Display supported global- or module-specific attributes
+
+positional arguments:
+  match                 Display a subset of attributes
+
+options:
+  -h, --help            show this help message and exit
+  --system              Display system information (without user defaults)
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
+  -m MODULE, --module MODULE
+                        Display information for a single module
+  --plugin PLUGIN [PLUGIN ...]
+                        Add plugin attributes to the system defaults
+```
+
+**Examples:**
+
+* Display global VLAN attributes
+
+```text
+$ netlab show attributes vlan
+
+You can use the following global vlan lab topology attributes:
+=============================================================================
+
+id:
+  max_value: 4095
+  min_value: 1
+  type: int
+mode:
+  type: str
+  valid_values:
+  - bridge
+  - irb
+  - route
+prefix: null
+vni:
+  max_value: 16777215
+  min_value: 1
+  type: int
+
+=============================================================================
+See https://netlab.tools/dev/validation/ for more data type- and
+attribute validation details.
+```
+
+* Display SR-MPLS module attributes using YAML format to remove header and footer text
+
+```yaml
+$ netlab show attributes --module sr --format yaml
+---
+global:
+  ipv6_sid_offset:
+    min_value: 1
+    type: int
+  srgb_range_size:
+    min_value: 1
+    type: int
+  srgb_range_start:
+    min_value: 1
+    type: int
+node:
+  ipv6_sid_offset:
+    min_value: 1
+    type: int
+  srgb_range_size:
+    min_value: 1
+    type: int
+  srgb_range_start:
+    min_value: 1
+    type: int
+```
+
+* Display BGP interface attributes
+
+```yaml
+$ netlab show attributes --module bgp interface --format yaml
+---
+local_as: asn
+replace_global_as: bool
+```
+
+* Display BGP interface attributes when using **bgp.policy** plugin
+
+```
+$ netlab show attributes --module bgp --format yaml interface --plugin bgp.policy
+---
+local_as: asn
+locpref:
+  max_value: 4294967295
+  min_value: 0
+  type: int
+med:
+  max_value: 32767
+  min_value: 0
+  type: int
+replace_global_as: bool
+weight:
+  max_value: 32767
+  min_value: 0
+  type: int
 ```
 
 (netlab-show-devices)=
