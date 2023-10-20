@@ -8,6 +8,7 @@ import netaddr
 import re
 from box import Box
 from ..utils import log
+from . import global_vars
 
 """
 Common error checking routines:
@@ -35,6 +36,7 @@ def wrong_type_message(
       value: typing.Any,                                # Value we got
       key: typing.Optional[str] = None,                 # Optional key within the object
       context: typing.Optional[typing.Any] = None,      # Optional context
+      data_name: typing.Optional[str] = None,           # Optional validation context
       module: typing.Optional[str] = None,              # Module name to display in error messages
                       ) -> None:
   global wrong_type_help
@@ -61,10 +63,53 @@ def wrong_type_message(
     path = f'attribute {path}'
 
   log.error(
-    f'{path} must be {expected}{ctxt}',
+    f'{path} must be {expected}{ctxt}'+attr_help(module,data_name),
     log.IncorrectValue if wrong_value else log.IncorrectType,
     module or 'topology')
   return
+
+#
+# Get attribute help -- return 'use netlab show attributes XYZ' help message
+#
+attr_help_cache: typing.Optional[Box] = None          # Remember which messages we already printed out
+
+def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> str:
+  global attr_help_cache
+
+  if data_name is None or module is None:             # We're missing crucial information, cannot provide any help
+    return ''
+
+  if attr_help_cache is None:                         # Initialize help messages cache if needed
+    from ..data import get_empty_box
+    attr_help_cache = get_empty_box()
+
+  topology = global_vars.get_topology()               # Try to get current lab topology
+  if not topology:                                    # ... not initialized yet, too bad
+    return ''
+  
+  defaults = topology.defaults                        # Get topology defaults
+  attr_type = data_name.split(' ')[-1].lower()        # Try to extract the validation context ('lower' is needed for VLAN)
+  attrs     = defaults.attributes                     # Assume global validation context
+  mod_cache = 'global'
+
+  if module in defaults and 'attributes' in defaults[module]:
+    attrs = defaults[module].attributes               # Looks like we're within a valid module validation context
+    mod_cache = module
+  else:
+    module = ''                                       # Otherwise assume global context, clear 'module' information
+
+  # No need to print out the same help message twice, check the message cache
+  #
+  if mod_cache in attr_help_cache and attr_type in attr_help_cache[mod_cache]:
+    return ''
+
+  attr_help_cache[mod_cache][attr_type] = True        # Remember we were asked to provide this help message
+  if not attr_type in attrs:                          # ... but it makes no sense to give extra help if the show command
+    return ''                                         # ... won't print the desired attributes
+
+  # Looks like we passed all sanity checks, return (hopefully useful) extra information
+  #
+  return f"\n... use 'netlab show attributes{' --module '+module if module else ''} {attr_type}' to display valid attributes"
 
 def check_valid_values(
       path: str,                                        # Path to the value
@@ -121,6 +166,7 @@ Required input arguments:
 Optional arguments:
 
   context       - Additional data identifying the context (usually used for links)
+  data_name     - Context of the element to check (example: bgp node), used for error messages
   module        - The caller module (used for error messages)
   valid_values  - list of valid values (applicable to all data types)
   create_empty  - Create an empty element if the value is missing
@@ -191,6 +237,7 @@ def post_validation(
       key: typing.Optional[str],
       expected: typing.Any,
       context: typing.Optional[str] = None,
+      data_name: typing.Optional[str] = None,
       module: typing.Optional[str] = None,
       abort: bool = False,
       test_function: typing.Any = None) -> typing.Any:
@@ -201,9 +248,8 @@ def post_validation(
         wrong_type_message(
           path=path,
           key=None if parent is None else key,
-          expected=expected,
-          value=value,context=context,
-          module=module)
+          expected=expected,value=value,
+          context=context,data_name=data_name,module=module)
       if abort:
         raise log.IncorrectType()
       return None
@@ -232,6 +278,7 @@ def type_test(
           key: str,                                         # Key within the parent object, may include dots.
           path: str,                                        # Path to parent object, used in error messages
           context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
+          data_name: typing.Optional[str] = None,           # Optional data validation context
           module: typing.Optional[str] = None,              # Module name to display in error messages
           valid_values: typing.Optional[list] = None,       # List of valid values
           create_empty: typing.Optional[bool] = None,       # Do we need to create an empty value?
@@ -261,6 +308,7 @@ def type_test(
                 key=key,
                 expected=expected,
                 context=context,
+                data_name=data_name,
                 module=module,
                 abort=abort,
                 test_function=test_function)
