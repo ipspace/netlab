@@ -50,16 +50,29 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
   module: typing.Optional[object] = None
   config_name = None
 
-  plugin_is_dir = os.path.isdir(module_path)
-  if plugin_is_dir:
+  plugin_is_dir = os.path.isdir(module_path)                # Plugin name could specify a directory
+  if plugin_is_dir:                                         # If we're dealing with a directory...
     dir_path = module_path
-    module_path = module_path + '/plugin.py'
-    config_name = plugin
-    if not os.path.exists(module_path):
-      return None
+    config_name = None
 
-  module_name = plugin.replace('.py','')
-  module_name = f'netlab.plugin.{module_name}'
+    for fn in ('__init__.py','plugin.py'):                  # ... try to find the Python plugin file within that directory
+      if not os.path.exists(dir_path+"/"+fn):
+        continue
+
+      config_name = plugin                                  # Remember plugin name as configuration directory name
+      module_path = module_path + '/' + fn                  # Remember the path to the Python file
+
+      if '__init__' in fn:
+        module_name = f'netlab.extra.{plugin}'              # Deal with the plugin as a regular Python module
+      else:
+        module_name = f'netlab.plugin.{plugin}'             # ... old-style plugin, put it into separate module namespace
+
+    if config_name is None:                                 # Out of loop, did we find the Python file?
+      return None                                           # ... nope, return failure
+
+  else:                                                     # Plugin name is name of a Python file
+    module_name = plugin.replace('.py','')
+    module_name = f'netlab.plugin.{module_name}'            # Put the module into the 'plugin' module namespace
 
   try:
     modspec  = importlib.util.spec_from_file_location(module_name,module_path)
