@@ -45,6 +45,7 @@ BGP session attributes can be specified on global, node, link, or interface (nod
 
 The plugin implements generic BGP session features for the following platforms:
 
+(bgp-session-platforms)=
 | Operating system    | password | default<br>originate | GTSM | BGP<br>timers | TCP-AO | BFD |
 | ------------------- | :------: | :---------------: | :--: | :--: | :--: | :-: |
 | Arista EOS          |    ✅    |     ✅                | ✅  | ✅  | ✅  | ✅ |
@@ -62,6 +63,7 @@ The plugin implements generic BGP session features for the following platforms:
 * Arista EOS supports TCP-AO only when running as a virtual machine
 * _netlab_ always configures HMAC-SHA1-96 as the cryptographic algorithm on IOS XE
 
+(bgp-session-as-path)=
 The plugin implements AS-path-mangling nerd knobs for the following platforms:
 
 | Operating system    | Allow<br>AS in | AS<br>override | Remove<br>private AS |
@@ -77,6 +79,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Nokia SR OS         |  ✅  |  ✅  |   ❌  |
 | VyOS                |  ✅  |  ✅  |   ❌  |
 
+(bgp-session-apply)=
 ## Applying BGP Session Attributes to IBGP Sessions
 
 The plugin applies BGP session attributes to EBGP sessions -- either all EBGP sessions a node has if the attribute has been specified on a global- or node level, or all EBGP sessions on a link where the BGP session attribute has been specified.

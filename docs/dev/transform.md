@@ -137,6 +137,7 @@ For every node using the specified module, execute **node_** hook (**node_pre_de
 
 For every link that has at least one node using the specified module, execute **link_** hook (**link_pre_default**, **link_pre_transform**, **link_post_transform**).
 
+(dev-transform-debugging)=
 ## Debugging the Transformation Process
 
 `netlab create` command (the primary user of the transformation process) has a hidden `--debug` option that sets numerous debugging flags, allowing you to debug a subset of transformation components.
