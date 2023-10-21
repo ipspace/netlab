@@ -17,6 +17,7 @@ Want to know how _netlab_ works behind the scenes? These documents might give yo
    :maxdepth: 1
    :caption: Other Advanced Topics
 
+   versioning.md
    validation.md
    module-attributes.md
    quirks.md

@@ -12,7 +12,7 @@ from box import Box
 # Related modules
 from .. import data
 from ..data import types as _types
-from ..utils import log, files as _files
+from ..utils import log, files as _files, versioning
 
 USER_DEFAULTS: typing.Final[list] = ['./topology-defaults.yml','~/.netlab.yml','~/topology-defaults.yml']
 SYSTEM_DEFAULTS: typing.Final[list] = ['/etc/netlab/defaults.yml','package:topology-defaults.yml']
@@ -196,6 +196,7 @@ def load(
 
   if not relative_topo_name and fname.find('package:') != 0:
     fname = str(_files.absolute_path(fname))
+    fname = versioning.get_versioned_topology(fname)
 
   topology = read_yaml(fname)
   if topology is None:

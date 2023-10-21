@@ -2,6 +2,7 @@
 # Common routines for create-topology script
 #
 import sys
+import os
 import typing
 import warnings
 import typing
@@ -39,6 +40,21 @@ class FatalError(Warning):
 class ErrorAbort(Exception):
   pass
 
+# Try to print 'Errors encountered while processing _filename_' header
+#
+def print_error_header() -> None:
+  try:
+    from ..data import global_vars
+    topology = global_vars.get_topology()
+    if not topology:
+      return
+
+    if topology.input:
+      toponame = os.path.basename(topology.input[0])
+      print(f'Errors encountered while processing {toponame}',file=sys.stderr)
+  except:
+    pass
+
 def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
   global err_count
   err_count = err_count + 1
@@ -48,6 +64,7 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
     if WARNING:
       warnings.warn_explicit(text,FatalError,filename=module,lineno=err_count)
     else:
+      print_error_header()
       print(f'Fatal error in {module}: {text}',file=sys.stderr)
     sys.exit(1)
 
@@ -58,6 +75,7 @@ def error(text: str, category: typing.Type[Warning] = UserWarning, module: str =
     warnings.warn_explicit(text,category,filename=module,lineno=err_count)
     return
   else:
+    print_error_header()
     print(f'{category.__name__} in {module}: {text}',file=sys.stderr)
 
   if hint is None:                                  # No extra hints
