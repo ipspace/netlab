@@ -95,7 +95,7 @@ The data transformation has three major steps:
   * Sort node module lists in order of module dependencies -- a module dependent on another module will be configured after it (`netsim.modules.reorder_node_modules`)
 
 * Execute **post_transform** plugin hooks
-* Merge group-level and node-level [custom deployment templates](../groups.md#custom-configuration-templates) (`netsim.augment.groups.node_config_template`)
+* Merge group-level and node-level [custom deployment templates](custom-config) (`netsim.augment.groups.node_config_template`)
 * Delete temporary data structures from the topology (list of plugin modules, addressing pools, pointer to provider module)
 
 ## Configuration Module Transformations
