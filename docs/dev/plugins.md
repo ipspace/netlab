@@ -102,7 +102,7 @@ def post_transform(topo: Box) -> None:
 ...
 ```
 
-The **post_transform** function also sets the **config** node parameter to deploy [custom configuration template](../groups.md#custom-configuration-templates) that creates additional loopback interface with the anycast IP address.
+The **post_transform** function also sets the **config** node parameter to deploy [custom configuration template](custom-config) that creates additional loopback interface with the anycast IP address.
 
 ```
 def post_transform(topo: Box) -> None:

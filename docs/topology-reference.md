@@ -49,6 +49,7 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    groups.md
    addressing.md
    modules.md
+   custom-config-templates.md
    extools.md
    plugins.md
    providers.md
