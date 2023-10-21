@@ -50,6 +50,7 @@ def transform_setup(topology: Box) -> None:
   log.exit_on_error()
 
   augment.topology.check_global_elements(topology)
+  augment.plugin.check_plugin_dependencies(topology)                    # Check plugin dependencies on other plugins and modules
   augment.nodes.validate(topology)
   log.exit_on_error()
 

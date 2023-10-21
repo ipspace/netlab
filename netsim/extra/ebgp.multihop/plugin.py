@@ -7,6 +7,7 @@ from netsim.data.validate import validate_attributes
 
 _config_name = 'ebgp.multihop'
 _execute_after = [ 'ebgp.utils', 'bgp.session' ]
+_requires    = [ 'bgp' ]
 
 def pre_transform(topology: Box) -> None:
   global _config_name

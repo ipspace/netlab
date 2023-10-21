@@ -35,7 +35,7 @@ Plugins extending [configuration modules](../modules.md) might have to define ad
 
 Plugin can specify global variables that are used to influence the plugin behavior or order-of-execution:
 
-* `_requires`: A list of prerequisite plugins. _netlab_ will abort if any of the prerequisite plugins is not listed in the **topology.plugin** list.
+* `_requires`: A list of prerequisite modules and plugins. _netlab_ will abort if any of the prerequisite plugins is not listed in the **topology.plugin** list, or if any of the prerequisite modules is not used by at least one node.
 * `_execute_after`: A list of plugins that should execute before the current plugin. For example, **ebgp.multihop** plugin has to execute after **ebgp.utils** plugin, and therefore defines `_execute_after = [ 'ebgp.utils' ]`
 * `_config_name`: The name of extra configuration templates to add to the node **config** attribute when a node using the plugin functionality requires additional device configuration.  The value of this variable is set during the plugin initialization process, but it's still recommended to define it in the plugin and set its value to a string to prevent **mypy** complaints.
 

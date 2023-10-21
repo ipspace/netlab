@@ -6,7 +6,7 @@ from netsim.augment import devices
 
 _config_name = 'bgp.policy'
 
-#_requires    = [ 'bgp' ]
+_requires    = [ 'bgp' ]
 
 '''
 append_policy_attribute

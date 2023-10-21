@@ -22,6 +22,9 @@ BGP_SESSIONS = ['ibgp','ebgp']
 
 err_count: int = 0
 
+class MissingDependency(Warning):
+  pass
+
 class MissingValue(Warning):
   pass
 
@@ -76,7 +79,15 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
       print(f'Fatal error in {module}: {text}',file=sys.stderr)
     sys.exit(1)
 
-def error(text: str, category: typing.Type[Warning] = UserWarning, module: str = 'topology', hint: typing.Optional[str] = None) -> None:
+"""
+Display an error message, including error category, calling module and optional hint
+"""
+def error(
+      text: str,
+      category: typing.Type[Warning] = UserWarning,
+      module: str = 'topology',
+      hint: typing.Optional[str] = None) -> None:
+
   global err_count
   err_count = err_count + 1
   if WARNING:

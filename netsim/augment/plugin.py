@@ -104,27 +104,6 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
   return pymodule
 
 '''
-check_plugin_dependencies: given a plugin, check whether it has the _requires
-attribute, whether that attribute is a list, and whether all plugins in that list
-are included in the topology
-'''
-
-def check_plugin_dependencies(plugin: object, topology: Box) -> None:
-  rq = getattr(plugin,'_requires',None)
-  if rq is None:                                              # No dependencies, no worries
-    return
-  
-  pname = getattr(plugin,'_config_name','plugin')             # Get plugin name for error messages
-  if not isinstance(rq,list):                                 # _requires metadata must be a list
-    log.error('plugin _requires metadata must be list',log.IncorrectType,pname)
-    delattr(plugin,'_requires')                               # Remove the _requires metadata so it won't crash code using it
-    return
-  
-  for dp in rq:                                               # Now test whether the prerequisite plugins are included
-    if not dp in topology.plugin:
-      log.error(f'{pname} requires plugin {dp} which is not included in lab topology',log.MissingValue,'plugin')
-
-'''
 Sort plugins based on their _requires and _execute_after attributes
 
 Input:
@@ -218,7 +197,6 @@ def init(topology: Box) -> None:
         break
 
     if plugin:                                                # If we found the plugin...
-      check_plugin_dependencies(plugin,topology)              # ... check its dependencies
       topology.Plugin.append(plugin)                          # ... and add it to the list of active plugins
     else:
       load_error = True
@@ -233,6 +211,36 @@ def init(topology: Box) -> None:
   sort_plugins(topology)
   if log.debug_active('plugin'):
     print(f'plug INIT: {topology.Plugin}')
+
+'''
+plugin_requires_check: given a plugin, check whether it has the _requires
+attribute, whether that attribute is a list, and whether all plugins in that list
+are included in the topology
+
+check_plugin_dependencies: perform plugin_requires_check for all loaded plugins
+'''
+
+def plugin_requires_check(plugin: object, topology: Box) -> None:
+  rq = getattr(plugin,'_requires',None)
+  if rq is None:                                              # No dependencies, no worries
+    return
+
+  pname = getattr(plugin,'_config_name','plugin')             # Get plugin name for error messages
+  if not isinstance(rq,list):                                 # _requires metadata must be a list
+    log.error('plugin _requires metadata must be list',log.IncorrectType,pname)
+    delattr(plugin,'_requires')                               # Remove the _requires metadata so it won't crash code using it
+    return
+
+  for dp in rq:                                               # Now test whether the prerequisite plugins are included
+    if not dp in topology.plugin and not dp in topology.module:
+      log.error(
+        f"{pname} plugin requires {dp} {'module' if dp in topology.defaults else 'plugin'} which is not included in lab topology",
+        log.MissingDependency,
+        'plugin')
+
+def check_plugin_dependencies(topology: Box) -> None:
+  for plugin in topology.get('Plugin',[]):
+    plugin_requires_check(plugin,topology)
 
 '''
 Execute a plugin action:

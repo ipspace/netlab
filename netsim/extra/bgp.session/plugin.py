@@ -5,6 +5,7 @@ from netsim import api
 from netsim.augment import devices
 
 _config_name = 'bgp.session'
+_requires    = [ 'bgp' ]
 
 def pre_link_transform(topology: Box) -> None:
   global _config_name
