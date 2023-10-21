@@ -234,7 +234,7 @@ def copy_group_device_module(topology: Box) -> None:
     if log.debug_active('groups'):
       print(f'Setting device/module for group {grp}')
     g_members = group_members(topology,grp)
-    if not g_members:
+    if not g_members and not gdata.get('_default_group',False):
       log.error(
         f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
         log.IncorrectValue,
@@ -393,8 +393,13 @@ def init_groups(topology: Box) -> None:
   if 'groups' in topology.defaults:
     check_group_data_structure(topology,'defaults',prune_members=True)
     for gname,gdata in topology.defaults.groups.items():
-      if gname.find('_') != 0:
-        topology.groups[gname] = gdata + topology.groups[gname]
+      if gname.find('_') == 0:
+        continue
+
+      if not gname in topology.groups:
+        gdata._default_group = True
+
+      topology.groups[gname] = gdata + topology.groups[gname]
 
   add_node_level_groups(topology)
   log.exit_on_error()
