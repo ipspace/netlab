@@ -42,7 +42,14 @@ class ErrorAbort(Exception):
 
 # Try to print 'Errors encountered while processing _filename_' header
 #
+
+_error_header_printed: bool = False
+
 def print_error_header() -> None:
+  global _error_header_printed
+  if _error_header_printed:
+    return
+  
   try:
     from ..data import global_vars
     topology = global_vars.get_topology()
@@ -52,6 +59,7 @@ def print_error_header() -> None:
     if topology.input:
       toponame = os.path.basename(topology.input[0])
       print(f'Errors encountered while processing {toponame}',file=sys.stderr)
+      _error_header_printed = True
   except:
     pass
 
