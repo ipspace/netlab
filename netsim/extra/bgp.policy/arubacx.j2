@@ -1,0 +1,52 @@
+{% import '_route_map_aoscx.j2' as routemap %}
+{% macro ebgp_neighbor(n,af) -%}
+{{   routemap.apply_route_map(n,af) }}
+{%- endmacro %}
+!
+{% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) -%}
+{{   routemap.common_route_map_entry(p_entry) }}
+{%- endcall %} 
+!
+router bgp {{ bgp.as }}
+!
+! Work on weight first, which is out of the address family
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{%     if 'weight' in n %}
+    neighbor {{ n[af] }} weight {{ n.weight }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+!
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{%     if loop.first %}
+ address-family {{ af }} unicast
+{%     endif %}
+{{     ebgp_neighbor(n,af) -}}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+ vrf {{ vname }}
+!
+! Work on weight first, which is out of the address family
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors if n[af] is defined %}
+{%       if 'weight' in n %}
+    neighbor {{ n[af] }} weight {{ n.weight }}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+!
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors if n[af] is defined %}
+{%       if loop.first %}
+  address-family {{ af }} unicast
+{%       endif %}
+{{       ebgp_neighbor(n,af) -}}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}

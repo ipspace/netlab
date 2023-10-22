@@ -49,6 +49,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Operating system    | password | default<br>originate | GTSM | BGP<br>timers | TCP-AO | BFD |
 | ------------------- | :------: | :---------------: | :--: | :--: | :--: | :-: |
 | Arista EOS          |    ✅    |     ✅                | ✅  | ✅  | ✅  | ✅ |
+| Aruba AOS-CX        |    ✅    |     ✅                | ✅  | ✅  | ❌  | ✅ |
 | Cisco IOSv          |    ✅    |    ✅                | ✅  | ✅  |  ❌  | ✅ |
 | Cisco IOS-XE        |    ✅    |    ✅                | ✅  | ✅  | ✅  | ✅ |
 | Cumulus Linux       |    ✅    |    ✅                | ✅  | ✅  |  ❌  | ✅ |
@@ -69,6 +70,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Operating system    | Allow<br>AS in | AS<br>override | Remove<br>private AS |
 | ------------------- | :--: | :--: | :--: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |
+| Aruba AOS-CX        |  ✅  |  ❌  |  ✅  |
 | Cisco IOSv          |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |
