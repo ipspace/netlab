@@ -1,18 +1,22 @@
+#!/bin/bash
+#
 {% macro ebgp_session(n,af) -%}
 {%   if n.password is defined %}
- neighbor {{ n[af] }} password {{ n.password }}
+  neighbor {{ n[af] }} password {{ n.password }}
 {%   endif %}
 {%   if n.gtsm is defined %}
- neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
+  neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
 {%   endif %}
 {%   if n.timers is defined %}
- neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+  neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
 {%   endif %}
 {%   if n.bfd is defined %}
   neighbor {{ n[af] }} bfd
 {%   endif %}
 {%- endmacro %}
+{#
 
+#}
 {% macro ebgp_neighbor(n,af) -%}
 {%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
 {%   if n.allowas_in is defined %}
@@ -31,6 +35,11 @@
 {%     endfor %}
 {%   endif %}
 {%- endmacro %}
+{#
+
+#}
+set -e
+cat >/tmp/config <<CONFIG
 !
 router bgp {{ bgp.as }}
 {% for n in bgp.neighbors %}
@@ -60,15 +69,31 @@ router bgp {{ bgp.as }}
 
 {% if vrfs is defined %}
 {%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+router bgp {{ bgp.as }} vrf {{ vname }}
 {%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {%         set peer = n[af] if n[af] is string else n.local_if|default('?') %}
 {%         if loop.first %}
- address-family {{ af }} vrf {{ vname }}
+ address-family {{ af }}
 {%         endif %}
 {{         ebgp_session(n,af) }}
 {{         ebgp_neighbor(n,af) }}
 {%       endfor %}
 {%     endfor %}
+{%   endfor %}
+{% endif %}
+CONFIG
+#
+# Change BGP configuration
+#
+vtysh -f /tmp/config
+vtysh -c 'write'
+#
+# Clear BGP sessions
+#
+vtysh -c 'clear bgp *'
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+vtysh -c 'clear bgp vrf {{ vname }} *'
 {%   endfor %}
 {% endif %}
