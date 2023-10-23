@@ -1,6 +1,17 @@
 Release notes
 =============
 
+**[Release 1.6.4](release-1.6.4) (2023-10-23)**
+
+* Implement simple BGP routing policies in [bgp.policy plugin](plugins/bgp.policy.md)
+* Implement **[remove_private_as](bgp-session-as-path)**, passive BGP peers and [BFD for BGP neighbors](bgp-session-platforms) in [bgp.session plugin](plugins/bgp.session)
+* [Selectively apply BGP session attributes](bgp-session-apply) to IBGP and EBGP sessions
+* [Enable external tools](tools-enable-default) in user defaults
+* [Default groups](default-groups) allow you to specify user- or project-wide groups in the defaults files.
+
+{.text-right}
+[More features...](release-1.6.4)
+
 **[Release 1.6.3](release-1.6.3) (2023-10-06)**
 
 * [EBGP multihop sessions](plugins/ebgp.multihop.md)
