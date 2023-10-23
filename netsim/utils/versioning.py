@@ -92,4 +92,9 @@ def get_versioned_topology(toponame: str) -> str:
   if best_version is None:
     return toponame
 
-  return str(topopath.parent / f"{file_stem}.{best_version}{file_sfx}")
+  selected_name = f"{file_stem}.{best_version}{file_sfx}"
+  print(
+    f'Notice: using {selected_name} lab topology instead of {topopath.name}',
+    file=sys.stderr)
+
+  return str(topopath.parent / selected_name)
