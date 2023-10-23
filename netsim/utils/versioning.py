@@ -77,7 +77,8 @@ def get_versioned_topology(toponame: str) -> str:
     cand_version = candidate.stem[len(file_stem)+1:]      # Extract version from versioned topology name
     cand_spec = get_version_specifier(cand_version)       # Try to get version specifier from the topology version name
     if cand_spec is None:                                 # If the version is weird, we'll get an error message
-      continue                                            # ... but keep going
+      log.fatal(
+        f'Found invalid Python version {cand_version} in {candidate.name} when looking for the best version of {topopath.name}')
 
     if not netlab_version in cand_spec:                   # Is netlab version good enough to handle this topology?
       continue                                            # ... nope, keep going
