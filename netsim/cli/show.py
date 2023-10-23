@@ -22,6 +22,8 @@ from .show_commands import module_support as _mod_support
 from .show_commands import outputs as _outputs
 from .show_commands import reports as _reports
 from .show_commands import providers as _providers
+from .show_commands import attributes as _attributes
+from .show_commands import defaults as _defaults
 
 show_dispatch: dict = {
   'images': {
@@ -51,6 +53,14 @@ show_dispatch: dict = {
   'providers': {
     'exec':  _providers.show,
     'parse': _providers.parse
+  },
+  'attributes': {
+    'exec':  _attributes.show,
+    'parse': _attributes.parse
+  },
+  'defaults': {
+    'exec':  _defaults.show,
+    'parse': _defaults.parse
   }
 }
 
@@ -91,6 +101,12 @@ def run(cli_args: typing.List[str]) -> None:
     log.fatal("Cannot read system settings")
     return
 
-  main.topology_init(topology)
+  topology.name = 'empty'
+  topology.nodes = data.get_empty_box()
+  topology.nodes.dummy.device = 'none'                  # Add a dummy node
+  if 'plugin' in args and args.plugin:
+    topology.plugin = args.plugin
+
+  main.transform_setup(topology)
   settings = topology.defaults
   show_dispatch[args.action]['exec'](settings,args)

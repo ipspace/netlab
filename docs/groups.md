@@ -44,51 +44,20 @@ The following groups have special meaning in *netlab*-generated Ansible inventor
 
 * `unprovisioned`: **netlab up** and **netlab initial** will skip devices in this group while deploying device configurations.
 
-(custom-config)=
-## Custom Configuration Templates
+(default-groups)=
+### Default Groups
 
-You can building complex labs with functionality that is not yet part of *netlab* with the help of **[netlab config](netlab/config.md)** command that deploys custom configuration template to a set of lab devices. 
+You can specify system-wide or [project-wide](defaults-locations) groups in user- or system defaults file(s).
 
-To make the deployment of custom configuration template(s) part of a regular lab creating process[^CC], use **config** group attribute that can specify either a single template or a list of templates.
+As expected, the default group settings are merged with the lab topology groups, and you can even use them to create new groups that are not defined in lab topology.
 
-[^CC]: ... once your configuration templates are thoroughly tested ;)
+The only peculiarity of the default groups is the handling of group members:
 
-For example, to deploy `ospf-anycast-loopback.j2` template on members of `anycast` group and `mpls-ldp.j2` on all devices in your lab during the **[netlab up](netlab/up.md)** process, use the following topology file:
+* Default groups can have a list of **members**
+* A non-existent node in a group **members** list usually generates an error message. For default groups, such a member is silently removed from the **members** list[^DGM]
+* The members of a default group are copied into the corresponding lab topology group only when the lab topology group has no members.
 
-```
-defaults:
-  device: iosv
-
-groups:
-  anycast:
-    members: [ a1, a2, a3 ]
-    config: [ ospf-anycast-loopback.j2 ]
-  all:
-    config: [ mpls-ldp.j2 ]
-
-nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
-```
-
-The **config** parameter can also be specified on individual nodes, for example:
-
-```
-defaults:
-  device: cumulus
-
-module: [ ospf ]
-
-nodes:
-  s1:
-  s2:
-  s3:
-    config: [ something-special.j2 ]
-
-links: [ s1-s2, s2-s3 ]
-```
-
-```{tip}
-A **netlab config** command is executed by **netlab up** process for every template in every **config** parameter, regardless of whether it's specified on a group or a node. Excessive use of **config** parameters might thus result in slower lab deployment.
-```
+[^DGM]: That makes it possible to have default group members that are not present in the lab topology.
 
 ## Setting Node Data in Groups
 
@@ -362,7 +331,9 @@ g2:
 
 ### Node Data in Hierarchical Groups
 
-When faced with a group hierarchy, **node_data** processing takes great care to use the node values specified in the most-specific group. Continuing the previous example, now with **node_data**:
+When faced with a group hierarchy, **node_data** processing takes great care to use the node values specified in the most-specific group (see also [](custom-config-groups))
+
+Continuing the previous example, now with **node_data**:
 
 ```
 groups:
@@ -413,74 +384,3 @@ groups:
 * Nodes **b** and **d** have **bgp.as** set to 65000.
 * Node **e** has **bgp.as** set to 65001 (deep merge results in value from **g2** being overwritten by value from **g3**).
 * Nodes **c** and **f** do not have any BGP-related attributes
-
-### Custom Configuration Templates in Hierarchical Groups
-
-Custom configuration templates for individual nodes are built from configuration templates of all parent groups (starting with the least-specific parent group) plus node configuration templates. When using the following topology file...
-
-```
-nodes:
-  a:
-    config: [ a ]
-  b:
-  c:
-  d:
-  e:
-    config: [ e ]
-  f:
-
-groups:
-  g1: [ a,b ]
-  g2:
-    members: [ d,g1,g3 ]
-    config: [ g2a, g2b ]
-  g3:
-    members: [ e ]
-    config: [ g3 ]
-```
-
-... individual nodes get the following configuration templates:
-
-| node | template                                |
-|------|-----------------------------------------|
-| a    | g2a, g2b (from g2 via g1), a (from a)   |
-| b    | g2a, g2b (from g2 via g1)               |
-| c    | none (it's not a member of any group)   |
-| d    | g2a, g2b (from g2)                      |
-| e    | g2a, g2b (from g2 via g3), g3 (from g3) |
-| f    | none (it's not a member of any group)   |
-
-If you want to remove one or more templates specified by parent groups from a node or a group, use **-_x_** to remove a specific parent template from the list or `-` to remove all parent templates, for example:
-
-```
-nodes:
-  a:
-    config: [ -g2b, a ]
-  b:
-    config: [ -, b ]
-  c:
-  d:
-  e:
-    config: [ -g1, e ]
-  f:
-
-groups:
-  g1: [ a,b ]
-  g2:
-    members: [ d,g1,g3 ]
-    config: [ g2a, g2b ]
-  g3:
-    members: [ e ]
-    config: [ g3 ]
-```
-
-The following configuration templates would be applied to individual nodes in the above lab topology:
-
-| node | template                                        |
-|------|-------------------------------------------------|
-| a    | g2a (from g2 via g1, g2b removed), a (from a)   |
-| b    | all parent templates removed, b (from b).       |
-| c    | none (it's not a member of any group)           |
-| d    | g2a, g2b (from g2)                              |
-| e    | g2a, g2b (from g2 via g3), g3 (from g3), -g1 is ignored, e (from e) |
-| f    | none (it's not a member of any group)           |

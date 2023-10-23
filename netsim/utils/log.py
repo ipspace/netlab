@@ -2,6 +2,7 @@
 # Common routines for create-topology script
 #
 import sys
+import os
 import typing
 import warnings
 import typing
@@ -21,6 +22,9 @@ BGP_SESSIONS = ['ibgp','ebgp']
 
 err_count: int = 0
 
+class MissingDependency(Warning):
+  pass
+
 class MissingValue(Warning):
   pass
 
@@ -39,6 +43,29 @@ class FatalError(Warning):
 class ErrorAbort(Exception):
   pass
 
+# Try to print 'Errors encountered while processing _filename_' header
+#
+
+_error_header_printed: bool = False
+
+def print_error_header() -> None:
+  global _error_header_printed
+  if _error_header_printed:
+    return
+  
+  try:
+    from ..data import global_vars
+    topology = global_vars.get_topology()
+    if not topology:
+      return
+
+    if topology.input:
+      toponame = os.path.basename(topology.input[0])
+      print(f'Errors encountered while processing {toponame}',file=sys.stderr)
+      _error_header_printed = True
+  except:
+    pass
+
 def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
   global err_count
   err_count = err_count + 1
@@ -48,16 +75,26 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
     if WARNING:
       warnings.warn_explicit(text,FatalError,filename=module,lineno=err_count)
     else:
+      print_error_header()
       print(f'Fatal error in {module}: {text}',file=sys.stderr)
     sys.exit(1)
 
-def error(text: str, category: typing.Type[Warning] = UserWarning, module: str = 'topology', hint: typing.Optional[str] = None) -> None:
+"""
+Display an error message, including error category, calling module and optional hint
+"""
+def error(
+      text: str,
+      category: typing.Type[Warning] = UserWarning,
+      module: str = 'topology',
+      hint: typing.Optional[str] = None) -> None:
+
   global err_count
   err_count = err_count + 1
   if WARNING:
     warnings.warn_explicit(text,category,filename=module,lineno=err_count)
     return
   else:
+    print_error_header()
     print(f'{category.__name__} in {module}: {text}',file=sys.stderr)
 
   if hint is None:                                  # No extra hints

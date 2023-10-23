@@ -47,6 +47,7 @@ myst_enable_extensions = [
     "html_admonition",
     "replacements",
     "smartquotes",
+    "strikethrough",
     "tasklist",
     "attrs_block"
 ]

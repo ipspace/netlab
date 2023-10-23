@@ -8,9 +8,8 @@ The **netlab create** command reads network topology description in YAML format,
 
 **netlab create** uses these sources of information to build the desired lab topology:
 
-* Network topology in YAML format (default: `topology.yml`)
-* Optional [default settings](../defaults.md) in YAML format
-* Global default settings (`topology-defaults.yml` in *netlab* package)
+* Network topology in YAML format (default: `topology.yml`, but see also [](../dev/versioning.md))
+* [Default settings](../defaults.md) that can be specified in [project-, user- or system default files](defaults-locations)
 
 ## Data Model Transformation
 

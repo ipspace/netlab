@@ -35,7 +35,8 @@ IPv4 component of an addressing pool is defined with two parameters:
 * _prefix_ length - prefix length of individual subnets in the pool
 
 IPv6 component of an addressing pool is defined with an _ipv6_ prefix,
-prefix length of individual subnets is assumed to be /64.
+prefix length of individual subnets is assumed to be /64 unless the
+pool has _prefix6_ attribute.
 
 Legacy setup migration
 ----------------------
@@ -219,9 +220,9 @@ def create_pool_generators(addrs: Box, no_copy_list: list) -> Box:
     for key,data in pfx.items():
       if "_pfx" in key:
         af   = key.replace('_pfx','')
-        plen = pfx['prefix'] if af == 'ipv4' else 64
+        plen = pfx['prefix'] if af == 'ipv4' else pfx.get('prefix6',64)
         gen[pool][af] = data.subnet(plen)
-        if (af == 'ipv4' and plen == 32) or (pool == 'loopback'):
+        if (af == 'ipv4' and plen == 32) or (af == 'ipv6' and plen >= 127) or (pool == 'loopback'):
           next(gen[pool][af])
       elif not key in no_copy_list:
         gen[pool][key] = data

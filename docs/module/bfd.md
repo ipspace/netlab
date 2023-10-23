@@ -13,6 +13,7 @@ BFD is supported on these platforms:
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅❗| ✅  |  ❌  |
+| FRR                   | ✅❗| ✅  |  ❌  |
 | Dell OS10             |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅❗| ✅  | ✅  |
 | Juniper vPTX          | ✅❗| ✅  | ✅  |
@@ -24,7 +25,7 @@ BFD is supported on these platforms:
 | VyOS                  | ✅❗| ✅  | ✅  |
 
 **Notes:**
-* Cumulus Linux configures BFD as part of OSPFv2/OSPFv3 configuration.
+* Cumulus Linux and FRR configure BFD as part of OSPFv2/OSPFv3 configuration.
 * Junos configuration template configures BFD timers within routing protocol configuration, not in individual interfaces
 * VyOS configuration template configures BFD timers only at global level
 

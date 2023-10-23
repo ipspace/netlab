@@ -45,7 +45,7 @@ You can override or augment them in topology **addressing** element. You can als
 
 ## Dual-Stack Support
 
-Every address pool could have an IPv4 and an IPv6 prefix, supporting IPv4-only, dual-stack or IPv6-only deployments. Pool address space is specified in **ipv4** or **ipv6** CIDR prefix. Size of individual IPv4 address allocations is specified with the **prefix** parameter, IPv6 prefixes are currently fixed  (/64).
+Every address pool could have an IPv4 and an IPv6 prefix, supporting IPv4-only, dual-stack or IPv6-only deployments. Pool address space is specified in **ipv4** or **ipv6** CIDR prefix. Size of individual IPv4 address allocations is specified with the **prefix** parameter. *netlab* uses /64 IPv6 prefixes unless you change the prefix size with **prefix6** attribute.
 
 (address-pool-specs)=
 ## Specifying Address Pools
@@ -65,13 +65,15 @@ Each address pool specification is a dictionary of address pools. Individual add
 * **ipv4** -- IPv4 CIDR prefix or **true** for unnumbered IPv4 links
 * **ipv6** -- IPv6 CIDR prefix or **true** for LLA-only IPv6 links.
 * **unnumbered** -- unnumbered address pool. Interfaces attached to nodes based on this address pool will have IPv4 and/or IPv6 enabled based on the protocols enabled on node's loopback interface.
-* **prefix** -- IPv4 subnet allocation size. IPv6 subnets use /64 prefixes that cannot be changed.
+* **prefix** -- IPv4 subnet allocation size.
+* **prefix6** -- Optional IPv6 subnet allocation size. *netlab* creates /64 IPv6 subnets when the **prefix6** address pool parameter is not specified.
 * **start** -- first subnet or first IP address offset. Used primarily with **loopback** pools to ensure the first address assignment gets the x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address.
 * **allocation** -- [address allocation policy](addressing-tutorial-lan-links) (`id_based`, `sequential`, `p2p` or `loopback`).
 
 **Notes:**
 
 * Default IPv4 subnet allocation size is 32 for `loopback` pool, 24 for `lan` pool and 30 for `p2p` pool. All other pools must specify the **prefix** parameter whenever the **ipv4** parameter is specified.
+* Default IPv6 subnet allocation is /64. You can change this behavior with the **prefix6** pool parameter.
 * IPv4 loopback pool starts at .1 (**start** parameter is assumed to be 1)
 * IPv6 loopback pool starts at the second subnet to make loopback IPv6 address similar to its IPv4 counterpart.
 
