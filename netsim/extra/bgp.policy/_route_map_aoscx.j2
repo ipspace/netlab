@@ -1,0 +1,76 @@
+{#
+
+This Jinja2 template defines macros that can be used to configure Aruba AOS-CX
+It is very similar to _route_map_ios, except for the route map sequence format...
+(most probably some day I can integrate this on the original template)
+
+route-map xxx permit 100
+VS
+route-map xxx permit seq 100
+
+#}
+{% macro apply_route_map(n,af) -%}
+{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%   if 'policy' in n %}
+{%     for direction in [ 'in','out' ] if direction in n.policy %}
+    neighbor {{ peer }} route-map bp-{{ n._policy_name }}-{{ direction }} {{ direction }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}
+!
+{#
+   This macro generates the elements of route-map entries common across all "industry standard CLI" devices
+#}
+{% macro common_route_map_entry(p_entry) -%}
+{%   if 'set' in p_entry %}
+{%     if 'locpref' in p_entry.set %}
+  set local-preference {{ p_entry.set.locpref }}
+{%     endif %}
+{%     if 'med' in p_entry.set %}
+  set metric {{ p_entry.set.med }}
+{%     endif %}
+{%   endif %}
+{%- endmacro %}
+{#
+   This macro builds a single route map and uses the callback to define a route map entry.
+#}
+{% macro build_route_map(n) -%}
+{%   for direction in [ 'in','out' ] if direction in n.policy %}
+{%     for p_entry in n.policy[direction] %}
+route-map bp-{{ n._policy_name }}-{{ direction }} {{ p_entry.action|default('permit') }} seq {{ loop.index * 10 }}
+{{       caller(p_entry) }}
+{%     endfor %}
+!
+{%   endfor %}
+{%- endmacro %}
+!
+{#
+   This macro creates route maps for all neighbors in a VRF or global routing table
+
+   The callback defines a route map entry.
+#}
+{% macro create_neighbor_route_maps(bgp) -%}
+{%   set cb = caller %}
+{%   for n in bgp.neighbors|default([]) if 'policy' in n %}
+{%    call(p_entry) build_route_map(n) -%}
+{{       cb(p_entry) }}
+{%-    endcall %}
+{%   endfor %}
+{%- endmacro %}
+!
+{#
+   Top-level route-map macro: creates route maps for global and VRF neighbors
+
+   The callback defines a route map entry.
+#}
+{% macro create_route_maps(bgp,vrfs) -%}
+{%   set cb = caller %}
+{%   call(p_entry) create_neighbor_route_maps(bgp) -%}
+{{     cb(p_entry) }}
+{%-  endcall %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%     call(p_entry) create_neighbor_route_maps(vdata.bgp) -%}
+{{       cb(p_entry) }}
+{%-    endcall %}
+{%   endfor %}
+{%- endmacro %}

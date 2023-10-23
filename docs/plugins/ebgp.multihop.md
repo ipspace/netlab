@@ -10,6 +10,7 @@ The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | Global<br>sessions | VRF<br>sessions |
 | ------------------- | :--: | :--: |
+| Aruba AOS-CX        |  ✅  |  ❌   |
 | Arista EOS          |  ✅  |  ❌   |
 | Cisco IOSv / IOS-XE |  ✅  |  ❌   |
 | Cumulus Linux       |  ✅  |  ❌   |
