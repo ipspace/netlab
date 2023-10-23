@@ -67,6 +67,8 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
       else:
         module_name = f'netlab.plugin.{plugin}'             # ... old-style plugin, put it into separate module namespace
 
+      break
+
     if config_name is None:                                 # Out of loop, did we find the Python file?
       return None                                           # ... nope, return failure
 
