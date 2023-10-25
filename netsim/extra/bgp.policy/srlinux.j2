@@ -1,0 +1,51 @@
+{% macro ebgp_neighbor(n,af,vrf) -%}
+- path: network-instance[name={{vrf}}]/protocols/bgp
+  val:
+{% if n.type=='ebgp' and af=='ipv6' and n.ipv6|default(0) == True %}
+   group: {# Note: This doesn't allow for different policies per individual neighbor #}
+   - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
+{% else %}
+   neighbor:
+   - peer-address: {{ n[af]|ipaddr('address') }}
+{% endif %}
+{% for direction in [ 'in','out' ] if direction in n.policy %}
+     {{ 'import' if direction=='in' else 'export' }}-policy: bp-{{ n._policy_name }}-{{ direction }}
+{% endfor %}
+
+{% for direction in [ 'in','out' ] if direction in n.policy %}
+- path: routing-policy/policy[name=bp-{{ n._policy_name }}-{{ direction }}]
+  val:
+{%  for entry in n.policy[direction] %}
+{%   if loop.first %}
+   default-action:
+    policy-result: "accept"
+    bgp:
+{%    if 'locpref' in entry.set %}
+     local-preference:
+      set: {{ entry.set.locpref }}
+{%    endif %}
+{%    if 'med' in entry.set %}
+     med:
+      set: {{ entry.set.med }}
+{%    endif %}
+{%   endif %}
+{%  endfor %}
+{% endfor %}
+{%- endmacro %}
+
+updates:
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined and 'policy' in n %}
+{{     ebgp_neighbor(n,af,'default') -}}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%     for af in ['ipv4','ipv6'] %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined and 'policy' in n %}
+{{         ebgp_neighbor(n,af,vname) -}}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
