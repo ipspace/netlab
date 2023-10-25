@@ -37,11 +37,6 @@ Returns True if at least some relevant attributes were found
 def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool:
   global _config_name,_direct,_compound,_attr_list
 
-  if not _attr_list:                                    # Premature optimization: build the attribute lists only once
-    _direct   = topology.defaults.bgp.attributes.p_attr.direct
-    _compound = topology.defaults.bgp.attributes.p_attr.compound
-    _attr_list = _direct + list(_compound.keys())
-
   Found = False
   for attr in _attr_list:
     attr_value = intf.get('bgp',{}).get(attr,None)      # Get attribute value from interface
@@ -76,11 +71,16 @@ interface BGP parameters supported by this plugin into BGP neighbor parameters
 '''
 
 def post_transform(topology: Box) -> None:
+  global _config_name,_direct,_compound,_attr_list
+  _direct   = topology.defaults.bgp.attributes.p_attr.direct
+  _compound = topology.defaults.bgp.attributes.p_attr.compound
+  _attr_list = _direct + list(_compound.keys())
+
   for n, ndata in topology.nodes.items():
     if not 'bgp' in ndata.module:                           # Skip nodes not running BGP
       continue
 
-    _bgp.cleanup_neighbor_attributes(ndata,topology,topology.defaults.bgp.attributes.session.attr)
+    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list)
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
