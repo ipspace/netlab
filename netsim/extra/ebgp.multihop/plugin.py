@@ -5,12 +5,16 @@ from netsim.augment import devices
 from netsim.augment import links
 from netsim.data.validate import validate_attributes
 
-def pre_transform(topology: Box) -> None:
-  config_name  = api.get_config_name(globals())        # Get the plugin configuration name
-  session_idx  = data.find_in_list(['ebgp.utils','bgp.session'],topology.plugin)
-  multihop_idx = data.find_in_list([ config_name ],topology.plugin)
+_config_name = 'ebgp.multihop'
+_execute_after = [ 'ebgp.utils', 'bgp.session' ]
+_requires    = [ 'bgp' ]
 
-  if session_idx is not None and session_idx > multihop_idx:
+def pre_transform(topology: Box) -> None:
+  global _config_name
+  session_idx  = data.find_in_list(['ebgp.utils','bgp.session'],topology.plugin)
+  multihop_idx = data.find_in_list([ _config_name ],topology.plugin)
+
+  if session_idx is not None and multihop_idx is not None and session_idx > multihop_idx:
     log.error(
       'ebgp.multihop plugin must be included after bgp.session/ebgp.utils plugin',
       log.IncorrectValue,'ebgp.multihop')
@@ -23,7 +27,7 @@ def pre_link_transform(topology: Box) -> None:
   topology.bgp.multihop.sessions = sessions
   for s in sessions:
     for attr in list(s.keys()):                       # Change session attributes into BGP link attributes
-      if attr in ['interfaces','_linkname']:          # Skip internal attributes
+      if attr in ['interfaces','_linkname','bgp']:    # Skip internal attributes and BGP attributes already within BGP namespace
         continue
       s.bgp[attr] = s[attr]                           # Turn a session attribute into 'bgp.x' attribute
       s.pop(attr,None)
@@ -45,7 +49,7 @@ def pre_link_transform(topology: Box) -> None:
     for intf in s.interfaces:
       node = topology.nodes[intf.node]
       for attr in list(intf.keys()):                  # Change interface attributes into BGP attributes
-        if attr in ['node']:                          # Skip internal attributes
+        if attr in ['node','bgp']:                    # Skip internal attributes and attributes already in BGP namespace
           continue
         intf.bgp[attr] = intf[attr]                   # Turn an interface attribute into 'bgp.x' attribute
         intf.pop(attr,None)
@@ -63,7 +67,7 @@ def pre_link_transform(topology: Box) -> None:
       if not 'loopback' in node:
         log.error(
           'Cannot establish EBGP multihop session from node {intf.name}: node has no loopback interface',
-          'ebgp.multihop',log.IncorrectValue)
+          log.IncorrectValue,'ebgp.multihop')
         continue
       for af in ['ipv4','ipv6']:
         if af in node.loopback:
@@ -129,14 +133,14 @@ post_transform processing:
 * Augment address family activation
 '''
 def post_transform(topology: Box) -> None:
-  config_name = api.get_config_name(globals())        # Get the plugin configuration name
+  global _config_name
   for ndata in topology.nodes.values():
     intf_count = len(ndata.interfaces)
     ndata.interfaces = [ intf for intf in ndata.interfaces if not intf.get('_bgp_session',None) ]
 
     if len(ndata.interfaces) != intf_count:           # Did the interface count change?
       check_multihop_support(ndata,topology)
-      api.node_config(ndata,config_name)              # We must have some multihop sessions, add extra config
+      api.node_config(ndata,_config_name)             # We must have some multihop sessions, add extra config
       augment_af_activation(ndata,topology)
 
   topology.links = [ link for link in topology.links if not link.get('_bgp_session',None) ]

@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 set -e
+set -x
 #
 # Create bash profile script
 #
@@ -52,7 +53,7 @@ fi
 # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
 #
 {% if clab is not defined or clab.binds|default({})=={} %}
-{% set modlist = {'bgp':'bgpd','ospf':['ospfd','ospf6d'],'isis':'isisd','vrf':'bgpd','mpls':'ldpd'} %}
+{% set modlist = {'bfd':'bfdd','bgp':'bgpd','ospf':['ospfd','ospf6d'],'isis':'isisd','vrf':'bgpd','mpls':'ldpd'} %}
 {% for m in module|default([]) if modlist[m] is defined %}
 {%   for frr_m in [modlist[m]]|flatten %}
 echo "{{ frr_m }}=yes" >>/etc/frr/daemons
@@ -66,9 +67,11 @@ echo "{{ frr_m }}=yes" >>/etc/frr/daemons
 # Create loopbacks and stub devices
 #
 {% for i in (interfaces+[{ 'type': 'loopback', 'ifname': 'lo0'}]) if i.type in ['loopback','stub'] %}
-if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
-  ip link add {{ i.ifname }} type dummy
-  ip link set dev {{ i.ifname }} up
+if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
+  if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
+    ip link add {{ i.ifname }} type dummy
+    ip link set dev {{ i.ifname }} up
+  fi
 fi
 {% endfor %}
 

@@ -36,7 +36,8 @@ source_parsers = {
 source_suffix = ['.rst', '.md']
 
 extensions = [
-  'myst_parser'
+  'myst_parser',
+  'sphinxcontrib.jquery'
 ]
 
 myst_heading_anchors = 3
@@ -46,6 +47,7 @@ myst_enable_extensions = [
     "html_admonition",
     "replacements",
     "smartquotes",
+    "strikethrough",
     "tasklist",
     "attrs_block"
 ]

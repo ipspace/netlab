@@ -11,18 +11,30 @@
 {%   if n.timers is defined %}
   neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }} {{ n.timers.min_hold|default('') }} 
 {%   endif %}
+{%   if n.bfd|default(False) %}
+  neighbor {{ n[af] }} fall-over bfd
+{%   endif %}
+{%   if n.passive|default(False) %}
+  neighbor {{ n[af] }} transport connection-mode passive
+{%   endif %}
 {%- endmacro %}
 !
 {% macro ebgp_neighbor(n,af) -%}
 {%     if n.allowas_in is defined %}
   neighbor {{ n[af] }} allowas-in {{ n.allowas_in }}
 {%     endif %}
-{%     if n.as_override is defined %}
+{%     if n.as_override|default(False) %}
   neighbor {{ n[af] }} as-override
 {%     endif %}
-{%     if n.default_originate is defined %}
+{%     if n.default_originate|default(False) %}
   neighbor {{ n[af] }} default-originate
 {%     endif %}
+{%   if n.remove_private_as|default([]) %}
+{%     set rpa = { 'on': '', 'replace': 'all replace-as', 'all': 'all' } %}
+{%     for rpo in n.remove_private_as if rpo in rpa %}
+  neighbor {{ n[af] }} remove-private-as {{ rpa[rpo] }}
+{%     endfor %}
+{%   endif %}
 {%- endmacro %}
 !
 {% for pwd in bgp._ao_secrets|default([]) %}
@@ -46,7 +58,11 @@ router bgp {{ bgp.as }}
  address-family {{ af }}
 {%   for n in bgp.neighbors if n[af] is defined %}
 {{     ebgp_neighbor(n,af) }}
+{%     if loop.last %}
+ do clear bgp {{ af }} unicast *
+{%     endif %}
 {%   endfor %}
+!
 {% endfor %}
 !
 {% if vrfs is defined %}
@@ -58,6 +74,9 @@ router bgp {{ bgp.as }}
 {%         endif %}
 {{         ebgp_session(n,af,bgp) }}
 {{         ebgp_neighbor(n,af) }}
+{%         if loop.last %}
+ do clear bgp vrf {{ vname }} {{ af }} unicast *
+{%         endif %}
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}

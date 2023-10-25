@@ -1,19 +1,42 @@
 #
 # Testing ebgp-utils plugin
 #
-plugin: [ ebgp.utils ]
-module: [ bgp ]
-defaults.device: vyos
+plugin: [ ebgp.multihop,bgp.session ]
+module: [ bgp,vrf ]
+defaults.device: eos
 bgp.password: Secret
+
+vrfs:
+  red:
+    links:
+    - r1:
+        bgp.default_originate: True
+      r2:
+        bgp.allowas_in: True
+      bgp.password: InVrf
+
+bgp.multihop.sessions:
+- r2:
+    bgp.local_as: 123               # Regression test
+  r3:
+    local_as: 456
+  bgp.password: Funny               # Regression test
 
 nodes:
   r1:
     bgp.as: 65001
     bgp.default_originate: True
+    bgp.session.apply:
+      ibgp: [ password ]
+      ebgp:
   r2:
     bgp.as: 65002
   r3:
-    bgp.as: 65002
+    bgp.as: 65003
+  rr:
+    bgp.as: 65001
+    bgp.rr: true
+    bgp.session.apply: [ ibgp ]
 
 links:
 - r1:
@@ -22,3 +45,4 @@ links:
   r3:
     bgp.allowas_in: True
   bgp.password: SomethingElse
+- r1-rr

@@ -26,6 +26,17 @@ You can configure individual tools using parameters in the tool-specific diction
 
 For the list of tool-specific parameters see the individual tool description.
 
+(tools-enable-default)=
+## Enabling Tools in User Defaults
+
+You can change [user defaults](defaults.md) to start an external tool with every lab topology -- all you have to do is to set the **defaults.tools._toolname_.enabled** attribute to `True`.
+
+For example, to use Graphite GUI with every lab you start, add the following line to `~/.netlab.yml` file:
+
+```
+tools.graphite.enabled: True
+```
+
 (extools-list)=
 ## Supported Tools
 

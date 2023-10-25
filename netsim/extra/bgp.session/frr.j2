@@ -1,0 +1,102 @@
+#!/bin/bash
+#
+{% macro ebgp_session(n,af) -%}
+{%   if n.password is defined %}
+  neighbor {{ n[af] }} password {{ n.password }}
+{%   endif %}
+{%   if n.gtsm is defined %}
+  neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
+{%   endif %}
+{%   if n.timers is defined %}
+  neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+{%   endif %}
+{%   if n.bfd|default(False) %}
+  neighbor {{ n[af] }} bfd
+{%   endif %}
+{%   if n.passive|default(False) %}
+  neighbor {{ n[af] }} passive
+{%   endif %}
+{%- endmacro %}
+{#
+
+#}
+{% macro ebgp_neighbor(n,af) -%}
+{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%   if n.allowas_in|default(False) %}
+  neighbor {{ peer }} allowas-in {{ n.allowas_in }}
+{%   endif %}
+{%   if n.as_override|default(False) %}
+  neighbor {{ peer }} as-override
+{%   endif %}
+{%   if n.default_originate|default(False) %}
+  neighbor {{ peer }} default-originate
+{%   endif %}
+{%   if n.remove_private_as|default([]) %}
+{%     set rpa = { 'on': '', 'replace': 'all replace-AS', 'all': 'all' } %}
+{%     for rpo in n.remove_private_as if rpo in rpa %}
+  neighbor {{ n[af] }} remove-private-AS {{ rpa[rpo] }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}
+{#
+
+#}
+set -e
+cat >/tmp/config <<CONFIG
+!
+router bgp {{ bgp.as }}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     ebgp_session(n,af) }}
+{%   endfor %}
+{% endfor %}
+!
+! Global address families
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{%     if loop.first %}
+ address-family {{ af }}
+{%     endif %}
+{{     ebgp_neighbor(n,af) }}
+{%   endfor %}
+{% endfor %}
+
+{% for n in bgp.neighbors if n.evpn|default(False) and n.type == 'ebgp' %}
+{%  if loop.first %}
+ address-family l2vpn evpn
+{%  endif %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     ebgp_neighbor(n,af) }}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+router bgp {{ bgp.as }} vrf {{ vname }}
+{%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
+{%         set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%         if loop.first %}
+ address-family {{ af }}
+{%         endif %}
+{{         ebgp_session(n,af) }}
+{{         ebgp_neighbor(n,af) }}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+CONFIG
+#
+# Change BGP configuration
+#
+vtysh -f /tmp/config
+vtysh -c 'write'
+#
+# Clear BGP sessions
+#
+vtysh -c 'clear bgp *'
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+vtysh -c 'clear bgp vrf {{ vname }} *'
+{%   endfor %}
+{% endif %}

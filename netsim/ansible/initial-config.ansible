@@ -92,22 +92,21 @@
 # Input parameters:
 #
 # * The "custom_configs" group contains all nodes with "config" attribute
+# * The "netlab_custom_config" variable in "custom_config" group contains ordered list
+#   of all custom configs used by lab devices
 #
-# Hints to understand the code the follows:
-#
-# * When different nodes use the same config modules in different order, they
-#   might be applied out-of-order due to Ansible "optimization" attempts
-# * To prevent that "optimization", we deploy custom configs on a single device at a time
-# * If the user chose '--fast' deployment, then we stop caring about order of execution.
-#   Sorry -- you can have one or the other ;)
+# See the "deploy modules" comments to understand the weird code that follows
 #
 - name: Deploy custom deployment templates
   hosts: custom_configs:!unprovisioned
   strategy: "{{ netlab_strategy|default('linear') }}"
-  serial: "{{ 5 if netlab_strategy is defined else 1 }}"
   tags: [ custom,test ]
   tasks:
   - include_tasks: "tasks/deploy-custom-config.yml"
-    loop: "{{ config }}"
+    args:
+      apply:
+        tags: [ always ]
+    when: custom_config in config
+    loop: "{{ netlab_custom_config }}"
     loop_control:
       loop_var: custom_config

@@ -10,6 +10,7 @@ from box import Box
 from . import _TopologyOutput,check_writeable
 from ..augment import nodes
 from ..augment import devices
+from ..augment import plugin
 from ..utils import templates,strings,log
 from ..utils import files as _files
 
@@ -103,6 +104,12 @@ def create(topology: Box) -> Box:
         group_vars = devdata.group_vars + devdata[defaults.provider].group_vars
         if group_vars:
           inventory[group]['vars'] = group_vars
+
+  if (inventory.custom_configs.hosts):
+    try:
+      inventory.custom_configs.vars.netlab_custom_config = plugin.sort_extra_config(topology)
+    except log.FatalError as ex:
+      log.fatal(f'Cannot sort custom configuration requests: {str(ex)}','ansible')
 
   if not 'groups' in topology:
     return inventory

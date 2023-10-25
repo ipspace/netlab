@@ -6,7 +6,7 @@ To extend the lab topology with custom attributes (examples: BGP anycast prefix,
 
 To define new attributes, add them to the relevant **attributes** dictionary -- see [](dev/validation.md) for more details. With this approach you can also define the attribute type which can then be used during the validation phase to check attribute value.
 
-After defining custom attributes you usually have to create additional Jinja2 templates that use these attributes to configure additional lab device functionality. You can deploy those templates during initial lab device configuration with [custom configuration templates](groups.md#custom-configuration-templates) or use **‌netlab config** command to deploy them manually.
+After defining custom attributes you usually have to create additional Jinja2 templates that use these attributes to configure additional lab device functionality. You can deploy those templates during initial lab device configuration with [custom configuration templates](custom-config) or use **‌[netlab config](netlab/config.md)** command to deploy them manually.
 
 ## Link Attribute Example
 

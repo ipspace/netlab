@@ -42,8 +42,9 @@ _netlab_ BGP configuration module supports these features:
 
 Even more BGP features are implemented in the following plugins:
 
-* [](../plugins/ebgp.utils.md) plugin
-* [](../plugins/ebgp.multihop.md) plugin
+* [bgp.session](../plugins/bgp.session.md): implements numerous BGP session features, including session protection and AS-path manipulation.
+* [bgp.policy](../plugins/bgp.policy.md): implements simple BGP routing policies including weights, local preference and MED.
+* [ebgp.multihop](../plugins/ebgp.multihop.md): implements multihop EBGP sessions.
 
 ## Platform Support
 

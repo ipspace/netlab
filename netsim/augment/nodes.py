@@ -357,7 +357,10 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
             log.fatal( f"Loopback addresses must be valid IP prefixes, not 'True': {prefix_list}" )
         elif not n.loopback[af]:
           if af == 'ipv6':
-            n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
+            if prefix_list[af].prefixlen == 128:
+              n.loopback[af] = str(prefix_list[af])
+            else:
+              n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
           else:
             n.loopback[af] = str(prefix_list[af])
           n.af[af] = True

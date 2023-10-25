@@ -45,30 +45,38 @@ def group_members(topology: Box, group: str, count: int = 0) -> list:
 
 '''
 Check validity of 'groups' data structure
-'''
-def check_group_data_structure(topology: Box) -> None:
-  if not 'groups' in topology:
-    topology.groups = get_empty_box()
 
-  if must_be_dict(topology,'groups','topology',create_empty=True,module='groups') is None:
+* groups -- the group data (topology- or default groups)
+* topology -- top-level topology (have to pass it to get attributes from fixed location)
+* prune_members -- remove non-existent group members (used for default groups)
+'''
+def check_group_data_structure(
+      topology: Box,
+      parent_path: typing.Optional[str] = '',
+      prune_members: typing.Optional[bool] = False) -> None:
+
+  parent = topology.get(parent_path) if parent_path else topology
+  grp_namespace = f'{parent_path} ' if parent_path else ''
+
+  if must_be_dict(parent,'groups',parent_path,create_empty=True,module='groups') is None:
     return
 
   '''
   Transform group-as-list into group-as-dictionary
   '''
-  for grp in topology.groups.keys():
-    if topology.groups[grp] is None:
+  for grp in parent.groups.keys():
+    if parent.groups[grp] is None:
       log.error(
-        f"Definition of group '{grp}' must be a dictionary",
+        f"Definition of {grp_namespace}group '{grp}' must be a dictionary",
         log.IncorrectType,
         'groups')
       return
 
-    if isinstance(topology.groups[grp],list):
-      topology.groups[grp] = { 'members': topology.groups[grp] }
+    if isinstance(parent.groups[grp],list):
+      parent.groups[grp] = { 'members': parent.groups[grp] }
     if grp in topology.nodes:
       log.error(
-        f"group '{grp}' is also a node name. I can't deal with that level of confusion",
+        f"{grp_namespace}group '{grp}' is also a node name. I can't deal with that level of confusion",
         log.IncorrectValue,
         'groups')
 
@@ -82,12 +90,14 @@ def check_group_data_structure(topology: Box) -> None:
   # Allow provider- and tool- specific node attributes
   extra = get_object_attributes(['providers','tools'],topology)
 
-  for grp,gdata in topology.groups.items():
+  for grp,gdata in parent.groups.items():
     must_be_id(parent=None,key=grp,path=f'NOATTR:group name {grp}',module='groups')
-    if must_be_dict(topology.groups,grp,'topology.groups',create_empty=True,module='groups') is None:
+
+    gpath = f'{parent_path or "topology"}.groups'
+    if must_be_dict(parent.groups,grp,gpath,create_empty=True,module='groups') is None:
       continue
 
-    gpath=f'topology.groups.{grp}'
+    gpath=f'{gpath}.{grp}'
     g_modules = gdata.get('module',[])
     if g_modules:                           # Modules specified in the group -- we know what these nodes will use
       gm_source = 'group'
@@ -110,7 +120,7 @@ def check_group_data_structure(topology: Box) -> None:
       gdata.members = []
 
     if grp == 'all' and gdata.members:
-      log.error('Group "all" should not have explicit members')
+      log.error('{grp_namespace}group "all" should not have explicit members')
 
     must_be_dict(gdata,'vars',gpath,create_empty=False,module='groups')
     must_be_dict(gdata,'node_data',gpath,create_empty=False,module='groups')
@@ -133,7 +143,7 @@ def check_group_data_structure(topology: Box) -> None:
       for k in ('module','device'):          # Check that the 'module' or 'device' attributes are not in node_data
         if k in gdata.node_data:
           log.error(
-            f'Cannot use attribute {k} in node_data in group {grp}, set it as a group attribute',
+            f'Cannot use attribute {k} in node_data in {grp_namespace}group {grp}, set it as a group attribute',
             log.IncorrectValue,
             'groups')
 
@@ -146,9 +156,12 @@ def check_group_data_structure(topology: Box) -> None:
     if must_be_list(gdata,'members',gpath,create_empty=False,module='groups') is None:
       continue
 
-    for n in gdata.members:
-      if not n in topology.nodes and not n in topology.groups:
-        log.error('Member %s of group %s is not a valid node or group name' % (n,grp))
+    if prune_members:
+      gdata.members = [ n for n in gdata.members if n in topology.nodes or n in parent.groups ]
+    else:
+      for n in gdata.members:
+        if not n in topology.nodes and not n in parent.groups:
+          log.error('Member %s of {grp_namespace}group %s is not a valid node or group name' % (n,grp))
 
 '''
 Add node-level group settings to global groups
@@ -221,7 +234,7 @@ def copy_group_device_module(topology: Box) -> None:
     if log.debug_active('groups'):
       print(f'Setting device/module for group {grp}')
     g_members = group_members(topology,grp)
-    if not g_members:
+    if not g_members and not gdata.get('_default_group',False):
       log.error(
         f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
         log.IncorrectValue,
@@ -372,8 +385,22 @@ def create_bgp_autogroups(topology: Box) -> None:
 # Please note that check_group_data_structure creates 'groups' element if needed
 # and 'adjust_groups' deletes it if there are no groups in the topology.
 #
+
 def init_groups(topology: Box) -> None:
-  check_group_data_structure(topology)
+  if 'groups' in topology:
+    check_group_data_structure(topology)
+
+  if 'groups' in topology.defaults:
+    check_group_data_structure(topology,'defaults',prune_members=True)
+    for gname,gdata in topology.defaults.groups.items():
+      if gname.find('_') == 0:
+        continue
+
+      if not gname in topology.groups:
+        gdata._default_group = True
+
+      topology.groups[gname] = gdata + topology.groups[gname]
+
   add_node_level_groups(topology)
   log.exit_on_error()
 

@@ -10,7 +10,7 @@ from box import Box
 
 # Related modules
 from .. import data
-from ..utils import log
+from ..utils import log,sort as _sort
 from ..data.validate import must_be_list
 from ..utils.callback import Callback
 from ..augment import devices
@@ -433,23 +433,8 @@ def reorder_node_modules(topology: Box, secondary_sort: str = "config_after") ->
       n.module = sort_module_list(n.module,topology.defaults, secondary_sort)
 
 def sort_module_list(mods: list, mod_params: Box, secondary_sort: str = "config_after") -> list:
-  if (len(mods) < 2):
-    return mods
-
-  output: typing.List[str] = []
-  while len(mods):
-    skipped: typing.List[str] = []
-    for m in mods:
-      if m in mod_params:
-        requires = mod_params[m].get('requires',[]) + mod_params[m].get(secondary_sort,[])
-        if [ r for r in requires if r in mods ]:
-          skipped = skipped + [ m ]
-        else:
-          output = output + [ m ]
-
-    mods = skipped
-
-  return output
+  mods = [ m for m in mods if m in mod_params ]
+  return _sort.dependency(mods,lambda m: mod_params[m].get('requires',[]) + mod_params[m].get(secondary_sort,[]))
 
 """
 Copy node data into interface data:
