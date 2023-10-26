@@ -1,8 +1,7 @@
 import typing
 from box import Box
-from netsim.utils import log,bgp as _bgp
+from netsim.utils import bgp as _bgp
 from netsim import api,data
-from netsim.augment import devices
 
 _config_name = 'bgp.policy'
 
@@ -77,14 +76,14 @@ def post_transform(topology: Box) -> None:
   _attr_list = _direct + list(_compound.keys())
 
   for n, ndata in topology.nodes.items():
-    if not 'bgp' in ndata.module:                           # Skip nodes not running BGP
+    if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
       continue
 
     _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list)
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
-    # node-level locpref to all EBGP neighbors. That thest is a bit convolutaed to make
+    # node-level locpref to all EBGP neighbors. That test is a bit convolutaed to make
     # sure we don't get tripped up by None values
     #
     default_locpref = _bgp.get_device_bgp_feature('_default_locpref',ndata,topology)
