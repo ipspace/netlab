@@ -14,12 +14,35 @@
       ipv4-unicast: {{ activate.ipv4|default(False) }}
       ipv6-unicast: {{ activate.ipv6|default(False) }}
 {% endif %}
+{% if n.timers is defined %}
+     timers:
+      keepalive-interval: {{ n.timers.keepalive|default(60) }}
+      hold-time: {{ n.timers.hold|default(180) }}
+{% endif %}
+{% if n.bfd|default(False) %}
+     failure-detection:
+      enable-bfd: True
+{% endif %}
+{% if n.passive|default(False) %}
+     transport:
+      passive-mode: True
+{% endif %}
      as-path-options:
-{%   if n.allowas_in is defined %}
+{% if n.allowas_in is defined %}
       allow-own-as: {{ n.allowas_in|int }}
-{%   endif %}
+{% endif %}
       replace-peer-as: {{ True if n.as_override|default(False) else False }}
-{%   if n.password is defined and (n.type!='ebgp' or n.ipv6|default('') is string) %}
+{% if n.remove_private_as|default([]) %}
+{%  if 'replace' in n.remove_private_as %}
+      remove-private-as:
+       mode: replace
+{%  elif 'on' in n.remove_private_as or 'all' in n.remove_private_as %}
+      remove-private-as:
+       mode: delete
+       leading-only: {{ 'all' not in n.remove_private_as }}
+{%  endif %}
+{% endif %}
+{% if n.password is defined and (n.type!='ebgp' or n.ipv6|default('') is string) %}
      authentication:
       keychain: "peer-{{n.name}}"
 
