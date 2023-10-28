@@ -6,6 +6,11 @@ Cisco ASAv is supported by the **netlab libvirt package** command. To build a AS
 * Copy the ASAv disk image (.qcow2 file) into that directory
 * Execute **netlab libvirt package asav _virtual-disk-file-name_** and follow the instructions
 
+```{warning}
+* The **‌netlab libvirt package asav** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
+* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
+```
+
 ## Preparing the Box Configuration
 
 Initial device configuration is copied from an ISO image created by the installation process. You'll have to set an enable password and save the config. 
