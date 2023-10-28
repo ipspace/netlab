@@ -39,6 +39,7 @@ Missing features:
 
 Need one of those? Create a plugin and contribute it.
 
+(ospf-platform)=
 ## Platform Support
 
 The following table describes per-platform support of individual router-level OSPF features:
@@ -69,6 +70,7 @@ The following table describes per-platform support of individual router-level OS
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, which is the VLAN implementation model currently used in our templates.
 
+(ospf-interface)=
 The following table documents the interface-level OSPF features:
 
 | Operating system         | Cost  | Network<br />type | Unnumbered<br />interfaces | Passive<br />interfaces |
