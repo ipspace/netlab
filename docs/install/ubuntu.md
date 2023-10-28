@@ -8,6 +8,11 @@ The simplest way to install *netlab* and the whole low-level toolchain on an exi
 
 * If needed, install Python3 and **pip3** with `sudo apt-get update && sudo apt-get install -y python3-pip`
 * Install Python package with `sudo python3 -m pip install networklab` or your preferred Python package installation procedure.
+
+```{tip}
+Installing Python packages as root is not the recommended best practice (but gets around the potential PATH problems). Please use your regular Python package installation process if you're not setting up a throwaway VM/server.
+```
+
 * Install additional software with `netlab install ubuntu ansible libvirt containerlab` command ([more details](../netlab/install.md)).
 
 ```eval_rst
