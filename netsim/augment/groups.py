@@ -120,7 +120,7 @@ def check_group_data_structure(
       gdata.members = []
 
     if grp == 'all' and gdata.members:
-      log.error('{grp_namespace}group "all" should not have explicit members')
+      log.error(f'{grp_namespace}group "all" should not have explicit members')
 
     must_be_dict(gdata,'vars',gpath,create_empty=False,module='groups')
     must_be_dict(gdata,'node_data',gpath,create_empty=False,module='groups')
@@ -161,7 +161,7 @@ def check_group_data_structure(
     else:
       for n in gdata.members:
         if not n in topology.nodes and not n in parent.groups:
-          log.error('Member %s of {grp_namespace}group %s is not a valid node or group name' % (n,grp))
+          log.error(f'Member {n} of {grp_namespace}group {grp} is not a valid node or group name')
 
 '''
 Add node-level group settings to global groups

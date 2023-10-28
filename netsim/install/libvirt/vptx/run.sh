@@ -22,4 +22,4 @@ virsh net-start vptx_RPIO_LINK 2>/dev/null || true
 
 # Create initial bootstrap virtual disk
 cd $SCRIPT_DIR
-./make-config.sh juniper.conf /tmp/vptx.bootstrap.qcow2
+sudo ./make-config.sh juniper.conf /tmp/vptx.bootstrap.qcow2

@@ -59,7 +59,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
 | Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |
-| Nokia SR Linux      |  ✅  |   ❌  |   ❌  |   ❌  |
+| Nokia SR Linux      |  ✅  |   ✅  |   ✅  |   ✅  |
 | Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |
 | VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |
 
@@ -96,7 +96,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | FRR                 |  ✅  |  ✅  |  ✅  |
 | Juniper vMX/vPTX/vSRX | ❌  |  ✅  |   ❌  |
 | Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |
-| Nokia SR Linux      |  ✅  |  ✅  |   ❌  |
+| Nokia SR Linux      |  ✅  |  ✅  |   ✅  |
 | Nokia SR OS         |  ✅  |  ✅  |   ❌  |
 | VyOS                |  ✅  |  ✅  |   ❌  |
 
@@ -162,6 +162,7 @@ The implementations of **neighbor remove-private-as** command vary widely across
 | Cisco IOS-XE        |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 
 **Notes:**
 
@@ -176,7 +177,7 @@ The following test topology illustrates a subset of plugin capabilities. You mig
 defaults:
   device: eos
 
-module: [ bgp, vrf ]
+module: [ bgp, vrf, bfd ]
 plugin: [ bgp.session ]
 
 vrfs:
@@ -186,6 +187,8 @@ vrfs:
 bgp.timers:
   hold: 10
   keepalive: 3
+
+bgp.bfd: True
 
 nodes:
   y1:

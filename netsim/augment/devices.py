@@ -145,7 +145,7 @@ def build_module_support_lists(topology: Box) -> None:
       if not 'supported_on' in mdata:                       # Create 'supported_on' list if needed
         mdata.supported_on = []
 
-      if ddata.feature[m] is False and dname in mdata.supported_on:       
+      if ddata.features[m] is False and dname in mdata.supported_on:       
         mdata.supported_on.remove(dname)                    # The device DOES NOT support the module
         ddata.features.pop(m)                               # Remove the feature so it won't crash the transformation
         continue
