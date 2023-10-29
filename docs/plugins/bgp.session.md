@@ -58,6 +58,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
+| Juniper vMX/vPTX/vSRX | ❌  |  ✅  |  ✅  |  ✅  |
 | Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |
 | Nokia SR Linux      |  ✅  |   ✅  |   ✅  |   ✅  |
 | Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |
