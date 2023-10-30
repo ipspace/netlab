@@ -127,7 +127,7 @@ def validate_dictionary(
 
   OK = True
   for k in data.keys():                                             # Iterate over the elements
-    if not k in data_type:                                          # ... and report elements with invalid name
+    if not k in data_type._keys:                                    # ... and report elements with invalid name
       log.error(
         f'Incorrect {data_name} attribute {k} in {parent_path}',
         log.IncorrectAttr,
@@ -137,7 +137,7 @@ def validate_dictionary(
       validate_item(
         parent=data,
         key=k,
-        data_type=data_type[k],
+        data_type=data_type._keys[k],
         parent_path=parent_path,
         data_name=data_name,
         module=module)
@@ -166,17 +166,7 @@ def validate_value(
   validation_function = getattr(_tv,f'must_be_{data_type}',None)      # Try to get validation function
 
   if not validation_function:                                         # No validation function
-    if type(value).__name__ != data_type:                             # ... check data type name
-      _tv.wrong_type_message(
-              path=path,
-              key=None,
-              expected=data_type,
-              value=value,
-              context=context,
-              module=module)
-      if abort:
-        raise log.IncorrectType()
-    return value
+    log.fatal(f'No validation function for {data_type}')
 
   return validation_function(
             parent=None,                                # We're validating a standalone value
@@ -219,13 +209,12 @@ def validate_item(
     data = parent[key]
     data_type = Box(data_type)                                        # and fix datatype definition
 
-  if isinstance(data,Box) and isinstance(data_type,Box):              # Validating a dictionary against a dictionary of elements
-    return validate_dictionary(
-              data=data,
-              data_type=data_type,
-              parent_path=f"{parent_path}.{key}",
-              data_name=data_name,
-              module=module)
+  # Validating a dictionary against a dictionary of elements without a specified type
+  if isinstance(data_type,Box) and not 'type' in data_type:
+    data_keys = { k:v for k,v in data_type.items() if not k.startswith('_') }
+    data_type = Box({ k:v for k,v in data_type.items() if k.startswith('_') })
+    data_type.type = 'dict'
+    data_type._keys = data_keys
 
   if type_has_attribute(data_type,'_alt_types'):
     if validate_alt_type(data,data_type):
@@ -240,58 +229,42 @@ def validate_item(
       'valid_values': data_type
     }
 
-  if not 'type' in data_type:                                         # The required data type is a true dict, but the data is not
-    log.error(
-      f'{data_name} attribute {parent_path}.{key} should be a dictionary, found {type(data).__name__}',
-      log.IncorrectType,
-      module)
-    return False
 
-  for kw in list(data_type.keys()):                                   # Remove all 'internal' type attributes before calling validation function
-    if kw.startswith('_'):
-      data_type.pop(kw)
+  # Copy data type into validation attributes, skipping validation attributes and data type name
+  validation_attr = { k:v for k,v in data_type.items() if not k.startswith('_') and k != 'type' }
 
-  dt_name = data_type['type']                                         # Get the desired data type in string format
+  dt_name = data_type['type']
   validation_function = getattr(_tv,f'must_be_{dt_name}',None)        # Try to get validation function
 
-  if not validation_function:                                         # No validation function, have to compare type names
-    if not hasattr(_bi,dt_name):                                      # Is the requested data type a well-known type/class?
-      log.fatal(f'Invalid data type {dt_name} found when trying to validate {data_name} attribute {parent_path}.{key}')
-      return False                                                    # pragma: no cover
-
-    dt_ref = getattr(_bi,dt_name)                                     # Get pointer to desired data type
-    if not isinstance(data,dt_ref):                                   # ... and check if the current object is an instance of it
-      log.error(
-        f'{data_name} attribute {parent_path}.{key} should be {dt_name}, found {type(data).__name__}',
-        log.IncorrectType,
-        module)
-      return False
-
-    return True                                                       # We couldn't do full validation, but at least the instance type is OK
+  if not validation_function:                                         # No validation function
+    log.fatal(f'No validation function for {data_type}')
 
   # We have to validate an item with a validation function
   #
-  # First, create the extra arguments for the must_be_something function:
-  #
-  # * Start with the data type definition converted into a dictionary
-  # * Remove all attributes that are not used by the must_be_something functions
-  #
-  validation_attr = data_type.to_dict() if isinstance(data_type,Box) else data_type
-  for kw in ['type']:
-    validation_attr.pop(kw,None)
-
-  if data_type in ('dict','list') and not 'create_empty' in validation_attr:
+  if dt_name in ('dict','list') and not 'create_empty' in validation_attr:
     validation_attr['create_empty'] = False                           # Do not create empty dictionaries/lists unless told otherwise
 
   # Now call the validation function and hope for the best ;)
   #
-  return validation_function(
-            parent=parent,                                            # We're validating a single item
-            key=key,                                                  # So we're setting the retrieval key to None
-            path=parent_path,                                         # Pass the parent path (it will be combined with key anyway)
-            data_name=data_name,                                      # Pass name of the data
-            module=module,                                            # ... and the module
-            **validation_attr)                                        # And any other attributes
+  OK = validation_function(
+          parent=parent,                                            # We're validating a single item
+          key=key,                                                  # So we're setting the retrieval key to None
+          path=parent_path,                                         # Pass the parent path (it will be combined with key anyway)
+          data_name=data_name,                                      # Pass name of the data
+          module=module,                                            # ... and the module
+          **validation_attr)                                        # And any other attributes
+  if not OK:
+    return OK
+  
+  if dt_name == 'dict' and '_keys' in data_type:
+    return validate_dictionary(
+              data=data,
+              data_type=data_type,
+              parent_path=f"{parent_path}.{key}",
+              data_name=data_name,
+              module=module)
+
+  return True
 
 """
 validate_attributes -- validate object attributes
