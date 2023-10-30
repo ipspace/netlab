@@ -60,37 +60,6 @@ def get_valid_attributes(
   return valid
 
 """
-build_module_extra_attributes -- build a list of extra attributes defined by modules
-
-Some modules (vlan, vrf) define extra attributes (vlans, vrfs). While those attributes get added to the correct
-attribute lists during module initialization phase, it's good to know what hasn't been enabled if those attributes
-are not valid, so we're building a reverse lookup list from defaults._module_.attributes.extra lists
-"""
-
-def build_module_extra_attributes(topology: Box) -> None:
-  global_attr = topology.defaults.attributes            # Shortcut to global attribute list (where 'extra' list will be added)
-  # Iterate over all modules
-  for m in topology.defaults.keys():                    # Iterate over all default settings
-    if not 'supported_on' in topology.defaults[m]:      # ... not a module, move on
-      continue
-    mod_attr = topology.defaults[m].attributes          # A convenient shortcut to current module attributes to keep code simple
-    if not 'extra' in mod_attr:                         # No extra attributes for this module, move on
-      continue
-
-    for a_cat,a_list in mod_attr.extra.items():         # Now iterate over all attribute categories defined by this module
-      for attr in a_list:                               # ... and for every entry in that list
-        global_attr.extra[a_cat][attr] = m              # ... add a pointer back to the module
-
-"""
-get_extra_module_attributes -- return a dictionary of extra module attributes relevant to current validation context
-"""
-def get_extra_module_attributes(attributes : Box,attr_list: typing.List[str]) -> dict:
-  return { 
-    attr:mod for a_cat,a_extra in attributes.extra.items() \
-               if a_cat in attr_list \
-                 for attr,mod in a_extra.items() }
-
-"""
 validate_module_can_be_false: Check whether module attributes for an object can be 'false'
 """
 def validate_module_can_be_false(
@@ -105,13 +74,6 @@ def validate_module_can_be_false(
   return bool(intersect)
 
 """
-type_has_attribute: checks whether the data type definition has the specified attribute
-"""
-
-def type_has_attribute(data_type: typing.Any, attr: str) -> bool:
-  return isinstance(data_type,Box) and attr in data_type
-
-"""
 validate_dictionary -- recursively validate a dictionary
 
 Arguments are described in validate_item
@@ -123,6 +85,7 @@ def validate_dictionary(
       parent_path: str,
       data_name: str,
       module: str,
+      enabled_modules: typing.Optional[list] = []
         ) -> bool:
 
   OK = True
@@ -140,7 +103,8 @@ def validate_dictionary(
         data_type=data_type._keys[k],
         parent_path=parent_path,
         data_name=data_name,
-        module=module)
+        module=module,
+        enabled_modules=enabled_modules)
   return OK
 
 """
@@ -177,6 +141,32 @@ def validate_value(
             abort=abort)
 
 """
+transform_validation_shortcuts -- transform str/list/dict type definition shortcuts into structured definitions
+"""
+
+def transform_validation_shortcuts(data_type: Box) -> typing.Union[Box,dict]:
+  # Validating a dictionary against a dictionary of elements without a specified type
+  if isinstance(data_type,Box):
+    if not 'type' in data_type:
+      data_keys = { k:v for k,v in data_type.items() if not k.startswith('_') }
+      data_type = Box({ k:v for k,v in data_type.items() if k.startswith('_') })
+      data_type.type = 'dict'
+      data_type._keys = data_keys
+
+    return data_type
+  
+  if isinstance(data_type,str):                                       # Convert desired data type name into a dummy data type dictionary
+    return { 'type': data_type }
+
+  if isinstance(data_type,list):                                      # Convert list into 'list' datatype with 'valid_values'
+    return {
+      'type': 'list',
+      'valid_values': data_type
+    }
+
+  return data_type
+
+"""
 validate_item -- validate a single item from an object:
 
 * Return if the data type is None (= not validated)
@@ -195,40 +185,41 @@ def validate_item(
       parent_path: str,
       data_name: str,
       module: str,
-        ) -> typing.Any:
+      enabled_modules: typing.Optional[list] = []) -> typing.Any:
   global _bi,_tv
 
   data = parent[key]
   if data_type is None:                                               # Trivial case - data type not specified
     return True                                                       # ==> anything goes
 
+  data_type = transform_validation_shortcuts(data_type)
+
+  # First check the required module(s)
+  if '_requires' in data_type:
+    rq_module = data_type['_requires']                                # The the list of required modules
+    rq_module = rq_module if isinstance(rq_module,list) else [ rq_module ]
+    rq_fail = False
+    for m in rq_module:
+      if not enabled_modules or not m in enabled_modules:
+        rq_fail = True                                                # We could exit the loop on first error, but it's nicer
+        log.error(                                                    # ... to log all dependency errors
+          f"Attribute '{key}' used in {parent_path} requires module {m} which is not enabled in this context",
+          log.IncorrectAttr,
+          module)
+        
+    if rq_fail:                                                       # Attribute failed a dependency test, get out of here
+      return False
+
   # We have to handle a weird corner case: AF (or similar) list that is really meant to be a dictionary
   #
-  if isinstance(data,list) and type_has_attribute(data_type,'_list_to_dict'):
+  if isinstance(data,list) and '_list_to_dict' in data_type:
     parent[key] = { k: data_type._list_to_dict for k in data }        # Transform lists into a dictionary (updating parent will make it into a Box)
     data = parent[key]
     data_type = Box(data_type)                                        # and fix datatype definition
 
-  # Validating a dictionary against a dictionary of elements without a specified type
-  if isinstance(data_type,Box) and not 'type' in data_type:
-    data_keys = { k:v for k,v in data_type.items() if not k.startswith('_') }
-    data_type = Box({ k:v for k,v in data_type.items() if k.startswith('_') })
-    data_type.type = 'dict'
-    data_type._keys = data_keys
-
-  if type_has_attribute(data_type,'_alt_types'):
+  if '_alt_types' in data_type:                                       # Deal with alternate types first
     if validate_alt_type(data,data_type):
       return True
-
-  if isinstance(data_type,str):                                       # Convert desired data type name into a dummy data type dictionary
-    data_type = { 'type': data_type }
-
-  if isinstance(data_type,list):                                      # Convert list into 'list' datatype with 'valid_values'
-    data_type = {
-      'type': 'list',
-      'valid_values': data_type
-    }
-
 
   # Copy data type into validation attributes, skipping validation attributes and data type name
   validation_attr = { k:v for k,v in data_type.items() if not k.startswith('_') and k != 'type' }
@@ -262,7 +253,8 @@ def validate_item(
               data_type=data_type,
               parent_path=f"{parent_path}.{key}",
               data_name=data_name,
-              module=module)
+              module=module,
+              enabled_modules=enabled_modules)
 
   return True
 
@@ -309,9 +301,6 @@ def validate_attributes(
     log.fatal('Internal error in validate_attributes: attributes is not a Box')
     return None
 
-  if not 'extra' in topology.defaults.attributes:
-    build_module_extra_attributes(topology)
-
   if module_source is None:
     module_source = data_path
 
@@ -328,7 +317,6 @@ def validate_attributes(
   # Deal with that as well (although in an awkward way that should be improved)
   #
   valid = get_valid_attributes(attributes,attr_list)
-  extra_module_attr = get_extra_module_attributes(topology.defaults.attributes,attr_list)
   if isinstance(valid,str):                   # Validate data that is not a dictionary
     validate_value(                           # Use standalone value validator
       value=data,
@@ -336,13 +324,6 @@ def validate_attributes(
       path=data_path,
       module=module)
     return data
-
-  #
-  # Now that we know the valid attributes are a list, add extra attributes from enabled modules
-  #
-
-  if not modules is None:
-    valid += Box({ attr: None for attr,mod in extra_module_attr.items() if mod in modules })
 
   # Part 3 -- validate attributes
   #
@@ -372,7 +353,8 @@ def validate_attributes(
         data_type=valid[k],
         parent_path=data_path,
         data_name=data_name,
-        module=module)
+        module=module,
+        enabled_modules=modules)
       continue
 
     if not modules is None and k in modules:            # For module attributes, perform recursive check
@@ -399,13 +381,6 @@ def validate_attributes(
     if k in list_of_modules and not modules is None:
       log.error(
         f"{data_path} uses an attribute from module {k} which is not enabled in {module_source}",
-        log.IncorrectAttr,
-        module)
-      continue
-
-    if k in extra_module_attr and not modules is None:
-      log.error(
-        f"Attribute '{k}' used in {data_path} is defined by module {extra_module_attr[k]} which is not enabled",
         log.IncorrectAttr,
         module)
       continue
