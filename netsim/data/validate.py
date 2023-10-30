@@ -85,6 +85,7 @@ def validate_dictionary(
       parent_path: str,
       data_name: str,
       module: str,
+      enabled_modules: typing.Optional[list] = []
         ) -> bool:
 
   OK = True
@@ -102,7 +103,8 @@ def validate_dictionary(
         data_type=data_type._keys[k],
         parent_path=parent_path,
         data_name=data_name,
-        module=module)
+        module=module,
+        enabled_modules=enabled_modules)
   return OK
 
 """
@@ -251,7 +253,8 @@ def validate_item(
               data_type=data_type,
               parent_path=f"{parent_path}.{key}",
               data_name=data_name,
-              module=module)
+              module=module,
+              enabled_modules=enabled_modules)
 
   return True
 
