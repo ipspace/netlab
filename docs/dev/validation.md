@@ -181,6 +181,56 @@ af:
     ipv6: bool
 ```
 
+(validate-user-types)=
+## User-Defined Data Types
+
+If you use the same data structure in multiple places, consider using user-defined data types. You can define them in **defaults.attributes** and use them to validate any attribute.
+
+```{note}
+When using user-defined data types, you have to specify them as a string value of a validated attribute. You cannot use user-defined data types as a value for **‌type** validation attribute.
+```
+
+For example, the **bgp.session** plugin defines BGP timers as `exbs_timers` user-defined data type:
+
+```
+attributes:                   # User-defined data types
+  exbs_timers:                # BGP timers: keepalive, hold, min_hold -- integers with a value range
+    keepalive:
+      type: int
+      min_value: 1
+      max_value: 300
+    hold:
+      type: int
+      min_value: 3
+      max_value: 3600
+    min_hold:
+      type: int
+      min_value: 3
+      max_value: 3600
+```
+
+The `exbs_timers` data type is then used to validate **bgp.timers** global- and node attribute:
+
+```
+bgp:
+  attributes:
+    global:
+      timers: exbs_timers
+...
+    node:
+      timers: exbs_timers
+```
+
+Please note that the following definition (using `exbs_timers` as the value of `timers` **type** attribute) would not work:
+
+```
+bgp:
+  attributes:
+    global:
+      timers:
+        type: exbs_timers ### INVALID, WON'T WORK
+```
+
 ## Alternate Data Types
 
 Some _netlab_ attributes could take a dictionary value, alternate values meaning _use default_ or _do whatever you want_, or a list of keys.

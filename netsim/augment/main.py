@@ -11,7 +11,7 @@ from .. import augment
 from .. import providers
 from .. import modules
 from .. import devices as quirks
-from ..data import global_vars
+from ..data import global_vars,validate
 from . import addressing
 
 def topology_init(topology: Box) -> None:
@@ -49,6 +49,7 @@ def transform_setup(topology: Box) -> None:
   modules.pre_default(topology)
   log.exit_on_error()
 
+  validate.init_validation(topology)
   augment.topology.check_global_elements(topology)
   augment.plugin.check_plugin_dependencies(topology)                    # Check plugin dependencies on other plugins and modules
   augment.nodes.validate(topology)
