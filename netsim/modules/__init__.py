@@ -275,29 +275,6 @@ def merge_global_module_params(topology: Box) -> None:
   reorder_node_modules(topology,'transform_after')
 
 '''
-add_module_extra_parameters: add extra module keywords (ex: 'vrfs' for 'vrf' module) to the list of attributes
-'''
-
-##### REMOVE AFTER ATTRIBUTE MIGRATION #####
-def extend_global_attributes(attr: typing.Union[list,dict], extra: str) -> None:
-  if isinstance(attr,dict):
-    attr[extra] = None
-  elif isinstance(attr,list):
-    attr.append(extra)
-
-def add_module_extra_parameters(topology: Box) -> None:
-  if not 'module' in topology:
-    return
-
-  for m in topology.module:                                     # Iterate through the global list of modules
-    if 'extra' in topology.defaults[m].attributes:              # Does the module have 'extra' parameters?
-      for k in topology.defaults[m].attributes.extra.keys():    # ... oh, it does, iterate through its keys (attribute levels)
-        for attr in topology.defaults[m].attributes.extra[k]:   # Take every attribute from the list of extra attributes
-          if not attr in topology.defaults.attributes[k]:       # ... and if it's not already in the global list of attributes
-            extend_global_attributes(topology.defaults.attributes[k],attr)
-###            topology.defaults.attributes[k].append(attr)        # ... append it to the global list
-
-'''
 adjust_modules: somewhat intricate multi-step config module adjustments
 
 * Set node default modules based on global modules
@@ -315,7 +292,6 @@ def adjust_modules(topology: Box) -> None:
   module_transform("init",topology)
   merge_node_module_params(topology)
   merge_global_module_params(topology)
-  add_module_extra_parameters(topology)
 
 """
 Validate module parameters and dependencies
