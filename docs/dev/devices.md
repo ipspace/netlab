@@ -228,7 +228,19 @@ Similar to the initial device configuration, create templates supporting [indivi
 
 Use existing configuration templates and module description to figure out which settings your templates should support.
 
-For every configuration module you add, update the module's `supported_on` list in `netsim/topology-defaults.yml` to indicate that the configuration module is supported by the network device. The list of supported devices is used by the **netlab create** command to ensure the final lab topology doesn't contain unsupported/unimplemented module/device combinations.
+For every configuration module you add, update the device's `features` dictionary to indicate that the configuration module is supported by the network device. When a configuration module has no extra options (or your device doesn't support them), simply add `_module_: True` line. Explore existing device YAML definitions for more details. For example, this is the definition declaring that Cisco IOSv supports BFD (with no extra options) and BGP with a number BGP-specific features:
+
+```
+features:
+  bfd: true
+  bgp:
+    local_as: true
+    vrf_local_as: true
+    local_as_ibgp: true
+    activate_af: true
+```
+
+The list of supported devices is used by the **netlab create** command to ensure the final lab topology doesn't contain unsupported/unimplemented module/device combinations.
 
 ## Adding an Existing Device to a New Virtualization Provider
 
