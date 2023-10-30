@@ -15,6 +15,12 @@ from .types import must_be_list,must_be_dict,must_be_string,must_be_int,must_be_
 from . import types as _tv
 from . import get_empty_box
 
+# It's easier to have a few global functions than to pass topology parameter
+# around
+#
+list_of_modules: typing.List[str] = []
+topo_attributes: typing.Optional[Box] = None
+
 """
 get_valid_attributes
 
@@ -144,7 +150,16 @@ def validate_value(
 transform_validation_shortcuts -- transform str/list/dict type definition shortcuts into structured definitions
 """
 
-def transform_validation_shortcuts(data_type: Box) -> typing.Union[Box,dict]:
+def transform_validation_shortcuts(data_type: typing.Any) -> typing.Union[Box,dict]:
+  global topo_attributes
+
+  if isinstance(data_type,str):                             # Do we have a user-defined data type?
+    if topo_attributes and data_type in topo_attributes:    # User-defined data type has to be in defaults.attributes
+      data_type = topo_attributes[data_type]                # ... if that's the case, fetch it and continue processing
+
+  if isinstance(data_type,str):                             # Convert a a simple type with no extra attributes
+    return { 'type': data_type }                            # ... into a dummy data type dictionary
+
   # Validating a dictionary against a dictionary of elements without a specified type
   if isinstance(data_type,Box):
     if not 'type' in data_type:
@@ -154,17 +169,14 @@ def transform_validation_shortcuts(data_type: Box) -> typing.Union[Box,dict]:
       data_type._keys = data_keys
 
     return data_type
-  
-  if isinstance(data_type,str):                                       # Convert desired data type name into a dummy data type dictionary
-    return { 'type': data_type }
 
-  if isinstance(data_type,list):                                      # Convert list into 'list' datatype with 'valid_values'
+  if isinstance(data_type,list):                            # Convert list into 'list' datatype with 'valid_values'
     return {
       'type': 'list',
       'valid_values': data_type
     }
 
-  return data_type
+  log.fatal(f'Internal validation error: unknown data type {data_type}')
 
 """
 validate_item -- validate a single item from an object:
@@ -267,8 +279,6 @@ or module names. For module attributes, iterate over all valid module attributes
 Returns the original data or None transformed into an empty dictionary
 """
 
-list_of_modules: typing.List[str] = []
-
 def validate_attributes(
       data: Box,                                        # Object to validate
       topology: Box,                                    # Pointer to topology
@@ -287,6 +297,7 @@ def validate_attributes(
   # Part 1: set up default values
   #
   global list_of_modules
+  global topo_attributes
 
   if attributes is None:
     attributes = topology.defaults.attributes
@@ -303,9 +314,6 @@ def validate_attributes(
 
   if module_source is None:
     module_source = data_path
-
-  if not list_of_modules:
-    list_of_modules = [ m for m in topology.defaults.keys() if 'supported_on' in topology.defaults[m] ]
 
   if log.debug_active('validate'):
     print(f'validate {data_path} against {attr_list} attributes + {modules} modules from {module_source}')
@@ -389,6 +397,16 @@ def validate_attributes(
       f"Invalid {data_name} attribute '{k}' found in {data_path}"+attr_help(module,data_name),
       log.IncorrectAttr,
       module)
+
+"""
+init_validation: initial global variables from current topology
+"""
+def init_validation(topology: Box) -> None:
+  global topo_attributes
+  global list_of_modules
+
+  topo_attributes = topology.defaults.attributes
+  list_of_modules = [ m for m in topology.defaults.keys() if 'supported_on' in topology.defaults[m] ]
 
 """
 Get object-specific attributes
