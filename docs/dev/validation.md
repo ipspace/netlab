@@ -118,11 +118,69 @@ All data types support:
 **list** or **dict** support:
 * **create_empty** -- _True_ if you want to create an empty element if it's missing
 
+**dict** supports:
+* **_keys** -- valid dictionary keys. _netlab_ performs recursive validation of dictionary keys. Usually not used as you can use [shortcut definition](validation-shortcut-type)
+
 **int** values can be range-checked: 
 * **min_value** -- minimum parameter value
 * **max_value** -- maximum parameter value
 
-## Alternate Data Types for Dictionaries
+(validation-shortcut-type)=
+## Shortcut Data Type Definitions
+
+_netlab_ supports several shortcuts that make type definitions easier to create and read:
+
+* A data type definition that is a string is transformed into a dictionary with **type** key.
+* A data type definition that is a list will match a list value. The value of the data type definition is used as the list of valid values.
+* A data type definition that is a dictionary without the **type** key will match a dictionary. Keys starting with '_' (data validation parameters) will be retained in the data type definition, all other keys will be transferred into `_keys` dictionary.
+
+**String example**
+
+```
+device_name: str
+```
+
+is transformed into:
+
+```
+device_name:
+  type: str
+```
+
+**List example:**
+
+```
+x: [ a,b,c ]
+```
+
+... is transformed into
+
+```
+x:
+  type: list
+  valid_values: [ a,b,c ]
+```
+
+**Dictionary example:**
+
+```
+af:
+  _alt_types: [ NoneType ]
+  ipv4: bool
+  ipv6: bool
+```
+
+... is transformed into:
+
+```
+af:
+  _alt_types: [ NoneType ]
+  _keys:
+    ipv4: bool
+    ipv6: bool
+```
+
+## Alternate Data Types
 
 Some _netlab_ attributes could take a dictionary value, alternate values meaning _use default_ or _do whatever you want_, or a list of keys.
 
