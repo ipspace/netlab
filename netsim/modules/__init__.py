@@ -324,31 +324,6 @@ def module_validate(topology: Box) -> None:
   check_module_dependencies(topology)
 
 """
-Prepare module attribute dictionary
-
-* If the module attributes are a list, then global/node/link/interface attributes are the same
-
-Otherwise:
-
-* Add propagatable link attributes to interface attributes
-* Copy global attributes to node attributes if the node attributes are not specified
-"""
-
-def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> Box:
-  if isinstance(a,dict):
-    attr = data.get_box(a)
-    if not isinstance(attr.interface,str):
-      attr.interface = list(set(attr.link) - set(attr.link_no_propagate) | set(attr.interface))
-    attr.node = attr.get("node",attr["global"])
-  else:
-    attr = data.get_box({
-      "global": a,
-      "node": a,
-      "link": a,
-      "interface": a})
-  return attr
-
-"""
 check_module_dependencies:
 
 For every module used by the topology, check is the module has "requires" attribute, and if
