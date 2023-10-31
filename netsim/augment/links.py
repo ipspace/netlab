@@ -180,7 +180,7 @@ def validate(topology: Box) -> None:
         data_path=f'{l_data._linkname}.prefix',         # Topology path to link prefix
         data_name=f'prefix',
         attr_list=['prefix'],                           # We're checking prefix attributes
-        modules=None,                                   # No module attributes in prefix
+        modules=[],                                     # No module attributes in prefix
         module='links')
 
 """

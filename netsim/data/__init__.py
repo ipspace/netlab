@@ -16,6 +16,18 @@ def get_empty_box() -> Box:
   return get_box({})
 
 #
+# Another thingy we need all the time: make something a list
+
+def get_a_list(x: typing.Any, ctx: typing.Optional[str] = None) -> list:
+  if isinstance(x,list):
+    return x
+  if isinstance(x,dict):
+    from ..utils import log
+    log.fatal(f'Internal error: expected something that could be made into a list, got {x}')
+
+  return [ x ]
+
+#
 # Change all NULL values in a nested dictionary structure to empty strings
 # to make them nicer in YAML printouts
 #

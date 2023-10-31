@@ -395,11 +395,6 @@ def create_vrf_links(topology: Box) -> None:
 
 class VRF(_Module):
 
-  def module_pre_default(self, topology: Box) -> None:
-    for attr_set in ['global','node']:
-      if not 'vrfs' in topology.defaults.attributes[attr_set]:
-        topology.defaults.attributes[attr_set].append('vrfs')
-
   def module_pre_transform(self, topology: Box) -> None:
     if 'vrfs' in topology:
       try:
@@ -434,7 +429,7 @@ class VRF(_Module):
         topology=topology,
         data_path=f'vrfs.{vname}',                      # Path to global VRF definition
         data_name=f'VRF',
-        attr_list=['vrf','link'],                       # We're checking VLAN and link attributes
+        attr_list=['vrf'],                              # We're checking VRF attributes. Link attributes are added through _namespace
         modules=topology.get('module',[]),              # ... against global modules
         module_source='topology',
         module='vrf')                                   # Function is called from 'vrf' module

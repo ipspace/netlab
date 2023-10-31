@@ -113,6 +113,29 @@ All data types support:
 * **true_value** -- value to use when the parameter is set to *True*
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
 
+**Examples**
+
+The global **vlans** dictionary can be used only with the **vlan** module:
+
+```
+attributes:
+  global:
+    vlans:                        # vlans is a valid global parameter
+      type: dict                  # It's a dictionary
+      _requires: [ vlan ]         # ... that requires VLAN module
+```
+
+You can specify a list of BGP session types for the MPLS 6PE functionality. However, you can also specify a *True* value for the global **mpls.6pe** attribute to enable the feature. The *True* value gets translated into a default list (enable 6PE on IBGP sessions):
+
+```
+mpls:
+  attributes:
+    global:
+      6pe: { type: list, true_value: [ ibgp ] }
+```
+
+### Further Data Type Validation options
+
 **str**, **list** or **dict** support:
 * **valid_values** -- list of valid values (keys for dictionary)
 
@@ -229,6 +252,18 @@ bgp:
     global:
       timers:
         type: exbs_timers ### INVALID, WON'T WORK
+```
+
+You can use `_namespace` attribute within the user-defined data types to add attributes from other objects. For example, as you can use link attributes in VLAN definitions, the **vlan** definition (see `modules/vlan.yml`) includes the `_namespace` attribute:
+
+```
+attributes:
+  vlan:                           # Define the VLAN object type
+    id: { type: int, min_value: 1, max_value: 4095 }
+    vni: { type: int, min_value: 1, max_value: 16777215 }
+    mode: { type: str, valid_values: [ bridge, irb, route ] }
+    prefix:
+    _namespace: [ link ]          # VLANs can include link attributes
 ```
 
 ## Alternate Data Types
