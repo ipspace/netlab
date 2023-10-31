@@ -13,13 +13,46 @@ from .types import must_be_list,must_be_dict,must_be_string,must_be_int,must_be_
 
 # We also need to import the whole data.types module to be able to do validation function lookup
 from . import types as _tv
-from . import get_empty_box
+from . import get_empty_box,get_a_list
 
 # It's easier to have a few global functions than to pass topology parameter
 # around
 #
 list_of_modules: typing.List[str] = []
 topo_attributes: typing.Optional[Box] = None
+
+"""
+get_attribute_namespaces
+
+Given a list of attribute namespaces, iterate through attributes and extend the list
+with potential _namespace definitions.
+"""
+
+def get_attribute_namespaces(
+      attributes: Box,                                      # Where to get valid attributes from
+      attr_list: typing.List[str]                           # List of attribute namespaces
+        ) -> list:
+  
+  iterate_list = list(attr_list)                            # Make a copy of the attr list
+  return_list = []
+
+  cnt = 0
+  while iterate_list:                                       # Repeat until we run out of ideas
+    cnt = cnt + 1
+    if cnt > 100:                                           # Always nice to detect an infinite loop ;)
+      log.fatal('Internal error: Never-ending get_attribute_namespace loop, got {attr_list} / {iterate_list}')
+
+    ns = iterate_list.pop(0)                                # Get the next namespace from the list
+    if not ns in attributes:                                # Not present in the attributes?
+      continue                                              # ... no big deal, ignore it
+    
+    if not ns in return_list:                               # Has it already been mentioned?
+      return_list.append(ns)                                # ... nope, add it to the list
+
+    if '_namespace' in attributes[ns]:                      # Add namespaces to inspect if the current namespace wants that
+      iterate_list.extend(get_a_list(attributes[ns]._namespace))
+
+  return return_list
 
 """
 get_valid_attributes
@@ -42,17 +75,16 @@ def get_valid_attributes(
 
     if isinstance(add_attr,str):                            # Got a specific data type?
       if valid:                                             # Have we already collected something?
-        log.fatal(
+        log.fatal(                                          # ... bad karma, inconsistent validation requirements
           f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
           f'... attributes: {attributes}')
-        return ''                                           # ... bad karma, inconsistent validation requirements
+
       return add_attr
 
     if not isinstance(add_attr,Box):
-      log.fatal(
+      log.fatal(                                            # ... dang, someone messed up. Abort, abort, abort...
         f'Internal error: Expected dictionary for {atlist} attributes\n' +
         f'... attributes: {attributes}')
-      return ''                                             # ... dang, someone messed up. Abort, abort, abort...
 
     no_propagate = f'{atlist}_no_propagate'                 # No-propagate list excluded only for non-first attribute category
     if idx and no_propagate in attributes:
@@ -91,8 +123,10 @@ def validate_dictionary(
       parent_path: str,
       data_name: str,
       module: str,
-      enabled_modules: typing.Optional[list] = []
-        ) -> bool:
+      topology: Box,
+      attr_list: list,
+      attributes: Box,
+      enabled_modules: list) -> bool:
 
   OK = True
   for k in data.keys():                                             # Iterate over the elements
@@ -110,6 +144,9 @@ def validate_dictionary(
         parent_path=parent_path,
         data_name=data_name,
         module=module,
+        topology=topology,
+        attr_list=attr_list,
+        attributes=attributes,
         enabled_modules=enabled_modules)
   return OK
 
@@ -197,7 +234,10 @@ def validate_item(
       parent_path: str,
       data_name: str,
       module: str,
-      enabled_modules: typing.Optional[list] = []) -> typing.Any:
+      topology: Box,
+      attr_list: list,
+      attributes: Box,
+      enabled_modules: list) -> typing.Any:
   global _bi,_tv
 
   data = parent[key]
@@ -266,6 +306,9 @@ def validate_item(
               parent_path=f"{parent_path}.{key}",
               data_name=data_name,
               module=module,
+              topology=topology,
+              attr_list=attr_list,
+              attributes=attributes,
               enabled_modules=enabled_modules)
 
   return True
@@ -285,7 +328,7 @@ def validate_attributes(
       data_path: str,                                   # Path to the data object (needed in error messages)
       data_name: str,                                   # Name of the object (needed in error messages, example: 'node')
       attr_list: typing.List[str],                      # List of valid attributes (example: ['node'] or ['link','interface'])
-      modules: typing.Optional[list] = [],              # List of relevant modules
+      modules: list = [],                               # List of relevant modules
       module: str = 'attributes',                       # Module generating the error message (default: 'attributes')
       module_source: typing.Optional[str] = None,       # Where did we get the list of modules?
       attributes: typing.Optional[Box] = None,          # Where to get valid attributes from
@@ -324,6 +367,7 @@ def validate_attributes(
   # It could be that the list of attributes tells us data should be of certain type
   # Deal with that as well (although in an awkward way that should be improved)
   #
+  attr_list = get_attribute_namespaces(attributes,attr_list)
   valid = get_valid_attributes(attributes,attr_list)
   if isinstance(valid,str):                   # Validate data that is not a dictionary
     validate_value(                           # Use standalone value validator
@@ -362,7 +406,10 @@ def validate_attributes(
         parent_path=data_path,
         data_name=data_name,
         module=module,
-        enabled_modules=modules)
+        enabled_modules=modules,
+        topology=topology,
+        attr_list=attr_list,
+        attributes=attributes)
       continue
 
     if not modules is None and k in modules:            # For module attributes, perform recursive check
@@ -377,7 +424,7 @@ def validate_attributes(
         data_path=f'{data_path}.{k}',                   # Change 'node' to 'node.bgp'
         data_name=f'{k} {data_name}',                   # Change 'node' to 'bgp node' to be used in 'bgp node attribute...'
         attr_list=attr_list,                            # Not changing the checking context
-        modules=None,                                   # Do not consider other modules during module attribute check
+        modules=[],                                     # Do not consider other modules during module attribute check
         module=k,                                       # Error message generated by the module
         attributes=topology.defaults[k].attributes)     # Use module attributes
 

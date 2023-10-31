@@ -97,7 +97,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
       topology=topology,
       data_path=f'{obj_path}.{vname}',                # Topology path to VLAN attributes
       data_name=f'VLAN',
-      attr_list=['vlan','link'],                      # We're checking VLAN and link attributes
+      attr_list=['vlan'],                             # Checking VLAN attributes. Link attributes are added through _namespace
       modules=obj.get('module',[]),                   # ... against object modules (node or topology)
       module_source='topology' if obj is topology else f'nodes.{obj.name}',
       module='vlans')                                 # Function is called from 'vlans' module
