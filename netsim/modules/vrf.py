@@ -9,8 +9,7 @@ from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from ..utils import log
 from .. import data
 from ..data import global_vars
-from ..data.validate import validate_attributes
-from ..data.types import must_be_list,must_be_dict,must_be_id
+from ..data.types import must_be_list
 from ..augment import devices,groups,links,addressing
 
 #
@@ -90,7 +89,13 @@ def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
 
 #
 # Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
-# Also checks for valid naming
+#
+# The data type sanity checks have been done by topology/node validation module:
+#
+# * the 'vrfs' attribute is a dictionary of VRF definitions (dictionaries)
+# * the keys (VRF names) are valid identifiers
+#
+# This function performs semantic validation
 #
 def normalize_vrf_dict(obj: Box, topology: Box) -> None:
   if not 'vrfs' in obj:
@@ -99,20 +104,9 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
   asn = None
   obj_name = 'global VRFs' if obj is topology else obj.name
 
-  if not isinstance(obj.vrfs,dict):
-    log.error(f'VRF definition in {obj_name} is not a dictionary',log.IncorrectValue,'vrf')
-    return
-
   for vname in list(obj.vrfs.keys()):
-    must_be_id(parent=None,key=vname,path=f'NOATTR:VRF name {vname} in {obj_name}',module='vrf')
-
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
-    if not isinstance(obj.vrfs[vname],dict):
-      log.error(f'VRF definition for {vname} in {obj_name} should be empty or a dictionary',
-        log.IncorrectValue,
-        'vrf')
-      return
 
     vdata = obj.vrfs[vname]
     if 'rd' in vdata:
@@ -126,15 +120,11 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
             'vrf')
           return
         vdata.rd = f'{asn}:{vdata.rd}'
-      elif isinstance(vdata.rd,str):
+      else:                     # We know that RD attribute makes some sense (due to type validation), so it's either int or str
         if parse_rdrt_value(vdata.rd) is None:
           log.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
             log.IncorrectValue,
             'vrf')
-      else:
-        log.error(f'RD value in VRF {vname} in {obj_name} must be a string or an integer',
-          log.IncorrectValue,
-          'vrf')
 
 def normalize_vrf_ids(topology: Box) -> None:
   normalize_vrf_dict(topology,topology)
@@ -395,18 +385,8 @@ def create_vrf_links(topology: Box) -> None:
 
 class VRF(_Module):
 
+  # Note: validation of 'vrfs' dictionary has already been done during top-level element validation
   def module_pre_transform(self, topology: Box) -> None:
-    if 'vrfs' in topology:
-      try:
-        must_be_dict(
-          parent=topology,
-          key='vrfs',
-          path='topology',
-          create_empty=False,
-          abort=True,
-          module='vrf')  # Check that we're dealing with a VRF dictionary and return otherwise
-      except:
-        return
 
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vrfs','vrf',copy_keys=['rd','export','import'])
@@ -415,31 +395,13 @@ class VRF(_Module):
       return
 
     create_vrf_links(topology)                          # Create VRF links (and remove 'links' attribute)
-    for vname in topology.vrfs.keys():
-      must_be_dict(
-        parent=topology,
-        key=f'vrfs.{vname}',
-        path='topology',
-        create_empty=True,
-        module='vrf')
-
-      vdata = topology.vrfs[vname]
-      validate_attributes(
-        data=vdata,                                     # Validate global VRF data
-        topology=topology,
-        data_path=f'vrfs.{vname}',                      # Path to global VRF definition
-        data_name=f'VRF',
-        attr_list=['vrf'],                              # We're checking VRF attributes. Link attributes are added through _namespace
-        modules=topology.get('module',[]),              # ... against global modules
-        module_source='topology',
-        module='vrf')                                   # Function is called from 'vrf' module
-
     log.exit_on_error()
     normalize_vrf_ids(topology)
     populate_vrf_static_ids(topology)
     set_vrf_ids(topology,topology)
     set_import_export_rt(topology,topology)
 
+  # Note: validation of 'nodes.x.vrfs' dictionary has already been done during node validation
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     # Check if any global vrfs need to be pulled in due to being referenced by a vlan
     vlan_vrfs = [ vdata.vrf for vname,vdata in node.get('vlans',{}).items() if 'vrf' in vdata ]
@@ -448,30 +410,9 @@ class VRF(_Module):
         return
       node.vrfs = {}     # Prepare to pull in global vrfs
 
-    if must_be_dict(
-        parent=node,
-        key='vrfs',
-        path=f'nodes.{node.name}',
-        create_empty=False,
-        module='vrf') is False:                            # Check that we're dealing with a VRF dictionary and return if there's none
-      return
-
     for vname in set(list(node.vrfs.keys()) + vlan_vrfs):  # Filter out duplicates
-      if node.vrfs[vname] is None:
+      if node.vrfs[vname] is None:                         # Make sure the VRF dictionary exists
         node.vrfs[vname] = {}
-
-      validate_attributes(
-        data=node.vrfs[vname],                        # Validate node VRF data
-        topology=topology,
-        data_path=f'nodes.{node.name}.vrfs.{vname}',  # Path to node VRF definition
-        data_name=f'VRF',
-        attr_list=['vrf','link'],                     # We're checking VLAN and link attributes
-        modules=node.get('module',[]),                # ... against node modules
-        module_source=f'nodes.{node.name}',
-        module='vrf')                                 # Function is called from 'vrf' module
-
-#      if 'vrfs' in topology and vname in topology.vrfs:
-#        node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]
 
     set_vrf_ids(node,topology)
     set_import_export_rt(node,topology)
