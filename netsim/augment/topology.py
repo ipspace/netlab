@@ -118,8 +118,8 @@ def adjust_global_parameters(topology: Box) -> None:
 
   providers = topology.defaults.providers
   if not topology.provider in providers:
-    plist = ', '.join(providers.keys())
-    log.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (topology.provider,plist))
+    plist = ', '.join(sorted(providers.keys()))
+    log.fatal(f'Unknown virtualization provider {topology.provider}. Supported providers are: {plist}')
 
   # Adjust defaults with provider-specific defaults
   #
