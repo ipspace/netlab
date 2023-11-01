@@ -92,7 +92,6 @@ def test_error_cases():
         error_log_text = "\n".join(error_log)
         expected_text  = "\n".join(log_lines)
         print(f'Accumulated error log\n{"=" * 70}\n{error_log_text}\n\nExpected log\n{"=" * 70}\n{expected_text}')
-        print(f'{"-"*70}\nlog: {error_log}\nexp: {log_lines}')
       assert error_log == log_lines
 
 if __name__ == "__main__":
