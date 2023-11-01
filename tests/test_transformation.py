@@ -10,6 +10,7 @@ import glob
 import pathlib
 import pytest
 import difflib
+import pathlib
 from box import Box
 
 import utils
@@ -17,8 +18,10 @@ import utils
 from netsim.utils import log,strings,read as _read
 from netsim import augment
 from netsim.outputs import _TopologyOutput,ansible
+from netsim.data import types as _types
 
 def run_test(fname):
+  log.init_log_system(header = False)
   topology = _read.load(fname,relative_topo_name=True)
   log.exit_on_error()
   augment.main.transform(topology)
@@ -78,6 +81,19 @@ def test_error_cases():
     log.err_count = 0
     with pytest.raises(log.ErrorAbort):
       topo = run_test(test_case)
+
+    error_log = log.get_error_log()
+    log_file = pathlib.Path(test_case.replace('.yml','.log'))
+    if log_file.exists():
+      with log_file.open() as f:
+        log_lines = [line.rstrip('\n') for line in f]
+
+      if error_log != log_lines:
+        error_log_text = "\n".join(error_log)
+        expected_text  = "\n".join(log_lines)
+        print(f'Accumulated error log\n{"=" * 70}\n{error_log_text}\n\nExpected log\n{"=" * 70}\n{expected_text}')
+        print(f'{"-"*70}\nlog: {error_log}\nexp: {log_lines}')
+      assert error_log == log_lines
 
 if __name__ == "__main__":
   test_transformation_cases("/tmp")
