@@ -9,8 +9,7 @@ from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from ..utils import log
 from .. import data
 from ..data import global_vars
-from ..data.validate import validate_attributes
-from ..data.types import must_be_list,must_be_dict,must_be_id
+from ..data.types import must_be_list
 from ..augment import devices,groups,links,addressing
 
 #
@@ -90,7 +89,13 @@ def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
 
 #
 # Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
-# Also checks for valid naming
+#
+# The data type sanity checks have been done by topology/node validation module:
+#
+# * the 'vrfs' attribute is a dictionary of VRF definitions (dictionaries)
+# * the keys (VRF names) are valid identifiers
+#
+# This function performs semantic validation
 #
 def normalize_vrf_dict(obj: Box, topology: Box) -> None:
   if not 'vrfs' in obj:
@@ -99,20 +104,9 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
   asn = None
   obj_name = 'global VRFs' if obj is topology else obj.name
 
-  if not isinstance(obj.vrfs,dict):
-    log.error(f'VRF definition in {obj_name} is not a dictionary',log.IncorrectValue,'vrf')
-    return
-
   for vname in list(obj.vrfs.keys()):
-    must_be_id(parent=None,key=vname,path=f'NOATTR:VRF name {vname} in {obj_name}',module='vrf')
-
     if obj.vrfs[vname] is None:
       obj.vrfs[vname] = {}
-    if not isinstance(obj.vrfs[vname],dict):
-      log.error(f'VRF definition for {vname} in {obj_name} should be empty or a dictionary',
-        log.IncorrectValue,
-        'vrf')
-      return
 
     vdata = obj.vrfs[vname]
     if 'rd' in vdata:
@@ -126,15 +120,11 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
             'vrf')
           return
         vdata.rd = f'{asn}:{vdata.rd}'
-      elif isinstance(vdata.rd,str):
+      else:                     # We know that RD attribute makes some sense (due to type validation), so it's either int or str
         if parse_rdrt_value(vdata.rd) is None:
           log.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
             log.IncorrectValue,
             'vrf')
-      else:
-        log.error(f'RD value in VRF {vname} in {obj_name} must be a string or an integer',
-          log.IncorrectValue,
-          'vrf')
 
 def normalize_vrf_ids(topology: Box) -> None:
   normalize_vrf_dict(topology,topology)
