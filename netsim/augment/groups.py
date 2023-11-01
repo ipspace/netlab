@@ -125,7 +125,7 @@ def check_group_data_structure(
     must_be_dict(gdata,'vars',gpath,create_empty=False,module='groups')
     must_be_dict(gdata,'node_data',gpath,create_empty=False,module='groups')
     must_be_list(gdata,'config',gpath,create_empty=False,module='groups')
-    must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=list_of_modules)
+    must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
     must_be_string(gdata,'device',gpath,module='groups',valid_values=list(topology.defaults.devices))
 
     if 'node_data' in gdata:                 # Validate node_data attributes (if any)
