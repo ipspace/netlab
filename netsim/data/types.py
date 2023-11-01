@@ -28,7 +28,14 @@ def get_element_path(parent: str, element: typing.Optional[str]) -> str:
   else:
     return parent
 
-wrong_type_help: dict = {}
+_wrong_type_help: dict = {}                           # Remember the 'wrong type' hints we printed out
+_attr_help_cache: typing.Optional[Box] = None         # Remember which attribute help messages we already printed out
+
+def init_wrong_type() -> None:
+  global _wrong_type_help,_attr_help_cache
+
+  _wrong_type_help = {}
+  _attr_help_cache = None
 
 def wrong_type_message(
       path: str,                                        # Path to the value
@@ -39,16 +46,16 @@ def wrong_type_message(
       data_name: typing.Optional[str] = None,           # Optional validation context
       module: typing.Optional[str] = None,              # Module name to display in error messages
                       ) -> None:
-  global wrong_type_help
+  global _wrong_type_help
 
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
   ctxt = f'\n... context: {context}' if context else ''
   expected_help = expected.split(' HELP:')              # Does the error message contain help?
   if len(expected_help) > 1:                            # ... it does, let's see what we can do
-    if not expected_help[0] in wrong_type_help:         # Did we print this help before? Adjust context if not
+    if not expected_help[0] in _wrong_type_help:        # Did we print this help before? Adjust context if not
       ctxt = f'\n... FYI: {expected_help[0]} is {expected_help[1]}{ctxt}'
-      wrong_type_help[expected_help[0]] = expected_help[1]
+      _wrong_type_help[expected_help[0]] = expected_help[1]
     expected = expected_help[0]                         # ... and get the actual target data type name
 
   wrong_value = 'NWT: ' in expected
@@ -71,17 +78,16 @@ def wrong_type_message(
 #
 # Get attribute help -- return 'use netlab show attributes XYZ' help message
 #
-attr_help_cache: typing.Optional[Box] = None          # Remember which messages we already printed out
 
 def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> str:
-  global attr_help_cache
+  global _attr_help_cache
 
   if data_name is None or module is None:             # We're missing crucial information, cannot provide any help
     return ''
 
-  if attr_help_cache is None:                         # Initialize help messages cache if needed
+  if _attr_help_cache is None:                        # Initialize help messages cache if needed
     from ..data import get_empty_box
-    attr_help_cache = get_empty_box()
+    _attr_help_cache = get_empty_box()
 
   topology = global_vars.get_topology()               # Try to get current lab topology
   if not topology:                                    # ... not initialized yet, too bad
@@ -100,10 +106,10 @@ def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> 
 
   # No need to print out the same help message twice, check the message cache
   #
-  if mod_cache in attr_help_cache and attr_type in attr_help_cache[mod_cache]:
+  if mod_cache in _attr_help_cache and attr_type in _attr_help_cache[mod_cache]:
     return ''
 
-  attr_help_cache[mod_cache][attr_type] = True        # Remember we were asked to provide this help message
+  _attr_help_cache[mod_cache][attr_type] = True       # Remember we were asked to provide this help message
   if not attr_type in attrs:                          # ... but it makes no sense to give extra help if the show command
     return ''                                         # ... won't print the desired attributes
 

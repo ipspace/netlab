@@ -8,6 +8,7 @@ import warnings
 import typing
 import argparse
 from box import Box
+from ..data import types as _types
 
 LOGGING : bool = False
 VERBOSE : int = 0
@@ -20,7 +21,7 @@ WARNING : bool = False
 AF_LIST = ['ipv4','ipv6']
 BGP_SESSIONS = ['ibgp','ebgp']
 
-err_count: int = 0
+_ERROR_LOG: list = []
 
 class MissingDependency(Warning):
   pass
@@ -67,35 +68,41 @@ def print_error_header() -> None:
     pass
 
 def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
-  global err_count
-  err_count = err_count + 1
+  global _ERROR_LOG
+
+  err_line = f'Fatal error in {module}: {text}'
+  _ERROR_LOG.extend(err_line.split("\n"))
+
   if RAISE_ON_ERROR:
     raise ErrorAbort(text)
   else:
     if WARNING:
-      warnings.warn_explicit(text,FatalError,filename=module,lineno=err_count)
+      warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
     else:
       print_error_header()
-      print(f'Fatal error in {module}: {text}',file=sys.stderr)
+      print(err_line,file=sys.stderr)
     sys.exit(1)
 
 """
 Display an error message, including error category, calling module and optional hint
 """
+
 def error(
       text: str,
       category: typing.Type[Warning] = UserWarning,
       module: str = 'topology',
       hint: typing.Optional[str] = None) -> None:
 
-  global err_count
-  err_count = err_count + 1
+  global _ERROR_LOG
+  err_line = f'{category.__name__} in {module}: {text}'
+  _ERROR_LOG.extend(err_line.split("\n"))
+
   if WARNING:
-    warnings.warn_explicit(text,category,filename=module,lineno=err_count)
+    warnings.warn_explicit(text,category,filename=module,lineno=len(_ERROR_LOG))
     return
   else:
     print_error_header()
-    print(f'{category.__name__} in {module}: {text}',file=sys.stderr)
+    print(err_line,file=sys.stderr)
 
   if hint is None:                                  # No extra hints
     return
@@ -110,12 +117,14 @@ def error(
   mod_hints = topology.defaults.hints[module]       # Get hints for current module
 
   if mod_hints[hint]:
-    print(extra_data_printout(mod_hints[hint],width=90),file=sys.stderr)
+    hint_printout = extra_data_printout(mod_hints[hint],width=90)
+    _ERROR_LOG.extend(hint_printout.split("\n"))  
+    print(hint_printout,file=sys.stderr)
     mod_hints[hint] = ''
 
 def exit_on_error() -> None:
-  global err_count
-  if err_count > 0:
+  global _ERROR_LOG
+  if _ERROR_LOG:
     fatal('Cannot proceed beyond this point due to errors, exiting')
 
 #
@@ -137,6 +146,7 @@ def print_verbose(t: typing.Any) -> None:
 #
 def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
   global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR
+  global _error_header_printed
   
   if 'verbose' in args and args.verbose:
     VERBOSE = args.verbose
@@ -150,6 +160,9 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
     else:
       DEBUG = args.debug if args.debug else ['all']
       print(f'Debugging flags set: {DEBUG}')
+
+  if 'test' in args and args.test and 'errors' in args.test:
+    _error_header_printed = True
 
   if 'quiet' in args and args.quiet:
     QUIET = True
@@ -195,3 +208,19 @@ def debug_active(flag: str) -> bool:
     return False
 
   return 'all' in DEBUG or flag in DEBUG
+
+"""
+init_log_system: initialize the logging system (used to run test cases)
+"""
+def init_log_system(header: bool = True) -> None:
+  global _ERROR_LOG,_error_header_printed
+
+  _ERROR_LOG = []                                 # Clear the error log
+  _error_header_printed = not header              # Mark header as printed if we don't want to have one
+
+  _types.init_wrong_type()
+
+def get_error_log() -> list:
+  global _ERROR_LOG
+
+  return _ERROR_LOG
