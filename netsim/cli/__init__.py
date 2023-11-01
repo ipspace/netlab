@@ -27,6 +27,9 @@ def parser_add_debug(parser: argparse.ArgumentParser) -> None:
                     'vlan','vrf','quirks','validate','addressing','groups','status',
                     'external','defaults']),
                   help=argparse.SUPPRESS)
+  parser.add_argument('--test', dest='test', action='store',nargs='*',
+                  choices=['errors'],
+                  help=argparse.SUPPRESS)
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
@@ -97,7 +100,8 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
 
 def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   log.set_logging_flags(args)
-  topology = _read.load(args.topology.name,args.defaults)
+  relative_name = 'test' in args and args.test and 'errors' in args.test
+  topology = _read.load(args.topology.name,args.defaults,relative_topo_name=relative_name)
 
   if args.settings or args.device or args.provider or args.plugin:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)

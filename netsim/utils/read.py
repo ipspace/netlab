@@ -56,7 +56,7 @@ def include_yaml(data: Box, source_file: str) -> None:
       log.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
       return
 
-    for file_name in inc_files:
+    for file_name in sorted(inc_files):
       yaml_data = read_yaml(filename=file_name)
       if yaml_data is None:
         log.fatal(f'Cannot read {file_name} that should be included into {source_file}')
