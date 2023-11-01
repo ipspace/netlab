@@ -129,6 +129,7 @@ When an attribute has a data type defined with the **type** attribute, you can u
 | **dict**  | **create_empty** (bool) -- replace None value with an empty dictionary |
 |           | **_keys** -- validation rules for individual dictionary keys. |
 |           | **_subtype** -- validate values as belonging to the specified subtype |
+|           | **_keytype** -- validate keys as belonging to the specified scalar type |
 |           | **_list_to_dict** -- [value can be specified as a list](validation-list-to-dict) |
 | **int**   | **min_value** -- minimum parameter value |
 |           | **max_value** -- maximum parameter value |
@@ -185,7 +186,7 @@ attributes:
       _requires: [ vlan ]         # ... that requires VLAN module
 ```
 
-The global **vrfs** attribute is a dictionary of **vrf** definitions:
+The global **vrfs** attribute is a dictionary of **vrf** definitions. The VRF names must be valid identifiers
 
 ```
 attributes:
@@ -193,6 +194,7 @@ attributes:
     vrfs:                         # vrfs is a valid global parameter
       type: dict                  # It's a dictionary
       _subtype: vrf               # ... of VRF definitions
+      _keytype: id                # ... where the VRF names must be valid identifiers
       _requires: [ vrf ]          # ... that requires VRF module
 ```
 

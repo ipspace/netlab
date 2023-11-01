@@ -129,10 +129,22 @@ def validate_dictionary(
       attributes: Box,
       enabled_modules: list) -> bool:
 
+  # Assume everything is OK
+  return_value = True
+
+  # Validate keys if needed
+  if '_keytype' in data_type:
+    for k in data.keys():
+      if not validate_value(
+                value=k,
+                data_type=data_type._keytype,
+                path=f'NOATTR:{parent_path}.{k}',
+                module=module):
+        return_value = False
+
   # Option #1: Validate dictionary where every value is another type
   #
   if '_subtype' in data_type:
-    return_value = True
     for k,v in data.items():                      # Iterate over all dictionary values
       if data_type._subtype in attributes:        # User defined data type, do full recursive validation including namespaces and modules
         OK = validate_attributes(                 # Call main validation routines with as many parameters as we can supply
@@ -162,21 +174,18 @@ def validate_dictionary(
       if OK is False:                             # Aggregate return results into a single boolean value
         return_value = False
 
-    return return_value                           # ... and return composite result
-
   # Option #2: validate a dictionary with specified keys/value types
   #
   if not '_keys' in data_type:                    # If the dictionary does not have the valid keys
-    return True                                   # ... there's nothing to validate
+    return return_value                           # ... there's nothing further to validate, return what we accumulated so far
 
-  OK = True
   for k in data.keys():                           # Iterate over the elements
     if not k in data_type._keys:                  # ... and report elements with invalid name
       log.error(
         f'Incorrect {data_name} attribute {k} in {parent_path}',
         log.IncorrectAttr,
         module)
-      OK = False
+      return_value = False
     else:                                         # For valid elements, validate them
       validate_item(
         parent=data,
@@ -190,7 +199,8 @@ def validate_dictionary(
         attr_list=attr_list,
         attributes=attributes,
         enabled_modules=enabled_modules)
-  return OK
+
+  return return_value                             # Return final status
 
 """
 validate_alt_type -- deal with dictionaries that could be specified as something else
