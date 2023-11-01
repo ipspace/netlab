@@ -36,6 +36,7 @@ def transform_setup(topology: Box) -> None:
 
   augment.topology.extend_attribute_list(topology.defaults)             # Attributes have to be extended before group init
   augment.topology.extend_module_attribute_list(topology)               # ... or we won't recognize node attributes in groups
+  validate.init_validation(topology)
   augment.groups.init_groups(topology)
   log.exit_on_error()
 
@@ -49,7 +50,6 @@ def transform_setup(topology: Box) -> None:
   modules.pre_default(topology)
   log.exit_on_error()
 
-  validate.init_validation(topology)
   augment.topology.check_global_elements(topology)
   augment.plugin.check_plugin_dependencies(topology)                    # Check plugin dependencies on other plugins and modules
   augment.nodes.validate(topology)
