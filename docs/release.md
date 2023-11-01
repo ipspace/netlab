@@ -1,6 +1,10 @@
 Release notes
 =============
 
+**[Release 1.7.0](release-1.7.0) (2023-XX-XX)**
+
+[More features...](release-1.7.0)
+
 **[Release 1.6.4](release-1.6.4) (2023-10-23)**
 
 * Implement simple BGP routing policies in [bgp.policy plugin](plugins/bgp.policy.md)
@@ -397,6 +401,7 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.7.md
    release/1.6.md
    release/1.5.md
    release/1.4.md
