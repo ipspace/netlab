@@ -13,20 +13,24 @@ from . import global_vars
 """
 Common error checking routines:
 
+* get_element_path: given prefix and suffix (either one could be missing) return the full path
+* init_wrong_type: initialize the error message caches
 * wrong_type_text: return the type of the data item, tranforming Box into dict
 * wrong_type_message: prints the 'wrong data type' error message
 * int_value_error: prints out-of-bounds error message
 * check_valid_values: checks scalar or lists for valid values
 """
 
-def wrong_type_text(x : typing.Any) -> str:
-  return "dictionary" if isinstance(x,dict) else str(type(x).__name__)
-
 def get_element_path(parent: str, element: typing.Optional[str]) -> str:
-  if element:
-    return f'{parent}.{element}' if parent else element
-  else:
+  if not element:                                 # Element missing, return just the parent (whatever it is)
     return parent
+  else:
+    if not parent:                                # We have suffix but no prefix, get out of here
+      return element
+
+    # The fun part: merge prefix + suffix and get rid of unneeded 'topology.' prefix
+    path = f'{parent}.{element}'
+    return path.replace('topology.','') if path.startswith('topology.') else path
 
 _wrong_type_help: dict = {}                           # Remember the 'wrong type' hints we printed out
 _attr_help_cache: typing.Optional[Box] = None         # Remember which attribute help messages we already printed out
@@ -36,6 +40,9 @@ def init_wrong_type() -> None:
 
   _wrong_type_help = {}
   _attr_help_cache = None
+
+def wrong_type_text(x : typing.Any) -> str:
+  return "dictionary" if isinstance(x,dict) else str(type(x).__name__)
 
 def wrong_type_message(
       path: str,                                        # Path to the value
@@ -94,15 +101,27 @@ def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> 
     return ''
   
   defaults = topology.defaults                        # Get topology defaults
-  attr_type = data_name.split(' ')[-1].lower()        # Try to extract the validation context ('lower' is needed for VLAN)
+  attr_list = data_name.lower().split(' ')            # Split data name into its components
+  if attr_list[-1] == 'topology':                     # Remove the extraneous 'topology' bit
+    attr_list.pop()
+
   attrs     = defaults.attributes                     # Assume global validation context
   mod_cache = 'global'
 
-  if module in defaults and 'attributes' in defaults[module]:
+  if not attr_list:                                   # Nothing left to guess, get out
+    return ''
+
+  if attr_list[0] == module and module in defaults and 'attributes' in defaults[module]:
     attrs = defaults[module].attributes               # Looks like we're within a valid module validation context
     mod_cache = module
+    attr_list.pop(0)
   else:
     module = ''                                       # Otherwise assume global context, clear 'module' information
+
+  # Get attribute type (or empty)
+  attr_type = attr_list[-1] if attr_list else ''
+  if not attr_type in attrs:                          # No such attribute in the current context, display just the context help
+    attr_type = ''
 
   # No need to print out the same help message twice, check the message cache
   #
@@ -110,21 +129,23 @@ def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> 
     return ''
 
   _attr_help_cache[mod_cache][attr_type] = True       # Remember we were asked to provide this help message
-  if not attr_type in attrs:                          # ... but it makes no sense to give extra help if the show command
+  if not attr_type and not mod_cache:                 # ... but it makes no sense to give extra help if the show command
     return ''                                         # ... won't print the desired attributes
 
   # Looks like we passed all sanity checks, return (hopefully useful) extra information
   #
-  return f"\n... use 'netlab show attributes{' --module '+module if module else ''} {attr_type}' to display valid attributes"
+  return f"\n... use 'netlab show attributes{' --module '+module if module else ''}" + \
+         f"{' ' + attr_type if attr_type else ''}' to display valid attributes"
 
 def check_valid_values(
       path: str,                                        # Path to the value
-      expected: list,                                   # Expected values
-      value:    typing.Any,                             # Value we got
-      key:      typing.Optional[str] = None,            # Optional key within the object
-      context:  typing.Optional[typing.Any] = None,     # Optional context
-      module:   typing.Optional[str] = None,            # Module name to display in error messages
-      abort:    bool = False,
+      expected:  list,                                  # Expected values
+      value:     typing.Any,                            # Value we got
+      key:       typing.Optional[str] = None,           # Optional key within the object
+      context:   typing.Optional[typing.Any] = None,    # Optional context
+      data_name: typing.Optional[str] = None,           # Data name, needed for attribute help
+      module:    typing.Optional[str] = None,           # Module name to display in error messages
+      abort:     bool = False,
                       ) -> bool:
 
   if isinstance(value,list):                            # Deal with lists first
@@ -139,7 +160,8 @@ def check_valid_values(
   path = get_element_path(path,key)
   ctxt = f'\n... context: {context}' if context else ''
   log.error(
-    f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}',
+    f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}' + \
+      attr_help(module,data_name),
     log.IncorrectValue,
     module or 'topology')
 
@@ -328,6 +350,7 @@ def type_test(
           value=value,
           expected=valid_values,
           context=context,
+          data_name=data_name,
           module=module,
           abort=abort)
 

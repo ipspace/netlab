@@ -32,7 +32,7 @@ def get_attribute_namespaces(
       attributes: Box,                                      # Where to get valid attributes from
       attr_list: typing.List[str]                           # List of attribute namespaces
         ) -> list:
-  
+
   iterate_list = list(attr_list)                            # Make a copy of the attr list
   return_list = []
 
@@ -45,7 +45,7 @@ def get_attribute_namespaces(
     ns = iterate_list.pop(0)                                # Get the next namespace from the list
     if not ns in attributes:                                # Not present in the attributes?
       continue                                              # ... no big deal, ignore it
-    
+
     if not ns in return_list:                               # Has it already been mentioned?
       return_list.append(ns)                                # ... nope, add it to the list
 
@@ -123,20 +123,61 @@ def validate_dictionary(
       parent_path: str,
       data_name: str,
       module: str,
+      module_source: typing.Optional[str],
       topology: Box,
       attr_list: list,
       attributes: Box,
       enabled_modules: list) -> bool:
 
+  # Option #1: Validate dictionary where every value is another type
+  #
+  if '_subtype' in data_type:
+    return_value = True
+    for k,v in data.items():                      # Iterate over all dictionary values
+      if data_type._subtype in attributes:        # User defined data type, do full recursive validation including namespaces and modules
+        OK = validate_attributes(                 # Call main validation routines with as many parameters as we can supply
+          data=v,
+          topology=topology,
+          data_path=f'{parent_path}.{k}',
+          data_name=f'{data_type._subtype}',
+          attr_list=[ data_type._subtype ],
+          modules=enabled_modules,
+          module=module,
+          module_source=module_source,
+          attributes=attributes)
+      else:                                       # Simple type that is validated with a must_be_something function
+        OK = validate_item(                       # ... call the simpler item validation routine
+          parent=data,
+          key=k,
+          data_type=data_type._subtype,
+          parent_path=parent_path,
+          data_name=data_name,
+          module=module,
+          module_source=module_source,
+          topology=topology,
+          attr_list=attr_list,
+          attributes=attributes,
+          enabled_modules=enabled_modules)
+
+      if OK is False:                             # Aggregate return results into a single boolean value
+        return_value = False
+
+    return return_value                           # ... and return composite result
+
+  # Option #2: validate a dictionary with specified keys/value types
+  #
+  if not '_keys' in data_type:                    # If the dictionary does not have the valid keys
+    return True                                   # ... there's nothing to validate
+
   OK = True
-  for k in data.keys():                                             # Iterate over the elements
-    if not k in data_type._keys:                                    # ... and report elements with invalid name
+  for k in data.keys():                           # Iterate over the elements
+    if not k in data_type._keys:                  # ... and report elements with invalid name
       log.error(
         f'Incorrect {data_name} attribute {k} in {parent_path}',
         log.IncorrectAttr,
         module)
       OK = False
-    else:                                                           # For valid elements, validate them
+    else:                                         # For valid elements, validate them
       validate_item(
         parent=data,
         key=k,
@@ -144,6 +185,7 @@ def validate_dictionary(
         parent_path=parent_path,
         data_name=data_name,
         module=module,
+        module_source=module_source,
         topology=topology,
         attr_list=attr_list,
         attributes=attributes,
@@ -234,6 +276,7 @@ def validate_item(
       parent_path: str,
       data_name: str,
       module: str,
+      module_source: typing.Optional[str],
       topology: Box,
       attr_list: list,
       attributes: Box,
@@ -299,13 +342,14 @@ def validate_item(
   if not OK:
     return OK
   
-  if dt_name == 'dict' and '_keys' in data_type:
+  if dt_name == 'dict':
     return validate_dictionary(
               data=data,
               data_type=data_type,
               parent_path=f"{parent_path}.{key}",
               data_name=data_name,
               module=module,
+              module_source=module_source,
               topology=topology,
               attr_list=attr_list,
               attributes=attributes,
@@ -406,6 +450,7 @@ def validate_attributes(
         parent_path=data_path,
         data_name=data_name,
         module=module,
+        module_source=module_source,
         enabled_modules=modules,
         topology=topology,
         attr_list=attr_list,
