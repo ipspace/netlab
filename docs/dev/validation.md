@@ -109,11 +109,71 @@ vlan:
       mode:  { type: str, valid_values: [ bridge, irb, route] }
 ```
 
-All data types support:
+All attributes defined with a dictionary (**mode** in the above example, but not **access** or **native**) can use the following validation parameters:
+
 * **true_value** -- value to use when the parameter is set to *True*
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
+* **_alt_types** -- [alternate data types](validation-alt-types)
 
-**Examples**
+See [](validation-definition-examples) for more details.
+
+### Further Data Type Validation Options
+
+When an attribute has a data type defined with the **type** attribute, you can use the following attributes to perform value-based validations:
+
+| Data type | Value validation option |
+|-----------|-------------------------|
+| **str**   | **valid_values** -- list of valid values |
+| **list**  | **valid_values** -- list of valid values, checked for every element in the list |
+|           | **create_empty** (bool) -- replace None value with an empty list |
+| **dict**  | **create_empty** (bool) -- replace None value with an empty dictionary |
+|           | **_keys** -- validation rules for individual dictionary keys. |
+|           | **_subtype** -- validate values as belonging to the specified subtype |
+|           | **_list_to_dict** -- [value can be specified as a list](validation-list-to-dict) |
+| **int**   | **min_value** -- minimum parameter value |
+|           | **max_value** -- maximum parameter value |
+| **ipv4**  | **use** -- [the use of IPv4 address/prefix](validation-ip-address) |
+| **ipv6**  | **use** -- [the use of IPv6 address/prefix](validation-ip-address) |
+
+**Notes**
+* **_keys** attribute is rarely used in dictionary definitions. It's much better to use a [shortcut definition](validation-shortcut-type). See [examples](validation-definition-examples) for a counterexample.
+
+(validation-definition-examples)=
+### Data Type Definition Examples
+
+VLAN ID is an integer between 1 and 4K. VXLAN ID is an integer between 1 and 16M. This is how they are defined in the **vlan** definition:
+
+```
+attributes:
+  vlan:
+    id: { type: int, min_value: 1, max_value: 4095 }
+    vni: { type: int, min_value: 1, max_value: 16777215 }
+```
+
+BGP sessions is a dictionary of per-AF BGP session types. The value of **bgp.attributes.global.sessions** is defined as a dictionary which triggers recursive validation:
+
+```
+bgp.attributes:
+  global:
+    sessions:
+      ipv4: [ ibgp, ebgp ]
+      ipv6: [ ibgp, ebgp ]
+```  
+
+*clab* provider parameters include a **type** attribute, colliding with the validation **type** attribute. Valid *clab* attributes thus have to be specified with **_keys** dictionary:
+
+```
+clab.attributes:
+  node:
+    type: dict
+    _keys:          # Make keys explicit to get around the 'type' attribute
+      binds:
+      kind: str
+      config_templates:
+      type: str
+      cmd: str
+      ...
+```
 
 The global **vlans** dictionary can be used only with the **vlan** module:
 
@@ -125,6 +185,17 @@ attributes:
       _requires: [ vlan ]         # ... that requires VLAN module
 ```
 
+The global **vrfs** attribute is a dictionary of **vrf** definitions:
+
+```
+attributes:
+  global:
+    vrfs:                         # vrfs is a valid global parameter
+      type: dict                  # It's a dictionary
+      _subtype: vrf               # ... of VRF definitions
+      _requires: [ vrf ]          # ... that requires VRF module
+```
+
 You can specify a list of BGP session types for the MPLS 6PE functionality. However, you can also specify a *True* value for the global **mpls.6pe** attribute to enable the feature. The *True* value gets translated into a default list (enable 6PE on IBGP sessions):
 
 ```
@@ -133,21 +204,6 @@ mpls:
     global:
       6pe: { type: list, true_value: [ ibgp ] }
 ```
-
-### Further Data Type Validation options
-
-**str**, **list** or **dict** support:
-* **valid_values** -- list of valid values (keys for dictionary)
-
-**list** or **dict** support:
-* **create_empty** -- _True_ if you want to create an empty element if it's missing
-
-**dict** supports:
-* **_keys** -- valid dictionary keys. _netlab_ performs recursive validation of dictionary keys. Usually not used as you can use [shortcut definition](validation-shortcut-type)
-
-**int** values can be range-checked: 
-* **min_value** -- minimum parameter value
-* **max_value** -- maximum parameter value
 
 (validation-shortcut-type)=
 ## Shortcut Data Type Definitions
@@ -266,6 +322,7 @@ attributes:
     _namespace: [ link ]          # VLANs can include link attributes
 ```
 
+(validation-alt-types)=
 ## Alternate Data Types
 
 Some _netlab_ attributes could take a dictionary value, alternate values meaning _use default_ or _do whatever you want_, or a list of keys.
@@ -286,6 +343,7 @@ ospf:
         ipv6: bool
 ```
 
+(validation-list-to-dict)=
 ### Dictionary Specified As a List
 
 Some _netlab_ attributes that are supposed to be a dictionary can take a list value that is transformed into a dictionary: list elements become dictionary keys, and a default value is used for the dictionary values. To validate such attributes, add **_list_to_dict** key to the attribute specification. The **_list_to_dict** key specifies the default value used when converting a list into a dictionary
@@ -315,6 +373,7 @@ ospf:
         ipv6: bool
 ```
 
+(validation-ip-address)=
 ## IP Address Validation
 
 **ipv4** and **ipv6** validators have a mandatory **use** parameter that can take the following values:
