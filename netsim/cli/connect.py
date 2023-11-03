@@ -58,13 +58,19 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
   parser.add_argument(
     dest='host', action='store',
     help='Device or tool to connect to')
+  parser.add_argument(
+    '-s','--show',
+    dest='show',
+    action='store',
+    nargs='+',
+    help='Show command to execute on the device')
 
   return parser.parse_known_args(args)
 
 def docker_connect(data: Box, rest: typing.List[str], log_level: LogLevel = LogLevel.INFO) -> None:
   host = data.ansible_host or data.host
 
-  shell = data.get('docker_shell','bash -il')
+  shell = data.get('docker_shell','bash' if rest else 'bash -il')
   if not isinstance(shell,list):
     shell = str(shell).split(' ')
 
@@ -109,23 +115,56 @@ def ssh_connect(data: Box, rest: typing.List[str], log_level: LogLevel = LogLeve
     print(f"DRY RUN: {args}")
     return
 
-  if log_level == LogLevel.ARGS:
-    print("Executing: %s" % args)
-  elif log_level == LogLevel.NONE:
-    pass
-  else:
-    sys.stderr.write(f"Connecting to {host} using SSH port {data.ansible_port or 22}\n")
+  if log_level != LogLevel.NONE:
+    exec_args = ', executing ' + ' '.join(rest) if rest else ''
+    sys.stderr.write(f"Connecting to {host} using SSH port {data.ansible_port or 22}{exec_args}\n")
     sys.stderr.flush()
 
   subprocess.run(args)
 
-def connect_to_node(node: str, rest: list, topology: Box, log_level: LogLevel = LogLevel.INFO) -> None:
+def quote_list(args: list) -> list:
+  return [ f'"{arg}"' if " " in arg else arg for arg in args ]
+
+def create_show_command(host: Box, rest: list) -> list:
+  got_args = False
+  show_cmd = []
+  for arg in host.netlab_show_command:
+    if '$@' in arg:
+      show_cmd.append(arg.replace('$@',' '.join(rest)))
+      got_args = True
+    else:
+      show_cmd.append(arg)
+
+  if not got_args:
+    show_cmd.extend(rest)
+
+  return show_cmd
+
+def create_command_list(host: Box, args: argparse.Namespace, rest: list) -> list:
+  if rest and args.show:
+    log.fatal(
+      'Cannot run a command and a show command at the same time.\n' +
+      '... Make --show the first argument after the node name')
+
+  if args.show:
+    show_cmd = create_show_command(host,args.show)
+    if host.netlab_show_command:
+      return quote_list(show_cmd)
+    else:
+      return [ 'show' ] + args.show
+  else:
+    return rest
+
+def connect_to_node(args: argparse.Namespace, rest: list, topology: Box, log_level: LogLevel = LogLevel.INFO) -> None:
+  node = args.host
   host_data = outputs_common.adjust_inventory_host(
                 node=topology.nodes[node],
                 defaults=topology.defaults,
                 group_vars=True)
   host_data.host = node
   connection = host_data.netlab_console_connection or host_data.ansible_connection
+
+  rest = create_command_list(host_data,args,rest)
 
   if connection == 'docker':
     docker_connect(host_data,rest,log_level)
@@ -173,12 +212,12 @@ def run(cli_args: typing.List[str]) -> None:
   log_level = get_log_level(args)
   set_dry_run(args)
 
-  rest = [ f'"{arg}"' if " " in arg else arg for arg in rest ]      # Quote arguments with whitespaces
-
+  rest = quote_list(rest)     # Quote arguments with whitespaces
   topology = load_snapshot(args)
   host = args.host
+
   if host in topology.nodes:
-    connect_to_node(host,rest,topology,log_level)
+    connect_to_node(args,rest,topology,log_level)
   elif host in topology.tools:
     connect_to_tool(host,rest,topology,log_level)
   else:
