@@ -6,7 +6,7 @@ If you have a Windows- or MacOS-based computer and would like to use *netlab* wi
 
 [^1]: The *libvirt* Vagrant plugin starts all network devices in parallel, resulting in much faster lab setup than using Vagrant with Virtualbox.
 
-[^2]: See also the [tutorial created by Leo Kirchner](https://blog.kirchne.red/netsim-tools-quickstart.html).
+[^2]: See also the [tutorial created by Leo Kirchner](https://blog.kirchne.red/posts/netsim-tools-quickstart/).
 
 ```{warning}
 Running *‌libvirt* within a Ubuntu VM requires *‌nested virtualization*. Nested virtualization was available in VMware Workstation/Fusion for years and was recently added to VirtualBox. While VMware products perform flawlessly, you might get unacceptable performance with VirtualBox nested virtualization on some Intel CPUs (example: MacBook Pro 2020, Intel Core i5 CPU).
