@@ -1,0 +1,55 @@
+{% macro ebgp_session(n,af,bgp) -%}
+{%   if n.password is defined %}
+      password {{ n.password }}
+{%   endif %}
+{%   if n.gtsm is defined %}
+      ttl-security hops {{ n.gtsm }}
+{%   endif %}
+{%   if n.timers is defined %}
+      timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+{%   endif %}
+{%   if n.passive|default(False) %}
+      transport connection-mode passive
+{%   endif %}
+{%   if n.remove_private_as|default([]) %}
+{%     set rpa = { 'on': '', 'replace': 'replace-as', 'all': 'all' } %}
+{%     for rpo in n.remove_private_as if rpo in rpa %}
+      neighbor {{ n[af] }} remove-private-as {{ rpa[rpo] }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}
+!
+{% macro ebgp_neighbor(n,af) -%}
+{%     if n.allowas_in is defined %}
+        allowas-in {{ n.allowas_in }}
+{%     endif %}
+{%     if n.as_override|default(False) %}
+        as-override
+{%     endif %}
+{%     if n.default_originate|default(False) %}
+        default-originate
+{%     endif %}
+{%- endmacro %}
+!
+router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+  neighbor {{ n[af] }}
+{{     ebgp_session(n,af,bgp) }}
+      address-family {{ af }} unicast
+{{     ebgp_neighbor(n,af) }}
+{%  endfor %}
+{% endfor %}
+{% set vrfs = vrfs|default({}) %}
+{% for vname, vdata in vrfs.items() %}
+  vrf {{ vname }}
+!
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors|default([]) if af in n %}
+    neighbor {{ n[af] }} remote-as {{ n.as }}
+{{       ebgp_session(n,af,vdata.bgp) }}
+      address-family {{ af }} unicast
+{{       ebgp_neighbor(n,af) }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

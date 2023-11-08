@@ -56,6 +56,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |
 | Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
 | Juniper vMX/vPTX/vSRX | ❌  |  ✅  |  ✅  |  ✅  |
@@ -77,6 +78,7 @@ BGP session security features are available on these platforms:
 | Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
 | Cisco IOSv          |    ✅    | ✅  |  ❌  |
 | Cisco IOS-XE        |    ✅    |  ✅ |  ✅ |
+| Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
 | Cumulus Linux       |    ✅    | ✅  |  ❌  |
 | FRR                 |    ✅    | ✅  |  ❌  |
 | Juniper vMX/vPTX/vSRX |    ✅  |  ❌  |  ❌  |
@@ -93,6 +95,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Aruba AOS-CX        |  ✅  |  ❌  |  ✅  |
 | Cisco IOSv          |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |
+| Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |
 | Juniper vMX/vPTX/vSRX | ❌  |  ✅  |   ❌  |
