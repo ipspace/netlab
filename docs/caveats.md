@@ -103,6 +103,7 @@ devices.cumulus.libvirt.memory: 2048
 * Only supported on top of *Containerlab*
 * Supports container image release 23.3.1 or later (due to YANG model changes)
 * Requires the latest Ansible Galaxy collection 'nokia.grpc' and its dependencies to be installed from the git repo. You can also use the **netlab install grpc** command to install them
+* MPLS and LDP only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
 
 ```
 ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
