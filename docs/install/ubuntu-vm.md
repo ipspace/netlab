@@ -6,7 +6,7 @@ If you have a Windows- or MacOS-based computer and would like to use *netlab* wi
 
 [^1]: The *libvirt* Vagrant plugin starts all network devices in parallel, resulting in much faster lab setup than using Vagrant with Virtualbox.
 
-[^2]: See also the [tutorial created by Leo Kirchner](https://blog.kirchne.red/netsim-tools-quickstart.html).
+[^2]: See also the [tutorial created by Leo Kirchner](https://blog.kirchne.red/posts/netsim-tools-quickstart/).
 
 ```{warning}
 Running *‌libvirt* within a Ubuntu VM requires *‌nested virtualization*. Nested virtualization was available in VMware Workstation/Fusion for years and was recently added to VirtualBox. While VMware products perform flawlessly, you might get unacceptable performance with VirtualBox nested virtualization on some Intel CPUs (example: MacBook Pro 2020, Intel Core i5 CPU).
@@ -65,6 +65,10 @@ Vagrant.configure("2") do |config|
 end
 ```
 
+```{tip}
+The above Vagrantfile installs Python packages as root. That is not the recommended best practice and is used primarily because we're setting up a single-purpose VM.
+```
+
 * Execute **vagrant up** and wait for the installation to complete. If you're using VMware Workstation or Fusion you MUST specify the **--provider** argument in **vagrant up** command when you're creating the VM (but not on subsequent starts).
 * Log into the virtual machine with **vagrant ssh** and test the installation with **netlab test**
 
@@ -81,6 +85,10 @@ sudo apt-get install -y python3-pip
 sudo pip3 install --ignore-installed networklab
 sudo pip3 install --upgrade pyopenssl cryptography
 netlab install -y ubuntu ansible libvirt containerlab
+```
+
+```{tip}
+Installing Python packages as root is not the recommended best practice and is used primarily because we're setting up a single-purpose VM.
 ```
 
 * After completing the software installation, you might have to use **usermod** to add your user to *libvirt* and *docker* groups.

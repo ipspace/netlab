@@ -399,6 +399,32 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
       l.bgp.advertise = True                # ... also advertise loopback prefixes if bgp.advertise_loopback is set
 
 """
+bgp_set_originate_af: set bgp[af] flags based on prefixes that should be originated
+"""
+
+def bgp_set_originate_af(node: Box, topology: Box) -> None:
+  if 'bgp' not in node:                                     # Safeguard: skip non-BGP nodes
+    return
+
+  if node.get('bgp.originate',[]):                          # bgp.originate attribute implies IPv4 is active
+    node.bgp.ipv4 = True
+
+  for af in ['ipv4','ipv6']:
+    if node.get(f'bgp.{af}',False):                         # No need for further checks if the AF flag is already set
+      continue
+
+    if node.get('bgp.advertise_loopback',True):             # If the router advertises its loopback prefix
+      if af in node.get('loopback',{}):                     # ... do the AF checks on loopback interface
+        node.bgp[af] = True
+        continue
+
+    for intf in node.get("interfaces",[]):                  # No decision yet, iterate over all interfaces
+      if af in intf and intf[af]:                           # Is the address family active on the interface?
+        if intf.get('bgp.advertise',False):                 # Is the interface prefix advertised in BGP?
+          if not 'vrf' in intf:                             # The AF fix is only required for global interfaces
+            node.bgp[af] = True                             # ... the stars have aligned, set the BGP AF flag
+
+"""
 process_as_list:
   If the global BGP parameters have as_list attribute, set node AS numbers and node
   RR flags accordingly
@@ -524,4 +550,5 @@ class BGP(_Module):
       return
     build_bgp_sessions(node,topology)
     bgp_set_advertise(node,topology)
+    bgp_set_originate_af(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')

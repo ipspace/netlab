@@ -21,6 +21,10 @@ To build a Linux environment needed to run network devices as virtual machines o
 
 Install Python package with `sudo python3 -m pip install networklab` or your preferred Python package installation procedure.
 
+```{tip}
+Installing Python packages as root is not the recommended best practice. Please use your regular Python package installation process if you're not setting up a throwaway VM/server.
+```
+
 ## Creating *vagrant-libvirt* Virtual Network
 
 *vagrant-libvirt* plugin connects management interfaces of managed VMs to *vagrant-libvirt* virtual network. Vagrant can figure out the device IP address based on dynamic DHCP mappings; *netlab* can't. To make the Ansible inventory created by **[netlab create](../netlab/create.md)** work, your virtual network MUST include static DHCP bindings that map management MAC addresses defined in *netlab* data model into expected IP addresses.

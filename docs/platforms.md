@@ -154,6 +154,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 The following system-wide features are configured on supported network operating systems as part of initial device configuration:
 
+(platform-initial-config)=
 | Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
 | Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
@@ -177,6 +178,7 @@ The following system-wide features are configured on supported network operating
 | Nokia SR OS           |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 | VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 
+(platform-initial-interfaces)=
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
 | Operating system      | Interface<br />description | Interface<br />bandwidth | MTU |
@@ -202,6 +204,7 @@ The following interface parameters are configured on supported network operating
 | Nokia SR OS           |            ✅              |            ❌            | ❌ |
 | VyOS                  |            ✅              |            ❌            | ✅ |
 
+(platform-initial-addresses)=
 The following interface addresses are supported on various platforms:
 
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces |
