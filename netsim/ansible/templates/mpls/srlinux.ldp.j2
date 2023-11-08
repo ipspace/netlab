@@ -1,0 +1,25 @@
+{# Note: LDP only supported on 7250 IXR #}
+{% if clab.type not in ['ixr6','ixr10','ixr6e','ixr10e'] %}
+{{ type_ixr | mandatory('LDP only supported on 7250 IXR; use e.g. clab.type "ixr6e" instead of '+clab.type) }}
+{% else %}
+updates:
+
+- path: system/mpls/label-ranges/dynamic[name=D1]
+  val:
+   start-label: 100
+   end-label: 200
+
+- path: network-instance[name=default]/protocols/ldp
+  val:
+   admin-state: enable
+   dynamic-label-block: D1
+
+{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
+{%  set ifname = l.ifname if '.' in l.ifname else l.ifname|replace('vlan','irb0.') if l.type=='svi' else (l.ifname+'.0') %}
+- path: network-instance[name=default]/protocols/ldp/discovery/interfaces
+  val:
+   interface:
+   - name: "{{ ifname }}"
+{% endfor %}
+
+{% endif %}
