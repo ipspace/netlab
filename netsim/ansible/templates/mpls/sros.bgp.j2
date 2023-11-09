@@ -1,0 +1,36 @@
+{# Handles both BGP-LU and 6PE configuration #}
+
+{% from "templates/initial/sros.j2" import if_name with context %}
+
+{# Enable MPLS for eBGP neighbors using BGP-LU or 6PE #}
+{% for n in bgp.neighbors if n.ifindex is defined and 
+      (n['ipv4_label']|default(False) or n['ipv6_label']|default(False)) or n['6pe']|default(False) %}
+{%   for i in interfaces if i.ifindex == n.ifindex|default(0) %}
+- path: configure/router[router-name=Base]/mpls/interface[interface-name={{ if_name(i,i.ifname) }}]
+  val:
+   admin-state: enable
+
+# RSVP interface must be present along with MPLS interface
+- path: configure/router[router-name=Base]/rsvp/interface[interface-name={{ if_name(i,i.ifname) }}]
+  val:
+   admin-state: disable
+{%   endfor %}
+{% endfor %}
+
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+{%   for n in bgp.neighbors if n[af] is defined and 
+        (n[af+'_label']|default(False) or (af=='ipv4' and n['6pe']|default(False))) %}
+
+{# Assuming no need to (re)create peer group #}
+{%     set peer_group = 'ebgp' if n.type=='ebgp' else 'ibgp-local-as' if n.type=='localas_ibgp' else ('ibgp-'+af) %}
+- path: configure/router[router-name=Base]/bgp/neighbor[ip-address={{ n[af] }}]
+  val:
+   description: "{{ n.name }}"
+   group: "{{ peer_group }}" 
+   peer-as: {{ n.as }}
+   family:
+{%     set _af = 'ipv6' if n['6pe']|default(False) else af %}
+    {{ _af }}: True
+    label-{{ _af }}: True
+{%   endfor %}
+{% endfor %}
