@@ -1,12 +1,32 @@
+updates:
+- path: configure/router[router-name=Base]
+  val:
+   mpls:
+    admin-state: enable
+    interface:
+    - interface-name: system
+      admin-state: enable
+   rsvp: # RSVP interface must be present along with MPLS interface
+    admin-state: disable
+    interface:
+    - interface-name: system
+      admin-state: disable
+
 {% if ldp is defined %}
 {%   include 'sros.ldp.j2' +%}
 {% endif %}
+
 {% if 'bgp' in mpls %}
-{%   include 'sros.bgp-lu.j2' +%}
+- path: configure/router[router-name=Base]/bgp/label-allocation
+  val:
+   label-ipv6:
+    explicit-null: {{ mpls.bgp.explicit_null|default(False)|bool }}
+
+# TODO: set next-hop-resolution labeled-routes use-bgp-routes label-ipv6-explicit-null too?
+
+{%   include 'sros.bgp.j2' +%}
 {% endif %}
+
 {% if 'vpn' in mpls %}
 {%   include 'sros.mplsvpn.j2' +%}
-{% endif %}
-{% if '6pe' in mpls %}
-{%   include 'sros.6pe.j2' +%}
 {% endif %}
