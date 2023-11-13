@@ -3,7 +3,7 @@
 Virtualbox-based Vagrant lab is the only option if you want to run *netlab* directly on Windows or MacOS (you could also run them [within a Ubuntu VM](../install/ubuntu-vm.md)):
 
 * [netlab](../netlab/cli.md) commands will create Ansible inventory and Vagrant configuration
-* Vagrant will create virtual networks within VirtualBox environment and start network devices as virtual machines within VirtualBox
+* Vagrant will create virtual networks within the VirtualBox environment and start network devices as virtual machines within VirtualBox
 * Ansible will connect to the network devices and configure them
 
 ![VirtualBox-based architecture](../install/virtual-box-architecture.png)
@@ -16,17 +16,23 @@ The environment is pretty easy to set up:
 * [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)[^1] and device-specific requirements.
 * Test the installation with **[netlab test virtualbox](../netlab/test.md)** command
 
+```{warning}
+We don't test _netlab_ on Windows and have no experience with Windows Subsystem for Linux. It might work, but if it doesn't, you're on your own[^NVNS]. Running your lab in a [Ubuntu VM running on Windows](../install/ubuntu-vm.md) might be a better option.
+```
+
+[^NVNS]: If we were a networking vendor, we would have said, "Running _netlab_ on Windows is not supported."
+
 ## Creating a New Lab
 To create a new lab:
 
-* Create [lab topology file](../topology-overview.md) in an empty directory. Use `provider: virtualbox` in lab topology to select the *virtualbox* virtualization provider.
+* Create [lab topology file](../topology-overview.md) in an empty directory. Use `provider: virtualbox` in the lab topology to select the *virtualbox* virtualization provider.
 * Execute **[netlab up](../netlab/up.md)**
 
 [^1]: Running Ansible on Windows is not supported, but supposedly it runs just fine under WSL. 
 
 ## Testing the Installation
 
-The easiest way to test your installation is to use **netlab test** command. If you prefer to do step-by-step tests, or if you don't want to install Ansible, you might find this recipe useful:
+The easiest way to test your installation is to use the **netlab test** command. If you prefer to do step-by-step tests, or if you don't want to install Ansible, use this recipe:
 
 * Create an empty directory and `topology.yml` file with the following contents within that directory:
 
@@ -53,7 +59,7 @@ Vagrant relies on *boxes* (prepackaged VM images). The following Vagrant boxes a
 | Cumulus VX 5.0 (NVUE)            | CumulusCommunity/cumulus-vx:5.0.1|
 | Generic Linux          | generic/ubuntu2004 |
 
-You'll have to download Arista vEOS and Nexus 9300v images from the vendor web site (requires registration) and install them with **vagrant box add _filename_ \-\-name _boxname_** command. You'll find build recipes for other network devices on [codingpackets.com](https://codingpackets.com/blog/tag/#vagrant).
+You must download Arista vEOS and Nexus 9300v images from the vendor website (requires registration) and install them with the **vagrant box add _filename_ \-\-name _boxname_** command. You'll find build recipes for other network devices on [codingpackets.com](https://codingpackets.com/blog/tag/#vagrant).
 
 You have to use the following box names when installing or building the Vagrant boxes:
 
@@ -67,6 +73,6 @@ You have to use the following box names when installing or building the Vagrant 
 
 **Notes**:
 
-* Arista rarely ships the latest software version as a Vagrant box. You'll usually have to build your own box if you want to have an up-to-date EOS version.
-* Vagrantfile created by **netlab create** or **netlab up** sets up port forwarding for SSH (22), HTTP (80) and NETCONF (830), but the corresponding Ansible inventory contains only **ansible_port** (SSH). You could edit the final inventory by hand, add extra file to `host_vars`, or fix *netlab* code. Should you decide to do the latter, please contact us in advance to discuss the necessary data structures.
-* If you want to add other network devices, build your own Vagrant boxes and modify system *topology-defaults.yml* file or [user defaults](defaults-user-file) (see [_adding new virtualization provider for an existing device_](../dev/device-platform.md) for more details). 
+* Arista rarely ships the latest software version as a Vagrant box. You'll usually have to build a Vagrant box to have an up-to-date EOS version.
+* Vagrantfile created by **netlab create** or **netlab up** sets up port forwarding for SSH (22), HTTP (80), and NETCONF (830), but the corresponding Ansible inventory contains only **ansible_port** (SSH). You could edit the final inventory by hand, add an extra file to `host_vars`, or fix the *netlab* code. Should you decide to do the latter, please get in touch with us in advance to discuss the necessary data structures.
+* If you want to add other network devices, build your own Vagrant boxes and modify the system *topology-defaults.yml* file or [user defaults](defaults-user-file) (see [_adding new virtualization provider for an existing device_](../dev/device-platform.md) for more details). 
