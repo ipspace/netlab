@@ -2,7 +2,7 @@
 
 import sys
 
-__version__ = "1.6.4-post2"
+__version__ = "1.6.4-post3"
 
 try:
   import box

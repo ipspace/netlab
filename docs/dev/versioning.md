@@ -38,4 +38,14 @@ For example, when a directory contains `test.yml`, `test.1.5.yml`, `test.1.6.3.y
 It's highly recommended that you add **version** attribute to versioned topology files to ensure the user does not try to use a topology file not suitable for their _netlab_ version
 ```
 
+Using version-specific topology files can be confusing. To reduce the confusion, _netlab_ prints a notice telling you which topology file it uses whenever it uses a version-specific topology file. You can also use the **netlab inspect input** command to display the topology file and all the default files _netlab_ used to start the lab, for example:
+
+```
+$ netlab inspect input
+- /home/user/BGP/policy/6-med/topology.1.6.4.yml
+- /home/user/BGP/defaults.yml
+- /home/user/.netlab.yml
+- package:topology-defaults.yml
+```
+
 [^2ED]: The version-specific topology name must include at least two extra dots to reduce the chance of a false positive.

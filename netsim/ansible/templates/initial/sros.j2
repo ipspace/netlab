@@ -1,5 +1,7 @@
-{% macro if_name(n) -%}
-{{- (('oc_%s/1_0' if sros_use_openconfig|default(true) else 'i%s' if n[0].isdigit() else '%s')|format(n)).replace(':','_') -}}
+{% macro if_name(i,name=None) -%}
+{% set _name = name or i.ifname %}
+{% set _pre = "stub-" if i.type|default()=='stub' else 'i' if _name[0].isdigit() else "" %}
+{{- (('oc_%s%s/1_0' if sros_use_openconfig|default(true) else '%s%s')|format(_pre,_name)).replace(':','_') -}}
 {%- endmacro %}
 
 {% macro declare_router(i,sub_path="") -%}
@@ -21,7 +23,7 @@
 {%- endmacro %}
 
 {% macro declare_interface(i,name=None) %}
-{% set ifname = if_name(name or i.ifname) %}
+{% set ifname = if_name(i,name or i.ifname) %}
 {{ declare_router(i,sub_path="/interface[interface-name=" + ifname + "]") }}
 {% endmacro %}
 
@@ -53,7 +55,7 @@
    port: "{{ port }}"
 {%  endif %}
 {% elif name!='system' and l.type in ['loopback','stub'] %}
-   loopback: {{ True if l.vrf is defined else [null] }}
+   loopback: {{ True if l.vrf is defined else '[null]' }}
 {% endif %}
 {% if ip_v4 is string and ip_v4|ipv4 %}
 {{  ip_addr('4',ip_v4,name) }}
@@ -123,7 +125,7 @@
 {%  if l.type not in ['loopback','stub','svi'] %}
 {{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan) }}
 {%  else %}
-{{ interface("stub-"+l.ifname if l.type=='stub' else l.ifname,desc,v4,v6,None,l) }}
+{{ interface(l.ifname,desc,v4,v6,None,l) }}
 {%  endif %}
 {% endif %}
 {%- endmacro -%}

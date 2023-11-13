@@ -16,15 +16,17 @@ during the installation process.
 
 EOM
 
-# Add sudo / root check - ghostinthenet 20220418
-SUDO='DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a'
-if [ "$UID" != "0" ]; then
- if [ -x "$(command -v sudo)" ]; then
-  SUDO="sudo $SUDO"
- else
-  echo 'Script requires root privileges.'
-  exit 0
- fi
+# If we have sudo command, then we use it to set environment variables
+if [ -x "$(command -v sudo)" ]; then
+  SUDO='sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a'
+else
+#
+# no sudo command, if we're not root we can't proceed
+  SUDO=""
+  if [ "$UID" != "0" ]; then
+    echo 'Script requires root privileges.'
+    exit 0
+  fi
 fi
 
 if [[ -z "$FLAG_YES" ]]; then

@@ -1,53 +1,44 @@
 {% from "templates/initial/sros.j2" import if_name with context %}
 
-updates:
-- path: configure/router[router-name=Base]
+{% for i in interfaces if ('ldp' in i) and not i.ldp.passive %}
+- path: configure/router[router-name=Base]/mpls/interface[interface-name={{ if_name(i,i.ifname) }}]
   val:
-   mpls:
-    admin-state: enable
-    interface:
-    - interface-name: system
-      admin-state: enable
-{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
-    - interface-name: {{ if_name(l.ifname) }}
-      admin-state: enable
+   admin-state: enable
+
+# RSVP interface must be present along with MPLS interface
+- path: configure/router[router-name=Base]/rsvp/interface[interface-name={{ if_name(i,i.ifname) }}]
+  val:
+   admin-state: disable
 {% endfor %}
-   rsvp: # RSVP interface must be present along with MPLS interface
-    admin-state: enable
-    interface:
-    - interface-name: system
-      admin-state: enable
-{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
-    - interface-name: {{ if_name(l.ifname) }}
-      admin-state: enable
-{% endfor %}
-   ldp:
-    admin-state: enable
-    implicit-null-label: {{ not ldp.explicit_null|default(False) }}
+
+- path: configure/router[router-name=Base]/ldp
+  val:
+   admin-state: enable
+   implicit-null-label: {{ not ldp.explicit_null|default(False) }}
 {%  for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
 {%   if loop.first %}
-    interface-parameters:
-     interface:
+   interface-parameters:
+    interface:
 {%   endif %}
-     - ip-int-name: "{{ if_name(l.ifname) }}"
-       admin-state: enable
+    - ip-int-name: "{{ if_name(l,l.ifname) }}"
+      admin-state: enable
 {%   for af in ('ipv4','ipv6') if af in l %}
-       {{ af }}:
-        admin-state: enable
-        transport-address: system
+      {{ af }}:
+       admin-state: enable
+       transport-address: system
 {%   endfor %}
 {%  endfor %}
 
 {# LDP/IGP sync is enabled by default, disable if requested #}
 {% if not ldp.igp_sync|default(True) %}
 {% if 'ospf' in module %}
-   ospf:
-   - ospf-instance: 0
-     ldp-sync: False
+- path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+  val:
+   ldp-sync: False
 {% endif %}
 {% if 'isis' in module %}
-   isis:
-   - isis-instance: 0
-     ldp-sync: False
+- path: configure/router[router-name=Base]/isis[isis-instance=0]
+  val:
+   ldp-sync: False
 {% endif %}
 {% endif %}
