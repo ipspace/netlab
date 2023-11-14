@@ -9,6 +9,7 @@
    plugins/bgp.session.md
    plugins/bgp.policy.md
    plugins/ebgp.multihop.md
+   plugins/fabric.md
    plugins/multilab.md
 ```
 
