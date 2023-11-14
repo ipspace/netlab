@@ -21,7 +21,7 @@ def topology_init(topology: Box) -> None:
 
 def transform_setup(topology: Box) -> None:
   topology_init(topology)
-  augment.topology.check_required_elements(topology)
+  augment.topology.topology_sanity_check(topology)
   versioning.check_topology_version(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   if 'links' in topology:
@@ -32,6 +32,7 @@ def transform_setup(topology: Box) -> None:
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('init',topology)
   augment.tools.process_tools(topology)
+  augment.topology.check_required_elements(topology)
   log.exit_on_error()
 
   augment.topology.extend_attribute_list(topology.defaults)             # Attributes have to be extended before group init

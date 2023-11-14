@@ -58,19 +58,7 @@ def extend_module_attribute_list(topology: Box) -> None:
           topology.defaults[k].attributes = {}
         extend_attribute_list(topology.defaults[k],f'topology.defaults.{k}',['global','node','link'])
 
-def check_required_elements(topology: Box) -> None:
-  invalid_topo = False
-  for rq in ['nodes']:
-    if not rq in topology:
-      log.error(f"Lab topology is missing mandatory {rq} element",category=log.MissingValue,module="topology")
-      invalid_topo = True
-    elif not topology.get(rq):
-      log.error(f"Required topology element {rq} is empty",category=log.MissingValue,module="topology")
-      invalid_topo = True
-
-  if invalid_topo:
-    log.fatal("Fatal topology errors, aborting")
-
+def topology_sanity_check(topology: Box) -> None:
   if not 'name' in topology:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
     for bad_char in (' ','.'):
@@ -83,6 +71,16 @@ def check_required_elements(topology: Box) -> None:
 
   if must_be_string(topology,'name','',module='topology'):
     topology.defaults.name = topology.name
+
+def check_required_elements(topology: Box) -> None:
+  invalid_topo = False
+  for rq in ['nodes']:
+    if not topology.get(rq):
+      log.error(f"Required topology element '{rq}' is missing or empty",category=log.MissingValue,module="topology")
+      invalid_topo = True
+
+  if invalid_topo:
+    log.fatal("Fatal topology errors, aborting")
 
 def check_global_elements(topology: Box) -> None:
   # Allow provider-specific global attributes
