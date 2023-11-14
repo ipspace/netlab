@@ -39,7 +39,7 @@ The plugin implements BGP policy attributes on these devices:
 | Operating system    | Local<br>preference | MED | Weight | AS-path<br>prepending |
 |---------------------|:----:|:----:|:----:|:----:|
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |
+| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ✅  |
 | Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
