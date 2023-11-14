@@ -28,6 +28,8 @@ The plugin is configured with the **fabric** topology-level dictionary that has 
 | **leaf**   | dictionary | Leaf parameters |
 | **debug**  | boolean | Print generated topology elements |
 
+### Leaf- and Spine Parameters
+
 You can specify these leaf- and spine parameters in the **leaf** and **spine** dictionaries:
 
 | Parameter | Type | Meaning |
@@ -99,6 +101,8 @@ Building an IBGP fabric with route reflectors running on spine switches requires
 ```yaml
 defaults.device: eos
 module: [ ospf,bgp ]
+bgp.as: 65000
+
 plugin: [ fabric ]
 fabric.spines: 2
 fabric.leafs: 4
@@ -114,7 +118,7 @@ Building an EBGP fabric in which every leaf switch has a different AS number is 
 
 ```yaml
 defaults.device: eos
-module: [ ospf,bgp ]
+module: [ bgp ]
 plugin: [ fabric ]
 fabric:
   spines: 2
