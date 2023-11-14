@@ -205,9 +205,9 @@ def topology_expand(topology: Box) -> None:
   # Groups are special. We can add fabric groups to topology groups, but that won't
   # merge the 'members' lists.
   topology.groups = grp + topology.groups
-  for g in grp.keys():                                      # Iterate over all groups, combine the member lists
-    all_members = topology.groups[g].members + grp[g].members
-    topology.groups[g].members = list(set(all_members))     # ... and use a set to make the list unique
+  for g in grp.keys():                                            # Iterate over all groups
+    all_members = topology.groups[g].members + grp[g].members     # ... combine the member lists
+    topology.groups[g].members = sorted(list(set(all_members)))   # ... and use a sorted set to make the list unique and deterministic
 
-  topology.nodes = nodes + topology.nodes                   # Nodes are trivial -- add fabric nodes to topology nodes
-  topology.links = links + topology.get('links',[])         # ... and prepend fabric links to topology links
+  topology.nodes = nodes + topology.nodes                         # Nodes are trivial -- add fabric nodes to topology nodes
+  topology.links = links + topology.get('links',[])               # ... and prepend fabric links to topology links
