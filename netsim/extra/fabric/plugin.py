@@ -185,14 +185,8 @@ def topology_expand(topology: Box) -> None:
   if not 'fabric' in topology:
     return
 
-  l_cnt = topology.get('fabric.leafs',None)                 # Get number of leafs and spines
-  s_cnt = topology.get('fabric.spines',None)
-  if not l_cnt:                                             # Loudly complain if one of them is missing
-    log.error('Number of fabric leafs is a required paramenter')
-    return
-  if not s_cnt:
-    log.error('Number of spines is a required paramenter')
-    return
+  l_cnt = topology.get('fabric.leafs',1)                    # Get number of leafs and spines
+  s_cnt = topology.get('fabric.spines',1)                   # Missing values ==> 1, validation code will complain in a minute ;)
 
   # Create the fabric groups, nodes and links
   (grp,nodes,links) = generate_fabric(topology,l_cnt,s_cnt)

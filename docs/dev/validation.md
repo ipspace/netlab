@@ -113,6 +113,7 @@ All attributes defined with a dictionary (**mode** in the above example, but not
 
 * **true_value** -- value to use when the parameter is set to *True*
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
+* **_required** (bool) -- the attribute must be present if the parent in the parent dictionary
 * **_alt_types** -- [alternate data types](validation-alt-types)
 
 See [](validation-definition-examples) for more details.

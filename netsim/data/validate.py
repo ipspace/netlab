@@ -28,6 +28,14 @@ Given a list of attribute namespaces, iterate through attributes and extend the 
 with potential _namespace definitions.
 """
 
+def remove_required_flag(a: Box) -> None:                   # Utility function: recursively remove _required flag
+  if '_required' in a:                                      # Remove the flag from current dictionary (if present)
+    a.pop('_required',None)
+
+  for v in a.values():                                      # Iterate into child values
+    if isinstance(v,Box):                                   # ... and recurse if the child value is a box
+      remove_required_flag(v)
+
 def get_attribute_namespaces(
       attributes: Box,                                      # Where to get valid attributes from
       attr_list: typing.List[str]                           # List of attribute namespaces
@@ -43,11 +51,14 @@ def get_attribute_namespaces(
       log.fatal('Internal error: Never-ending get_attribute_namespace loop, got {attr_list} / {iterate_list}')
 
     ns = iterate_list.pop(0)                                # Get the next namespace from the list
-    if not ns in attributes:                                # Not present in the attributes?
+    if not ns in attributes and cnt > 1:                    # Not present in the attributes and it's not the primary namespace?
       continue                                              # ... no big deal, ignore it
 
     if not ns in return_list:                               # Has it already been mentioned?
       return_list.append(ns)                                # ... nope, add it to the list
+
+    if not ns in attributes:                                # Now get out if this namespace has no relevant attributes
+      continue                                              # ... or we'll clobber the attr dictionary in the next step
 
     if '_namespace' in attributes[ns]:                      # Add namespaces to inspect if the current namespace wants that
       iterate_list.extend(get_a_list(attributes[ns]._namespace))
@@ -87,8 +98,14 @@ def get_valid_attributes(
         f'... attributes: {attributes}')
 
     no_propagate = f'{atlist}_no_propagate'                 # No-propagate list excluded only for non-first attribute category
-    if idx and no_propagate in attributes:
-      add_attr = { k:v for k,v in add_attr.items() if not k in attributes[no_propagate] }
+    if idx:                                                 # Special handling for secondary namespaces
+      if no_propagate in attributes:                        # Build a reduced dictionary if the secondary namespace has no_propagate list
+        add_attr = { k:v for k,v in add_attr.items() if not k in attributes[no_propagate] }
+      else:                                                 # Other create a copy of the secondary attributes
+        add_attr = add_attr + {}
+
+      remove_required_flag(add_attr)                        # Remove required flags from the secondary namespace attributes
+
     valid += add_attr                                       # ... nope, add to list of attributes and move on
 
     internal_atlist = f'{atlist}_internal'                  # Internal object attributes (used by links)
@@ -110,6 +127,24 @@ def validate_module_can_be_false(
 
   intersect = set(attr_list) & set(attributes.can_be_false)
   return bool(intersect)
+
+"""
+check_required_keys -- checks that the required keys are present in the data structure
+"""
+
+def check_required_keys(data: Box, attributes: Box, path: str,module: str) -> bool:
+  result = True
+  for k,v in attributes.items():
+    if isinstance(v,Box) and '_required' in v and v._required:
+      if k in data:
+        continue
+      log.error(
+        f'Mandatory attribute {path}.{k} is missing',
+        log.MissingValue,
+        module)
+      result = False
+
+  return result
 
 """
 validate_dictionary -- recursively validate a dictionary
@@ -200,6 +235,7 @@ def validate_dictionary(
         attributes=attributes,
         enabled_modules=enabled_modules)
 
+  return_value = return_value and check_required_keys(data,data_type._keys,parent_path,module)
   return return_value                             # Return final status
 
 """
@@ -434,6 +470,7 @@ def validate_attributes(
 
   # Part 3 -- validate attributes
   #
+  # * Check if all the required attributes are present
   # * Anything starting with "_" is OK (internal attributes)
   # * Known attributes for object we're checking are OK
   # * Module attributes are OK, but have to be checked recursively
@@ -448,6 +485,8 @@ def validate_attributes(
       log.IncorrectType,
       'validate')
     return
+
+  check_required_keys(data,valid,data_path,module)
 
   for k in data.keys():
     if any(k.startswith(i) for i in ignored):           # Skip internal attributes
