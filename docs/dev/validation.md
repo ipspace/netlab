@@ -1,6 +1,6 @@
 # Lab Topology Attribute Validation
 
-_netlab_ includes a comprehensive validation framework that checks attributes of all core topology elements and optional configuration modules. Valid attributes, their data types and other constraints are defined in `attributes` dictionary within `topology-defaults.yml` file and within individual module definitions.
+_netlab_ includes a comprehensive validation framework that checks attributes of all core topology elements and optional configuration modules. Valid attributes, their data types, and other constraints are defined in the `attributes` dictionary within the `topology-defaults.yml` file and individual module definitions.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -23,35 +23,23 @@ Various data model transformation routines check:
 * VRF attributes defined in `attributes.vrf`
 * Prefix attributes defined in `attributes.prefix`
 
-Group, node, link, interface, VLAN and VRF attributes are augmented with module attributes based on modules configured on individual groups, nodes (node and interface attributes) or the list of all modules used in a lab topology (link, VLAN, VRF attributes).
+Group, node, link, interface, VLAN, and VRF attributes are augmented with module attributes based on modules configured on individual groups, nodes (node and interface attributes), or the list of all modules used in a lab topology (link, VLAN, VRF attributes).
 
 **attributes** dictionary has additional elements that define extra attributes and propagation of attributes between lab topology objects:
 
 * **internal** global attributes are valid but not checked
 * **link_internal** link attributes are valid but not checked
-* Link module attributes are copied to interface attributes unless the module is mentioned in **link_module_no_propagate** list
+* Link module attributes are copied to interface attributes unless the module is mentioned in the **link_module_no_propagate** list
 * Pool attributes are copied to prefixes unless they are mentioned in the **pool_no_copy** list
 * Node attributes mentioned in the **node_copy** list are copied into node's interfaces
 * Global module attributes are copied into node attributes unless they're listed in a module **no_propagate** list
-* Individual modules could use additional values in **attributes** dictionary. For example, the VLAN module uses **vlan_no_propagate** list to control which VLAN attributes are not copied into links or SVI interfaces.
+* Individual modules could use additional values in the **attributes** dictionary. For example, the VLAN module uses the **vlan_no_propagate** list to control which VLAN attributes are not copied into links or SVI interfaces.
 
 ## Specifying Valid Attributes
 
-Core- or module-specific attribute types that are validated (**global**, **node**, **link**, **interface**, **pool**, **prefix**, **vlan**, **vrf**) can be specified as a list (in which case only the attribute names are validated) or as a dictionary (in which case the data types of individual attributes can be validated).
+Core- or module-specific attribute types that are validated (**global**, **node**, **link**, **interface**, **pool**, **prefix**, **groups**, **vlan**, **vrf**) are specified as dictionaries of valid attributes.
 
-This is how you could validate attribute names supported by IS-IS configuration module[^IFN]:
-
-[^IFN]: Link attributes are also valid interface attributes.
-
-```
-isis:
-  attributes:
-    global: [ af, area, type, bfd ]
-    node: [ af, area, net, type, bfd ]
-    link: [ metric, cost, type, bfd, network_type, passive ]
-```
-
-More thorough attribute check is implemented for most configuration modules. For example, this is the definition of valid **gateway** attributes and their data types:
+For example, this is the definition of valid **gateway** attributes and their data types:
 
 ```
 gateway:
@@ -83,22 +71,20 @@ gateway:
         preempt: bool
 ```
 
-As you can see, the dictionary-based approach allows in-depth validation of nested attributes.
-
-Using the dictionary-based approach, each attribute could be:
+The dictionary-based approach allows in-depth validation of nested attributes, where each attribute could be:
 
 * Another dictionary without the **type** key (use for nested attributes)
 * A string specifying the desired data type.
-* A dictionary specifying the data type in **type** key and additional parameters (see [](dev-valid-data-types))
+* A dictionary specifying the data type in **type** key, and containing additional parameters described in [](dev-valid-data-types).
 
 (dev-valid-data-types)=
 ## Valid Data Types
 
 Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and networking-specific data types (**asn**, **ipv4**, **ipv6**, **rd**, **mac** and **net**).
  
-Data type can be specified as a string (without additional parameters), or as a dictionary with a **type** attribute (data type as a string) and additional type-specific validation parameters.
+The data type can be specified as a string (without additional parameters) or a dictionary with a **type** attribute (data type as a string) and other type-specific validation parameters.
 
-For example, VLAN link parameters include **access** and **native** that can be any string value as well as **mode** that must have one of the predefined values:
+For example, VLAN link parameters include **access** and **native**, which can be any string value, as well as **mode** that must have one of the predefined values:
 
 ```
 vlan:
@@ -138,7 +124,7 @@ When an attribute has a data type defined with the **type** attribute, you can u
 | **ipv6**  | **use** -- [the use of IPv6 address/prefix](validation-ip-address) |
 
 **Notes**
-* **_keys** attribute is rarely used in dictionary definitions. It's much better to use a [shortcut definition](validation-shortcut-type). See [examples](validation-definition-examples) for a counterexample.
+* **_keys** attribute is rarely used in dictionary definitions. Using a [shortcut definition](validation-shortcut-type) is much better. See [examples](validation-definition-examples) for a counterexample.
 
 (validation-definition-examples)=
 ### Data Type Definition Examples
@@ -187,7 +173,7 @@ attributes:
       _requires: [ vlan ]         # ... that requires VLAN module
 ```
 
-The global **vrfs** attribute is a dictionary of **vrf** definitions. The VRF names must be valid identifiers
+The global **vrfs** attribute is a dictionary of **vrf** definitions. The VRF names must be valid identifiers.
 
 ```
 attributes:
@@ -213,9 +199,9 @@ mpls:
 
 _netlab_ supports several shortcuts that make type definitions easier to create and read:
 
-* A data type definition that is a string is transformed into a dictionary with **type** key.
+* A data type definition that is a string is transformed into a dictionary with the **type** key.
 * A data type definition that is a list will match a list value. The value of the data type definition is used as the list of valid values.
-* A data type definition that is a dictionary without the **type** key will match a dictionary. Keys starting with '_' (data validation parameters) will be retained in the data type definition, all other keys will be transferred into `_keys` dictionary.
+* A data type definition that is a dictionary without the **type** key will match a dictionary. Keys starting with '_' (data validation parameters) will be retained in the data type definition, and all other keys will be transferred into the `_keys` dictionary.
 
 **String example**
 
@@ -266,10 +252,10 @@ af:
 (validate-user-types)=
 ## User-Defined Data Types
 
-If you use the same data structure in multiple places, consider using user-defined data types. You can define them in **defaults.attributes** and use them to validate any attribute.
+Consider using user-defined data types if you use the same data structure in multiple places. You can define them in **defaults.attributes** and use them to validate any attribute.
 
 ```{note}
-When using user-defined data types, you have to specify them as a string value of a validated attribute. You cannot use user-defined data types as a value for **‌type** validation attribute.
+When using user-defined data types, you must specify them as a string value of a validated attribute. You cannot use user-defined data types as a value for **‌type** validation attribute.
 ```
 
 For example, the **bgp.session** plugin defines BGP timers as `exbs_timers` user-defined data type:
@@ -313,7 +299,7 @@ bgp:
         type: exbs_timers ### INVALID, WON'T WORK
 ```
 
-You can use `_namespace` attribute within the user-defined data types to add attributes from other objects. For example, as you can use link attributes in VLAN definitions, the **vlan** definition (see `modules/vlan.yml`) includes the `_namespace` attribute:
+You can use the `_namespace` attribute within the user-defined data types to add attributes from other objects. For example, as you can use link attributes in VLAN definitions, the **vlan** definition (see `modules/vlan.yml`) includes the `_namespace` attribute:
 
 ```
 attributes:
@@ -349,9 +335,9 @@ ospf:
 (validation-list-to-dict)=
 ### Dictionary Specified As a List
 
-Some _netlab_ attributes that are supposed to be a dictionary can take a list value that is transformed into a dictionary: list elements become dictionary keys, and a default value is used for the dictionary values. To validate such attributes, add **_list_to_dict** key to the attribute specification. The **_list_to_dict** key specifies the default value used when converting a list into a dictionary
+Some _netlab_ attributes that are supposed to be a dictionary can take a list value. That list value is transformed into a dictionary: list elements become dictionary keys, and a default value is used for the dictionary values. Add the **_list_to_dict** key to the attribute specification to validate such attributes. The **_list_to_dict** key specifies the default value used when converting a list into a dictionary.
 
-**_list_to_dict** parameter is commonly used with address family parameters. For example, OSPF allows **ospf.af** parameter to be a list of enabled address families or a dictionary of address families with true/false value, for example:
+**_list_to_dict** parameter is commonly used with address family parameters. For example, OSPF allows **ospf.af** parameter to be a list of enabled address families or a dictionary of address families with True/False values, for example:
 
 ```
 nodes:
@@ -381,7 +367,7 @@ ospf:
 
 **ipv4** and **ipv6** validators have a mandatory **use** parameter that can take the following values:
 
-* **interface** -- an IP address specified on an interface. Can take True/False value and does not have to include a prefix length.
-* **prefix** -- an IP prefix. Can take True/False value and must include prefix length/subnet mask.
+* **interface** -- an IP address specified on an interface. It can take a True/False value and does not have to include a prefix length.
+* **prefix** -- an IP prefix. It can take a True/False value and must include prefix length/subnet mask.
 * **id** (IPv4 only) -- an IPv4 address or an integer. Use **id** for parameters like OSPF areas, BGP cluster IDs, or router IDs.
 
