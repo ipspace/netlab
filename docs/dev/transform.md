@@ -36,7 +36,6 @@ The data transformation has three major steps:
 * Process external **tools** (`augment.tools.process_tools`)
 * Check for the presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 
-* Extend **default.attributes** with **default.extra_attributes** (`netsim.augment.topology.extend_attribute_list`)
 * Initialize attribute validation (`netsim.data.validate.init_validation`)
 * Initialize node groups (`netsim.augment.groups.init_groups`):
 
