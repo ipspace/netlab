@@ -6,6 +6,7 @@
 .. toctree::
    :maxdepth: 1
 
+   plugins/bgp.domain.md
    plugins/bgp.session.md
    plugins/bgp.policy.md
    plugins/ebgp.multihop.md
