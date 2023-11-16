@@ -200,4 +200,6 @@ vSRX container built with *vrnetlab* uses **flow based forwarding**. You have tw
 ### VXLAN and EVPN Caveats
 
 * The VXLAN dataplane (at least, on the virtual version) seems not supporting VNI greater than 65535. If you set an higher value, an overflow will occur, and you may have overlapping VNIs. The workaround for this is to set, i.e., `defaults.vxlan.start_vni: 20000` (especially on multi-vendor topologies).
-* On the Aruba AOS-CX Virtual version *10.11.0001*, EVPN Symmetric IRB seems not supported.
+* EVPN Symmetric IRB is supported only from the Aruba AOS-CX Virtual version *10.13*. Additionally:
+  * CPU generated traffic does not get encapsulated in Symmetric IRB on AOS-CX Simulator.
+  * Active-Gateway MAC Addresses shall be the same across all VTEPs in AOS-CX Simulator.
