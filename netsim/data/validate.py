@@ -242,8 +242,29 @@ def validate_dictionary(
 validate_alt_type -- deal with dictionaries that could be specified as something else
 """
 
-def validate_alt_type(data: typing.Any, data_type: Box) -> bool:
-  return type(data).__name__ in data_type._alt_types
+def validate_alt_type(data: typing.Any, data_type: Box) -> typing.Any:
+  if type(data).__name__ in data_type._alt_types:       # Simple check: is type name in alt types?
+    return True                                         # Got it, no need for more complex validation
+
+  for at in data_type._alt_types:                       # Iterate over alt-types
+    validation_function = getattr(_tv,f'must_be_{at}',None)
+    if not validation_function:                         # Is alt-type a data type with a validation function?
+      continue                                          # ... nope, get out of here
+    try:
+      v_result = validation_function(                   # Try to validate
+                   parent=None,                         # ... a standalone value
+                   key=data,                            # ... specified in this parameter
+                   path='-',                            # ... ignore path, which also means no error message (don't get me started ;)
+                   abort=True)                          # ... abort on error, so we don't get a ton of log messages
+      if isinstance(v_result,str):
+        return False                                    # String means an error
+      else:
+        return v_result
+    except:                                             # Validation failed, try the next data type
+      pass
+
+  return False                                          # No alt data type matched
+
 
 """
 validate_value -- validate a single value (not from an object)
@@ -360,8 +381,10 @@ def validate_item(
     data_type = Box(data_type)                                        # and fix datatype definition
 
   if '_alt_types' in data_type:                                       # Deal with alternate types first
-    if validate_alt_type(data,data_type):
-      return True
+    if type(data).__name__ != data_type.get('type',''):               # Does it make sense to check alternate types?
+      alt_result = validate_alt_type(data,data_type)                  # Do we have alt data type (potentially returning modified value)
+      if alt_result:
+        return True
 
   # Copy data type into validation attributes, skipping validation attributes and data type name
   validation_attr = { k:v for k,v in data_type.items() if not k.startswith('_') and k != 'type' }
