@@ -124,6 +124,7 @@ When an attribute has a data type defined with the **type** attribute, you can u
 | **str**   | **valid_values** -- list of valid values |
 | **list**  | **valid_values** -- list of valid values, checked for every element in the list |
 |           | **create_empty** (bool) -- replace None value with an empty list |
+|           | **_subtype** -- validate values as belonging to the specified subtype |
 | **dict**  | **create_empty** (bool) -- replace None value with an empty dictionary |
 |           | **_keys** -- validation rules for individual dictionary keys. |
 |           | **_subtype** -- validate values as belonging to the specified subtype |

@@ -215,7 +215,9 @@ def get_value_to_check(
       true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_
       false_value: typing.Optional[typing.Any] = None,  # Value to use to replace _false_
       abort: bool = False) -> typing.Any:
+
   value = parent.get(key,None)                          # Try to get the value from the parent object
+
   if value is None:                                     # No value was found, now what?
     if empty_value is not None:                         # ... is there empty value for this data type?
       if create_empty is None:                          # Empty value is defined, and we'll use it to create an empty object if the caller

@@ -239,6 +239,61 @@ def validate_dictionary(
   return return_value                             # Return final status
 
 """
+validate_list -- recursively validate a dictionary
+
+Arguments are described in validate_item
+"""
+
+def validate_list(
+      data: Box,
+      data_type: typing.Any,
+      parent_path: str,
+      data_name: str,
+      module: str,
+      module_source: str,
+      topology: Box,
+      attr_list: list,
+      attributes: Box,
+      enabled_modules: list) -> bool:
+
+  # Assume everything is OK
+  return_value = True
+
+  if not '_subtype' in data_type:
+    return True
+
+  for idx,value in enumerate(data):             # Iterate over all list values
+    if data_type._subtype in attributes:        # User defined data type, do full recursive validation including namespaces and modules
+      OK = validate_attributes(                 # Call main validation routines with as many parameters as we can supply
+        data=value,
+        topology=topology,
+        data_path=f'{parent_path}[{idx+1}]',
+        data_name=f'{data_type._subtype}',
+        attr_list=[ data_type._subtype ],
+        modules=enabled_modules,
+        module=module,
+        module_source=module_source,
+        attributes=attributes)
+    else:                                       # Simple type that is validated with a must_be_something function
+      OK = validate_item(                       # ... call the simpler item validation routine
+        parent=None,
+        key=value,
+        data_type=data_type._subtype,
+        parent_path=f'{parent_path}[{idx+1}]',
+        data_name=data_name,
+        module=module,
+        module_source=module_source,
+        topology=topology,
+        attr_list=attr_list,
+        attributes=attributes,
+        enabled_modules=enabled_modules)
+
+      if OK is False:                             # Aggregate return results into a single boolean value
+        return_value = False
+
+  return return_value                             # Return final status
+
+"""
 validate_alt_type -- deal with dictionaries that could be specified as something else
 """
 
@@ -336,9 +391,14 @@ but have to invoke it with parent dictionary and key, so we can forward these el
 to "must_be_something" routines.
 """
 
+subtype_validation: dict = {
+  'dict': validate_dictionary,
+  'list': validate_list
+}
+
 def validate_item(
-      parent: Box,
-      key: str,
+      parent: typing.Optional[Box],
+      key: typing.Any,
       data_type: typing.Any,
       parent_path: str,
       data_name: str,
@@ -348,9 +408,10 @@ def validate_item(
       attr_list: list,
       attributes: Box,
       enabled_modules: list) -> typing.Any:
-  global _bi,_tv
 
-  data = parent[key]
+  global _bi,_tv,subtype_validation
+
+  data = key if parent is None else parent[key]
   if data_type is None:                                               # Trivial case - data type not specified
     return True                                                       # ==> anything goes
 
@@ -375,7 +436,7 @@ def validate_item(
 
   # We have to handle a weird corner case: AF (or similar) list that is really meant to be a dictionary
   #
-  if isinstance(data,list) and '_list_to_dict' in data_type:
+  if isinstance(data,list) and '_list_to_dict' in data_type and parent is not None:
     parent[key] = { k: data_type._list_to_dict for k in data }        # Transform lists into a dictionary (updating parent will make it into a Box)
     data = parent[key]
     data_type = Box(data_type)                                        # and fix datatype definition
@@ -412,8 +473,11 @@ def validate_item(
   if not OK:
     return OK
   
-  if dt_name == 'dict':
-    return validate_dictionary(
+  if parent is not None:                                            # Validation function might have changed the parent value
+    data = parent[key]                                              # ... make sure we do the last step using the current value
+
+  if dt_name in subtype_validation:
+    return subtype_validation[dt_name](
               data=data,
               data_type=data_type,
               parent_path=f"{parent_path}.{key}",
