@@ -44,6 +44,16 @@ def init_wrong_type() -> None:
 def wrong_type_text(x : typing.Any) -> str:
   return "dictionary" if isinstance(x,dict) else str(type(x).__name__)
 
+def err_add_alt_types(ctx: dict) -> str:
+  a_types = ctx.get('_alt_types',[])
+  if not a_types:
+    return ''
+
+  if len(a_types) == 1:
+    return f' or {a_types[0]}'
+  else:
+    return f' or any of {", ".join(a_types)}'
+
 def wrong_type_message(
       path: str,                                        # Path to the value
       expected: str,                                    # Expected type
@@ -69,6 +79,9 @@ def wrong_type_message(
   if wrong_value:                                       # String with 'NWT' means 'type is OK, value is incorrect'
     expected = expected.replace('NWT: ','')             # ... but we also don't want NWT in the error message ;)
   else:
+    if isinstance(context,dict) and '_alt_types' in context:
+      expected += err_add_alt_types(context)
+      ctxt = ''
     expected += f', found {wrong_type}'                 # A more generic message, add wrong type
 
   if 'NOATTR:' in path:                                 # Deal with values that are not attributes

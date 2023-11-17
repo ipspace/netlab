@@ -181,9 +181,9 @@ def validate_dictionary(
   #
   if '_subtype' in data_type:
     for k,v in data.items():                      # Iterate over all dictionary values
-      if data_type._subtype in attributes:        # User defined data type, do full recursive validation including namespaces and modules
-        OK = validate_attributes(                 # Call main validation routines with as many parameters as we can supply
-          data=v,
+      if isinstance(data_type._subtype,str) and data_type._subtype in attributes:
+        OK = validate_attributes(                 # User defined data type, do full recursive validation including namespaces and modules
+          data=v,                                 # Call main validation routines with as many parameters as we can supply
           topology=topology,
           data_path=f'{parent_path}.{k}',
           data_name=f'{data_type._subtype}',
@@ -263,8 +263,8 @@ def validate_list(
     return True
 
   for idx,value in enumerate(data):             # Iterate over all list values
-    if data_type._subtype in attributes:        # User defined data type, do full recursive validation including namespaces and modules
-      OK = validate_attributes(                 # Call main validation routines with as many parameters as we can supply
+    if isinstance(data_type._subtype,str) and data_type._subtype in attributes:
+      OK = validate_attributes(                 # User defined data type, do full recursive validation including namespaces and modules
         data=value,
         topology=topology,
         data_path=f'{parent_path}[{idx+1}]',
@@ -441,7 +441,9 @@ def validate_item(
     data = parent[key]
     data_type = Box(data_type)                                        # and fix datatype definition
 
+  alt_context = None                                                  # Alt-type context passed to validation functions
   if '_alt_types' in data_type:                                       # Deal with alternate types first
+    alt_context = { '_alt_types': data_type._alt_types }
     if type(data).__name__ != data_type.get('type',''):               # Does it make sense to check alternate types?
       alt_result = validate_alt_type(data,data_type)                  # Do we have alt data type (potentially returning modified value)
       if alt_result:
@@ -469,6 +471,7 @@ def validate_item(
           path=parent_path,                                         # Pass the parent path (it will be combined with key anyway)
           data_name=data_name,                                      # Pass name of the data
           module=module,                                            # ... and the module
+          context=alt_context,                                      # Pass information about alt data types
           **validation_attr)                                        # And any other attributes
   if not OK:
     return OK
