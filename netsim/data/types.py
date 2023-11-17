@@ -589,6 +589,9 @@ def must_be_prefix_str(value: typing.Any) -> typing.Union[bool,str,typing.Callab
   except Exception as ex:
     return "NWT: IPv4 or IPv6 prefix"
 
+  if parse.network != parse.ip:
+    return "NWT: IPv4 or IPv6 prefix without the host bits"
+
   try:                                                                # ... and finally we have to check it's a true IPv4 address
     parse.ipv4()
     if not parse.is_ipv4_mapped():
