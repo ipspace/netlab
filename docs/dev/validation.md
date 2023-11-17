@@ -80,7 +80,18 @@ The dictionary-based approach allows in-depth validation of nested attributes, w
 (dev-valid-data-types)=
 ## Valid Data Types
 
-Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and networking-specific data types (**asn**, **ipv4**, **ipv6**, **rd**, **mac** and **net**).
+Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and the following networking-specific data types:
+
+| Data type.     | Meaning |
+|----------------|---------|
+| **asn**        | AS number (an integer between 1 and 65535) |
+| **id**         | Identifier (containing A-Z, a-z, 0-9 and underscore) |
+| **ipv4**       | An IPv4 address, prefix, integer (offset in a subnet), or bool (unnumbered) |
+| **ipv6**       | An IPv6 address, prefix, integer (offset in a subnet), or bool (LLA only) |
+| **mac**        | MAC address in any format recognized by the `netaddr` library |
+| **net**        | IS-IS NET/NSAP |
+| **prefix_str** | An IPv4 or IPv6 prefix |
+| **rd**         | Route distinguisher (ASN:ID or IP:ID) |
  
 The data type can be specified as a string (without additional parameters) or a dictionary with a **type** attribute (data type as a string) and other type-specific validation parameters.
 
@@ -118,6 +129,7 @@ When an attribute has a data type defined with the **type** attribute, you can u
 |           | **_subtype** -- validate values as belonging to the specified subtype |
 |           | **_keytype** -- validate keys as belonging to the specified scalar type |
 |           | **_list_to_dict** -- [value can be specified as a list](validation-list-to-dict) |
+| **id**    | **max_length** -- maximum identifier length |
 | **int**   | **min_value** -- minimum parameter value |
 |           | **max_value** -- maximum parameter value |
 | **ipv4**  | **use** -- [the use of IPv4 address/prefix](validation-ip-address) |
@@ -209,7 +221,7 @@ _netlab_ supports several shortcuts that make type definitions easier to create 
 device_name: str
 ```
 
-is transformed into:
+Is transformed into:
 
 ```
 device_name:
@@ -314,13 +326,13 @@ attributes:
 (validation-alt-types)=
 ## Alternate Data Types
 
-Some _netlab_ attributes could take a dictionary value, alternate values meaning _use default_ or _do whatever you want_, or a list of keys.
+Some *netlab* attributes could take a dictionary value, alternate values (*True* usually meaning *use default*, or *None* meaning *I don't care, do what you want*), or a list of keys.
 
 ### Specifying Alternate Data Types
 
-**_alt_types** list within a dictionary of valid attributes specifies alternate data types that can be used instead of a dictionary.
+**_alt_types** list (commonly used within a dictionary of valid attributes) specifies alternate data types that can be used instead of the primary data type. The types in the **_alt_types** list cannot be user-defined data types.
 
-For example, **_igp_.af** attribute can take a dictionary of address families, or it could be left empty (_None_) to tell _netlab_ to use the address families defined on the node:
+**Example:** ***igp*.af** attribute can take a dictionary of address families, or it could be left empty (*None*) to tell *netlab* to use the address families defined on the node:
 
 ```
 ospf:
@@ -330,6 +342,16 @@ ospf:
         _alt_types: [ NoneType ]
         ipv4: bool
         ipv6: bool
+```
+
+**Example:** A link prefix could be a dictionary (containing IPv4/IPv6 values checked elsewhere), a string that could be an IPv4 or IPv6 prefix, or a boolean value.
+
+```
+attributes:
+  link:
+    prefix:
+      type: dict
+      _alt_types: [ bool, prefix_str ]
 ```
 
 (validation-list-to-dict)=
