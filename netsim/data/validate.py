@@ -290,6 +290,8 @@ def validate_list(
 
       if OK is False:                             # Aggregate return results into a single boolean value
         return_value = False
+      elif not isinstance(OK,bool):
+        data[idx] = OK
 
   return return_value                             # Return final status
 
@@ -447,7 +449,9 @@ def validate_item(
     if type(data).__name__ != data_type.get('type',''):               # Does it make sense to check alternate types?
       alt_result = validate_alt_type(data,data_type)                  # Do we have alt data type (potentially returning modified value)
       if alt_result:
-        return True
+        if not isinstance(alt_result,bool) and parent is not None:    # Non-boolean return is a rewritten value
+          parent[key] = alt_result                                    # ... don't lose it ;)
+        return alt_result
 
   # Copy data type into validation attributes, skipping validation attributes and data type name
   validation_attr = { k:v for k,v in data_type.items() if not k.startswith('_') and k != 'type' }
@@ -475,7 +479,7 @@ def validate_item(
           **validation_attr)                                        # And any other attributes
   if not OK:
     return OK
-  
+
   if parent is not None:                                            # Validation function might have changed the parent value
     data = parent[key]                                              # ... make sure we do the last step using the current value
 
