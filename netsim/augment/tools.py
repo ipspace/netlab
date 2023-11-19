@@ -71,7 +71,7 @@ Process topology tools:
 def process_tools(topology: Box) -> None:
   if 'tools' in topology:
     try:
-        must_be_dict(topology,'tools','',module='topology',abort=True)
+        must_be_dict(topology,'tools','',module='topology',_abort=True)
     except:
         topology.pop('tools')
         return

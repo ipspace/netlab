@@ -365,7 +365,7 @@ def create_vrf_links(topology: Box) -> None:
         path=f'vlans.{vname}',
         create_empty=False,
         module='vlans',
-        abort=True)
+        _abort=True)
     except:                                                                 # Error: not a list
       vdata.pop('links',None)                                               # ... remove the attribute
       continue                                                              # ... and move on

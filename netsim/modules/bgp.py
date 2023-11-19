@@ -434,7 +434,7 @@ def process_as_list(topology: Box) -> None:
     return                                  # ... nope, no work for me ;))
 
   try:
-    must_be_dict(topology.bgp,'as_list','bgp',create_empty=False,module='bgp',abort=True)
+    must_be_dict(topology.bgp,'as_list','bgp',create_empty=False,module='bgp',_abort=True)
   except Exception as ex:
     return
 

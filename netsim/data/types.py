@@ -56,28 +56,32 @@ def err_add_alt_types(ctx: dict) -> str:
 
 def wrong_type_message(
       path: str,                                        # Path to the value
-      expected: str,                                    # Expected type
+      err_stat: dict,                                   # Expected type/value
       value: typing.Any,                                # Value we got
       key: typing.Optional[str] = None,                 # Optional key within the object
-      context: typing.Optional[typing.Any] = None,      # Optional context
-      data_name: typing.Optional[str] = None,           # Optional validation context
+      context: dict = {},                               # Optional validation context
+      data_name: typing.Optional[str] = None,           # Name of the attribute we're validating
       module: typing.Optional[str] = None,              # Module name to display in error messages
                       ) -> None:
   global _wrong_type_help
 
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
-  ctxt = f'\n... context: {context}' if context else ''
-  expected_help = expected.split(' HELP:')              # Does the error message contain help?
-  if len(expected_help) > 1:                            # ... it does, let's see what we can do
-    if not expected_help[0] in _wrong_type_help:        # Did we print this help before? Adjust context if not
-      ctxt = f'\n... FYI: {expected_help[0]} is {expected_help[1]}{ctxt}'
-      _wrong_type_help[expected_help[0]] = expected_help[1]
-    expected = expected_help[0]                         # ... and get the actual target data type name
+  ctxt = ''
+  exp_type = err_stat.get('_type','UnSpec')             # _type should be set to expected type on type validation error
+  expected = exp_type
 
-  wrong_value = 'NWT: ' in expected
-  if wrong_value:                                       # String with 'NWT' means 'type is OK, value is incorrect'
-    expected = expected.replace('NWT: ','')             # ... but we also don't want NWT in the error message ;)
+  if '_type' not in err_stat and '_value' not in err_stat:
+    raise Exception("FATAL (wrong_type_message) err_stat does not contain _type or _value")
+
+  if '_help' in err_stat:                               # Did the validation function specify extra help?
+    if exp_type not in _wrong_type_help:                # Did we print this help before? Adjust context if not
+      help = err_stat.get("_help")
+      ctxt = f'\n... FYI: {exp_type} is {help}{ctxt}'
+      _wrong_type_help[exp_type] = help
+
+  if '_value' in err_stat:                             # _value contains explanation why the value is incorrect
+    expected = err_stat.get('_value')                  # ... even though the type is correct
   else:
     if isinstance(context,dict) and '_alt_types' in context:
       expected += err_add_alt_types(context)
@@ -91,7 +95,7 @@ def wrong_type_message(
 
   log.error(
     f'{path} must be {expected}{ctxt}'+attr_help(module,data_name),
-    log.IncorrectValue if wrong_value else log.IncorrectType,
+    log.IncorrectValue if '_value' in err_stat else log.IncorrectType,
     module or 'topology')
   return
 
@@ -155,10 +159,9 @@ def check_valid_values(
       expected:  list,                                  # Expected values
       value:     typing.Any,                            # Value we got
       key:       typing.Optional[str] = None,           # Optional key within the object
-      context:   typing.Optional[typing.Any] = None,    # Optional context
+      context:   dict = {},                             # Optional validation context
       data_name: typing.Optional[str] = None,           # Data name, needed for attribute help
       module:    typing.Optional[str] = None,           # Module name to display in error messages
-      abort:     bool = False,
                       ) -> bool:
 
   if isinstance(value,list):                            # Deal with lists first
@@ -171,14 +174,14 @@ def check_valid_values(
       return True
 
   path = get_element_path(path,key)
-  ctxt = f'\n... context: {context}' if context else ''
-  log.error(
-    f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}' + \
-      attr_help(module,data_name),
-    log.IncorrectValue,
-    module or 'topology')
+  if '_raw_status' not in context and '_silent' not in context:
+    log.error(
+      f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}' + \
+        attr_help(module,data_name),
+      log.IncorrectValue,
+      module or 'topology')
 
-  if abort:
+  if context.get('_abort',False):
     raise log.IncorrectValue()
   return False
 
@@ -212,7 +215,10 @@ Optional arguments:
   valid_values  - list of valid values (applicable to all data types)
   create_empty  - Create an empty element if the value is missing
   true_value    - Replace True with another value
-  abort         - Throw an exception after printing an error message
+
+Common context arguments:
+
+  _abort        - Throw an exception after printing an error message
 
 Sample use: make sure the 'config' attribute of a node is list
 
@@ -227,7 +233,7 @@ def get_value_to_check(
       create_empty: typing.Optional[bool] = None,       # Do we need to create an empty value?
       true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_
       false_value: typing.Optional[typing.Any] = None,  # Value to use to replace _false_
-      abort: bool = False) -> typing.Any:
+      context: dict = {}) -> typing.Any:                # Additional validation context
 
   value = parent.get(key,None)                          # Try to get the value from the parent object
 
@@ -240,8 +246,8 @@ def get_value_to_check(
         value = empty_value                             # ... if we should create an empty value do so
         parent[key] = empty_value                       # ... and store it in the parent object
       else:
-        if abort:                                       # Empty value was specified, 'create_empty' is False, and there's no actual value
-          raise log.IncorrectValue()                 # ... raise an exception if requested
+        if context.get('_abort',False):                 # Empty value was specified, 'create_empty' is False, and there's no actual value
+          raise log.IncorrectValue()                    # ... raise an exception if requested
 
     if not key in parent:                               # We can skip further processing if the key is missing.
       return value
@@ -278,36 +284,27 @@ def post_validation(
       parent: typing.Optional[Box],
       path: str,
       key: typing.Optional[str],
-      expected: typing.Any,
-      context: typing.Optional[str] = None,
+      err_stat: dict,
       data_name: typing.Optional[str] = None,
       module: typing.Optional[str] = None,
-      abort: bool = False,
-      test_function: typing.Any = None) -> typing.Any:
+      context: dict = {}) -> typing.Any:
 
-  if isinstance(expected,(bool,str)):
-    if not expected is True:
-      if isinstance(expected,str):
-        #
-        # Lacking a better way of passing "hey we don't want an error message if you're raising an exception"
-        # so deep into the validation bowels, we use path (which is mandatory) set to '-' to say
-        # "thanks but no thanks". Yeah, there should have been a better way to handle this :(
-        #
-        if path != '-' or not abort:
-          wrong_type_message(
-            path=path,
-            key=None if parent is None else key,
-            expected=expected,value=value,
-            context=context,data_name=data_name,module=module)
-      if abort:
-        raise log.IncorrectType()
-      return None
-  elif isinstance(expected,types.FunctionType):
-    value = expected(value)
+  if not err_stat.get('_valid',False):
+    if '_raw_status' not in context and '_silent' not in context:
+      wrong_type_message(
+        path=path,
+        key=None if parent is None else key,
+        err_stat=err_stat,value=value,
+        context=context,
+        data_name=data_name,module=module)
+    if context.get('_abort',False):
+      raise log.IncorrectType()
+    return None
+  
+  if '_transform' in err_stat:
+    value = err_stat['_transform'](value)
     if not parent is None:
       parent[key] = value
-  else:
-    log.fatal(f'Validator function {test_function} returned unexpected value {expected}')
 
   return value
 
@@ -326,14 +323,20 @@ def type_test(
           parent: typing.Optional[Box],                     # Parent object
           key: str,                                         # Key within the parent object, may include dots.
           path: str,                                        # Path to parent object, used in error messages
-          context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
+##        context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
           data_name: typing.Optional[str] = None,           # Optional data validation context
           module: typing.Optional[str] = None,              # Module name to display in error messages
           valid_values: typing.Optional[list] = None,       # List of valid values
           create_empty: typing.Optional[bool] = None,       # Do we need to create an empty value?
           true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_ (false_values used to replace _false_)
-          abort: bool = False,                              # Abort on error
           **kwargs: typing.Any) -> typing.Optional[typing.Any]:
+
+      context: dict = {}                                    # Build validation context
+      if kwargs:                                            # Do we have any extra parameters?
+        for k in list(kwargs.keys()):                       # Split extra parameters into validation and context parameters
+          if k.startswith('_'):                             # ... parameters starting with _ are context parameters
+            context[k] = kwargs[k]                          # ... for example, _abort
+            kwargs.pop(k,None)
 
       if parent is None:                                    # No parent => key is the value to check
         value = key
@@ -345,37 +348,40 @@ def type_test(
                   create_empty=create_empty,
                   true_value=true_value,
                   false_value=false_value,
-                  abort=abort)
+                  context=context)
         if not key in parent:
           return value
 
-      expected = test_function(value,**kwargs)              # Now call the validator function with the item value
+      status = test_function(value,**kwargs)              # Now call the validator function with the item value
       value = post_validation(
                 value=value,
                 parent=parent,
                 path=path,
                 key=key,
-                expected=expected,
-                context=context,
+                err_stat=status,
                 data_name=data_name,
                 module=module,
-                abort=abort,
-                test_function=test_function)
-
+                context=context)
+      
       # Finally, check valid values (if specified)
       #
-      if valid_values:
-        check_valid_values(
-          path=path,
-          key=None if parent is None else key,
-          value=value,
-          expected=valid_values,
-          context=context,
-          data_name=data_name,
-          module=module,
-          abort=abort)
+      if valid_values and status.get('_valid',False):
+        if not check_valid_values(
+                  path=path,
+                  key=None if parent is None else key,
+                  value=value,
+                  expected=valid_values,
+                  data_name=data_name,
+                  module=module,
+                  context=context):
+          status['_value'] = 'Invalid value'
+          pass
 
-      # And return whatever the final value is (considering empty, true, and transformed values)
+      if '_raw_status' in context:                        # Did the caller request raw status?
+        status['value'] = value                           # ... he did, add transformed value to it
+        return status                                     # ... and return
+
+      # Otherwise it's a legacy call. Return whatever the final value is (considering empty, true, and transformed values)
       #
       return value
 
@@ -396,43 +402,47 @@ Exceptions:
 """
 
 @type_test(false_value=[],empty_value=[])
-def must_be_list(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
+def must_be_list(value: typing.Any) -> dict:
 
   def transform_to_list(value: typing.Any) -> list:
     return [ value ]
 
   if isinstance(value,(str,int,float,bool)):            # Handle scalar-to-list transformations with a callback function
-    return transform_to_list
+    return { '_valid': True, '_transform': transform_to_list }
 
-  return True if isinstance(value,list) else 'a scalar or a list'
+  return { '_valid': True } if isinstance(value,list) else { '_type': 'a scalar or a list' }
 
 @type_test(false_value={},empty_value={})
-def must_be_dict(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
-  return True if isinstance(value,dict) else 'a dictionary'
+def must_be_dict(value: typing.Any) -> dict:
+  return { '_valid': True } if isinstance(value,dict) else { '_type': 'a dictionary' }
 
 @type_test(false_value='')
-def must_be_string(value: typing.Any) -> typing.Union[bool,str]:
-  return True if isinstance(value,str) else 'a string'
+def must_be_string(value: typing.Any) -> dict:
+  return { '_valid': True } if isinstance(value,str) else { '_type': 'a string' }
 
 @type_test(false_value='')
-def must_be_str(value: typing.Any) -> typing.Union[bool,str]:
-  return True if isinstance(value,str) else 'a string'
+def must_be_str(value: typing.Any) -> dict:
+  return { '_valid': True } if isinstance(value,str) else { '_type': 'a string' }
 
 @type_test()
-def must_be_id(value: typing.Any, max_length: int = 16) -> typing.Union[bool,str]:
+def must_be_id(value: typing.Any, max_length: int = 16) -> dict:
   match_str = f'[a-zA-Z_][a-zA-Z0-9_-]{{0,{max_length - 1}}}'
 #  print(f'must_be_id: v={value} m={match_str}')
   if not isinstance(value,str) or not re.fullmatch(match_str,value):
-    return f'a {max_length}-character identifier HELP:a string containing up to {max_length} alphanumeric characters, numbers and underscores'
+    return {
+      '_valid': False,
+      '_type' : f'a {max_length}-character identifier',
+      '_help' : f'a string containing up to {max_length} alphanumeric characters, numbers and underscores'
+    }
 
-  return True
+  return { '_valid': True } 
 
 @type_test()
 def must_be_int(
       value: typing.Any,
       min_value:  typing.Optional[int] = None,          # Minimum value
       max_value:  typing.Optional[int] = None,          # Maximum value
-                ) -> typing.Union[bool,str,typing.Callable]:
+                ) -> dict:
 
   def transform_to_int(value: typing.Any) -> int:
     return int(value)
@@ -440,30 +450,30 @@ def must_be_int(
   if isinstance(value,str):                             # Try to convert STR to INT
     try:
       transform_to_int(value)
-      return transform_to_int
+      return { '_valid': True, '_transform': transform_to_int }
     except:
       pass
 
   if not isinstance(value,int):                         # value must be an int
-    return 'an integer'
+    return { '_type': 'an integer' }
 
   if isinstance(value,bool):                            # but not a bool
-    return 'NWT: a true integer (not a bool)'
+    return { '_value': 'a true integer (not a bool)' }
 
   if isinstance(min_value,int) and isinstance(max_value,int):
     if value < min_value or value > max_value:
-      return f'NWT: an integer between {min_value} and {max_value}'
+      return { '_value': f'an integer between {min_value} and {max_value}' }
   elif isinstance(min_value,int):
     if value < min_value:
-      return f'NWT: an integer larger or equal to {min_value}'
+      return { '_value': f'an integer larger or equal to {min_value}' }
   elif isinstance(max_value,int):
     if value > max_value:
-      return f'NWT: an integer less than or equal to {max_value}'
+      return { '_value': f'an integer less than or equal to {max_value}' }
 
-  return True
+  return { '_valid': True } 
 
 @type_test()
-def must_be_bool(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
+def must_be_bool(value: typing.Any) -> dict:
 
   def transform_to_bool(value: typing.Any) -> bool:
     if value == 'True' or value == 'true':
@@ -477,103 +487,103 @@ def must_be_bool(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
   if isinstance(value,str):                             # Try to convert STR to INT
     try:
       transform_to_bool(value)
-      return transform_to_bool
+      return { '_valid': True, '_transform': transform_to_bool }
     except:
       pass
 
-  return True if isinstance(value,bool) else 'a boolean'
+  return { '_valid': True } if isinstance(value,bool) else { '_type': 'a boolean' }
 
 @type_test()
-def must_be_asn(value: typing.Any) -> typing.Union[bool,str]:
+def must_be_asn(value: typing.Any) -> dict:
   err = 'an AS number (integer between 1 and 65535)'
   if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
-    return err
+    return { '_type': err }
 
   if value < 0 or value > 65535:
-    return 'NWT: '+err
+    return { '_value': err }
 
-  return True
+  return { '_valid': True }
 
 #
 # Testing for IPv4 and IPv6 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
 #
 @type_test()
-def must_be_ipv4(value: typing.Any, use: str) -> typing.Union[bool,str]:
+def must_be_ipv4(value: typing.Any, use: str) -> dict:
   if isinstance(value,bool):                                          # bool values are valid only on interfaces
     if use not in ('interface','prefix'):
-      return 'NWT: an IPv4 address (boolean value is valid only on an interface)'
+      return { '_value' : 'an IPv4 address (boolean value is valid only on an interface)' }
     else:
-      return True
+      return { '_valid': True }
 
   if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
     if use not in ('id','interface'):
-      return 'NWT: an IPv4 prefix (integer value is only valid as a 32-bit ID)'
+      return { '_value': 'an IPv4 prefix (integer value is only valid as a 32-bit ID)' }
     if value < 0 or value > 2**32-1:
-      return 'NWT: an IPv4 address or an integer between 0 and 2**32'
-    return True
+      return { '_value': 'an IPv4 address or an integer between 0 and 2**32' }
+    return { '_valid': True }
 
   if not isinstance(value,str):
-    return 'IPv4 prefix' if use == 'prefix' else 'IPv4 address'
+    return { '_type': 'IPv4 prefix' if use == 'prefix' else 'IPv4 address' }
 
   if '/' in value:
     if use == 'id':                                                   # IDs should not have a prefix
-      return 'NWT: IPv4 address (not prefix)'
+      return { '_value': 'IPv4 address (not prefix)' }
   else:
     if use == 'prefix':                                               # prefix must have a /
-      return 'NWT: IPv4 prefix'
+      return { '_value': 'IPv4 prefix' }
 
   try:
     parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
   except Exception as ex:
-    return "NWT: IPv4 " + ("address or " if use != 'prefix' else "") + "prefix"
+    return { '_value': ("IPv4 " + ("address or " if use != 'prefix' else "") + "prefix") }
 
   try:                                                                # ... and finally we have to check it's a true IPv4 address
     parse.ipv4()
     if parse.is_ipv4_mapped():
-      return "NWT: IP address in IPv4 format"
+      return { '_value': "IP address in IPv4 format" }
   except Exception as ex:
-    return "NWT: IPv4 address/prefix"
+    return { '_value': "IPv4 address/prefix" }
 
-  return True
+  return { '_valid': True }
 
 @type_test()
-def must_be_ipv6(value: typing.Any, use: str) -> typing.Union[bool,str]:
+def must_be_ipv6(value: typing.Any, use: str) -> dict:
   if isinstance(value,bool):                                          # bool values are valid only on interfaces
     if use not in ('interface','prefix'):
-      return 'NWT: an IPv6 address (boolean value is valid only on an interface)'
+      return { '_value': 'an IPv6 address (boolean value is valid only on an interface)' }
     else:
-      return True
+      return { '_valid': True }
 
   if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
     if use not in ('interface'):
-      return 'NWT: an IPv6 prefix (integer value is only valid as an inteface offset)'
-    return True
+      return { '_value': 'NWT: an IPv6 prefix (integer value is only valid as an inteface offset)' }
+    return { '_valid': True }
 
   if not isinstance(value,str):
-    return 'IPv6 prefix' if use == 'prefix' else 'IPv6 address'
+    return { '_type': 'IPv6 prefix' if use == 'prefix' else 'IPv6 address' }
 
   if not '/' in value:
     if use == 'prefix':                                               # prefix must have a /
-      return 'NWT: IPv6 prefix (not an address)'
+      return { '_value': 'IPv6 prefix (not an address)' }
 
   try:
     parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
   except Exception as ex:
-    return "NWT: IPv6 " + ("address or " if use != 'prefix' else "") + "prefix"
+    return { '_value': "IPv6 " + ("address or " if use != 'prefix' else "") + "prefix" }
 
   if parse.is_ipv4_mapped():                                          # This is really an IPv4 address, but it looks like IPv6, so OK
-    return True
+    return { '_valid': True }
 
   try:                                                                # ... and finally we have to check it's a true IPv6 address
     parse.ipv4()
-    return "NWT: IPv6 (not an IPv4) address"                          # If we could get IPv4 address out of it, it clearly is not
+    return { '_value': "IPv6 (not an IPv4) address" }                 # If we could get IPv4 address out of it, it clearly is not
   except Exception as ex:
     pass
 
-  return True
+  return { '_valid': True }
 
 @type_test()
-def must_be_prefix_str(value: typing.Any) -> typing.Union[bool,str,typing.Callable]:
+def must_be_prefix_str(value: typing.Any) -> dict:
 
   def transform_to_ipv4(value: typing.Any) -> dict:
     return { 'ipv4': value }
@@ -582,76 +592,76 @@ def must_be_prefix_str(value: typing.Any) -> typing.Union[bool,str,typing.Callab
     return { 'ipv6': value }
 
   if not isinstance(value,str) or not '/' in value:
-    return 'IPv4 or IPv6 prefix'
+    return { '_type': 'IPv4 or IPv6 prefix' }
 
   try:
     parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
   except Exception as ex:
-    return "NWT: IPv4 or IPv6 prefix"
+    return { '_value': "IPv4 or IPv6 prefix" }
 
   if parse.network != parse.ip:
-    return "NWT: IPv4 or IPv6 prefix without the host bits"
+    return { '_value': "IPv4 or IPv6 prefix without the host bits" }
 
   try:                                                                # ... and finally we have to check it's a true IPv4 address
     parse.ipv4()
     if not parse.is_ipv4_mapped():
-      return transform_to_ipv4
+      return { '_valid': True, '_transform': transform_to_ipv4 }
   except Exception as ex:
     pass
 
-  return transform_to_ipv6
+  return { '_valid': True, '_transform': transform_to_ipv6 }
 
 @type_test()
-def must_be_mac(value: typing.Any) -> typing.Union[bool,str]:
+def must_be_mac(value: typing.Any) -> dict:
   if not isinstance(value,str):
-    return 'MAC address'
+    return {'_type': 'MAC address' }
 
   try:
     parse = netaddr.EUI(value)                                        # now let's check if we have a MAC address
   except Exception as ex:
-    return "MAC address"
+    return { '_value': "MAC address" }
 
-  return True
+  return { '_valid': True }
 
 @type_test()
-def must_be_net(value: typing.Any) -> typing.Union[bool,str]:
+def must_be_net(value: typing.Any) -> dict:
   if not isinstance(value,str):
-    return 'IS-IS NET/NSAP'
+    return { '_type': 'IS-IS NET/NSAP' }
 
   if not re.fullmatch('[0-9a-f.]+',value):
-    return 'NWT: IS-IS NET/NSAP containing hexadecimal digits or dots'
+    return { '_value': 'IS-IS NET/NSAP containing hexadecimal digits or dots' }
 
   if len(value.replace('.','')) % 2 != 0:
-    return 'NWT: IS-IS NET/NSAP containing even number of hexadecimal digits'
+    return { '_value': 'IS-IS NET/NSAP containing even number of hexadecimal digits' }
 
-  return True
+  return { '_valid': True }
 
 @type_test()
-def must_be_rd(value: typing.Any) -> typing.Union[bool,str]:
+def must_be_rd(value: typing.Any) -> dict:
   if isinstance(value,int) or value is None:                          # Accept RD/RT offets and trust the modules to do the right thing
-    return True                                                       # Also: RD set to None can be used to prevent global-to-node RD inheritance
+    return { '_valid': True }                                         # Also: RD set to None can be used to prevent global-to-node RD inheritance
 
   if not isinstance(value,str):                                       # Otherwise it must be a string
-    return "route distinguisher"
+    return { '_type': "route distinguisher" }
 
   try:
     (rdt,rdi) = value.split(':')
   except Exception as ex:
-    return "NWT: route distinguisher in asn:id or ip:id format"
+    return { '_value': "route distinguisher in asn:id or ip:id format" }
 
   try:
     rdi_parsed = int(rdi)
   except Exception as ex:
-    return "NWT: an RD in asn:id or ip:id format where id is an integer value"
+    return { '_value': "an RD in asn:id or ip:id format where id is an integer value" }
 
   try:
     rdt_parsed = int(rdt)
   except Exception as ex:
     try:
       if '/' in rdt:
-        return "route distinguisher in asn:id or ip:id format"
+        return { '_value': "route distinguisher in asn:id or ip:id format" }
       netaddr.IPNetwork(rdt)
     except Exception as ex:
-      return "NWT: an RD in asn:id or ip:id format where asn is an integer or ip is an IPv4 address"
+      return { '_value': "an RD in asn:id or ip:id format where asn is an integer or ip is an IPv4 address" }
 
-  return True
+  return { '_valid': True }
