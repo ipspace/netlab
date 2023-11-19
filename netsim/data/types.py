@@ -59,15 +59,15 @@ def wrong_type_message(
       err_stat: dict,                                   # Expected type/value
       value: typing.Any,                                # Value we got
       key: typing.Optional[str] = None,                 # Optional key within the object
-      context: typing.Optional[typing.Any] = None,      # Optional context
-      data_name: typing.Optional[str] = None,           # Optional validation context
+      context: dict = {},                               # Optional validation context
+      data_name: typing.Optional[str] = None,           # Name of the attribute we're validating
       module: typing.Optional[str] = None,              # Module name to display in error messages
                       ) -> None:
   global _wrong_type_help
 
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
-  ctxt = f'\n... context: {context}' if context else ''
+  ctxt = ''
   exp_type = err_stat.get('_type','UnSpec')             # _type should be set to expected type on type validation error
   expected = exp_type
 
@@ -290,11 +290,12 @@ def post_validation(
       context: dict = {}) -> typing.Any:
 
   if not err_stat.get('_valid',False):
-    if '_raw_status' not in context and '_silent' not in context and path != '-':
+    if '_raw_status' not in context and '_silent' not in context:
       wrong_type_message(
         path=path,
         key=None if parent is None else key,
         err_stat=err_stat,value=value,
+        context=context,
         data_name=data_name,module=module)
     if context.get('_abort',False):
       raise log.IncorrectType()
