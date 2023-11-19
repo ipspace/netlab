@@ -174,12 +174,12 @@ def check_valid_values(
       return True
 
   path = get_element_path(path,key)
-  ctxt = f'\n... context: {context}' if context else ''
-  log.error(
-    f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}{ctxt}' + \
-      attr_help(module,data_name),
-    log.IncorrectValue,
-    module or 'topology')
+  if '_raw_status' not in context and '_silent' not in context:
+    log.error(
+      f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}' + \
+        attr_help(module,data_name),
+      log.IncorrectValue,
+      module or 'topology')
 
   if context.get('_abort',False):
     raise log.IncorrectValue()
@@ -290,12 +290,7 @@ def post_validation(
       context: dict = {}) -> typing.Any:
 
   if not err_stat.get('_valid',False):
-    #
-    # Lacking a better way of passing "hey we don't want an error message if you're raising an exception"
-    # so deep into the validation bowels, we use path (which is mandatory) set to '-' to say
-    # "thanks but no thanks". Yeah, there should have been a better way to handle this :(
-    #
-    if path != '-' or not context.get('_abort',False):  # FIX FIX FIX
+    if '_raw_status' not in context and '_silent' not in context and path != '-':
       wrong_type_message(
         path=path,
         key=None if parent is None else key,
@@ -366,20 +361,26 @@ def type_test(
                 data_name=data_name,
                 module=module,
                 context=context)
-
+      
       # Finally, check valid values (if specified)
       #
-      if valid_values:
-        check_valid_values(
-          path=path,
-          key=None if parent is None else key,
-          value=value,
-          expected=valid_values,
-          data_name=data_name,
-          module=module,
-          context=context)
+      if valid_values and status.get('_valid',False):
+        if not check_valid_values(
+                  path=path,
+                  key=None if parent is None else key,
+                  value=value,
+                  expected=valid_values,
+                  data_name=data_name,
+                  module=module,
+                  context=context):
+          status['_value'] = 'Invalid value'
+          pass
 
-      # And return whatever the final value is (considering empty, true, and transformed values)
+      if '_raw_status' in context:                        # Did the caller request raw status?
+        status['value'] = value                           # ... he did, add transformed value to it
+        return status                                     # ... and return
+
+      # Otherwise it's a legacy call. Return whatever the final value is (considering empty, true, and transformed values)
       #
       return value
 
