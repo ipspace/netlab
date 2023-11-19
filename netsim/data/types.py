@@ -159,10 +159,9 @@ def check_valid_values(
       expected:  list,                                  # Expected values
       value:     typing.Any,                            # Value we got
       key:       typing.Optional[str] = None,           # Optional key within the object
-      context:   typing.Optional[typing.Any] = None,    # Optional context
+      context:   dict = {},                             # Optional validation context
       data_name: typing.Optional[str] = None,           # Data name, needed for attribute help
       module:    typing.Optional[str] = None,           # Module name to display in error messages
-      abort:     bool = False,
                       ) -> bool:
 
   if isinstance(value,list):                            # Deal with lists first
@@ -182,7 +181,7 @@ def check_valid_values(
     log.IncorrectValue,
     module or 'topology')
 
-  if abort:
+  if context.get('_abort',False):
     raise log.IncorrectValue()
   return False
 
@@ -216,7 +215,10 @@ Optional arguments:
   valid_values  - list of valid values (applicable to all data types)
   create_empty  - Create an empty element if the value is missing
   true_value    - Replace True with another value
-  abort         - Throw an exception after printing an error message
+
+Common context arguments:
+
+  _abort        - Throw an exception after printing an error message
 
 Sample use: make sure the 'config' attribute of a node is list
 
@@ -231,7 +233,7 @@ def get_value_to_check(
       create_empty: typing.Optional[bool] = None,       # Do we need to create an empty value?
       true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_
       false_value: typing.Optional[typing.Any] = None,  # Value to use to replace _false_
-      abort: bool = False) -> typing.Any:
+      context: dict = {}) -> typing.Any:                # Additional validation context
 
   value = parent.get(key,None)                          # Try to get the value from the parent object
 
@@ -244,8 +246,8 @@ def get_value_to_check(
         value = empty_value                             # ... if we should create an empty value do so
         parent[key] = empty_value                       # ... and store it in the parent object
       else:
-        if abort:                                       # Empty value was specified, 'create_empty' is False, and there's no actual value
-          raise log.IncorrectValue()                 # ... raise an exception if requested
+        if context.get('_abort',False):                 # Empty value was specified, 'create_empty' is False, and there's no actual value
+          raise log.IncorrectValue()                    # ... raise an exception if requested
 
     if not key in parent:                               # We can skip further processing if the key is missing.
       return value
@@ -283,11 +285,9 @@ def post_validation(
       path: str,
       key: typing.Optional[str],
       err_stat: dict,
-      context: typing.Optional[str] = None,
       data_name: typing.Optional[str] = None,
       module: typing.Optional[str] = None,
-      abort: bool = False,
-      test_function: typing.Any = None) -> typing.Any:
+      context: dict = {}) -> typing.Any:
 
   if not err_stat.get('_valid',False):
     #
@@ -295,13 +295,13 @@ def post_validation(
     # so deep into the validation bowels, we use path (which is mandatory) set to '-' to say
     # "thanks but no thanks". Yeah, there should have been a better way to handle this :(
     #
-    if path != '-' or not abort:
+    if path != '-' or not context.get('_abort',False):  # FIX FIX FIX
       wrong_type_message(
         path=path,
         key=None if parent is None else key,
         err_stat=err_stat,value=value,
-        context=context,data_name=data_name,module=module)
-    if abort:
+        data_name=data_name,module=module)
+    if context.get('_abort',False):
       raise log.IncorrectType()
     return None
   
@@ -327,14 +327,20 @@ def type_test(
           parent: typing.Optional[Box],                     # Parent object
           key: str,                                         # Key within the parent object, may include dots.
           path: str,                                        # Path to parent object, used in error messages
-          context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
+##        context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
           data_name: typing.Optional[str] = None,           # Optional data validation context
           module: typing.Optional[str] = None,              # Module name to display in error messages
           valid_values: typing.Optional[list] = None,       # List of valid values
           create_empty: typing.Optional[bool] = None,       # Do we need to create an empty value?
           true_value: typing.Optional[typing.Any] = None,   # Value to use to replace _true_ (false_values used to replace _false_)
-          abort: bool = False,                              # Abort on error
           **kwargs: typing.Any) -> typing.Optional[typing.Any]:
+
+      context: dict = {}                                    # Build validation context
+      if kwargs:                                            # Do we have any extra parameters?
+        for k in list(kwargs.keys()):                       # Split extra parameters into validation and context parameters
+          if k.startswith('_'):                             # ... parameters starting with _ are context parameters
+            context[k] = kwargs[k]                          # ... for example, _abort
+            kwargs.pop(k,None)
 
       if parent is None:                                    # No parent => key is the value to check
         value = key
@@ -346,7 +352,7 @@ def type_test(
                   create_empty=create_empty,
                   true_value=true_value,
                   false_value=false_value,
-                  abort=abort)
+                  context=context)
         if not key in parent:
           return value
 
@@ -357,11 +363,9 @@ def type_test(
                 path=path,
                 key=key,
                 err_stat=status,
-                context=context,
                 data_name=data_name,
                 module=module,
-                abort=abort,
-                test_function=test_function)
+                context=context)
 
       # Finally, check valid values (if specified)
       #
@@ -371,10 +375,9 @@ def type_test(
           key=None if parent is None else key,
           value=value,
           expected=valid_values,
-          context=context,
           data_name=data_name,
           module=module,
-          abort=abort)
+          context=context)
 
       # And return whatever the final value is (considering empty, true, and transformed values)
       #

@@ -312,7 +312,7 @@ def validate_alt_type(data: typing.Any, data_type: Box) -> typing.Any:
                    parent=None,                         # ... a standalone value
                    key=data,                            # ... specified in this parameter
                    path='-',                            # ... ignore path, which also means no error message (don't get me started ;)
-                   abort=True)                          # ... abort on error, so we don't get a ton of log messages
+                   _abort=True)                         # ... abort on error, so we don't get a ton of log messages
       if isinstance(v_result,str):
         return False                                    # String means an error
       else:
@@ -331,9 +331,8 @@ def validate_value(
       value: typing.Any,
       data_type: str,
       path: str,
-      context: typing.Optional[typing.Any] = None,      # Additional context (use when verifying link values)
       module: typing.Optional[str] = None,              # Module name to display in error messages
-      abort: bool = False) -> typing.Any:
+      _abort: bool = False) -> typing.Any:
   global _bi,_tv
 
   validation_function = getattr(_tv,f'must_be_{data_type}',None)      # Try to get validation function
@@ -346,8 +345,7 @@ def validate_value(
             key=value,
             path=path,
             module=module,
-            context=context,
-            abort=abort)
+            _abort=_abort)
 
 """
 transform_validation_shortcuts -- transform str/list/dict type definition shortcuts into structured definitions
@@ -475,7 +473,6 @@ def validate_item(
           path=parent_path,                                         # Pass the parent path (it will be combined with key anyway)
           data_name=data_name,                                      # Pass name of the data
           module=module,                                            # ... and the module
-          context=alt_context,                                      # Pass information about alt data types
           **validation_attr)                                        # And any other attributes
   if not OK:
     return OK

@@ -163,7 +163,7 @@ def find_node_device(n: Box, topology: Box) -> bool:
     return False
 
   try:
-    must_be_string(n,'device',f'nodes.{n.name}',module='nodes',abort=True)
+    must_be_string(n,'device',f'nodes.{n.name}',module='nodes',_abort=True)
   except Exception as ex:
     return False
 

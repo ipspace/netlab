@@ -946,7 +946,7 @@ def expand_groups(topology: Box) -> None:
         parent=link,
         key='group',
         path=link._linkname,
-        abort=True,
+        _abort=True,
         module='links')
     except:                                         # If not, report error and skip the link
       continue
