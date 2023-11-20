@@ -16,7 +16,7 @@ from .. import utils
 from .. import providers
 from . import devices,addressing
 from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_int,must_be_string,must_be_id
+from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
 from ..data import global_vars
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
@@ -163,7 +163,7 @@ def find_node_device(n: Box, topology: Box) -> bool:
     return False
 
   try:
-    must_be_string(n,'device',f'nodes.{n.name}',module='nodes',_abort=True)
+    must_be_device(n,'device',f'nodes.{n.name}',module='nodes',_abort=True)
   except Exception as ex:
     return False
 

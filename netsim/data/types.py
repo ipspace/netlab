@@ -64,6 +64,7 @@ def wrong_type_message(
       module: typing.Optional[str] = None,              # Module name to display in error messages
                       ) -> None:
   global _wrong_type_help
+  global _attr_help_cache
 
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
@@ -93,8 +94,21 @@ def wrong_type_message(
   else:
     path = f'attribute {path}'
 
+  # Display hint only when we know the hint ID
+  if '_hint_id' in err_stat:
+    if _attr_help_cache is None:                        # Initialize help messages cache if needed
+      from ..data import get_empty_box
+      _attr_help_cache = get_empty_box()
+
+    hint_id = err_stat.get('_hint_id') or 'SomeHint'    # ... just in case we have some weird value in the hint ID
+    if not _attr_help_cache.hints[hint_id]:             # Did we already display this hint?
+      ctxt += "\n... "+err_stat.get('_hint','')         # ... nope, time to do it now
+      _attr_help_cache.hints[hint_id] = err_stat.get('_hint','')
+  else:
+    ctxt += attr_help(module,data_name)
+
   log.error(
-    f'{path} must be {expected}{ctxt}'+attr_help(module,data_name),
+    f'{path} must be {expected}{ctxt}',
     log.IncorrectValue if '_value' in err_stat else log.IncorrectType,
     module or 'topology')
   return
@@ -663,5 +677,25 @@ def must_be_rd(value: typing.Any) -> dict:
       netaddr.IPNetwork(rdt)
     except Exception as ex:
       return { '_value': "an RD in asn:id or ip:id format where asn is an integer or ip is an IPv4 address" }
+
+  return { '_valid': True }
+
+
+@type_test()
+def must_be_device(value: typing.Any) -> dict:
+  from .validate import list_of_devices
+
+  status = {
+    '_type':    "device",
+    '_hint_id': "devices",
+    '_hint':    "Use 'netlab show devices' to display a list of valid devices"
+  }
+
+  if not isinstance(value,str):                                       # Otherwise it must be a string
+    return status
+
+  if not value in list_of_devices:
+    status['_value'] = f'known device type identifier (got {value})'
+    return status
 
   return { '_valid': True }

@@ -19,7 +19,9 @@ from . import get_empty_box,get_a_list
 # around
 #
 list_of_modules: typing.List[str] = []
+list_of_devices: typing.List[str] = []
 topo_attributes: typing.Optional[Box] = None
+topo_pointer: typing.Optional[Box] = None
 
 """
 get_attribute_namespaces
@@ -645,9 +647,13 @@ init_validation: initial global variables from current topology
 def init_validation(topology: Box) -> None:
   global topo_attributes
   global list_of_modules
+  global list_of_devices
+  global topo_pointer
 
+  topo_pointer = topology
   topo_attributes = topology.defaults.attributes
   list_of_modules = [ m for m in topology.defaults.keys() if 'supported_on' in topology.defaults[m] ]
+  list_of_devices = list(topology.defaults.devices.keys())
 
 """
 Get object-specific attributes
