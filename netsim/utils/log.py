@@ -127,6 +127,10 @@ def exit_on_error() -> None:
   if _ERROR_LOG:
     fatal('Cannot proceed beyond this point due to errors, exiting')
 
+def pending_errors() -> bool:
+  global _ERROR_LOG
+  return True if _ERROR_LOG else False
+
 #
 # Logging and debugging functions
 #
