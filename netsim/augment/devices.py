@@ -171,5 +171,16 @@ def augment_device_settings(topology: Box) -> None:
     if not isinstance(devices[dname],Box):                  # ... validate device definition data type
       log.fatal(f'Internal error: definition of device {dname} is not a dictionary')
 
+
   process_device_inheritance(topology)
   build_module_support_lists(topology)
+
+  for dname in devices.keys():                              # After completing device transformation, do a few sanity checks
+    for kw in ['interface_name','description']:             # ... list of attributes taken from nodes
+      if not kw in devices[dname]:
+        log.error(
+          f'Device {dname} defined in defaults.devices.{dname} does not have {kw} attribute',
+          log.IncorrectValue,
+          'devices')
+
+  log.exit_on_error()

@@ -169,22 +169,9 @@ def find_node_device(n: Box, topology: Box) -> bool:
 
   devtype = n.device
 
-  if not devtype in topology.defaults.devices:
-    log.error(f'Unknown device {devtype} in node {n.name}',log.IncorrectValue,'nodes')
-    return False
-
   dev_def = topology.defaults.devices[devtype]
   if not isinstance(dev_def,dict):
     log.fatal(f"Device data for device {devtype} must be a dictionary")
-
-  for kw in ['interface_name','description']:
-    if not kw in dev_def:
-      log.error(
-        f'Device {devtype} used on node {n.name} is not a valid device type\n'+
-        "... run 'netlab show devices' to display valid device types",
-        log.IncorrectValue,
-        'nodes')
-      return False
 
   return True
 
