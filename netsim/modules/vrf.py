@@ -358,18 +358,6 @@ def create_vrf_links(topology: Box) -> None:
     if not 'links' in vdata:                                                # No VRF links?
       continue                                                              # ... no problem, move on
 
-    try:
-      must_be_list(                                                         # Verify that the 'links' attribute is a list
-        parent=vdata,
-        key='links',
-        path=f'vlans.{vname}',
-        create_empty=False,
-        module='vlans',
-        _abort=True)
-    except:                                                                 # Error: not a list
-      vdata.pop('links',None)                                               # ... remove the attribute
-      continue                                                              # ... and move on
-
     for cnt,l in enumerate(vdata.links):                                    # So far so good, now iterate over the links
       link_data = links.adjust_link_object(                                 # Create link data from link definition
                     l=l,
