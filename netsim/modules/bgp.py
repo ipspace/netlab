@@ -428,6 +428,9 @@ def bgp_set_originate_af(node: Box, topology: Box) -> None:
 process_as_list:
   If the global BGP parameters have as_list attribute, set node AS numbers and node
   RR flags accordingly
+
+This function is called from init_groups very early in the topology initialization process
+and has to do its own data validation.
 """
 def process_as_list(topology: Box) -> None:
   if not topology.get('bgp.as_list'):       # Do we have global bgp.as_list setting?
