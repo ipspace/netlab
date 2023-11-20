@@ -12,20 +12,13 @@ from ..data.types import must_be_list,must_be_string,must_be_dict
 
 """
 Check the 'tools' section of the topology file
+(assuming global type validation made sure we have dicts where needed)
 
-* Tools section must be a dictionary
 * Tool names must be present in defaults.tools
 * Selected tool runtime must be valid
 """
 def validate_tool_attributes(topology: Box) -> None:
   for tool in topology.tools.keys():                # Iterate over tools     
-    must_be_dict(                                   # Make sure the tool configuration is a dictionary    
-      parent=topology.tools,
-      key=tool,path=f'topology.tools',
-      create_empty=True,
-      module='topology')
-    if not isinstance(topology.tools[tool],dict):   # Skip if we have an error
-      continue
     if not tool in topology.defaults.tools:         # Check that the tool is valid
       log.error(
         f'Invalid tool {tool}\n... valid tools are {",".join(topology.defaults.tools.keys())}',
@@ -69,12 +62,8 @@ Process topology tools:
 * Validate tool attributes 
 """
 def process_tools(topology: Box) -> None:
-  if 'tools' in topology:
-    try:
-        must_be_dict(topology,'tools','',module='topology',_abort=True)
-    except:
-        topology.pop('tools')
-        return
+  if log.pending_errors():                      # Skip tool processing if we already have pending errors
+    return                                      # ... data structures might be broken
 
   copy_default_tools(topology)
   if 'tools' in topology:
