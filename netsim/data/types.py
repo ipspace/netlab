@@ -699,3 +699,22 @@ def must_be_device(value: typing.Any) -> dict:
     return status
 
   return { '_valid': True }
+
+@type_test()
+def must_be_node_id(value: typing.Any) -> dict:
+  if not isinstance(value,str):                                       # Otherwise it must be a string
+    return { '_type': 'valid node name (a string)' }
+  
+  topology = global_vars.get_topology()               # Try to get current lab topology
+  if topology is None:                                # pragma: no-cover
+    log.fatal('Calling node_id validation before the topology has been initialized')
+
+  if value not in topology.nodes:  
+    return {
+      '_type':    "node",
+      '_value':   f"valid node name (found {value})",
+      '_hint_id': "nodes",
+      '_hint':    "Valid node names are "+", ".join(list(topology.nodes))
+    }
+  
+  return { '_valid': True }

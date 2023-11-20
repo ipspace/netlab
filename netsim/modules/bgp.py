@@ -9,7 +9,8 @@ import netaddr
 
 from . import _Module,_routing
 from .. import data
-from ..data.validate import must_be_int,must_be_list,must_be_dict
+from ..data.types import must_be_int,must_be_list,must_be_dict
+from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log
 
@@ -436,32 +437,25 @@ def process_as_list(topology: Box) -> None:
   if not topology.get('bgp.as_list'):       # Do we have global bgp.as_list setting?
     return                                  # ... nope, no work for me ;))
 
-  try:
-    must_be_dict(topology.bgp,'as_list','bgp',create_empty=False,module='bgp',_abort=True)
-  except Exception as ex:
+  if not validate_item(
+            parent=topology.bgp,
+            key='as_list',
+            data_type=topology.defaults.bgp.attributes.as_list,
+            parent_path='bgp',
+            data_name='BGP as_list',
+            module='bgp',
+            module_source='topology',
+            topology=topology,
+            attr_list=[ 'bgp' ],
+            attributes=topology.defaults.attributes,
+            enabled_modules=[]):
+    return
+
+  if log.pending_errors():
     return
 
   node_data = data.get_empty_box()
-  node_list = list(topology.nodes.keys())
   for asn,as_data in topology.bgp.as_list.items():
-    if not isinstance(as_data,Box):
-      log.error(
-        f"Invalid value in bgp.as_list for ASN {asn}\n" + \
-        f"... Each ASN in a BGP as_list must be a dictionary with (at least) members key:\n"+
-        f"... Found: {as_data}",
-        log.IncorrectValue,
-        'bgp')
-      continue
-
-    must_be_list(as_data,'members',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
-    must_be_list(as_data,'rr',f'bgp.as_list.{asn}',create_empty=False,module='bgp',valid_values=node_list)
-    if not as_data.members:
-      log.error(
-        f"BGP as_list for ASN {asn} does not have a valid list of members",
-        log.IncorrectValue,
-        'bgp')
-      continue
-
     for n in as_data.members:
       if 'as' in node_data[n]:
         log.error(
