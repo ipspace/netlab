@@ -26,7 +26,29 @@ evpn
 {%     if import_target == export_target %}
   route-target both {{ v.evpn.export|join(' ') }}
 {%     endif %}
+{# if symmetric irb, we want to redistribute host routes as well (redistribute host-route) #}
+{%     if v.evpn is defined and v.vrf is defined %}
+{%       if vrfs[v.vrf].evpn.transit_vni is defined %}
+  redistribute host-route
+{%       endif %}
+{%     endif %}
 
 {%   endfor %}
 {% endif %}
 
+{# L3VNI is defined on vxlan interface, even if it's only an EVPN stuff #}
+{% if vrfs is defined %}
+{# define evpn rt #}
+{%   for n,v in vrfs.items() if v.af is defined %}
+vrf {{ n }}
+  route-target import {{ v.import|join(' ') }} evpn
+  route-target export {{ v.export|join(' ') }} evpn
+{%   endfor %}
+{# define l3vni #}
+interface vxlan 1
+{%   for n,v in vrfs.items() if v.af is defined %}
+  vni {{ v.evpn.transit_vni }}
+    vrf {{ n }}
+    routing
+{%   endfor %}
+{% endif %}
