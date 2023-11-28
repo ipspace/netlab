@@ -98,7 +98,7 @@ def docker_connect(
   sys.stdout.flush()
   sys.stderr.flush()
 
-  need_output = 'output' in p_args
+  need_output = 'output' in p_args and p_args.output
   return run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
 
 def ssh_connect(
@@ -130,7 +130,7 @@ def ssh_connect(
     sys.stderr.write(f"Connecting to {host} using SSH port {data.ansible_port or 22}{exec_args}\n")
     sys.stderr.flush()
 
-  need_output = 'output' in p_args
+  need_output = 'output' in p_args and p_args.output
   return run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
 
 def quote_list(args: list) -> list:
