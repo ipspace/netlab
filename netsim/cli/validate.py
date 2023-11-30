@@ -7,6 +7,7 @@ import typing
 import os
 import sys
 import argparse
+import re
 
 from box import Box
 from termcolor import colored
@@ -90,12 +91,6 @@ def p_test_pass(v_entry: Box, topology: Box) -> None:
   msg = v_entry.get('pass','Test succeeded')
   log_progress(msg,topology)
 
-# Print "all tests succeeded"
-#
-def p_success(topology: Box) -> None:
-  print()
-  log_progress('All tests passed',topology,f_status='SUCCESS')
-
 '''
 Get generic or per-device action from a validation entry
 
@@ -111,7 +106,10 @@ def get_entry_value(v_entry: Box, action: str, node: Box) -> typing.Any:
     return value
   
   if '{{' in value:
-    value = templates.render_template(data=node,j2_text=value)
+    try:
+      value = templates.render_template(data=node,j2_text=value)
+    except Exception as ex:
+      log.fatal(f'Jinja2 error rendering {value}\n... {ex}')
 #    print(f"{action} value for {node.name}: {value}")
 
   return value  
@@ -185,7 +183,7 @@ def get_result_string(v_entry: Box, n_name: str, topology: Box) -> typing.Union[
 
   # Set up arguments for the 'netlab connect' command and execute it
   #
-  args = argparse.Namespace(quiet=True,host=n_name,output=True)
+  args = argparse.Namespace(quiet=True,host=n_name,output=True,show=None)
   result = connect_to_node(args=args,rest=v_cmd,topology=topology,log_level=LogLevel.NONE)
 
   if result is False:                                       # Report an error if 'netlab connect' failed
@@ -216,12 +214,14 @@ def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
   return None
 
 test_skip_count: int
+test_result_count: int
+test_pass_count: int
 
 '''
 Execute a single validation test on all specified nodes
 '''
 def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace) -> typing.Optional[bool]:
-  global test_skip_count
+  global test_skip_count,test_result_count,test_pass_count
 
   # Return value uses ternary logic: OK (True), Fail(False), Skipped (None)
   ret_value = None
@@ -239,6 +239,10 @@ def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace
         topology=topology)
       test_skip_count += 1                        # Increment skip count for test results summary
       continue
+
+    if args.verbose >= 2:                         # Print out what will be executed
+      cmd = get_entry_value(v_entry,action,node)
+      print(f'{action} on {node.name}/{node.device}: {cmd}')
 
     if action == 'show':                          # We got a 'show' action, try to get parsed results
       result = get_parsed_result(v_entry,n_name,topology)
@@ -262,11 +266,17 @@ def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace
         OK = None
       else:
         try:                                      # Otherwise try to evaluate the validation expression
-          OK = eval(v_test,{'__builtins': {}},result)
-        except:                                   # ... and failure if the evaluation failed
+          result.re = re                          # Give validation expression access to 're' module
+          OK = eval(v_test,{'__builtins__': {}},result)
+          if OK is None:
+            OK = False
+          result.pop('re')
+        except Exception as ex:                   # ... and failure if the evaluation failed
+          if args.verbose >= 2:
+            print(f'... evaluation error: {ex}')
           OK = False
 
-      if not OK:                                  # Validation expression failed...
+      if not OK or args.verbose >= 2:              # Validation expression failed or we're extra verbose
         if args.verbose > 0:
           if v_test:
             print(f'Test expression: {v_test}\n')
@@ -275,9 +285,12 @@ def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace
 
       if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
         p_test_fail(n_name,v_entry,topology)
+        test_result_count += 1
         ret_value = False
       elif OK:                                    # ... or we might have a positive result
         log_progress(f'Validation succeeded on {n_name}',topology)
+        test_result_count += 1
+        test_pass_count += 1
         if ret_value is None:
           ret_value = True
 
@@ -290,7 +303,7 @@ def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace
 Main routine: run all tests, handle validation errors, print summary results
 '''
 def run(cli_args: typing.List[str]) -> None:
-  global test_skip_count
+  global test_skip_count,test_result_count,test_pass_count
   args = validate_parse(cli_args)
   topology = load_snapshot(args)
 
@@ -300,6 +313,8 @@ def run(cli_args: typing.List[str]) -> None:
   status = True
   cnt = 0
   test_skip_count = 0
+  test_result_count = 0
+  test_pass_count = 0
   topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
 
   for v_entry in topology.validate:
@@ -316,12 +331,13 @@ def run(cli_args: typing.List[str]) -> None:
 
     cnt = cnt + 1
 
-  if status:
-    p_success(topology)
-    if test_skip_count:
-      log_info('Some tests were skipped, the results are not reliable',topology)
-  else:
-    print()
+  print()
+  if test_pass_count:
+    log_progress(f'Tests passed: {test_pass_count}',topology,f_status='SUCCESS')
+  elif test_result_count:
     log_failure('Tests completed, validation failed',topology)
+
+  if test_skip_count:
+    log_info('Some tests were skipped, the results are not reliable',topology)
 
   sys.exit(0 if status else 1)
