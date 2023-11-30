@@ -7,8 +7,6 @@ from box import Box
 
 from ..utils import log
 from .. import data
-from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_list,must_be_string,must_be_dict
 
 """
 Check the 'tools' section of the topology file
