@@ -85,7 +85,7 @@ check_device_support:
 def check_device_support(t_name: str,v_entry: Box,topology: Box) -> bool:
   if not v_entry.nodes:
     log.error(
-      f'Validation test {t_name} does not have a list of nodes it should be executed on',
+      f'Validation test "{t_name}" does not have a list of nodes it should be executed on',
       category=log.MissingValue,
       module='validation')
     return False
@@ -95,7 +95,7 @@ def check_device_support(t_name: str,v_entry: Box,topology: Box) -> bool:
     n_device = topology.nodes[n].device
     if not n_device in v_entry.devices:
       log.error(
-        f'Cannot execute validation test {t_name} on node {n} (device {n_device})\n'+ \
+        f'Cannot execute validation test "{t_name}" on node {n} (device {n_device})\n'+ \
         f'... This test can only be executed on {", ".join(v_entry.devices)}',
         category=log.IncorrectValue,
         module='validation')
@@ -113,28 +113,38 @@ def p_status(txt: str, color: str, topology: Box) -> str:
 #
 def p_test_header(t_name: str, v_entry: Box,topology: Box) -> None:
   print(
-    p_status(t_name,"light_grey",topology) + \
+    p_status(t_name,"light_blue",topology) + \
     v_entry.get('description','Starting test') + \
     f' [ node(s): {",".join(v_entry.nodes)} ]')
+
+# Print generic "test failed" message
+#
+def log_failure(msg: str, topology: Box, f_status: str = 'FAIL') -> None:
+  print(p_status(f_status,'light_red',topology) + msg)
+
+# Print generic "making progress" message
+#
+def log_progress(msg: str, topology: Box, f_status: str = 'PASS') -> None:
+  print(p_status(f_status,'light_green',topology) + msg)
 
 # Print "test failed on node"
 #
 def p_test_fail(t_name: str, n_name: str, v_entry: Box, topology: Box) -> None:
   err = v_entry.get('fail','')
   err = f'Node {n_name}: '+err if err else f'Test failed for node {n_name}'
-  print(p_status('FAIL','red',topology)+err)
+  log_failure(err,topology)
 
 # Print "test passed"
 #
 def p_test_pass(t_name: str, n_name: str, v_entry: Box, topology: Box) -> None:
   msg = v_entry.get('pass','Test succeeded')
-  print(p_status('PASS','green',topology)+msg)
+  log_progress(msg,topology)
 
 # Print "all tests succeeded"
 #
 def p_success(topology: Box) -> None:
   print()
-  print(p_status('SUCCESS','green',topology)+"All tests passed")
+  log_progress('All tests passed',topology,f_status='SUCCESS')
 
 '''
 Get generic or per-device action from a validation entry
@@ -181,13 +191,17 @@ def get_parsed_result(t_name: str, v_entry: Box, n_name: str, topology: Box) -> 
   result = connect_to_node(args=args,rest=[],topology=topology,log_level=LogLevel.NONE)
 
   if not isinstance(result,str):
-    log.error('Failed to execute show command {v_cmd} on {n_name} (device {n_device})')
+    log_failure(
+      f'Failed to execute show command "{" ".join(v_cmd)}" on {n_name} (device {node.device})',
+      topology=topology)
     return err_value
 
   try:
     return Box.from_json(result)
   except:
-    log.error('Failed to parse result output of {v_cmd} on {n_name} as JSON')
+    log_failure(
+      f'Failed to parse result output of "{" ".join(v_cmd)}" on {n_name} (device {node.device}) as JSON',
+      topology=topology)
     return err_value
 
 '''
@@ -241,6 +255,8 @@ def execute_validation_test(t_name: str,v_entry: Box,topology: Box) -> bool:
       if not OK:
         p_test_fail(t_name,n_name,v_entry,topology)
         ret_value = False
+      else:
+        log_progress(f'Validation succeeded on {n_name}',topology)
 
   if ret_value:
     p_test_pass(t_name,n_name,v_entry,topology)
