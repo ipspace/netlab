@@ -85,11 +85,13 @@ Validator recognizes standard Python data types (**str**, **int**, **bool**, **l
 | Data type.     | Meaning |
 |----------------|---------|
 | **asn**        | AS number (an integer between 1 and 65535) |
+| **device**     | Valid device (platform) identifier |
 | **id**         | Identifier (containing A-Z, a-z, 0-9 and underscore) |
 | **ipv4**       | An IPv4 address, prefix, integer (offset in a subnet), or bool (unnumbered) |
 | **ipv6**       | An IPv6 address, prefix, integer (offset in a subnet), or bool (LLA only) |
 | **mac**        | MAC address in any format recognized by the `netaddr` library |
 | **net**        | IS-IS NET/NSAP |
+| **node_id**    | Valid node name |
 | **prefix_str** | An IPv4 or IPv6 prefix |
 | **rd**         | Route distinguisher (ASN:ID or IP:ID) |
  
