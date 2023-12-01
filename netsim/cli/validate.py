@@ -13,7 +13,7 @@ from box import Box
 from termcolor import colored
 
 from . import load_snapshot,parser_add_debug,parser_add_verbose
-from ..utils import log,templates
+from ..utils import log,templates,strings
 from .. import data
 from .connect import connect_to_node,LogLevel
 
@@ -34,16 +34,34 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     default='netlab.snapshot.yml',
     const='netlab.snapshot.yml',
     help='Transformed topology snapshot file')
-#  parser.add_argument(
-#    '--node',
-#    dest='node', action='store',
-#    help='Execute validation tests only on selected node')
-#  parser.add_argument(
-#    dest='tests', action='store',
-#    nargs='?',
-#    help='Validation test(s) to execute (default: all)')
+  parser.add_argument(
+    '--list',
+    dest='list',
+    action='store_true',
+    help='List validation tests')
+  parser.add_argument(
+    '--node',
+    dest='nodes', action='store',
+    help='Execute validation tests only on selected node(s)')
+  parser.add_argument(
+    dest='tests', action='store',
+    nargs='*',
+    help='Validation test(s) to execute (default: all)')
 
   return parser.parse_args(args)
+
+'''
+list_tests: display validation tests defined for the current lab topology
+'''
+def list_tests(topology: Box) -> None:
+  heading = [ 'Test','Description','Nodes','Devices' ]
+  rows = [
+    [ v_entry.name,
+      v_entry.description or '',
+      ",".join(v_entry.nodes),
+      ",".join(v_entry.devices) ]
+    for v_entry in topology.validate ]
+  strings.print_table(heading,rows)
 
 # The following routines print colored test status and offer
 # various levels of abstraction, from "give me a colored text"
@@ -300,6 +318,57 @@ def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace
   return ret_value
 
 '''
+filter_by_test: select only tests specified in arguments
+'''
+def filter_by_tests(args: argparse.Namespace, topology: Box) -> None:
+  if not args.tests:
+    return
+
+  for t in args.tests:
+    find_test = [ v_entry for v_entry in topology.validate if v_entry.name == t ]
+    if not find_test:
+      log.error(
+        f'Invalid test name {t}, use "netlab validate --list" to list test names',
+        category=log.IncorrectValue,
+        module='validation')
+
+  if log.pending_errors():
+    return
+
+  topology.validate = [ v_entry for v_entry in topology.validate if v_entry.name in args.tests ]
+
+'''
+filter_by_nodes: select only tests executed on specified node
+'''
+def filter_by_nodes(args: argparse.Namespace, topology: Box) -> None:
+  if not args.nodes:
+    return
+
+  node_list = args.nodes.split(',')
+  node_set  = set(node_list)
+
+  for n in node_list:
+    if not n in topology.nodes:
+      log.error(
+        f'Invalid node name {n}, use "netlab inspect nodes" to list nodes in your lab',
+        category=log.IncorrectValue,
+        module='validation')
+
+  if log.pending_errors():
+    return
+
+  topology.validate = [ v_entry for v_entry in topology.validate if set(v_entry.nodes) & node_set ]
+  if not topology.validate:
+    log.error(
+      f'No tests are executed on any of the specified nodes',
+      category=log.IncorrectValue,
+      module='validation')
+    return
+
+  for v_entry in topology.validate:
+    v_entry.nodes = [ n for n in v_entry.nodes if n in node_list ]
+
+'''
 Main routine: run all tests, handle validation errors, print summary results
 '''
 def run(cli_args: typing.List[str]) -> None:
@@ -309,6 +378,14 @@ def run(cli_args: typing.List[str]) -> None:
 
   if 'validate' not in topology:
     log.fatal('No validation tests defined for the current lab, exiting')
+
+  if args.list:
+    list_tests(topology)
+    return
+
+  filter_by_tests(args,topology)
+  filter_by_nodes(args,topology)
+  log.exit_on_error()
 
   status = True
   cnt = 0
