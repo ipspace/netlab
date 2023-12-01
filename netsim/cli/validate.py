@@ -409,7 +409,7 @@ def run(cli_args: typing.List[str]) -> None:
     cnt = cnt + 1
 
   print()
-  if test_pass_count:
+  if test_pass_count and test_pass_count == test_result_count:
     log_progress(f'Tests passed: {test_pass_count}',topology,f_status='SUCCESS')
   elif test_result_count:
     log_failure('Tests completed, validation failed',topology)
