@@ -92,6 +92,7 @@ The data transformation has three major steps:
 
 ## Final Steps and Cleanup
 
+* Transform the lab validation data structure (`netsim.augment.validate.process_validation`)
 * Execute **post_transform** module functions (`netsim.modules.post_transform`):
 
   * Check whether the lab devices support modules configured on them (`netsim.modules.check_supported_node_devices`)
