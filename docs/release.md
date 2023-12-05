@@ -3,7 +3,7 @@ Release notes
 
 **[Release 1.7.0](release-1.7.0) (2023-12-03)**
 
-* **[netlab validate](../netlab/validate.md)** command can be used to execute [lab validation tests](../topology/validate.md).
+* **[netlab validate](topology/validate.md)** command can be used to execute [lab validation tests](topology/validate.md).
 * The [**fabric** plugin](plugins/fabric.md) generates a whole leaf-and-spine fabric topology from a few parameters.
 * The [**bgp.domain** plugin](plugins/bgp.domain.md) allows you to create topologies with multiple independent devices or sites using the same BGP AS number.
 * The [**bgp.policy** plugin](plugins/bgp.policy.md) supports AS-path prepending on Arista EOS, Aruba AOS-CX, Cisco CSR 1000v, Cisco IOSv, Cumulus Linux, FRR
