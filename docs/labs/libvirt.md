@@ -25,6 +25,7 @@ You MUST use **netlab up** to start the lab to ensure the virtual machines get c
 
 We tested _netlab_ with Vagrant version 2.3.4 and vagrant-libvirt plugin version 0.11.2. These are also the versions installed by **netlab install libvirt** command.
 
+(libvirt-vagrant-boxes)=
 ## Vagrant Boxes
 
 Vagrant starts virtual machines from prepackaged VM images called *boxes*. While it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
