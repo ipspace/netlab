@@ -1,24 +1,31 @@
 # Virtualbox-Based Lab on Windows or MacOS
 
-Virtualbox-based Vagrant lab is the only option if you want to run *netlab* directly on Windows or MacOS (you could also run them [within a Ubuntu VM](../install/ubuntu-vm.md)):
+Virtualbox-based Vagrant lab is the only option to run *netlab* directly on Windows or MacOS. Do not use VirtualBox on Linux; KVM/libvirt is a much better alternative fully supported by _netlab_.
 
-* [netlab](../netlab/cli.md) commands will create Ansible inventory and Vagrant configuration
-* Vagrant will create virtual networks within the VirtualBox environment and start network devices as virtual machines within VirtualBox
-* Ansible will connect to the network devices and configure them
+```{warning}
+* We no longer have the infrastructure to test _netlab_ on VirtualBox. It probably still works.
+* While _netlab_ has no problem running on Apple silicon, you won't be able to start x86-based virtual machines or containers. As of late 2023, there are no network devices available for ARM CPU[^FRR].
+* If your system supports nested virtualization, run _netlab_ [within a Ubuntu VM](../install/ubuntu-vm.md).
+* We don't test _netlab_ on Windows and have no experience with Windows Subsystem for Linux. It might work, but if it doesn't, you're on your own[^NVNS].
+```
+
+[^FRR]: If you insist, you can build an ARM FRR container.
+
+When running _netlab_ with `virtualbox` provider:
+
+* [netlab](../netlab/cli.md) commands create Ansible inventory and Vagrant configuration.
+* Vagrant creates virtual networks within the VirtualBox environment and starts network devices as virtual machines within VirtualBox.
+* Ansible connects to the network devices using SSH ports mapped by Virtualbox and configures them.
 
 ![VirtualBox-based architecture](../install/virtual-box-architecture.png)
 
-The environment is pretty easy to set up:
+The VirtualBox environment is pretty easy to set up:
 
-* [Install Virtualbox](https://www.virtualbox.org/wiki/Downloads) (might require fiddling with BIOS setup on Ubuntu bare-metal installations)
+* [Install Virtualbox](https://www.virtualbox.org/wiki/Downloads) (might require fiddling with BIOS setup)
 * [Install Vagrant](https://www.vagrantup.com/docs/installation)
-* Install *netlab* Python package with `pip3 install networklab`
-* [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)[^1] and device-specific requirements.
+* Assuming you already have Python3 installed, install *netlab* Python package with `pip3 install networklab`
+* [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)[^1] and related device-specific requirements (see Ansible documentation for details).
 * Test the installation with **[netlab test virtualbox](../netlab/test.md)** command
-
-```{warning}
-We don't test _netlab_ on Windows and have no experience with Windows Subsystem for Linux. It might work, but if it doesn't, you're on your own[^NVNS]. Running your lab in a [Ubuntu VM running on Windows](../install/ubuntu-vm.md) might be a better option.
-```
 
 [^NVNS]: If we were a networking vendor, we would have said, "Running _netlab_ on Windows is not supported."
 
