@@ -27,14 +27,18 @@ The following table describes per-platform support of individual IS-IS features:
 | Operating system      | IS type | IPv6 AF | Multi<br>topology | Unnumbered<br />interfaces | IPv4<br />BFD | IPv6<br />BFD |
 | ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Cisco ASAv         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
 | Cisco IOS          | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Cisco IOS XE       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌ |
-| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
-| Cisco ASAv         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
+| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌ |
+| FRR                | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
+| Juniper vMX        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
+| Juniper vPTX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
+| Juniper vSRX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
-| VyOS               | ✅  | ✅  | ✅  | ❌  | ✅  | ✅ |
+| VyOS               | ✅  | ✅  | ✅  |  ❌  | ✅  | ✅ |
 
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
