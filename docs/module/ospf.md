@@ -85,7 +85,7 @@ The following table documents the interface-level OSPF features:
 | Cumulus Linux 5.0 (NVUE) |   ✅  |         ✅        |             ✅            |            ✅           |
 | Dell OS10                |   ✅  |         ✅        |             ❌            |            ✅           |
 | Fortinet FortiOS         |   ✅  | [❗](caveats-fortios) |         ❌            |            ✅           |
-| FRR 7.5.0                |   ✅  |         ✅        |             ✅            |            ❗           |
+| FRR 7.5.0                |   ✅  |         ✅        |             ❌            |            ❗           |
 | Juniper vMX              |   ✅  |         ✅        |             ✅            |            ✅           |
 | Juniper vPTX             |   ✅  |         ✅        |             ✅            |            ✅           |
 | Juniper vSRX 3.0         |   ✅  |         ✅        |             ✅            |            ✅           |
