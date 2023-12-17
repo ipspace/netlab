@@ -43,8 +43,10 @@ _netlab_ BGP configuration module supports these features:
 Even more BGP features are implemented in the following plugins:
 
 * [bgp.session](../plugins/bgp.session.md): implements numerous BGP session features, including session protection and AS-path manipulation.
-* [bgp.policy](../plugins/bgp.policy.md): implements simple BGP routing policies including weights, local preference and MED.
+* [bgp.policy](../plugins/bgp.policy.md): implements simple BGP routing policies, including weights, local preference, and MED.
+* [bgp.originate](../plugins/bgp.originate.md): creates loopback interfaces instead of static routes to originate additional IPv4 or IPv6 prefixes
 * [ebgp.multihop](../plugins/ebgp.multihop.md): implements multihop EBGP sessions.
+* [bgp.domain](../plugins/bgp.domain.md): allows you to build topologies that reuse the same BGP ASN in different network parts.
 
 ## Platform Support
 
@@ -234,10 +236,12 @@ nodes:
         - "172.16.0.0/19"
 ```
 
+(bgp-sessions)=
 ## BGP Sessions
 
 The BGP transformation module builds a list of BGP neighbors for ever node. That list of neighbors is then used to configure BGP neighbors within the BGP routing process:
 
+(bgp-ibgp-sessions)=
 **IBGP sessions**
 * If there are no route reflectors within an autonomous system (no device within the autonomous system has **bgp.rr** set to *true*), you'll get a full mesh of IBGP sessions.
 * Router reflectors have IBGP sessions to all other nodes in the same AS. When the remote node is not a router reflector, *route-reflector-client* is configured on the IBGP session.
@@ -249,6 +253,7 @@ The BGP transformation module builds a list of BGP neighbors for ever node. That
 
 See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 
+(bgp-ebgp-sessions)=
 **EBGP sessions**
 * Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them.
 * Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS, or IBGP sessions between nodes belonging to different AS.

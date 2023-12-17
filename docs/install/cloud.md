@@ -1,8 +1,10 @@
 # Running netlab in a Public Cloud
 
-You can run *netlab* on a Ubuntu instance in any public cloud that supports *nested virtualization*. Create a Ubuntu instance, verify that it has virtualization capabilities (`kvm-ok` is usually a good way to find that out), and follow [](ubuntu.md) instructions.
+You can run *netlab* on a Ubuntu instance in any public cloud if you want to run containerized versions of network devices (available for Arista EOS, Cumulus Linux, FRR, and Nokia SR Linux). Follow the public cloud installation documentation to create and start an Ubuntu instance, and the [](ubuntu.md) instructions to install *netlab* and other system software.
 
-Nested virtualization seems to be supported on AWS bare-metal instances (they tend to be expensive), [some Azure instances](https://azure.microsoft.com/en-gb/blog/nested-virtualization-in-azure/), in Google Cloud, by Packet (bare-metal provider) and by Digital Ocean.
+If you want to run network devices as virtual machines, then the public cloud has to support *nested virtualization*. Create a Ubuntu instance, verify that it has virtualization capabilities (`kvm-ok` is usually a good way to find that out), and follow [](ubuntu.md) instructions.
+
+Nested virtualization seems to be supported on AWS bare-metal instances (they tend to be expensive), Oracle Cloud bare-metal instances, [some Azure instances](https://azure.microsoft.com/en-gb/blog/nested-virtualization-in-azure/), in Google Cloud, by Packet (bare-metal provider) and by Digital Ocean.
 
 ## Google Cloud
 

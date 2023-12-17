@@ -56,11 +56,22 @@ def include_yaml(data: Box, source_file: str) -> None:
       log.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
       return
 
-    for file_name in inc_files:
+    for file_name in sorted(inc_files):
       yaml_data = read_yaml(filename=file_name)
       if yaml_data is None:
         log.fatal(f'Cannot read {file_name} that should be included into {source_file}')
         return
+
+      if '_top' in yaml_data:                                   # Do we have to modify parent defaults outside of include scope?
+        for k,v in yaml_data._top.items():                      # Iterate over top-level modifications
+          if not k in data:                                     # New item, add it
+            data[k] = v
+          elif isinstance(v,Box) and isinstance(data[k],Box):   # Otherwise, we can only merge boxes
+            data[k] = data[k] + v
+
+        yaml_data.pop('_top',None)                              # And remove the out-of-scope modifications
+
+      # Finally, insert the included file in its proper place
       data[os.path.splitext(os.path.basename(file_name))[0]] = yaml_data
 
   data.pop('_include',None)

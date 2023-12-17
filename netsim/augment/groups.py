@@ -122,11 +122,7 @@ def check_group_data_structure(
     if grp == 'all' and gdata.members:
       log.error(f'{grp_namespace}group "all" should not have explicit members')
 
-    must_be_dict(gdata,'vars',gpath,create_empty=False,module='groups')
-    must_be_dict(gdata,'node_data',gpath,create_empty=False,module='groups')
-    must_be_list(gdata,'config',gpath,create_empty=False,module='groups')
-    must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=list_of_modules)
-    must_be_string(gdata,'device',gpath,module='groups',valid_values=list(topology.defaults.devices))
+    must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
 
     if 'node_data' in gdata:                 # Validate node_data attributes (if any)
       validate_attributes(
@@ -146,6 +142,9 @@ def check_group_data_structure(
             f'Cannot use attribute {k} in node_data in {grp_namespace}group {grp}, set it as a group attribute',
             log.IncorrectValue,
             'groups')
+
+    if log.pending_errors():                 # If we already found errors
+      continue                               # ... then the group data structures are not safe to work on
 
     for k in list(gdata.keys()):             # Then move (validated) group node attributes into node_data
       if k in group_attr:

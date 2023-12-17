@@ -1,4 +1,4 @@
-# Start Virtual Lab
+# Start a Virtual Lab
 
 **netlab up** is a high-level command that:
 

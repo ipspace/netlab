@@ -255,6 +255,9 @@ def execute(action: str, topology: Box) -> None:
   if not 'Plugin' in topology:                                # No plugins, no worries
     return
 
+  if log.debug_active('plugin'):
+    print(f'plug hook: {action}')
+
   for plugin in topology.Plugin:                              # Iterate over the loaded plugin modules
     if hasattr(plugin,action):                                # Does the plugin have the required action?
       func = getattr(plugin,action)                           # ... yes, fetch the function to call

@@ -11,7 +11,7 @@ from .. import augment
 from .. import providers
 from .. import modules
 from .. import devices as quirks
-from ..data import global_vars
+from ..data import global_vars,validate
 from . import addressing
 
 def topology_init(topology: Box) -> None:
@@ -21,21 +21,22 @@ def topology_init(topology: Box) -> None:
 
 def transform_setup(topology: Box) -> None:
   topology_init(topology)
-  augment.topology.check_required_elements(topology)
+  augment.topology.topology_sanity_check(topology)
   versioning.check_topology_version(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
+  augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
+  augment.plugin.execute('topology_expand',topology)                    # topology-expanding plugins must be called before link checks
+
   if 'links' in topology:
     augment.links.links_init(topology)
 
   augment.components.expand_components(topology)
 
-  augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('init',topology)
-  augment.tools.process_tools(topology)
+  augment.topology.check_required_elements(topology)
   log.exit_on_error()
 
-  augment.topology.extend_attribute_list(topology.defaults)             # Attributes have to be extended before group init
-  augment.topology.extend_module_attribute_list(topology)               # ... or we won't recognize node attributes in groups
+  validate.init_validation(topology)
   augment.groups.init_groups(topology)
   log.exit_on_error()
 
@@ -51,6 +52,7 @@ def transform_setup(topology: Box) -> None:
 
   augment.topology.check_global_elements(topology)
   augment.plugin.check_plugin_dependencies(topology)                    # Check plugin dependencies on other plugins and modules
+  augment.tools.process_tools(topology)
   augment.nodes.validate(topology)
   log.exit_on_error()
 
@@ -81,6 +83,7 @@ def transform_data(topology: Box) -> None:
   modules.post_link_transform(topology)
 
 def post_transform(topology: Box) -> None:
+  augment.validate.process_validation(topology)
   modules.post_transform(topology)
   augment.plugin.execute('post_transform',topology)
   augment.groups.node_config_templates(topology)

@@ -180,7 +180,7 @@ def validate(topology: Box) -> None:
         data_path=f'{l_data._linkname}.prefix',         # Topology path to link prefix
         data_name=f'prefix',
         attr_list=['prefix'],                           # We're checking prefix attributes
-        modules=None,                                   # No module attributes in prefix
+        modules=[],                                     # No module attributes in prefix
         module='links')
 
 """
@@ -930,6 +930,9 @@ def set_linkindex(topology: Box) -> None:
 '''
 expand_groups -- expand link groups (identified by 'group' and 'members' attributes) into individual links
 appended to the end of the link list
+
+This function is called from init_links very early in the topology initialization process
+and must do its own data validation.
 '''
 def expand_groups(topology: Box) -> None:
   for link in list(topology.links):                 # Iterate over existing links (that's why we have to cast it as a list)
@@ -946,7 +949,7 @@ def expand_groups(topology: Box) -> None:
         parent=link,
         key='group',
         path=link._linkname,
-        abort=True,
+        _abort=True,
         module='links')
     except:                                         # If not, report error and skip the link
       continue

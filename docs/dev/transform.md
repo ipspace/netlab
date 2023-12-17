@@ -19,8 +19,11 @@ The data transformation has three major steps:
 
 * Read topology file
 * Read customer and system [default settings](../defaults.md) (`topology-defaults.yml`) and [merge them](../defaults.md#deep-merging) with the topology file (`netsim.read_topology.load`)
-* Check for presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
+* Perform the basic sanity checks (`netsim.augment.topology.topology_sanity_check`)
+* Check minimum _netlab_ version (`netsim.utils.versioning.check_topology_version`)
 * Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
+* Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
+* Execute plugin **topology_expand** hook (`netsim.augment.plugin.execute`) for plugins that augment lab topology structures (example: [](../plugins/fabric.md))
 
 * Initialize the link list (`netsim.augment.links.links_init`)
   * Transform [strings or lists of nodes](../example/link-definition.md) into link dictionaries (`netsim.augment.links.adjust_link_list`)
@@ -28,9 +31,12 @@ The data transformation has three major steps:
   * Expand [link groups](link-groups) (`netsim.augment.links.expand_groups`)
   * Set **linkindex** attributes (`netsim.augment.links.set_linkindex`)
 
-* Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
+* Expand topology components (`netsim.augment.components.expand_components`)
 * Execute plugin **init** hook (`netsim.augment.plugin.execute`)
-* Extend **default.attributes** with **default.extra_attributes** (`netsim.augment.topology.extend_attribute_list`)
+* Process external **tools** (`augment.tools.process_tools`)
+* Check for the presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
+
+* Initialize attribute validation (`netsim.data.validate.init_validation`)
 * Initialize node groups (`netsim.augment.groups.init_groups`):
 
 	* Check the group data structures
@@ -86,6 +92,7 @@ The data transformation has three major steps:
 
 ## Final Steps and Cleanup
 
+* Transform the lab validation data structure (`netsim.augment.validate.process_validation`)
 * Execute **post_transform** module functions (`netsim.modules.post_transform`):
 
   * Check whether the lab devices support modules configured on them (`netsim.modules.check_supported_node_devices`)

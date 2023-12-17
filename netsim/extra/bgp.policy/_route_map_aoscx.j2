@@ -9,6 +9,16 @@ VS
 route-map xxx permit seq 100
 
 #}
+{% macro prepend_set(s_param,asn) -%}
+{%   if s_param.path|default('') %}
+  set as-path prepend {{ s_param.path }}
+{%   elif s_param.count|default(0) %}
+  set as-path prepend {{ (asn + " ") * s_param.count }}
+{%   endif %}
+{%- endmacro %}
+{#
+  Apply route map to a BGP neighbor
+#}
 {% macro apply_route_map(n,af) -%}
 {%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
 {%   if 'policy' in n %}
@@ -28,6 +38,9 @@ route-map xxx permit seq 100
 {%     endif %}
 {%     if 'med' in p_entry.set %}
   set metric {{ p_entry.set.med }}
+{%     endif %}
+{%     if 'prepend' in p_entry.set %}
+{{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
 {%     endif %}
 {%   endif %}
 {%- endmacro %}

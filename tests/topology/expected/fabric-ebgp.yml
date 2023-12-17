@@ -1,0 +1,784 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+fabric:
+  leaf:
+    bgp:
+      as: '{65000 + count}'
+    device: eos
+    name: l{count}
+  leafs: 4
+  spine:
+    bgp:
+      as: 65100
+    device: cumulus
+  spines: 2
+groups:
+  as65001:
+    members:
+    - l1
+  as65002:
+    members:
+    - l2
+  as65003:
+    members:
+    - l3
+  as65004:
+    members:
+    - l4
+  as65100:
+    members:
+    - S1
+    - S2
+  leafs:
+    device: eos
+    members:
+    - l1
+    - l2
+    - l3
+    - l4
+    node_data:
+      bgp: {}
+  spines:
+    device: cumulus
+    members:
+    - S1
+    - S2
+    node_data:
+      bgp:
+        as: 65100
+input:
+- topology/input/fabric-ebgp.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: l1
+  - ifindex: 1
+    ifname: swp1
+    ipv4: 10.1.0.1/30
+    node: S1
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.6/30
+    node: l1
+  - ifindex: 1
+    ifname: swp1
+    ipv4: 10.1.0.5/30
+    node: S2
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.10/30
+    node: l2
+  - ifindex: 2
+    ifname: swp2
+    ipv4: 10.1.0.9/30
+    node: S1
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.14/30
+    node: l2
+  - ifindex: 2
+    ifname: swp2
+    ipv4: 10.1.0.13/30
+    node: S2
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.18/30
+    node: l3
+  - ifindex: 3
+    ifname: swp3
+    ipv4: 10.1.0.17/30
+    node: S1
+  linkindex: 5
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.16/30
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.22/30
+    node: l3
+  - ifindex: 3
+    ifname: swp3
+    ipv4: 10.1.0.21/30
+    node: S2
+  linkindex: 6
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.20/30
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.26/30
+    node: l4
+  - ifindex: 4
+    ifname: swp4
+    ipv4: 10.1.0.25/30
+    node: S1
+  linkindex: 7
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.24/30
+  role: external
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.30/30
+    node: l4
+  - ifindex: 4
+    ifname: swp4
+    ipv4: 10.1.0.29/30
+    node: S2
+  linkindex: 8
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.28/30
+  role: external
+  type: p2p
+- bridge: input_9
+  gateway:
+    ipv4: 172.16.0.1/24
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.7/24
+    node: h1
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.0.1/24
+    node: l1
+  linkindex: 9
+  node_count: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+  role: stub
+  type: lan
+- bridge: input_10
+  gateway:
+    ipv4: 172.16.1.2/24
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.1.8/24
+    node: h2
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.1.2/24
+    node: l2
+  linkindex: 10
+  node_count: 2
+  prefix:
+    ipv4: 172.16.1.0/24
+  role: stub
+  type: lan
+module:
+- bgp
+name: input
+nodes:
+  S1:
+    _fabric_count: 1
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ipv4: 10.0.0.6
+        name: S2
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: l1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 2
+        ipv4: 10.1.0.10
+        name: l2
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65003
+        ifindex: 3
+        ipv4: 10.1.0.18
+        name: l3
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65004
+        ifindex: 4
+        ipv4: 10.1.0.26
+        name: l4
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.5
+    box: CumulusCommunity/cumulus-vx:4.4.0
+    device: cumulus
+    id: 5
+    interfaces:
+    - ifindex: 1
+      ifname: swp1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: S1 -> l1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: l1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: swp2
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: S1 -> l2
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.10/30
+        node: l2
+      role: external
+      type: p2p
+    - ifindex: 3
+      ifname: swp3
+      ipv4: 10.1.0.17/30
+      linkindex: 5
+      name: S1 -> l3
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.18/30
+        node: l3
+      role: external
+      type: p2p
+    - ifindex: 4
+      ifname: swp4
+      ipv4: 10.1.0.25/30
+      linkindex: 7
+      name: S1 -> l4
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.26/30
+        node: l4
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.5/32
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: 08:4f:a9:00:00:05
+    module:
+    - bgp
+    name: S1
+  S2:
+    _fabric_count: 2
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ipv4: 10.0.0.5
+        name: S1
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.6
+        name: l1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 2
+        ipv4: 10.1.0.14
+        name: l2
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65003
+        ifindex: 3
+        ipv4: 10.1.0.22
+        name: l3
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65004
+        ifindex: 4
+        ipv4: 10.1.0.30
+        name: l4
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.6
+    box: CumulusCommunity/cumulus-vx:4.4.0
+    device: cumulus
+    id: 6
+    interfaces:
+    - ifindex: 1
+      ifname: swp1
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: S2 -> l1
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.6/30
+        node: l1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: swp2
+      ipv4: 10.1.0.13/30
+      linkindex: 4
+      name: S2 -> l2
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.14/30
+        node: l2
+      role: external
+      type: p2p
+    - ifindex: 3
+      ifname: swp3
+      ipv4: 10.1.0.21/30
+      linkindex: 6
+      name: S2 -> l3
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.22/30
+        node: l3
+      role: external
+      type: p2p
+    - ifindex: 4
+      ifname: swp4
+      ipv4: 10.1.0.29/30
+      linkindex: 8
+      name: S2 -> l4
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.30/30
+        node: l4
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.6/32
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.106
+      mac: 08:4f:a9:00:00:06
+    module:
+    - bgp
+    name: S2
+  h1:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 7
+    interfaces:
+    - bridge: input_9
+      gateway:
+        ipv4: 172.16.0.1/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.7/24
+      linkindex: 9
+      name: h1 -> l1
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 172.16.0.1/24
+        node: l1
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.107
+      mac: 08:4f:a9:00:00:07
+    name: h1
+    role: host
+  h2:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 8
+    interfaces:
+    - bridge: input_10
+      gateway:
+        ipv4: 172.16.1.2/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.1.8/24
+      linkindex: 10
+      name: h2 -> l2
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 172.16.1.2/24
+        node: l2
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.108
+      mac: 08:4f:a9:00:00:08
+    name: h2
+    role: host
+  l1:
+    _fabric_count: 1
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: S1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 2
+        ipv4: 10.1.0.5
+        name: S2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: l1 -> S1
+      neighbors:
+      - ifname: swp1
+        ipv4: 10.1.0.1/30
+        node: S1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: l1 -> S2
+      neighbors:
+      - ifname: swp1
+        ipv4: 10.1.0.5/30
+        node: S2
+      role: external
+      type: p2p
+    - bgp:
+        advertise: true
+      bridge: input_9
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.0.1/24
+      linkindex: 9
+      name: l1 -> h1
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.7/24
+        node: h1
+      role: stub
+      type: lan
+    loopback:
+      ipv4: 10.0.0.1/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - bgp
+    name: l1
+  l2:
+    _fabric_count: 2
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65002
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.9
+        name: S1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 2
+        ipv4: 10.1.0.13
+        name: S2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: l2 -> S1
+      neighbors:
+      - ifname: swp2
+        ipv4: 10.1.0.9/30
+        node: S1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.14/30
+      linkindex: 4
+      name: l2 -> S2
+      neighbors:
+      - ifname: swp2
+        ipv4: 10.1.0.13/30
+        node: S2
+      role: external
+      type: p2p
+    - bgp:
+        advertise: true
+      bridge: input_10
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.1.2/24
+      linkindex: 10
+      name: l2 -> h2
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.1.8/24
+        node: h2
+      role: stub
+      type: lan
+    loopback:
+      ipv4: 10.0.0.2/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - bgp
+    name: l2
+  l3:
+    _fabric_count: 3
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65003
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.17
+        name: S1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 2
+        ipv4: 10.1.0.21
+        name: S2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: arista/veos
+    device: eos
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.18/30
+      linkindex: 5
+      name: l3 -> S1
+      neighbors:
+      - ifname: swp3
+        ipv4: 10.1.0.17/30
+        node: S1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.22/30
+      linkindex: 6
+      name: l3 -> S2
+      neighbors:
+      - ifname: swp3
+        ipv4: 10.1.0.21/30
+        node: S2
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.3/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    module:
+    - bgp
+    name: l3
+  l4:
+    _fabric_count: 4
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65004
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.25
+        name: S1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 2
+        ipv4: 10.1.0.29
+        name: S2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.4
+    box: arista/veos
+    device: eos
+    id: 4
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.26/30
+      linkindex: 7
+      name: l4 -> S1
+      neighbors:
+      - ifname: swp4
+        ipv4: 10.1.0.25/30
+        node: S1
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.30/30
+      linkindex: 8
+      name: l4 -> S2
+      neighbors:
+      - ifname: swp4
+        ipv4: 10.1.0.29/30
+        node: S2
+      role: external
+      type: p2p
+    loopback:
+      ipv4: 10.0.0.4/32
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:00:00:04
+    module:
+    - bgp
+    name: l4
+plugin:
+- fabric
+provider: libvirt

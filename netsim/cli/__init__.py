@@ -27,6 +27,15 @@ def parser_add_debug(parser: argparse.ArgumentParser) -> None:
                     'vlan','vrf','quirks','validate','addressing','groups','status',
                     'external','defaults']),
                   help=argparse.SUPPRESS)
+  parser.add_argument('--test', dest='test', action='store',nargs='*',
+                  choices=['errors'],
+                  help=argparse.SUPPRESS)
+
+# Some CLI utilities might use the 'verbose' flag without other common arguments
+#
+def parser_add_verbose(parser: argparse.ArgumentParser) -> None:
+  parser.add_argument('-v','--verbose', dest='verbose', action='count', default = 0,
+                  help='Verbose logging (add multiple flags for increased verbosity)')
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
@@ -34,10 +43,9 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
                   help='Enable basic logging')
   parser.add_argument('-q','--quiet', dest='quiet', action='store_true',
                   help='Report only major errors')
-  parser.add_argument('-v','--verbose', dest='verbose', action='count', default = 0,
-                  help='Verbose logging (add multiple flags for increased verbosity)')
   parser.add_argument('--warning', dest='warning', action='store_true',help=argparse.SUPPRESS)
   parser.add_argument('--raise_on_error', dest='raise_on_error', action='store_true',help=argparse.SUPPRESS)
+  parser_add_verbose(parser)
   if debugging:
     parser_add_debug(parser)
 
@@ -97,7 +105,8 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
 
 def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   log.set_logging_flags(args)
-  topology = _read.load(args.topology.name,args.defaults)
+  relative_name = 'test' in args and args.test and 'errors' in args.test
+  topology = _read.load(args.topology.name,args.defaults,relative_topo_name=relative_name)
 
   if args.settings or args.device or args.provider or args.plugin:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)

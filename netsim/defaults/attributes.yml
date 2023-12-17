@@ -9,9 +9,17 @@ global:
   module:
   name: id
   nodes:
-  plugin: list
+  plugin:
+    type: list
+    _subtype: str
   provider: id
-  tools: dict
+  tools:
+    type: dict
+    _subtype: dict
+  validate:
+    type: dict
+    _keytype: id
+    _subtype: _v_entry
   version:
 internal:
   input:
@@ -25,7 +33,9 @@ link:
   bridge: id
   disable: bool
   name: str
-  prefix:                                           # Prefix is too complex to validate here -- links module will do the job
+  prefix:
+    type: dict
+    _alt_types: [ bool, prefix_str ]
   role: id
   pool: id
   type: { type: str, valid_values: [ lan, p2p, stub, loopback, tunnel, vlan_member ] }
@@ -47,8 +57,10 @@ interface:
 node:
   name: str                                         # Validity of node name is checked in the nodes module
   interfaces: list
-  module: list
-  device: id
+  module:
+    type: list
+    _subtype: id
+  device: device
   box: str
   id: { type: int, min_value: 1, max_value: 150 }
   config: list
@@ -67,17 +79,6 @@ node:
   cpu:
   memory: int
   unmanaged: bool
-vlan:
-  id: { type: int, min_value: 1, max_value: 4095 }
-  vni: { type: int, min_value: 1, max_value: 16777215 }
-  mode: { type: str, valid_values: [ bridge, irb, route ] }
-  prefix:
-vrf:
-  rd: rd
-  import: list
-  export: list
-  id: { type: int, min_value: 1 }
-  loopback:                                         # Loopback is a mix of multiple formats, let the VRF module handle it
 pool:
   ipv4: { type: ipv4, use: prefix }
   ipv6: { type: ipv6, use: prefix }
@@ -93,9 +94,33 @@ prefix:
   ipv6: { type: ipv6, use: prefix }
   allocation: { type: str, valid_values: [ p2p, sequential, id_based ] }
 group:
-  members: list
+  members:
+    type: list
+    _subtype: id
   vars: dict
   config: list
-  node_data: dict
-  device: id
+  node_data: 
+    type: dict
+    true_value: {}
+  device: device
   module: list
+_v_entry:                  # Validation entry
+  _description: Single network validation test
+  description: str
+  fail: str
+  pass: str
+  nodes:
+    type: list
+    _subtype: node_id
+  devices:
+    type: list
+    _subtype: device
+  exec: _v_option
+  show: _v_option
+  valid: _v_option
+  stop_on_error: bool
+_v_option:
+  _description: An option in a single network validation test
+  type: dict
+  _alt_types: [ str ]
+  _keytype: device

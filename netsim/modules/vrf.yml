@@ -1,8 +1,5 @@
 # VRF default settings and attributes
 #
-# Also supported on csr, eos, frr, iosv, nxos, routeros, dellos10, vyos, routeros7, arubacx, junos (vmx, vsrx, vptx)
-#
-supported_on: [ cumulus_nvue, srlinux, cumulus, sros, none ]
 config_after: [ vlan, ospf, isis, bgp, mpls ]
 transform_after: [ vlan, bgp ]
 as: 65000
@@ -15,6 +12,25 @@ attributes:
     loopback:
   link: id
   interface: id
-  extra:
-    global: [ vrfs ]
-    node: [ vrfs ]
+_top:                               # Modification of global defaults
+  attributes:
+    vrf:                            # Define the VRF object type
+      rd: rd
+      import: list
+      export: list
+      id: { type: int, min_value: 1 }
+      links: list
+      loopback:                     # Loopback is a mix of multiple formats, let the VRF module handle it
+      _namespace: [ link ]          # VRFs can include link attributes
+    global:
+      vrfs:                         # vrfs is a valid global parameter
+        type: dict                  # It's a dictionary
+        _subtype: vrf               # ... of VRF definitions
+        _keytype: id                # ... where the VRF names must be valid identifiers
+        _requires: [ vrf ]          # ... that requires VRF module
+    node:
+      vrfs:                         # Repeat the definition for node vrfs
+        type: dict
+        _subtype: vrf
+        _keytype: id
+        _requires: [ vrf ]

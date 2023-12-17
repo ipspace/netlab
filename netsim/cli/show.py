@@ -101,9 +101,11 @@ def run(cli_args: typing.List[str]) -> None:
     log.fatal("Cannot read system settings")
     return
 
+  log.init_log_system(False)
   topology.name = 'empty'
-  topology.nodes = data.get_empty_box()
+#  topology.nodes = data.get_empty_box()
   topology.nodes.dummy.device = 'none'                  # Add a dummy node
+  topology.nodes.dummy.module = []                      # ... and disable all modules on that node
   if 'plugin' in args and args.plugin:
     topology.plugin = args.plugin
 

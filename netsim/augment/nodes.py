@@ -16,7 +16,7 @@ from .. import utils
 from .. import providers
 from . import devices,addressing
 from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_int,must_be_string,must_be_id
+from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
 from ..data import global_vars
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
@@ -163,28 +163,15 @@ def find_node_device(n: Box, topology: Box) -> bool:
     return False
 
   try:
-    must_be_string(n,'device',f'nodes.{n.name}',module='nodes',abort=True)
+    must_be_device(n,'device',f'nodes.{n.name}',module='nodes',_abort=True)
   except Exception as ex:
     return False
 
   devtype = n.device
 
-  if not devtype in topology.defaults.devices:
-    log.error(f'Unknown device {devtype} in node {n.name}',log.IncorrectValue,'nodes')
-    return False
-
   dev_def = topology.defaults.devices[devtype]
   if not isinstance(dev_def,dict):
     log.fatal(f"Device data for device {devtype} must be a dictionary")
-
-  for kw in ['interface_name','description']:
-    if not kw in dev_def:
-      log.error(
-        f'Device {devtype} used on node {n.name} is not a valid device type\n'+
-        "... run 'netlab show devices' to display valid device types",
-        log.IncorrectValue,
-        'nodes')
-      return False
 
   return True
 

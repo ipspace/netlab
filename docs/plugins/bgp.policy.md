@@ -18,7 +18,10 @@ The plugin adds the following BGP attributes:
 
 * **bgp.locpref** is an integer attribute that sets default local preference when applied to a node, or sets local preference on BGP updates received from an EBGP neighbor.
 * **bgp.med** is an integer attribute that sets MED attribute on BGP updates sent to an EBGP neighbor.
+* **bgp.prepend** is a dictionary that configures outbound AS-path prepending. It can contain a **count** attribute (number of times the node AS is prepended) or a **path** attribute (the prepended AS-path as a string[^ASPS])
 * **bgp.weight** is an integer attribute that sets per-neighbor weight.
+
+[^ASPS]: You must quote a single AS number that you want to prepend with the **path** attribute, otherwise the YAML parser treats it as an integer.
 
 BGP policy attributes can be specified on a node or an interface (node-to-link attachment). The following table describes where you could apply individual attributes:
 
@@ -26,20 +29,22 @@ BGP policy attributes can be specified on a node or an interface (node-to-link a
 |------------|:----:|:---------:|
 | locpref    |  ✅  |    ✅     |
 | med        |  ❌   |    ✅     |
+| prepend    |  ❌   |    ✅     |
 | weight     |  ❌   |    ✅     |
 
 ## Platform Support
 
 The plugin implements BGP policy attributes on these devices:
 
-| Operating system    | Local<br>preference | MED | Weight |
-|---------------------|:----:|:----:|:----:|
-| Arista EOS          |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |
-| FRR                 |  ✅  |  ✅  |  ✅  |
+| Operating system    | Local<br>preference | MED | Weight | AS-path<br>prepending |
+|---------------------|:----:|:----:|:----:|:----:|
+| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
+| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ✅  |
+| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
+| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |
 
 **Notes:**
 
@@ -85,35 +90,58 @@ route-map bp-r1-2-out permit 10
  set metric 200
 ```
 
-## Test Topology
+## Sample Topologies
 
-The following test topology illustrates a simple primary/backup scenario in which a CE-router uses weights and MED to select primary/backup uplinks.
+The following topology illustrates a simple primary/backup scenario in which a CE-router uses weights and MED to select primary/backup uplinks.
 
 ```
 ---
 defaults.device: frr
 
-module: [ bgp,ospf ]
+module: [ bgp ]
 plugin: [ bgp.policy ]
 
 nodes:
   ce:
     bgp.as: 65000
-  pe1:
-    bgp.as: 65100
-  pe2:
+  pe:
     bgp.as: 65100
 
 links:
 - ce:
     bgp.weight: 100
     bgp.med: 50
-  pe1:
+  pe:
   name: Primary uplink
 - ce:
     bgp.weight: 50
     bgp.med: 100
-  pe2:
+  pe:
   name: Backup uplink
-- pe1-pe2  # We need this link to have a working example
+```
+
+The next topology illustrates AS-path prepending functionality. On the backup link, the CE-router prepends its own AS three times, on the primary link it prepends another AS.
+
+```
+---
+defaults.device: frr
+
+module: [ bgp ]
+plugin: [ bgp.policy ]
+
+nodes:
+  ce:
+    bgp.as: 65000
+  pe:
+    bgp.as: 65100
+
+links:
+- ce:
+    bgp.prepend.path: "65123"
+  pe:
+  name: Primary uplink
+- ce:
+    bgp.prepend.count: 3
+  pe:
+  name: Backup uplink
 ```

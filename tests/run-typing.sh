@@ -5,5 +5,6 @@ cd $DIRNAME
 set -e
 cd ..; python3 -m mypy --no-incremental -p netsim
 for file in netsim/extra/*.*/*.py; do
+  echo "Checking $file"
   python3 -m mypy $file
 done

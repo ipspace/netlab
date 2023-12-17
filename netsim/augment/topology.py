@@ -15,62 +15,7 @@ from .. import data
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_list,must_be_string,must_be_dict
 
-#
-# Extend link/node/global attribute lists with extra attributes
-#
-def extend_attribute_list(settings: Box, attribute_path: str = 'topology.defaults', always_valid: list = []) -> None:
-  if not 'extra_attributes' in settings:
-    return
-
-  for k in settings.extra_attributes.keys():           # Iterate over extensions
-    if not k in settings.get('attributes',{}):         # Check that the extension is valid
-      if k in always_valid:                            # ... some extensions are always valid (needed for modules)
-        settings.attributes[k] = []                    # ... in which case we have to start with an empty list
-      else:                                            # ... for everything else, throw an error
-        log.error(
-          f'Invalid extra_attribute {k} -- not present in configurable {attribute_path} attributes',
-          log.IncorrectValue,
-          'topology')
-
-    must_be_list(                                      # Make sure the extension is a list so it's safe to iterate over
-      parent = settings.extra_attributes,
-      key = k,
-      path = f'{attribute_path}.extra_attributes.{k}')
-
-    log.exit_on_error()
-
-    for v in settings.extra_attributes[k]:             # Have to iterate over values in the custom attribute list
-      if not v in settings.attributes[k]:              # ... to prevent duplicate values in attribute lists
-        if isinstance(settings.attributes[k],Box):     # Deal with old- or new-style attributes
-          settings.attributes[k][v] = None             # ... new style: add element to dictionary
-        else:
-          settings.attributes[k].append(v)             # ... old style: append it to the list
-
-#
-# Extend attribute lists for all top-level elements of the defaults dictionary
-# with 'attributes' and 'extra_attributes' keys
-#
-def extend_module_attribute_list(topology: Box) -> None:
-  for k in topology.defaults.keys():
-    if isinstance(topology.defaults[k],dict):
-      if 'extra_attributes' in topology.defaults[k]:
-        if not 'attributes' in topology.defaults[k]:   # pragma: no cover (things would break way before this point)
-          topology.defaults[k].attributes = {}
-        extend_attribute_list(topology.defaults[k],f'topology.defaults.{k}',['global','node','link'])
-
-def check_required_elements(topology: Box) -> None:
-  invalid_topo = False
-  for rq in ['nodes']:
-    if not rq in topology:
-      log.error(f"Lab topology is missing mandatory {rq} element",category=log.MissingValue,module="topology")
-      invalid_topo = True
-    elif not topology.get(rq):
-      log.error(f"Required topology element {rq} is empty",category=log.MissingValue,module="topology")
-      invalid_topo = True
-
-  if invalid_topo:
-    log.fatal("Fatal topology errors, aborting")
-
+def topology_sanity_check(topology: Box) -> None:
   if not 'name' in topology:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
     for bad_char in (' ','.'):
@@ -83,6 +28,16 @@ def check_required_elements(topology: Box) -> None:
 
   if must_be_string(topology,'name','',module='topology'):
     topology.defaults.name = topology.name
+
+def check_required_elements(topology: Box) -> None:
+  invalid_topo = False
+  for rq in ['nodes']:
+    if not topology.get(rq):
+      log.error(f"Required topology element '{rq}' is missing or empty",category=log.MissingValue,module="topology")
+      invalid_topo = True
+
+  if invalid_topo:
+    log.fatal("Fatal topology errors, aborting")
 
 def check_global_elements(topology: Box) -> None:
   # Allow provider-specific global attributes
@@ -118,8 +73,8 @@ def adjust_global_parameters(topology: Box) -> None:
 
   providers = topology.defaults.providers
   if not topology.provider in providers:
-    plist = ', '.join(providers.keys())
-    log.fatal('Unknown virtualization provider %s. Supported providers are: %s' % (topology.provider,plist))
+    plist = ', '.join(sorted(providers.keys()))
+    log.fatal(f'Unknown virtualization provider {topology.provider}. Supported providers are: {plist}')
 
   # Adjust defaults with provider-specific defaults
   #

@@ -1,6 +1,17 @@
 Release notes
 =============
 
+**[Release 1.7.0](release-1.7.0) (2023-12-03)**
+
+* **[netlab validate](netlab/validate.md)** command can be used to execute [lab validation tests](topology/validate.md).
+* The [**fabric** plugin](plugins/fabric.md) generates a whole leaf-and-spine fabric topology from a few parameters.
+* The [**bgp.domain** plugin](plugins/bgp.domain.md) allows you to create topologies with multiple independent devices or sites using the same BGP AS number.
+* The [**bgp.policy** plugin](plugins/bgp.policy.md) supports AS-path prepending on Arista EOS, Aruba AOS-CX, Cisco CSR 1000v, Cisco IOSv, Cumulus Linux, FRR
+* [**bgp.originate** plugin](plugins/bgp.originate.md) uses loopbacks (instead of static routes to Null device) to originate BGP IPv4 and IPv6 prefixes
+* The `--show` option of the **[netlab connect](netlab/connect.md)** command implements a consistent cross-device way of executing show commands.
+
+[More features...](release-1.7.0)
+
 **[Release 1.6.4](release-1.6.4) (2023-10-23)**
 
 * Implement simple BGP routing policies in [bgp.policy plugin](plugins/bgp.policy.md)
@@ -397,6 +408,7 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.7.md
    release/1.6.md
    release/1.5.md
    release/1.4.md

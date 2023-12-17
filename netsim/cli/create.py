@@ -7,6 +7,9 @@
 import argparse
 import typing
 import textwrap
+import os
+import sys
+import termcolor
 from box import Box
 
 from . import common_parse_args, topology_parse_args, load_topology
@@ -44,6 +47,8 @@ def create_topology_parse(
     prog=f"netlab {cmd}",
     description=description,
     epilog=epilog)
+  parser.add_argument('--unlock', dest='unlock', action='store_true',
+                  help=argparse.SUPPRESS)
 
   parser.add_argument(
     dest='topology', action='store', nargs='?',
@@ -76,6 +81,11 @@ def run(cli_args: typing.List[str],
   topology = load_topology(args)
   augment.main.transform(topology)
   log.exit_on_error()
+
+  if args.unlock and os.path.exists('netlab.lock'):
+    print(termcolor.colored("WARNING: ","light_red",attrs=["bold"]) + \
+          "removing netlab.lock file, you're on your own",file=sys.stderr)
+    os.remove('netlab.lock')
 
   for output_format in args.output:
     output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format.split(':')[0]])

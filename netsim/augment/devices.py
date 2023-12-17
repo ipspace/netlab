@@ -132,6 +132,10 @@ def build_module_support_lists(topology: Box) -> None:
       continue
 
     for m in list(ddata.features.keys()):                   # Iterate over device features
+      f_value = ddata.features[m]
+      if f_value is None or f_value is True:                # Normalize features to dicts
+        ddata.features[m] = {}
+
       if not m in sets:
         continue                                            # Weird feature name, skip it
 
@@ -142,20 +146,15 @@ def build_module_support_lists(topology: Box) -> None:
       if not 'attributes' in mdata:                         # Is this a valid module?
         continue                                            # ... not without attributes
 
+      if f_value is False:                                  # Device definitely DOES NOT support the feature
+        ddata.features.pop(m)                               # Remove the feature so it won't crash the transformation
+        continue                                            # ... and skip it
+
       if not 'supported_on' in mdata:                       # Create 'supported_on' list if needed
         mdata.supported_on = []
 
-      if ddata.features[m] is False and dname in mdata.supported_on:       
-        mdata.supported_on.remove(dname)                    # The device DOES NOT support the module
-        ddata.features.pop(m)                               # Remove the feature so it won't crash the transformation
-        continue
-
       if not dname in mdata.supported_on:                   # Append device to module support list if needed
         mdata.supported_on.append(dname)
-
-      f_value = ddata.features[m]
-      if f_value is None or f_value is True:                # Normalize features to dicts
-        ddata.features[m] = {}
 
 """
 Initial device setting augmentation:
@@ -172,5 +171,16 @@ def augment_device_settings(topology: Box) -> None:
     if not isinstance(devices[dname],Box):                  # ... validate device definition data type
       log.fatal(f'Internal error: definition of device {dname} is not a dictionary')
 
+
   process_device_inheritance(topology)
   build_module_support_lists(topology)
+
+  for dname in devices.keys():                              # After completing device transformation, do a few sanity checks
+    for kw in ['interface_name','description']:             # ... list of attributes taken from nodes
+      if not kw in devices[dname]:
+        log.error(
+          f'Device {dname} defined in defaults.devices.{dname} does not have {kw} attribute',
+          log.IncorrectValue,
+          'devices')
+
+  log.exit_on_error()

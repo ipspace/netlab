@@ -103,6 +103,7 @@ devices.cumulus.libvirt.memory: 2048
 * Only supported on top of *Containerlab*
 * Supports container image release 23.3.1 or later (due to YANG model changes)
 * Requires the latest Ansible Galaxy collection 'nokia.grpc' and its dependencies to be installed from the git repo. You can also use the **netlab install grpc** command to install them
+* MPLS and LDP only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
 
 ```
 ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
@@ -164,12 +165,12 @@ The Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own i
 (caveats-vptx)=
 ## Juniper vPTX
 
-(These are not real *caveats*, but useful informations)
+* *netlab* release 1.7.0 supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
 
-* Juniper vPTX, also known as vJunos EVO, uses Linux instead of BSD as base OS. There are some basic differences from a "default" JunOS instance, including the management interface name, which is `re0:mgmt-0`.
-* After the VM boots up, you need to wait for the *virtual FPC* to become *Online* before being able to forward packets. You can verify this with `show chassis fpc`. **NOTE**: You will be able to see the network interfaces only after the *FPC* is online.
-* It could take some times for the VM to get the DHCP address on the management interface. Be patient.
-* The management interface DHCP client might not work correctly on vJunosEvolved release 23.2R1.15. If you're experiencing problems, use release 23.1R1.8.
+The rest of this section lists information you might find helpful if you're a long-time Junos user:
+
+* vJunos Evolved (vJunos EVO, Juniper vPTX) uses Linux instead of BSD as the underlying OS. There are some basic differences from a "default" JunOS instance, including the management interface name, which is `re0:mgmt-0`.
+* After the VM boots up, you need to wait for the *virtual FPC* to become *Online* before being able to forward packets. You can verify this with `show chassis fpc`. **NOTE**: You can see the network interfaces only after the *FPC* is online.
 * It seems that the DHCP Client of the management interface does not install a default route, even if received by the DHCP server.
 * The VM will complain about missing licenses. You can ignore that.
 
@@ -199,4 +200,6 @@ vSRX container built with *vrnetlab* uses **flow based forwarding**. You have tw
 ### VXLAN and EVPN Caveats
 
 * The VXLAN dataplane (at least, on the virtual version) seems not supporting VNI greater than 65535. If you set an higher value, an overflow will occur, and you may have overlapping VNIs. The workaround for this is to set, i.e., `defaults.vxlan.start_vni: 20000` (especially on multi-vendor topologies).
-* On the Aruba AOS-CX Virtual version *10.11.0001*, EVPN Symmetric IRB seems not supported.
+* EVPN Symmetric IRB is supported only from the Aruba AOS-CX Virtual version *10.13*. Additionally:
+  * CPU generated traffic does not get encapsulated in Symmetric IRB on AOS-CX Simulator.
+  * Active-Gateway MAC Addresses shall be the same across all VTEPs in AOS-CX Simulator.

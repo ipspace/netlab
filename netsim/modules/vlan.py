@@ -4,12 +4,10 @@
 import typing
 from box import Box
 
-from . import _Module,_routing,get_effective_module_attribute,_dataplane
+from . import _Module,get_effective_module_attribute,_dataplane
 from ..utils import log
 from .. import data
-from ..data import global_vars,get_empty_box,get_box,get_global_parameter
-from ..data.validate import validate_attributes
-from ..data.types import must_be_id,must_be_list,must_be_dict
+from ..data import get_empty_box,get_box,get_global_parameter
 from ..augment import devices,groups,links,addressing
 
 # Static lists of keywords
@@ -86,21 +84,10 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     return
 
   for vname in list(obj.vlans.keys()):
-    must_be_id(parent=None,key=vname,path=f'NOATTR:VLAN name {vname} in {obj_name}',module='vlan')
-
     if not obj.vlans[vname]:
       obj.vlans[vname] = data.get_empty_box()
 
     vdata = obj.vlans[vname]
-    validate_attributes(
-      data=vdata,                                     # Validate node data
-      topology=topology,
-      data_path=f'{obj_path}.{vname}',                # Topology path to VLAN attributes
-      data_name=f'VLAN',
-      attr_list=['vlan','link'],                      # We're checking VLAN and link attributes
-      modules=obj.get('module',[]),                   # ... against object modules (node or topology)
-      module_source='topology' if obj is topology else f'nodes.{obj.name}',
-      module='vlans')                                 # Function is called from 'vlans' module
 
     if not 'mode' in vdata:                                         # Do we have 'mode' set in the VLAN definition?
       if default_fwd_mode and obj is not topology:                  # Propagate default VLAN forwarding mode if needed
@@ -1113,18 +1100,6 @@ def create_vlan_access_links(topology: Box) -> None:
     if not 'links' in vdata:                                                # No VLAN links?
       continue                                                              # ... no problem, move on
 
-    try:
-      must_be_list(                                                         # Verify that the 'links' attribute is a list
-        parent=vdata,
-        key='links',
-        path=f'vlans.{vname}',
-        create_empty=False,
-        module='vlans',
-        abort=True)
-    except:                                                                 # Error: not a list
-      vdata.pop('links',None)                                               # ... remove the attribute
-      continue                                                              # ... and move on
-
     for cnt,l in enumerate(vdata.links):                                    # So far so good, now iterate over the links
       link_data = links.adjust_link_object(                                 # Create link data from link definition
                     l=l,
@@ -1163,19 +1138,12 @@ def cleanup_vlan_flags(topology: Box) -> None:
 
 class VLAN(_Module):
 
+  # Note: VLAN data has been validated as part topology/node validation before
+  # the module_pre_transform function is called. Is't thus safe to assume
+  # the vlan/vlans data is sane
+  #
   def module_pre_transform(self, topology: Box) -> None:
     if 'vlans' in topology:
-      try:
-        must_be_dict(
-          parent=topology,
-          key='vlans',
-          path='topology',
-          create_empty=False,
-          abort=True,
-          module='vlan')      # Check that we're dealing with a VLAN dictionary and return if there's an error
-      except:
-        return
-
       if not 'links' in topology:                 # Make sure there's a 'links' element in topology
         topology.links = []                       # ... so the various link-related hooks are called and we get 
                                                   # ... VLAN subinterfaces

@@ -275,59 +275,6 @@ def merge_global_module_params(topology: Box) -> None:
   reorder_node_modules(topology,'transform_after')
 
 '''
-add_module_extra_parameters: add extra module keywords (ex: 'vrfs' for 'vrf' module) to the list of attributes
-'''
-
-##### REMOVE AFTER ATTRIBUTE MIGRATION #####
-def extend_global_attributes(attr: typing.Union[list,dict], extra: str) -> None:
-  if isinstance(attr,dict):
-    attr[extra] = None
-  elif isinstance(attr,list):
-    attr.append(extra)
-
-def add_module_extra_parameters(topology: Box) -> None:
-  if not 'module' in topology:
-    return
-
-  for m in topology.module:                                     # Iterate through the global list of modules
-    if 'extra' in topology.defaults[m].attributes:              # Does the module have 'extra' parameters?
-      for k in topology.defaults[m].attributes.extra.keys():    # ... oh, it does, iterate through its keys (attribute levels)
-        for attr in topology.defaults[m].attributes.extra[k]:   # Take every attribute from the list of extra attributes
-          if not attr in topology.defaults.attributes[k]:       # ... and if it's not already in the global list of attributes
-            extend_global_attributes(topology.defaults.attributes[k],attr)
-###            topology.defaults.attributes[k].append(attr)        # ... append it to the global list
-
-'''
-adjust_module_support: copy device 'supports' attribute into module 'supported_on' list
-'''
-
-def adjust_module_support(topology: Box) -> None:
-  for dname,ddata in topology.defaults.devices.items():         # Iterate through all devices
-    if not 'supports' in ddata:                                 # Old-style definition without 'supports' attribute?
-      continue
-    if ddata.supports == '*':                                   # Wildcard 'supports everything'?
-      for mname,mdata in topology.defaults.items():             # ... iterate through all default settings
-        if not isinstance(mdata,Box):                           # If the module data is not a dictionary
-          continue                                              # ... we have a badly messed-up situation
-        if not 'supported_on' in mdata:                         # A module must have supported_on attribute
-          continue
-        if not dname in mdata.supported_on:                     # ... add device to the list of supported devices
-          mdata.supported_on.append(dname)
-      continue                                                  # ... and move on to the next device
-
-    # If we're here, we have a list of modules that the device supports
-    if not isinstance(ddata.supports,list):                     # ... but it's not a list?
-      continue                                                  # ... weird, but we can't do anything about it
-
-    for mname in ddata.supports:                                # Now iterate over the list of supported modules
-      if not mname in topology.defaults:                        # ... not a valid default attribute?
-        continue
-      if not 'supported_on' in topology.defaults[mname]:        # ... not a module?
-        continue
-      if not dname in topology.defaults[mname].supported_on:    # ... add device to the list of supported devices
-        topology.defaults[mname].supported_on.append(dname)
-
-'''
 adjust_modules: somewhat intricate multi-step config module adjustments
 
 * Set node default modules based on global modules
@@ -336,7 +283,6 @@ adjust_modules: somewhat intricate multi-step config module adjustments
 * Merge global module parametres into nodes
 '''
 def adjust_modules(topology: Box) -> None:
-  adjust_module_support(topology)
   augment_node_module(topology)
   adjust_global_modules(topology)
   if not 'module' in topology:
@@ -346,38 +292,12 @@ def adjust_modules(topology: Box) -> None:
   module_transform("init",topology)
   merge_node_module_params(topology)
   merge_global_module_params(topology)
-  add_module_extra_parameters(topology)
 
 """
 Validate module parameters and dependencies
 """
 def module_validate(topology: Box) -> None:
   check_module_dependencies(topology)
-
-"""
-Prepare module attribute dictionary
-
-* If the module attributes are a list, then global/node/link/interface attributes are the same
-
-Otherwise:
-
-* Add propagatable link attributes to interface attributes
-* Copy global attributes to node attributes if the node attributes are not specified
-"""
-
-def parse_module_attributes(a: typing.Union[typing.Dict, Box]) -> Box:
-  if isinstance(a,dict):
-    attr = data.get_box(a)
-    if not isinstance(attr.interface,str):
-      attr.interface = list(set(attr.link) - set(attr.link_no_propagate) | set(attr.interface))
-    attr.node = attr.get("node",attr["global"])
-  else:
-    attr = data.get_box({
-      "global": a,
-      "node": a,
-      "link": a,
-      "interface": a})
-  return attr
 
 """
 check_module_dependencies:

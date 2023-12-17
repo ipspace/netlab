@@ -2,7 +2,7 @@
 
 *[netlab](https://netlab.tools)* is bringing infrastructure-as-code concepts to networking labs. You'll describe your high-level network topology and routing design in a YAML file, and the tools in this repository will
 
-* Create *Vagrantfile* configuration file for *virtualbox* or *libvirt* environment
+* Create *Vagrantfile* configuration file for *VirtualBox* or *libvirt* environment
 * Create *containerlab* configuration file
 * Create Ansible inventory and configuration file
 * Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, and BGP routing design
@@ -14,9 +14,11 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4). Downgrade to 1.6.3 if you encounter bugs of use release 1.5.4 if you want an older one. You might want to [read the release notes](https://netlab.tools/release/) as well.
+The latest release is [release 1.7.0](https://github.com/ipspace/netlab/releases/tag/release_1.7.0), which includes a significant overhaul of lab topology data validation (more details in the [release notes](https://netlab.tools/release/))
+
+If you encounter bugs using release 1.7.0, please downgrade to [1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4) and [open a GitHub issue](https://github.com/ipspace/netlab/issues).
 <!--
-It contains [numerous new features](https://netlab.tools/release/1.6/) that might have a few bugs attached to them. Should you encounter one of those creatures, please open a Github issue and use release 1.5.4.
+It contains [numerous new features](https://netlab.tools/release/1.6/) that might have a few bugs. Should you encounter one of those creatures, please open a GitHub issue and use release 1.5.4.
 --> 
 
 ## An Overview of CLI Commands
@@ -34,7 +36,7 @@ It contains [numerous new features](https://netlab.tools/release/1.6/) that migh
 : Applies additional Jinja2 configuration templates to network devices.
 
 **netlab collect**
-: Using Ansible fact gathering or other device-specific Ansible modules, collects device configurations and saves them in specified directory (default: **config**).
+: Using Ansible fact gathering or other device-specific Ansible modules, collects device configurations and saves them in the specified directory (default: **config**).
 
 **netlab connect**
 : Use SSH or **docker exec** to [connect to a lab device](https://netlab.tools/netlab/connect/) using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords specified in lab topology or *netlab* device defaults.

@@ -181,28 +181,28 @@ The following system-wide features are configured on supported network operating
 (platform-initial-interfaces)=
 The following interface parameters are configured on supported network operating systems as part of initial device configuration:
 
-| Operating system      | Interface<br />description | Interface<br />bandwidth | MTU |
-| --------------------- | :------------------------: | :----------------------: | :-: |
-| Arista EOS            |            ✅              |            ✅            | ✅ |
-| Aruba AOS-CX          |            ✅              |            ❌            | ✅ |
-| Cisco ASAv            |            ✅              |            ❌            | ✅ |
-| Cisco IOS/IOS XE      |            ✅              |            ✅            | ✅[❗](caveats-iosv) |
-| Cisco IOS XRv         |            ✅              |            ✅ [❗](caveats-iosxr)           | ✅ |
-| Cisco Nexus OS        |            ✅              |            ✅            | ✅ |
-| Cumulus Linux         |            ✅              |            ✅            | ✅ |
-| Cumulus Linux 5.0 (NVUE) |         ✅              |            ✅            | ❌ |
-| Dell OS10             |            ✅              |            ❌            | ✅ |
-| Fortinet FortiOS      |            ✅              |            ✅            | ❌ |
-| FRR                   |            ✅              |            ✅            | ✅ |
-| Generic Linux         |            ❌              |            ❌            | ✅ |
-| Juniper vMX           |            ✅              |            ✅            | ✅ |
-| Juniper vPTX          |            ✅              |            ✅            | ✅ |
-| Juniper vSRX 3.0      |            ✅              |            ✅            | ✅ |
-| Mikrotik RouterOS 6   |            ✅              |            ❌            | ✅ |
-| Mikrotik RouterOS 7   |            ✅              |            ❌            | ✅ |
-| Nokia SR Linux        |            ✅              |            ❌            | ❌ |
-| Nokia SR OS           |            ✅              |            ❌            | ❌ |
-| VyOS                  |            ✅              |            ❌            | ✅ |
+| Operating system      | Interface<br />description | Interface<br />bandwidth | MTU | Additional<br />loopbacks
+| --------------------- |:---:|:---:|:---:|:---:|
+| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
+| Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
+| Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
+| Cisco IOS/IOS XE      | ✅  | ✅  | ✅[❗](caveats-iosv) | ✅  |
+| Cisco IOS XRv         | ✅  | ✅ [❗](caveats-iosxr) | ✅ |  ❌  |
+| Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux 5.0 (NVUE) | ✅ | ✅ |  ❌ |  ❌  |
+| Dell OS10             | ✅  |  ❌  | ✅  | ✅  |
+| Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
+| FRR                   | ✅  | ✅  | ✅  | ✅  |
+| Generic Linux         |  ❌  |  ❌  | ✅  |  ❌  |
+| Juniper vMX           | ✅  | ✅  | ✅  | ✅  |
+| Juniper vPTX          | ✅  | ✅  | ✅  | ✅  |
+| Juniper vSRX 3.0      | ✅  | ✅  | ✅  | ✅  |
+| Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
+| Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ✅  |
+| Nokia SR Linux        | ✅  |  ❌  | ✅  | ✅  |
+| Nokia SR OS           | ✅  |  ❌  | ✅  | ✅  |
+| VyOS                  | ✅  |  ❌  | ✅  | ✅  |
 
 (platform-initial-addresses)=
 The following interface addresses are supported on various platforms:

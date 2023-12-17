@@ -10,3 +10,4 @@ from . import main
 from . import config
 from . import components
 from . import tools
+from . import validate

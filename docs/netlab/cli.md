@@ -17,13 +17,14 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 
 ## Configuring and Controlling the Lab
 
-* **[netlab connect](connect.md)** uses the transformed lab topology data to find IP address, username, and password of specified lab device or [external tool](../extools.md), and uses SSH or **docker exec** to connect to the lab device/tool.
-* **[netlab collect](collect.md)** uses Ansible device facts (or equivalent functionality implemented with Ansible modules) to collect device configurations and store them into specified directory.
+* **[netlab connect](connect.md)** uses the transformed lab topology data to find the IP address, username, and password of the specified lab device or [external tool](../extools.md), and uses SSH or **docker exec** to connect to the lab device/tool.
+* **[netlab collect](collect.md)** uses Ansible device facts (or equivalent functionality implemented with Ansible modules) to collect device configurations and store them in the specified directory.
+* **‌[netlab validate](validate.md)** executes tests defined in the lab topology on the lab devices
 * **[netlab down](down.md)** destroys the virtual lab.
 
 ## Reports and Graphs
 
-* **‌[netlab status](status.md)** display the state of lab instances running on the current server
+* **‌[netlab status](status.md)** displays the state of lab instances running on the current server
 * **[netlab report‌](report.md)** creates a report (example: node/link addressing) from the transformed lab topology data.
 * **[netlab graph](graph.md)** creates a graph description of physical or BGP topology in Graphviz or D2 format
 * **[netlab inspect](inspect.md)** helps you inspect data structures in transformed lab topology
@@ -67,5 +68,5 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab status <status.md>
    netlab test <test.md>
    netlab up <up.md>
+   netlab validate <validate.md>
 ```
-
