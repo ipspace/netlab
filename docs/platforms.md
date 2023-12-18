@@ -131,7 +131,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Operating system      | Deploy configuration | Collect configuration |
 | --------------------- | :------------------: | :-------------------: |
 | Arista EOS            |          ✅           |           ✅           |
-| Aruba AOS-CX          |          ✅           |           ❌           |
+| Aruba AOS-CX          |          ✅           |           ✅           |
 | Cisco ASAv            |          ✅           |           ✅           |
 | Cisco IOS / IOS XE    |          ✅           |           ✅           |
 | Cisco IOS XRv         |          ✅           |           ✅           |
