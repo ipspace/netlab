@@ -32,7 +32,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Cisco IOS XE       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌ |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌ |
-| FRR                | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
+| FRR                | ✅  | ✅  | ✅  | ✅  | ❌  | ❌ |
 | Juniper vMX        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Juniper vPTX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Juniper vSRX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
