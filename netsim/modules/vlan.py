@@ -1211,7 +1211,7 @@ class VLAN(_Module):
         return
       create_vlan_links(link,v_attr,topology)
 
-    svi_skipattr = topology.defaults.vlan.attributes.vlan_no_propagate or []      # VLAN attributes not copied into link data
+    svi_skipattr = list(topology.defaults.vlan.attributes.vlan_no_propagate) or [] # VLAN attributes not copied into link data
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
     if not link_vlan is None:
