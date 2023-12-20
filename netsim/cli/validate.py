@@ -10,7 +10,7 @@ import argparse
 import re
 
 from box import Box
-from termcolor import colored
+import termcolor
 
 from . import load_snapshot,parser_add_debug,parser_add_verbose
 from ..utils import log,templates,strings
@@ -71,7 +71,7 @@ def list_tests(topology: Box) -> None:
 #
 def p_status(txt: str, color: str, topology: Box) -> str:
   txt = f'[{txt}]{" " * 80}'[:topology._v_len+3]
-  return colored(txt,color)
+  return termcolor.colored(txt,color)               # type: ignore
 
 # Print test header
 #
