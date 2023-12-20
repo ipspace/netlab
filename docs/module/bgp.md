@@ -65,7 +65,7 @@ The following features are only supported on a subset of platforms:
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
 | Dell OS10             |  ✅  |  ✅  |  ✅ |  ❌  |  ✅  |
-| FRR 7.5.0             |  ✅ |  ❌  |  ✅  |  ✅  |  ✅ |
+| FRR                   |  ✅ |  ❌  |  ✅  |  ✅  |  ✅ |
 | Nokia SR Linux        |  ✅ |  ❌ |  ✅ |  ✅  |  ✅  |
 | Nokia SR OS           |  ❌ |  ❌ |  ✅ |  ✅  |  ✅  |
 | VyOS                  |  ✅  |  ✅  |  ✅ |  ❌  |  ✅  |
