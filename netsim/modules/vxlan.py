@@ -98,6 +98,13 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
   vtep_interface = node.loopback
   loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults).format(ifindex=0)
 
+  # Search for additional loopback interfaces with vxlan.vtep' flag, and use the first one
+  for intf in node.interfaces:
+    if intf.get('type', '') == 'loopback' and 'vxlan' in intf and intf.vxlan.get('vtep', False):
+      vtep_interface = intf
+      loopback_name = intf.ifname
+      break
+
   if topology.defaults.vxlan.use_v6_vtep and not 'ipv6' in vtep_interface:
     log.error(
       f'You want to use IPv6 VTEP -- VXLAN module needs an IPv6 address on loopback interface of {node.name}',
@@ -111,13 +118,6 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
       log.IncorrectValue,
       'vxlan')
     return False
-  
-  # Search for additional loopback interfaces with 'use_as_vtep' flag, and use the first one
-  for intf in node.interfaces:
-    if intf.get('type', '') == 'loopback' and intf.get('use_as_vtep', False):
-      vtep_interface = intf
-      loopback_name = intf.ifname
-      break
 
   vtep_ip = ""
   vtep_af = 'ipv6' if topology.vxlan.use_v6_vtep else 'ipv4'
