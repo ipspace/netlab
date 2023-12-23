@@ -268,10 +268,12 @@ def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace
       result = get_parsed_result(v_entry,n_name,topology)
       if '_error' in result:                      # OOPS, we failed
         ret_value = False
+        test_result_count += 1
         continue
     elif action == 'exec':                        # We got an 'exec' action, try to get something out of the device
       result.stdout = get_result_string(v_entry,n_name,topology)
       if result.stdout is False:                  # Store device printout in 'stdout'
+        test_result_count += 1
         ret_value = False
         continue
 
