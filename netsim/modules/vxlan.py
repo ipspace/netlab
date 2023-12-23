@@ -9,7 +9,7 @@ from . import _Module,get_effective_module_attribute,_dataplane
 from ..utils import log
 from .. import data
 from ..data.validate import must_be_int,must_be_string
-from ..augment import addressing
+from ..augment import addressing,devices
 
 """
 register_static_vni -- register all static VNIs
@@ -94,14 +94,25 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
 # Set VTEP IPv4/IPv6 address
 #
 def node_set_vtep(node: Box, topology: Box) -> bool:
-  if topology.defaults.vxlan.use_v6_vtep and not 'ipv6' in node.loopback:
+  # default vtep interface & interface name
+  vtep_interface = node.loopback
+  loopback_name = str(devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)).format(ifindex=0)
+
+  # Search for additional loopback interfaces with vxlan.vtep' flag, and use the first one
+  for intf in node.interfaces:
+    if intf.get('type', '') == 'loopback' and 'vxlan' in intf and intf.vxlan.get('vtep', False):
+      vtep_interface = intf
+      loopback_name = intf.ifname
+      break
+
+  if topology.defaults.vxlan.use_v6_vtep and not 'ipv6' in vtep_interface:
     log.error(
       f'You want to use IPv6 VTEP -- VXLAN module needs an IPv6 address on loopback interface of {node.name}',
       log.IncorrectValue,
       'vxlan')
     return False
 
-  if not 'ipv4' in node.loopback and not topology.defaults.vxlan.use_v6_vtep:
+  if not 'ipv4' in vtep_interface and not topology.defaults.vxlan.use_v6_vtep:
     log.error(
       f'VXLAN module needs an IPv4 address on loopback interface of {node.name}',
       log.IncorrectValue,
@@ -110,8 +121,9 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
 
   vtep_ip = ""
   vtep_af = 'ipv6' if topology.vxlan.use_v6_vtep else 'ipv4'
-  vtep_ip = node.loopback[vtep_af]
+  vtep_ip = vtep_interface[vtep_af]
   node.vxlan.vtep = str(netaddr.IPNetwork(vtep_ip).ip)              # ... and convert IPv4(v6) prefix into an IPv4(v6) address
+  node.vxlan.vtep_interface = loopback_name
   return True
 
 #
