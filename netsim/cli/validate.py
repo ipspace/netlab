@@ -10,7 +10,6 @@ import argparse
 import re
 
 from box import Box
-import termcolor
 
 from . import load_snapshot,parser_add_debug,parser_add_verbose
 from ..utils import log,templates,strings
@@ -67,34 +66,37 @@ def list_tests(topology: Box) -> None:
 # various levels of abstraction, from "give me a colored text"
 # to "tell the user the lab was a great success"
 
-# Prepare test status (colored text in fixed width)
+# Prints test status (colored text in fixed width)
 #
-def p_status(txt: str, color: str, topology: Box) -> str:
+def p_status(txt: str, color: str, topology: Box) -> None:
   txt = f'[{txt}]{" " * 80}'[:topology._v_len+3]
-  return termcolor.colored(txt,color)               # type: ignore
+  strings.print_colored_text(txt,color)
 
 # Print test header
 #
 def p_test_header(v_entry: Box,topology: Box) -> None:
+  p_status(v_entry.name,"bright_cyan",topology)
   print(
-    p_status(v_entry.name,"light_cyan",topology) + \
     v_entry.get('description','Starting test') + \
     f' [ node(s): {",".join(v_entry.nodes)} ]')
 
 # Print generic "test failed" message
 #
 def log_failure(msg: str, topology: Box, f_status: str = 'FAIL') -> None:
-  print(p_status(f_status,'light_red',topology) + msg)
+  p_status(f_status,'bright_red',topology)
+  print(msg)
 
 # Print generic "making progress" message
 #
 def log_progress(msg: str, topology: Box, f_status: str = 'PASS') -> None:
-  print(p_status(f_status,'light_green',topology) + msg)
+  p_status(f_status,'light_green',topology)
+  print(msg)
 
 # Print generic "ambivalent info" message
 #
 def log_info(msg: str, topology: Box, f_status: str = 'INFO') -> None:
-  print(p_status(f_status,'yellow',topology) + msg)
+  p_status(f_status,'yellow',topology)
+  print(msg)
 
 # Print "test failed on node"
 #
