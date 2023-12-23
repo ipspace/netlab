@@ -48,14 +48,18 @@ class YAML(_TopologyOutput):
         break
 
     if not isinstance(cleantopo,Box) and not isinstance(cleantopo,BoxList):
-      output.write(f"{str(result)}\n")
+      r_fmt = 'str'
+      r_txt = f"{str(cleantopo)}\n"
     elif modname == 'YAML':
-      output.write(strings.get_yaml_string(cleantopo))
+      r_fmt = 'yaml'
+      r_txt = strings.get_yaml_string(cleantopo)
     else:
-      output.write(cleantopo.to_json(indent=2,sort_keys=True))
+      r_fmt = 'json'
+      r_txt = cleantopo.to_json(indent=2,sort_keys=True)
 
     if outfile != '-':
+      output.write(r_txt)
       _files.close_output_file(output)
       print(f"Created transformed topology dump in {modname} format in {outfile}")
     else:
-      output.write("\n")
+      strings.pretty_print(r_txt,r_fmt)
