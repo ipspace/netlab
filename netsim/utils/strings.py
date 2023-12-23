@@ -117,6 +117,6 @@ colored_text: Print colored text using rich library
 def print_colored_text(txt: str, color: str, stderr: bool = False) -> None:
   global rich_console, rich_stderr
   c = rich_stderr if stderr else rich_console
-  txt = txt.replace('[','\[')             # Quote square brackets so they're not treated as markup
+  txt = txt.replace('[','\\[')             # Quote square brackets so they're not treated as markup
   r_txt = f'[{color}]{txt}[/{color}]'     # Compose colored text markup
   c.print(r_txt,end='',highlight=False)

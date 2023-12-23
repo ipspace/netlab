@@ -8,11 +8,13 @@ import os
 import sys
 import argparse
 import re
+import time
+import math
 
 from box import Box
 
 from . import load_snapshot,parser_add_debug,parser_add_verbose
-from ..utils import log,templates,strings
+from ..utils import log,templates,strings,status as _status
 from .. import data
 from .connect import connect_to_node,LogLevel
 
@@ -233,6 +235,36 @@ def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
 
   return None
 
+'''
+wait_before_testing -- wait for specified time since lab start time or previous test
+'''
+def wait_before_testing(
+      v_entry: Box,
+      start_time: typing.Optional[typing.Union[int,float]],
+      topology: Box) -> None:
+  if not 'wait' in v_entry:
+    return
+
+  if start_time is None:
+    wait_time = v_entry.wait
+  else:
+    wait_time = math.ceil(start_time + v_entry.wait - time.time())
+
+  if wait_time > 0 and 'wait_msg' in v_entry:         # Print the initial "we're waiting for this" message
+    log_info(
+      v_entry.wait_msg,
+      f_status = 'WAITING',
+      topology=topology)
+
+  while wait_time >= 0:
+    log_info(                                         # Have to wait some more, print a logging message
+      f'Waiting for {v_entry.wait} seconds, {wait_time} seconds left',
+      f_status = 'WAITING',
+      topology=topology)
+
+    time.sleep(wait_time if wait_time < 5 else 5)     # Wait no more than five seconds
+    wait_time = wait_time - 5
+
 test_skip_count: int
 test_result_count: int
 test_pass_count: int
@@ -240,13 +272,20 @@ test_pass_count: int
 '''
 Execute a single validation test on all specified nodes
 '''
-def execute_validation_test(v_entry: Box,topology: Box, args: argparse.Namespace) -> typing.Optional[bool]:
+def execute_validation_test(
+      v_entry: Box,
+      topology: Box,
+      start_time: typing.Optional[typing.Union[int,float]],
+      args: argparse.Namespace) -> typing.Optional[bool]:
   global test_skip_count,test_result_count,test_pass_count
 
   # Return value uses ternary logic: OK (True), Fail(False), Skipped (None)
   ret_value = None
 
   p_test_header(v_entry,topology)                 # Print test header
+  if 'wait' in v_entry:
+    wait_before_testing(v_entry,start_time,topology)
+
   for n_name in v_entry.nodes:                    # Iterate over all specified nodes
     node = topology.nodes[n_name]
     result = data.get_empty_box()
@@ -397,18 +436,22 @@ def run(cli_args: typing.List[str]) -> None:
   test_result_count = 0
   test_pass_count = 0
   topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
+  start_time = _status.lock_timestamp()
 
   for v_entry in topology.validate:
     if cnt:
       print()
 
-    result = execute_validation_test(v_entry,topology,args)
+    result = execute_validation_test(v_entry,topology,start_time,args)
     if result is False:
       status = False
       if v_entry.stop_on_error:
         print()
         log_failure('Mandatory test failed, validation stopped',topology)
         sys.exit(1)
+
+    if 'wait' in v_entry:
+      start_time = time.time()
 
     cnt = cnt + 1
 

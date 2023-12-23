@@ -10,8 +10,10 @@ Each test has a name (dictionary key) and description (dictionary value) -- anot
 * **devices** (list, optional) -- platforms (network operating systems) that can be used to execute the validation tests. The value of this parameter is set automatically in multi-platform tests; you have to supply it if you specified **show** and **exec** parameters as strings.
 * **show** (string or dictionary) -- a device command executed with the `netlab connect --show` command. The result should be valid JSON.
 * **exec** (string or dictionary) -- any other valid network device command. The command will be executed with the `netlab connect` command.
-* **valid** (string or dictionary) -- Python code that will be executed once the **show** or **exec** command has completed. The test succeeds if the Python code returns any value that evaluates to `True` when converted to a boolean[^TEX]. The Python code can use the results of the **show** command as variables; the **exec** command printout is available in the `stdout` variable.
-* **stop_on_error** (optional, bool) -- When set to `True`, the validation tests stop if the current test fails on at least one of the devices.
+* **valid** (string or dictionary, optional) -- Python code that will be executed once the **show** or **exec** command has completed. The test succeeds if the Python code returns any value that evaluates to `True` when converted to a boolean[^TEX]. The Python code can use the results of the **show** command as variables; the **exec** command printout is available in the `stdout` variable.
+* **wait** (integer, optional) -- Time to wait before starting the test. The first wait time is measured from when the lab was started; subsequent times are measured from the previous test containing the **wait** parameter.
+* **wait_str** (string, optional) -- Message to print before starting the wait.
+* **stop_on_error** (bool, optional) -- When set to `True`, the validation tests stop if the current test fails on at least one of the devices.
 
 [^TEX]: Objects, non-empty strings, lists, or dictionaries, integers not equal to zero or `True`. 
 
@@ -40,6 +42,24 @@ validate:
 ```
 
 The validation runs on Linux hosts, so there's no need for a multi-platform approach. The validation test executes a simple **ping** command on a host and checks whether at least one ping returned the expected amount of data (64 bytes).
+
+(validate-wait)=
+## Wait-before-Test Example
+
+Control-plane protocols might need tens of seconds to establish adjacencies and reach a steady state. The following validation test waits for OSPF initialization (~40 seconds to elect a designated router on a LAN segment) before starting end-to-end connectivity tests:
+
+```
+validate:
+  ping:
+    description: Ping-based reachability test
+    wait_msg: Waiting for STP and OSPF to stabilize
+    wait: 45
+    nodes: [ h1,h2 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h3
+    valid: |
+      "64 bytes" in stdout
+```
 
 (validate-multi-platform)=
 ## Complex Multi-Platform Example
@@ -92,6 +112,6 @@ The **valid** expressions for Cumulus Linux, FRR, and Arista EOS use JSON data s
 A similar approach cannot be used for Cisco IOSv. The only way to validate the correctness of a show printout is to use a convoluted regular expression.
 
 ```{tip}
-* You can use the **‌netlab validate -vv** command to generate debugging printouts that will help you figure out why your tests don't work as expected.
+* You can use the **‌netlab validate -vv** command to generate debugging printouts to help you determine why your tests don't work as expected.
 * **‌netlab validate** command takes the tests from the `netlab.snapshot.yml` file created during the **‌netlab up** process. To recreate that file while the lab is running, use the hidden **‌netlab create --unlock** command.
 ```

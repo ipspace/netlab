@@ -298,3 +298,5 @@ def run(cli_args: typing.List[str]) -> None:
   deploy_initial_config(args,topology,step+1)
   start_external_tools(args,topology,step+2)
   lab_status_change(topology,'started')
+  if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done
+    _status.lock_directory()                          # .. to have a timestamp of when the lab was started
