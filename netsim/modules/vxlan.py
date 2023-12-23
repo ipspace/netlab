@@ -6,7 +6,7 @@ from box import Box
 import netaddr
 
 from . import _Module,get_effective_module_attribute,_dataplane
-from ..utils import log
+from ..utils import log,strings
 from .. import data
 from ..data.validate import must_be_int,must_be_string
 from ..augment import addressing,devices
@@ -96,7 +96,11 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
 def node_set_vtep(node: Box, topology: Box) -> bool:
   # default vtep interface & interface name
   vtep_interface = node.loopback
-  loopback_name = str(devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)).format(ifindex=0)
+  lbname = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
+  if not lbname:
+    log.fatal("Internal error: can't find the loopback name of VXLAN-capable device {node.device}")
+
+  loopback_name = strings.eval_format(lbname,{ 'ifindex': 0 })
 
   # Search for additional loopback interfaces with vxlan.vtep' flag, and use the first one
   for intf in node.interfaces:

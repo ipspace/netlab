@@ -8,6 +8,7 @@ import rich.console, rich.table, rich.json, rich.syntax
 
 rich_console: rich.console.Console
 rich_console = rich.console.Console()
+rich_stderr  = rich.console.Console(stderr=True)
 
 ruamel_attrs: typing.Final[dict] = {'version': (1,1)}
 
@@ -62,8 +63,9 @@ def print_structured_dict(d: Box, prefix: str = '') -> None:
 # eval_format: emulate f'strings' evaluated on a data structure
 #
 def eval_format(fmt: str, data: dict) -> str:
-  fmt = fmt.replace("'","\\'")                    # Escape single quotes to prevent eval crashes
-  return str(eval(f"f'{fmt}'",dict(data)))        # An awful hack to use f-string specified in a string variable
+  fmt = fmt.replace("'","\\'")         # Escape single quotes to prevent eval crashes
+  ex = "f'"+fmt+"'"                    # String to format-evaluate
+  return str(eval(ex,dict(data)))      # An awful hack to use f-string specified in a string variable
 
 """
 confirm: print the prompt and wait for a yes/no answer
