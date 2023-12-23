@@ -9,7 +9,11 @@ auto vni-{{ vlan.vni }}
 iface vni-{{ vlan.vni }}
     bridge-access {{ vlan.id }}
     vxlan-id {{ vlan.vni }}
-    vxlan-learning {{ "no" if vxlan.flooding|default("") == "evpn" else "yes" }}
+{% if vxlan.flooding|default("") == "evpn" %}
+    vxlan-learning no
+{% else %}
+    vxlan-learning yes
+{% endif %}
 {% endmacro -%}
 #
 # Create VXLAN interfaces with static flood lists
@@ -30,6 +34,7 @@ iface lo inet loopback
 {%   endfor %}
 #
 iface bridge
+    bridge-stp no
 {%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
     bridge-ports vni-{{ vlans[vname].vni }}
 {%   endfor %}
