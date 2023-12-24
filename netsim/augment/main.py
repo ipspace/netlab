@@ -24,6 +24,7 @@ def transform_setup(topology: Box) -> None:
   augment.topology.topology_sanity_check(topology)
   versioning.check_topology_version(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
+  augment.groups.precheck_groups(topology)
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('topology_expand',topology)                    # topology-expanding plugins must be called before link checks
 
