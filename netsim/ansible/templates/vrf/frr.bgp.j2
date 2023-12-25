@@ -7,10 +7,15 @@ router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  no bgp default ipv4-unicast
 {% for n in vdata.bgp.neighbors|default([]) %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
- neighbor {{ n[af] }} remote-as {{ n.as }}
- neighbor {{ n[af] }} description {{ n.name }}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%     if n[af] is string %}
+ neighbor {{ peer }} remote-as {{ n.as }}
+{%     else %}
+ neighbor {{ peer }} interface remote-as {{ n.as }}
+{%     endif %}
+ neighbor {{ peer }} description {{ n.name }}
 {%     if n.local_as is defined %}
-  neighbor {{ n[af] }} local-as {{ n.local_as }} {{ 'no-prepend replace-as' if n.replace_global_as|default(True) else '' }}
+  neighbor {{ peer }} local-as {{ n.local_as }} {{ 'no-prepend replace-as' if n.replace_global_as|default(True) else '' }}
 {%     endif %}
 {%   endfor %}
 {% endfor %}
@@ -30,9 +35,10 @@ router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
   network {{ n[af]|ipaddr('0') }}
 {%   endfor %}
 {%   for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
-  neighbor {{ n[af] }} activate
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+  neighbor {{ peer }} activate
 {%     if bgp.community.ebgp|default([]) %}
-  neighbor {{ n[af] }} send-community {{ community(bgp.community.ebgp) }}
+  neighbor {{ peer }} send-community {{ community(bgp.community.ebgp) }}
 {%     endif %}
 {%   endfor %}
  exit-address-family
