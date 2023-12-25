@@ -7,6 +7,7 @@ message: |
   h3 and h4 should be able to ping each other, but not h1 or h2
 
 groups:
+  _auto_create: True
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
@@ -17,26 +18,32 @@ groups:
 vlans:
   red:
     mode: bridge
+    links: [ s1-h1, s1-h2 ]
   blue:
+    links: [ s1-h3 ]
   green:
+    links: [ s1-h4 ]
 
-nodes:
-  h1:
-  h2:
-  h3:
-  h4:
-  s1:
-
-links:
-- h1:
-  s1:
-    vlan.access: red
-- h2:
-  s1:
-    vlan.access: red
-- h3:
-  s1:
-    vlan.access: blue
-- h4:
-  s1:
-    vlan.access: green
+validate:
+  intra:
+    description: Intra-VLAN reachability (red)
+    wait: 30
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h2
+    valid: |
+      "64 bytes" in stdout
+  inter:
+    description: Inter-VLAN reachability (blue/green)
+    nodes: [ h3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h4
+    valid: |
+      "64 bytes" in stdout
+  filter:
+    description: Inter-VLAN isolation (red - blue)
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A h3 || true"
+    valid: |
+      "0 packets received" in stdout

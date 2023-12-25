@@ -4,13 +4,14 @@ message: |
 
   * All hosts should be able to ping each other and
     switch interfaces in the same VLAN
-  * Hosts should be able to ping loopback address of s1 but not
-    loopback address of s2 (static routes on hosts point to s1)
+  * Hosts should be able to ping loopback address of the
+    adjacent switch (static routes point to nearest router)
 
   Please note it might take a while for the lab to work due to
   STP learning phase
 
 groups:
+  _auto_create: True
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
@@ -20,29 +21,35 @@ groups:
 
 vlans:
   red:
+    links: [ s1-h1, s2-h2 ]
   blue:
-
-nodes:
-  h1:
-  h2:
-  h3:
-  h4:
-  s1:
-  s2:
+    links: [ s1-h3, s2-h4 ]
 
 links:
-- h1:
-  s1:
-    vlan.access: red
-- h2:
-  s2:
-    vlan.access: red
-- h3:
-  s1:
-    vlan.access: blue
-- h4:
-  s2:
-    vlan.access: blue
 - s1:
   s2:
   vlan.trunk: [ red, blue ]
+
+validate:
+  ping_h:
+    description: Cross-VLAN reachability
+    wait: 30
+    nodes: [ h1, h2, h3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h4
+    valid: |
+      "64 bytes" in stdout
+  ping_s1:
+    description: Ping default gateway (S1)
+    nodes: [ h1, h3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A s1
+    valid: |
+      "64 bytes" in stdout
+  ping_s2:
+    description: Ping default gateway (S2)
+    nodes: [ h2, h4 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A s2
+    valid: |
+      "64 bytes" in stdout

@@ -14,6 +14,7 @@ message: |
   STP and OSPF setup phase
 
 groups:
+  _auto_create: True
   routers:
     members: [ r1,r2,r3 ]
     module: [ ospf,vrf,vlan ]
@@ -29,19 +30,11 @@ vlans:
   red:
     mode: route
     vrf: red
+    links: [ r1-h1, r3-h2, r1-h5 ]
   blue:
     mode: route
     vrf: blue
-
-nodes:
-  r1:
-  r2:
-  r3:
-  h1:
-  h2:
-  h3:
-  h4:
-  h5:
+    links: [ r1-h3, r3-h4 ]
 
 links:
 - r1:
@@ -50,18 +43,28 @@ links:
 - r2:
   r3:
   vlan.trunk: [ red, blue ]  
-- h1:
-  r1:
-    vlan.access: red
-- h3:
-  r1:
-    vlan.access: blue
-- h2:
-  r3:
-    vlan.access: red
-- h4:
-  r3:
-    vlan.access: blue
-- h5:
-  r1:
-    vlan.access: red
+
+validate:
+  red:
+    description: Intra-VLAN reachability (red)
+    wait_msg: Waiting for STP forwarding state and OSPF adjacencies
+    wait: 40
+    nodes: [ h1,h2 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h5
+    valid: |
+      "64 bytes" in stdout
+  blue:
+    description: Intra-VLAN reachability (blue)
+    nodes: [ h3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h4
+    valid: |
+      "64 bytes" in stdout
+  filter:
+    description: Inter-VLAN isolation (red - blue)
+    nodes: [ h1,h2 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A h3 || true"
+    valid: |
+      "0 packets received" in stdout

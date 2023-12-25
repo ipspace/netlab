@@ -27,6 +27,8 @@ uses a long time to start. Use something like:
 netlab up -p <provider> -d cumulus -s nodes.s1.ros=<device> <topology-file>
 ```
 
+Topologies using Linux hosts have validation tests. Execute them with **netlab validate**.
+
 The topologies (in increasing order of complexity) implement the following scenarios:
 
 ### Single node bridging
@@ -73,8 +75,5 @@ The topologies (in increasing order of complexity) implement the following scena
 
 ### Consolidated VLAN test cases
 
+* `vlan-vrf-route-leaking.yml` -- implement VRF lite with inter-VRF EBGP session
 * `vlan-all-in-one.yml` -- contains all variations of access and trunk vlans in various supported modes, with/without native vlan. Used to test config generation
-
-
-vlan-mixed-trunk.yml
-vlan-vrf-lite.yml
