@@ -10,6 +10,7 @@ import argparse
 import re
 import time
 import math
+import traceback
 
 from box import Box
 
@@ -442,7 +443,15 @@ def run(cli_args: typing.List[str]) -> None:
     if cnt:
       print()
 
-    result = execute_validation_test(v_entry,topology,start_time,args)
+    try:
+      result = execute_validation_test(v_entry,topology,start_time,args)
+    except KeyboardInterrupt:
+      print("")
+      log.fatal('Validation test interrupted')
+    except:
+      traceback.print_exc()
+      log.fatal('Unhandled exception')
+
     if result is False:
       status = False
       if v_entry.stop_on_error:
