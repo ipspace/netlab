@@ -231,6 +231,7 @@ def auto_create_members(
         continue
 
       topology.nodes[n].name = n                  # Otherwise create an empty node data structure
+      topology.nodes[n].interfaces = []           # ... with an empty interface list
   
   '''
   Transform group-as-list into group-as-dictionary
@@ -393,6 +394,8 @@ def export_group_node_data(
   if not unique_keys:
     unique_keys = copy_keys
   for gname,gdata in topology.groups.items():
+    if gname.startswith('_'):                                         # Skip groups starting with '_'
+      continue                                                        # ... those are group settings
     #
     # Find groups with node_data dictionaries
     # and check that the key within node_data dictionary we're interested in is also a dictionary
@@ -579,3 +582,19 @@ def node_config_templates(topology: Box) -> None:
       node.config = config_list
     else:
       node.pop('config',None)
+
+"""
+Final step in group processing: remove settings from groups data structure,
+so the templates don't have to guess whether they're dealing with groups
+or settings
+"""
+def cleanup(topology: Box) -> None:
+  if not 'groups' in topology:                    # No groups, no worries
+    return
+
+  for gname in list(topology.groups.keys()):      # Iterate over group names
+    if gname.startswith('_'):                     # ... and if something starts with underscore, it's a setting
+      topology.groups.pop(gname,None)             # ... so remove it
+
+  if not topology.groups:                         # Anything left?
+    topology.pop('groups',None)                   # ... nope, remove the whole 'groups' thingy

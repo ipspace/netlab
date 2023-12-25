@@ -104,7 +104,11 @@ The data transformation has three major steps:
 
 * Execute **post_transform** plugin hooks
 * Merge group-level and node-level [custom deployment templates](custom-config) (`netsim.augment.groups.node_config_template`)
-* Delete temporary data structures from the topology (list of plugin modules, addressing pools, pointer to provider module)
+* Execute **post_transform** provider hooks
+* Process device quirks
+* Cleanup links: remove empty **links** list and **_linkname** attribute from individual links
+* Cleanup groups: remove settings (keys starting with '\_') from **groups** dictionary
+* Delete temporary data structures from the topology: list of plugin modules, addressing pools, and pointers to provider modules.
 
 ## Configuration Module Transformations
 

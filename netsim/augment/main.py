@@ -95,6 +95,7 @@ def post_transform(topology: Box) -> None:
   log.exit_on_error()
   
   augment.links.cleanup(topology)
+  augment.groups.cleanup(topology)
   for remove_attr in ['Plugin','pools','_Providers']:
     topology.pop(remove_attr,None)
 
