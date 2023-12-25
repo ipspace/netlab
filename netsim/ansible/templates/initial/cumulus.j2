@@ -35,56 +35,6 @@ sort /tmp/hosts|uniq >>/etc/hosts
 # Disable ZTP
 #
 ztp --disable
-{% else %}
-echo "INIT: recreating /etc/network/interfaces"
-{#
-  DHCP in Cumulus containers is becoming a ever-more-complex mess whenever
-  I update Ubuntu 20.04 LTS -- right now 'ifreload -a' fails because another
-  daemon continuously tries to do something to the network interfaces.
-  
-  Here's the current approach to survive through that mess:
-  
-  * Change /etc/network/interfaces to disable DHCP on management interface
-  * Wait for firstboot processes to disappear
-  * Kill any DHCP clients
-  * At that time there might be more firstboot processes, but we're ignoring them
-  * Keep reloading interfaces until it succeeds
-  * Move on with the rest of the configuration
-#}
-cat >/etc/network/interfaces <<CONFIG
-auto lo
-iface lo inet loopback
-
-auto mgmt
-iface mgmt
-    vrf-table auto
-
-auto eth0
-iface eth0 inet static
-    address {{ mgmt.ipv4 }}
-    vrf mgmt
-
-source /etc/network/interfaces.d/*.intf
-CONFIG
-#
-echo "INIT: waiting for firstboot processing to finish"
-while [ -n "$(pgrep -f firstboot)" ]; do
-  logger "Waiting for firstboot to finish"
-  ps -ef|grep firstboot|logger
-  sleep 1
-done
-#
-echo "INIT: Kill DHCP clients"
-if [ -n "$(pgrep -f dhclient)" ]; then
-  echo "INIT: killing dhclient"
-  kill -9 $(pgrep -f dhclient)
-fi
-#
-echo "INIT: disabling DHCP on eth0"
-until ifreload -a; do
-  logger "ifreload failed, retrying"
-  sleep 1
-done
 {% endif %}
 #
 #
@@ -116,10 +66,9 @@ cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
 {{ loopback_interface(l.ifname,l,True) }}
 {% endfor %}
 CONFIG
-ps -ef
 #
 until ifreload -a; do
-  sleep 10
+  sleep 1
 done
 #
 echo "INIT: creating other interface"
@@ -146,7 +95,9 @@ iface {{ l.ifname }}
 CONFIG
 #
 echo "INIT: executing ifreload"
-ifreload -a
+until ifreload -a; do
+  sleep 1
+done
 #
 # For whatever crazy reason, I had to enable IPv6 in containers
 #
