@@ -1,0 +1,48 @@
+message: |
+  The device under test has two user VRFs and a common services VRF. The
+  lab tests inter-VRF route leaking between common VRF and other VRFs
+
+  * h1 and h2 should be able to ping srv but not each other
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, srv ]
+    device: linux
+  routers:
+    members: [ rtr ]
+    module: [ vrf ]
+
+vrfs:
+  red:
+    import: [ red, common ]
+    links: [ rtr-h1 ]
+  blue:
+    import: [ blue, common ]
+    links: [ rtr-h2 ]
+  common:
+    import: [ red, blue, common ]
+    links: [ rtr-srv ]
+
+validate:
+  red:
+    description: h1 trying to reach srv
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A srv
+    valid: |
+      "64 bytes" in stdout
+  blue:
+    description: h2 trying to reach srv
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A srv
+    valid: |
+      "64 bytes" in stdout
+  s2s:
+    description: h1 should not be able to reach h2
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A h2 || true"
+    valid: |
+      "0 packets received" in stdout

@@ -1,11 +1,13 @@
 message: |
-  The device under test has two VRFs with two interfaces in each VRF.
+  The lab tests the basic VRF lite functionality: the device under
+  test has two VRFs with two interfaces in each VRF.
 
   * h1 and h2 should be able to ping each other
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
 
 groups:
+  _auto_create: True
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
@@ -19,4 +21,25 @@ vrfs:
   blue:
     links: [ rtr-h2, rtr-h4 ]
 
-nodes: [ rtr, h1, h2, h3, h4 ]
+validate:
+  red:
+    description: Ping-based reachability test in VRF red
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h3
+    valid: |
+      "64 bytes" in stdout
+  ping_blue:
+    description: Ping-based reachability test in VRF blue
+    nodes: [ h2 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h4
+    valid: |
+      "64 bytes" in stdout
+  inter_vlan:
+    description: Ping-based isolation test between blue and red VRF
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A h4 || true"
+    valid: |
+      "0 packets received" in stdout

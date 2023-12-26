@@ -12,16 +12,20 @@ groups:
   ce_ospf:
     members: [ r1,r3  ]
     module: [ ospf ]
+    device: cumulus
   ce_bgp:
     members: [ r2,r4  ]
     module: [ bgp ]
+    device: cumulus
   pe:
     members: [ rtr ]
     module: [ vrf, ospf,bgp ]
 
 vrfs:
   red:
+    links: [ rtr-r1, rtr-r2 ]
   blue:
+    links: [ rtr-r3, rtr-r4 ]
 
 nodes:
   rtr:
@@ -33,12 +37,27 @@ nodes:
   r4:
     bgp.as: 65101
 
-links:
-- rtr: { vrf: red }
-  r1:
-- rtr: { vrf: red } 
-  r2:
-- rtr: { vrf: blue }
-  r3:
-- rtr: { vrf: blue }
-  r4:
+validate:
+  red:
+    description: Ping-based reachability test in VRF red
+    wait: 20
+    wait_msg: Waiting for BGP and OSPF to start
+    nodes: [ r1 ]
+    devices: [ cumulus ]
+    exec: ping -c 5 -W 1 -A r2
+    valid: |
+      "64 bytes" in stdout
+  blue:
+    description: Ping-based reachability test in VRF blue
+    nodes: [ r3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A r4
+    valid: |
+      "64 bytes" in stdout
+  inter_vrf:
+    description: Ping-based isolation test between blue and red VRF
+    nodes: [ r1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A r4 || true"
+    valid: |
+      "0 packets received" in stdout or "Network is unreachable" in stdout
