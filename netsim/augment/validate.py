@@ -9,6 +9,46 @@ from .. import data
 import typing
 
 '''
+validate_test_entry: Check if the test makes sense
+
+* Every test should have 'wait', 'show', or 'exec' option
+* Tests with 'show' option should have 'valid' option
+* Tests with 'valid' option should have 'show' or 'exec' option
+'''
+
+def validate_test_entry(v_entry: Box, topology: Box) -> bool:
+  action_OK = False
+  for kw in ('show','exec','wait'):
+    action_OK = action_OK or kw in v_entry
+
+  if not action_OK:                                     # Test should have at least one of show/exec/wait
+    log.error(
+          f'Test {v_entry.name} should have wait, show, or exec option',
+          category=log.MissingValue,
+          module='validation')
+    return False
+
+  if 'show' in v_entry and 'valid' not in v_entry:      # A test with 'show' must also have 'valid'
+    log.error(
+          f'Test {v_entry.name} has a "show" option but no "valid" option',
+          category=log.MissingValue,
+          module='validation')
+    return False
+
+  if 'valid' not in v_entry:                            # A test does not have 'valid' option, no further validation needed
+    return True
+
+  for kw in ('show','exec'):                            # If we know how to get results to validate, we're OK
+    if kw in v_entry:
+      return True
+
+  log.error(
+        f'Test {v_entry.name} has a "valid" option but no "show" or "exec" option',
+        category=log.MissingValue,
+        module='validation')                            # OOPS, we have no action that would produce a result to validate
+  return False
+
+'''
 calculate_device_support: Figure out which devices are supported by the current validation test
 
 If the validation entry includes 'devices' we're good to go -- hopefully the topology creator
@@ -17,6 +57,9 @@ entries and do an intersectiion with the 'valid' entry
 '''
 
 def calculate_device_support(v_entry: Box, topology: Box) -> bool:
+  if 'show' not in v_entry and 'exec' not in v_entry:
+    return True
+
   if 'devices' in v_entry:                            # Validation entry has an explicit list of supported devices
     return True                                       # ... nothing to do here
   
@@ -56,6 +99,9 @@ def process_validation(topology: Box) -> None:
 
   for t_name,v_entry in topology.validate.items():          # Iterate over test dictionary
     v_entry.name = t_name                                   # Copy test name into test entry
+    if not validate_test_entry(v_entry,topology):           # ... check whether the test makes sense
+      continue
+
     calculate_device_support(v_entry,topology)              # ... and calculate supported devices
 
   topology.validate = list(topology.validate.values())      # Finally, turn validation dictionary into a list

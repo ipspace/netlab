@@ -20,6 +20,7 @@ options:
                         Transformed topology snapshot file
   --list                List validation tests
   --node NODES          Execute validation tests only on selected node(s)
+  --skip-wait           Skip the waiting period
 ```
 
 ## Example

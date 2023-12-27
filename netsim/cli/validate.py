@@ -46,6 +46,10 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='nodes', action='store',
     help='Execute validation tests only on selected node(s)')
   parser.add_argument(
+    '--skip-wait',
+    dest='nowait', action='store_true',
+    help='Skip the waiting period')
+  parser.add_argument(
     dest='tests', action='store',
     nargs='*',
     help='Validation test(s) to execute (default: all)')
@@ -81,7 +85,7 @@ def p_test_header(v_entry: Box,topology: Box) -> None:
   p_status(v_entry.name,"bright_cyan",topology)
   print(
     v_entry.get('description','Starting test') + \
-    f' [ node(s): {",".join(v_entry.nodes)} ]')
+    (f' [ node(s): {",".join(v_entry.nodes)} ]' if v_entry.nodes else ''))
 
 # Print generic "test failed" message
 #
@@ -226,10 +230,10 @@ find_test_action -- find something that can be executed on current node
 * If everything fails, return None (nothing usable for the current node)
 '''
 def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
-  for kw in ('show','exec'):
+  for kw in ('show','exec','wait'):
     if not kw in v_entry:
       continue
-    if isinstance(v_entry[kw],str):
+    if isinstance(v_entry[kw],(str,int)):
       return kw
     if node.device in v_entry[kw]:
       return kw
@@ -284,14 +288,17 @@ def execute_validation_test(
   ret_value = None
 
   p_test_header(v_entry,topology)                 # Print test header
-  if 'wait' in v_entry:
+  if 'wait' in v_entry and not args.nowait:
     wait_before_testing(v_entry,start_time,topology)
 
   for n_name in v_entry.nodes:                    # Iterate over all specified nodes
     node = topology.nodes[n_name]
     result = data.get_empty_box()
 
-    action = find_test_action(v_entry,node)       # Find the action to show/execute
+    action = find_test_action(v_entry,node)       # Find the action to show/execute/wait
+    if action == 'wait':                          # Skip tests with pure wait action
+      continue                                    # ... note that wait is the last action keyword considered
+
     if action is None:                            # None found, skip this node
       log_info(
         f'Test action not defined for device {node.device} / node {n_name}',
@@ -328,21 +335,23 @@ def execute_validation_test(
         OK = None
       else:
         try:                                      # Otherwise try to evaluate the validation expression
+          result.result = result
           result.re = re                          # Give validation expression access to 're' module
           OK = eval(v_test,{'__builtins__': {}},result)
           if OK is None:
             OK = False
-          result.pop('re')
         except Exception as ex:                   # ... and failure if the evaluation failed
           if args.verbose >= 2:
             print(f'... evaluation error: {ex}')
           OK = False
 
-      if not OK or args.verbose >= 2:              # Validation expression failed or we're extra verbose
+      if not OK or args.verbose >= 2:             # Validation expression failed or we're extra verbose
         if args.verbose > 0:
           if v_test:
             print(f'Test expression: {v_test}\n')
             print(f'Evaluated result {OK}')
+          for kw in ('re','result'):              # Remove stuff that will crash JSON serialization
+            result.pop(kw,None)
           print(f'Result received from {n_name}\n{"-" * 80}\n{result.to_json()}\n')
 
       if OK is not None and not OK:               # We have a real result (not skipped) that is not OK

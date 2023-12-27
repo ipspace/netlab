@@ -25,6 +25,13 @@ You can also set these test string attributes to prettify the test results:
 
 The **show**, **exec**, and **valid** parameters can be strings or dictionaries. If you're building a lab that will be used with a single platform, specify them as strings; if you want to be able to execute tests on different platforms, specify a dictionary of commands and Python validation snippets. The values of these parameters can be Jinja2 expressions (see [](validate-multi-platform) for more details).
 
+**Notes:**
+
+* Every test entry should have **show**, **exec** or **wait** parameter.
+* A test entry with just the **wait** parameter is valid and can be used to delay the test procedure.
+* Test entries with **show** parameter must have **valid** expression.
+* Test entries with **valid** expression must have either **show** or **exec** parameter.
+
 (validate-simple)=
 ## Simple Example
 
