@@ -56,7 +56,10 @@ def create_node_dict(nodes: Box) -> Box:
     if ndata is None:
       ndata = data.get_box({'name': name})
     elif not isinstance(ndata,dict):
-      log.error(f'Node data for node {name} must be a dictionary')
+      log.error(
+        text=f'Node data for node {name} must be a dictionary',
+        category=log.IncorrectType,
+        module='nodes')
       node_dict[name] = { 'name': name, 'extra': ndata }
       ndata = node_dict[name]
     else:

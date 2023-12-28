@@ -68,7 +68,7 @@ def wrong_type_message(
 
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
-  ctxt = ''
+  ctxt = []
   exp_type = err_stat.get('_type','UnSpec')             # _type should be set to expected type on type validation error
   expected = exp_type
 
@@ -78,7 +78,7 @@ def wrong_type_message(
   if '_help' in err_stat:                               # Did the validation function specify extra help?
     if exp_type not in _wrong_type_help:                # Did we print this help before? Adjust context if not
       help = err_stat.get("_help")
-      ctxt = f'\n... FYI: {exp_type} is {help}{ctxt}'
+      ctxt.append(f'FYI: {exp_type} is {help}')
       _wrong_type_help[exp_type] = help
 
   if '_value' in err_stat:                             # _value contains explanation why the value is incorrect
@@ -86,7 +86,7 @@ def wrong_type_message(
   else:
     if isinstance(context,dict) and '_alt_types' in context:
       expected += err_add_alt_types(context)
-      ctxt = ''
+      ctxt = []
     expected += f', found {wrong_type}'                 # A more generic message, add wrong type
 
   if 'NOATTR:' in path:                                 # Deal with values that are not attributes
@@ -102,15 +102,16 @@ def wrong_type_message(
 
     hint_id = err_stat.get('_hint_id') or 'SomeHint'    # ... just in case we have some weird value in the hint ID
     if not _attr_help_cache.hints[hint_id]:             # Did we already display this hint?
-      ctxt += "\n... "+err_stat.get('_hint','')         # ... nope, time to do it now
+      ctxt.append(err_stat.get('_hint',''))             # ... nope, time to do it now
       _attr_help_cache.hints[hint_id] = err_stat.get('_hint','')
   else:
-    ctxt += attr_help(module,data_name)
+    ctxt.append(attr_help(module,data_name))
 
   log.error(
-    f'{path} must be {expected}{ctxt}',
-    log.IncorrectValue if '_value' in err_stat else log.IncorrectType,
-    module or 'topology')
+    text=f'{path} must be {expected}',
+    category=log.IncorrectValue if '_value' in err_stat else log.IncorrectType,
+    module=module or 'topology',
+    more_hints=ctxt)
   return
 
 #
@@ -165,7 +166,7 @@ def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> 
 
   # Looks like we passed all sanity checks, return (hopefully useful) extra information
   #
-  return f"\n... use 'netlab show attributes{' --module '+module if module else ''}" + \
+  return f"use 'netlab show attributes{' --module '+module if module else ''}" + \
          f"{' ' + attr_type if attr_type else ''}' to display valid attributes"
 
 def check_valid_values(
@@ -190,10 +191,12 @@ def check_valid_values(
   path = get_element_path(path,key)
   if '_raw_status' not in context and '_silent' not in context:
     log.error(
-      f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}' + \
-        attr_help(module,data_name),
-      log.IncorrectValue,
-      module or 'topology')
+      text=f'attribute {path} has invalid value(s): {value}',
+      more_hints=[
+        f'valid values are: {",".join(expected)}',
+        attr_help(module,data_name)],
+      category=log.IncorrectValue,
+      module=module or 'topology')
 
   if context.get('_abort',False):
     raise log.IncorrectValue()

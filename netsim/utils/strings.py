@@ -6,9 +6,12 @@ import typing
 from box import Box,BoxList
 import rich.console, rich.table, rich.json, rich.syntax
 
-rich_console: rich.console.Console
-rich_console = rich.console.Console()
-rich_stderr  = rich.console.Console(stderr=True)
+rich_console   = rich.console.Console()
+rich_stderr    = rich.console.Console(stderr=True)
+rich_color     = rich_console.color_system is not None
+rich_err_color = rich_stderr.color_system is not None
+rich_width     = rich_console.size.width if rich_color else 80
+rich_err_width = rich_stderr.size.width if rich_err_color else 80
 
 ruamel_attrs: typing.Final[dict] = {'version': (1,1)}
 
@@ -35,15 +38,51 @@ def pretty_print(txt: str, fmt: str) -> None:
     except:
       rich_console.out(txt)
 
-def extra_data_printout(s : str, width: int = 70) -> str:
+"""
+Given a string, split it into lines, and wrap each line to specified width.
+Use custom lead-in for first and subsequent lines (default: none).
+"""
+def wrap_text_into_lines(
+      s : str,
+      width: int = 90,
+      first_line: str = '',
+      next_line: str = '') -> list:
   lines = []
   for line in s.split('\n'):
-    lines.append(textwrap.TextWrapper(
-      initial_indent="... ",
-      subsequent_indent="      ",
-      width=width).fill(line))
+    wrap_line = textwrap.TextWrapper(
+      initial_indent=first_line,
+      subsequent_indent=next_line,
+      width=width).fill(line)
+    lines.extend(wrap_line.split('\n'))
+  
+  return lines
 
+"""
+Given a string, generate the traditional "extra data" printout:
+
+* Text is wrapped to specified width
+* First line is prepended with ..., others with four spaces to
+  keep alignment
+"""
+def extra_data_printout(
+      s : str,
+      width: int = 70,
+      first_line: str = '... ',
+      next_line: str = '    ') -> str:
+  lines = wrap_text_into_lines(s,width,first_line,next_line)
   return "\n".join(lines)
+
+"""
+Pad text to specified width
+"""
+def pad_text(t: str, w: int = 10) -> str:
+  return (t + " " * w)[0:w]
+
+"""
+Generate error label of specified width (default: 10)
+"""
+def pad_err_code(t: str, w: int = 10) -> str:
+  return pad_text(f"[{t}]",w)
 
 def format_structured_dict(d: Box, prefix: str = '') -> str:
   lines = []
