@@ -24,7 +24,7 @@ BGP_SESSIONS = ['ibgp','ebgp']
 
 _ERROR_LOG: list = []
 
-err_class_map = {
+err_class_map = {                       # Map error classes into short error codes
   'MissingDependency':  'DEPEND',
   'MissingValue':       'MISSING',
   'IncorrectValue':     'VALUE',
@@ -60,54 +60,65 @@ class ErrorAbort(Exception):
 
 _error_header_printed: bool = False
 
+"""
+Print "errors found in _topologyname_" error header
+"""
 def print_error_header() -> None:
   global _error_header_printed
-  if _error_header_printed:
+  if _error_header_printed:                     # Header already printed, get out
     return
   
   try:
     from ..data import global_vars
-    topology = global_vars.get_topology()
+    topology = global_vars.get_topology()       # Get a pointer to topology
     if not topology:
       return
 
-    if topology.input:
+    if topology.input:                          # If we know where we got the topology from, print the error message
       toponame = os.path.basename(topology.input[0])
-      if rich_err_color:
+      if rich_err_color:                        # Error is going to terminal with color capabilities
         print_colored_text(pad_err_code('ERRORS'),'red',stderr=True)
         print(f'Errors found in {toponame}',file=sys.stderr)
-      else:
+      else:                                     # Plain old teletype (or file), print error message
         print(f'Errors encountered while processing {toponame}',file=sys.stderr)
       _error_header_printed = True
   except:
     pass
 
+"""
+Print the final error message and abort
+"""
 def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
   global _ERROR_LOG
 
   err_line = f'Fatal error in {module}: {text}'
   _ERROR_LOG.extend(err_line.split("\n"))
 
-  if RAISE_ON_ERROR:
+  if RAISE_ON_ERROR:                              # CI flag: raise exception instead of aborting
     raise ErrorAbort(text)
   else:
-    if WARNING:
+    if WARNING:                                   # CI flag: raise a warning
       warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
     else:
       print_error_header()
-      if rich_err_color:
+      if rich_err_color:                          # Color-capable terminal
         print_colored_text(pad_err_code('FATAL'),'red',stderr=True)
         if module != 'netlab':
           print(f'{module}: ',end='',file=sys.stderr)
         print(text,file=sys.stderr)
-      else:
+      else:                                       # ... or teletype/file
         print(err_line,file=sys.stderr)
     sys.exit(1)
 
 """
-Display an error message, including error category, calling module and optional hint
-"""
+Generic hint-processing function:
 
+* Calculate terminal width
+* If needed, wrap hint string into lines
+* Cleanup hint list (some callers might be lazy and pass empty hints)
+* Append hints to error log (needed for CI test cases), then print them to
+  terminal or file
+"""
 def print_more_hints(
       h_list: typing.Union[list,str],   # Hint split into lines
       h_name: str='HINT',               # Hint header
@@ -129,31 +140,35 @@ def print_more_hints(
   global _ERROR_LOG
   h_first = True
   for line in h_list:
-    _ERROR_LOG.append(f"... {line}")
+    _ERROR_LOG.append(f"... {line}")                        # Convention: hints in traditional output are prefaced with ...
     if rich_err_color:
-      if h_first:
+      if h_first:                                           # First hint line on color-capable TTY: print hint header
         print_colored_text(pad_err_code(h_name),h_color,stderr=True)
         print(line,file=sys.stderr)
         h_first = False
       else:
-        print(" "*10+line,file=sys.stderr)
+        print(" "*10+line,file=sys.stderr)                  # Otherwise print another line indented to align with the previous one
     else:
-      print(f"... {line}",file=sys.stderr)
+      print(f"... {line}",file=sys.stderr)                  # Teletype/file, just print the line
+
+"""
+Display an error message, including error category, calling module and optional hints
+"""
 
 def error(
-      text: str,
-      category: typing.Type[Warning] = UserWarning,
-      module: str = 'topology',
-      hint: typing.Optional[str] = None,
-      more_hints: typing.Optional[typing.Union[str,list]] = None,
+      text: str,                                                    # Error text
+      category: typing.Type[Warning] = UserWarning,                 # Category (must be one of the classes defined above)
+      module: str = 'topology',                                     # Module generating the error
+      hint: typing.Optional[str] = None,                            # Pointer to a static hint
+      more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
       more_data: typing.Optional[typing.Union[str,list]] = None) -> None:
 
   global _ERROR_LOG,err_class_map
   err_name = category.__name__
   err_line = f'{err_name} in {module}: {text}'
-  _ERROR_LOG.extend(err_line.split("\n"))
+  _ERROR_LOG.extend(err_line.split("\n"))                           # Append traditional error line to the CI error log
 
-  if WARNING:
+  if WARNING:                                                       # CI flag: raise warning during pytest
     warnings.warn_explicit(text,category,filename=module,lineno=len(_ERROR_LOG))
     return
   else:
@@ -164,29 +179,29 @@ def error(
     else:
       print(err_line,file=sys.stderr)
 
-  if more_hints is not None:
+  if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
     print_more_hints(more_hints)
 
-  if more_data is not None:
+  if more_data is not None:                                         # Caller supplied data, print it with DATA label
     print_more_hints(more_data,'DATA','bright_black')
 
-  if hint is None:                                  # No extra hints
+  if hint is None:                                                  # No pointers to static hints
     return
 
   from ..data.global_vars import get_topology
   from .strings import extra_data_printout
 
   topology = get_topology()
-  if topology is None:                              # No valid topology ==> no hints
+  if topology is None:                                              # No valid topology ==> no static hints
     return
 
-  mod_hints = topology.defaults.hints[module]       # Get hints for current module
+  mod_hints = topology.defaults.hints[module]                       # Get static hints for current module
 
-  if mod_hints[hint]:
-    hint_printout = extra_data_printout(mod_hints[hint],width=90)
+  if mod_hints[hint]:                                               # Do we know what to do?
+    hint_printout = extra_data_printout(mod_hints[hint],width=90)   # Format the hint for traditional printout
     _ERROR_LOG.extend(hint_printout.split("\n"))
     if rich_err_color:
-      hint_lines = extra_data_printout(mod_hints[hint],width=70,first_line='',next_line='').split('\n')
+      hint_lines = wrap_text_into_lines(mod_hints[hint],width=min(rich_err_width-10,100))
       print_more_hints(hint_lines,'HINT','green')
     else:
       print(hint_printout,file=sys.stderr)

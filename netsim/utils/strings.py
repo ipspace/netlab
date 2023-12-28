@@ -38,14 +38,10 @@ def pretty_print(txt: str, fmt: str) -> None:
     except:
       rich_console.out(txt)
 
-def extra_data_printout(
-      s : str,
-      width: int = 70,
-      first_line: str = '... ',
-      next_line: str = '    ') -> str:
-  lines = wrap_text_into_lines(s,width,first_line,next_line)
-  return "\n".join(lines)
-
+"""
+Given a string, split it into lines, and wrap each line to specified width.
+Use custom lead-in for first and subsequent lines (default: none).
+"""
 def wrap_text_into_lines(
       s : str,
       width: int = 90,
@@ -61,9 +57,30 @@ def wrap_text_into_lines(
   
   return lines
 
+"""
+Given a string, generate the traditional "extra data" printout:
+
+* Text is wrapped to specified width
+* First line is prepended with ..., others with four spaces to
+  keep alignment
+"""
+def extra_data_printout(
+      s : str,
+      width: int = 70,
+      first_line: str = '... ',
+      next_line: str = '    ') -> str:
+  lines = wrap_text_into_lines(s,width,first_line,next_line)
+  return "\n".join(lines)
+
+"""
+Pad text to specified width
+"""
 def pad_text(t: str, w: int = 10) -> str:
   return (t + " " * w)[0:w]
 
+"""
+Generate error label of specified width (default: 10)
+"""
 def pad_err_code(t: str, w: int = 10) -> str:
   return pad_text(f"[{t}]",w)
 
