@@ -98,7 +98,7 @@ def attributes(topology: Box) -> None:
   defaults=topology.defaults
 
   for modname,moddata in defaults.items():                            # Iterate over top-level defaults
-    if not isinstance(moddata,Box) or not 'supported_on' in moddata:  # Skip everything that is not a module
+    if not isinstance(moddata,Box) or not 'attributes' in moddata:    # Skip everything that does not have attributes
       continue
     adjust_attributes(
       attr=moddata.attributes,
