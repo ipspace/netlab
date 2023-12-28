@@ -146,7 +146,7 @@ def error(
       module: str = 'topology',
       hint: typing.Optional[str] = None,
       more_hints: typing.Optional[typing.Union[str,list]] = None,
-      more_data: typing.Optional[list] = None) -> None:
+      more_data: typing.Optional[typing.Union[str,list]] = None) -> None:
 
   global _ERROR_LOG,err_class_map
   err_name = category.__name__
