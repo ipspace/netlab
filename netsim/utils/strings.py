@@ -10,6 +10,8 @@ rich_console   = rich.console.Console()
 rich_stderr    = rich.console.Console(stderr=True)
 rich_color     = rich_console.color_system is not None
 rich_err_color = rich_stderr.color_system is not None
+rich_width     = rich_console.size.width if rich_color else 80
+rich_err_width = rich_stderr.size.width if rich_err_color else 80
 
 ruamel_attrs: typing.Final[dict] = {'version': (1,1)}
 

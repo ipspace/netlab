@@ -9,7 +9,7 @@ import typing
 import argparse
 from box import Box
 from ..data import types as _types
-from .strings import rich_err_color,print_colored_text,pad_err_code,pad_text
+from .strings import rich_err_color,rich_err_width,print_colored_text,pad_err_code,pad_text,wrap_text_into_lines
 
 LOGGING : bool = False
 VERBOSE : int = 0
@@ -109,10 +109,17 @@ Display an error message, including error category, calling module and optional 
 """
 
 def print_more_hints(
-      h_list: list,                     # Hint split into lines
+      h_list: typing.Union[list,str],   # Hint split into lines
       h_name: str='HINT',               # Hint header
       h_color: str='green',             # Color of hint header
       cleanup: bool=True) -> None:      # Remove empty lines from hint lines?
+
+  if isinstance(h_list,str):
+    h_width = min(rich_err_width,100)
+    if rich_err_color:
+      h_width = h_width - 10
+
+    h_list = wrap_text_into_lines(h_list,width=h_width)
 
   if cleanup:
     h_list = [ line for line in h_list if line ]
@@ -138,7 +145,7 @@ def error(
       category: typing.Type[Warning] = UserWarning,
       module: str = 'topology',
       hint: typing.Optional[str] = None,
-      more_hints: typing.Optional[list] = None,
+      more_hints: typing.Optional[typing.Union[str,list]] = None,
       more_data: typing.Optional[list] = None) -> None:
 
   global _ERROR_LOG,err_class_map

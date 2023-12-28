@@ -602,7 +602,7 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         rq = rq + f' plus first-hop gateway'
       log.error(
         f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}',
-        more_data=strings.wrap_text_into_lines(f'link data: {link}'),
+        more_data=f'link data: {link}',
         category=log.IncorrectValue,
         module='links')
       continue
