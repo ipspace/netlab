@@ -36,15 +36,28 @@ def pretty_print(txt: str, fmt: str) -> None:
     except:
       rich_console.out(txt)
 
-def extra_data_printout(s : str, width: int = 70) -> str:
+def extra_data_printout(
+      s : str,
+      width: int = 70,
+      first_line: str = '... ',
+      next_line: str = '    ') -> str:
+  lines = wrap_text_into_lines(s,width,first_line,next_line)
+  return "\n".join(lines)
+
+def wrap_text_into_lines(
+      s : str,
+      width: int = 90,
+      first_line: str = '',
+      next_line: str = '') -> list:
   lines = []
   for line in s.split('\n'):
-    lines.append(textwrap.TextWrapper(
-      initial_indent="... ",
-      subsequent_indent="      ",
-      width=width).fill(line))
-
-  return "\n".join(lines)
+    wrap_line = textwrap.TextWrapper(
+      initial_indent=first_line,
+      subsequent_indent=next_line,
+      width=width).fill(line)
+    lines.extend(wrap_line.split('\n'))
+  
+  return lines
 
 def pad_text(t: str, w: int = 10) -> str:
   return (t + " " * w)[0:w]

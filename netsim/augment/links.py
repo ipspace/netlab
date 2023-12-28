@@ -601,10 +601,10 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       if get_gateway_id(link):
         rq = rq + f' plus first-hop gateway'
       log.error(
-        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}\n' + \
-        strings.extra_data_printout(f'link data: {link}',width=90),
-        log.IncorrectValue,
-        'links')
+        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}',
+        more_data=strings.wrap_text_into_lines(f'link data: {link}'),
+        category=log.IncorrectValue,
+        module='links')
       continue
 
     if not allocation_policy in IPAM_dispatch:
