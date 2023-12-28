@@ -38,10 +38,10 @@ def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
         'links')
     elif not 'node' in n:               # Do we have node name in interface data?
       log.error(                     # ... no? Too bad, throw an error
-        f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute\n' +
-        f'... found {n}',
-        log.MissingValue,
-        'links')
+        text=f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute',
+        more_data=[ f'... found {n}' ],
+        category=log.MissingValue,
+        module='links')
     elif not n.node in nodes:           # Is the node name valid?
       log.error(                     # ... it's not, get lost
         f'Interface data {link._linkname}.interfaces[{intf_cnt}] refers to an unknown node {n.node}',
@@ -822,10 +822,10 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
         if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \
             not features.initial.ipv4.unnumbered:
           log.error(
-            f'Device {ndata.device} does not support unnumbered IPv4 interfaces used on\n'+
-            f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
-            log.IncorrectValue,
-            'interfaces')
+            text=f'Device {ndata.device} does not support unnumbered IPv4 interfaces',
+            more_hints=[ f'Used on node {node} interface {ifdata.ifname} (link {ifdata.name})' ],
+            category=log.IncorrectValue,
+            module='interfaces')
       if 'ipv6' in ifdata:
         if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
             not features.initial.ipv6.lla:

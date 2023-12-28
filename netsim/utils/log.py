@@ -108,7 +108,7 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
 Display an error message, including error category, calling module and optional hint
 """
 
-def print_more_hints(h_list: list) -> None:
+def print_more_hints(h_list: list,h_name: str='HINT',h_color: str='green') -> None:
   if not h_list:
     return
 
@@ -118,7 +118,7 @@ def print_more_hints(h_list: list) -> None:
     _ERROR_LOG.append(f"... {line}")
     if rich_color:
       if h_first:
-        print_colored_text(pad_err_code('HINT'),'green')
+        print_colored_text(pad_err_code(h_name),h_color)
         print(line)
         h_first = False
       else:
@@ -131,7 +131,8 @@ def error(
       category: typing.Type[Warning] = UserWarning,
       module: str = 'topology',
       hint: typing.Optional[str] = None,
-      more_hints: typing.Optional[list] = None) -> None:
+      more_hints: typing.Optional[list] = None,
+      more_data: typing.Optional[list] = None) -> None:
 
   global _ERROR_LOG,err_class_map
   err_name = category.__name__
@@ -153,6 +154,9 @@ def error(
     more_hints = [ line for line in more_hints if line ]
     print_more_hints(more_hints)
 
+  if more_data is not None:
+    more_data =  [ line for line in more_data if line ]
+    print_more_hints(more_data,'DATA','bright_black')
   if hint is None:                                  # No extra hints
     return
 

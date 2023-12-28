@@ -41,7 +41,10 @@ def check_bgp_parameters(node: Box) -> None:
 
     for k in node.bgp.community.keys():
       if not k in ['ibgp','ebgp']:
-        log.error("Invalid BGP community setting in node %s: %s" % (node.name,k))
+        log.error(
+          text=f"Invalid BGP community setting in {k} node {node.name}",
+          category=log.IncorrectValue,
+          module='bgp')
       else:
         must_be_list(
           parent=node.bgp.community,
@@ -459,16 +462,18 @@ def process_as_list(topology: Box) -> None:
     for n in as_data.members:
       if 'as' in node_data[n]:
         log.error(
-          f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
-          log.IncorrectValue)
+          text=f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
+          category=log.IncorrectValue,
+          module='bgp')
         continue
       node_data[n]["as"] = asn
 
     for n in as_data.get('rr',{}):
       if node_data[n]["as"] != asn:
         log.error(
-          "Node %s is specified as route reflector in AS %s but is not in member list" % (n,asn),
-          log.IncorrectValue)
+          text=f"Node {n} is specified as route reflector in AS {asn} but is not in member list",
+          category=log.IncorrectValue,
+          module='bgp')
         continue
       node_data[n].rr = True
 
@@ -477,8 +482,9 @@ def process_as_list(topology: Box) -> None:
       node_as = node.bgp.get("as",None)
       if node_as and node_as != node_data[name]["as"]:
         log.error(
-          "Node %s has AS %s but is also in member list of AS %s" % (node.name,node_as,node_data[node.name]["as"]),
-          log.IncorrectValue)
+          text=f'Node {node.name} has AS {node_as} but is also in member list of AS {node_data[node.name]["as"]}',
+          category=log.IncorrectValue,
+          module='bgp')
         continue
 
       node.bgp = node_data[name] + node.bgp

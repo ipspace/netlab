@@ -149,7 +149,10 @@ def check_group_data_structure(
       gdata.members = []
 
     if grp == 'all' and gdata.members:
-      log.error(f'{grp_namespace}group "all" should not have explicit members')
+      log.error(
+        text=f'{grp_namespace}group "all" should not have explicit members',
+        category=log.IncorrectValue,
+        module='groups')
 
     must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
 
@@ -189,7 +192,10 @@ def check_group_data_structure(
     else:
       for n in gdata.members:
         if not n in topology.nodes and not n in parent.groups:
-          log.error(f'Member {n} of {grp_namespace}group {grp} is not a valid node or group name')
+          log.error(
+            text=f'Member {n} of {grp_namespace}group {grp} is not a valid node or group name',
+            category=log.IncorrectValue,
+            module='groups')
 
 '''
 Auto-create group members

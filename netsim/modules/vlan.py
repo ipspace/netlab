@@ -177,9 +177,10 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         v_attr[attr].node_set.add(obj.node)
         continue
       log.error(
-        f'VLAN {vname} used in vlan.{attr}{node_error} is not defined\n... {link}',
-        log.IncorrectValue,
-        'vlan')
+        text=f'VLAN {vname} used in vlan.{attr}{node_error} is not defined',
+        more_data=[ f'{link}' ],
+        category=log.IncorrectValue,
+        module='vlan')
       link_ok = False
 
   return link_ok
