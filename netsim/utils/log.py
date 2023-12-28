@@ -9,7 +9,7 @@ import typing
 import argparse
 from box import Box
 from ..data import types as _types
-from .strings import rich_color,print_colored_text,pad_err_code,pad_text
+from .strings import rich_err_color,print_colored_text,pad_err_code,pad_text
 
 LOGGING : bool = False
 VERBOSE : int = 0
@@ -73,7 +73,7 @@ def print_error_header() -> None:
 
     if topology.input:
       toponame = os.path.basename(topology.input[0])
-      if rich_color:
+      if rich_err_color:
         print_colored_text(pad_err_code('ERRORS'),'red',stderr=True)
         print(f'Errors found in {toponame}',file=sys.stderr)
       else:
@@ -95,11 +95,11 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
       warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
     else:
       print_error_header()
-      if rich_color:
+      if rich_err_color:
         print_colored_text(pad_err_code('FATAL'),'red',stderr=True)
         if module != 'netlab':
-          print(f'{module}: ',end='')
-        print(text)
+          print(f'{module}: ',end='',file=sys.stderr)
+        print(text,file=sys.stderr)
       else:
         print(err_line,file=sys.stderr)
     sys.exit(1)
@@ -116,15 +116,15 @@ def print_more_hints(h_list: list,h_name: str='HINT',h_color: str='green') -> No
   h_first = True
   for line in h_list:
     _ERROR_LOG.append(f"... {line}")
-    if rich_color:
+    if rich_err_color:
       if h_first:
-        print_colored_text(pad_err_code(h_name),h_color)
-        print(line)
+        print_colored_text(pad_err_code(h_name),h_color,stderr=True)
+        print(line,file=sys.stderr)
         h_first = False
       else:
-        print(" "*10+line)
+        print(" "*10+line,file=sys.stderr)
     else:
-      print(f"... {line}")
+      print(f"... {line}",file=sys.stderr)
 
 def error(
       text: str,
@@ -144,9 +144,9 @@ def error(
     return
   else:
     print_error_header()
-    if rich_color and err_name in err_class_map:
+    if rich_err_color and err_name in err_class_map:
       print_colored_text(pad_err_code(err_class_map[err_name]),'yellow',stderr=True)
-      print(f'{module}: {text}')
+      print(f'{module}: {text}',file=sys.stderr)
     else:
       print(err_line,file=sys.stderr)
 

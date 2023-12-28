@@ -6,9 +6,10 @@ import typing
 from box import Box,BoxList
 import rich.console, rich.table, rich.json, rich.syntax
 
-rich_console = rich.console.Console()
-rich_stderr  = rich.console.Console(stderr=True)
-rich_color   = rich_console.color_system is not None
+rich_console   = rich.console.Console()
+rich_stderr    = rich.console.Console(stderr=True)
+rich_color     = rich_console.color_system is not None
+rich_err_color = rich_stderr.color_system is not None
 
 ruamel_attrs: typing.Final[dict] = {'version': (1,1)}
 

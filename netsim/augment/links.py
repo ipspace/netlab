@@ -39,7 +39,7 @@ def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
     elif not 'node' in n:               # Do we have node name in interface data?
       log.error(                     # ... no? Too bad, throw an error
         text=f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute',
-        more_data=[ f'... found {n}' ],
+        more_data=[ f'found {n}' ],
         category=log.MissingValue,
         module='links')
     elif not n.node in nodes:           # Is the node name valid?
