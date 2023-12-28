@@ -6,9 +6,9 @@ import typing
 from box import Box,BoxList
 import rich.console, rich.table, rich.json, rich.syntax
 
-rich_console: rich.console.Console
 rich_console = rich.console.Console()
 rich_stderr  = rich.console.Console(stderr=True)
+rich_color   = rich_console.color_system is not None
 
 ruamel_attrs: typing.Final[dict] = {'version': (1,1)}
 
@@ -44,6 +44,12 @@ def extra_data_printout(s : str, width: int = 70) -> str:
       width=width).fill(line))
 
   return "\n".join(lines)
+
+def pad_text(t: str, w: int = 10) -> str:
+  return (t + " " * w)[0:w]
+
+def pad_err_code(t: str, w: int = 10) -> str:
+  return pad_text(f"[{t}]",w)
 
 def format_structured_dict(d: Box, prefix: str = '') -> str:
   lines = []

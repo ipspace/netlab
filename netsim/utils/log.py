@@ -9,6 +9,7 @@ import typing
 import argparse
 from box import Box
 from ..data import types as _types
+from .strings import rich_color,print_colored_text,pad_err_code,pad_text
 
 LOGGING : bool = False
 VERBOSE : int = 0
@@ -22,6 +23,16 @@ AF_LIST = ['ipv4','ipv6']
 BGP_SESSIONS = ['ibgp','ebgp']
 
 _ERROR_LOG: list = []
+
+err_class_map = {
+  'MissingDependency':  'DEPEND',
+  'MissingValue':       'MISSING',
+  'IncorrectValue':     'VALUE',
+  'IncorrectAttr':      'ATTR',
+  'IncorrectType':      'TYPE',
+  'FatalError':         'FATAL',
+  'UserWarning':        'WRONG'
+}
 
 class MissingDependency(Warning):
   pass
@@ -62,7 +73,11 @@ def print_error_header() -> None:
 
     if topology.input:
       toponame = os.path.basename(topology.input[0])
-      print(f'Errors encountered while processing {toponame}',file=sys.stderr)
+      if rich_color:
+        print_colored_text(pad_err_code('ERRORS'),'red',stderr=True)
+        print(f'Errors found in {toponame}',file=sys.stderr)
+      else:
+        print(f'Errors encountered while processing {toponame}',file=sys.stderr)
       _error_header_printed = True
   except:
     pass
@@ -80,21 +95,47 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
       warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
     else:
       print_error_header()
-      print(err_line,file=sys.stderr)
+      if rich_color:
+        print_colored_text(pad_err_code('FATAL'),'red',stderr=True)
+        if module != 'netlab':
+          print(f'{module}: ',end='')
+        print(text)
+      else:
+        print(err_line,file=sys.stderr)
     sys.exit(1)
 
 """
 Display an error message, including error category, calling module and optional hint
 """
 
+def print_more_hints(h_list: list) -> None:
+  if not h_list:
+    return
+
+  global _ERROR_LOG
+  h_first = True
+  for line in h_list:
+    _ERROR_LOG.append(f"... {line}")
+    if rich_color:
+      if h_first:
+        print_colored_text(pad_err_code('HINT'),'green')
+        print(line)
+        h_first = False
+      else:
+        print(" "*10+line)
+    else:
+      print(f"... {line}")
+
 def error(
       text: str,
       category: typing.Type[Warning] = UserWarning,
       module: str = 'topology',
-      hint: typing.Optional[str] = None) -> None:
+      hint: typing.Optional[str] = None,
+      more_hints: typing.Optional[list] = None) -> None:
 
-  global _ERROR_LOG
-  err_line = f'{category.__name__} in {module}: {text}'
+  global _ERROR_LOG,err_class_map
+  err_name = category.__name__
+  err_line = f'{err_name} in {module}: {text}'
   _ERROR_LOG.extend(err_line.split("\n"))
 
   if WARNING:
@@ -102,7 +143,15 @@ def error(
     return
   else:
     print_error_header()
-    print(err_line,file=sys.stderr)
+    if rich_color and err_name in err_class_map:
+      print_colored_text(pad_err_code(err_class_map[err_name]),'yellow',stderr=True)
+      print(f'{module}: {text}')
+    else:
+      print(err_line,file=sys.stderr)
+
+  if more_hints is not None:
+    more_hints = [ line for line in more_hints if line ]
+    print_more_hints(more_hints)
 
   if hint is None:                                  # No extra hints
     return

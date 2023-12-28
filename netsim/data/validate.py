@@ -637,9 +637,10 @@ def validate_attributes(
       continue
 
     log.error(
-      f"Invalid {data_name} attribute '{k}' found in {data_path}"+attr_help(module,data_name),
-      log.IncorrectAttr,
-      module)
+      text=f"Invalid {data_name} attribute '{k}' found in {data_path}",
+      more_hints=[ attr_help(module,data_name) ],
+      category=log.IncorrectAttr,
+      module=module)
 
 """
 init_validation: initial global variables from current topology
