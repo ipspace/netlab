@@ -74,6 +74,7 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
 
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
   else:                                                       # No snapshot file, use 'netlab create' parser
+    log.section_header('Creating','configuration files')
     topology = create.run(cli_args,'up','Create configuration files, start a virtual lab, and configure it',up_args_parser)
 
   return topology
