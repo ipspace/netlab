@@ -220,7 +220,8 @@ class Graph(_TopologyOutput):
 
     if output_format in graph_dispatch:
       if graph_dispatch[output_format](topology,graphfile,self.settings,self.format):
-        print("Created graph file %s in %s format" % (graphfile, output_format))
+        log.status_created()
+        print(f"graph file {graphfile} in {output_format} format")
     else:
       formats = ', '.join(graph_dispatch.keys())
       log.error('Unknown graph format, use one of %s' % formats,log.IncorrectValue,'graph')

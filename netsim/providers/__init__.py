@@ -148,7 +148,8 @@ class _Provider(Callback):
             text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
             module=self.provider)
 
-        print( f"Created {out_folder}/{file_name} from {template_name.replace(sys_folder,'')}, mapped to {node.name}:{mapping}" )
+        strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+        print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
       else:
         log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
 
@@ -169,7 +170,8 @@ class _Provider(Callback):
 
     _files.create_file_from_text(fname,r_text)
     if fname != '-':
-      print("Created provider configuration file: %s" % fname)
+      log.status_created()
+      print(f"provider configuration file: {fname}")
       self.post_configuration_create(topology)
     else:
       print("\n")

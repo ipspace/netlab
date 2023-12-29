@@ -7,7 +7,7 @@ from box import Box
 from . import _TopologyOutput,check_writeable
 from .. import providers
 from ..augment import nodes
-from ..utils import log
+from ..utils import log,strings
 
 def get_provider_module(topology: Box, provider: str) -> providers._Provider:
   return providers._Provider.load(provider,topology.defaults.providers[provider])
@@ -40,6 +40,7 @@ class ProviderConfiguration(_TopologyOutput):
     write_provider_file(providers.select_topology(topology,topology.provider),topology.provider,filename)
 
     for subprovider in topology[topology.provider].providers.keys():  # Iterate over subproviders
+      strings.print_colored_text('[INFO]    ','bright_cyan',alt_txt=None)
       print(f"Creating configuration file for secondary provider {subprovider}")
       write_provider_file(
         topology=providers.select_topology(topology,subprovider),

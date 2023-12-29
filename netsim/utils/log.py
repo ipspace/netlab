@@ -9,7 +9,9 @@ import typing
 import argparse
 from box import Box
 from ..data import types as _types
-from .strings import rich_err_color,rich_err_width,print_colored_text,pad_err_code,pad_text,wrap_text_into_lines
+from . import strings
+
+import rich.table
 
 LOGGING : bool = False
 VERBOSE : int = 0
@@ -76,8 +78,8 @@ def print_error_header() -> None:
 
     if topology.input:                          # If we know where we got the topology from, print the error message
       toponame = os.path.basename(topology.input[0])
-      if rich_err_color:                        # Error is going to terminal with color capabilities
-        print_colored_text(pad_err_code('ERRORS'),'red',stderr=True)
+      if strings.rich_err_color:                # Error is going to terminal with color capabilities
+        strings.print_colored_text(strings.pad_err_code('ERRORS'),'red',stderr=True)
         print(f'Errors found in {toponame}',file=sys.stderr)
       else:                                     # Plain old teletype (or file), print error message
         print(f'Errors encountered while processing {toponame}',file=sys.stderr)
@@ -101,8 +103,8 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
       warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
     else:
       print_error_header()
-      if rich_err_color:                          # Color-capable terminal
-        print_colored_text(pad_err_code('FATAL'),'red',stderr=True)
+      if strings.rich_err_color:                  # Color-capable terminal
+        strings.print_colored_text(strings.pad_err_code('FATAL'),'red',stderr=True)
         if module != 'netlab':
           print(f'{module}: ',end='',file=sys.stderr)
         print(text,file=sys.stderr)
@@ -126,11 +128,11 @@ def print_more_hints(
       cleanup: bool=True) -> None:      # Remove empty lines from hint lines?
 
   if isinstance(h_list,str):
-    h_width = min(rich_err_width,100)
-    if rich_err_color:
+    h_width = min(strings.rich_err_width,100)
+    if strings.rich_err_color:
       h_width = h_width - 10
 
-    h_list = wrap_text_into_lines(h_list,width=h_width)
+    h_list = strings.wrap_text_into_lines(h_list,width=h_width)
 
   if cleanup:
     h_list = [ line for line in h_list if line ]
@@ -141,9 +143,9 @@ def print_more_hints(
   h_first = True
   for line in h_list:
     _ERROR_LOG.append(f"... {line}")                        # Convention: hints in traditional output are prefaced with ...
-    if rich_err_color:
+    if strings.rich_err_color:
       if h_first:                                           # First hint line on color-capable TTY: print hint header
-        print_colored_text(pad_err_code(h_name),h_color,stderr=True)
+        strings.print_colored_text(strings.pad_err_code(h_name),h_color,stderr=True)
         print(line,file=sys.stderr)
         h_first = False
       else:
@@ -173,8 +175,12 @@ def error(
     return
   else:
     print_error_header()
-    if rich_err_color and err_name in err_class_map:
-      print_colored_text(pad_err_code(err_class_map[err_name]),'yellow',stderr=True)
+    if strings.rich_err_color and err_name in err_class_map:
+      err_code = err_class_map[err_name]
+      strings.print_colored_text(
+        strings.pad_err_code(err_code),
+        'red' if err_code == 'FATAL' else 'yellow',
+        stderr=True)
       print(f'{module}: {text}',file=sys.stderr)
     else:
       print(err_line,file=sys.stderr)
@@ -200,8 +206,9 @@ def error(
   if mod_hints[hint]:                                               # Do we know what to do?
     hint_printout = extra_data_printout(mod_hints[hint],width=90)   # Format the hint for traditional printout
     _ERROR_LOG.extend(hint_printout.split("\n"))
-    if rich_err_color:
-      hint_lines = wrap_text_into_lines(mod_hints[hint],width=min(rich_err_width-10,100))
+    if strings.rich_err_color:
+      l_width = min(strings.rich_err_width-10,100)
+      hint_lines = strings.wrap_text_into_lines(mod_hints[hint],width=l_width)
       print_more_hints(hint_lines,'HINT','green')
     else:
       print(hint_printout,file=sys.stderr)
@@ -216,6 +223,26 @@ def exit_on_error() -> None:
 def pending_errors() -> bool:
   global _ERROR_LOG
   return True if _ERROR_LOG else False
+
+"""
+Print colored status headers
+"""
+def status_created() -> None:
+  strings.print_colored_text('[CREATED] ','green','Created ')
+
+def status_success() -> None:
+  strings.print_colored_text('[SUCCESS] ','green','OK: ')
+
+def section_header(label: str, text: str, color: str = 'green') -> None:
+  if not strings.rich_color:
+    print(f'{label} {text}')
+  else:
+    print()
+    table = rich.table.Table(show_header=False)
+    l_width = min(strings.rich_width-2,80)
+    table.add_column(width=l_width)
+    table.add_row(f'[{color}]{label.upper()}[/{color}] {text}')
+    strings.rich_console.print(table)
 
 #
 # Logging and debugging functions

@@ -74,6 +74,7 @@ proceeding. The cleanup process will start once you press RETURN.
 ==============================================================================
 ''')
   input('Press RETURN to continue -> ')
+  log.section_header('Executing','netlab down --cleanup --force','bright_cyan')
   external_commands.run_command('netlab down --cleanup --force')
 
 def cleanup_working_directory(args: argparse.Namespace, force_cleanup: bool) -> None:
@@ -111,20 +112,22 @@ def run(cli_args: typing.List[str]) -> None:
   if args.verbose:
     log.set_logging_flags(args)
 
-  external_commands.run_probes(settings,args.provider,1)
+  log.section_header('Checking',f'{args.provider} installation')
+  external_commands.run_probes(settings,args.provider)
+
   copy_topology(args)
   force_cleanup = False
+  log.section_header('Executing','netlab up','bright_cyan')
   if not external_commands.run_command('netlab up'):
     log.error('netlab up failed, aborting',log.FatalError,'test')
     force_cleanup = True
-  elif not external_commands.run_command('netlab down'):
-    log.error('netlab down failed',log.FatalError,'test')
-    force_cleanup = True
   else:
-    print('''
-==============================================================================
-All tests succeeded. You're good to go ;))
-==============================================================================
-''')
+    log.section_header('Executing','netlab down','bright_cyan')
+    if not external_commands.run_command('netlab down'):
+      log.error('netlab down failed',log.FatalError,'test')
+      force_cleanup = True
+
+  if not force_cleanup:
+    log.section_header('Success',f'{args.provider} is installed and working correctly')
 
   cleanup_working_directory(args,force_cleanup)

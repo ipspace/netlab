@@ -30,7 +30,8 @@ def create_tool_config(tool: str, topology: Box) -> None:
   topo_data = topology.copy()
   topo_data[tool] = tdata
   Path(f'./{tool}').mkdir(exist_ok=True)
-  print(f'Created {tool} configuration directory')
+  log.status_created()
+  print(f'{tool} configuration directory')
   for config in tdata.config:
     if not 'dest' in config:
       log.error(f'No destination file specified for tool configuration\n... tool {tool}\n... config {config}')
@@ -58,7 +59,8 @@ def create_tool_config(tool: str, topology: Box) -> None:
 
     try:
       _files.create_file_from_text(fname,config_text)
-      print(f'Created {fname} {config_src}')
+      log.status_created()
+      print(f'{fname} {config_src}')
     except Exception as e:
       log.error(f'Error writing tool configuration file {fname}\n... {e}')
 

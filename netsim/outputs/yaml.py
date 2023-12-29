@@ -60,6 +60,7 @@ class YAML(_TopologyOutput):
     if outfile != '-':
       output.write(r_txt)
       _files.close_output_file(output)
-      print(f"Created transformed topology dump in {modname} format in {outfile}")
+      log.status_created()
+      print(f"transformed topology dump in {modname} format in {outfile}")
     else:
       strings.pretty_print(r_txt,r_fmt)
