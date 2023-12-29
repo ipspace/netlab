@@ -39,6 +39,8 @@ Group, node, link, interface, VLAN, and VRF attributes are augmented with module
 
 Core- or module-specific attribute types that are validated (**global**, **node**, **link**, **interface**, **pool**, **prefix**, **groups**, **vlan**, **vrf**) are specified as dictionaries of valid attributes.
 
+The keys of the data type definition dictionaries are the valid attribute names, the values are the attribute data type descriptions (see also [](dev-valid-special-keys)).
+
 For example, this is the definition of valid **gateway** attributes and their data types:
 
 ```
@@ -396,3 +398,10 @@ ospf:
 * **prefix** -- an IP prefix. It can take a True/False value and must include prefix length/subnet mask.
 * **id** (IPv4 only) -- an IPv4 address or an integer. Use **id** for parameters like OSPF areas, BGP cluster IDs, or router IDs.
 
+(dev-valid-special-keys)=
+## Special Attribute Dictionary Keys
+
+The attribute dictionaries can contain these special keys:
+
+* **_namespace**: a list of additional namespaces recognized within the object. For example, the **vlan** object can contain **link** attributes (see `netlab show attributes vlan --format yaml` for an example)
+* **_description**: object description displayed in the **netlab show attributes** printout (see `netlab show attributes _v_entry --format yaml` for an example)
