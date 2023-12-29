@@ -102,8 +102,9 @@ def run_probes(settings: Box, provider: str, step: int = 0) -> None:
   for p in settings.providers[provider].probe:
     if not test_probe(p):
       log.fatal("%s failed, aborting" % p)
-  if log.VERBOSE or step and not is_dry_run():
-    print(".. all tests succeeded, moving on\n")
+  if not is_dry_run() and not log.QUIET:
+    log.status_success()
+    print(f'{provider} installed and working correctly')
 
 def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   if exec_command is None:
@@ -112,9 +113,8 @@ def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "t
   if not run_command(exec_command):
     log.fatal(f"{exec_command} failed, aborting...",cli_command)
 
-def deploy_configs(step : int = 3, command: str = "test", fast: typing.Optional[bool] = False) -> None:
-  print_step(step,"deploying initial device configurations",spacing = True)
-  cmd = ["netlab","initial"]
+def deploy_configs(command: str = "test", fast: typing.Optional[bool] = False) -> None:
+  cmd = ["netlab","initial","--no-message"]
   if log.VERBOSE:
     cmd.append("-" + "v" * log.VERBOSE)
 
@@ -123,6 +123,9 @@ def deploy_configs(step : int = 3, command: str = "test", fast: typing.Optional[
 
   if not run_command(set_ansible_flags(cmd)):
     log.fatal("netlab initial failed, aborting...",command)
+
+  log.status_success()
+  print("Lab devices configured")
 
 def custom_configs(config : str, group: str, step : int = 4, command: str = "test") -> None:
   print_step(step,"deploying custom configuration template %s for group %s" % (config,group))

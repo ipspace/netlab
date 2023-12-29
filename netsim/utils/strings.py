@@ -3,6 +3,7 @@
 #
 import textwrap
 import typing
+import sys
 from box import Box,BoxList
 import rich.console, rich.table, rich.json, rich.syntax
 
@@ -153,9 +154,16 @@ def print_table(
 """
 colored_text: Print colored text using rich library
 """
-def print_colored_text(txt: str, color: str, stderr: bool = False) -> None:
-  global rich_console, rich_stderr
-  c = rich_stderr if stderr else rich_console
-  txt = txt.replace('[','\\[')             # Quote square brackets so they're not treated as markup
-  r_txt = f'[{color}]{txt}[/{color}]'     # Compose colored text markup
-  c.print(r_txt,end='',highlight=False)
+def print_colored_text(txt: str, color: str, alt_txt: typing.Optional[str] = '', stderr: bool = False) -> None:
+  global rich_console, rich_stderr, rich_color, rich_err_color
+  console   = rich_stderr if stderr else rich_console
+  has_color = rich_err_color if stderr else rich_color
+
+  if has_color:
+    txt = txt.replace('[','\\[')             # Quote square brackets so they're not treated as markup
+    r_txt = f'[{color}]{txt}[/{color}]'      # Compose colored text markup
+    console.print(r_txt,end='',highlight=False)
+  else:
+    if alt_txt is not None:
+      alt_txt = alt_txt or txt
+      print(alt_txt,end='',file=sys.stderr if stderr else sys.stdout)

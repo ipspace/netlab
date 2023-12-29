@@ -161,7 +161,8 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
 
   if hostvars == "min":
     write_yaml(inventory,fname,header)
-    print("Created single-file Ansible inventory %s" % fname)
+    log.status_created()
+    print(f"single-file Ansible inventory {fname}")
     return
 
   for g in inventory.keys():
@@ -169,7 +170,8 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
     if gvars:
       write_yaml(gvars,'group_vars/%s/topology.yml' % g,header)
       if not log.QUIET:
-        print("Created group_vars for %s" % g)
+        strings.print_colored_text('[GROUPS]  ','bright_cyan','Created ')
+        print(f"group_vars for {g}")
 
     if 'hosts' in inventory[g]:
       hosts = inventory[g]['hosts']
@@ -186,11 +188,13 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
 
         write_yaml(vars_host,'host_vars/%s/topology.yml' % h,header)
         if not log.QUIET:
-          print("Created host_vars for %s" % h)
+          strings.print_colored_text('[HOSTS]   ','bright_cyan','Created ')
+          print(f"host_vars for {h}")
         hosts[h] = min_host
 
   write_yaml(inventory,fname,header)
-  print("Created minimized Ansible inventory %s" % fname)
+  log.status_created()
+  print(f"minimized Ansible inventory {fname}")
 
 def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventory_file: typing.Union[str,None] = 'hosts.yml') -> None:
   if not config_file:
@@ -211,7 +215,8 @@ def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventor
 
   _files.create_file_from_text(config_file,cfg_text)
   if not log.QUIET:
-    print("Created Ansible configuration file: %s" % config_file)
+    log.status_created()
+    print(f"Ansible configuration file: {config_file}")
 
 class AnsibleInventory(_TopologyOutput):
 

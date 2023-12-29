@@ -41,6 +41,10 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     '-o','--output',
     dest='output', action='store',nargs='?',const='config',
     help='Create a directory with initial configurations instead of deploying them (default output directory: config)')
+  parser.add_argument(
+    '--no-message',
+    dest='no_message', action='store_true',
+    help=argparse.SUPPRESS)
   return parser.parse_known_args(args)
 
 def run(cli_args: typing.List[str]) -> None:
@@ -88,7 +92,7 @@ def run(cli_args: typing.List[str]) -> None:
       lab_status_change(topology,f'deploying configuration: {deploy_text}')
 
     ansible.playbook('initial-config.ansible',rest)
-    if topology:
+    if topology and not args.no_message:
       message = get_message(topology,'initial',True)
       if message:
         print(f"\n\n{message}")

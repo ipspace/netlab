@@ -186,7 +186,7 @@ def run(cli_args: typing.List[str]) -> None:
   probes_OK = True
   lab_status_change(topology,f'lab shutdown requested{" in conflicting directory" if mismatch else ""}')
   try:
-    provider_probes(topology,1)
+    provider_probes(topology)
   except:
     probes_OK = False
     if not args.force:
