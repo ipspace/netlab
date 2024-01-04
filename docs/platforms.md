@@ -88,7 +88,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | FRR | ✅[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
 | Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) |          ✅           |              ✅               |            ✅             |
 | Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats-vmx)             |
-| Juniper vPTX                                       |          ✅           | ❌                            |            ❌            |
+| Juniper vPTX                                       |          ✅           | ❌                            |            ✅            |
 | Juniper vSRX 3.0                                   |          ✅           | ✅ |            ✅[❗](caveats-vsrx)             |
 | Mikrotik RouterOS 6                                |          ✅           |              ❌               |            ❌             |
 | Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
