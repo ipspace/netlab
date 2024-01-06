@@ -7,7 +7,7 @@ import typing
 from box import Box
 
 from .. import data
-from ..utils import log
+from ..utils import log,strings
 
 """
 Get generic device attribute:
@@ -59,6 +59,16 @@ def get_device_features(node: Box, defaults: Box) -> Box:
     return data.get_empty_box()
 
   return features
+
+"""
+Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
+"""
+def get_loopback_name(node: Box, topology: Box, ifindex: int = 0) -> typing.Optional[str]:
+  lbname = get_device_attribute(node,'loopback_interface_name',topology.defaults)
+  if not lbname:
+    return None
+  
+  return strings.eval_format(lbname,{ 'ifindex': ifindex })
 
 """
 Get all device data for current provider

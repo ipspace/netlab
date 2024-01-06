@@ -35,9 +35,9 @@ features:
 
 ## Static Configuration
 
-Your device template should start with static configuration needed to make your device usable. You might want to configure all relevant parameters or rely on box-building instructions to get the initial configuration set up.
+Your device template should start with the static configuration needed to make your device usable. You might want to configure all relevant parameters or rely on box-building instructions to get the initial configuration set up.
 
-For example, Cisco IOS configuration template enables LLDP, disable DNS lookup and removes banners:
+For example, the Cisco IOS configuration template enables LLDP, disables DNS lookup, and removes banners:
 
 ```
 no ip domain lookup
@@ -78,15 +78,16 @@ interface defaults
 
 ## Loopback Configuration
 
-The device data model assumes every network device has a primary loopback interface with unspecified name (the loopback interface name should be set in the configuration template). The data model may contains these optional loopback-related parameters:
+The device data model assumes every network device has a primary loopback interface. The data model contains these loopback-related parameters:
 
-* **loopback.ipv4** -- IPv4 loopback address in CIDR format
-* **loopback.ipv6** -- IPv6 loopback address in CIDR format.
+* **loopback.ipv4** -- IPv4 loopback address in CIDR format when available.
+* **loopback.ipv6** -- IPv6 loopback address in CIDR format when available.
+* **loopback.ifname** -- Loopback interface name for devices with `loopback_interface_name` parameter.
 
 Either address family might be missing -- you have to check the presence of attributes in your configuration templates. Arista EOS example:
 
 ```
-interface Loopback0
+interface {{ loopback.ifname }}
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4 }}
 {% endif %}
@@ -98,7 +99,7 @@ interface Loopback0
 If your device does not accept interface addresses in CIDR format, use **ipaddr** filter to generate the desired address format. Cisco IOS example:
 
 ```
-interface Loopback0
+interface {{ loopback.ifname }
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
 {% endif %}
@@ -109,7 +110,7 @@ interface Loopback0
 
 ## Management Interface Configuration
 
-If you decided to run LLDP on your device (highly recommended), disable it on the management interface. The management interface name SHOULD be specified in **mgmt.ifname** parameter; use a default value just in case something went wrong. Nexus OS example:
+If you decide to run LLDP on your device (highly recommended), disable it on the management interface. The management interface name SHOULD be specified in **mgmt.ifname** parameter; use a default value just in case something went wrong. Nexus OS example:
 
 ```
 interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
@@ -119,11 +120,11 @@ interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
 
 ## Configuring Interfaces
 
-Device interfaces are specified in the **interfaces** list. Each interface might have these parameters:
+Data-plane device interfaces are specified in the **interfaces** list. Each interface might have these parameters:
 
 * **ifname** -- interface name (always present)
 * **type** -- link type, for example: `stub` (optional)
-* **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...)
+* **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...). Use this parameter to skip physical interface configuration (for example, bandwidth)
 * **role** -- link role (as set by **role** link attribute -- optional)
 * **mtu** -- interface MTU (optional)
 * **bandwidth** -- interface bandwidth (optional)
@@ -133,10 +134,10 @@ Device interfaces are specified in the **interfaces** list. Each interface might
 
 **Notes:**
 
-* You don't have to support all interface attributes, but it's highly recommended to implement interface addresses, description and MTU.
-* Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
+* You don't have to support all interface attributes, but it's highly recommended to implement interface addresses, interface description, and MTU.
+* Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for the presence of optional attributes. Try to be consistent ;)
 
-Interface part of initial device configuration template starts with a **for** loop over all configured interfaces:
+The interface part of the initial device configuration template starts with a **for** loop over all configured interfaces:
 
 ```
 {% for l in interfaces %}
@@ -172,7 +173,7 @@ interface {{ l.ifname }}
 
 ### Virtual Interfaces
 
-If you have to configure additional parameters on physical interfaces (example: choosing between switch ports and router interfaces), use **virtual_interface** parameter to decide whether to include the configuration commands related to physical interfaces. Arista EOS example:
+If you have to configure additional parameters on physical interfaces (for example, choosing between switch ports and router interfaces), use the **virtual_interface** parameter to decide whether to include the configuration commands related to physical interfaces. Arista EOS example:
 
 ```
 {% if l.virtual_interface is not defined %}
@@ -186,7 +187,7 @@ If you have to configure additional parameters on physical interfaces (example: 
 You might want to implement slightly more complex interface descriptions than what _netlab_ generates. For example:
 
 * Interface name is not set on stub interfaces.
-* You might want to add link role to the interface description.
+* You might want to add a link role to the interface description.
 
 Cisco IOS example:
 
@@ -205,7 +206,7 @@ interface {{ l.ifname }}
 
 ### Minimum Interface MTU
 
-Some devices have weird MTU rules. For example, CSR 1000V cannot set the L2 MTU below 1500 bytes or L3 MTU above 1500 bytes. You could use **min_mtu** device setting in those scenarios and generate MTU configuration accordingly.
+Some devices have weird MTU rules. For example, CSR 1000V cannot set the L2 MTU below 1500 bytes or the L3 MTU above 1500 bytes. You could use the **min_mtu** device setting in those scenarios and generate MTU configuration accordingly.
 
 Cisco IOS example:
 
@@ -225,7 +226,7 @@ interface {{ l.ifname }}
 
 ### Interface Addresses
 
-IPv4 and IPv6 interface addresses could be specified as strings in CIDR format or as boolean value if your device supports unnumbered interfaces.
+IPv4 and IPv6 interface addresses could be specified as strings in CIDR format or as boolean values if your device supports unnumbered interfaces.
 
 If your device doesn't support unnumbered IPv4 or IPv6 addresses, use a configuration template similar to this one (Linux):
 
@@ -266,7 +267,7 @@ Coping with unnumbered interfaces requires a slightly more convoluted decision t
 
 ### Setting Interface MAC Address
 
-Interface MAC address is not part of the device data model. If you have to set it (for example, Arista EOS requires a unique MAC address on every interface), use device ID (**id**) and interface index (**ifindex** in interface data) in a configuration template similar to this one:
+The interface MAC address is not part of the device data model. If you have to set it (for example, Arista EOS requires a unique MAC address on every interface), use device ID (**id**) and interface index (**ifindex** in interface data) in a configuration template similar to this one:
 
 ```
 {% for l in interfaces %}
@@ -278,9 +279,9 @@ interface {{ l.ifname }}
 
 ## Setting Static Host Names (Optional)
 
-Your device might support static host-to-address mapping. If that's the case, it's worthwhile configuring it -- users troubleshooting their configurations might appreciate seeing host names instead of IP addresses.
+Your device might support static host-to-address mapping. If that's the case, it's worthwhile configuring it -- users troubleshooting their configurations might appreciate seeing hostnames instead of IP addresses.
 
-If your device supports a single IP address associated to a statically configured host, use this template (Nexus OS):
+If your device supports a single IP address associated with a statically configured host, use this template (Nexus OS):
 
 ```
 {% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
@@ -315,7 +316,7 @@ system {
 * It skips the current device or devices that don't have IPv4 address family configured
 * For all other devices, it takes the loopback IPv4 address or the IPv4 address of the first interface and configures that as the static DNS entry.
 
-If your device supports multiple IP addresses associated with a single hostname, use this template (Cisco IOS). Take the template as-is and don't try to optimize it... it's been hard enough to make it work with Jinja2 whitespace rules ;)
+If your device supports multiple IP addresses associated with a single hostname, use this template (Cisco IOS). Take the template as-is, and don't try to optimize it... it's been hard enough to make it work with Jinja2 whitespace rules ;)
 
 ```
 {% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}

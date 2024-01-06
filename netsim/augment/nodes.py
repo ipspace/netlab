@@ -355,6 +355,14 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
             n.loopback[af] = str(prefix_list[af])
           n.af[af] = True
 
+    if n.get('role','') != 'host':
+      lbname = devices.get_loopback_name(n,topology)
+      if lbname:
+        n.loopback.ifname = lbname
+        n.loopback.ifindex = 0
+        n.loopback.type = 'loopback'
+        n.loopback.neighbors = []
+
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
 
