@@ -126,7 +126,7 @@ Get generic or per-device action from a validation entry
 * If the result of the above is not a string we have a failure, get out
 * If the resulting string contains '{{' run it through Jinja2 engine
 '''
-def get_entry_value(v_entry: Box, action: str, node: Box) -> typing.Any:
+def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typing.Any:
   n_device = node.device
   value = v_entry[action][n_device] if isinstance(v_entry[action],dict) else v_entry[action]
   if not isinstance(value,str):
@@ -134,7 +134,9 @@ def get_entry_value(v_entry: Box, action: str, node: Box) -> typing.Any:
   
   if '{{' in value:
     try:
+      node.hostvars = topology.nodes                              # Mimicking Ansible, make other node data available as 'hostvars'
       value = templates.render_template(data=node,j2_text=value)
+      node.pop('hostvars',None)                                   # ... but only while evaluating J2 template
     except Exception as ex:
       log.fatal(f'Jinja2 error rendering {value}\n... {ex}')
 #    print(f"{action} value for {node.name}: {value}")
@@ -147,8 +149,8 @@ Get the command to execute on the device in list format
 * Use 'get_entry_value' to get the action string or list
 * If we got a string, transform it into a list
 '''
-def get_exec_list(v_entry: Box, action: str, node: Box) -> list:
-  v_cmd = get_entry_value(v_entry,action,node)
+def get_exec_list(v_entry: Box, action: str, node: Box, topology: Box) -> list:
+  v_cmd = get_entry_value(v_entry,action,node,topology)
   if isinstance(v_cmd,list):
     return v_cmd
   elif isinstance(v_cmd,str):
@@ -161,7 +163,7 @@ Execute a 'show' command. The return value is expected to be parseable JSON
 '''
 def get_parsed_result(v_entry: Box, n_name: str, topology: Box) -> Box:
   node = topology.nodes[n_name]                             # Get the node data
-  v_cmd = get_exec_list(v_entry,'show',node)                # ... and the 'show' action for the current node
+  v_cmd = get_exec_list(v_entry,'show',node,topology)       # ... and the 'show' action for the current node
   err_value = data.get_box({'_error': True})                # Assume an error
 
   if not v_cmd:                                             # We should not get here, but we could...
@@ -200,7 +202,7 @@ Execute a command on the device and return stdout
 '''
 def get_result_string(v_entry: Box, n_name: str, topology: Box) -> typing.Union[bool,str]:
   node = topology.nodes[n_name]                             # Get the node data
-  v_cmd = get_exec_list(v_entry,'exec',node)                # ... and the 'exec' action for the current node
+  v_cmd = get_exec_list(v_entry,'exec',node,topology)       # ... and the 'exec' action for the current node
   if not v_cmd:                                             # We should not get here, but we could...
     log.error(
       f'Test {v_entry.name}: have no idea what command to execute on node {n_name} / device {node.device}',
@@ -308,7 +310,7 @@ def execute_validation_test(
       continue
 
     if args.verbose >= 2:                         # Print out what will be executed
-      cmd = get_entry_value(v_entry,action,node)
+      cmd = get_entry_value(v_entry,action,node,topology)
       print(f'{action} on {node.name}/{node.device}: {cmd}')
 
     if action == 'show':                          # We got a 'show' action, try to get parsed results
@@ -325,7 +327,7 @@ def execute_validation_test(
         continue
 
     if 'valid' in v_entry:                        # Do we have a validation expression in the test entry?
-      v_test = get_entry_value(v_entry,'valid',node)
+      v_test = get_entry_value(v_entry,'valid',node,topology)
       if not v_test:                              # Do we have a validation expression for the current device?
         log_info(                                 # ... nope, have to skip it
           f'Test results validation not defined for device {node.device} / node {n_name}',
@@ -439,6 +441,8 @@ def run(cli_args: typing.List[str]) -> None:
   filter_by_tests(args,topology)
   filter_by_nodes(args,topology)
   log.exit_on_error()
+
+  templates.load_ansible_filters()
 
   status = True
   cnt = 0
