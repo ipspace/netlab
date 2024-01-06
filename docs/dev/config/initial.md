@@ -131,6 +131,8 @@ Data-plane device interfaces are specified in the **interfaces** list. Each inte
 * **name** -- interface description (optional)
 * **ipv4** -- IPv4 interface address (optional)
 * **ipv6** -- IPv6 interface address (optional)
+* **_parent_intf** -- name of the parent interface of unnumbered IPv4 interfaces
+* **_parent_ipv4** -- IPv4 address of the parent interface of unnumbered IPv4 interfaces
 
 **Notes:**
 
@@ -247,7 +249,7 @@ Coping with unnumbered interfaces requires a slightly more convoluted decision t
 ```
 {% if 'ipv4' in l %}
 {%   if l.ipv4 == True %}
- ip address unnumbered Loopback 0
+ ip address unnumbered {{ l._parent_intf }}
 {%   elif l.ipv4|ipv4 %}
  ip address {{ l.ipv4 }}
 {%   else %}
@@ -263,6 +265,33 @@ Coping with unnumbered interfaces requires a slightly more convoluted decision t
 {%   else %}
 ! Invalid IPv6 address {{ l.ipv6 }}
 {%   endif %}
+```
+
+Linux-based network operating systems (FRR, Cumulus Linux) set the IPv4 address of an unnumbered IPv4 interface to the IPv4 address of the parent interface. Here's part of the template used to create `/etc/network/interfaces` file on Cumulus Linux:
+
+```
+auto {{ l.ifname }}
+{%   if l.ipv4 is defined %}
+iface {{ l.ifname }} inet static
+{%     if l.ipv4 == True %}
+{%       if l._parent_ipv4 is defined %}
+  address {{ l._parent_ipv4 }}
+{%       endif %}
+{%     else %}
+  address {{ l.ipv4 }}
+{%     endif %}
+{%   endif %}
+```
+
+This is the relevant part of the template that configures unnumbered IPv4 interfaces on FRR:
+
+```
+interface {{ l.ifname }}
+{% if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
+ ip address {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
+{% else %}
+ ! no ip address
+{% endif %}
 ```
 
 ### Setting Interface MAC Address
