@@ -30,18 +30,22 @@
 
 * Nexus OS release 9.3 runs in 6 GB of RAM (*netlab* system default).
 * Nexus OS release 10.1 requires 8 GB of RAM and will fail with a cryptic message claiming it's running on unsupported hardware when it doesn't have enough memory.
-* Nexus OS release 10.2 requires at least 10 GB of RAM and crashes when ran as an 8 GB VM.
+* Nexus OS release 10.2 requires at least 10 GB of RAM and crashes when you try to run it as an 8 GB VM.
 * To change the default amount of memory used by a **nxos** device, set the **defaults.devices.nxos.memory** parameter (in MB)[^DD]
 
 [^DD]: See [](topology/hierarchy.md) for an in-depth explanation of why attributes with hierarchical names work in *netlab*
 
 (caveats-cumulus)=
-## Cumulus Linux in ContainerLab
+## Cumulus Linux
+
+* _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux. *ifupdown2* version shipping with Cumulus Linux 4.4.0 refuses to create VLAN subinterfaces in combination with a VLAN-aware bridge. The _netlab_-generated Cumulus Linux VLAN configuration, therefore, cannot use routed subinterfaces.
+* The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
+
+### Running Cumulus Linux in Containerlab
 
 * *containerlab* could run Cumulus Linux as a [container or as a micro-VM with *firecracker*](https://containerlab.dev/manual/kinds/cvx/). The default used by *netlab* is to run Cumulus Linux as a container. To change that, add **clab.runtime** parameter to node data.
 * Cumulus Linux ran as a container might report errors related to DHCP client during initial configuration, in which case you might have to disable **apparmor** for DHCP client to get it to run. The hammer-of-Thor command to fix this problem is `sudo systemctl disable apparmor` followed by a reboot, your sysadmin friends probably have a better suggestion.
 * *netlab* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. Once Nvidia releases an official container image, change the container name with **defaults.devices.cumulus.clab.image**[^DD] parameter (or by editing the `topology-defaults.yml` file included with *netlab*).
-* The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 
 (caveats-cumulus-nvue)=
 ## Cumulus 5.0 with NVUE
