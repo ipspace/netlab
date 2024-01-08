@@ -671,6 +671,21 @@ def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
     ifdata.name = f'{node_name} -> [{",".join(list(n_list))}]'
 
 """
+set_parent_interface -- set the parent interface and IP address for the IPv4 unnumbered interfaces
+"""
+def set_parent_interface(ifdata: Box, node: Box) -> None:
+  if ifdata.get('ipv4',None) is not True:                         # We're interested only in interfaces that have...
+    return                                                        # ... ipv4 set to True
+
+  lbname = node.get('loopback.ifname',None)                       # Try to get the parent interface name
+  if lbname:                                                      # Found it, save it in an internal attribute
+    ifdata._parent_intf = lbname
+
+  lbipv4 = node.get('loopback.ipv4',None)                         # Try to get the parent IPv4 address
+  if lbipv4:                                                      # Save the parent IPv4 address (needed for static routes)
+    ifdata._parent_ipv4 = lbipv4
+
+"""
 Create node interfaces from link interfaces
 """
 def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box) -> None:
@@ -690,6 +705,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                 link_attr=link_attr_propagate.union(ndict[node].get('module',[])) - set(defaults.attributes.link_module_no_propagate),
                 ifdata=data.get_box(value))
     set_interface_name(ifdata,link,intf_cnt)
+    set_parent_interface(ifdata,ndict[node])
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
     node_intf = add_node_interface(ndict[node],ifdata,defaults)   # Attach new interface to its node
     value.ifindex = node_intf.ifindex                             # Save ifindex and ifname in link interface data
