@@ -860,17 +860,23 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
     return
 
-#  if 'vlan_name' in link:                                 # Do not try to set first-hop gateways on VLAN links, VLAN module will do that
-#    return
-
   if log.debug_active('links'):
     print(f'Set DGW for {link}')
-  if not 'gateway' in link:
+  if not 'gateway' in link:                               # No default set on the link, let's try to find one
     gateway = None
-    for ifdata in link.interfaces:
+    for ifdata in link.interfaces:                        # Iterate over all attached interfaces
+      # Is this a non-host node with an IPv4 address?
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
-        link.gateway.ipv4 = ifdata.ipv4
-        break
+        if ifdata.ipv4 is True:                           # Are we dealing with an unnumbered interface?
+          node_intf = [ intf for intf in nodes[ifdata.node].interfaces 
+                          if intf.ifindex == ifdata.ifindex and
+                          '_parent_ipv4' in intf ]        # Find corresponding node interface
+          if not node_intf:                               # Not found, this is useless
+            continue
+          link.gateway.ipv4 = node_intf[0]._parent_ipv4   # Save the parent IPv4 address, and keep going
+        else:
+          link.gateway.ipv4 = ifdata.ipv4                 # Found a usable gateway IPv4 address
+          break                                           # ... we're done; get out of here
   elif link.gateway is False:
     return
 
