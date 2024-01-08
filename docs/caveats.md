@@ -38,8 +38,12 @@
 (caveats-cumulus)=
 ## Cumulus Linux
 
-* _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux. *ifupdown2* version shipping with Cumulus Linux 4.4.0 refuses to create VLAN subinterfaces in combination with a VLAN-aware bridge. The _netlab_-generated Cumulus Linux VLAN configuration, therefore, cannot use routed subinterfaces.
 * The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
+
+_netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux. That decision results in the following restrictions:
+
+* *ifupdown2* version shipping with Cumulus Linux 4.4.0 refuses to create VLAN subinterfaces in combination with a VLAN-aware bridge. The _netlab_-generated Cumulus Linux VLAN configuration, therefore, cannot use routed subinterfaces.
+* *ifupdown2* enslaves physical ports to the bridge, and subsequently cannot configure IP addresses on physical ports. The _netlab_-generated Cumulus Linux VLAN configuration, therefore, cannot use routed native VLAN.
 
 ### Running Cumulus Linux in Containerlab
 
