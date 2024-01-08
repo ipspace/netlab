@@ -860,17 +860,22 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
     return
 
-#  if 'vlan_name' in link:                                 # Do not try to set first-hop gateways on VLAN links, VLAN module will do that
-#    return
-
   if log.debug_active('links'):
     print(f'Set DGW for {link}')
-  if not 'gateway' in link:
-    gateway = None
-    for ifdata in link.interfaces:
+  if not 'gateway' in link:                               # Do we have first-hop gateway on the link?
+    for ifdata in link.interfaces:                        # Nope, iterate over interfaces, find routers running IPv4
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
-        link.gateway.ipv4 = ifdata.ipv4
-        break
+        link.gateway.ipv4 = ifdata.ipv4                   # Remember the router's IPv4 address
+        if ifdata.ipv4 is not True:                       # ... and if it's not unnumbered
+          break                                           # ... get out, we found it
+
+    if link.get('gateway.ipv4',None) is True:             # Did we find an unnumbered IPv4 address?
+      log.error(                                          # Complain...
+        text=f'Hosts cannot be attached to subnets where all routers have unnumbered interfaces (found in {link._linkname})',
+        category=log.IncorrectValue,
+        module='links')
+      link.pop('gateway',None)                            # ... and remove it, it's useless
+
   elif link.gateway is False:
     return
 
