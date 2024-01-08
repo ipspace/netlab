@@ -1,6 +1,16 @@
 Release notes
 =============
 
+**[Release 1.7.1](release-1.7.1) (2024-01-08)**
+
+* [Automatically create nodes from group members](groups-auto-create)
+* [Add 'wait' parameter](validate-wait) to validation tests
+* Use colors in netlab up/down/test/validate printouts
+* Use color-coded error messages
+* Use the **rich** Python library to pretty-print tables, JSON, and YAML
+
+[More features...](release-1.7.1)
+
 **[Release 1.7.0](release-1.7.0) (2023-12-03)**
 
 * **[netlab validate](netlab/validate.md)** command can be used to execute [lab validation tests](topology/validate.md).

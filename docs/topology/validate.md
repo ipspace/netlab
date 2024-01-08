@@ -68,6 +68,23 @@ validate:
       "64 bytes" in stdout
 ```
 
+Alternatively, you could add a dummy test that does nothing more than wait for the control-plane protocols to stabilize:
+
+```
+validate:
+	wait:
+    description: Waiting for STP and OSPF to stabilize
+    wait: 45
+
+  ping:
+    description: Ping-based reachability test
+    nodes: [ h1,h2 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h3
+    valid: |
+      "64 bytes" in stdout
+```
+
 (validate-multi-platform)=
 ## Complex Multi-Platform Example
 
@@ -75,9 +92,9 @@ The following validation test is used on the ISP router in the [Configure a Sing
 
 ```
 session:
-  description: Check EBGP session on ISP router
+  description: Check the EBGP session on the ISP router
   fail: The EBGP session with your router is not established
-  pass: The EBGP session is in Established state
+  pass: The EBGP session is in the Established state
   nodes: [ x1 ]
   show:
     cumulus: bgp summary json
