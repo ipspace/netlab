@@ -143,6 +143,7 @@ def check_group_data_structure(
       module='groups',
       modules=g_modules,
       module_source=gm_source,
+      ignored=['_','netlab_','ansible_'],   # Ignore attributes starting with _, netlab_ or ansible_
       extra_attributes=extra)               # Allow provider- and tool-specific settings (not checked at the moment)
 
     if not 'members' in gdata:
@@ -166,6 +167,7 @@ def check_group_data_structure(
         module='groups',
         modules=g_modules,
         module_source=gm_source,
+        ignored=['_','netlab_','ansible_'],  # Ignore attributes starting with _, netlab_ or ansible_
         extra_attributes=extra)              # Allow provider- and tool-specific settings (not checked at the moment)
 
       for k in ('module','device'):          # Check that the 'module' or 'device' attributes are not in node_data

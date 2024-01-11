@@ -105,7 +105,7 @@ defaults.devices.eos.clab.image: cEOS:latest
 
 You can debug the processing of the default files with the `--debug defaults` option of the **[netlab create](netlab/create.md)** command. You could use it when creating the lab configuration files or as `netlab create --output none --debug defaults` command if you want to do the debugging without creating any output.
 
-Use the **[netlab show defaults](netlab/show.md#defaults)** command to investigate how the system defaults were augmented with the user defaults. For example, execute `netlab show defaults gateway` to inspect the settings of the **gateway** module or `netlab show defaults outputs.d2` to inspect the settings of the D2 graphing output module.
+Use the **[netlab show defaults](netlab-show-defaults)** command to investigate how the system defaults were augmented with the user defaults. For example, execute `netlab show defaults gateway` to inspect the settings of the **gateway** module or `netlab show defaults outputs.d2` to inspect the settings of the D2 graphing output module.
 
 You can also use the **[netlab inspect defaults...](netlab/inspect.md)** command after you create the lab configuration files (and the snapshot file) with the **netlab create** or **[netlab up](netlab/up.md)** command. For example, to inspect the Arista EOS device settings, use **netlab inspect defaults.devices.eos**.
 
