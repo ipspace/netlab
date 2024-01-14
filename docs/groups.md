@@ -49,7 +49,7 @@ The following groups have special meaning in *netlab*-generated Ansible inventor
 
 You can specify system-wide or [project-wide](defaults-locations) groups in user- or system defaults file(s).
 
-As expected, the default group settings are merged with the lab topology groups, and you can even use them to create new groups that are not defined in the lab topology.
+As expected, the default group settings are merged with the lab topology groups, and you can even use them to create new groups not defined in the lab topology.
 
 The only peculiarity of the default groups is the handling of group members:
 
@@ -59,6 +59,7 @@ The only peculiarity of the default groups is the handling of group members:
 
 [^DGM]: That makes it possible to have default group members not present in the lab topology.
 
+(group-node-data)=
 ## Setting Node Data in Groups
 
 Sometimes, you'd like to set a node attribute for all group members. For example, in a BGP anycast scenario, we should set **[bgp.advertise_loopback](module/bgp.md#advertised-bgp-prefixes)** to *false* on all anycast server -- they should advertise only the anycast prefix, not individual loopback prefixes. 
@@ -135,7 +136,10 @@ You can set node device type (**device** attribute) or the list of configuration
 
 The device type is copied from groups to nodes with no explicit device type. Modules listed in a group are added to modules already enabled on group members. The merging of node- and group modules takes precedence over the global (topology-level) list of modules.
 
-The following example uses this functionality to use Cumulus VX on routers advertising the anycast IP address, and to use BGP as the only configuration module on those devices.
+The following example uses this functionality to:
+
+* Use Cumulus VX on routers advertising an anycast IP address,
+* Specify BGP as the only configuration module on those devices.
 
 ```
 defaults.device: iosv
@@ -160,9 +164,10 @@ nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 * Default device type specified in **defaults.device** is copied into nodes that still have no device type (L1, L2, L3, S1)
 * Default list of modules (`module: [ bgp, ospf ]`) is copied into nodes that still have no **module** attribute (L1, L2, L3, S1).
 
-## Group Variables
+(group-ansible-vars)
+## Ansible Group Variables
 
-Group definition could include group inventory variables in the **vars** element. Group variables are a dictionary of name/value pairs:
+Group definition could include Ansible group inventory variables in the **vars** element, a dictionary of name/value pairs. The following example creates two groups (g1 and g2) and sets Ansible group variables on g2.
 
 ```
 ---
@@ -179,7 +184,13 @@ groups:
       x2: 2
 ```
 
-Group variables are stored in **group_vars** directory when **[netlab create](netlab/create.md)** creates an Ansible inventory from the topology file. They can be used as Ansible group variables, for example, in a Jinja2 template specified in the **netlab config** command.
+Group variables are stored in **group_vars** directory when **[netlab create](netlab/create.md)** creates an Ansible inventory from the topology file. The Ansible inventory group variables can then be used in Ansible playbooks and related Jinja2 templates, for example, in the [custom configuration templates](custom-config-templates.md) deployed with the **[netlab initial](netlab/initial.md)** or **[netlab config](netlab/config.md)** commands.
+
+```{warning}
+* Use this functionality only when you need custom attributes in Jinja2 templates but don't want to specify them as [valid node attributes](extend-attributes.md).
+* You cannot use Ansible group variables to overwrite node data specified in a custom group. The [group node data](group-node-data) is copied into the node data and stored in Ansible host variables.
+* Ansible inventory is not used in the **[‌netlab connect](netlab/connect.md)** command. To overwrite connection-specific variables (connection method, username, password), specify `ansible_something` or `netlab_something` variables in node data. See [Node Attributes](node-ansible-data) for more details.
+```
 
 ### Changing Group Variables for Predefined Groups
 
@@ -206,7 +217,7 @@ nodes: [ a,b,c ]
 groups.all.vars.http_server: true
 ```
 
-You could also change group variables for auto-created platform groups. For example, to change the default username Ansible uses to connect to Cumulus VX nodes, use:
+You could also change group variables for auto-created device-specific groups. For example, to change the default username used to connect to Cumulus VX nodes, use:
 
 ```
 defaults.device: cumulus
@@ -412,4 +423,4 @@ groups:
   g3: [ E, F ]
 ```
 
-The lab will contain nodes **C** and **D** running Arista EOS, and nodes **E** and **F** running Cumulus Linux.
+The lab will contain nodes **C** and **D** running Arista EOS and nodes **E** and **F** running Cumulus Linux.
