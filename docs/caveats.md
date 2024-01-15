@@ -96,12 +96,14 @@ devices.cumulus.libvirt.memory: 2048
 
 * Runs with the *CHR* image.
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
+* The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the ```/system license renew``` command.
 
 (caveats-routeros7)=
 ## Mikrotik RouterOS 7
 
 * Runs with the *CHR* image.
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
+* The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the ```/system license renew``` command.
 * At the time of the build, testing is being performed with releases **7.5** (claimed as *stable*) and **7.6beta8**. On both of them:
   * MPLS dataplane seems to have issues when using *virtio* networking, while the LDP and VPNv4 control plane work fine. With *e1000* everything works fine.
   * BGP-based route leaking is working on the control plane, but not on the dataplane.
