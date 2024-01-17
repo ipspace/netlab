@@ -41,12 +41,12 @@ def build_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
 
 def get_dockerfiles() -> dict:
   d_path = _files.get_traversable_path('package:daemons')
-  d_list = _files.get_globbed_files(d_path,'*.dockerfile')
+  d_list = _files.get_globbed_files(d_path,'*/Dockerfile')
 
   df_dict: dict = {}
 
   for d_file in d_list:
-    daemon = os.path.splitext(os.path.basename(d_file))[0]
+    daemon = os.path.basename(os.path.dirname(d_file))
     df_dict[daemon] = d_file
 
   return df_dict
