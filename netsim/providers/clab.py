@@ -89,10 +89,21 @@ def normalize_clab_filemaps(node: Box) -> None:
       continue
     filemaps.normalize_file_mapping(node,f'nodes.{node.name}',undot_key,'clab')
 
+'''
+add_daemon_filemaps: add device-level daemon_config dictionary to clab.config_templates dictionary
+'''
+
+def add_daemon_filemaps(node: Box, topology: Box) -> None:
+  if '_daemon_config' not in node:                # Does the current node need daemon-specific binds?
+    return                                        # ... nope, get out of here
+
+  node.clab.config_templates = node.clab.config_templates + node._daemon_config
+
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
+    add_daemon_filemaps(node,topology)
     normalize_clab_filemaps(node)
 
     self.create_extra_files_mappings(node,topology)

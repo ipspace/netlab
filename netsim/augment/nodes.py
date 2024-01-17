@@ -173,8 +173,20 @@ def find_node_device(n: Box, topology: Box) -> bool:
   devtype = n.device
 
   dev_def = topology.defaults.devices[devtype]
-  if not isinstance(dev_def,dict):
+  if not isinstance(dev_def,Box):
     log.fatal(f"Device data for device {devtype} must be a dictionary")
+
+  if dev_def.get('daemon',False):                 # Special handling of daemons
+    n._daemon = True                              # First, set the daemon flag so we don't have to look up the device data
+    n._daemon_parent = dev_def.daemon_parent      # Next, remember the parent device -- we need that in template search paths
+    if 'daemon_config' in dev_def:                # Does the daemon need special configuration files?
+      n._daemon_config = dev_def.daemon_config    # Yes, save it for later (clab binds or Ansible playbooks)
+
+  # Do a sanity check on _daemon_config dictionary. Remove faulty value to prevent downstream crashes
+  #
+  if '_daemon_config' in n and not isinstance(n._daemon_config,Box):
+    log.error(f"Daemon configuration files for node {n} must be a dictionary")
+    n.pop('_daemon_config',None)
 
   return True
 

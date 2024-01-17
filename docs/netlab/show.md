@@ -219,29 +219,40 @@ options:
 $ netlab show devices
 Virtual network devices supported by netlab
 
-+--------------+-----------------------------------------------+
-| device       | description                                   |
-+==============+===============================================+
-| asav         | Cisco ASAv                                    |
-| csr          | Cisco CSR 1000v                               |
-| cumulus      | Cumulus VX 4.x or 5.x configured without NVUE |
-| cumulus_nvue | Cumulus VX 5.x configured with NVUE           |
-| dellos10     | Dell OS10                                     |
-| eos          | Arista vEOS                                   |
-| fortios      | Fortinet FortiOS firewall                     |
-| frr          | FRR container                                 |
-| iosv         | Cisco IOSv                                    |
-| iosxr        | Cisco IOS XRv                                 |
-| linux        | Generic Linux host                            |
-| nxos         | Cisco Nexus 9300v                             |
-| routeros     | Mikrotik RouterOS version 6                   |
-| routeros7    | Mikrotik RouterOS version 7                   |
-| srlinux      | Nokia SR Linux container                      |
-| sros         | Nokia SR OS container                         |
-| vmx          | Juniper vMX container                         |
-| vsrx         | Juniper vSRX 3.0                              |
-| vyos         | Vyatta VyOS VM/container                      |
-+--------------+-----------------------------------------------+
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ device       ┃ description                                               ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ arubacx      │ ArubaOS-CX                                                │
+│ asav         │ Cisco ASAv                                                │
+│ csr          │ Cisco CSR 1000v                                           │
+│ cumulus      │ Cumulus VX 4.x or 5.x configured without NVUE             │
+│ cumulus_nvue │ Cumulus VX 5.x configured with NVUE                       │
+│ dellos10     │ Dell OS10                                                 │
+│ eos          │ Arista vEOS VM or cEOS container                          │
+│ fortios      │ Fortinet FortiOS firewall                                 │
+│ frr          │ FRR container                                             │
+│ iosv         │ Cisco IOSv                                                │
+│ iosxr        │ Cisco IOS XRv                                             │
+│ junos        │ Generic Juniper device (meta device, used only as parent) │
+│ linux        │ Generic Linux host                                        │
+│ nxos         │ Cisco Nexus 9300v                                         │
+│ routeros     │ Mikrotik RouterOS version 6                               │
+│ routeros7    │ Mikrotik RouterOS version 7                               │
+│ srlinux      │ Nokia SR Linux container                                  │
+│ sros         │ Nokia SR OS container                                     │
+│ vmx          │ Juniper vMX container                                     │
+│ vptx         │ Juniper vPTX                                              │
+│ vsrx         │ Juniper vSRX 3.0                                          │
+│ vyos         │ Vyatta VyOS VM/container                                  │
+└──────────────┴───────────────────────────────────────────────────────────┘
+
+Networking daemons supported by netlab
+
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ daemon ┃ description                  ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ bird   │ BIRD Internet Routing Daemon │
+└────────┴──────────────────────────────┘
 ```
 
 * Displays Arista EOS information in YAML format:
@@ -249,6 +260,16 @@ Virtual network devices supported by netlab
 ```yaml
 $ netlab show devices -d eos --format yaml
 eos: Arista vEOS VM or cEOS container
+```
+
+* Displays BIRD information in YAML format:
+
+```yaml
+$ netlab show devices -d bird --format yaml
+bird:
+  daemon: true
+  description: BIRD Internet Routing Daemon
+  parent: linux
 ```
 
 (netlab-show-images)=
