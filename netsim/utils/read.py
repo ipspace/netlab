@@ -193,6 +193,29 @@ def build_defaults_list(
   return defaults_list
 
 #
+# include_environment_defaults -- set defaults from environment variables
+#
+# * Consider all environment variables starting with NETLAB_
+# * Replace underscores with dots, turn string into lowercase
+# * Evaluate the resulting string and store the results
+
+def include_environment_defaults(topology: Box) -> None:
+  for k in os.environ:
+    v = os.environ[k]                             # Get the variable value
+    try:
+      v = eval(v,{'__builtins__': {}})            # Try to evaluate it as bool/int/whatever
+    except:
+      pass                                        # Can't do that? No harm, we'll assume it's a string
+
+    k = k.lower()                                 # Normalize to lowercase
+    if not k.startswith('netlab_'):               # Skip non-netlab variables
+      continue
+
+    k = k.replace('netlab_','',1)                 # Drop the netlab_ prefix
+    k = k.replace('_','.')                        # Replace underscores with dots
+    topology.defaults[k] = v                      # And set the value
+
+#
 # Load the topology and defaults
 #
 # * Read the topology from fname
@@ -233,6 +256,9 @@ def load(
         continue                                            # ... skip it
 
     include_defaults(topology,dfname)                       # Merge the defaults
+
+  if user_defaults or user_defaults is None:                # User defaults missing or specified?
+    include_environment_defaults(topology)                  # ... we care about user defaults, add environment vars
 
   return topology
 

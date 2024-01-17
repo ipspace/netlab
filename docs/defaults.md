@@ -31,7 +31,7 @@ defaults:
 ```
 
 ```{tip}
-If you're a novice user, tweak the defaults with the lab topology settings, and migrate them to the user defaults file when you get the desired results.
+If you're a novice user, tweak the defaults with the lab topology settings and migrate them to the user defaults file when you get the desired results.
 ```
 
 (defaults-user-file)=
@@ -100,10 +100,30 @@ defaults.devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
 defaults.devices.eos.clab.image: cEOS:latest
 ```
 
+(defaults-env)=
+## Changing Defaults with Environment Variables
+
+You can change _netlab_ defaults with environment variables starting with `netlab_` or `NETLAB_`. These environment variables are processed as follows:
+
+* Convert the variable name to lowercase.
+* Remove the `netlab_` prefix.
+* Replace underscores with dots.
+* Set the corresponding value in the topology defaults.
+
+For example, the `NETLAB_DEVICE` variable sets the **defaults.device** parameter and the `NETLAB_BGP_AS` variable sets the **defaults.bgp.as** parameter.
+
+You can use the environment variables to replace the `--device`, `--provider`, or `--set` arguments of the **netlab up** command. For example, the following command sequence starts a lab topology using Arista EOS containers:
+
+```
+$ export NETLAB_DEVICE=eos
+$ export NETLAB_PROVIDER=clab
+$ netlab up
+```
+
 (defaults-debug)=
 ## Debugging User Default Files
 
-You can debug the processing of the default files with the `--debug defaults` option of the **[netlab create](netlab/create.md)** command. You could use it when creating the lab configuration files or as `netlab create --output none --debug defaults` command if you want to do the debugging without creating any output.
+You can debug the processing of the default files with the `--debug defaults` option of the **[netlab create](netlab/create.md)** command. You could use it when creating the lab configuration files. You could also debug default settings without creating any output with the `netlab create --output none --debug defaults` command.
 
 Use the **[netlab show defaults](netlab-show-defaults)** command to investigate how the system defaults were augmented with the user defaults. For example, execute `netlab show defaults gateway` to inspect the settings of the **gateway** module or `netlab show defaults outputs.d2` to inspect the settings of the D2 graphing output module.
 
