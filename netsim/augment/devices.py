@@ -136,7 +136,7 @@ def build_module_support_lists(topology: Box) -> None:
   sets = topology.defaults
   devs = sets.devices
 
-  for dname in list(devs.keys()):                           # Iterate over all known devices
+  for dname in sorted(list(devs.keys())):                   # Iterate over all known devices
     ddata = devs[dname]
     if not 'features' in ddata:                             # Skip devices without features
       continue
@@ -167,6 +167,30 @@ def build_module_support_lists(topology: Box) -> None:
         mdata.supported_on.append(dname)
 
 """
+Merge daemons definitions into device definitions
+"""
+def merge_daemons(topology: Box) -> None:
+  if not 'daemons' in topology.defaults:
+    return
+
+  daemons = topology.defaults.daemons
+  devices = topology.defaults.devices
+
+  for dname in daemons.keys():                              # To be on the safe side...
+    if not isinstance(daemons[dname],Box):                  # ... validate daemon definition data type
+      log.fatal(f'Internal error: definition of daemon {dname} is not a dictionary')
+    if dname in devices:                                    # ... and check for duplicate names
+      log.fatal(f'Internal error: duplicate name {dname} for a device and a daemon')
+
+  for dname in list(daemons):
+    devices[dname] = daemons[dname]
+    devices[dname].daemon = True                          # Mark the device as a daemon
+    if not 'parent' in devices[dname]:
+      devices[dname].parent = 'linux'                     # Most daemons run on Linux
+
+    devices[dname].daemon_parent = devices[dname].parent  # Save the parent for future use (it is removed when merging parent device data)
+
+"""
 Initial device setting augmentation:
 
 * Build supported_on module lists
@@ -174,14 +198,15 @@ Initial device setting augmentation:
 """
 def augment_device_settings(topology: Box) -> None:
   devices = topology.defaults.devices
+
   if not isinstance(devices,Box):
     log.fatal('Internal error: defaults.devices must be a dictionary')
 
-  for dname in list(devices.keys()):                        # To be on the safe side...
+  for dname in devices.keys():                              # To be on the safe side...
     if not isinstance(devices[dname],Box):                  # ... validate device definition data type
       log.fatal(f'Internal error: definition of device {dname} is not a dictionary')
 
-
+  merge_daemons(topology)
   process_device_inheritance(topology)
   build_module_support_lists(topology)
 

@@ -42,7 +42,18 @@ class _Provider(Callback):
     return str(_files.get_moddir()) + '/' + self.get_template_path()
 
   def find_extra_template(self, node: Box, fname: str) -> typing.Optional[str]:
-    return _files.find_file(fname+'.j2',[ f'./{node.device}','.',f'{ self.get_full_template_path() }/{node.device}'])
+    path_suffix = [ node.device ]
+    path_prefix = [ '.', self.get_full_template_path() ]
+
+    if node.get('_daemon',False):
+      if '_daemon_parent' in node:
+        path_suffix.append(node._daemon_parent)
+      path_prefix.append(str(_files.get_moddir() / 'daemons'))
+
+    path = [ pf + "/" + sf for pf in path_prefix for sf in path_suffix ]
+    if log.debug_active('clab'):
+      print(f'Searching for {fname}.j2 in {path}')
+    return _files.find_file(fname+'.j2',path)
 
   def get_output_name(self, fname: typing.Optional[str], topology: Box) -> str:
     if fname:
@@ -104,8 +115,8 @@ class _Provider(Callback):
       if not self.find_extra_template(node,file):
         log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
-          log.IncorrectValue,
-          self.provider)
+          category=log.IncorrectValue,
+          module=self.provider)
         continue
 
       out_folder = f"{self.provider}_files/{node.name}"

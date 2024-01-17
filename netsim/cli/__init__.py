@@ -23,7 +23,7 @@ DRY_RUN: bool = False
 def parser_add_debug(parser: argparse.ArgumentParser) -> None:
   parser.add_argument('--debug', dest='debug', action='store',nargs='*',
                   choices=sorted([
-                    'all','addr','cli','links','libvirt','modules','plugin','template',
+                    'all','addr','cli','links','libvirt','clab','modules','plugin','template',
                     'vlan','vrf','quirks','validate','addressing','groups','status',
                     'external','defaults']),
                   help=argparse.SUPPRESS)

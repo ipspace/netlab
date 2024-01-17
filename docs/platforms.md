@@ -8,7 +8,7 @@
 
 ## Supported Virtual Network Devices
 
-*netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)). If you want to use an unsupported device in a *netlab*-managed lab, use [an unknown device](platform-unknown) or [contribute a new device implementation](dev/devices.md).
+*netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)).
 
 | Virtual network device                    | netlab device type |
 | ----------------------------------------- | ------------------ |
@@ -34,30 +34,17 @@
 | Nokia SR OS [❗](caveats-sros)            | sros               |
 | VyOS 1.4 [❗](caveats-vyos)               | vyos               |
 
+*netlab* also supports the following daemons (control-plane software running on Linux VMs or containers):
+
+| Daemon                         | netlab device type |
+| ------------------------------ | ------------------ |
+| BIRD Internet Routing Daemon   | bird               |                               
+
 **Notes:**
 
-To specify the device type of a node in your virtual lab:
-
-* Specify **device** property in node data
-
-```
-nodes:
-- name: c_ios
-  device: iosv
-- name: c_csr
-  device: csr
-```
-
-* Use **defaults.device** setting in lab topology
-
-```
-defaults:
-  device: cumulus
-
-nodes: [ s1, s2, s3 ]
-```
-
-See [lab topology overview](topology-overview.md) for more details.
+* Use the **[netlab show devices](netlab-show-devices)** command to display the list of supported devices and daemons.
+* You can specify the device type in the **device** property of the [node data](node-attributes) or the topology-wide **[defaults.device](defaults.md)** setting. See [lab topology overview](topology-overview.md) for more details.
+* If you want to use an unsupported device in a *netlab*-managed lab, use [an unknown device](platform-unknown) or [contribute a new device implementation](dev/devices.md).
 
 ## Supported Virtualization Providers
 
@@ -152,7 +139,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 ## Initial Device Configurations
 
-The following system-wide features are configured on supported network operating systems as part of initial device configuration:
+The following system-wide features are configured on supported network operating systems as part of the initial device configuration:
 
 (platform-initial-config)=
 | Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
@@ -179,7 +166,7 @@ The following system-wide features are configured on supported network operating
 | VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
 
 (platform-initial-interfaces)=
-The following interface parameters are configured on supported network operating systems as part of initial device configuration:
+The following interface parameters are configured on supported network operating systems as part of the initial device configuration:
 
 | Operating system      | Interface<br />description | Interface<br />bandwidth | MTU | Additional<br />loopbacks
 | --------------------- |:---:|:---:|:---:|:---:|
@@ -263,8 +250,14 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 **Notes:**
 * FRHP = First-Hop Redundancy Protocol (anycast gateway or VRRP)
 
+Routing protocol [configuration modules](module-reference.md) are also supported on these daemons:
+
+| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [BGP](module/bgp.md) | [BFD](module/bfd.md) | |
+|------------------------------|:--:|:--:|:--:|:--:|
+| BIRD Internet Routing Daemon | ❌  | ✅ | ❌  | ❌  |
+
 (platform-dataplane-support)=
-The following data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
+The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
 
 | Operating system      | [VLAN](module/vlan.md) | [VRF](module/vrf.md) | [VXLAN](module/vxlan.md) | [MPLS](module/mpls.md) | [SR-MPLS](module/sr-mpls.md) | [SRv6](module/srv6.md) |
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
@@ -288,7 +281,7 @@ The following data plane [configuration modules](module-reference.md) are suppor
 
 ## IPv6 Support
 
-Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully supports IPv6. OSPFv3 is implemented only on some platforms.
+Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully support IPv6. OSPFv3 is implemented only on some platforms.
 
 | Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- | :-----------------: | :----: | :------: | :----------------: | :--------------: | :-----: |

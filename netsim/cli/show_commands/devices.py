@@ -28,12 +28,23 @@ def show(settings: Box, args: argparse.Namespace) -> None:
       continue
 
     row = [ device,dev_data.description ]
+    if dev_data.daemon:
+      row[1] = {
+        'daemon': True,
+        'description': dev_data.description,
+        'parent': dev_data.daemon_parent
+      }
     rows.append(row)
-    result[device] = dev_data.description
+    result[device] = row[1]
 
   if args.format == 'table':
     print('Virtual network devices supported by netlab')
     print("")
-    strings.print_table(heading,rows,inter_row_line=False)
+    strings.print_table(heading,[ r for r in rows if isinstance(r[1],str) ],inter_row_line=False)
+    daemons = [ [ r[0],r[1]['description']] for r in rows if isinstance(r[1],dict) and r[1]['daemon'] ]
+    if daemons:
+      print('\nNetworking daemons supported by netlab\n')
+      strings.print_table(['daemon','description'],daemons,inter_row_line=False)
+
   elif args.format in ['text','yaml']:
     print(strings.get_yaml_string(result))
