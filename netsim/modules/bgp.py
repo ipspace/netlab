@@ -127,6 +127,22 @@ def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
   return {}
 
 """
+get_remote_ibgp_endpoint: find the remote endpoint of an IBGP session
+
+* Loopback interface if it exists
+* First physical interface if the remote device is a daemon without a loopback interface
+* Otherwise, an empty box (which will result in no IBGP session due to lack of IP addresses)
+"""
+def get_remote_ibgp_endpoint(n: Box) -> Box:
+  if 'loopback' in n:
+    return n.loopback
+
+  if n.get('_daemon',False) and n.interfaces:
+    return n.interfaces[0]
+
+  return data.get_empty_box()
+
+"""
 build_ibgp_sessions: create IBGP session data structure
 
 * BGP route reflectors need IBGP session with all other nodes in the same AS
@@ -141,7 +157,8 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
     for name,n in topology.nodes.items():
       if "bgp" in n:
         if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-          neighbor_data = bgp_neighbor(n,n.loopback,'ibgp',sessions,get_neighbor_rr(n))
+          n_intf = get_remote_ibgp_endpoint(n)
+          neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
           if not neighbor_data is None:
             node.bgp.neighbors.append(neighbor_data)
 
@@ -151,7 +168,8 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   else:
     for n in rrlist:
       if n.name != node.name:
-        neighbor_data = bgp_neighbor(n,n.loopback,'ibgp',sessions,get_neighbor_rr(n))
+        n_intf = get_remote_ibgp_endpoint(n)
+        neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
         if not neighbor_data is None:
           node.bgp.neighbors.append(neighbor_data)
 
