@@ -1,6 +1,10 @@
 Release notes
 =============
 
+**[Release 1.8.0](release-1.8.0) (TBD)**
+
+[More features...](release-1.8.0)
+
 **[Release 1.7.1](release-1.7.1) (2024-01-08)**
 
 * [Automatically create nodes from group members](groups-auto-create)
@@ -418,6 +422,7 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.8.md
    release/1.7.md
    release/1.6.md
    release/1.5.md

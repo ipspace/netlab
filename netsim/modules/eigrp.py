@@ -11,7 +11,7 @@ class EIGRP(_Module):
     _routing.router_id(node,'eigrp',topology.pools)
     for intf in node.get('interfaces',[]):
       if not _routing.external(intf,'eigrp'):
-        _routing.passive(intf,'eigrp')
+        _routing.passive(intf,'eigrp',topology)
 
     _routing.remove_unaddressed_intf(node,'eigrp')
     _routing.remove_vrf_interfaces(node,'eigrp')

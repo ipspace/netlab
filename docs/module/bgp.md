@@ -1,11 +1,11 @@
 # BGP Configuration Module
 
-This configuration module configures BGP routing process and BGP neighbors on most [supported platforms](platform-routing-support). The configuration module sets up BGP sessions according to these simple design rules:
+This configuration module configures the BGP routing process and BGP neighbors on most [supported platforms](platform-routing-support). The configuration module sets up BGP sessions according to these simple design rules:
 
-* EBGP sessions are established between directly-connected IP addresses on every link where the connected routers belong to different autonomous systems. Parallel sessions are established for all address families (IPv4, IPv6) configured on the link.
+* EBGP sessions are established between directly connected IP addresses on every link where the connected routers belong to different autonomous systems. Parallel sessions are established for all address families (IPv4, IPv6) configured on the link.
 * IBGP sessions are established between loopback interfaces of routers in the same autonomous system. Parallel sessions are established for all address families configured on the loopback interfaces.
 * IGBP sessions could form a full mesh (when no router reflectors are configured in the autonomous system) or a hubs-and-spokes topology with a single route reflector cluster and a full mesh of IBGP sessions between route reflectors.
-* Sessions (IBGP or EBGP) between directly-connected IP addresses are established whenever the real AS or the local AS of the devices differ, allowing you to build scenarios like IBGP-over-EBGP (EVPN design) or IBGP mesh across  multiple autonomous systems (ISP migration scenario).
+* Sessions (IBGP or EBGP) between directly connected IP addresses are established whenever the real AS or the local AS of the devices differ, allowing you to build scenarios like IBGP-over-EBGP (EVPN design) or IBGP mesh across multiple autonomous systems (ISP migration scenario).
 
 More interesting BGP topologies can be created with [custom plugins](../plugins.md).
 
@@ -85,10 +85,14 @@ bgp:
   rr_list: [ s1, s2 ]
 ```
 
-When building a more complex lab with multiple autonomous systems, you might want to use **bgp.as_list** global parameter to specify a dictionary of autonomous systems (although you could still set BGP AS numbers and RR status with node attributes). Every autonomous system in the **bgp.as_list** should have two elements:
+When building a more complex lab with multiple autonomous systems, you might want to use **bgp.as_list** -- a global parameter that specifies a dictionary of autonomous systems. Every autonomous system in the **bgp.as_list** should have two elements:
 
 * **members** -- list of nodes within the autonomous system
 * **rr** -- list of route reflectors within the autonomous system.
+
+```{tip}
+You can override the **‌bgp.as_list** settings with the node attributes.
+```
 
 For example, use the following configuration to build a core network connected to two external autonomous systems:
 
@@ -108,21 +112,21 @@ bgp:
 
 Advanced global configuration parameters include:
 
-* **bgp.community** -- configure BGP community propagation. By defaults, standard and extended communities are propagated to IBGP neighbors, and standard communities are propagated to EBGP neighbors. See *[BGP Community Propagation](#bgp-communities-propagation)* for more details.
-* **bgp.advertise_roles** -- list of link types and roles. Links matching any element of the list will be advertised into BGP. See *[Advertised BGP Prefixes](#advertised-bgp-prefixes)* for details.
+* **bgp.community** -- configure BGP community propagation. By default, standard and extended communities are propagated to IBGP neighbors, and standard communities are propagated to EBGP neighbors. See *[BGP Community Propagation](#bgp-communities-propagation)* for more details.
+* **bgp.advertise_roles** -- a list of link types and roles. Links matching any element of the list will be advertised into BGP. See *[Advertised BGP Prefixes](#advertised-bgp-prefixes)* for details.
 * **bgp.ebgp_role** -- link role set on links connecting nodes from different autonomous systems. See *[Interaction with IGP](#interaction-with-igp)* for details.
-* **bgp.advertise_loopback** -- when set to `True` (default), the loopback IP addresses of the default loopback interface and any other [loopback links](links-loopback) are advertised as a BGP prefix. Set it to `False` in global defaults or as a node setting to disable loopback prefix advertisements.
+* **bgp.advertise_loopback** -- when set to `True` (default), the loopback IP addresses of the default loopback interface and any other [loopback links](links-loopback) are advertised as a BGP prefix. Set it to `False` in global defaults or as a node attribute to turn off loopback prefix advertisements.
 
 ## Node Configuration Parameters
 
 Instead of using a global list of autonomous systems, you could specify a BGP autonomous system and route reflector role on individual nodes using these parameters:
 
 * **bgp.as**: AS number -- specified on a node, or as default global value (propagated to all nodes without a specified AS number)
-* **bgp.rr** -- the node is BGP route reflector within its autonomous system.
+* **bgp.rr** -- the node is a BGP route reflector within its autonomous system.
 
 ```{note}
-* **bgp.as** parameter *must* be specified for every node using BGP configuration module.
-* The node AS number could be derived from the global **bgp.as_list**, from the default (global) value of **bgp.as** parameter, or specified on the node itself. Explore [simple BGP example](bgp_example/simple.md) to see how you can combine global AS number with node AS number.
+* **bgp.as** parameter *must* be specified for every node using the BGP configuration module.
+* The node AS number could be derived from the global **bgp.as_list**, from the default (global) value of **bgp.as** parameter, or specified on the node itself. Explore [simple BGP example](bgp_example/simple.md) to see how to combine the global AS number with the node AS number.
 * Specifying a BGP autonomous system on individual nodes makes sense when each node uses a different BGP AS. See [EBGP leaf-and-spine fabric example](bgp_example/ebgp.md) for details.
 ```
 
@@ -130,20 +134,20 @@ Additional per-node BGP configuration parameters include:
 
 * **bgp.advertise_loopback** -- when set to `False`, the IP prefixes configured on loopback interfaces are not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[BGP Community Propagation](#bgp-communities-propagation)* for more details.
-* **bgp.local_as** -- the autonomous system to use on all EBGP sessions.
-* **bgp.next_hop_self** -- use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; system default is **true**.
+* **bgp.local_as** -- the autonomous system used on all EBGP sessions.
+* **bgp.next_hop_self** -- use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
-* **bgp.router_id** -- set static router ID. Default **router_id** is taken from the IPv4 address of the loopback interface or from the **router_id** address pool if there's no usable IPv4 address on the loopback interface.
+* **bgp.router_id** -- set static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device has no loopback interface or there's no usable IPv4 address on the loopback interface.
 
 (bgp-advanced-node)=
-Finally, BGP configuration module supports these advanced node parameters that you probably shouldn't touch without a very good reason:
+Finally, the BGP configuration module supports these advanced node parameters that you probably shouldn't touch without a very good reason:
 
-* **bgp.rr_cluster_id** -- set static route reflector cluster ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
+* **bgp.rr_cluster_id** -- set static route reflector cluster-ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
 * **bgp.replace_global_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to disable that functionality and include both autonomous systems in the AS path[^RAS_P].
 * **bgp.sessions** (node or global parameter) -- specifies which transport sessions (IPv4 and/or IPv6) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^SESS_DM]. See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
 * **bgp.activate** (node or global parameter) -- specifies which default address families (IPv4 AF on IPv4 session, IPv6 on IPv6 session) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^ACT_CFG]. See *[leaf-spine](https://github.com/ipspace/netlab/blob/dev/tests/integration/bgp/local-as/leaf-spine.yml)* local AS test case for an example.
 
-[^SESS_DM]: This parameter influences the data structures built during the data transformation phase and is thus available on all platforms supporting BGP configuration module.
+[^SESS_DM]: This parameter influences the data structures built during the data transformation phase and is thus available on all platforms supporting the BGP configuration module.
 
 [^ACT_CFG]: This parameter has to be supported by the device configuration templates and is thus not available on all platforms.
 
@@ -153,15 +157,15 @@ Finally, BGP configuration module supports these advanced node parameters that y
 
 You can set a VRF-specific BGP router ID with **bgp.router_id** VRF parameter. Use this setting when building topologies with back-to-back links between VRFs on the same device.
 
-BGP is always enabled for all VRF address families. The connected interfaces (and OSPF routes when applicable) are always redistributed into the BGP routing process. 
+BGP is always enabled for all VRF address families. The connected interfaces (and OSPF routes if you're running OSPF in the VRF) are always redistributed into the BGP routing process. 
 
-To stop the creation of VRF EBGP sessions, set **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
+To stop the creation of VRF EBGP sessions, set the **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
 
 ## Link-Level Parameters
 
 You can also use these link-level parameters to influence the BGP prefix advertisements:
 
-* **bgp.advertise** -- The link prefix will be configured with the **network** statement within the BGP process.
+* **bgp.advertise** -- The BGP process will advertise the link IP prefix.
 
 You can also [disable all EBGP sessions on a link](routing_disable).
 
@@ -187,7 +191,7 @@ The following IPv4/IPv6 prefixes are configured with **network** statements with
 
 * IPv4/IPv6 prefixes configured on the default loopback interface and [loopback links](links-loopback) unless the **bgp.advertise_loopback** is set to `False`.
 * IPv4/IPv6 prefixes from links with **bgp.advertise** parameter set to **true**.
-* Prefixes assigned to *stub* networks -- links with a single node attached to them or links with **role** set to **stub**. To prevent a stub prefix from being advertised, set **bgp.advertise** link parameter to **false**
+* Prefixes assigned to *stub* networks -- links with a single node attached to them or links with a single router or daemon attached to them (these links would have **role** set to **stub**). To prevent a stub prefix from being advertised, set **bgp.advertise** link parameter to **false**
 * IPv4 prefixes in **bgp.originate** list. Static routes to *Null0* are created for those prefixes if needed.
 
 ### Using bgp.advertise Link Attribute
@@ -214,7 +218,7 @@ links:
   pe2:
 ```
 
-* You can change the default prefix advertisement rules with the  **defaults.bgp.advertise_roles** list. The system default value of that variable is **[ stub ]**. For example, to advertise LAN (multi-access) and stub prefixes, use the following setting:
+* You can change the default prefix advertisement rules with the  **defaults.bgp.advertise_roles** list. The system default value of that variable is **[ stub ]**. For example, use the following setting to advertise LAN (multi-access) and stub prefixes.
 
 ```
 defaults:
@@ -222,9 +226,15 @@ defaults:
     advertise_roles: [ lan, stub ]
 ```
 
+```{tip}
+An IP prefix assigned to a link with the **‌role** set to **‌stub** will not be advertised in BGP if there's more than one router or daemon attached to the link. The BGP module checks only the membership in the **‌defaults.bgp.advertise_roles** list for all other values of the **‌role** attribute.
+```
+
 ### Using bgp.originate Node Attribute
 
-If you set **bgp.originate** parameter on a node, the node will advertise the prefix in to BGP via a network statement, and create a static route for the prefix with a nexthop set to *Null0*.
+If you set **bgp.originate** parameter on a node, _netlab_ adds a static route for the prefix pointing to *Null0* and configures the BGP prefix.
+
+For example, PE1 advertises `172.16.0.0/19' in the following topology. Please note that while the prefix is advertised via BGP, it has no reachable IP addresses (the BGP prefix is based on a discard-everything static route).
 
 ```
 nodes:
@@ -239,14 +249,14 @@ nodes:
 (bgp-sessions)=
 ## BGP Sessions
 
-The BGP transformation module builds a list of BGP neighbors for ever node. That list of neighbors is then used to configure BGP neighbors within the BGP routing process:
+The BGP transformation module builds a list of BGP neighbors for every node. That list of neighbors is then used to configure BGP neighbors within the BGP routing process:
 
 (bgp-ibgp-sessions)=
 **IBGP sessions**
 * If there are no route reflectors within an autonomous system (no device within the autonomous system has **bgp.rr** set to *true*), you'll get a full mesh of IBGP sessions.
 * Router reflectors have IBGP sessions to all other nodes in the same AS. When the remote node is not a router reflector, *route-reflector-client* is configured on the IBGP session.
 * Route reflector clients have IBGP sessions with route reflectors (nodes within the same AS with **bgp.rr** set).
-* IBGP sessions are established between loopback interfaces. You should combine IBGP deployment with an IGP configuration module like [OSPF](ospf.md).
+* IBGP sessions are established between loopback interfaces. You should combine IBGP deployment with an IGP configuration module like [OSPF](ospf.md). The only exception to this rule is the routing daemons running on Linux hosts/containers that have no loopback interfaces -- their IBGP sessions originate from the IP address of the first physical interface.
 * Parallel IBGP sessions are established for all IP address families configured on loopback interfaces[^BSESS]. See also [IPv6 support](#ipv6-support).
 
 [^BSESS]: If allowed by the **bgp.sessions** parameter
@@ -259,7 +269,7 @@ See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 * Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS, or IBGP sessions between nodes belonging to different AS.
 * Parallel EBGP sessions are established for all IP address families configured on the link[^BSESS]. See also [IPv6 support](#ipv6-support).
 
-See the [Simple BGP Example](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) example for more details.
+See the [Simple BGP](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) examples for more details.
 
 ### Notes on Unnumbered EBGP Sessions
 
@@ -271,22 +281,22 @@ Unnumbered EBGP sessions are supported on a few platforms. *netlab* creates an I
 
 All BGP configuration templates include IPv4 and IPv6 address family configuration. Both address families are treated identically, allowing you to build IPv4-only, IPv6-only, or dual-stack networks:
 
-* An address family (IPv4 or IPv6) is enabled within the BGP routing process as soon as the device has at least one interface with an address from that address family.
-* BGP configuration uses separate BGP sessions for IPv4 and IPv6 address families[^BSESS]. Create your own configuration templates to enable IPv6 AF over IPv4 BGP sessions or IPv4 AF over IPv6 BGP sessions.
-* Whenever an IBGP neighbor has an IPv4/IPv6 address on its loopback interface, an IBGP sessions is configured between the IPv4/IPv6 addresses, and the IPv4/IPv6 address family is enabled for that session.
-* An EBGP IPv4/IPv6 session is configured whenever a directly-connected router in another AS has an IPv4/IPv6 address on the directly-connected link.
+* An address family (IPv4 or IPv6) is enabled within the BGP routing process when the device has at least one interface with an address from that address family.
+* BGP configuration uses separate BGP sessions for IPv4 and IPv6 address families[^BSESS]. Create [custom configuration templates](../custom-config-templates.md) to enable IPv6 AF over IPv4 BGP sessions or IPv4 AF over IPv6 BGP sessions.
+* Whenever an IBGP neighbor has an IPv4 or IPv6 address on its loopback interface, an IBGP session is configured between the IPv4 or IPv6 addresses, and the IPv4 or IPv6 address family is enabled for that session.
+* An EBGP IPv4 or IPv6 session is configured whenever a directly connected router in another AS has an IPv4 or IPv6 address on the directly connected link.
 
 No additional checks are performed regarding the viability of IPv4 or IPv6 BGP sessions. For example:
 
-* You could configure IPv6 addresses on loopback interfaces, but not on P2P links. The IPv6 IBGP sessions will be configured, but won't work.
-* You could configure IPv4 and IPv6 addresses throughout the network, but use OSPFv2 as the routing protocol. EBGP IPv6 sessions will work, IBGP IPv6 sessions won't.
+* You could configure IPv6 addresses on loopback interfaces but not P2P links. The IPv6 IBGP sessions will be configured but won't work because the transport network does not support IPv6.
+* You could configure IPv4 and IPv6 addresses throughout the network but use OSPFv2 as the routing protocol. EBGP IPv6 sessions will work, but IBGP IPv6 sessions won't.
 * You could configure addresses on individual nodes connected to an inter-AS link. If you configure IPv6 addresses on some nodes but not others, the system might configure useless EBGP sessions.
 
 ## Interaction with IGP
 
-BGP transformation module can set link *role* on links used for EBGP sessions. The link role (when not specified on the link itself) is set to the value of **defaults.bgp.ebgp_role** (default system value: **external**).
+The BGP transformation module can set link *role* on links used for EBGP sessions. The link role (when not specified on the link itself) is set to the value of **defaults.bgp.ebgp_role** (default system value: **external**).
 
-**Consequence:** default settings exclude links with EBGP sessions from IGP processes. See the [Simple BGP Example](bgp_example/simple.md) for details.
+**Consequence:** The default settings exclude links with EBGP sessions from IGP processes. See the [Simple BGP Example](bgp_example/simple.md) for more details.
 
 ## BGP Communities Propagation
 
@@ -303,7 +313,7 @@ nodes:
       community: standard
 ```
 
-* A list of strings (**standard** and/or **extended**) -- all communities specified in the list will be propagated to IBGP and EBGP neighbors. Most network operating systems will be configured with **both** configuration keyword if you specify `['standard','extended']` as the value. In the following example, R1 propagates standard and extended communities to all its neighbors.
+* A list of strings (**standard**, **extended**, or both) -- all communities specified in the list will be propagated to IBGP and EBGP neighbors. Most network operating systems will be configured with the **both** configuration keyword if you specify `['standard','extended']` as the value. In the following example, R1 propagates standard and extended communities to all its neighbors.
 
 ```
 nodes:
@@ -312,7 +322,7 @@ nodes:
       community: [standard, extended]
 ```
 
-* A dictionary with two keys: **ibgp** and **ebgp**. The value of each key could be a string or a list (see above). The following example sets a network-wide default -- send standard and extended communities to IBGP neighbors, and standard communities to EBGP neighbors (this is the global default set in global **topology-defaults.yml** file).
+* A dictionary with two keys: **ibgp** and **ebgp**. The value of each key could be a string or a list (see above). The following example sets a network-wide default -- send standard and extended communities to the IBGP neighbors and standard communities to EBGP neighbors (this is the global default set in the built-in **topology-defaults.yml** file).
 
 ```
 bgp:

@@ -107,7 +107,7 @@ The following table documents the interface-level OSPF features:
 ## Node Parameters
 
 * **ospf.process** -- process ID (default: 1)
-* **ospf.af** -- [OSPF address families](routing.md#address-families). Configures OSPFv2 and/or OSPFv3 on devices that support OSPFv3. Has no impact on other devices.
+* **ospf.af** -- [OSPF address families](routing.md#address-families), usually set by the data transformation code. Configures OSPFv2 when **ospf.af.ipv4** is set to `True` and OSPFv3 (on devices that support OSPFv3) when **ospf.af.ipv6** is set to `True`. 
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area and the loopback interface.
 * **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
@@ -146,14 +146,11 @@ Management interfaces are never added to the OSPF process. They are not in the s
 
 Unless the OSPF network type is specified with the **ospf.network_type**, it's set to **point-to-point** on links with exactly two non-host nodes attached to them and left unspecified otherwise (implying platform default, which is almost always **broadcast**).
 
-Stub links (links with exactly one non-host device attached to them) or links with **role: stub** or **role: passive** are configured as passive OSPF interfaces.
-
-## Using Link Roles
-
-Link roles are used together with link types to decide whether to include an interface in an OSPF process and whether to make an interface passive:
+When the **ospf.passive** attribute is not specified on a link or an interface, _netlab_ uses the link roles together with the link types to decide whether to include an interface in an OSPF process and whether to make an interface passive:
 
 * External links (links with **role: external**) are not included in the OSPF process. 
-* Links with **role** set to **stub** or **passive** are configured as *passive* OSPF interfaces.
+* Links with **role** set to **passive** are configured as *passive* OSPF interfaces.
+* Interfaces connected to links with a single router or routing daemon attached are *passive* OSPF interfaces.
 
 **Notes:** 
 

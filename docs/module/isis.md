@@ -1,13 +1,13 @@
 # IS-IS Configuration Module
 
-This configuration module configures IS-IS routing process on Cisco IOS, Cisco NX-OS, Arista EOS, Junos (tested on vSRX), Nokia SR OS and Nokia SR Linux.
+This configuration module configures the IS-IS routing process on Cisco IOS, Cisco NX-OS, Arista EOS, Junos (tested on vSRX), Nokia SR OS, and Nokia SR Linux.
 
 The module supports the following IS-IS features:
 
 * IPv4 and IPv6
 * IS type (L1 and/or L2)
 * Multi-topology IPv6 (enabled by default as soon as the node has at least one IPv6 address, cannot be disabled)
-* Wide metrics (enabled by default, cannot be disabled)
+* Wide metrics (enabled by default, cannot be turned off)
 * Unnumbered IPv4 interfaces
 * Passive interfaces
 * BFD
@@ -41,13 +41,13 @@ The following table describes per-platform support of individual IS-IS features:
 | VyOS               | ✅  | ✅  | ✅  |  ❌  | ✅  | ✅ |
 
 **Notes:**
-* On Arista EOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
-* On VyOS, IPv6 is enabled on all interfaces as soon as one interface has an IPv6 address.
+* On Arista EOS, IPv6 is enabled on all interfaces as soon as one of them has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
+* On VyOS, IPv6 is enabled on all interfaces as soon as one of them has an IPv6 address.
 * Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
 
 ## Global Parameters
 
-* **isis.area** -- CLNS area prefix. Router address (NET) is computed from area prefix, 6-byte system ID (using **id** node attribute) and NSAP selector (.00)
+* **isis.area** -- CLNS area prefix. Router address (NET) is computed from area prefix, 6-byte system ID (using **id** node attribute), and NSAP selector (.00)
 * **isis.type** -- IS-IS router type (**level-1**, **level-2** or **level-1-2**. Default: **level-2**)
 * **isis.bfd** -- enable BFD for IS-IS. This parameter could be a boolean value (*True*/*False*) or a dictionary of address families, for example:
 
@@ -60,12 +60,12 @@ isis:
 ```
 
 ```{warning}
-Specify **‌isis.area** with a single dot (example: 49.0001) within quotes to tell YAML parser it's not a floating-point number.
+Specify **‌isis.area** with a single dot (example: 49.0001) within quotes to tell the YAML parser it's not a floating-point number.
 ```
 
 ## Node Parameters
 
-You can specify node parameters as global values (top-level topology elements) or within individual nodes. You can also specify **isis.net** on individual nodes instead of using **isis.area** (see [example](#example) for details).
+You can specify node parameters as global values (top-level topology elements) or within individual nodes. You can specify **isis.net** on individual nodes instead of using **isis.area** (see [example](#example) for details).
 
 **Note:**
 * When specifying **isis.net**, avoid values in range *area.0000.0000.0001.00* through *area.0000.0000.0099.00* as they are used for auto-generated NETs.
@@ -91,19 +91,16 @@ links:
 
 The number of neighbors on an interface is used to set IS-IS network type unless it's specified with **isis.network_type** link or interface attribute. Interfaces with exactly one non-host neighbor (point-to-point links) have **isis.network_type** set to **point-to-point**. 
 
-Stub links (links with exactly one non-host device attached to them), or links with **role: stub** or **role: passive**, are configured as passive interfaces.
-
-## Using Link Roles
-
-Link roles are used together with link types to decide whether to include an interface in an IS-IS process, and whether to make an interface passive:
+When the **isis.passive** interface parameter is not set on a link or an interface, _netlab_ uses the link roles together with  the link types to decide whether to include an interface in an IS-IS process and whether to make an interface passive:
 
 * External links (links with **role: external**) are not included in the IS-IS process. 
-* Links with **role** set to **stub** or **passive** are configured as *passive* IS-IS interfaces.
+* Links with **role** set to **passive** are configured as *passive* IS-IS interfaces.
+* Interfaces connected to links with a single router or routing daemon attached are *passive* IS-IS interfaces.
 
 **Notes:** 
 
-* Link role could be set by the BGP module -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, making inter-AS links excluded from the IS-IS process.
-* Management interfaces are never added to the IS-IS process. They are not in the set of device links and thus not considered in the IS-IS configuration template.
+* The BGP module could set link role -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the IS-IS process.
+* Management interfaces are never added to the IS-IS process. They are not in the set of device links and, thus, not considered in the IS-IS configuration template.
 
 ## Example
 
@@ -117,13 +114,13 @@ All devices run OSPF:
 module: [ isis ]
 ```
 
-Default IS-IS area is 49.0001:
+The default IS-IS area is 49.0001:
 ```
 isis:
   area: 49.0001
 ```
 
-R1 and R2 are in default IS-IS area. We'll specify explicit NET for R2:
+R1 and R2 are in the default IS-IS area. We'll specify explicit NET for R2:
 
 ```
 nodes:
@@ -164,7 +161,7 @@ links:
   r2:
 ```
 
-We'll specify asymmetric per-node IS-IS metrics on link between R2 and R3:
+We'll specify asymmetric per-node IS-IS metrics on the link between R2 and R3:
 
 ```
 links:
@@ -178,7 +175,7 @@ links:
 
 ### Resulting Device Configurations
 
-The above topology generates the following device configurations
+The above topology generates the following device configurations:
 
 #### R1 (Cisco IOS)
 

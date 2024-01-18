@@ -65,7 +65,7 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
         intf.ldp = intf.mpls.ldp
 
     if not _routing.external(intf,'ldp'):
-      _routing.passive(intf,'ldp')
+      _routing.passive(intf,'ldp',topology)
 
   _routing.remove_unused_igp(node,'ldp')
 

@@ -82,7 +82,7 @@ class OSPF(_Module):
     # Cleanup routing protocol from external/disabled interfaces
     for intf in node.get('interfaces',[]):
       if not _routing.external(intf,'ospf'):                # Remove external interfaces from OSPF process
-        _routing.passive(intf,'ospf')                       # Set passive flag on other OSPF interfaces
+        _routing.passive(intf,'ospf',topology)              # Set passive flag on other OSPF interfaces
         err = _routing.network_type(intf,'ospf',['point-to-point','point-to-multipoint','broadcast','non-broadcast'])
         if err:
           log.error(f'{err}\n... node {node.name} link {intf}')
