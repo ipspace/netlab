@@ -135,18 +135,17 @@ def augment_node_module(topology: Box) -> None:
         path=f'nodes.{name}',
         create_empty=False,
         valid_values=mod_list)
-      continue
+    else:
+      # Copy global modules (if they exist) into non-host nodes
+      #
+      # non-host nodes are nodes that do not have 'role' set to 'host' or have 'daemon' set to True
+      #
+      daemon   = devices.get_device_attribute(n,'daemon',topology.defaults)
+      is_host  = devices.get_device_attribute(n,'role',topology.defaults) == 'host' or n.get('role') == 'host'
+      if g_module and (not is_host or daemon):
+        n.module = g_module
 
-    # Copy global modules (if they exist) into non-host nodes
-    #
-    # non-host nodes are nodes that do not have 'role' set to 'host' or have 'daemon' set to True
-    #
-    daemon   = devices.get_device_attribute(n,'daemon',topology.defaults)
-    is_host  = devices.get_device_attribute(n,'role',topology.defaults) == 'host' or n.get('role') == 'host'
-    if g_module and (not is_host or daemon):
-      n.module = g_module
-
-    # Remove unused modules from the _daemon_config dictionary
+    # Remove modules that are not used on the current daemon from the _daemon_config dictionary
     if '_daemon_config' in n:
       for m in list(n._daemon_config.keys()):
         if m in mod_list and not m in n.module:                 # If an entry in _daemon_config is a known module
