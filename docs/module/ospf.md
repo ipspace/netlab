@@ -70,6 +70,12 @@ The following table describes per-platform support of individual router-level OS
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
 
+OSPF is also supported on these [routing daemons](platform-daemons):
+
+| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  | BFD<br/>Strict-Mode |
+| ------------------------ |:--:|:--:|:--:|:--:|:--:|
+| BIRD                     | ✅ | ❌  | ✅ | ❌  | ❌  |
+
 (ospf-interface)=
 The following table documents the interface-level OSPF features:
 
@@ -98,6 +104,15 @@ The following table documents the interface-level OSPF features:
 **Notes:**
 * Arista EOS, Cisco Nexus OS, SR Linux, and Dell OS10 support point-to-point and broadcast network types. Other network types will not be configured.
 * SR OS supports point-to-point, broadcast, and non-broadcast network types. Point-to-multipoint network type will not be configured.
+
+OSPF routing daemons support these interface-level features:
+
+| Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
+| ------------------------ |:--:|:--:|:--:|:--:|
+| BIRD                     | ✅ | ✅ | ❌  | ✅ |
+
+**Notes:**
+* Routing daemons usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
 
 ## Global Parameters
 

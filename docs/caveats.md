@@ -2,10 +2,53 @@
 
 ```eval_rst
 .. contents:: Table of Contents
-   :depth: 2
+   :depth: 1
    :local:
    :backlinks: none
 ```
+
+(caveats-aruba)=
+## Aruba AOS-CX
+
+* Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
+* Limitations of the Aruba AOS-CX Simulator can be found [here](https://feature-navigator.arubanetworks.com/), selecting *CX Simulator* as platform.
+
+### VRF and L3VPN Caveats
+
+* OSPF processes can be only *1-63*. VRF indexes usually are > 100, so a device tweak will map every *vrfidx* to a different OSPF process id. That means you cannot have more than 62 VRF using OSPF.
+* On the Aruba AOS-CX Virtual version *10.11.0001*, MPLS L3VPN forwarding plane seems broken (while the control plane is working fine).
+
+### VXLAN and EVPN Caveats
+
+* The VXLAN dataplane (at least, on the virtual version) seems not supporting VNI greater than 65535. If you set an higher value, an overflow will occur, and you may have overlapping VNIs. The workaround for this is to set, i.e., `defaults.vxlan.start_vni: 20000` and `defaults.evpn.start_transit_vni: 10000` (especially on multi-vendor topologies).
+* EVPN Symmetric IRB is supported only from the Aruba AOS-CX Virtual version *10.13*. Additionally:
+  * CPU generated traffic does not get encapsulated in Symmetric IRB on AOS-CX Simulator.
+  * Active-Gateway MAC Addresses shall be the same across all VTEPs in AOS-CX Simulator.
+
+(caveats-bird)=
+## BIRD Internet Routing Daemon
+
+* BIRD is supported as a pure control-plane daemon running on a Linux VM or as a container with a single external interface.
+* BIRD supports a single router ID that is used for BGP and OSPF.
+* The VM or container running BIRD starts with static routes pointing to one of the adjacent routers (see [host routes on Linux](linux-routes)). BGP and OSPF routes learned by BIRD are copied into the kernel IP routing table.
+
+### OSPF Caveats
+
+* BIRD OSPF implementation has no *reference bandwidth*. The default OSPF cost is 10.
+
+### BGP Caveats
+
+* You must run OSPF on the BIRD daemon for the IBGP sessions to work.
+* BIRD will not advertise (reflect) an IBGP route if it has an equivalent OSPF route.
+* BIRD changes the next hop of the reflected routes (will be fixed)
+* You cannot configure BGP community propagation on BIRD. All BGP communities are always propagated to all neighbors.
+* BIRD might prefer a link-local address as the next hop for an IBGP IPv6 prefix and will use that link-local address when doing route reflection, resulting in broken IPv6 connectivity.
+
+(caveats-csr)=
+## Cisco CSR 1000v
+
+* Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
+* VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 
 (caveats-iosv)=
 ## Cisco IOSv
@@ -18,12 +61,6 @@
 * netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name, in which case you'll have to set **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
 * Copying Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. Vagrant configuration file uses fixed SSH password.
 * Maximum interface bandwidth on IOS XRv is 1 Gbps (1000000).
-
-(caveats-csr)=
-## Cisco CSR 1000v
-
-* Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
-* VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 
 (caveats-nxos)=
 ## Cisco Nexus OS
@@ -72,6 +109,13 @@ devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
 devices.cumulus.libvirt.memory: 2048
 ```
 
+(caveats-os10)=
+## Dell OS10
+
+Dell OS10 uses a concept of a so-called *Virtual Network* interface to try to handle transparently VLANs and VXLANs in the same way. However, it seems that right now it is **NOT** possible to activate OSPF on a *Virtual Network* (VLAN) SVI interface.
+
+Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface (but *anycast* gateway is supported). At the same time, *anycast* gateway is not supported on plain *ethernet* interfaces, so you need to use *VRRP* there.
+
 (caveats-fortios)=
 ## Fortinet FortiOS
 
@@ -90,6 +134,37 @@ devices.cumulus.libvirt.memory: 2048
 * VM version of FRR is a Ubuntu VM. FRR package is downloaded and installed during the initial configuration process.
 * You can change FRR default profile with **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
+
+(caveats-vmx)=
+## Juniper vMX in Containerlab
+
+Juniper vMX runs as a container in _containerlab_. You have to use _vrnetlab_ to build the container from a vMX disk image. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vmx/) for further details.
+
+The Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
+
+(caveats-vptx)=
+## Juniper vPTX
+
+* *netlab* release 1.7.0 supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
+
+The rest of this section lists information you might find helpful if you're a long-time Junos user:
+
+* vJunos Evolved (vJunos EVO, Juniper vPTX) uses Linux instead of BSD as the underlying OS. There are some basic differences from a "default" JunOS instance, including the management interface name, which is `re0:mgmt-0`.
+* After the VM boots up, you need to wait for the *virtual FPC* to become *Online* before being able to forward packets. You can verify this with `show chassis fpc`. **NOTE**: You can see the network interfaces only after the *FPC* is online.
+* It seems that the DHCP Client of the management interface does not install a default route, even if received by the DHCP server.
+* The VM will complain about missing licenses. You can ignore that.
+
+(caveats-vsrx)=
+## Juniper vSRX in Containerlab
+
+You can run Juniper vSRX as a container packaged by *vrnetlab*. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vsrx/) for further details.
+
+The Juniper vSRX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
+
+vSRX container built with *vrnetlab* uses **flow based forwarding**. You have two ways to use it:
+
+* Configure security zones, and attach interfaces and rules to them;
+* Change the mode to [**packet based forwarding**](https://supportportal.juniper.net/s/article/SRX-How-to-change-forwarding-mode-for-IPv4-from-flow-based-to-packet-based).
 
 (caveats-routeros6)=
 ## Mikrotik RouterOS 6
@@ -157,59 +232,3 @@ Additionally, using always the latest build published on [Vagrant Hub](https://a
 
 (vyos-clab)=
 It looks like the official VyOS container is not updated as part of the daily builds; *netlab* uses a [third-party container](https://github.com/sysoleg/vyos-container) (`ghcr.io/sysoleg/vyos-container`) to run VyOS with *containerlab*.
-
-(caveats-os10)=
-## Dell OS10
-
-Dell OS10 uses a concept of a so-called *Virtual Network* interface to try to handle transparently VLANs and VXLANs in the same way. However, it seems that right now it is **NOT** possible to activate OSPF on a *Virtual Network* (VLAN) SVI interface.
-
-Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface (but *anycast* gateway is supported). At the same time, *anycast* gateway is not supported on plain *ethernet* interfaces, so you need to use *VRRP* there.
-
-(caveats-vmx)=
-## Juniper vMX in Containerlab
-
-Juniper vMX runs as a container in _containerlab_. You have to use _vrnetlab_ to build the container from a vMX disk image. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vmx/) for further details.
-
-The Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
-
-(caveats-vptx)=
-## Juniper vPTX
-
-* *netlab* release 1.7.0 supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
-
-The rest of this section lists information you might find helpful if you're a long-time Junos user:
-
-* vJunos Evolved (vJunos EVO, Juniper vPTX) uses Linux instead of BSD as the underlying OS. There are some basic differences from a "default" JunOS instance, including the management interface name, which is `re0:mgmt-0`.
-* After the VM boots up, you need to wait for the *virtual FPC* to become *Online* before being able to forward packets. You can verify this with `show chassis fpc`. **NOTE**: You can see the network interfaces only after the *FPC* is online.
-* It seems that the DHCP Client of the management interface does not install a default route, even if received by the DHCP server.
-* The VM will complain about missing licenses. You can ignore that.
-
-(caveats-vsrx)=
-## Juniper vSRX in Containerlab
-
-You can run Juniper vSRX as a container packaged by *vrnetlab*. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vsrx/) for further details.
-
-The Juniper vSRX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
-
-vSRX container built with *vrnetlab* uses **flow based forwarding**. You have two ways to use it:
-
-* Configure security zones, and attach interfaces and rules to them;
-* Change the mode to [**packet based forwarding**](https://supportportal.juniper.net/s/article/SRX-How-to-change-forwarding-mode-for-IPv4-from-flow-based-to-packet-based).
-
-(caveats-aruba)=
-## Aruba AOS-CX
-
-* Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
-* Limitations of the Aruba AOS-CX Simulator can be found [here](https://feature-navigator.arubanetworks.com/), selecting *CX Simulator* as platform.
-
-### VRF and L3VPN Caveats
-
-* OSPF processes can be only *1-63*. VRF indexes usually are > 100, so a device tweak will map every *vrfidx* to a different OSPF process id. That means you cannot have more than 62 VRF using OSPF.
-* On the Aruba AOS-CX Virtual version *10.11.0001*, MPLS L3VPN forwarding plane seems broken (while the control plane is working fine).
-
-### VXLAN and EVPN Caveats
-
-* The VXLAN dataplane (at least, on the virtual version) seems not supporting VNI greater than 65535. If you set an higher value, an overflow will occur, and you may have overlapping VNIs. The workaround for this is to set, i.e., `defaults.vxlan.start_vni: 20000` and `defaults.evpn.start_transit_vni: 10000` (especially on multi-vendor topologies).
-* EVPN Symmetric IRB is supported only from the Aruba AOS-CX Virtual version *10.13*. Additionally:
-  * CPU generated traffic does not get encapsulated in Symmetric IRB on AOS-CX Simulator.
-  * Active-Gateway MAC Addresses shall be the same across all VTEPs in AOS-CX Simulator.

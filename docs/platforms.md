@@ -6,6 +6,7 @@
    :local:
 ```
 
+(platform-devices)=
 ## Supported Virtual Network Devices
 
 *netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)).
@@ -34,6 +35,7 @@
 | Nokia SR OS [❗](caveats-sros)            | sros               |
 | VyOS 1.4 [❗](caveats-vyos)               | vyos               |
 
+(platform-daemons)=
 *netlab* also supports the following daemons (control-plane software running on Linux VMs or containers):
 
 | Daemon                         | netlab device type |
