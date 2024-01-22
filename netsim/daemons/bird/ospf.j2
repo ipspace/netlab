@@ -2,7 +2,7 @@
 router id {{ ospf.router_id }};
 {% endif %}
 {# build a list of OSPF areas #}
-{% set area_list = [] %}
+{% set area_list = [ ospf.area ] %}
 {% for l in interfaces|default([]) if 'ospf' in l and 'area' in l.ospf and l.ospf.area not in area_list %}
 {%   set status = area_list.append(l.ospf.area) %}
 {% endfor %}
@@ -12,11 +12,14 @@ router id {{ ospf.router_id }};
 {%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
 protocol ospf {{ ver }} ospf_{{ ver }} {
 {%   for area in area_list %}
-{%     for l in interfaces|default([]) if af in l and 'ospf' in l and 'area' in l.ospf and l.ospf.area == area %}
-{%       if loop.first %}
-  area {{ l.ospf.area }} {
+  area {{ area }} {
     default cost 10;
-{%       endif %}
+{%     if area == ospf.area and af in loopback|default({}) %}
+    interface "lo" {
+      stub;
+    };
+{%     endif %}
+{%     for l in interfaces|default([]) if af in l and 'ospf' in l and 'area' in l.ospf and l.ospf.area == area %}
     interface "{{ l.ifname }}" {
 {%       if 'network_type' in l.ospf %}
       type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
@@ -28,10 +31,8 @@ protocol ospf {{ ver }} ospf_{{ ver }} {
       cost {{ l.ospf.cost }};
 {%       endif %}
     };
-{%       if loop.last %}
-  };
-{%       endif %}
 {%     endfor %}
+  };
 {%   endfor %}
 }
 {% endfor %}
