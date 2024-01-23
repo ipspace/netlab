@@ -15,7 +15,8 @@ import traceback
 from box import Box
 
 from . import load_snapshot,parser_add_debug,parser_add_verbose
-from ..utils import log,templates,strings,status as _status
+from ..utils import log,templates,strings,status as _status, files as _files
+from ..data import global_vars
 from .. import data
 from .connect import connect_to_node,LogLevel
 
@@ -118,6 +119,114 @@ def p_test_pass(v_entry: Box, topology: Box) -> None:
   msg = v_entry.get('pass','Test succeeded')
   log_progress(msg,topology)
 
+_validation_plugins: dict = {}
+
+'''
+load_plugin: try to load the validation plugin for the specified device
+'''
+
+def load_plugin(device: str) -> typing.Any:
+  topology = global_vars.get_topology()
+  if topology is None:                                                # Abort if we can't get a point to the topology
+    return None
+
+  v_path = topology.defaults.paths.validate or [ 'validate' ]         # Get validation plugin path
+  v_base = os.path.dirname(topology.input[0])                         # Get base (topology) directory
+  v_path = _files.absolute_search_path(v_path,v_base)                 # Get the absolute search path
+
+  for v_entry in v_path:                                              # Iterate over the seach path
+    v_file = f'{v_entry}/{device}.py'                                 # ... trying to find the device-specific plugin
+    if os.path.exists(v_file):                                        # Got it?
+      return _files.load_python_module(f'validate_{device}',v_file)   # ... cool, try to load the Python module
+
+  return None
+
+'''
+find_plugin -- find the validation plugin
+
+The plugin could have been already loaded, in which case we'll find it in the global
+_validation_plugin dictionary, or we have to load it, in which case we'll save it in
+the same dictionary for the next lookup.
+
+Please note that even the negative results ('there is no such plugin') are cached.
+'''
+def find_plugin(device: str) -> typing.Any:
+  global _validation_plugins
+  if device in _validation_plugins:
+    return _validation_plugins[device]
+
+  plugin = load_plugin(device)
+  _validation_plugins[device] = plugin
+  return plugin
+
+'''
+find_plugin_action -- find the action (show/exec) from the plugin
+
+Figure out whether the validation plugin for the device under test providers the
+desired functionality (show_ or exec_ function). If not, the test is skipped.
+'''
+def find_plugin_action(v_entry: Box, node: Box) -> typing.Optional[str]:
+  if 'plugin' not in v_entry:
+    return None
+
+  plugin = find_plugin(node.device)
+  if not plugin:
+    return None
+
+  func_name = v_entry.plugin.split('(')[0]
+  for kw in ('show','exec'):
+    if getattr(plugin,f'{kw}_{func_name}',None):
+      return kw
+
+  return None
+
+class PluginEvalError(Exception):     # Exception class used to raise plugin evaluation exceptions
+  pass
+
+'''
+Execute the plugin function specified by 'action' variable and 'plugin' v_entry value
+
+The magic part of this function is the preparation step:
+
+* We pretend the device-specific validation plugin is imported into the current context
+  as 'validate_XXX' module
+* We pass a copy of the topology data as locals to the validation function (ensuring all
+  changes made to topology data are discarded)
+* The topology data is augmented with 'node' variable (current node data)
+* The results of the 'exec' or 'show' command (if available) are passed as _result global
+  to the validation plugin
+
+Finally, the validation expression is executed and the exceptions are handled:
+
+* AttributeError exception including 'validate_XXX' in the error text indicates the
+  function we tried to call does not exist, in which case we return None (test skipped)
+* Any other error is re-raised as PluginEvalError exception to signal to the caller
+  that the plugin evaluatino function failed.
+
+Please note that custom exception raised in the plugin functions get re-raised as
+PluginEvalError exceptions, resulting in custom error messages.
+'''
+def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Optional[Box] = None) -> typing.Any:
+  p_name = f'validate_{node.device}'
+  exec = f'{p_name}.{action}_{v_entry.plugin}'
+  exec_data = data.get_box(global_vars.get_topology() or {}) + v_entry.vars
+  exec_data.node = node
+
+  plugin = find_plugin(node.device)               # Find device-specific validation plugin
+  if plugin is None:                              # Not found, the test is skipped
+    return None
+  plugin._result = result
+  exec_data[p_name] = plugin
+
+  try:
+    return eval(exec,{},exec_data)
+  except AttributeError as ex:
+    if p_name in str(ex):
+      return None
+    raise PluginEvalError(str(ex))
+  except Exception as ex:
+    raise PluginEvalError(str(ex))
+
 '''
 Get generic or per-device action from a validation entry
 
@@ -125,10 +234,27 @@ Get generic or per-device action from a validation entry
 * If the validation entry is a dictionary, use device-specific item
 * If the result of the above is not a string we have a failure, get out
 * If the resulting string contains '{{' run it through Jinja2 engine
+
+If we try to get the string to pass to the device from a plugin, then any
+plugin evaluation errors indicate something is badly broken, so we log the
+error with as much data as feasible... and if the end-user ever sees that
+error message, the author of the validation plugin did a lousy job ¯\_(ツ)_/¯
 '''
 def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typing.Any:
   n_device = node.device
-  value = v_entry[action][n_device] if isinstance(v_entry[action],dict) else v_entry[action]
+  if action in v_entry:
+    value = v_entry[action][n_device] if isinstance(v_entry[action],dict) else v_entry[action]
+  elif 'plugin' in v_entry:
+    try:
+      value = exec_plugin_function(action,v_entry,node)
+    except PluginEvalError as ex:
+      log.error(
+        text=str(ex),
+        category=log.IncorrectValue,
+        module='validate',
+        more_hints=[ f'device: {node.device}, action: {action}', f'plugin expression: {action}_{v_entry.plugin}'])
+      return None
+
   if not isinstance(value,str):
     return value
   
@@ -161,7 +287,7 @@ def get_exec_list(v_entry: Box, action: str, node: Box, topology: Box) -> list:
 '''
 Execute a 'show' command. The return value is expected to be parseable JSON
 '''
-def get_parsed_result(v_entry: Box, n_name: str, topology: Box) -> Box:
+def get_parsed_result(v_entry: Box, n_name: str, topology: Box, verbosity: int) -> Box:
   node = topology.nodes[n_name]                             # Get the node data
   v_cmd = get_exec_list(v_entry,'show',node,topology)       # ... and the 'show' action for the current node
   err_value = data.get_box({'_error': True})                # Assume an error
@@ -173,10 +299,16 @@ def get_parsed_result(v_entry: Box, n_name: str, topology: Box) -> Box:
       module='validation')
     return err_value
 
+  if verbosity >= 3:                                        # Extra-verbose: print command to execute
+    print(f'Preparing to execute {v_cmd}')
+
   # Set up arguments for the 'netlab connect' command and execute it
   #
   args = argparse.Namespace(quiet=True,host=n_name,output=True,show=v_cmd)
   result = connect_to_node(args=args,rest=[],topology=topology,log_level=LogLevel.NONE)
+
+  if verbosity >= 3:                                        # Extra-verbose: print the results we got
+    print(f'Executed {v_cmd} got {result}')
 
   # If the result we got back is not a string, the 'netlab connect' command
   # failed in one way or another
@@ -233,14 +365,17 @@ find_test_action -- find something that can be executed on current node
 '''
 def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
   for kw in ('show','exec','wait'):
-    if not kw in v_entry:
+    if kw not in v_entry:
       continue
     if isinstance(v_entry[kw],(str,int)):
       return kw
     if node.device in v_entry[kw]:
       return kw
 
-  return None
+  if 'plugin' not in v_entry:
+    return None
+
+  return find_plugin_action(v_entry,node)
 
 '''
 wait_before_testing -- wait for specified time since lab start time or previous test
@@ -275,6 +410,110 @@ def wait_before_testing(
 test_skip_count: int
 test_result_count: int
 test_pass_count: int
+
+"""
+execute_validation_expression: execute the v_entry.valid string in a safe environment with
+error/success logging.
+
+Getting the results:
+
+* There is no 'valid' entry: bad, log an error, increase skip count
+* Validation expression fails: bad, assume result is False
+* Otherwise, the validation function should return True (or some such), False or None
+
+Evaluating the results:
+
+* False: print failure message, increase result count but not pass count
+* True: print success message, increase result and pass count
+* None: we have no idea what the answer is, skip this test
+"""
+def execute_validation_expression(
+      v_entry: Box,
+      node: Box,
+      topology: Box,
+      result: Box,
+      verbosity: int) -> typing.Optional[bool]:
+
+  global test_skip_count,test_result_count,test_pass_count
+
+  v_test = get_entry_value(v_entry,'valid',node,topology)
+  if not v_test:                              # Do we have a validation expression for the current device?
+    log_info(                                 # ... nope, have to skip it
+      f'Test results validation not defined for device {node.device} / node {node.name}',
+      f_status = 'SKIPPED',
+      topology=topology)
+    test_skip_count += 1
+    return None
+  else:
+    try:                                      # Otherwise try to evaluate the validation expression
+      result.result = result
+      result.re = re                          # Give validation expression access to 're' module
+      OK = eval(v_test,{'__builtins__': {}},result)
+      if OK is None:
+        OK = False
+    except Exception as ex:                   # ... and failure if the evaluation failed
+      if verbosity >= 2:
+        print(f'... evaluation error: {ex}')
+      OK = False
+
+  if not OK or verbosity >= 2:             # Validation expression failed or we're extra verbose
+    if verbosity > 0:
+      if v_test:
+        print(f'Test expression: {v_test}\n')
+        print(f'Evaluated result {OK}')
+      for kw in ('re','result'):              # Remove stuff that will crash JSON serialization
+        result.pop(kw,None)
+      print(f'Result received from {node.name}\n{"-" * 80}\n{result.to_json()}\n')
+
+  if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
+    p_test_fail(node.name,v_entry,topology)
+    test_result_count += 1
+  elif OK:                                    # ... or we might have a positive result
+    log_progress(f'Validation succeeded on {node.name}',topology)
+    test_result_count += 1
+    test_pass_count += 1
+
+  return OK
+
+"""
+execute_validation_plugin:
+
+* Execute the valid_xxx function in the validation plugin
+* Process the results similarly to the execute_validation_expression function
+
+Exception handling:
+
+* If the 'exec_plugin_function' throws an exception, log the failure and assume the test has failed
+"""
+def execute_validation_plugin(
+      v_entry: Box,
+      node: Box,
+      topology: Box,
+      result: Box,
+      verbosity: int) -> typing.Optional[bool]:
+
+  global test_skip_count,test_result_count,test_pass_count
+
+  try:
+    OK = exec_plugin_function('valid',v_entry,node,result)
+    if OK is not None and not OK:
+      p_test_fail(node.name,v_entry,topology)
+  except Exception as ex:
+    log_failure(f'{node.name}: {str(ex)}',topology)
+    OK = False
+
+  if (not OK and verbosity) or verbosity >= 2:
+    print(f'Input data: {result.to_json()}')
+    print(f'Plugin expression: {v_entry.plugin}\n')
+    print(f'Evaluated result {OK}')
+
+  if OK is not None:
+    test_result_count += 1
+    if OK:
+      log_progress(f'Validation succeeded on {node.name}',topology)
+      test_pass_count += 1
+
+  return OK
 
 '''
 Execute a single validation test on all specified nodes
@@ -314,7 +553,7 @@ def execute_validation_test(
       print(f'{action} on {node.name}/{node.device}: {cmd}')
 
     if action == 'show':                          # We got a 'show' action, try to get parsed results
-      result = get_parsed_result(v_entry,n_name,topology)
+      result = get_parsed_result(v_entry,n_name,topology,args.verbose)
       if '_error' in result:                      # OOPS, we failed
         ret_value = False
         test_result_count += 1
@@ -326,46 +565,17 @@ def execute_validation_test(
         ret_value = False
         continue
 
+    OK = None
     if 'valid' in v_entry:                        # Do we have a validation expression in the test entry?
-      v_test = get_entry_value(v_entry,'valid',node,topology)
-      if not v_test:                              # Do we have a validation expression for the current device?
-        log_info(                                 # ... nope, have to skip it
-          f'Test results validation not defined for device {node.device} / node {n_name}',
-          f_status = 'SKIPPED',
-          topology=topology)
-        test_skip_count += 1
-        OK = None
-      else:
-        try:                                      # Otherwise try to evaluate the validation expression
-          result.result = result
-          result.re = re                          # Give validation expression access to 're' module
-          OK = eval(v_test,{'__builtins__': {}},result)
-          if OK is None:
-            OK = False
-        except Exception as ex:                   # ... and failure if the evaluation failed
-          if args.verbose >= 2:
-            print(f'... evaluation error: {ex}')
-          OK = False
+      OK = execute_validation_expression(v_entry,node,topology,result,args.verbose)
+    elif 'plugin' in v_entry:                     # If not, try to call the plugin function
+      OK = execute_validation_plugin(v_entry,node,topology,result,args.verbose)
 
-      if not OK or args.verbose >= 2:             # Validation expression failed or we're extra verbose
-        if args.verbose > 0:
-          if v_test:
-            print(f'Test expression: {v_test}\n')
-            print(f'Evaluated result {OK}')
-          for kw in ('re','result'):              # Remove stuff that will crash JSON serialization
-            result.pop(kw,None)
-          print(f'Result received from {n_name}\n{"-" * 80}\n{result.to_json()}\n')
-
-      if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
-        p_test_fail(n_name,v_entry,topology)
-        test_result_count += 1
-        ret_value = False
-      elif OK:                                    # ... or we might have a positive result
-        log_progress(f'Validation succeeded on {n_name}',topology)
-        test_result_count += 1
-        test_pass_count += 1
-        if ret_value is None:
-          ret_value = True
+    # The result could be 'True', 'False', or 'None' (don't know)
+    if OK is True and ret_value is None:          # If we have a True result and we don't know the composite result yet
+      ret_value = True                            # ... set composite result to True
+    elif OK is False:                             # But if we have a single failure ...
+      ret_value = False                           # ... set composite result to False (failure)
 
   if ret_value:                                   # If we got to 'True'
     p_test_pass(v_entry,topology)                 # ... declare Mission Accomplished

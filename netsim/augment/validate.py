@@ -18,7 +18,7 @@ validate_test_entry: Check if the test makes sense
 
 def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   action_OK = False
-  for kw in ('show','exec','wait'):
+  for kw in ('show','exec','wait','plugin'):
     action_OK = action_OK or kw in v_entry
 
   if not action_OK:                                     # Test should have at least one of show/exec/wait
@@ -38,7 +38,7 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   if 'valid' not in v_entry:                            # A test does not have 'valid' option, no further validation needed
     return True
 
-  for kw in ('show','exec'):                            # If we know how to get results to validate, we're OK
+  for kw in ('show','exec','plugin'):                   # If we know how to get results to validate, we're OK
     if kw in v_entry:
       return True
 

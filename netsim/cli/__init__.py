@@ -17,6 +17,7 @@ from . import usage
 from .. import augment
 from .. import __version__
 from ..utils import status as _status, log, read as _read
+from ..data import global_vars
 
 DRY_RUN: bool = False
 
@@ -128,6 +129,7 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
     print(f"Cannot read the topology snapshot file {args.snapshot}")
     sys.exit(1)
 
+  global_vars.init(topology)
   return topology
 
 def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typing.Optional[Box]:

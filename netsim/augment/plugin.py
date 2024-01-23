@@ -10,7 +10,7 @@ import importlib.util
 
 from box import Box
 from ..utils import log, read as _read, sort as _sort, strings
-from ..utils.files import get_moddir,get_search_path
+from ..utils.files import get_moddir,get_search_path,load_python_module
 from .. import data
 from . import config
 
