@@ -1,0 +1,45 @@
+message: |
+  This lab tests whether the OSPF costs are correctly applied
+  to physical and loopback interfaces.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+  x1:
+    id: 2
+  x2:
+    id: 3
+
+links:
+- dut:
+    ospf.cost: 17
+  x1:
+  ospf.cost: 10
+
+- dut:
+  x2:
+  ospf.cost: 10
+
+validate:
+  wait:
+    description: Wait for OSPF adjacencies to start
+    wait: 30
+  adj:
+    description: Check for OSPF adjacencies
+    nodes: [ x1, x2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  c_x1:
+    description: Check cost X2 => X1
+    nodes: [ x1 ]
+    plugin: ospf_prefix(nodes.x2.loopback.ipv4,cost=30)
+  c_x2:
+    description: Check cost X1 => X2
+    nodes: [ x2 ]
+    plugin: ospf_prefix(nodes.x1.loopback.ipv4,cost=37)
