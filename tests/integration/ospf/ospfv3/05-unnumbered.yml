@@ -1,0 +1,34 @@
+message: |
+  This lab tests whether the OSPF interfaces on device under test are correctly
+  configured as passive interfaces.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1 ]
+
+nodes:
+  dut:
+  x1:
+
+links:
+- dut:
+  x1:
+  prefix.ipv6: True
+
+validate:
+  wait:
+    description: Wait for OSPF adjacencies to start
+    wait: 30
+  adj:
+    description: Is DUT a neigbor of X1?
+    pass: OK, X1 has DUT as a neighbor
+    nodes: [ x1 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  lb:
+    description: Check the DUT loopback prefix on X1
+    nodes: [ x1 ]
+    plugin: ospf6_prefix(nodes.dut.loopback.ipv6.replace('::1','::'),rt='Intra-Area')
