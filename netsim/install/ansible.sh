@@ -20,7 +20,7 @@ EOM
 SUDO=''
 if [ "$UID" != "0" ]; then
   if [ -x "$(command -v sudo)" ]; then
-    SUDO=sudo
+    SUDO=sudo PIP_ROOT_USER_ACTION=ignore
   else
     echo 'Script requires root privileges.'
     exit 1
