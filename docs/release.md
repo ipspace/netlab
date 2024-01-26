@@ -5,6 +5,10 @@ Release notes
 
 [More features...](release-1.8.0)
 
+**Release 1.7.2 (2024-01-26)**
+
+This release contains only [bug fixes](bug-fixes-1.7.2) and [documentation fixes](doc-fixes-1.7.2).
+
 **[Release 1.7.1](release-1.7.1) (2024-01-08)**
 
 * [Automatically create nodes from group members](groups-auto-create)

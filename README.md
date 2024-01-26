@@ -14,7 +14,7 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.7.1](https://github.com/ipspace/netlab/releases/tag/release_1.7.1). It's mostly a maintenance release with UI improvements (more details in the [release notes](https://netlab.tools/release/))
+The latest release is [release 1.7.2](https://github.com/ipspace/netlab/releases/tag/release_1.7.2), which contains fixes for a few annoying bugs (more details in the [release notes](https://netlab.tools/release/)).
 
 If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4) and [open a GitHub issue](https://github.com/ipspace/netlab/issues).
 <!--
