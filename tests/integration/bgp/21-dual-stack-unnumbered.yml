@@ -1,0 +1,54 @@
+message: |
+  Use this topology to test the unnumbered IPv4+IPv6 EBGP implementation and
+  propagation of routes between EBGP speakers.
+
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+    loopback:
+      ipv4: 172.42.42.1/24
+      ipv6: 2001:db8:cafe:1::1/64
+
+links:
+- dut:
+  x1:
+  prefix:
+    ipv4: True
+    ipv6: True
+- dut:
+  x2:
+  prefix:
+    ipv4: True
+    ipv6: True
+
+validate:
+  wait:
+    description: Wait for EBGP sessions to come up
+    wait: 3
+  session:
+    description: Check EBGP sessions with DUT
+    nodes: [ x1,x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',intf=node.interfaces[0].ifname)
+
+  prefix4:
+    description: Check whether DUT propagates the IPv4 beacon prefix
+    nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.42.0/24')
+
+  prefix6:
+    description: Check whether DUT propagates the IPv6 beacon prefix
+    nodes: [ x1 ]
+    plugin: bgp_prefix('2001:db8:cafe:1::/64',af='ipv6')
