@@ -1,13 +1,13 @@
 (custom-config)=
 # Custom Configuration Templates
 
-You can building complex labs with functionality that is [not yet part of *netlab*](customize.md) with the help of **[netlab config](netlab/config.md)** command that deploys a custom configuration template to a set of lab devices. 
+You can build complex labs with functionality that is [not yet part of *netlab*](customize.md) with the custom configuration templates that can be deployed with **[netlab config](netlab/config.md)**, **[netlab initial](netlab/initial.md)** or **[netlab up](netlab/up.md)** commands. The custom configuration templates could be stored in the lab topology directory, the user's defaults directory, or within the _netlab_ package. See [](dev-find-custom) for more details.
 
-To make the deployment of custom configuration template(s) part of a regular lab initialization process[^CC], use **config** group- or node attribute that can specify either a single template or a list of templates.
+For a one-off deployment of custom configuration templates, use the **netlab config** command. To make the deployment of custom configuration template(s) part of a regular lab initialization process[^CC], use **config** group- or node attribute that can specify either a single template or a list of templates.
 
 [^CC]: ... once your configuration templates are thoroughly tested ;)
 
-For example, to deploy `ospf-anycast-loopback.j2` template on members of `anycast` group and `mpls-ldp.j2` on all devices in your lab during the **[netlab up](netlab/up.md)** process, use the following topology file:
+For example, to deploy the `ospf-anycast-loopback.j2` template on members of the `anycast` group and `mpls-ldp.j2` on all devices in your lab during the **[netlab up](netlab/up.md)** process, use the following topology file:
 
 ```
 defaults:
@@ -49,7 +49,7 @@ Node **config** attributes are merged with the group **‌config** attributes. [
 ```
 
 ```{warning}
-_netlab_ sorts custom configuration templates in the order they are specified in groups and nodes to speed up their deployment. Specifying `custom: [ a,b ]` on one node and `custom: [ b,a ]` on another will result in a sorting loop and a fatal error.
+_netlab_ sorts custom configuration templates in the order specified in groups and nodes to speed up their deployment. Specifying `custom: [ a,b ]` on one node and `custom: [ b,a ]` on another will result in a sorting loop and a fatal error.
 ```
 
 (custom-config-groups)=

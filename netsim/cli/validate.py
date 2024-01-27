@@ -130,10 +130,9 @@ def load_plugin(device: str) -> typing.Any:
   if topology is None:                                                # Abort if we can't get a point to the topology
     return None
 
-  v_path = topology.defaults.paths.validate or [ 'validate' ]         # Get validation plugin path
+  v_path = topology.defaults.paths.validate or ['topology:validate']  # Get validation plugin path
   v_base = os.path.dirname(topology.input[0])                         # Get base (topology) directory
   v_path = _files.absolute_search_path(v_path,v_base)                 # Get the absolute search path
-
   for v_entry in v_path:                                              # Iterate over the seach path
     v_file = f'{v_entry}/{device}.py'                                 # ... trying to find the device-specific plugin
     if os.path.exists(v_file):                                        # Got it?

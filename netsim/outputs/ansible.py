@@ -66,11 +66,25 @@ def ansible_inventory_host(node: Box, topology: Box) -> Box:
   provider_inventory_settings(host,node,topology)
   return host
 
+"""
+Copy defaults.paths dictionary into ALL group. Create separate variables
+from individual customizable paths to prevent dependencies on too many
+variables that might not be set (example: only 'paths.custom' values should
+depend on 'custom_config' variable)
+"""
+def copy_paths(inventory: Box, topology: Box) -> None:
+  if 'paths' not in topology.defaults:
+    return
+  
+  for k,v in topology.defaults.paths.items():
+    inventory.all.vars[f'paths_{k}'] = v
+
 def create(topology: Box) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
   inventory.all.vars.netlab_provider = topology.defaults.provider
   inventory.all.vars.netlab_name = topology.name
+  copy_paths(inventory,topology)
 
   inventory.modules.hosts = {}
   inventory.custom_configs.hosts = {}

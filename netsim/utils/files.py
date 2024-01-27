@@ -11,6 +11,7 @@ import typing
 import fnmatch
 
 from . import log
+from ..data import global_vars
 
 try:
   from importlib import resources
@@ -85,12 +86,23 @@ def absolute_search_path(
   for p_entry in path:
     if 'package:' in p_entry:
       p_abs = get_moddir () / p_entry.replace('package:','')
+    elif 'topology:' in p_entry:
+      topology = global_vars.get_topology()
+      if topology:
+        topo_dir = os.path.dirname(topology.input[0])+"/"
+        p_abs = pathlib.Path(p_entry.replace('topology:',topo_dir))
+      else:
+        continue
     elif p_entry.find('~') == 0:
       p_abs = pathlib.Path(os.path.expanduser(p_entry))
+    elif p_entry[0] in ['.','/']:
+      p_abs = pathlib.Path(p_entry)    
     else:
       p_abs = pathlib.Path(curdir) / p_entry
 
-    a_path.append(str(p_abs.resolve()))
+    p_final = str(p_abs.resolve())
+    if not p_final in a_path:
+      a_path.append(p_final)
 
   return a_path
 

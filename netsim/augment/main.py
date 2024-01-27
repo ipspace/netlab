@@ -17,6 +17,7 @@ from . import addressing
 def topology_init(topology: Box) -> None:
   global_vars.init(topology)
   augment.config.attributes(topology)
+  augment.config.paths(topology)
   augment.devices.augment_device_settings(topology)
 
 def transform_setup(topology: Box) -> None:
