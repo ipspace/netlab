@@ -2,18 +2,54 @@
 router id {{ bgp.router_id }};
 {% endif %}
 
+{% for pfx in bgp.originate|default([]) %}
+{%   if loop.first %}
+protocol static bgp_ipv4 {
+  ipv4;
+{%   endif %}
+  route {{ pfx }} unreachable;
+{%   if loop.last %}
+}
+{%   endif %}
+{% endfor %}
+
+filter bgp_prefixes {
+  if source ~ [ RTS_STATIC, RTS_BGP ]
+    then accept;
+
+{% if bgp.advertise_loopback|default(False) %}
+  if source ~ [ RTS_DEVICE ] && ifname = "lo"
+    then accept;
+{% endif %}
+{% for intf in interfaces if 'bgp' in intf and intf.bgp.advertise|default(False) %}
+  if source ~ [ RTS_DEVICE ] && ifname = "{{ intf.ifname }}"
+    then accept;
+{% endfor %}
+  reject;
+}
+
 {% for n in bgp.neighbors %}
 {%   for af in [ 'ipv4','ipv6' ] if af in n %}
-protocol bgp {
-  local as {{ n.local_as|default(bgp.as) }};
+protocol bgp bgp_{{ n.name }}_{{ af }} {
+{%     set loopback = loopback|default({}) %}
+{%     set local_ip = loopback[af]|default('') %}
+  local {{ local_ip.split('/')[0] if n.type == 'ibgp' else '' }} as {{ n.local_as|default(bgp.as) }};
   neighbor {{ n[af] }} as {{ n['as'] }};
+{%     if bgp.rr|default('') and ((not n.rr|default('') and n.type == 'ibgp') or n.type == 'localas_ibgp') %}
+  rr client;
+{%       if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
+  rr cluster id {{ bgp.rr_cluster_id }};
+{%       endif %}
+{%     endif %}
+{%     if af in n.activate and n.activate[af] %}
   {{ af }} {
     import all;
-    export where source ~ [ RTS_STATIC, RTS_BGP ];
-{%     if 'next_hop_self' in bgp and bgp.next_hop_self %}
-    next hop self;
-{%     endif %}
+    export filter bgp_prefixes;
+{%       if 'next_hop_self' in bgp and bgp.next_hop_self and n.type == 'ibgp' %}
+    next hop self ebgp;
+{%       endif %}
   };
+{%     endif %}
 }
 {%   endfor %}
 {% endfor %}

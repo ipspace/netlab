@@ -28,7 +28,8 @@
 (caveats-bird)=
 ## BIRD Internet Routing Daemon
 
-* BIRD is supported as a pure control-plane daemon running on a Linux VM or as a container with a single external interface.
+* BIRD is implemented as a pure control-plane daemon running on a Linux VM or as a container with a single external interface. You can set the node **role** to **router** to turn a BIRD instance into a more traditional networking device with a loopback interface.
+* _netlab_ installs BIRD software in a container image or a VM on top of Ubuntu 22.04. The current version of BIRD shipping with Ubuntu 22.04 is 2.0.8.
 * BIRD supports a single router ID that is used for BGP and OSPF.
 * The VM or container running BIRD starts with static routes pointing to one of the adjacent routers (see [host routes on Linux](linux-routes)). BGP and OSPF routes learned by BIRD are copied into the kernel IP routing table.
 
@@ -40,9 +41,12 @@
 
 * You must run OSPF on the BIRD daemon for the IBGP sessions to work.
 * BIRD will not advertise (reflect) an IBGP route if it has an equivalent OSPF route.
-* BIRD changes the next hop of the reflected routes (will be fixed)
 * You cannot configure BGP community propagation on BIRD. All BGP communities are always propagated to all neighbors.
-* BIRD might prefer a link-local address as the next hop for an IBGP IPv6 prefix and will use that link-local address when doing route reflection, resulting in broken IPv6 connectivity.
+
+### IPv6 Caveats
+
+* OSPFv3 does not advertise the prefix configured on the loopback interface even when the loopback interface is part of the OSPFv3 process.
+* If the BGP next hop of a reflected IBGP route is reachable as an OSPF route, BIRD advertises a link-local address as one of the next hops of the IBGP IPv6 prefix, potentially resulting in broken IPv6 connectivity.
 
 (caveats-csr)=
 ## Cisco CSR 1000v

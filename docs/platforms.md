@@ -236,9 +236,9 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco IOS XRv         | ✅   |  ✅   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
 | Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
-| Dell OS10             | [❗](caveats-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
-| Fortinet FortiOS      | [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
+| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |  ❌  |  ❌  |
+| Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
 | FRR                   | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Juniper vPTX          | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
@@ -254,9 +254,9 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 Routing protocol [configuration modules](module-reference.md) are also supported on these daemons:
 
-| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [BGP](module/bgp.md) | [BFD](module/bfd.md) | |
+| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [BGP](module/bgp.md) | [BFD](module/bfd.md) |
 |------------------------------|:--:|:--:|:--:|:--:|
-| BIRD Internet Routing Daemon | ❌  | ✅ | ❌  | ❌  |
+| BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ✅ [❗](caveats-bird) | ❌ |
 
 (platform-dataplane-support)=
 The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:

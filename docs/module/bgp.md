@@ -3,7 +3,7 @@
 This configuration module configures the BGP routing process and BGP neighbors on most [supported platforms](platform-routing-support). The configuration module sets up BGP sessions according to these simple design rules:
 
 * EBGP sessions are established between directly connected IP addresses on every link where the connected routers belong to different autonomous systems. Parallel sessions are established for all address families (IPv4, IPv6) configured on the link.
-* IBGP sessions are established between loopback interfaces of routers in the same autonomous system. Parallel sessions are established for all address families configured on the loopback interfaces.
+* IBGP sessions are established between loopback interfaces of routers in the same autonomous system, or with external interfaces of routing daemons. Parallel sessions are established for all address families configured on the loopback interfaces.
 * IGBP sessions could form a full mesh (when no router reflectors are configured in the autonomous system) or a hubs-and-spokes topology with a single route reflector cluster and a full mesh of IBGP sessions between route reflectors.
 * Sessions (IBGP or EBGP) between directly connected IP addresses are established whenever the real AS or the local AS of the devices differ, allowing you to build scenarios like IBGP-over-EBGP (EVPN design) or IBGP mesh across multiple autonomous systems (ISP migration scenario).
 
@@ -50,9 +50,7 @@ Even more BGP features are implemented in the following plugins:
 
 ## Platform Support
 
-_netlab_ supports most BGP features on [all platforms supporting BGP configuration module](platform-routing-support), with the following exceptions:
-
-* Cumulus Linux 5.2.0 using NVUE cannot configure IBGP sessions between loopback interfaces. Please [see caveats for more details](caveats-cumulus-nvue).
+_netlab_ supports most BGP features on [all platforms supporting BGP configuration module](platform-routing-support) (see [platform support table](platform-routing-support) for device-specific caveats).
 
 The following features are only supported on a subset of platforms:
 
@@ -60,6 +58,7 @@ The following features are only supported on a subset of platforms:
 | --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Aruba AOS-CX          |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
+| BIRD                  |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS/IOS XE      |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS XRv         |  ❌  |  ❌  |  ❌  |  ❌  |  ✅ |
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
