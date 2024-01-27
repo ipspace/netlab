@@ -15,7 +15,7 @@ from .. import modules
 from ..modules import bgp
 from ..data import get_box,get_empty_box
 from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
+from ..data.types import must_be_dict,must_be_list,must_be_id,transform_asdot
 from . import nodes
 
 '''
@@ -435,8 +435,6 @@ def create_bgp_autogroups(topology: Box) -> None:
   if not isinstance(g_module,list):                             # Won't deal with incorrectly formatted 'module' attribute here
     g_module = []                                               # ... just assume it's an empty list
   g_bgpas = data.get_global_parameter(topology,'bgp.as')        # Try to get the global BGP AS
-  if not data.is_true_int(g_bgpas):                             # ... don't worry if it's not int, someone else will complain
-    g_bgpas = 0
 
   for gname,gdata in topology.groups.items():                   # Sanity check: BGP autogroups should not have static members
     if re.match('as\\d+$',gname):
@@ -455,9 +453,11 @@ def create_bgp_autogroups(topology: Box) -> None:
       continue
 
     try:
-      n_bgpas = n_data.get('bgp.as') or g_bgpas                 # Get node-level or global BGP AS
+      n_bgpas = n_data.get('bgp.as',g_bgpas)                    # Get node-level or global BGP AS
+      if not data.is_true_int(n_bgpas):                         # ... if it's not int, it might be as.dot
+        n_bgpas = transform_asdot(n_bgpas)
     except:
-      n_bgpas = g_bgpas
+      n_bgpas = 0
 
     if not n_bgpas:
       continue

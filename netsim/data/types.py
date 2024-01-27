@@ -511,13 +511,62 @@ def must_be_bool(value: typing.Any) -> dict:
   return { '_valid': True } if isinstance(value,bool) else { '_type': 'a boolean' }
 
 @type_test()
-def must_be_asn(value: typing.Any) -> dict:
+def must_be_asn2(value: typing.Any) -> dict:                          # 2-octet ASN (in case we need it somewhere)
   err = 'an AS number (integer between 1 and 65535)'
   if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
     return { '_type': err }
 
   if value < 0 or value > 65535:
     return { '_value': err }
+
+  return { '_valid': True }
+
+def transform_asdot(value: str) -> int:
+  asv = 0
+  for asp in value.split('.'):
+    asv = 65536 * asv + int(asp)
+
+  return asv
+
+_ASN_help = 'an integer between 1 and 4294967295, optionally written as asdot string N.N where N <= 65535'
+
+def asdot_parsing(value: str) -> dict:
+  err = 'a 4-octet AS number'
+  global _ASN_help
+
+  as_parts = value.split('.')
+  asv = 0
+  if len(as_parts) > 2:
+    return { '_type': f'{err} with two parts when using as.dot notation' }
+
+  for asn in as_parts:
+    try:
+      asp = int(asn)
+    except:
+      return { '_type': f'{err} with each part of as.dot string being an integer' }
+    if asp < 0 or asp > 65535:
+      return { '_value': f'{err} with each part of as.dot string being a 2-octet value' }
+
+    asv = 65536 * asv + asp
+
+  if asv <= 0 or asv >= 2**32:
+    return { '_value': f'{err} -- specified value is out of bounds' }
+  
+  return { '_valid': True, '_transform': transform_asdot }
+
+@type_test()
+def must_be_asn(value: typing.Any) -> dict:
+  err = 'a 4-octet AS number'
+  global _ASN_help
+
+  if isinstance(value,str):
+    return asdot_parsing(value)
+
+  if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
+    return { '_type': err, '_help': _ASN_help }
+
+  if value < 0 or value > 4294967295:
+    return { '_value': f'{err} -- an integer between 1 and 4294967295' }
 
   return { '_valid': True }
 

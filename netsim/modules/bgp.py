@@ -9,7 +9,7 @@ import netaddr
 
 from . import _Module,_routing
 from .. import data
-from ..data.types import must_be_int,must_be_list,must_be_dict
+from ..data.types import must_be_int,must_be_list,must_be_asn
 from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log
@@ -24,7 +24,7 @@ def check_bgp_parameters(node: Box) -> None:
       'bgp')
     return
 
-  must_be_int(parent=node,key='bgp.as',path=f'nodes.{node.name}',min_value=1,max_value=65535,module='bgp')
+  must_be_asn(parent=node,key='bgp.as',path=f'nodes.{node.name}',module='bgp')
 
   if "community" in node.bgp:
     bgp_comm = node.bgp.community

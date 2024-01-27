@@ -25,6 +25,7 @@ Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../n
 _netlab_ BGP configuration module supports these features:
 
 * Multiple autonomous systems
+* 2-octet and 4-octet BGP AS numbers[^4O]
 * IPv4 and IPv6 address families
 * Direct (single-hop) EBGP sessions
 * IBGP sessions between loopback interfaces
@@ -39,6 +40,8 @@ _netlab_ BGP configuration module supports these features:
 * Changing local autonomous system for individual BGP sessions (*local-as*)
 * Static **router-id** and **cluster-id**
 * Interaction with OSPF or IS-IS (IGP is disabled on external links)
+
+[^4O]: Some platforms might not support 4-octet AS numbers. The propagation of large BGP communities is not yet configurable.
 
 Even more BGP features are implemented in the following plugins:
 
