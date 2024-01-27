@@ -510,10 +510,11 @@ def execute_validation_plugin(
   if OK is not None:
     test_result_count += 1
     if OK:
-      log_progress(f'Validation succeeded on {node.name}',topology)
+      msg = f'{node.name}: {OK}' if isinstance(OK,str) else f'Validation succeeded on {node.name}'
+      log_progress(msg,topology)
       test_pass_count += 1
 
-  return OK
+  return bool(OK)
 
 '''
 Execute a single validation test on all specified nodes
@@ -532,6 +533,17 @@ def execute_validation_test(
   if 'wait' in v_entry and not args.nowait:
     wait_before_testing(v_entry,start_time,topology)
 
+  if not v_entry.nodes:
+    if 'wait' in v_entry:
+      return None
+
+    log_info(
+      f'There are no nodes specified for this test, skipping...',
+      f_status='SKIPPED',
+      topology=topology)
+    test_skip_count += 1
+    return None
+
   for n_name in v_entry.nodes:                    # Iterate over all specified nodes
     node = topology.nodes[n_name]
     result = data.get_empty_box()
@@ -543,7 +555,7 @@ def execute_validation_test(
     if action is None:                            # None found, skip this node
       log_info(
         f'Test action not defined for device {node.device} / node {n_name}',
-        f_status = 'SKIPPED',
+        f_status='SKIPPED',
         topology=topology)
       test_skip_count += 1                        # Increment skip count for test results summary
       continue

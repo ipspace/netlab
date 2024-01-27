@@ -133,6 +133,10 @@ session:
       {% endfor %}
 ```
 
+```{tip}
+It might be easier to use [validation plugins](validate-plugin) to create complex validation tests.
+```
+
 The test will be used by students configuring BGP routers; it includes the **description**, **pass**, and **fail** parameters to make the test results easier to understand.
 
 The test uses a **show** command that produces JSON printouts on Cumulus Linux, FRR, and Arista EOS. Cisco IOSv cannot generate JSON printouts; the command to execute on Cisco IOSv is therefore specified in the **exec** parameter.
@@ -207,6 +211,26 @@ The function calls specified in the **plugin** validation test parameter can con
 * Any topology value. For example, you can use the `nodes` dictionary, the `links` list, or any expression that evaluates to a valid topology element, for example, `nodes.dut.ospf.router_id`.
 * Current node parameters are available in the `node` variable. For example, use `node.name` to get the name of the node on which the test is executed or `node.ospf.router_id` to get the local OSPF router ID.
 * The validation function can access the parsed results of the **show** or **exec** command as the global `_result` variable.
+
+The same input parameters are passed to **show_XXX**, **exec_XXX**, and **valid_XXX** functions. If you want to have flexible validation functions, they might need many arguments that are not relevant to the **show_XXX**/**exec_XXX** functions. In that case, use the `**kwargs` parameter to ignore the extra parameters, for example:
+
+```
+def show_bgp_neighbor(ngb: list, n_id: str, **kwargs: typing.Any) -> str:
+  return 'bgp summary json'
+
+def valid_bgp_neighbor(
+      ngb: list,
+      n_id: str,
+      af: str = 'ipv4',
+      state: str = 'Established',
+      intf: str = '') -> str:
+...
+```
+
+### Return Values
+
+* The **show_XXX** and **exec_XXX** functions should return the string to execute on the tested node.
+* The **valid_XXX** function should return *False* if the validation failed, and *True* or a string value if the validation succeeded. The string value returned by the **valid_XXX** function is used as the *validation succeeded* message by the `netlab validate` command.
 
 ### Error Handling
 
