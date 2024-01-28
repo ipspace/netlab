@@ -3,7 +3,7 @@
 This configuration module configures the BGP routing process and BGP neighbors on most [supported platforms](platform-routing-support). The configuration module sets up BGP sessions according to these simple design rules:
 
 * EBGP sessions are established between directly connected IP addresses on every link where the connected routers belong to different autonomous systems. Parallel sessions are established for all address families (IPv4, IPv6) configured on the link.
-* IBGP sessions are established between loopback interfaces of routers in the same autonomous system, or with external interfaces of routing daemons. Parallel sessions are established for all address families configured on the loopback interfaces.
+* IBGP sessions are established between loopback interfaces of routers in the same autonomous system or with external interfaces of routing daemons. Parallel sessions are established for all address families configured on the loopback interfaces.
 * IGBP sessions could form a full mesh (when no router reflectors are configured in the autonomous system) or a hubs-and-spokes topology with a single route reflector cluster and a full mesh of IBGP sessions between route reflectors.
 * Sessions (IBGP or EBGP) between directly connected IP addresses are established whenever the real AS or the local AS of the devices differ, allowing you to build scenarios like IBGP-over-EBGP (EVPN design) or IBGP mesh across multiple autonomous systems (ISP migration scenario).
 
@@ -25,7 +25,7 @@ Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../n
 _netlab_ BGP configuration module supports these features:
 
 * Multiple autonomous systems
-* 2-octet and 4-octet BGP AS numbers[^4O]
+* 2-octet and 4-octet BGP AS numbers. 4-octet AS numbers can be specified in as.dot notation.
 * IPv4 and IPv6 address families
 * Direct (single-hop) EBGP sessions
 * IBGP sessions between loopback interfaces
@@ -40,8 +40,6 @@ _netlab_ BGP configuration module supports these features:
 * Changing local autonomous system for individual BGP sessions (*local-as*)
 * Static **router-id** and **cluster-id**
 * Interaction with OSPF or IS-IS (IGP is disabled on external links)
-
-[^4O]: Some platforms might not support 4-octet AS numbers. The propagation of large BGP communities is not yet configurable.
 
 Even more BGP features are implemented in the following plugins:
 
@@ -142,7 +140,7 @@ Additional per-node BGP configuration parameters include:
 * **bgp.router_id** -- set static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device has no loopback interface or there's no usable IPv4 address on the loopback interface.
 
 (bgp-advanced-node)=
-Finally, the BGP configuration module supports these advanced node parameters that you probably shouldn't touch without a very good reason:
+Finally, the BGP configuration module supports these advanced node parameters that you probably shouldn't touch without an excellent reason:
 
 * **bgp.rr_cluster_id** -- set static route reflector cluster-ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
 * **bgp.replace_global_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to disable that functionality and include both autonomous systems in the AS path[^RAS_P].
@@ -268,7 +266,7 @@ See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 (bgp-ebgp-sessions)=
 **EBGP sessions**
 * Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them.
-* Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS, or IBGP sessions between nodes belonging to different AS.
+* Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS or IBGP sessions between nodes belonging to different AS.
 * Parallel EBGP sessions are established for all IP address families configured on the link[^BSESS]. See also [IPv6 support](#ipv6-support).
 
 See the [Simple BGP](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) examples for more details.
@@ -306,7 +304,7 @@ The propagation of BGP communities over IBGP and EBGP sessions is controlled wit
 
 The value of **bgp.community** attribute could be:
 
-* A string: **standard** or **extended** -- only specified communities will be propagated to IBGP and EBGP neighbors. In the following example, R1 propagates standard communities to all its neighbors.
+* A string: only specified communities will be propagated to IBGP and EBGP neighbors. In the following example, R1 propagates standard communities to all its neighbors.
 
 ```
 nodes:
@@ -315,13 +313,13 @@ nodes:
       community: standard
 ```
 
-* A list of strings (**standard**, **extended**, or both) -- all communities specified in the list will be propagated to IBGP and EBGP neighbors. Most network operating systems will be configured with the **both** configuration keyword if you specify `['standard','extended']` as the value. In the following example, R1 propagates standard and extended communities to all its neighbors.
+* A list of strings -- all communities specified in the list will be propagated to IBGP and EBGP neighbors. In the following example, R1 propagates standard and extended communities to all its neighbors.
 
 ```
 nodes:
   r1:
     bgp:
-      community: [standard, extended]
+      community: [ standard, extended]
 ```
 
 * A dictionary with two keys: **ibgp** and **ebgp**. The value of each key could be a string or a list (see above). The following example sets a network-wide default -- send standard and extended communities to the IBGP neighbors and standard communities to EBGP neighbors (this is the global default set in the built-in **topology-defaults.yml** file).
@@ -341,6 +339,17 @@ nodes:
     bgp:
       community: []
 ```
+
+The **bgp.community** values can contain these keywords:
+
+* **standard**: Standard BGP communities (RFC 1997) and large BGP communities (RFC 8092) are sent to the neighbor[^NAL]. 
+* **extended**: Extended BGP communities (RFC 4360) are sent to the neighbor.
+* **large**: Large BGP communities (RFC 8092) are sent to the neighbor
+* **2octet**: Standard BGP communities using 2-octet ASN (RFC 1997) are sent to the neighbor.
+
+[^NAL]: Some devices might not propagate the large communities when using the **standard** keyword.
+
+Only some devices support **large** and **2octet** keywords. Use **[netlab show modules -m bgp](netlab-show-modules)** command to display BGP capabilities supported by individual devices and check the **community** column for more details. Devices without a value in that column support **standard** and **extended** keywords, but the meaning of the **standard** keyword might vary. Some devices (for example, Cisco IOSv and IOS XE) propagate large BGP communities as soon as the propagation of standard communities is configured. In contrast, others (for example, Arista EOS) require an explicit configuration of **large** community propagation.
 
 ## Related Plugins
 

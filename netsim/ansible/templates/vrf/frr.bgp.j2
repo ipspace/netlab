@@ -1,6 +1,3 @@
-{% macro community(list) -%}
-{{ "both" if list|length >= 2 else list[0] }}
-{%- endmacro %}
 !
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  no bgp ebgp-requires-policy
@@ -37,8 +34,10 @@ router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
 {%   for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
 {%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
   neighbor {{ peer }} activate
-{%     if bgp.community.ebgp|default([]) %}
-  neighbor {{ peer }} send-community {{ community(bgp.community.ebgp) }}
+{%     if n.type in bgp.community|default({}) %}
+{%       for c_type in bgp.community[n.type] %}
+  neighbor {{ peer }} send-community {{ c_type }}
+{%       endfor %}
 {%     endif %}
 {%   endfor %}
  exit-address-family

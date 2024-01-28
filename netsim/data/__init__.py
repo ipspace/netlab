@@ -138,3 +138,27 @@ def find_in_list(value: list, target: list) -> typing.Optional[int]:
       continue
 
   return None
+
+"""
+Lookup a netlab keyword, return a list of device keyword(s)
+"""
+def kw_lookup(lookup_table: typing.Union[dict,Box], kw: str) -> list:
+  if not kw in lookup_table:                      # Do we know what to do?
+    return []                                     # ... nope, it's better to skip this one
+  
+  v = lookup_table[kw]                            # Get the lookup value
+  if v is None or v is True:                      # No translation, use the original keyword
+    return [ kw ]
+  elif v is False:                                # This keyword is not supported, skip it
+    return []
+  else:
+    return v if isinstance(v,list) else [ v ]     # ... otherwise return the translated value as a list
+
+def kw_list_transform(lookup_table: typing.Union[dict,Box], kw_list: list) -> list:
+  xf_list = []
+  for kw in kw_list:
+    for lookup_kw in kw_lookup(lookup_table,kw):
+      if not lookup_kw in xf_list:
+        xf_list.append(lookup_kw)
+
+  return xf_list

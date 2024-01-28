@@ -14,7 +14,7 @@ from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log
 
-def check_bgp_parameters(node: Box) -> None:
+def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
   if not "as" in node.bgp:
@@ -50,7 +50,7 @@ def check_bgp_parameters(node: Box) -> None:
           parent=node.bgp.community,
           path=f'nodes.{node.name}.bgp.community',
           key=k,
-          valid_values=['standard','extended'],
+          valid_values=topology['defaults.bgp.attributes.global.community.ibgp'],
           module='bgp')
 
 BGP_VALID_AF: typing.Final[list] = ['ipv4','ipv6']
@@ -515,6 +515,38 @@ def process_as_list(topology: Box) -> None:
 
       node.bgp = node_data[name] + node.bgp
 
+BGP_DEFAULT_COMMUNITY_KW: typing.Final[dict] = {
+  'standard': 'standard',
+  'extended': 'extended'
+}
+
+"""
+bgp_transform_community_list: transform _netlab_ community keywords into device keywords
+"""
+def bgp_transform_community_list(node: Box, topology: Box) -> None:
+  clist = node.get('bgp.community')
+  if not clist:
+    return
+  
+  features = devices.get_device_features(node,topology.defaults)
+  kw_xform = features.get('bgp.community') or BGP_DEFAULT_COMMUNITY_KW
+
+  for s_type in list(clist.keys()):
+    kw_list = clist[s_type]
+    for kw in kw_list:
+      if not kw in kw_xform:
+        log.error(
+          f"Invalid {s_type} BGP community propagation keyword '{kw}' for device {node.device}/node {node.name}",
+          category=log.IncorrectValue,
+          module='bgp',
+          more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ])
+    
+  if 'ibgp_localas' not in clist:
+    clist.ibgp_localas = clist.ibgp
+
+  for s_type in list(clist.keys()):
+    clist[s_type] = data.kw_list_transform(kw_xform,clist[s_type])
+
 class BGP(_Module):
 
   """
@@ -536,7 +568,7 @@ class BGP(_Module):
       if node.name in topology.bgp.rr_list:
         node.bgp.rr = True
 
-    check_bgp_parameters(node)
+    check_bgp_parameters(node, topology)
 
   """
   Link pre-transform: Set link role based on BGP nodes attached to the link.
@@ -581,3 +613,4 @@ class BGP(_Module):
     bgp_set_advertise(node,topology)
     bgp_set_originate_af(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')
+    bgp_transform_community_list(node,topology)
