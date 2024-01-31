@@ -41,19 +41,29 @@ class _Provider(Callback):
   def get_full_template_path(self) -> str:
     return str(_files.get_moddir()) + '/' + self.get_template_path()
 
-  def find_extra_template(self, node: Box, fname: str) -> typing.Optional[str]:
-    path_suffix = [ node.device ]
-    path_prefix = [ '.', self.get_full_template_path() ]
+  def find_extra_template(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
+    if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
+      path_prefix = topology.defaults.paths.custom.dirs
+      path_suffix = [ fname ]
+      fname = node.device
+    else:
+      path_suffix = [ node.device ]
+      path_prefix = topology.defaults.paths.templates.dirs + [ self.get_full_template_path() ]
 
-    if node.get('_daemon',False):
-      if '_daemon_parent' in node:
-        path_suffix.append(node._daemon_parent)
-      path_prefix.append(str(_files.get_moddir() / 'daemons'))
+      if node.get('_daemon',False):
+        if '_daemon_parent' in node:
+          path_suffix.append(node._daemon_parent)
+        path_prefix.append(str(_files.get_moddir() / 'daemons'))
 
     path = [ pf + "/" + sf for pf in path_prefix for sf in path_suffix ]
     if log.debug_active('clab'):
       print(f'Searching for {fname}.j2 in {path}')
-    return _files.find_file(fname+'.j2',path)
+
+    found_file = _files.find_file(fname+'.j2',path)
+    if log.debug_active('clab'):
+      print(f'Found file: {found_file}')
+
+    return found_file
 
   def get_output_name(self, fname: typing.Optional[str], topology: Box) -> str:
     if fname:
@@ -110,9 +120,10 @@ class _Provider(Callback):
     cur_binds = node.get(f'{self.provider}.{outkey}',[])
     bind_dict = filemaps.mapping_to_dict(cur_binds)
     for file,mapping in map_dict.items():
+      file = file.replace('@','.')
       if file in bind_dict:
         continue
-      if not self.find_extra_template(node,file):
+      if not self.find_extra_template(node,file,topology):
         log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
           category=log.IncorrectValue,
@@ -143,7 +154,7 @@ class _Provider(Callback):
       if not out_folder in file:                  # Skip files that are not mapped into the temporary provider folder
         continue
       file_name = file.replace(out_folder+"/","")
-      template_name = self.find_extra_template(node,file_name)
+      template_name = self.find_extra_template(node,file_name,topology)
       if template_name:
         node_data = node + { 'hostvars': topology.nodes }
         if '/' in file_name:                      # Create subdirectory in out_folder if needed
@@ -247,6 +258,9 @@ Execute a topology-wide provider hook
 def execute(hook: str, topology: Box) -> None:
   p_module = get_provider_module(topology,topology.provider)
   p_module.call(hook,topology)
+
+  for node in topology.nodes.values():
+    execute_node(f'node_{hook}',node,topology)
 
 """
 Execute a node-level provider hook

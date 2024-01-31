@@ -103,14 +103,15 @@ class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
+    node_fp = get_forwarded_ports(node,topology)
+    if node_fp:
+      add_forwarded_ports(node,node_fp)
+
+  def node_post_transform(self, node: Box, topology: Box) -> None:
     add_daemon_filemaps(node,topology)
     normalize_clab_filemaps(node)
 
     self.create_extra_files_mappings(node,topology)
-
-    node_fp = get_forwarded_ports(node,topology)
-    if node_fp:
-      add_forwarded_ports(node,node_fp)
 
   def post_configuration_create(self, topology: Box) -> None:
     for n in topology.nodes.values():

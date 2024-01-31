@@ -176,18 +176,6 @@ def find_node_device(n: Box, topology: Box) -> bool:
   if not isinstance(dev_def,Box):
     log.fatal(f"Device data for device {devtype} must be a dictionary")
 
-  if dev_def.get('daemon',False):                 # Special handling of daemons
-    n._daemon = True                              # First, set the daemon flag so we don't have to look up the device data
-    n._daemon_parent = dev_def.daemon_parent      # Next, remember the parent device -- we need that in template search paths
-    if 'daemon_config' in dev_def:                # Does the daemon need special configuration files?
-      n._daemon_config = dev_def.daemon_config    # Yes, save it for later (clab binds or Ansible playbooks)
-
-  # Do a sanity check on _daemon_config dictionary. Remove faulty value to prevent downstream crashes
-  #
-  if '_daemon_config' in n and not isinstance(n._daemon_config,Box):
-    log.error(f"Daemon configuration files for node {n} must be a dictionary")
-    n.pop('_daemon_config',None)
-
   return True
 
 """
@@ -320,6 +308,18 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
       if not k in n:
         n[k] = defaults.devices[n.device].node[k]
 
+  if dev_data.get('daemon',False):                # Special handling of daemons
+    n._daemon = True                              # First, set the daemon flag so we don't have to look up the device data
+    n._daemon_parent = dev_data.daemon_parent     # Next, remember the parent device -- we need that in template search paths
+    if 'daemon_config' in dev_data:               # Does the daemon need special configuration files?
+      n._daemon_config = dev_data.daemon_config   # Yes, save it for later (clab binds or Ansible playbooks)
+
+  # Do a sanity check on _daemon_config dictionary. Remove faulty value to prevent downstream crashes
+  #
+  if '_daemon_config' in n and not isinstance(n._daemon_config,Box):
+    log.error(f"Daemon configuration files for node {n} must be a dictionary")
+    n.pop('_daemon_config',None)
+
 '''
 Main node transformation code
 
@@ -377,6 +377,26 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
+
+'''
+Final cleanup of node data
+'''
+def cleanup_daemon_config(n: Box) -> None:
+  for k in list(n._daemon_config.keys()):
+    if k.startswith('_'):                                   # Skip internal mappings (will have to be redone later)
+      continue
+
+    kn = k.replace('@','.')                                 # A workaround for aggressive de-dotting
+    # Leave config mappings for device configuration, module configuration, or extra configs
+    if kn == n.device or kn in n.get('module',[]) or kn in n.get('config',[]):
+      continue
+
+    n._daemon_config.pop(k,None)
+
+def cleanup(topology: Box) -> None:
+  for name,n in topology.nodes.items():
+    if '_daemon_config' in n:
+      cleanup_daemon_config(n)
 
 '''
 Return a copy of the topology (leaving original topology unchanged) with unmanaged devices removed

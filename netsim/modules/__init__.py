@@ -145,12 +145,6 @@ def augment_node_module(topology: Box) -> None:
       if g_module and (not is_host or daemon):
         n.module = g_module
 
-    # Remove modules that are not used on the current daemon from the _daemon_config dictionary
-    if '_daemon_config' in n:
-      for m in list(n._daemon_config.keys()):
-        if m in mod_list and not m in n.module:                 # If an entry in _daemon_config is a known module
-          n._daemon_config.pop(m,None)                          # that is not active on the node, remove it
-
 # Check whether the modules defined on individual nodes are valid module names
 # and supported by the node device type
 #
