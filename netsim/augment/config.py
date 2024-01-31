@@ -123,7 +123,10 @@ def make_paths_absolute(p_top: Box) -> None:
       p_top[k] = [ fn.replace('\n','') for fn in p_top[k] ]
       continue
     v = p_top[k]
+    if isinstance(v,str):
+      v = [ v ]
     if isinstance(v,list):
+      print(f'transforming: {k} {v}')
       p_top[k] = _files.absolute_search_path(v)
     elif isinstance(v,Box):
       make_paths_absolute(v)
