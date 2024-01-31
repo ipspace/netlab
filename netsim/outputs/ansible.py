@@ -101,15 +101,19 @@ def create(topology: Box) -> Box:
         if ('_pfx' in k) or ('_eui' in k):
           del pool[k]
 
+  extra_groups: dict = {                    # Extra groups created in Ansible inventory
+    'module':  'modules',                   # Devices using configuration modules
+    'config':  'custom_configs',            # Devices using custom configuration
+    '_daemon': 'daemons'                    # Daemons
+  }
+
   for name,node in topology.nodes.items():
     group = node.get('device','all')
     inventory[group].hosts[name] = ansible_inventory_host(node,topology)
 
-    if 'module' in node:
-      inventory.modules.hosts[name] = {}
-
-    if 'config' in node:
-      inventory.custom_configs.hosts[name] = {}
+    for xg in extra_groups.keys():
+      if node.get(xg,False):                # Add device to the extra group if it has the corresponding attribute set
+        inventory[extra_groups[xg]].hosts[name] = {}
 
   if 'devices' in defaults:
     for group in inventory.keys():

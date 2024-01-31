@@ -184,11 +184,13 @@ def merge_daemons(topology: Box) -> None:
 
   for dname in list(daemons):
     devices[dname] = daemons[dname]
-    devices[dname].daemon = True                          # Mark the device as a daemon
+    devices[dname].daemon = True                            # Mark the device as a daemon
+    if 'netlab_device_type' not in devices[dname].group_vars:
+      devices[dname].group_vars.netlab_device_type = dname  # Remember the device type (needed for config templates)
     if not 'parent' in devices[dname]:
-      devices[dname].parent = 'linux'                     # Most daemons run on Linux
+      devices[dname].parent = 'linux'                       # Most daemons run on Linux
 
-    devices[dname].daemon_parent = devices[dname].parent  # Save the parent for future use (it is removed when merging parent device data)
+    devices[dname].daemon_parent = devices[dname].parent    # Save the parent for future use (it is removed when merging parent device data)
 
 """
 Initial device setting augmentation:

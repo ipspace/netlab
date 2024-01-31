@@ -1,19 +1,21 @@
 - delegate_to: localhost
+  vars:
+    config_module: "{{ item }}"
   block:
   - set_fact:
       config_template: "{{ lookup('first_found',params,errors='ignore') }}"
     vars:
       params:
         paths: "{{ paths }}"
-        files:
-        - "{{item}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2"
-        - "{{item}}/{{netlab_device_type}}.j2"
-        - "{{item}}.{{netlab_device_type}}.j2"
-        - "{{item}}/{{ansible_network_os}}-{{provider|default(netlab_provider)}}.j2"
-        - "{{item}}/{{ansible_network_os}}.j2"
-        - "{{item}}.{{ansible_network_os}}.j2"
-        - "{{item if '.' in item else item ~ '.j2' }}"
+        files: "{{ paths_templates.files }}"
 
   - template:
       src: "{{ config_template }}"
       dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.cfg"
+    when: config_template
+
+  - fail:
+      msg: >
+        Missing configuration template for {{ item }} on device
+        {{ netlab_device_type|default(ansible_network_os) }}/{{ ansible_network_os }}
+    when: not config_template

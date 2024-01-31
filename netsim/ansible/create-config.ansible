@@ -23,7 +23,7 @@
       apply:
         vars:
           item: initial
-          paths: [ "../templates" ]
+          paths: "{{ paths_templates.dirs }}"
 
 - name: Create module-specific configurations
   hosts: modules
@@ -37,7 +37,7 @@
     args:
       apply:
         vars:
-          paths: [ "{{ lookup('env','PWD') }}/templates","~/.netlab/templates","../templates" ]
+          paths: "{{ paths_templates.dirs }}"
 
 - name: Create custom deployment templates
   hosts: custom_configs
@@ -50,7 +50,21 @@
     args:
       apply:
         vars:
-          paths:
-          - "{{ lookup('env','PWD') }}"
-          - "~/.netlab"
-          - "../../extra"
+          paths: "{{ paths_custom.dirs }}"
+
+- name: Create custom deployment templates
+  hosts: daemons
+  serial: 1
+  vars:
+    extra_config: >
+      {{ _daemon_config|default({})
+            |list
+            |difference(modules|default([]))
+            |difference(config|default([])) }}
+  tasks:
+  - include_tasks: "tasks/create-config.yml"
+    loop: "{{ extra_config }}"
+    args:
+      apply:
+        vars:
+          paths: "{{ paths_templates.dirs }}"
