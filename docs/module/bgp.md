@@ -1,3 +1,4 @@
+(module-bgp)=
 # BGP Configuration Module
 
 This configuration module configures the BGP routing process and BGP neighbors on most [supported platforms](platform-routing-support). The configuration module sets up BGP sessions according to these simple design rules:
@@ -49,6 +50,7 @@ Even more BGP features are implemented in the following plugins:
 * [ebgp.multihop](../plugins/ebgp.multihop.md): implements multihop EBGP sessions.
 * [bgp.domain](../plugins/bgp.domain.md): allows you to build topologies that reuse the same BGP ASN in different network parts.
 
+(bgp-platform)=
 ## Platform Support
 
 _netlab_ supports most BGP features on [all platforms supporting BGP configuration module](platform-routing-support) (see [platform support table](platform-routing-support) for device-specific caveats).
@@ -133,7 +135,7 @@ Instead of using a global list of autonomous systems, you could specify a BGP au
 Additional per-node BGP configuration parameters include:
 
 * **bgp.advertise_loopback** -- when set to `False`, the IP prefixes configured on loopback interfaces are not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
-* **bgp.community** -- override global BGP community propagation defaults for this node. See *[BGP Community Propagation](#bgp-communities-propagation)* for more details.
+* **bgp.community** -- override global BGP community propagation defaults for this node. See *[](bgp-community-propagation)* for more details.
 * **bgp.local_as** -- the autonomous system used on all EBGP sessions.
 * **bgp.next_hop_self** -- use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
@@ -298,6 +300,7 @@ The BGP transformation module can set link *role* on links used for EBGP session
 
 **Consequence:** The default settings exclude links with EBGP sessions from IGP processes. See the [Simple BGP Example](bgp_example/simple.md) for more details.
 
+(bgp-community-propagation)=
 ## BGP Communities Propagation
 
 The propagation of BGP communities over IBGP and EBGP sessions is controlled with global- or node-level **bgp.community** attribute.

@@ -1,3 +1,4 @@
+(validate)=
 # Lab Validation Tests
 
 Lab topology can include a series of automated tests. Once the lab runs, you can execute those tests with the **[netlab validate](../netlab/validate.md)** command. The tests can be used in any automated validation process, from checking self-paced training solutions to integration tests and CI/CD pipelines.
@@ -9,6 +10,7 @@ Lab topology can include a series of automated tests. Once the lab runs, you can
    :backlinks: none
 ```
 
+(validate-tests)=
 ## Specifying Validation Tests
 
 The **validate** topology element is a dictionary of tests that are executed in the order in which they're specified in the lab topology.

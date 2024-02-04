@@ -1,3 +1,4 @@
+(module-ospf)=
 # OSPF Configuration Module
 
 This configuration module configures OSPFv2 and OSPFv3 routing processes on most supported platforms (see [supported features](#supported-features) and [platform support](#platform-support)).

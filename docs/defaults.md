@@ -1,3 +1,4 @@
+(defaults)=
 # Topology Defaults
 
 *netlab* has dozens of system defaults that specify:
