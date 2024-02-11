@@ -20,6 +20,7 @@ from ..utils import status as _status, log, read as _read
 from ..data import global_vars
 
 DRY_RUN: bool = False
+NETLAB_SCRIPT: str = ''
 
 def parser_add_debug(parser: argparse.ArgumentParser) -> None:
   parser.add_argument('--debug', dest='debug', action='store',nargs='*',
@@ -234,7 +235,10 @@ quick_commands = {
   'alias': lambda x: usage.print_usage('alias.txt')
 }
 
-def lab_commands() -> None:
+def lab_commands(script: str) -> None:
+  global NETLAB_SCRIPT
+  NETLAB_SCRIPT = script
+
   if len(sys.argv) < 2:
     usage.run([])
     sys.exit()

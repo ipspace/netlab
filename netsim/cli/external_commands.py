@@ -21,6 +21,26 @@ def stringify(cmd : typing.Union[str,list]) -> str:
   return str(cmd)
 
 """
+add_netlab_path: Prepend the directory from which the current copy of netlab was ran to the search path
+"""
+def add_netlab_path() -> None:
+  from . import NETLAB_SCRIPT
+
+  netlab_path = os.path.dirname(NETLAB_SCRIPT)
+  path = os.environ['PATH']
+  if netlab_path in path:
+    return
+
+  if log.VERBOSE or log.debug_active('external'):
+    print(f"Adding {netlab_path} to system PATH")
+  os.environ['PATH'] = netlab_path + ":" + os.environ['PATH']
+
+  if log.VERBOSE or log.debug_active('external'):
+    print(f"New system path: {os.environ['PATH']}")
+
+  return
+
+"""
 run_command: Execute an external command specified as a string or a list of CLI parameters
 
 Flags:
@@ -45,6 +65,7 @@ def run_command(
   if log.VERBOSE or log.debug_active('external'):
     print(f"run_command executing: {cmd}")
 
+  add_netlab_path()
   if isinstance(cmd,str):
     cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
 
