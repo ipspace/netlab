@@ -467,10 +467,12 @@ def execute_validation_expression(
   if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
     p_test_fail(node.name,v_entry,topology)
     test_result_count += 1
+    return OK
   elif OK:                                    # ... or we might have a positive result
     log_progress(f'Validation succeeded on {node.name}',topology)
     test_result_count += 1
     test_pass_count += 1
+    return bool(OK)
 
   return OK
 
