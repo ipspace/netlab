@@ -88,6 +88,7 @@ def create(topology: Box) -> Box:
 
   inventory.modules.hosts = {}
   inventory.custom_configs.hosts = {}
+  inventory.daemons.hosts = {}
 
   defaults = topology.defaults
 
