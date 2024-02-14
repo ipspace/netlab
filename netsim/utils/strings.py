@@ -4,6 +4,8 @@
 import textwrap
 import typing
 import sys
+import re
+
 from box import Box,BoxList
 import rich.console, rich.table, rich.json, rich.syntax
 
@@ -167,3 +169,11 @@ def print_colored_text(txt: str, color: str, alt_txt: typing.Optional[str] = '',
     if alt_txt is not None:
       alt_txt = alt_txt or txt
       print(alt_txt,end='',file=sys.stderr if stderr else sys.stdout)
+
+"""
+make_id: Make an identifier out of a string
+"""
+def make_id(txt: str) -> str:
+  not_allowed = f'[^a-zA-Z0-9_]'
+  id = re.sub(not_allowed,'_',txt)
+  return id

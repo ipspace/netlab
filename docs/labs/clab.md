@@ -29,9 +29,11 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Virtual network device | Container image              |
 |------------------------|------------------------------|
 | Arista cEOS            | ceos:4.26.4M                 |
+| BIRD                   | netlab/bird:latest           |
 | Cumulus VX             | networkop/cx:4.4.0           |
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |
 | Dell OS10              | vrnetlab/vr-ftosv            |
+| dnsmasq                | netlab/dnsmasq:latest        |
 | FRR                    | frrouting/frr:v8.4.0         |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
 | Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
@@ -42,6 +44,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * Cumulus VX, FRR, Linux, and Nokia SR Linux images are automatically downloaded from Docker Hub.
+* You have to build the BIRD and dnsmasq images with the **netlab clab build** command.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS container image (requires a license); see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 

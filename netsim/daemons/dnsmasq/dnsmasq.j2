@@ -1,0 +1,20 @@
+dhcp-authoritative
+enable-ra
+domain=lab.local
+ra-param=*,10
+
+{% for pool in dhcp.pools|default([]) %}
+{%   for af in ('ipv4','ipv6') if af in pool %}
+dhcp-range=set:{{ af }}_{{ pool.clean_name }},{{ 
+  pool[af]|ipaddr(1)|ipaddr('address') }},{{ 
+  pool[af]|ipaddr(-2 if af == 'ipv4' else 1024)|ipaddr('address') }},{{
+  pool[af]|ipaddr('netmask') if af == 'ipv4' else pool[af]|ipaddr('prefix') }},2m
+{%     if af == 'ipv4' and pool.gateway[af] is defined %}
+dhcp-option=tag:{{ af }}_{{ pool.clean_name }},option:router,{{ pool.gateway[af]|ipaddr('address') }}
+{%     endif %}
+{%     for xa in pool.excluded[af]|default([]) %}
+dhcp-host=tag:{{ af }}_{{ pool.clean_name }},00:00:00:00:{{ loop.index + 1 }},{{ xa }}
+{%     endfor %}
+{%   endfor %}
+#
+{% endfor %}

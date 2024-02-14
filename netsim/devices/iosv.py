@@ -1,5 +1,5 @@
 #
-# Arista EOS quirks
+# Cisco IOSv quirks
 #
 from box import Box
 
@@ -23,7 +23,7 @@ def check_vrrp_bvi(node: Box, topology: Box) -> None:
       'quirks')
     return
 
-class EOS(_Quirks):
+class IOS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:

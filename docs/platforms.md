@@ -36,17 +36,19 @@
 | VyOS 1.4 [❗](caveats-vyos)               | vyos               |
 
 (platform-daemons)=
-*netlab* also supports the following daemons (control-plane software running on Linux VMs or containers):
+*netlab* also supports the following daemons (control-plane software running in containers):
 
 | Daemon                         | netlab device type |
 | ------------------------------ | ------------------ |
-| BIRD Internet Routing Daemon   | bird               |                               
+| BIRD Internet Routing Daemon [❗](caveats-bird) | bird               |
+| dnsmasq DHCP server [❗](caveats-dnsmasq)       | dnsmasq            |
 
 **Notes:**
 
 * Use the **[netlab show devices](netlab-show-devices)** command to display the list of supported devices and daemons.
 * You can specify the device type in the **device** property of the [node data](node-attributes) or the topology-wide **[defaults.device](defaults.md)** setting. See [lab topology overview](topology-overview.md) for more details.
 * If you want to use an unsupported device in a *netlab*-managed lab, use [an unknown device](platform-unknown) or [contribute a new device implementation](dev/devices.md).
+* The daemons run on top of Ubuntu Linux and use the same scripts as Linux for initial device configuration. See *linux* device for initial configuration capabilities.
 
 ## Supported Virtualization Providers
 
@@ -280,6 +282,22 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Nokia SR Linux        |  ✅  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
 | Nokia SR OS           |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ✅  |
 | VyOS                  |  ✅  | ✅  |  ✅   | ✅   |    ❌    |  ❌   |
+
+(platform-services-support)=
+Network services [configuration modules](module-reference.md) are supported on these devices[^NSM]
+
+| Operating system      | [DHCP](module/dhcp.md) | [DHCPv6](module/dhcp.md) |
+| --------------------- | :--: | :--: |
+| Arista EOS            | ✅   |  ✅  |
+| Cisco IOSv            | ✅   |  ✅  |
+| Cisco IOS XE          | ✅   |  ✅  |
+| Cumulus Linux         | ✅   |  ✅  |
+
+Network services [configuration modules](module-reference.md) are also supported on these daemons:
+
+| Operating system      | [DHCP](module/dhcp.md) | [DHCPv6](module/dhcp.md) |
+| --------------------- | :--: | :--: |
+| dnsmasq               | ✅   |  ✅  |
 
 ## IPv6 Support
 

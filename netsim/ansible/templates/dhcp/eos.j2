@@ -1,0 +1,16 @@
+{% if 'server' in dhcp|default({}) %}
+{%   include 'eos.server.j2' %}
+!
+{% endif %}
+{% for intf in interfaces if dhcp.server is defined or intf.dhcp is defined %}
+interface {{ intf.ifname }}
+{%   if dhcp.server is defined %}
+{%     for afx in ('ipv4','ipv6') if afx in af %}
+  dhcp server {{ afx }}
+{%     endfor %}
+{%   endif %}
+{%   if intf.dhcp.client.ipv4 is defined %}
+  no ip address
+  ip address dhcp
+{%   endif %}
+{% endfor %}

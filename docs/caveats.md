@@ -7,6 +7,17 @@
    :backlinks: none
 ```
 
+(caveats-eos)=
+## Arista EOS
+
+* Routed VLANs cannot be used in EVPN MPLS VLAN bundles
+
+The following features do not work on Arista cEOS Ethernet interfaces:
+
+* MPLS encapsulation
+* Anycast gateways
+* DHCP and DHCPv6 clients
+
 (caveats-aruba)=
 ## Aruba AOS-CX
 
@@ -28,6 +39,7 @@
 (caveats-bird)=
 ## BIRD Internet Routing Daemon
 
+* You have to build the BIRD container image with the **netlab clab build bird** command.
 * BIRD is implemented as a pure control-plane daemon running on a Linux VM or as a container with a single external interface. You can set the node **role** to **router** to turn a BIRD instance into a more traditional networking device with a loopback interface.
 * _netlab_ installs BIRD software in a container image or a VM on top of Ubuntu 22.04. The current version of BIRD shipping with Ubuntu 22.04 is 2.0.8.
 * BIRD supports a single router ID that is used for BGP and OSPF.
@@ -119,6 +131,11 @@ devices.cumulus.libvirt.memory: 2048
 Dell OS10 uses a concept of a so-called *Virtual Network* interface to try to handle transparently VLANs and VXLANs in the same way. However, it seems that right now it is **NOT** possible to activate OSPF on a *Virtual Network* (VLAN) SVI interface.
 
 Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface (but *anycast* gateway is supported). At the same time, *anycast* gateway is not supported on plain *ethernet* interfaces, so you need to use *VRRP* there.
+
+(caveats-dnsmasq)=
+## dnsmasq DHCP server
+
+* You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
 (caveats-fortios)=
 ## Fortinet FortiOS

@@ -176,6 +176,9 @@ def find_node_device(n: Box, topology: Box) -> bool:
   if not isinstance(dev_def,Box):
     log.fatal(f"Device data for device {devtype} must be a dictionary")
 
+  if dev_def.get('node.module') and 'module' not in n:      # Have to copy default device module into node data
+    n.module = dev_def.node.module                          # ... before modules are initialized
+
   return True
 
 """
