@@ -1,0 +1,51 @@
+groups:
+  _auto_create: true
+  clients:
+    members: [ c1, c2 ]
+    device: cumulus
+    provider: clab
+  servers:
+    members: [ server ]
+    device: csr
+    module: [ dhcp ]
+    dhcp.server: true
+    role: host
+
+nodes:
+  relay:
+    module: [ dhcp, vrf ]
+
+vrfs:
+  c_vrf:
+
+links:
+- c1:
+    ipv4: dhcp
+  c2:
+    ipv4: dhcp
+  relay:
+    dhcp.server: server
+    dhcp.vrf: global
+  vrf: c_vrf
+
+- relay-server
+
+validate:
+  wait:
+    description: Wait a bit for DHCP client and server
+    wait: 5
+  address:
+    description: Check for DHCP address assignments
+    nodes: [ c1, c2 ]
+    pass: The DHCP clients got dynamic IPv4 addresses
+    fail: No IPv4 address assigned
+    exec:
+      cumulus: "ip addr show swp1 | grep inet | grep dynamic || true"
+    valid:
+      cumulus: stdout.rstrip()
+
+message: |
+  Use this topology to test the inter-VRF DHCPv4 relay functionality of your
+  device. Use 'netlab validate' to check whether your device propagated DHCPv4
+  requests from DHCP clients in VRF c_vrf to DHCP servers in global routing
+  table.

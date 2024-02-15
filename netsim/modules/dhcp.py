@@ -48,48 +48,52 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
           module='dhcp')
         OK = False
 
-    # Iterate over configured DHCP relays, check whether the device supports DHCP relaying
-    # and inter-VRF DHCP relaying and whether the DHCP servers are legit
-    for intf in node.interfaces:
-      if not intf.get('dhcp.server',False):
-        continue
-      if not features.dhcp.relay:
+  # Iterate over configured DHCP relays, check whether the device supports DHCP relaying
+  # and inter-VRF DHCP relaying and whether the DHCP servers are legit
+  for intf in node.interfaces:
+    if not intf.get('dhcp.server',False):
+      continue
+    if not features.dhcp.relay:
+      log.error(
+        f'Node {node.name} (device {node.device}) cannot be a DHCP relay',
+        category=log.IncorrectValue,
+        module='dhcp')
+      OK = False
+
+    for srv in intf.dhcp.server:
+      if not topology.nodes.get(f'{srv}.dhcp.server',False):
         log.error(
-          f'Node {node.name} (device {node.device}) cannot be a DHCP relay',
+          f'Node {srv} used for DHCP relaying on node {node.name} is not a DHCP server',
           category=log.IncorrectValue,
           module='dhcp')
         OK = False
 
-      for srv in intf.dhcp.server:
-        if not topology.nodes.get(f'{srv}.dhcp.server',False):
-          log.error(
-            f'Node {srv} used for DHCP relaying on node {node.name} is not a DHCP server',
-            category=log.IncorrectValue,
-            module='dhcp')
-          OK = False
+    if not intf.get('dhcp.vrf',False):                    # Did the user request inter-VRF relaying?
+      continue
 
-      if not intf.get('dhcp.vrf',False):
-        continue
-      if not features.dhcp.vrf:
-        log.error(
-          f'Node {node.name} (device {node.device}) cannot perform inter-VRF DHCP relaying',
-          category=log.IncorrectValue,
-          module='dhcp')
-        OK = False
+    if not features.dhcp.vrf:                             # Does the device support inter-VRF relaying?
+      log.error(                                          # No, report an error
+        f'Node {node.name} (device {node.device}) cannot perform inter-VRF DHCP relaying',
+        category=log.IncorrectValue,
+        module='dhcp')
+      OK = False
+    else:                                                 # Inter-VRF relaying is configured
+      if node.get('dhcp.vrf',None) is None:               # ... assume the device can insert DHCP VPN option
+        node.dhcp.vrf = True                              # ... but only if the dhcp.vrf node value is not set
 
-      # 'global' is a valid VRF keyword for VRF-to-global relaying
-      # In all other cases, the VRF has to be present on the node
-      #
-      vrf = intf.get('dhcp.vrf')
-      if vrf == 'global':
-        continue
+    # 'global' is a valid VRF keyword for VRF-to-global relaying
+    # In all other cases, the VRF has to be present on the node
+    #
+    vrf = intf.get('dhcp.vrf')
+    if vrf == 'global':
+      continue
 
-      if vrf not in node.get('vrfs',{}):
-        log.error(
-          f'VRF {vrf} used for DHCP relaying on node {node.name} has no interfaces on that node',
-          category=log.IncorrectValue,
-          module='dhcp')
-        OK = False
+    if vrf not in node.get('vrfs',{}):
+      log.error(
+        f'VRF {vrf} used for DHCP relaying on node {node.name} has no interfaces on that node',
+        category=log.IncorrectValue,
+        module='dhcp')
+      OK = False
 
   return OK
 
@@ -116,6 +120,8 @@ def build_topology_dhcp_pools(topology: Box) -> None:
       continue
 
     subnet = data.get_empty_box()                           # Create a DHCP pool data structure
+    if 'vrf' in link:                                       # Copy link VRF information into the pool
+      subnet.vrf = link.vrf                                 # ... to support VRF-aware DHCP servers
 
     for af in ('ipv4','ipv6'):                              # Iterate over link address families
       if af not in link.dhcp.subnet or af not in link.prefix:
@@ -126,7 +132,7 @@ def build_topology_dhcp_pools(topology: Box) -> None:
       subnet.clean_name = strings.make_id(subnet.name)      # Get pool name from link and clean it up
 
       if af in link.get('gateway',{}):                      # Save default gateway if present
-        subnet.gateway[af] = link.gateway[af]
+        subnet.gateway[af] = str(netaddr.IPNetwork(link.gateway[af]).ip)
 
       for intf in link.get('interfaces',[]):                # Now iterate over the interfaces attached to the link
         if af not in intf or af in intf.get('dhcp.client',{}):
@@ -151,6 +157,10 @@ def set_dhcp_server_pools(node: Box, topology: Box) -> None:
     build_topology_dhcp_pools(topology)
 
   node.dhcp.pools = topology.dhcp.pools                     # And copy topology DHCP pools into DHCP server node data
+  for p in node.dhcp.pools:                                 # Final step: iterate over the DHCP pools
+    if 'vrf' in p:                                          # ... looking for VRF subnets
+      if node.get('dhcp.vrf',None) is None:                 # ... and if the node doesn't have 'VRF-aware pools' flag
+        node.dhcp.vrf = True                                # ... set it to True
 
 '''
 set_dhcp_relay: Convert DHCP server names into IP addresses of DHCPv4/DHCPv6 relays

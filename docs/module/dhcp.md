@@ -23,22 +23,25 @@ DHCP clients are supported on these platforms:
 
 DHCP servers are supported on these platforms: 
 
-| Operating system      | IPv4 | IPv6 |
-| --------------------- | :-: | :-: |
-| Arista EOS            | ✅  | ✅  |
-| Cisco IOSv            | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  |
-| dnsmasq               | ✅  | ✅  |
+| Operating system      | IPv4 | IPv6 | VRF-aware |
+| --------------------- | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  |  ❌  |
+| Cisco IOSv            | ✅  | ✅  |  ❌  |
+| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| dnsmasq               | ✅  | ✅  |  ❌  |
 
 DHCP relays are supported on these platforms: 
 
-| Operating system      | IPv4 | IPv6 |
-| --------------------- | :-: | :-: |
-| Arista EOS            | ✅  | ✅  |
-| Cisco IOSv            | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  |
+| Operating system      | IPv4 | IPv6 | VRF-aware |
+| --------------------- | :-: | :-: | :-: 
+| Arista EOS            | ✅  | ✅  | ✅ [❗](caveats-eos) |
+| Cisco IOSv            | ✅  | ✅  | ✅  |
+| Cisco IOS XE          | ✅  | ✅  | ✅  |
 
-VRF-aware DHCP relays and servers still need to be implemented.
+```{tip}
+* VRF-aware DHCP relays use DHCP options specified in RFC 6607.
+* VRF-aware DHCP servers can use DHCP options specified in RFC 6607 to select the client subnet.
+```
 
 (dhcp-parameters)=
 ## Node Parameters
@@ -46,8 +49,12 @@ VRF-aware DHCP relays and servers still need to be implemented.
 The DHCP module supports the following node parameters:
 
 * **dhcp.server** (boolean) -- the device should run a DHCP server
-* **dhcp.vrf** (boolean) -- the DHCP server should be VRF-aware
+* **dhcp.vrf** (boolean) -- the DHCP relay or server should be VRF-aware. The default value of this parameter is set to _true_ if the node performs inter-VRF DHCP relaying or has DHCP pools from VRF subnets. To override that behavior, you can set **dhcp.vrf** to _false_.
 
+```{tip}
+You have to set **‌dhcp.vrf** to _False_ on a Cisco IOS XE DHCP server when you use it with Arista EOS VRF-aware relays ([more details](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html)).
+```
+ 
 ## Interface Parameters
 
 * To start a DHCP client on an interface, set **ipv4** or **ipv6** address to **dhcp**.
@@ -56,7 +63,7 @@ The DHCP module supports the following node parameters:
 
 ## Implementation Notes
 
-* The **dhcp** module is automatically enabled for nodes with DHCP clients. You don't have to specify it in the **module** list. However, at least one node in the topology must be using **dhcp** module to enable _netlab_ to recognize **dhcp** as a valid IPv4 or IPv6 address.
+* The **dhcp** module is automatically enabled for nodes with DHCP clients. You don't have to specify it in the **module** list. However, at least one topology node must use the **dhcp** module to enable _netlab_ to recognize **dhcp** as a valid IPv4 or IPv6 address.
 * You must enable the **dhcp** module on DHCP relays and servers.
 * *dnsmasq* always uses the **dhcp** module and is configured as a DHCP server. There's no need to set the **module** or **dhcp.server** node variable.
 
