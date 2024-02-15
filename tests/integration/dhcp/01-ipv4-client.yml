@@ -1,13 +1,16 @@
 nodes:
-  client:
+  c1:
+  c2:
   server:
     module: [ dhcp ]
-    device: eos
+    device: dnsmasq
     dhcp.server: true
     provider: clab
 
 links:
-- client:
+- c1:
+    ipv4: dhcp
+  c2:
     ipv4: dhcp
   server:
 
@@ -18,14 +21,17 @@ validate:
   lease:
     description: Check for DHCP server lease
     nodes: [ server ]
-    pass: The DHCP server has an active IPv4 lease
+    pass: The DHCP server has at least two active IPv4 leases
     fail: There are no IPv4 leases on the DHCP server
     show:
       eos: "dhcp server leases | json"
+    exec:
+      dnsmasq: "cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] ' | wc -l"
     valid:
-      eos: vrfs.default.ipv4ActiveLeases
+      eos: len(vrfs.default.ipv4ActiveLeases) == 2
+      dnsmasq: stdout.rstrip() == '2'
 
 message: |
   Use this topology to test the DHCPv4 client on your device. Use 'netlab
-  validate' to report check whether your device requested a DHCP lease on the
-  DHCP server.
+  validate' to check whether your devices requested DHCP leases from the DHCP
+  server.

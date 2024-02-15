@@ -3,15 +3,18 @@ addressing.lan:
   ipv6: 2001:db8:cafe::/48
 
 nodes:
-  client:
+  c1:
+  c2:
   server:
     module: [ dhcp ]
-    device: eos
+    device: dnsmasq
     dhcp.server: true
     provider: clab
 
 links:
-- client:
+- c1:
+    ipv6: dhcp
+  c2:
     ipv6: dhcp
   server:
 
@@ -22,14 +25,17 @@ validate:
   lease:
     description: Check for DHCPv6 server lease
     nodes: [ server ]
-    pass: The DHCP server has an active IPv6 lease
+    pass: The DHCP server has two active IPv6 leases
     fail: There are no IPv6 leases on the DHCP server
     show:
       eos: "dhcp server leases | json"
+    exec:
+      dnsmasq: "cat /var/lib/misc/dnsmasq.leases | grep --color=never 2001:db8:cafe | wc -l"
     valid:
       eos: vrfs.default.ipv6ActiveLeases
+      dnsmasq: stdout.rstrip() == '2'
 
 message: |
   Use this topology to test the DHCPv6 client on your device. Use 'netlab
-  validate' to report check whether your device requested a DHCPv6 lease on the
+  validate' to check whether your devices requested DHCPv6 leases from the
   DHCPv6 server.

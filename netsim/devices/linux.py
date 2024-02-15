@@ -11,11 +11,9 @@ class Linux(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    provider = node.get('provider',None) or topology.provider
-    if provider != 'clab':
+    if devices.get_provider(node,topology) != 'clab':
       return
 
-    print(f'Linux quirk {node.name} {provider}')
     for intf in node.interfaces:
       if not intf.get('dhcp.client',False):
         continue

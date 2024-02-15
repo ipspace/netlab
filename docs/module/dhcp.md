@@ -25,7 +25,7 @@ DHCP servers are supported on these platforms:
 | Operating system      | IPv4 | IPv6 |
 | --------------------- | :-: | :-: |
 | Arista EOS            | ✅  | ✅  |
-| Cisco IOSv            | ✅  |  ❌  |
+| Cisco IOSv            | ✅  | ✅  |
 | dnsmasq               | ✅  | ✅  |
 
 DHCP relays still need to be implemented.

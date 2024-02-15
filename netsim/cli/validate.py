@@ -426,6 +426,11 @@ Evaluating the results:
 * True: print success message, increase result and pass count
 * None: we have no idea what the answer is, skip this test
 """
+
+BUILTINS: dict = {                            # Allowed built-in functions. Extend as needed ;)
+  'len': len
+}
+
 def execute_validation_expression(
       v_entry: Box,
       node: Box,
@@ -434,6 +439,7 @@ def execute_validation_expression(
       verbosity: int) -> typing.Optional[bool]:
 
   global test_skip_count,test_result_count,test_pass_count
+  global BUILTINS
 
   v_test = get_entry_value(v_entry,'valid',node,topology)
   if not v_test:                              # Do we have a validation expression for the current device?
@@ -447,7 +453,7 @@ def execute_validation_expression(
     try:                                      # Otherwise try to evaluate the validation expression
       result.result = result
       result.re = re                          # Give validation expression access to 're' module
-      OK = eval(v_test,{'__builtins__': {}},result)
+      OK = eval(v_test,{ '__builtins__': BUILTINS },result)
       if OK is None:
         OK = False
     except Exception as ex:                   # ... and failure if the evaluation failed
@@ -467,7 +473,7 @@ def execute_validation_expression(
   if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
     p_test_fail(node.name,v_entry,topology)
     test_result_count += 1
-    return OK
+    return bool(OK)
   elif OK:                                    # ... or we might have a positive result
     log_progress(f'Validation succeeded on {node.name}',topology)
     test_result_count += 1

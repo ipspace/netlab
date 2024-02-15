@@ -1,3 +1,4 @@
+{% set has_v6 = [] %}
 {% for pool in dhcp.pools|default([]) %}
 {%   if pool.excluded.ipv4 is defined %}
 {%     for xa in pool.excluded.ipv4 %}
@@ -12,4 +13,17 @@ ip dhcp pool {{ pool.clean_name }}
  default-router {{ pool.gateway.ipv4 }}
 {%     endif %}
 {%   endif %}
+{%   if pool.ipv6 is defined %}
+!
+{% set ignore = has_v6.append(pool.name) %}
+ipv6 dhcp pool {{ pool.clean_name }}
+ address prefix {{ pool.ipv6 }}
+{%   endif %}
 {% endfor %}
+{% if has_v6 %}
+{%   for intf in interfaces %}
+!
+interface {{ intf.ifname }}
+ ipv6 dhcp server
+{%   endfor %}
+{% endif %}
