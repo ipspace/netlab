@@ -771,6 +771,9 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
     if not 'role' in link and host_count == node_cnt - 1 and not 'vlan_name' in link:
       link.role = 'stub'
 
+  if link.get('dhcp.subnet.ipv4',None):
+    link.host_count = link.get('host_count',0) + 1
+
   if 'type' in link:                # Link type already set, nothing to do
     return
 
@@ -778,7 +781,7 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
   if node_cnt == 1:
     set_link_loopback_type(link,nodes,defaults)
 
-  if host_count > 0:
+  if link.get('host_count',0) > 0:
     link.type = 'lan'
 
   return
@@ -865,6 +868,8 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'gateway' in link:                               # Do we have first-hop gateway on the link?
     for ifdata in link.interfaces:                        # Nope, iterate over interfaces, find routers running IPv4
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
+        if ifdata.get('dhcp.client.ipv4',False):
+          continue                                        # Skip routers running DHCP clients
         link.gateway.ipv4 = ifdata.ipv4                   # Remember the router's IPv4 address
         if ifdata.ipv4 is not True:                       # ... and if it's not unnumbered
           break                                           # ... get out, we found it

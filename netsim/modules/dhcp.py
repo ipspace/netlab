@@ -139,8 +139,6 @@ def build_topology_dhcp_pools(topology: Box) -> None:
 
         addr = str(netaddr.IPNetwork(intf[af]).ip)          # Transform interface CIDR address into pure address
         subnet.excluded[af].append(addr)                    # ... and append it to the excluded addresses
-        if af not in subnet.gateway:                        # If we don't have a default gateway yet
-          subnet.gateway[af] = addr                         # ... this one is as good as anything else
 
     topology.dhcp.pools.append(subnet)                      # Append the new pool to the list of pools
 
@@ -180,9 +178,6 @@ class DHCP(_Module):
           node.module = [ 'dhcp' ]
         elif 'dhcp' not in node.module:
           node.module.append('dhcp')
-
-    if link.get('dhcp.subnet',False) and 'pool' not in link:
-      link.pool = 'lan'                             # Links with DHCP clients are always LAN links to avoid /30 hassle
 
   """
   Final DHCP transformation:
