@@ -5,12 +5,10 @@ import typing
 from box import Box
 import netaddr
 
-from . import _Module,get_effective_module_attribute
+from . import _Module,_routing
 from ..utils import log, strings
 from .. import data
-from ..augment.nodes import reserve_id
 from ..augment import devices
-from ..data.validate import validate_attributes,must_be_string
 
 '''
 Do sanity checks on DHCP data:
@@ -154,6 +152,44 @@ def set_dhcp_server_pools(node: Box, topology: Box) -> None:
 
   node.dhcp.pools = topology.dhcp.pools                     # And copy topology DHCP pools into DHCP server node data
 
+'''
+set_dhcp_relay: Convert DHCP server names into IP addresses of DHCPv4/DHCPv6 relays
+'''
+
+def set_dhcp_relay(intf: Box, n_name: str, topology: Box) -> None:
+  if not intf.get('dhcp.server',False):                     # Relay not configured on the interface, get out
+    return
+
+  for af in ('ipv4','ipv6'):                                # We could be relaying IPv4 or IPv6
+    #
+    # Do we have any DHCP clients attached to this interface?
+    clist = [ ngb.node for ngb in intf.neighbors if ngb.get(f'dhcp.client.{af}',False) ]
+    if not clist:                                           # Nope, no need to set DHCP relay for this interface
+      continue
+
+    intf.dhcp.relay[af] = []                                # Build the list of the relay targets
+    for srv_name in intf.get('dhcp.server',[]):             # Iterate over relay target names
+      # Get control-plane interface for the relay target
+      cp_intf = _routing.get_remote_cp_endpoint(topology.nodes[srv_name])
+      if not cp_intf:                                       # no usable CP interafce, get out
+        log.error(
+          f'DHCP server {srv_name} used by node {n_name} interface {intf.ifname} has no usable interface',
+          category=log.MissingValue,
+          module='dhcp')
+        continue
+
+      if not af in cp_intf:                                 # Target AF not configured on the server CP interface?
+        log.error(
+          f'Missing {af} address on {cp_intf.ifname} on {srv_name}. Node {n_name} cannot use it as DHCP {af} relay',
+          category=log.MissingValue,
+          module='dhcp')
+        continue
+
+      # We have a usable address on the DHCP server control-plane interface.
+      # Add it to the DHCP relay targets
+      #
+      intf.dhcp.relay[af].append(str(netaddr.IPNetwork(cp_intf[af]).ip))
+
 class DHCP(_Module):
 
   """
@@ -194,6 +230,9 @@ class DHCP(_Module):
       for af in ('ipv4','ipv6'):
         if intf.get(f'dhcp.client.{af}',False):
           intf.pop(af,None)
+
+        if intf.get('dhcp.server',False):
+          set_dhcp_relay(intf,node.name,topology)
 
     if node.get('dhcp.server',False):
       set_dhcp_server_pools(node,topology)

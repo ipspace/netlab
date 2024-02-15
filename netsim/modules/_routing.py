@@ -276,3 +276,17 @@ def remove_vrf_routing_blocks(node: Box, proto: str) -> None:
       continue
 
     vdata.pop(proto,None)                                                   # Got rid of the false flag
+
+"""
+get_remote_cp_endpoint: find the remote control-plane endpoint
+
+Return loopback interface or the first physical interface
+"""
+def get_remote_cp_endpoint(n: Box) -> Box:
+  if 'loopback' in n and n.get('role') != 'host':           # The node has loopback and is not a host
+    return n.loopback                                       # ... can't use loopback if the node has no routing
+
+  if n.interfaces:                                          # Hope the node has at least one usable interface
+    return n.interfaces[0]                                  # ... if it does, return that
+
+  return data.get_empty_box()                               # Otherwise return an empty box

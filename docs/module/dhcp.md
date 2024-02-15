@@ -18,6 +18,7 @@ DHCP clients are supported on these platforms:
 | --------------------- | :-: | :-: |
 | Arista EOS            | ✅ [❗](caveats-eos) |  ❌  |
 | Cisco IOSv            | ✅  | ✅  |
+| Cisco IOS XE          | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | 
 
 DHCP servers are supported on these platforms: 
@@ -26,9 +27,18 @@ DHCP servers are supported on these platforms:
 | --------------------- | :-: | :-: |
 | Arista EOS            | ✅  | ✅  |
 | Cisco IOSv            | ✅  | ✅  |
+| Cisco IOS XE          | ✅  | ✅  |
 | dnsmasq               | ✅  | ✅  |
 
-DHCP relays still need to be implemented.
+DHCP relays are supported on these platforms: 
+
+| Operating system      | IPv4 | IPv6 |
+| --------------------- | :-: | :-: |
+| Arista EOS            | ✅  | ✅  |
+| Cisco IOSv            | ✅  | ✅  |
+| Cisco IOS XE          | ✅  | ✅  |
+
+VRF-aware DHCP relays and servers still need to be implemented.
 
 (dhcp-parameters)=
 ## Node Parameters
@@ -46,7 +56,7 @@ The DHCP module supports the following node parameters:
 
 ## Implementation Notes
 
-* The **dhcp** module is automatically enabled for nodes with DHCP clients. You don't have to specify it in the **module** list.
+* The **dhcp** module is automatically enabled for nodes with DHCP clients. You don't have to specify it in the **module** list. However, at least one node in the topology must be using **dhcp** module to enable _netlab_ to recognize **dhcp** as a valid IPv4 or IPv6 address.
 * You must enable the **dhcp** module on DHCP relays and servers.
 * *dnsmasq* always uses the **dhcp** module and is configured as a DHCP server. There's no need to set the **module** or **dhcp.server** node variable.
 
@@ -91,4 +101,27 @@ links:
     ipv4: dhcp
     ipv6: dhcp
   server:
+```
+
+The following topology uses DHCP relaying on an Arista EOS switch to propagate DHCP requests from Cumulus Linux clients to a *dnsmasq* DHCP server.
+
+```
+provider: clab
+
+module: [ dhcp ]
+
+nodes:
+  client:
+    device: cumulus
+  relay:
+    device: eos
+  server:
+    device: dnsmasq
+
+links:
+- client:
+    ipv4: dhcp
+  relay:
+    dhcp.server: server
+- relay-server
 ```
