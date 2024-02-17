@@ -6,6 +6,7 @@ Dell OS10 is supported by the **netlab libvirt package** command.
 * Dell provides the OS10 Virtual image as a set of vmdk and gns3a files to be used within GNS3. The following procedure will "convert" the required files for using them with Vagrant.
 * The **‌netlab libvirt package dellos10** command has been tested on Ubuntu and might not work on other Linux distros.
 * On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
+* *‌virt-install* might report a fatal error on Ubuntu 22.04. Execute `export VIRTINSTALL_OSINFO_DISABLE_REQUIRE=1` in your shell and restart the build process.
 ```
 
 To prepare for the build:
