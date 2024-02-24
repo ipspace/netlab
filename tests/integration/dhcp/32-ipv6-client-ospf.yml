@@ -1,0 +1,73 @@
+---
+addressing.lan:
+  ipv4: false
+  ipv6: 2001:db8:cafe::/48
+
+module: [ dhcp ]
+
+groups:
+  _auto_create: true
+  clients:
+    members: [ c1, c2 ]
+    module: [ ospf, dhcp ]
+  servers:
+    members: [ server ]
+    device: dnsmasq
+    dhcp.server: true
+    provider: clab
+
+nodes:
+  relay:
+    device: eos
+    provider: clab
+    module: [ ospf, dhcp ]
+
+links:
+- c1:
+    ipv6: dhcp
+  c2:
+    ipv6: dhcp
+  relay:
+    dhcp.server: server
+- relay-server
+
+validate:
+  lease:
+    description: Check for DHCP server lease
+    nodes: [ server ]
+    pass: The DHCP server has at least one active IPv4 lease
+    fail: No IPv4 leases on the DHCP server
+    show:
+      eos: "dhcp server leases | json"
+    exec:
+      dnsmasq: "cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] ' | wc -l"
+    valid:
+      eos: vrfs.default.ipv4ActiveLeases
+      dnsmasq: stdout.rstrip() > '0'
+  lease_all:
+    description: Check for DHCP server lease
+    nodes: [ server ]
+    pass: The DHCP server has at least two active IPv4 leases
+    fail: There are not enough IPv4 leases on the DHCP server
+    show:
+      eos: "dhcp server leases | json"
+    exec:
+      dnsmasq: "cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] ' | wc -l"
+    valid:
+      eos: len(vrfs.default.ipv4ActiveLeases) == 2
+      dnsmasq: stdout.rstrip() == '2'
+  ospf:
+    description: Check for OSPF adjacencies on the DHCP relay
+    wait: 40
+    pass: DHCP relay has two OSPF neighbors
+    fail: Some OSPF adjacencies are missing on the DHCP relay
+    nodes: [ relay ]
+    show:
+      eos: "ip ospf neighbor | json"
+    valid:
+      eos: len(vrfs.default.instList["1"].ospfNeighborEntries) == 2
+
+message: |
+  Use this topology to test the OSPF over interfaces using dynamic DHCPv6 addresses. Use
+  'netlab validate' to check whether your devices acquired dynamic IPv6 addresses and whether they
+  established OSPFv3 adjacency with the DHCP relay.

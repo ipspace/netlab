@@ -28,9 +28,15 @@ cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
 {%   endif %}
 {%   if l.dhcp.client.ipv4 is defined %}
 iface {{ l.ifname }} inet dhcp
+{%     if l.mtu is defined %}
+  mtu {{ l.mtu }}
+{%     endif %}
 {%   endif %}
 {%   if l.dhcp.client.ipv6 is defined %}
 iface {{ l.ifname }} inet6 dhcp
+{%     if l.mtu is defined %}
+  mtu {{ l.mtu }}
+{%     endif %}
 {%   endif %}
 {%   if loop.last %}
 CONFIG
@@ -40,6 +46,11 @@ CONFIG
 {% for l in interfaces if l.type in ['lan','p2p','stub'] and l.dhcp.client is defined %}
 {%   if loop.first %}
 echo "DHCP: executing ifup"
+nohup bash -c 'ifreload -a || ifreload -a' &
 {%   endif %}
-nohup ifup {{ l.ifname }} &
+{%   if 'ipv6' in l.dhcp.client %}
+sysctl net/ipv6/conf/{{ l.ifname }}/forwarding=0
+sysctl net/ipv6/conf/{{ l.ifname }}/accept_ra=2
+sysctl net/ipv6/conf/{{ l.ifname }}/accept_ra_from_local=1
+{%   endif %}
 {% endfor %}
