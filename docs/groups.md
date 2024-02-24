@@ -68,7 +68,7 @@ While it's perfectly OK to set the desired attribute(s) on individual nodes, it'
 
 [^MNA]: If a group definition contains a **module** attribute, you cannot set attributes for modules not listed in the **module** attribute in the group definition.
  
-[^NDT]: Node attributes were stored in **node_data** group attribute prior to *netlab* release 1.4. Starting with release 1.4, you can continue using the **node_data** dictionary or set node attributes directly in group definitions.
+[^NDT]: Node attributes were stored in **node_data** group attribute prior to *netlab* release 1.4. While you can still use the **node_data** dictionary, it has a few undesired side effects that we'll not fix. It is deprecated in release 1.8; using it will generate a warning during the data transformation phase.
 
 The node group attribute will be set on all members of the group. The data is [deep-merged](defaults.md#deep-merging) with the existing node data -- for example, you could set **bgp.advertise_loopback** attribute in group definition without affecting **bgp.as** node attribute[^NDGP].
 
@@ -134,7 +134,7 @@ As the group VLANs/VRFs are copied into all nodes in a group, you'll get all VLA
 
 You can set node device type (**device** attribute) or the list of configuration modules (**module** attribute) in group definitions, but only on groups with static members.
 
-The device type is copied from groups to nodes with no explicit device type. Modules listed in a group are added to modules already enabled on group members. The merging of node- and group modules takes precedence over the global (topology-level) list of modules.
+The device type is copied from groups to nodes with no **device** attribute. Modules listed in a group are added to the node **module** attribute. The merging of node- and group modules takes precedence over the global (topology-level) list of modules.
 
 The following example uses this functionality to:
 
@@ -231,7 +231,7 @@ groups.cumulus.vars.ansible_user: other
 
 The BGP module creates a group named *asnnn* where *nnn* is the AS number for every BGP AS present in the lab topology. The members of the group are all nodes in that autonomous system.
 
-You can set inventory variables (with **vars** attribute), deployment templates (with **config** attribute), or node data (with **node_data** attribute) on an automatic BGP group, but you cannot specify static group members.
+You can set inventory variables (with **vars** attribute), deployment templates (with **config** attribute), or node data on an automatic BGP group, but you cannot specify static group members.
 
 Here is a BGP anycast topology file that depends on setting node data within an automatic BGP group (the topology file uses [BGP as-list](module/bgp.md#global-bgp-configuration-parameters) functionality to specify AS membership):
 
@@ -251,8 +251,7 @@ bgp:
 
 groups:
   as65001:
-    node_data:
-      bgp.advertise_loopback: false
+    bgp.advertise_loopback: false
 
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
@@ -342,9 +341,11 @@ g2:
 
 ### Node Data in Hierarchical Groups
 
-When faced with a group hierarchy, **node_data** processing takes great care to use the node values specified in the most specific group (see also [](custom-config-groups))
+When faced with a group hierarchy, processing of node data takes great care to use the node values specified in the most specific group (see also [](custom-config-groups))
 
-Continuing the previous example, now with **node_data**:
+Continuing the previous example, now with node data in groups[^FINV]:
+
+[^FINV]: Please note that **foo** is not a valid node attribute.
 
 ```
 groups:
@@ -352,18 +353,16 @@ groups:
     members: [ a,b ]
   g2:
     members: [ d,g1,g3 ]
-    node_data:
-      foo: bar
+    foo: bar
   g3:
     members: [ e ]
-    node_data:
-      foo: baz
+    foo: baz
 ```
 
 * Nodes **a**, **b** and **d** (direct and indirect members of group **g2**) will have the node attribute **foo** set to **bar**.
 * Node **e** (member of group **g3**) will have the node attribute **foo** set to **baz** -- **g3** overwrites the **foo** value set by the parent group **g2**.
 
-**‌node_data** processing performs [deep dictionary merge](defaults.md#deep-merging) when an attribute specified in the group **‌node_data** and the current value of node attribute are both dictionaries, allowing you to specify various parts of the same dictionary in different groups, for example:
+Group node data processing performs [deep dictionary merge](defaults.md#deep-merging) when an attribute specified in the group ‌and the current value of the node attribute are both dictionaries, allowing you to specify various parts of the same dictionary in different groups, for example:
 
 ```
 nodes:
@@ -381,14 +380,12 @@ groups:
   g1: [ a,b ]
   g2:
     members: [ d,g1,g3 ]
-    node_data:
-      bgp:
-        as: 65000
+    bgp:
+      as: 65000
   g3:
     members: [ e ]
-    node_data:
-      bgp:
-        as: 65001
+    bgp:
+      as: 65001
 ```
 
 * Node **a** has **bgp.rr** set to *True* (direct node data) and **bgp.as** set to 65000 (attribute merged from **g2** node data).
