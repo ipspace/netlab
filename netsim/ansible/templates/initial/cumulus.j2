@@ -77,6 +77,9 @@ cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
 auto {{ l.ifname }}
 {%   if l.ipv4 is defined %}
 iface {{ l.ifname }} inet static
+{%     if l.mtu is defined %}
+  mtu {{ l.mtu }}
+{%     endif %}
 {%     if l.ipv4 == True %}
 {%       if l._parent_ipv4 is defined %}
   address {{ l._parent_ipv4 }}
@@ -87,11 +90,10 @@ iface {{ l.ifname }} inet static
 {%   endif %}
 {%   if l.ipv6 is defined and l.ipv6 is string %}
 iface {{ l.ifname }} inet6 static
-  address {{ l.ipv6 }}
-{%   endif %}
-{%   if l.mtu is defined %}
-iface {{ l.ifname }}
+{%     if l.mtu is defined %}
   mtu {{ l.mtu }}
+{%     endif %}
+  address {{ l.ipv6 }}
 {%   endif %}
 {% endfor %}
 CONFIG
@@ -134,8 +136,10 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
+{% if 'ipv6' not in l.dhcp.client|default({}) %}
  ipv6 nd ra-interval 5
  no ipv6 nd suppress-ra
+{% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
 {% endif %}
