@@ -200,6 +200,34 @@ def set_dhcp_relay(intf: Box, n_name: str, topology: Box) -> None:
       #
       intf.dhcp.relay[af].append(str(netaddr.IPNetwork(cp_intf[af]).ip))
 
+'''
+check_dynamic_routing -- check whether a node uses routing protocols on a DHCP interface
+'''
+
+def check_dynamic_routing(intf: Box, node: Box, topology: Box) -> bool:
+  if 'bgp' in intf:
+    log.error(
+      f'You cannot run EBGP over DHCP client interfaces (node {node.name} interface {intf.name})',
+      category=log.IncorrectValue,
+      module='dhcp')
+    intf.pop('bgp',None)
+    return False
+
+  OK = True
+  for rp in ('ospf','isis'):
+    if not rp in intf:
+      continue
+    features = devices.get_device_features(node,topology.defaults)
+    if not features.dhcp.client.routing:
+      log.error(
+        f'Device {node.device} / node {node.name} cannot run dynamic routing protocols on DHCP client interface',
+        more_data = [ f'protocol: {rp}, interface {intf.name}'],
+        category=log.IncorrectValue,
+        module='dhcp')
+      OK = False
+
+  return OK
+
 class DHCP(_Module):
 
   """
@@ -240,6 +268,7 @@ class DHCP(_Module):
       for af in ('ipv4','ipv6'):
         if intf.get(f'dhcp.client.{af}',False):
           intf.pop(af,None)
+          check_dynamic_routing(intf,node,topology)
 
         if intf.get('dhcp.server',False):
           set_dhcp_relay(intf,node.name,topology)

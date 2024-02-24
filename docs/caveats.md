@@ -12,6 +12,7 @@
 
 * Routed VLANs cannot be used in EVPN MPLS VLAN bundles
 * Arista EOS uses an [invalid value for the suboption 150 of the DHCP option 82](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html#vendor-interoperability-is-fun) when doing inter-VRF DHCPv4 relaying.
+* The DHCP client on Arista EOS is finicky. Management interface might lose its IPv4 address when the DHCP state changes on one of the data-plane Ethernet interfaces.
 
 The following features do not work on Arista cEOS Ethernet interfaces:
 
