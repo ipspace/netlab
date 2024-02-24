@@ -309,3 +309,5 @@ def run(cli_args: typing.List[str]) -> None:
   lab_status_change(topology,'started')
   if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done
     _status.lock_directory()                          # .. to have a timestamp of when the lab was started
+
+  log.repeat_warnings('netlab up')

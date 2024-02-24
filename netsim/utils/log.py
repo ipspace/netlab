@@ -25,6 +25,7 @@ AF_LIST = ['ipv4','ipv6']
 BGP_SESSIONS = ['ibgp','ebgp']
 
 _ERROR_LOG: list = []
+_WARNING_LOG: list = []
 
 err_class_map = {                       # Map error classes into short error codes
   'MissingDependency':  'DEPEND',
@@ -33,7 +34,13 @@ err_class_map = {                       # Map error classes into short error cod
   'IncorrectAttr':      'ATTR',
   'IncorrectType':      'TYPE',
   'FatalError':         'FATAL',
-  'UserWarning':        'WRONG'
+  'UserWarning':        'WRONG',
+  'Warning':            'WARNING'
+}
+
+err_color_map = {
+  'FATAL': 'red',
+  'WARNING': 'magenta'
 }
 
 class MissingDependency(Warning):
@@ -165,23 +172,29 @@ def error(
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
       more_data: typing.Optional[typing.Union[str,list]] = None) -> None:
 
-  global _ERROR_LOG,err_class_map
+  global _ERROR_LOG,err_class_map,_WARNING_LOG,err_color_map
   err_name = category.__name__
-  err_line = f'{err_name} in {module}: {text}'
-  _ERROR_LOG.extend(err_line.split("\n"))                           # Append traditional error line to the CI error log
+  err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
+
+  if category is Warning:
+    _WARNING_LOG.extend(f'{module}: {text}'.split("\n"))            # Warnings are collected in a separate list
+  else:
+    _ERROR_LOG.extend(err_line.split("\n"))                         # Append traditional error line to the CI error log
 
   if WARNING:                                                       # CI flag: raise warning during pytest
     warnings.warn_explicit(text,category,filename=module,lineno=len(_ERROR_LOG))
     return
   else:
-    print_error_header()
+    if category is not Warning:
+      print_error_header()
     if strings.rich_err_color and err_name in err_class_map:
       err_code = err_class_map[err_name]
       strings.print_colored_text(
         strings.pad_err_code(err_code),
-        'red' if err_code == 'FATAL' else 'yellow',
+        err_color_map.get(err_code,'yellow'),
         stderr=True)
-      print(f'{module}: {text}',file=sys.stderr)
+      mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
+      print(f'{mod_txt}{text}',file=sys.stderr)
     else:
       print(err_line,file=sys.stderr)
 
@@ -223,6 +236,19 @@ def exit_on_error() -> None:
 def pending_errors() -> bool:
   global _ERROR_LOG
   return True if _ERROR_LOG else False
+
+def repeat_warnings(cmd: str) -> None:
+  global _WARNING_LOG
+  if _WARNING_LOG:
+    wlist = list(_WARNING_LOG)
+    print("",file=sys.stderr)
+    error(
+      text=f"The following warnings were generated during the '{cmd}' processing",
+      category=Warning,
+      module='',
+    )
+    for wline in wlist:
+      error(wline,category=Warning,module='')
 
 """
 Print colored status headers
