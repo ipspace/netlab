@@ -74,7 +74,7 @@ def run_command(
 
   try:
     result = subprocess.run(cmd,capture_output=check_result,check=True,text=True)
-    if log.debug_active('external'):
+    if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... run result: {result}')
     if not check_result:
       return True
@@ -83,7 +83,7 @@ def run_command(
     return result.stdout != ""
   except Exception as ex:
     if not log.QUIET and not ignore_errors:
-      print( f"Error executing {stringify(cmd)}:\n  {ex}" )
+      print(f"Error executing {stringify(cmd)}:\n  {ex}")
     return False
 
 def test_probe(p : typing.Union[str,list,Box],quiet : bool = False) -> bool:
