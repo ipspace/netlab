@@ -172,11 +172,13 @@ def error(
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
       more_data: typing.Optional[typing.Union[str,list]] = None) -> None:
 
-  global _ERROR_LOG,err_class_map,_WARNING_LOG,err_color_map
+  global _ERROR_LOG,err_class_map,_WARNING_LOG,QUIET,err_color_map
   err_name = category.__name__
   err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
 
   if category is Warning:
+    if QUIET:
+      return
     _WARNING_LOG.extend(f'{module}: {text}'.split("\n"))            # Warnings are collected in a separate list
   else:
     _ERROR_LOG.extend(err_line.split("\n"))                         # Append traditional error line to the CI error log
@@ -296,6 +298,9 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
 
   if 'logging' in args and args.logging:
     LOGGING = True
+
+  if 'test' in args and args.test and 'errors' in args.test:
+    QUIET = True
 
   if 'debug' in args:
     if args.debug is None:
