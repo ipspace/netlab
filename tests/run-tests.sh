@@ -1,4 +1,7 @@
 #!/bin/bash
+if [ "$1" == "ci" ]; then
+  set -e
+fi
 DIRNAME=`dirname "$0"`
 echo "Executing CI/CD tests in $DIRNAME"
 cd "$DIRNAME"

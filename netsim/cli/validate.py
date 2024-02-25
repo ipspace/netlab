@@ -133,6 +133,8 @@ def load_plugin(device: str) -> typing.Any:
   v_path = topology.defaults.paths.validate or ['topology:validate']  # Get validation plugin path
   v_base = os.path.dirname(topology.input[0])                         # Get base (topology) directory
   v_path = _files.absolute_search_path(v_path,v_base)                 # Get the absolute search path
+  if log.VERBOSE >= 2:
+    print(f'Searching for {device} plugin in {v_path}')
   for v_entry in v_path:                                              # Iterate over the seach path
     v_file = f'{v_entry}/{device}.py'                                 # ... trying to find the device-specific plugin
     if os.path.exists(v_file):                                        # Got it?
@@ -658,6 +660,7 @@ Main routine: run all tests, handle validation errors, print summary results
 def run(cli_args: typing.List[str]) -> None:
   global test_skip_count,test_result_count,test_pass_count
   args = validate_parse(cli_args)
+  log.set_logging_flags(args)
   topology = load_snapshot(args)
 
   if 'validate' not in topology:
