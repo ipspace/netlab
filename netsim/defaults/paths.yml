@@ -1,3 +1,4 @@
+---
 validate:                       # Search path for validation plugins
 - topology:validate
 - validate
@@ -33,11 +34,22 @@ custom:                         # Custom configuration templates
 
 deploy:
   dirs:
-  - "package:ansible/tasks/deploy-config"
+  - "topology:tasks"
+  - "tasks"
+  - "~/.netlab/tasks"
+  - "package:ansible/tasks"
   tasks_generic:
-  - "{{ansible_network_os}}-{{ node_provider }}.yml"
-  - "{{ansible_network_os}}.yml"
-  - "missing.yml"
+  - "deploy-config/{{ansible_network_os}}-{{ node_provider }}.yml"
+  - "deploy-config/{{ansible_network_os}}.yml"
+  files:
+  - "{{netlab_device_type}}/{{ config_module }}-{{ provider|default(netlab_provider) }}.yml"
+  - "{{netlab_device_type}}/{{ config_module }}.yml"
+  - "deploy-config/{{netlab_device_type}}-{{ provider|default(netlab_provider) }}.yml"
+  - "deploy-config/{{netlab_device_type}}.yml"
+  - "{{ansible_network_os}}/{{ config_module }}-{{ provider|default(netlab_provider) }}.yml"
+  - "{{ansible_network_os}}/{{ config_module }}.yml"
+  - "deploy-config/{{ansible_network_os}}-{{ provider|default(netlab_provider) }}.yml"
+  - "deploy-config/{{ansible_network_os}}.yml"
 
 templates:
   dirs:
@@ -46,6 +58,8 @@ templates:
   - "~/.netlab/templates"
   - "package:ansible/templates"
   - "package:daemons"
+
+t_files:
   files:
   - "{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2"
   - "{{config_module}}/{{netlab_device_type}}.j2"
@@ -54,3 +68,22 @@ templates:
   - "{{config_module}}/{{ansible_network_os}}.j2"
   - "{{config_module}}.{{ansible_network_os}}.j2"
   - "{{netlab_device_type}}/{{config_module}}.j2"
+
+ready:
+  dirs:
+  - "topology:readiness-check"
+  - "readiness-check"
+  - "~/.netlab/readiness-check"
+  - "package:ansible/tasks/readiness-check"
+  files:
+  - "{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml"
+  - "{{netlab_device_type}}.yml"
+  - "{{ansible_network_os}}-{{provider|default(netlab_provider)}}.yml"
+  - "{{ansible_network_os}}.yml"
+
+collect:
+  dirs:
+  - "topology:fetch-config"
+  - "fetch-config"
+  - "~/.netlab/fetch-config"
+  - "package:ansible/tasks/fetch-config"

@@ -6,27 +6,35 @@
   vars:
     config_dir: "{{ lookup('env','PWD') }}/{{ target|default('config') }}"
   tasks:
-  - set_fact:
+  - name: Set variables that cannot be set with VARS
+    set_fact:
       netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
 
-  - file:
+  - name: Create config directory
+    file:
       path: "{{ config_dir }}"
       state: directory
     run_once: true
     delegate_to: localhost
 
-  - include_tasks: "{{ item }}"
+  - name: Find configuration collection script
+    set_fact:
+      collect_script: "{{ lookup('first_found',params,errors='ignore') }}"
+    vars:
+      params:
+        paths: "{{ paths_collect.dirs }}"
+        files: "{{ paths_ready.files }}"
+
+  - include_tasks: "{{ collect_script }}"
     name: Collect device configurations
-    with_first_found:
-    - "tasks/fetch-config/{{netlab_device_type}}.yml"
-    - "tasks/fetch-config/{{ansible_network_os}}.yml"
-    - "missing.yml"
+    when: collect_script
     args:
       apply:
         vars:
           netsim_action: fetch-config
 
-  - copy:
+  - name: Copy collected configuration to local config directory
+    copy:
       content: "{{ ansible_net_config }}"
       dest: "{{ config_dir }}/{{ inventory_hostname }}.cfg"
     delegate_to: localhost

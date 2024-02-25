@@ -1,3 +1,4 @@
+---
 - delegate_to: localhost
   block:
   - name: "Compute final module name for {{ config_item }}"
@@ -5,21 +6,23 @@
       config_module: "{{ config_item.replace('@','.') }}"
       item: "{{ config_item.replace('@','.') }}"
 
-  - name: "Find configuration template {{ config_module }}"
+  - name: "Find {{ config_module }} configuration template"
     set_fact:
       config_template: "{{ lookup('first_found',params,errors='ignore') }}"
     vars:
       params:
         paths: "{{ paths }}"
-        files: "{{ paths_templates.files }}"
+        files: "{{ paths_t_files.files }}"
 
-  - template:
-      src: "{{ config_template }}"
-      dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.cfg"
-    when: config_template
-
-  - fail:
+  - name: Throw an error message if we can't find the configuration template
+    fail:
       msg: >
         Missing configuration template for {{ config_module }} on device
         {{ netlab_device_type|default(ansible_network_os) }}/{{ ansible_network_os }}
     when: not config_template
+
+  - name: Create {{ config_module }} configuration from {{ config_template }}
+    template:
+      src: "{{ config_template }}"
+      dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.cfg"
+    when: config_template

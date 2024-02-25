@@ -7,7 +7,8 @@
     config_dir: "{{ lookup('env','PWD') }}/config"
   tasks:
   - block:
-    - set_fact:
+    - name: Set variables that cannot be set with VARS
+      set_fact:
         netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
 
     - name: Create config directory in {{ config_dir }}
@@ -18,7 +19,8 @@
 
     delegate_to: localhost
 
-  - include_tasks: "tasks/create-config.yml"
+  - name: Create initial device configuration
+    include_tasks: "tasks/create-config.yml"
     args:
       apply:
         vars:
@@ -28,10 +30,12 @@
 - name: Create module-specific configurations
   hosts: modules
   tasks:
-  - set_fact:
+  - name: Set variables that cannot be set with VARS
+    set_fact:
       modlist: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
 
-  - include_tasks: "tasks/create-config.yml"
+  - name: Create device configurations for {{ netlab_module|intersect(modlist) }}
+    include_tasks: "tasks/create-config.yml"
     loop: "{{ netlab_module|intersect(modlist) }}"
     loop_control:
       loop_var: config_item
@@ -44,7 +48,8 @@
 - name: Create custom deployment templates
   hosts: custom_configs
   tasks:
-  - include_tasks: "tasks/create-custom-config.yml"
+  - name: Create {{ custom_config }} custom device configuration
+    include_tasks: "tasks/create-custom-config.yml"
     when: custom_config in config
     loop: "{{ netlab_custom_config }}"
     loop_control:
@@ -64,7 +69,8 @@
             |difference(modules|default([]))
             |difference(config|default([])) }}
   tasks:
-  - include_tasks: "tasks/create-config.yml"
+  - name: Create daemon configurations
+    include_tasks: "tasks/create-config.yml"
     loop: "{{ extra_config }}"
     when: "'@' not in config_item"
     loop_control:

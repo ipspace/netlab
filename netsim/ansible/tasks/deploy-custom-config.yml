@@ -6,7 +6,10 @@
 # template name specified in paths_custom.files (tons of variations on inventory_hostname, netlab_device_type,
 # node_provider and ansible_network_os
 #
-- set_fact:
+---
+- name: Find configuration template
+  set_fact:
+    config_module: "{{ custom_config }}"
     config_template: "{{ lookup('first_found',params,errors='ignore') }}"
   tags: [ always ]
   vars:
@@ -26,15 +29,18 @@
       =========================================
       {{ lookup('template',config_template) }}
     verbosity: 1
-  tags: [ test,custom ]
+  tags: [ test, custom ]
 
 # Find deployment task list. It could be a config-specific tasklist (somewhere in paths_custom directories with
 # file name from paths_custom.tasks list) or a generic deployment tasklist from deployment directories and
 # using generic deployment task names (a combination of ansible_network_os and netlab_provider). missing.yml
 # in the deployment directory is the catch-all of last resort.
 #
-- set_fact:
-    deploy_task: "{{ lookup('first_found',c_params,errors='ignore') or lookup('first_found',d_params,errors='ignore') }}"
+- name: Find custom configuration deployment script
+  set_fact:
+    deploy_task:
+      "{{ lookup('first_found',c_params,errors='ignore')
+         or lookup('first_found',d_params,errors='ignore') }}"
   vars:
     node_provider: "{{ provider|default(netlab_provider) }}"
     c_params:
@@ -46,8 +52,10 @@
 
 # Now that we have the name of the deployment task list, include it and let it run
 #
-- include_tasks: "{{ deploy_task }}"
+- name: Run the configuration deployment script
+  include_tasks: "{{ deploy_task }}"
   tags: [ custom ]
+  when: deploy_task
   vars:
     node_provider: "{{ provider|default(netlab_provider) }}"
   args:

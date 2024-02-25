@@ -5,9 +5,10 @@
   strategy: "{{ netlab_strategy|default('linear') }}"
   gather_facts: false
   tasks:
-  - set_fact:
+  - name: Set variables that cannot be set with VARS
+    set_fact:
       netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
-      search_path: [ "{{ lookup('env','PWD') }}/templates","~/.netlab/templates","../templates" ]
+      search_path: "{{ paths_templates.dirs }}"
     tags: [ always ]
 
 #
@@ -15,17 +16,13 @@
 #
 
   - block:
-    - set_fact:
+    - name: Find device readiness script
+      set_fact:
         ready_script: "{{ lookup('first_found',params,errors='ignore') }}"
       vars:
         params:
-          paths:
-          - "tasks/readiness-check"
-          files:
-          - "{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml"
-          - "{{netlab_device_type}}.yml"
-          - "{{ansible_network_os}}-{{provider|default(netlab_provider)}}.yml"
-          - "{{ansible_network_os}}.yml"
+          paths: "{{ paths_ready.dirs }}"
+          files: "{{ paths_ready.files }}"
 
     - name: Waiting for device to become ready
       include_tasks: "{{ ready_script }}"
@@ -74,9 +71,11 @@
   strategy: "{{ netlab_strategy|default('linear') }}"
   tags: [ module,test ]
   tasks:
-  - set_fact:
+  - name: Set variables that cannot be set with VARS
+    set_fact:
       mod_select: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
-  - include_tasks: "tasks/deploy-module.yml"
+  - name: Deploy individual configuration modules
+    include_tasks: "tasks/deploy-module.yml"
     args:
       apply:
         vars:
@@ -103,7 +102,8 @@
   strategy: "{{ netlab_strategy|default('linear') }}"
   tags: [ custom,test ]
   tasks:
-  - include_tasks: "tasks/deploy-custom-config.yml"
+  - name: Run custom configuration deployment scripts
+    include_tasks: "tasks/deploy-custom-config.yml"
     args:
       apply:
         tags: [ always ]
