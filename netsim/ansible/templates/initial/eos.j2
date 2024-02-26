@@ -14,13 +14,11 @@ ipv6 unicast-routing
 {% include 'eos.vrf.j2' %}
 {% endif %}
 !
-{% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
-ip host {{ k|replace('_','') }}{% if v.loopback.ipv4 is defined %} {{ v.loopback.ipv4|ipaddr('address') }}{% endif %}
-{%- for l in v.interfaces|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %} {{ l.ipv4|ipaddr('address') }}{% endfor %}
-
+{% for hname,hdata in hosts.items() if 'ipv4' in hdata and hname != inventory_hostname %}
+ip host {{ hname|replace('_','') }} {{ hdata.ipv4|join (' ') }}
 {% endfor %}
-{% for k,v in hostvars.items() if k != inventory_hostname and v.loopback.ipv6 is defined %}
-ipv6 host {{ k }} {{ v.loopback.ipv6|ipaddr('address') }}
+{% for hname,hdata in hosts.items() if 'ipv6' in hdata and hname != inventory_hostname %}
+ipv6 host {{ hname|replace('_','') }} {{ hdata.ipv6[0] }}
 {% endfor %}
 {% if mtu is defined %}
 !

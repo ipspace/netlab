@@ -8,10 +8,16 @@ ff00::0	ip6-mcastprefix
 ff02::1	ip6-allnodes
 ff02::2	ip6-allrouters
 #
-{% for name,node in hostvars.items() if node.af is defined and node.af.ipv4|default(False) %}
-{%   if node.loopback is defined and node.loopback.ipv4 is defined %}
-{{ node.loopback.ipv4.split('/')[0] }} {{ name }}
-{%   elif node.interfaces and node.interfaces[0].ipv4 is defined and node.interfaces[0].ipv4 is string %}
-{{ node.interfaces[0].ipv4.split('/')[0] }} {{ name }}
+{% for name,node in hostvars.items() %}
+{%   set intf_list = [ node.loopback ] + node.interfaces if node.loopback is defined else node.interfaces %}
+{%   set addr_list = [] %}
+{%   for intf in intf_list %}
+{%     for af in ('ipv4','ipv6') if af in intf and intf[af] is string %}
+{%       set addr = intf[af].split('/')|first %}
+{%       set ignore = addr_list.append(addr) %}
+{%     endfor %}
+{%   endfor %}
+{%   if addr_list %}
+{{ addr_list|join(' ') }} {{ name }}
 {%   endif %}
 {% endfor %}

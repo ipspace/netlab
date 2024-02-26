@@ -6,6 +6,7 @@ import typing
 import yaml
 import os
 from box import Box
+import netaddr
 
 from . import _TopologyOutput,check_writeable
 from ..augment import nodes
@@ -67,6 +68,27 @@ def ansible_inventory_host(node: Box, topology: Box) -> Box:
   return host
 
 """
+Create a 'hosts' dictionary as an 'all' group variable listing usable IPv4 and
+IPv6 addresses of all lab devices.
+"""
+def add_host_addresses(topology: Box, inventory: Box) -> None:
+  for name,node in topology.nodes.items():
+    intf_list = node.interfaces
+    if 'loopback' in node:                                  # Create a list of all usable interfaces
+      intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
+
+    for intf in intf_list:                                  # Now iterate over interfaces
+      for af in ('ipv4','ipv6'):                            # ... and collect IPv4 and IPv6 addresses
+        if not isinstance(intf.get(af,False),str):          # Is the IP address a string (= usable IP address)?
+          continue
+      
+        if not af in inventory.all.vars.hosts[name]:        # Edge case: first interface
+          inventory.all.vars.hosts[name][af] = []           # ... have to start with an empty list
+
+        addr = str(netaddr.IPNetwork(intf[af]).ip)          # Extract IP address from the CIDR prefix
+        inventory.all.vars.hosts[name][af].append(addr)     # ... and append it to the list of usable IP addresses
+
+"""
 Copy defaults.paths dictionary into ALL group. Create separate variables
 from individual customizable paths to prevent dependencies on too many
 variables that might not be set (example: only 'paths.custom' values should
@@ -101,6 +123,8 @@ def create(topology: Box) -> Box:
       for k in list(pool.keys()):
         if ('_pfx' in k) or ('_eui' in k):
           del pool[k]
+
+  add_host_addresses(topology,inventory)    # Create the 'hosts' dictionary in 'all' group
 
   extra_groups: dict = {                    # Extra groups created in Ansible inventory
     'module':  'modules',                   # Devices using configuration modules
