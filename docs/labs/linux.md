@@ -67,9 +67,9 @@ vagrant@host:~$ ip addr
 (linux-lldp)=
 ## LLDP
 
-LLDP is started on Ubuntu virtual machines if the **netlab_lldp_enable** group variable is set to **True** (default setting). LLDP is not started in Linux containers or in non-Ubuntu Linux virtual machines.
+LLDP is started on Ubuntu virtual machines if the **netlab_lldp_enable** group variable is set to **True** (default setting is **False**). LLDP is not started in Linux containers or in non-Ubuntu Linux virtual machines.
 
-To disable LLDP on Ubuntu virtual machines, set the **netlab_lldp_enable** node parameter or **defaults.devices.linux.group_vars.netlab_lldp_enable** variable to **False**.
+To enable LLDP on Ubuntu virtual machines, set the **netlab_lldp_enable** node parameter or **defaults.devices.linux.group_vars.netlab_lldp_enable** variable to **True**.
 
 (linux-initial-config)=
 ## Initial Configuration on Linux Virtual Machines
@@ -81,18 +81,17 @@ _netlab_ supports two Linux networking configuration mechanisms:
 
 You might have to change the initial configuration mechanism to *traditional configuration* if you're using Linux virtual machines that are not based on Ubuntu. To do that, set the node **netlab_linux_distro** parameter to **vanilla** or set **defaults.devices.linux._provider_.group_vars.netlab_linux_distro** variable to **vanilla**.
 
+(linux-ubuntu-package)=
 ## Ubuntu Package Installation During Initial Configuration
 
 If needed the _netlab_ initial configuration script installs **lldpd** and **net-tools** Ubuntu packages.
 
-* **net-tools** package is installed if the **netlab_net_tools** variable is set to **True** (default setting) and if the **arp** command cannot be found.
-* **lldpd** package is installed if the **netlab_lldp_enable** variable is set to **True** (default setting) and if the **lldpd.service** is not running.
+* **net-tools** package is installed if the **netlab_net_tools** variable is set to **True** (default setting is **False**) and if the **arp** command cannot be found.
+* **lldpd** package is installed if the **netlab_lldp_enable** variable is set to **True** (default setting is **False**) and if the **lldpd.service** is not running.
 
 The package installation is performed only when the **netlab_linux_distro** variable is set to **ubuntu** (see [](linux-initial-config))
 
-_netlab_ initial configuration script will skip Ubuntu package installation if it can find **arp** command or if the **lldpd.service** is already running, allowing you to build Vagrant boxes that require no Internet access during the initial configuration.
-
-You can also disable package installation by setting **netlab_net_tools** and **netlab_lldp_enable** node parameters or corresponding **defaults.devices.linux.group_vars._variable_** variables to **False**.
+_netlab_ initial configuration script will skip Ubuntu package installation if it can find **arp** command or if the **lldpd.service** is already running, allowing you to build custom Vagrant boxes that require no Internet access during the initial configuration.
 
 (clab-linux)=
 ## Initial Configuration on Linux Containers
