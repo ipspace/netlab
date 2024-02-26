@@ -4,6 +4,7 @@
 # Let's use that.
 #
 # (Overwrite netplan config to remove DNS stuff)
+echo -n 'Starting initial config ' && date
 cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
 network:
   version: 2
@@ -105,23 +106,28 @@ SCRIPT
 {% endif %}
 
 # Interface addressing
-{% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined)%}
+{% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined or l.dhcp is defined)%}
 cat <<SCRIPT > /etc/netplan/03-eth-{{ l.ifname }}.yaml
 network:
   version: 2
   renderer: networkd
   ethernets:
     {{ l.ifname }}:
+{%   if l.dhcp.client.ipv4|default(False) %}
+      dhcp4: true
+{%   endif %}
+{%   if l.dhcp.client.ipv6|default(False) %}
+      dhcp6: true
+{%   endif %}
+{%   for af in ('ipv4','ipv6') if af in l %}
+{%     if loop.first %}
       addresses:
-{% if l.ipv4 is defined %}
-        - {{ l.ipv4 }}
-{%   endif %}
-{% if l.ipv6 is defined %}
-        - {{ l.ipv6 }}
-{%   endif %}
-{% if l.mtu is defined %}
+{%     endif %}
+        - {{ l[af] }}
+{%   endfor %}
+{%   if l.mtu is defined %}
       mtu: {{ l.mtu }}
-{% endif %}
+{%   endif %}
 SCRIPT
 {% endfor %}
 
@@ -143,5 +149,7 @@ network:
 SCRIPT
 {% endfor  %}
 
+echo -n 'Starting netplan generate ' && date
 netplan generate
-netplan apply
+echo -n 'Starting netplan apply ' && date
+nohup netplan apply &

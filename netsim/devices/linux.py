@@ -14,11 +14,9 @@ class Linux(_Quirks):
     if devices.get_provider(node,topology) != 'clab':
       return
 
-    for intf in node.interfaces:
-      if not intf.get('dhcp.client',False):
-        continue
+    if 'dhcp' in node.get('module',[]):
       log.error(
-        f"Linux containers (node {node.name}) cannot run DHCP clients.",
-        more_hints=[ "Use 'dhclient' or 'cumulus' device type" ],
+        f"netlab does not support DHCP functionality in Linux containers",
+        more_hints=[ "Use 'cumulus' for DHCP client or 'dnsmasq' for DHCP server" ],
         category=log.IncorrectType,
         module='quirks')

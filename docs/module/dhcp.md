@@ -20,6 +20,7 @@ DHCP clients are supported on these platforms:
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
+| Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |  ❌  |
 
 DHCP servers are supported on these platforms: 
 
@@ -29,6 +30,7 @@ DHCP servers are supported on these platforms:
 | Cisco IOSv            | ✅  | ✅  |  ❌  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
 | dnsmasq               | ✅  | ✅  |  ❌  |
+| Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |
 
 DHCP relays are supported on these platforms: 
 

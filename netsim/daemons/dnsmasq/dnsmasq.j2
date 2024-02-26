@@ -2,8 +2,11 @@ dhcp-authoritative
 enable-ra
 domain=lab.local
 ra-param=*,10
+except-interface=lo
+port=0
 
 {% for pool in dhcp.pools|default([]) %}
+{%   set pool_idx = loop.index %}
 {%   for af in ('ipv4','ipv6') if af in pool %}
 dhcp-range=set:{{ af }}_{{ pool.clean_name }},{{ 
   pool[af]|ipaddr(1)|ipaddr('address') }},{{ 
@@ -13,7 +16,7 @@ dhcp-range=set:{{ af }}_{{ pool.clean_name }},{{
 dhcp-option=tag:{{ af }}_{{ pool.clean_name }},option:router,{{ pool.gateway[af]|ipaddr('address') }}
 {%     endif %}
 {%     for xa in pool.excluded[af]|default([]) %}
-dhcp-host=tag:{{ af }}_{{ pool.clean_name }},00:00:00:00:{{ loop.index + 1 }},{{ xa }}
+dhcp-host=ff:00:00:00:{{ pool_idx }}:{{ loop.index + 1 }},{{ xa }}
 {%     endfor %}
 {%   endfor %}
 #
