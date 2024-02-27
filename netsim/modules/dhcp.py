@@ -68,6 +68,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
           module='dhcp')
         OK = False
 
+    node.dhcp.relay = True                                # Remember the node uses a DHCP relay
+
     if not intf.get('dhcp.vrf',False):                    # Did the user request inter-VRF relaying?
       continue
 

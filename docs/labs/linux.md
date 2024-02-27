@@ -71,6 +71,14 @@ LLDP is started on Ubuntu virtual machines if the **netlab_lldp_enable** group v
 
 To enable LLDP on Ubuntu virtual machines, set the **netlab_lldp_enable** node parameter or **defaults.devices.linux.group_vars.netlab_lldp_enable** variable to **True**.
 
+(linux-dhcp-relay)=
+## DHCP Relaying on Linux
+
+DHCP relaying on Ubuntu and Cumulus Linux uses `isc-dhcp-relay`, and is implemented only for IPv4. The `isc-dhcp-relay` has a few limitations:
+
+* The list of DHCP servers is specified per daemon, not per interface. The configuration template combines DHCP servers specified on all interfaces into a single list of servers.
+* While it might be possible to run a DHCP relay within a single VRF (for intra-VRF, not inter-VRF relaying), _netlab_ does not implement that. DHCP relaying with `isc-dhcp-relay` does not work between VRF interfaces.
+
 (linux-initial-config)=
 ## Initial Configuration on Linux Virtual Machines
 

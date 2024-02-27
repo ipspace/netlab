@@ -39,6 +39,8 @@ DHCP relays are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅ [❗](caveats-eos) |
 | Cisco IOSv            | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cumulus Linux         | ✅ [❗](linux-dhcp-relay) |  ❌  |  ❌  |
+| Linux (Ubuntu VM only)| ✅ [❗](linux-dhcp-relay)  |  ❌  |  ❌  |
 
 ```{tip}
 * VRF-aware DHCP relays use DHCP options specified in RFC 6607.
