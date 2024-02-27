@@ -217,11 +217,12 @@ links:
   ...
 ```
 
-You can also set interface parameters for every interface connected to a VLAN within global VLAN definition. For example, you could set the OSPF cost for all interfaces connected to the **red** VLAN:
+You can also set interface parameters for every interface connected to a routed VLAN within global VLAN definition. For example, you could set the OSPF cost for all interfaces connected to the **red** VLAN:
 
 ```
 vlans:
   red:
+    mode: route
     ospf.cost: 10
 
 nodes:
@@ -237,7 +238,7 @@ links:
 Finally, you can set the parameters of an individual routed VLAN subinterface within the **vlan.trunk** link- or interface- dictionary.
 
 ```{warning}
-You cannot set VLAN interface parameters for bridged or IRB VLANs on access or trunk links. Most physical interface parameters[^PIFX] are ignored when creating the VLAN interface, and removed from the physical interface.
+You cannot set VLAN interface parameters for bridged or IRB VLANs on access or trunk links. Most physical interface parameters[^PIFX] are ignored when creating the VLAN interface, and removed from the physical interface ([more details](../dev/vlan-interface-attributes.md)).
 ```
 
 [^PIFX]: ... apart from IPv4/IPv6 addresses and **gateway** link parameters set during the data transformation.
