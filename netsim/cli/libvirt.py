@@ -258,6 +258,11 @@ best not to damage the original virtual disk).
     print('User decided to abort the box building process')
     return
 
+  # Set environment variables to ensure we have a consistent LIBVIRT environment
+  #
+  os.environ["LIBVIRT_DEFAULT_URI"] = "qemu:///system"      # Create system-wide libvirt networks
+  os.environ["VIRTINSTALL_OSINFO_DISABLE_REQUIRE"] = "1"    # Stop yammering about unknown operating systems
+
   # Ignore all errors when doing initial VM cleanup as the VM might not have been created before
   #
   vm_cleanup('vm_box',ignore_destroy=True,ignore_undefine=True)
