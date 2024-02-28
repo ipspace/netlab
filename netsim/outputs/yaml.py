@@ -47,7 +47,8 @@ class YAML(_TopologyOutput):
         cleantopo = result
         break
 
-    if not isinstance(cleantopo,Box) and not isinstance(cleantopo,BoxList):
+    is_structured = isinstance(cleantopo,Box) or isinstance(cleantopo,BoxList)
+    if not is_structured:
       r_fmt = 'str'
       r_txt = f"{str(cleantopo)}\n"
     elif modname == 'YAML':
@@ -63,4 +64,7 @@ class YAML(_TopologyOutput):
       log.status_created()
       print(f"transformed topology dump in {modname} format in {outfile}")
     else:
-      strings.pretty_print(r_txt,r_fmt)
+      if is_structured:
+        strings.pretty_print(r_txt,r_fmt)
+      else:
+        print(r_txt)
