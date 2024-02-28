@@ -1,9 +1,11 @@
+(dev-config-deploy)=
 # Deploying Device Configurations
 
 *netlab* Ansible playbooks deploy configurations through device-specific task lists and templates. When adding a new device type, you'll have to create either a generic _deploy configuration_ task list and a bunch of configuration templates or a task list for every module supported by the device (plus the initial configuration templates).
 
 You can also mix and match the two approaches. For example, you could have a generic *deploy configuration* task list but use a separate list of tasks for the initial configuration.
 
+(dev-config-deploy-paths)=
 ## Configuration Deployment Search Paths
 
 Before starting the configuration deployment process, **netlab initial** Ansible playbook tries to find an Ansible task list that can be used to check the readiness of a lab device. If that task list is found, it's executed before the initial device configuration deployment starts. You can use that task list to check the device's SSH server (Arista cEOS) or interface initialization state (Cisco Nexus OS). **netlab initial** uses these default parameters to find the device readiness task list ([more details](deploy-search-paths)):

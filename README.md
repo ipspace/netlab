@@ -6,7 +6,7 @@
 * Create *containerlab* configuration file
 * Create Ansible inventory and configuration file
 * Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, and BGP routing design
-* Configure IPv4, IPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, VRRP, anycast gateways, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
+* Configure IPv4, IPv6, DHCP, DHCPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, VRRP, anycast gateways, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
 
 Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
@@ -14,12 +14,11 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.7.2](https://github.com/ipspace/netlab/releases/tag/release_1.7.2), which contains fixes for a few annoying bugs (more details in the [release notes](https://netlab.tools/release/)).
+The latest release is [release 1.8.0](https://github.com/ipspace/netlab/releases/tag/release_1.8.0). It contains [numerous new features](https://netlab.tools/release/1.8/) that might have a few bugs. Should you encounter one of those creatures, please open a GitHub issue and use [release 1.7.2](https://github.com/ipspace/netlab/releases/tag/release_1.7.2).
 
-If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4) and [open a GitHub issue](https://github.com/ipspace/netlab/issues).
 <!--
-It contains [numerous new features](https://netlab.tools/release/1.6/) that might have a few bugs. Should you encounter one of those creatures, please open a GitHub issue and use release 1.5.4.
---> 
+If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4) and [open a GitHub issue](https://github.com/ipspace/netlab/issues).
+-->
 
 ## An Overview of CLI Commands
 

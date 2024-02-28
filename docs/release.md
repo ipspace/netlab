@@ -1,7 +1,13 @@
 Release notes
 =============
 
-**[Release 1.8.0](release-1.8.0) (TBD)**
+**[Release 1.8.0](release-1.8.0) (2024-03-01)**
+
+* [DHCP configuration module](dhcp-module) implements DHCP clients, DHCP servers, and DHCP relays for IPv4 and IPv6.
+* Support for control plane and network services daemons running in Linux containers. This release includes BIRD and dnsmasq daemons.
+* Support for 4-octet BGP AS numbers, including [large BGP communities](bgp-community-propagation) (where available).
+* [Validation plugins](validate-plugin) allow you to write more powerful **netlab validate** validation tests without creating complex Jinja2 templates
+* Build Docker containers with the **[netlab clab build](netlab-clab-build)** command
 
 [More features...](release-1.8.0)
 

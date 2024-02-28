@@ -113,13 +113,22 @@ You can change _netlab_ defaults with environment variables starting with `netla
 
 For example, the `NETLAB_DEVICE` variable sets the **defaults.device** parameter and the `NETLAB_BGP_AS` variable sets the **defaults.bgp.as** parameter.
 
-You can use the environment variables to replace the `--device`, `--provider`, or `--set` arguments of the **netlab up** command. For example, the following command sequence starts a lab topology using Arista EOS containers:
+You can use the environment variables instead of the `--device`, `--provider`, or `--set` arguments of the **netlab up** command. For example, the following command sequence starts a lab topology using Arista EOS containers:
 
 ```
 $ export NETLAB_DEVICE=eos
 $ export NETLAB_PROVIDER=clab
 $ netlab up
 ```
+
+Environment variables have higher precedence than the system- and user defaults but cannot override the **netlab up** CLI arguments. For example, this is the order of precedence (from highest to lowest) used to select the virtualization provider:
+
+* The `--provider` CLI argument
+* **provider** attribute specified in lab topology
+* `NETLAB_PROVIDER` environment variable
+* **defaults.provider** attribute in the lab topology
+* **provider** attribute in user defaults
+* **provider** attribute is not specified in the system defaults but would have been the value of last resort.
 
 (defaults-debug)=
 ## Debugging User Default Files
@@ -155,13 +164,13 @@ You can change the locations of user- or system defaults with the `defaults.sour
 
 [^NAE]: These parameters cannot be changed anywhere else as they're checked before the default values are merged with the lab topology file.
 
-* `defaults.sources.extra` adds files to the list of user default files. You can use this parameter to add extra defaults to larger projects with a hierarchical directory structure.
-* `defaults.sources.list` (if present) specifies the complete list of default file locations that cannot be changed with other parameters
-* `defaults.sources.user` changes the list of potential user default files.
-* `defaults.sources.system` changes the list of potential system default files.
+* The `defaults.sources.extra` list adds files to the list of user default files. You can use this parameter to add extra defaults to larger projects with a hierarchical directory structure.
+* The `defaults.sources.user` parameter changes the list of potential user default files.
+* The `defaults.sources.system` parameter changes the list of potential system default files.
+* The `defaults.sources.list` parameter (if present) specifies the complete list of default file locations that cannot be changed with other parameters.
 
 ```{warning}
-If you need to change the `defaults.sources.system` setting, make sure `package:topology-defaults.yml` is the last element in the list, or you'll face an interesting troubleshooting exercise.
+If you need to change the `defaults.sources.system` or `default.sources.list` settings, make sure `package:topology-defaults.yml` is the last element in the list.
 ```
 
 For example, the [project-wide defaults file](https://github.com/ipspace/bgplab/blob/main/defaults.yml) in the [BGP Hands-On Labs](https://github.com/ipspace/bgplab/) project specifies the device type you want to use in the labs. Individual lab topologies ([example](https://github.com/ipspace/bgplab/blob/main/basic-session/topology.yml)) are stored in subdirectories and use `defaults.sources.extra` parameter to add project-wide defaults to the lab topology, for example:
