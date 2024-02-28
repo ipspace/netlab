@@ -2,7 +2,7 @@
 
 import sys
 
-__version__ = "1.8.0-dev3"
+__version__ = "1.8.0"
 
 try:
   import box

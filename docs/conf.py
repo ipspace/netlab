@@ -29,9 +29,6 @@ author = 'Ivan Pepelnjak'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 #  'recommonmark',
 # ones.
-source_parsers = {
-    '.md': 'recommonmark.parser.CommonMarkParser',
-}
 
 source_suffix = ['.rst', '.md']
 
