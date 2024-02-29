@@ -34,10 +34,12 @@ source_suffix = ['.rst', '.md']
 
 extensions = [
   'myst_parser',
-  'sphinxcontrib.jquery'
+  'sphinxcontrib.jquery',
+  'sphinx_rtd_dark_mode'
 ]
 
 myst_heading_anchors = 3
+default_dark_mode = False
 
 myst_enable_extensions = [
     "deflist",
@@ -92,12 +94,4 @@ html_css_files = [ 'css/custom.css' ]
 sys.path.insert(0, os.path.abspath('netlab'))
 
 def setup(app):
-    app.add_config_value('recommonmark_config', {
-        #'url_resolver': lambda url: github_doc_root + url,
-        'auto_toc_tree_section': 'Contents',
-        'enable_math': False,
-        'enable_inline_math': False,
-        'enable_eval_rst': True
-    }, True)
     app.add_transform(AutoStructify)
-
