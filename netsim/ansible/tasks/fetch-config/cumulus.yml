@@ -1,29 +1,46 @@
 #
 # Fetch Cumulus VX configuration files
 #
-- command: vtysh -c 'show run'
+- name: Save FRR running configuration to frr.conf
+  command: vtysh -c 'write'
+  become: true
+- name: Collect FRR configuration
+  command: cat /etc/frr/frr.conf
   become: true
   register: config
-- copy:
+- name: Save FRR configuration to {{ ofile }}
+  vars:
+    ofile: "{{ config_dir }}/{{ inventory_hostname }}.cfg"
+  copy:
     content: |
       {{ config.stdout }}
-    dest: "{{ config_dir }}/{{ inventory_hostname }}.cfg"
+    dest: "{{ ofile }}"
   delegate_to: localhost
 
-- command: cat /etc/frr/daemons
+- name: Collect FRR daemons configuration
+  command: cat /etc/frr/daemons
   become: true
   register: config
-- copy:
+- name: Save FRR daemons to {{ ofile }}
+  vars:
+    ofile: "{{ config_dir }}/{{ inventory_hostname }}-daemons"
+  copy:
     content: |
       {{ config.stdout }}
-    dest: "{{ config_dir }}/{{ inventory_hostname }}-daemons"
+    dest: "{{ ofile }}"
   delegate_to: localhost
 
-- command: ifquery -a
-  register: ifquery
-  become: true
-- copy:
-    content: |
-      {{ ifquery.stdout }}
-    dest: "{{ config_dir }}/{{ inventory_hostname }}-interfaces"
-  delegate_to: localhost
+- block:
+  - name: Collect ifupdown2 configuration
+    command: ifquery -a
+    register: ifquery
+    become: true
+  - name: Save ifupdown configuration to {{ ofile }}
+    vars:
+      ofile: "{{ config_dir }}/{{ inventory_hostname }}-interfaces"
+    copy:
+      content: |
+        {{ ifquery.stdout }}
+      dest: "{{ ofile }}"
+    delegate_to: localhost
+  when: "'cumulus' in netlab_device_type"
