@@ -35,6 +35,11 @@ def up_parse_args(standalone: bool) -> argparse.ArgumentParser:
     action='store_true',
     help='Do not configure lab devices')
   parser.add_argument(
+    '-r','--reload-config',
+    dest='reload',
+    action='store',
+    help='Reload saved configurations from specified directory')
+  parser.add_argument(
     '--no-tools',
     dest='no_tools',
     action='store_true',
@@ -235,6 +240,19 @@ def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
     print(f"\n\n{message}")
 
 """
+Reload saved configurations
+"""
+def reload_saved_config(args: argparse.Namespace, topology: Box) -> None:
+  lab_status_change(topology,f'reloading saved initial configurations')
+  log.section_header('Reloading','saved initial device configurations')
+  cmd = external_commands.set_ansible_flags(['netlab','config','--reload',args.reload])
+  if not external_commands.run_command(cmd):
+    log.fatal("netlab config --reload failed, aborting...",'netlab up')
+  lab_status_change(topology,f'saved initial configurations reloaded')
+  log.status_success()
+  print("Saved configurations reloaded")
+
+"""
 Deploy external tools
 """
 def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
@@ -270,6 +288,9 @@ Main "lab start" process
 def run(cli_args: typing.List[str]) -> None:
   up_args_parser = up_parse_args(False)                       # Try to parse the up-specific arguments
   (args,rest) = up_args_parser.parse_known_args(cli_args)
+  if args.reload and args.no_config:
+    log.fatal('Cannot combine --reload-config and --no-config')
+
   set_dry_run(args)
   if not args.snapshot and not is_dry_run():
     check_existing_lab()
@@ -304,7 +325,10 @@ def run(cli_args: typing.List[str]) -> None:
     recreate_secondary_config(topology,p_provider,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 
-  deploy_initial_config(args,topology)
+  if args.reload:
+    reload_saved_config(args,topology)
+  else:
+    deploy_initial_config(args,topology)
   start_external_tools(args,topology)
   lab_status_change(topology,'started')
   if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done

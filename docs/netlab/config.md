@@ -9,16 +9,18 @@
 ## Usage
 
 ```text
-usage: netlab config [-h] [-v] template
+usage: netlab config [-h] [-r] [-v] [-q] template
 
 Deploy custom configuration template
 
 positional arguments:
-  template       Configuration template (or a family of templates)
+  template       Configuration template or a directory with templates
 
-optional arguments:
+options:
   -h, --help     show this help message and exit
-  -v, --verbose  Verbose logging
+  -r, --reload   Reload saved device configurations
+  -v, --verbose  Verbose logging (add multiple flags for increased verbosity)
+  -q, --quiet    Report only major errors
 
 All other arguments are passed directly to ansible-playbook
 ```
@@ -35,6 +37,12 @@ All unrecognized parameters are passed to the internal `config.ansible` Ansible 
 
 * `-l` parameter to deploy device configurations on a subset of devices.
 * `-C` parameter to run the Ansible playbook in dry-run mode.
+
+## Restoring Saved Device Configurations
+
+**netlab config --reload** implements the *reload saved device configurations* part of the **netlab initial -r** command. It waits for devices to become ready (because it's used immediately after a lab has been started) and starts the initial configuration process on devices that need more than a replay of saved configuration ([more details](netlab-up-reload)).
+
+After that, it treats the saved device configurations as custom templates and uses the same process as the regular **netlab config** command.
 
 ## Debugging Device Configurations
 

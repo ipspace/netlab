@@ -1,0 +1,30 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Reload saved device configurations
+  hosts: all:!unprovisioned
+  gather_facts: false
+  tasks:
+  - name: Did we get the configuration directory name?
+    fail: msg="Specify initial configuration directory with the 'config' external variable"
+    when: config is not defined
+    run_once: true
+
+  - name: Set variables that cannot be set with VARS
+    set_fact:
+      netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
+      search_path: "{{ paths_templates.dirs }}"
+      custom_config: "{{ config }}"
+    tags: [ always ]
+
+  - import_tasks: tasks/wait-for-ready.yml
+  - include_tasks: tasks/initial-config.yml
+    when: netlab_initial|default(False) in ['always']
+    args:
+      apply:
+        tags: [ always ]
+
+  - name: Deploy saved configuration files
+    include_tasks: "tasks/deploy-custom-config.yml"
+    args:
+      apply:
+        tags: [ always ]

@@ -1,4 +1,4 @@
-(dhcp-module)=
+(module-dhcp)=
 # DHCP Configuration Module
 
 DHCP configuration module implements DHCP clients, servers, and relays for IPv4 and IPv6.

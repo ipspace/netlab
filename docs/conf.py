@@ -19,7 +19,9 @@ from recommonmark.transform import AutoStructify
 # -- Project information -----------------------------------------------------
 
 project = 'netlab'
-copyright = '2020–2023 Ivan Pepelnjak, Jeroen van Bemmel, Stefano Sasso, and other contributors'
+copyright = '''2020–2023 Ivan Pepelnjak, Jeroen van Bemmel, Stefano Sasso, and
+<a href="https://github.com/ipspace/netlab/graphs/contributors">other contributors</a>'''
+
 author = 'Ivan Pepelnjak'
 
 

@@ -11,43 +11,8 @@
       search_path: "{{ paths_templates.dirs }}"
     tags: [ always ]
 
-#
-# Initial device readiness check
-#
-
-  - block:
-    - name: Find device readiness script
-      set_fact:
-        ready_script: "{{ lookup('first_found',params,errors='ignore') }}"
-      vars:
-        params:
-          paths: "{{ paths_ready.dirs }}"
-          files: "{{ paths_ready.files }}"
-
-    - name: Waiting for device to become ready
-      include_tasks: "{{ ready_script }}"
-      when: ready_script|default('')
-      args:
-        apply:
-          tags: [ always ]
-
-    tags: [ always ]
-  
-#
-# Deploy initial configuration
-#
-# Uses 'deploy module' task list but sets the module to 'initial'
-#
-
-  - name: Deploy initial configuration
-    include_tasks: "tasks/deploy-module.yml"
-    args:
-      apply:
-        vars:
-          config_module: initial
-          paths: "{{ search_path }}"
-        tags: [ always ]
-    tags: [ initial ]
+  - import_tasks: tasks/wait-for-ready.yml
+  - import_tasks: tasks/initial-config.yml
 
 #
 # Deploy module-specific configurations
