@@ -8,7 +8,7 @@ The following settings can be displayed:
 * **[defaults](netlab-show-defaults)** -- User/system [defaults](../defaults.md)
 * **[devices](netlab-show-devices)** -- Supported devices
 * **[images](netlab-show-images)** -- Vagrant box names or container names for all supported devices or a single device
-* **[module](netlab-show-modules)** -- Configuration modules
+* **[modules](netlab-show-modules)** -- Configuration modules
 * **[module-support](netlab-show-module-support)** -- Configuration modules support matrix
 * **[outputs](netlab-show-outputs)** -- Output modules used by the **[netlab create](create.md)** command
 * **[reports](netlab-show-reports)** -- Report templates shipped with _netlab_
