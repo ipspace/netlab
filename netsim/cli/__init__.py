@@ -160,7 +160,7 @@ def get_message(topology: Box, action: str, default_message: bool = False) -> ty
     return topology.message if default_message else None    # If the action is OK with getting the default message return it
 
   if not isinstance(topology.message,Box):                  # Otherwise we should be dealing with a dict
-    log.fatal('topology message should be a string or a dict')
+    log.fatal('topology message should be a string or a dict',module='topology',header=True)
 
   return topology.message.get(action,None)                  # Return action-specific message if it exists
 

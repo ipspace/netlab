@@ -152,7 +152,7 @@ def create(topology: Box) -> Box:
     try:
       inventory.custom_configs.vars.netlab_custom_config = plugin.sort_extra_config(topology)
     except log.FatalError as ex:
-      log.fatal(f'Cannot sort custom configuration requests: {str(ex)}','ansible')
+      log.fatal(f'Cannot sort custom configuration requests: {str(ex)}','ansible',header=True)
 
   if not 'groups' in topology:
     return inventory

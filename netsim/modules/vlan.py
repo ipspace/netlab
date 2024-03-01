@@ -733,7 +733,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
     vlan_data = create_node_vlan(node,access_vlan,topology)
     if vlan_data is None:                                                   # pragma: no-cover
       if vlan_subif:                                                        # We should never get here, but at least we can
-        log.fatal(                                                       # scream before crashing
+        log.fatal(                                                          # scream before crashing
           f'Weird: cannot get VLAN data for VLAN {access_vlan} on node {node.name}, aborting')
       continue
 

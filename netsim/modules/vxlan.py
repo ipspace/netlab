@@ -98,7 +98,7 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
   vtep_interface = node.loopback
   loopback_name = devices.get_loopback_name(node,topology)
   if not loopback_name:
-    log.fatal("Internal error: can't find the loopback name of VXLAN-capable device {node.device}")
+    log.fatal("Can't find the loopback name of VXLAN-capable device {node.device}",module="vxlan",header=True)
 
   # Search for additional loopback interfaces with vxlan.vtep' flag, and use the first one
   for intf in node.interfaces:

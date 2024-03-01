@@ -367,7 +367,10 @@ BGP_DEFAULT_SESSIONS: typing.Final[dict] = {
 
 def build_bgp_sessions(node: Box, topology: Box) -> None:
   if not isinstance(node.get('bgp',None),Box) or not node.get('bgp.as',None):   # Sanity check
-    log.fatal(f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???')
+    log.fatal(
+      f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???',
+      module='bgp',
+      header=True)
     return                                                                      # ... it's insane, get out of here
 
   node.bgp.neighbors = []

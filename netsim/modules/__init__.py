@@ -262,8 +262,8 @@ def merge_global_module_params(topology: Box) -> None:
         'module')
       continue                                                  # Nope. Weird, but doesn't matter right now.
     mod_def = topology.defaults[m]
-    if not isinstance(mod_def,dict):                               # Are module defaults a dict?
-      log.fatal("Defaults for module %s should be a dict" % m)  # Nope? Too bad, crash right now, we can't live like that...
+    if not isinstance(mod_def,dict):                            # Are module defaults a dict?
+      log.fatal(f"Defaults for module {m} should be a dict")    # Nope? Too bad, crash right now, we can't live like that...
 
     default_copy = data.get_box(mod_def)                        # Got module defaults. Now copy them (we're gonna clobber them)
     no_propagate = list(no_propagate_list)                      # Always remove these default attributes (and make a fresh copy of the list)

@@ -97,7 +97,7 @@ def print_error_header() -> None:
 """
 Print the final error message and abort
 """
-def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
+def fatal(text: str, module: str = 'netlab', header: bool = False) -> typing.NoReturn:
   global _ERROR_LOG
 
   err_line = f'Fatal error in {module}: {text}'
@@ -109,7 +109,8 @@ def fatal(text: str, module: str = 'netlab') -> typing.NoReturn:
     if WARNING:                                   # CI flag: raise a warning
       warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
     else:
-      print_error_header()
+      if header:
+        print_error_header()
       if strings.rich_err_color:                  # Color-capable terminal
         strings.print_colored_text(strings.pad_err_code('FATAL'),'red',stderr=True)
         if module != 'netlab':

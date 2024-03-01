@@ -108,7 +108,10 @@ def include_nodes(n_name: str, c_data: Box, topology: Box) -> None:
     else:
       topology.nodes[node_name] = data.get_box(inc_data)    # Regular included node, just copy it
       if len(topology.nodes) > nodes.MAX_NODE_ID:
-        log.fatal('Exceeded maximum node limit while adding node {node_name}',module='components')
+        log.fatal(
+          'Exceeded maximum node limit while adding node {node_name}',
+          module='components',
+          header=True)
 
 def include_links(n_name: str, c_data: Box, topology: Box) -> None:
   for l_data in c_data.links:

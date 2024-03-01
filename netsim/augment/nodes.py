@@ -130,7 +130,10 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       continue
 
     if not addrs.get('start'):
-      log.fatal("Start offset missing in management address pool for AF %s" % af)
+      log.fatal(
+        "Start offset missing in management address pool for AF %s" % af,
+        module='addressing',
+        header=True)
 
     try:                                                              # Try to assign management address (might fail due to large ID)
       node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
@@ -359,7 +362,10 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
       for af in prefix_list:
         if isinstance(prefix_list[af],bool):
           if prefix_list[af]:
-            log.fatal( f"Loopback addresses must be valid IP prefixes, not 'True': {prefix_list}" )
+            log.fatal(
+              f"Loopback addresses must be valid IP prefixes, not 'True': {prefix_list}",
+              module='topology',
+              header=True)
         elif not n.loopback[af]:
           if af == 'ipv6':
             if prefix_list[af].prefixlen == 128:

@@ -53,13 +53,13 @@ def include_yaml(data: Box, source_file: str) -> None:
     traversable = _files.get_traversable_path(file_path)                           # Get a traversable object
     inc_files = _files.get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
     if not inc_files:
-      log.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
+      log.fatal(f'Cannot find file {inc_name} to be included into {source_file}','topology',header=True)
       return
 
     for file_name in sorted(inc_files):
       yaml_data = read_yaml(filename=file_name)
       if yaml_data is None:
-        log.fatal(f'Cannot read {file_name} that should be included into {source_file}')
+        log.fatal(f'Cannot read {file_name} that should be included into {source_file}','topology',header=True)
         return
 
       if '_top' in yaml_data:                                   # Do we have to modify parent defaults outside of include scope?
@@ -241,7 +241,7 @@ def load(
     if log.RAISE_ON_ERROR:                                  # ... and if we're under test harness
       raise log.IncorrectValue                              # ... raise a hard error
     else:
-      log.fatal('The "includes" topology element shall not be used')
+      log.fatal('The "includes" topology element shall not be used',module='topology',header=True)
 
   # Now build the list of default sources
   defaults_list = build_defaults_list(topology,user_defaults,system_defaults)

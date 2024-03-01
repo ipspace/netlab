@@ -33,7 +33,8 @@ def group_members(topology: Box, group: str, count: int = 0) -> list:
   if count > 99:                    # pragma: no cover (impossible to get here, recursive groups are checked elsewhere)
     log.fatal(
       'Recursive group definition, aborting',
-      'groups')
+      module='groups',
+      header=True)
 
   for m in topology.groups[group].members:
     if m in topology.nodes:
