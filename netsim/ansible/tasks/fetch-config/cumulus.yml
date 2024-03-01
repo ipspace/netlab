@@ -1,22 +1,29 @@
 #
 # Fetch Cumulus VX configuration files
 #
-- command: vtysh -c wr
+- command: vtysh -c 'show run'
   become: true
-- fetch:
-    src: "{{ file }}"
-    dest: "{{ config_dir }}/{{ inventory_hostname }}/"
-    flat: yes
-  become: True
-  loop_control:
-    loop_var: file
-  loop:
-  - /etc/frr/frr.conf
+  register: config
+- copy:
+    content: |
+      {{ config.stdout }}
+    dest: "{{ config_dir }}/{{ inventory_hostname }}.cfg"
+  delegate_to: localhost
+
+- command: cat /etc/frr/daemons
+  become: true
+  register: config
+- copy:
+    content: |
+      {{ config.stdout }}
+    dest: "{{ config_dir }}/{{ inventory_hostname }}-daemons"
+  delegate_to: localhost
+
 - command: ifquery -a
   register: ifquery
   become: true
 - copy:
     content: |
       {{ ifquery.stdout }}
-    dest: "{{ config_dir }}/{{ inventory_hostname }}/interfaces"
+    dest: "{{ config_dir }}/{{ inventory_hostname }}-interfaces"
   delegate_to: localhost
