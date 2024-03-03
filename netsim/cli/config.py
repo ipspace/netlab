@@ -44,10 +44,10 @@ def run(cli_args: typing.List[str]) -> None:
        glob.glob(args.template+'.*.j2'):
       rest = ['-e','config='+args.template] + rest
     else:
-      log.fatal(f'Cannot find specified Jinja2 template or configuration directory {{ args.template }}','config')
+      log.fatal(f'Cannot find specified Jinja2 template or configuration directory { args.template }','config')
 
   if args.verbose:
-    print(f'Ansible playbook args: {{ rest }}')
+    print(f'Ansible playbook args: { rest }')
   if args.reload:
     ansible.playbook('reload-config.ansible',rest)
   else:
