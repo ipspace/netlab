@@ -28,7 +28,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 
 | Virtual network device | Container image              |
 |------------------------|------------------------------|
-| Arista cEOS            | ceos:4.26.4M                 |
+| Arista cEOS            | ceos: 4.31.2F                 |
 | BIRD                   | netlab/bird:latest           |
 | Cumulus VX             | networkop/cx:4.4.0           |
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |

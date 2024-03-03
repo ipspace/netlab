@@ -191,7 +191,7 @@ clab:
     env:
       INTFTYPE: et
   mgmt_if: Management0
-  image: ceos:4.26.4M
+  image: ceos:4.31.2F
   group_vars:
     ansible_user: admin
     ansible_ssh_pass: admin
