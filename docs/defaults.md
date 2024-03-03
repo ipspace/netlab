@@ -54,7 +54,7 @@ For example, to make sure all labs use Arista EOS as the default device type usi
 ---
 device: eos
 devices.eos:
-  clab.image: ceos:4.27.2F
+  clab.image: ceos:4.31.2F
   libvirt.image: arista/veos:4.28.3M
 ```
 

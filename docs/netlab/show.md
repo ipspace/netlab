@@ -302,7 +302,7 @@ eos image names by virtualization provider
 +--------+-------------+-------------+--------------+
 | device | libvirt     | virtualbox  | clab         |
 +========+=============+=============+==============+
-| eos    | arista/veos | arista/veos | ceos:4.26.4M |
+| eos    | arista/veos | arista/veos | ceos:4.31.2F |
 +--------+-------------+-------------+--------------+
 ```
 
