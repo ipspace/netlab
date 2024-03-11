@@ -191,6 +191,7 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
 
   for l in topology.links:
     for intf in l.interfaces:
+      intf._topo_node = intf.node
       intf.node = topology.nodes[intf.node].d2.name
     if l.type == "p2p":
       edge_p2p(f,l,settings.interface_labels)
@@ -198,7 +199,7 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
       l.bridge = l.name or f'{l.type}_{l.linkindex}'
       network_with_label(f,l,settings)
       for ifdata in l.interfaces:
-        if ifdata.node in maps.nodes:
+        if ifdata._topo_node in maps.nodes:
           edge_node_net(f,l,ifdata,settings.interface_labels)
 
   f.close()
