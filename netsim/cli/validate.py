@@ -239,7 +239,7 @@ Get generic or per-device action from a validation entry
 If we try to get the string to pass to the device from a plugin, then any
 plugin evaluation errors indicate something is badly broken, so we log the
 error with as much data as feasible... and if the end-user ever sees that
-error message, the author of the validation plugin did a lousy job ¯\_(ツ)_/¯
+error message, the author of the validation plugin did a lousy job.
 '''
 def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typing.Any:
   n_device = node.device
