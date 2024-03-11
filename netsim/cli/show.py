@@ -109,6 +109,9 @@ def run(cli_args: typing.List[str]) -> None:
   if 'plugin' in args and args.plugin:
     topology.plugin = args.plugin
 
+  if args.action in ['defaults']:                       # Save original paths for the "show defaults" command
+    topology.defaults._original_paths = data.get_box(topology.defaults.paths)
+
   main.transform_setup(topology)
   settings = topology.defaults
   show_dispatch[args.action]['exec'](settings,args)

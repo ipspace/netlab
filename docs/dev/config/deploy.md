@@ -145,7 +145,21 @@ Unfortunately, the Nexus 9300v linecards become active almost a minute after com
 (deploy-search-paths)=
 ## Changing and Troubleshooting Search Paths
 
-The directory- and filename search paths used by **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](defaults). You can change these parameters but cannot append values to them.
+The directory and filename search paths used by the **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](defaults). You can change these parameters but cannot append values to them; if you want to modify a search path, you have to get its current value, prepend or append your entries, and set the system default parameter to the new value.
+
+You can inspect the default value of any search path with the **netlab show defaults paths._path_name_** command. For example, to inspect the file search path used for custom configuration templates, use the **netlab show defaults paths.custom.dirs** command:
+
+```
+$ netlab show defaults paths.custom.dirs
+
+netlab default settings within the paths.custom.dirs subtree
+=============================================================================
+
+- 'topology:'
+- .
+- ~/.netlab
+- package:extra
+```
 
 The filename search patterns can use Jinja2 expressions that rely on [Ansible variables](deploy-ansible-variables) set during the configuration deployment process. Directory search patterns can use these prefixes:
 
@@ -174,4 +188,22 @@ $ netlab inspect defaults.paths.custom.dirs
 - /home/user/BGP/session/2-asoverride
 - /home/user/.netlab
 - /home/user/net101/tools/netsim/extra
+```
+
+You can also display the evaluated absolute paths without creating a lab topology. Use the **evaluate-paths** option of the **netlab show defaults** command:
+
+```
+$ netlab show defaults paths.custom.dirs --evaluate-paths
+
+netlab default settings within the paths.custom.dirs subtree
+=============================================================================
+
+- /home/user/net101/tools/netsim/cli
+- /home/user
+- /home/user/.netlab
+- /home/pipi/net101/tools/netsim/extra
+```
+
+```{tip}
+The lab topology is the first entry in the custom template search path. The empty topology file used by the **‌netlab show defaults** resides in the `package:cli` directory, resulting in the first entry in the evaluated paths display.
 ```

@@ -79,18 +79,25 @@ Transform a search path into an absolute search path
 * replace 'package:' with get_moddir()
 * add topology directory to any other path
 """
+def expand_package(path: str) -> pathlib.Path:
+  return get_moddir () / path.replace('package:','')
+
 def absolute_search_path(
       path: typing.List[str],
       curdir: str = '.') -> typing.List[str]:
   a_path = []
   for p_entry in path:
     if 'package:' in p_entry:
-      p_abs = get_moddir () / p_entry.replace('package:','')
+      p_abs = expand_package(p_entry)
     elif 'topology:' in p_entry:
       topology = global_vars.get_topology()
       if topology:
-        topo_dir = os.path.dirname(topology.input[0])+"/"
-        p_abs = pathlib.Path(p_entry.replace('topology:',topo_dir))
+        topo_name = topology.input[0]
+        if topo_name.startswith('package:'):
+          p_abs = expand_package(os.path.dirname(topo_name))
+        else:
+          topo_dir = os.path.dirname(topo_name)+"/"
+          p_abs = pathlib.Path(p_entry.replace('topology:',topo_dir))
       else:
         continue
     elif p_entry.find('~') == 0:
