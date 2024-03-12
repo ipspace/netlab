@@ -6,122 +6,192 @@
 import typing
 import argparse
 import os
+import sys
 import subprocess
 
 from box import Box
 
 from ..utils import status, strings, log, read as _read
+from ..outputs import common as outputs_common
+from ..data import get_empty_box
+from .. import providers
 
-from . import external_commands
-from . import down
+from . import parser_add_verbose
 
 def status_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog='netlab status',
     description='Display lab status')
-#  parser.add_argument(
-#    '-v','--verbose',
-#    dest='verbose',
-#    action='count',
-#    default=0,
-#    help='Verbose logging')
   parser.add_argument(
-    dest='action',
-    action='store',
-    choices=['list','show','cleanup','reset'],
-    help='Lab status action')
-  parser.add_argument(
+    '-i','--instance',
     dest='instance',
     action='store',
-    nargs="*",
     help='Display or cleanup specific lab instance(s)')
+  parser.add_argument(
+    '-l','--log',
+    dest='log',
+    action='store_true',
+    help='Display the lab instance event log')
+  parser.add_argument(
+    '--cleanup',
+    dest='cleanup',
+    action='store_true',
+    help='Cleanup the current or specified lab instance')
+  parser.add_argument(
+    '--reset',
+    dest='reset',
+    action='store_true',
+    help='Reset the lab instance tracking system')
   parser.add_argument(
     '--all',
     dest='all',
     action='store_true',
-    help='Display or cleanup all lab instance(s)')
-  parser.add_argument(
-    '-v','--verbose',
-    dest='verbose',
-    action='store_true',
-    help='Verbose printout(s)')
-  if args:
-    return parser.parse_args(args)
-  else:
-    return parser.parse_args(['list'])
+    help='Display an overview of all lab instance(s)')
+  parser_add_verbose(parser)
+  return parser.parse_args(args)
+
+def get_instance(args: argparse.Namespace, lab_states: Box) -> str:
+  if args.instance:
+    if not args.instance in lab_states:
+      log.error(
+        f"Unknown lab instance {args.instance}.",
+        category=log.FatalError,
+        module='',
+        more_hints="Use 'netlab status --all' to display the list of lab instances")
+      sys.exit(1)
+    return args.instance
+
+  cur_dir = os.getcwd()
+  for id,state in lab_states.items():
+    if state.dir == cur_dir:
+      return id
+    
+  log.error(
+    f"There's no running lab in the current directory.",
+    category=log.FatalError,
+    module='',
+    more_hints="Use 'netlab status --all' to display the list of lab instances")
+  sys.exit(1)
 
 def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
   if args.verbose:
     print(f'netlab status file: {status.get_status_filename(topology)}\n')
-  if not lab_states:
-    print('No netlab-managed labs')
-    return
 
+  print("Active lab instance(s)\n")
+  heading = [ 'id', 'directory', 'status', 'providers' ]
+  rows = []
   for id,lab_state in lab_states.items():
-    print(f'Lab {id} in {lab_state.dir}')
-    print(f'  status: {lab_state.status}')
-    print(f'  provider(s): {",".join(lab_state.providers)}')
-    print()
+    rows.append([id,lab_state.dir,lab_state.status,",".join(lab_state.providers)])
 
-  for provider,pdata in topology.defaults.providers.items():
-    if not 'act_probe' in pdata:
-      continue
-    try:
-      result = subprocess.run(pdata.act_probe.split(' '),capture_output=True,text=True)
-    except:
-      continue
-    if result.stdout:
-      print(f'{pdata.act_title}\n{"=" * 80}\n{result.stdout}\n')
+  strings.print_table(heading,rows)
 
 def show_lab_instance(iid: str, lab_state: Box) -> None:
   print(f'Lab {iid} in {lab_state.dir}')
   print(f'  status: {lab_state.status}')
   print(f'  provider(s): {",".join(lab_state.providers)}')
-  if lab_state.log:
-    newline = "\n"
-    print(f'\nLog:\n{"=" * 80}\n{newline.join(lab_state.log)}{newline}')
+  print()
 
-def show_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
-  for iid in args.instance:
-    if not iid in lab_states:
-      print(f'Unknown lab instance {iid}, skipping\n')
-      continue
+def load_provider_status(p_module: dict, p_status: dict, provider: str, topology: Box) -> None:
+  if not provider in p_module:
+    p_module[provider] = providers._Provider.load(provider,topology.defaults.providers[provider])
 
-  for iid in lab_states.keys():
-    if not iid in args.instance and not args.all:
-      continue
-    show_lab_instance(iid,lab_states[iid])
+  if not provider in p_status:
+    p_status[provider] = p_module[provider].call('get_lab_status') or get_empty_box()
+
+def show_lab_nodes(topology: Box) -> None:
+  p_status: dict = {}
+  p_module: dict = {}
+  rows = []
+  heading = [ 'node', 'device', 'image', 'mgmt IPv4', 'connection', 'provider', 'VM/container', 'status']
+
+  for n_name,n_data in topology.nodes.items():
+    n_ext = outputs_common.adjust_inventory_host(
+              node=topology.nodes[n_name],
+              defaults=topology.defaults,
+              group_vars=True)
+
+    n_provider = n_data.get('provider',topology.defaults.provider)
+    load_provider_status(p_module,p_status,n_provider,topology)
+
+    row = [ n_data.name, n_data.device, n_data.box, n_data.mgmt.ipv4, n_ext.ansible_connection, n_provider ]
+    wk_name = p_module[n_provider].call('get_node_name',n_name,topology)
+    row.append(wk_name)
+
+    wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
+    row.append(wk_state.status if wk_state else 'Unknown')
+    rows.append(row)
+
+  for t_name,t_data in topology.tools.items():
+    n_provider = 'clab'
+    load_provider_status(p_module,p_status,n_provider,topology)
+
+    wk_name = f'{topology.name}_{t_name}'
+    wk_state = p_status[n_provider].get(wk_name,get_empty_box())
+
+    row = [ t_name, '(tool)', wk_state.get('image',''), '', 'docker', n_provider, 
+            wk_name, wk_state.get('status','Not running') ]
+    rows.append(row)
+
+  strings.print_table(heading,rows)
+
+def print_lab_log(log: typing.List) -> None:
+  if not log:
+    return
+
+  newline = "\n"
+  print(f'{newline.join(log)}{newline}')
+
+def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
+  iid = get_instance(args,lab_states)
+  lab_state = lab_states[iid]
+  show_lab_instance(iid,lab_state)
+  wdir = lab_state.dir
+  snapshot = f'{wdir}/netlab.snapshot.yml'
+
+  topology = _read.read_yaml(filename=snapshot)
+  if topology is None:
+    log.fatal(f'Cannot read topology snapshot file {snapshot}')
+
+  if lab_state.status != 'started':
+    log.error(
+      'Lab is not started, cannot display node/tool status. Displaying lab start/stop log',
+      category=log.FatalError,
+      module='',)
+    print()
+    print_lab_log(lab_state.log)
+    return
+
+  show_lab_nodes(topology)
+
+def show_lab_log(args: argparse.Namespace, lab_states: Box) -> None:
+  iid = get_instance(args,lab_states)
+  lab_state = lab_states[iid]
+  show_lab_instance(iid,lab_state)
+  print_lab_log(lab_state.log)
 
 def cleanup_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
-  if args.all:
-    print(f'Active lab instances:\n')
-    for k,v in lab_states.items():
-      print (f'  {k} in {v.dir}')
+  iid = get_instance(args,lab_states)
+
+  confirm_msg = f'Cleanup will remove lab instance "{ iid }" in {lab_states[iid].dir}. Are you sure?'
+  try:
+    if not strings.confirm(confirm_msg):
+      return
+  except KeyboardInterrupt as ex:
     print("")
-  
-  if not args.all and not args.instance:
-    print('No lab instances specified, nothing to do')
-    return
-  confirm_msg = f'Cleanup will remove all {"" if args.all else "specified "}lab instances. Are you sure?'
-  if not strings.confirm(confirm_msg):
-    return
+    log.fatal('User interrupt, exiting...')
 
-  pwd = os.getcwd()
-  for iid in list(lab_states.keys()):
-    if not args.all and not iid in args.instance:
-      continue
-    print(f'Shutting down lab {iid} in {lab_states[iid].dir}')
-    os.chdir(lab_states[iid].dir)
-    try:
-      result = subprocess.run(['netlab','down','--cleanup'],capture_output=False,check=True)
-    except Exception as ex:
-      print(f'Error shutting down lab {iid}: {ex}')
-      print(f'... aborting the cleanup process')
-      break
+  print(f'Shutting down lab {iid} in {lab_states[iid].dir}')
+  os.chdir(lab_states[iid].dir)
+  try:
+    result = subprocess.run(['netlab','down','--cleanup'],capture_output=False,check=True)
+  except Exception as ex:
+    log.error(
+      f'Error shutting down lab {iid}: {ex}',
+      category=log.FatalError,
+      module='',
+      more_hints = f'Change directory to { os.getcwd() } and execute "netlab down --cleanup --force"')
 
-  os.chdir(pwd)
-
-def reset_lab_status(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
+def reset_lab_status(topology: Box) -> None:
   lab_status_file = status.get_status_filename(topology)
   print(f'''
 This action deletes the lab status file {lab_status_file}.
@@ -138,19 +208,32 @@ command only when you're absolutely sure that the lab status shown by
   except Exception as ex:
     log.fatal(f'Cannot remove lab status file: {ex}')
 
-action_map = {
-  'list': display_active_labs,
-  'show': show_lab,
-  'cleanup': cleanup_lab,
-  'reset': reset_lab_status
-}
+def check_conflicting_options(args: argparse.Namespace) -> None:
+  var_args = vars(args)
+  kw_list = [ '--'+kw for kw in ('all','reset','cleanup') if kw in var_args and var_args[kw] ]
+  if len(kw_list) > 1:
+    log.fatal(f"You can use only one of the {', '.join(kw_list)} options")
 
 def run(cli_args: typing.List[str]) -> None:
-  topology = _read.system_defaults()
-  lab_states = status.read_status(topology)
   args = status_parse(cli_args)
   log.set_logging_flags(args)
-  if args.action in action_map:
-    action_map[args.action](topology,args,lab_states)
+  check_conflicting_options(args)
+
+  topology = _read.system_defaults()
+  if args.reset:
+    reset_lab_status(topology)
+    return
+
+  lab_states = status.read_status(topology)
+  if not lab_states:
+    print('No netlab-managed labs')
+    return
+
+  if args.all:
+    display_active_labs(topology,args,lab_states)
+  elif args.cleanup:
+    cleanup_lab(topology,args,lab_states)
+  elif args.log:
+    show_lab_log(args,lab_states)
   else:
-    log.fatal(f'Unknown action {args.action}')
+    show_lab(args,lab_states)
