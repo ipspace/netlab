@@ -18,9 +18,9 @@ from ..augment import devices
 # List of attributes we don't want propagated from defaults to global/node
 #
 no_propagate_list = [
-  "attributes","extra_attributes","features",
-  "requires","supported_on","no_propagate",
-  "config_after","transform_after"]
+  "attributes", "extra_attributes", "features",
+  "requires", "supported_on", "no_propagate",
+  "config_after", "transform_after", "warnings" ]
 
 """
 Return the authoritative list of all modules.

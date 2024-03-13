@@ -150,6 +150,7 @@ build_ibgp_sessions: create IBGP session data structure
 """
 def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   rrlist = find_bgp_rr(node.bgp.get("as"),topology)
+  has_ibgp     = False                            # Assume we have no IBGP sessions (yet)
 
   # If we don't have route reflectors, or if the current node is a route
   # reflector, we need BGP sessions to all other nodes in the same AS
@@ -161,6 +162,7 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
           if not neighbor_data is None:
             node.bgp.neighbors.append(neighbor_data)
+            has_ibgp = True
 
   #
   # The node is not a route reflector, and we have a non-empty RR list
@@ -172,6 +174,30 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
         if not neighbor_data is None:
           node.bgp.neighbors.append(neighbor_data)
+          has_ibgp = True
+
+  if not has_ibgp:
+    return
+
+  # Do we have to warn the user that IBGP sessions work better with IGP?
+  # The warning could be disabled in the settings, and we assume it doesn't make
+  # sense complaining if the node has no loopback interfaces (routing on hosts)
+  #
+  ibgp_warning = topology.defaults.bgp.warnings.missing_igp and 'loopback' in node
+  igp_list     = topology.defaults.bgp.warnings.igp_list
+
+  if ibgp_warning:                                # Does the user want to get the warning?
+    for igp in igp_list:                          # If so, check the viable IGPs
+      if igp in node.module:                      # ... and if any one of them is in the list of node modules
+        ibgp_warning = False                      # ... life is good, turn off the warning
+        break
+
+  if ibgp_warning:
+    log.error(
+      f'Node {node.name} has IBGP sessions but no IGP',
+      category=Warning,
+      module='bgp',
+      hint='igp')
 
 """
 build_ebgp_sessions: create EBGP session data structure

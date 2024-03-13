@@ -265,6 +265,10 @@ The BGP transformation module builds a list of BGP neighbors for every node. Tha
 
 See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 
+```{tip}
+_netlab_ generates a warning for routers that have IBGP sessions without an underlying IGP. To turn off that warning (for example, when using IBGP-over-EBGP EVPN design), set **defaults.bgp.warnings.missing_igp** to _False_.
+```
+
 (bgp-ebgp-sessions)=
 **EBGP sessions**
 * Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them.
