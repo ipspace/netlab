@@ -133,6 +133,7 @@ def print_more_hints(
       h_list: typing.Union[list,str],   # Hint split into lines
       h_name: str='HINT',               # Hint header
       h_color: str='green',             # Color of hint header
+      h_warning: bool=False,            # is this a warning hint?
       cleanup: bool=True) -> None:      # Remove empty lines from hint lines?
 
   if isinstance(h_list,str):
@@ -150,7 +151,8 @@ def print_more_hints(
   global _ERROR_LOG
   h_first = True
   for line in h_list:
-    _ERROR_LOG.append(f"... {line}")                        # Convention: hints in traditional output are prefaced with ...
+    if not h_warning:
+      _ERROR_LOG.append(f"... {line}")                      # Convention: hints in traditional output are prefaced with ...
     if strings.rich_err_color:
       if h_first:                                           # First hint line on color-capable TTY: print hint header
         strings.print_colored_text(strings.pad_err_code(h_name),h_color,stderr=True)
@@ -202,10 +204,10 @@ def error(
       print(err_line,file=sys.stderr)
 
   if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
-    print_more_hints(more_hints)
+    print_more_hints(more_hints,h_warning=category is Warning)
 
   if more_data is not None:                                         # Caller supplied data, print it with DATA label
-    print_more_hints(more_data,'DATA','bright_black')
+    print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning)
 
   if hint is None:                                                  # No pointers to static hints
     return
@@ -221,11 +223,12 @@ def error(
 
   if mod_hints[hint]:                                               # Do we know what to do?
     hint_printout = extra_data_printout(mod_hints[hint],width=90)   # Format the hint for traditional printout
-    _ERROR_LOG.extend(hint_printout.split("\n"))
+    if category is not Warning:
+      _ERROR_LOG.extend(hint_printout.split("\n"))
     if strings.rich_err_color:
       l_width = min(strings.rich_err_width-10,100)
       hint_lines = strings.wrap_text_into_lines(mod_hints[hint],width=l_width)
-      print_more_hints(hint_lines,'HINT','green')
+      print_more_hints(hint_lines,'HINT','green',h_warning=category is Warning)
     else:
       print(hint_printout,file=sys.stderr)
 
