@@ -77,8 +77,15 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 ## Cisco IOS XRv
 
 * netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name, in which case you'll have to set **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
-* Copying Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. Vagrant configuration file uses fixed SSH password.
+* Copying Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. The vagrant configuration file uses a fixed SSH password.
 * Maximum interface bandwidth on IOS XRv is 1 Gbps (1000000).
+* It seems IOS XR starts an SSH server before it parses the device configuration[^WCPGW], and newer versions of Vagrant don't like that and will ask you for the password for user **vagrant**. Ignore that prompt and the subsequent error messages[^POT], and you might get a running lab in a few minutes[^MAS].
+
+[^WCPGW]: Yeah, what could possibly go wrong?
+
+[^POT]: You'll get plenty of those. Even when the IOS XR device is configured and you can log into the console, it hates accepting SSH sessions.
+
+[^MAS]: Hint: you have plenty of time to make coffee and a snack.
 
 (caveats-nxos)=
 ## Cisco Nexus OS
