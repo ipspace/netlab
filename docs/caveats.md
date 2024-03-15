@@ -164,6 +164,7 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 * VM version of FRR is a Ubuntu VM. FRR package is downloaded and installed during the initial configuration process.
 * You can change FRR default profile with **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
+* FRR container needs host kernel modules for MPLS forwarding. If your Ubuntu 22.04 distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
 
 (caveats-vmx)=
 ## Juniper vMX in Containerlab
