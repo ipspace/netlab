@@ -92,13 +92,20 @@ defaults.device: eos
 defaults.devices.eos.image: arista/vEOS-lab-4.21.14M
 ```
 
-Change the provider-specific device images if you want to run your topology on multiple virtualization providers. This is how you can set different device image names for Arista EOS virtual machines and containers:
+Change the provider-specific device images if you want to run your topology on multiple virtualization providers. This is how you can set different device image names for Arista EOS virtual machines and containers in the lab topology:
 
 ```
 ---
-defaults.device: eos
 defaults.devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
-defaults.devices.eos.clab.image: cEOS:latest
+defaults.devices.eos.clab.image: "cEOS:latest"
+```
+
+You can also change the default image names in the user defaults file:
+
+```
+---
+devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
+devices.eos.clab.image: "cEOS:latest"
 ```
 
 (defaults-env)=
@@ -133,13 +140,13 @@ Environment variables have higher precedence than the system- and user defaults 
 (defaults-debug)=
 ## Debugging User Default Files
 
-You can debug the processing of the default files with the `--debug defaults` option of the **[netlab create](netlab/create.md)** command. You could use it when creating the lab configuration files. You could also debug default settings without creating any output with the `netlab create --output none --debug defaults` command.
+You can debug the processing of the default files with the `--debug defaults` option of the **[netlab create](netlab/create.md)** command. You can also debug default settings without creating any output with the `netlab create --output none --debug defaults` command.
 
-Use the **[netlab show defaults](netlab-show-defaults)** command to investigate how the system defaults were augmented with the user defaults. For example, execute `netlab show defaults gateway` to inspect the settings of the **gateway** module or `netlab show defaults outputs.d2` to inspect the settings of the D2 graphing output module.
+Use the **[netlab show defaults](netlab-show-defaults)** command to investigate how the system defaults were augmented with the user defaults. For example, execute `netlab show defaults gateway` to inspect the settings of the **gateway** module or `netlab show defaults outputs.d2` to examine the settings of the D2 graphing output module.
 
 You can also use the **[netlab inspect defaults...](netlab/inspect.md)** command after you create the lab configuration files (and the snapshot file) with the **netlab create** or **[netlab up](netlab/up.md)** command. For example, to inspect the Arista EOS device settings, use **netlab inspect defaults.devices.eos**.
 
-Finally, if you want to see how the lab topology defaults interact with user- and system defaults *without creating any output files*, use the **netlab create --output yaml:defaults...** command to process the lab topology and print the collected default values. For example, execute `netlab create --output yaml:defaults.addressing` to inspect the default address pools your lab topology would use.
+Finally, if you want to see how the lab topology defaults interact with user- and system defaults *without creating any output files*, use the **netlab create --output yaml:defaults...** command to process the lab topology and print the collected default values. For example, execute `netlab create --output yaml:defaults.addressing` to display the default address pools your lab topology would use.
 
 ## Advanced Topics
 
@@ -164,7 +171,7 @@ You can change the locations of user- or system defaults with the `defaults.sour
 
 [^NAE]: These parameters cannot be changed anywhere else as they're checked before the default values are merged with the lab topology file.
 
-* The `defaults.sources.extra` list adds files to the list of user default files. You can use this parameter to add extra defaults to larger projects with a hierarchical directory structure.
+* The `defaults.sources.extra` list adds files to the list of user default files. This parameter can be used to add extra defaults to larger projects with a hierarchical directory structure.
 * The `defaults.sources.user` parameter changes the list of potential user default files.
 * The `defaults.sources.system` parameter changes the list of potential system default files.
 * The `defaults.sources.list` parameter (if present) specifies the complete list of default file locations that cannot be changed with other parameters.

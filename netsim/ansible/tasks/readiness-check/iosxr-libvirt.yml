@@ -1,9 +1,9 @@
+---
 # Find the temporary IP address
 #
 - name: "Get current IOS XR IP address from Vagrant"
   shell: "vagrant ssh-config {{ inventory_hostname }}|grep -i hostname|grep -o '[0-9.]*'"
   register: ssh_config
-  when: netlab_provider == 'libvirt'
 
 # Add secondary IP address to the IOS XR management interface if the DHCP server gave
 # it an unexpected IP address due to its use of ASCII DHCP client ID
@@ -20,8 +20,4 @@
       lines:
       - ip address {{ mgmt.ipv4 }} 255.255.255.0 secondary
 
-  when: netlab_provider == 'libvirt' and ssh_config is defined and ansible_host != ssh_config.stdout
-
-- name: "iosxr_config: deploying initial config from {{ config_template }}"
-  iosxr_config:
-    src: "{{ config_template }}"
+  when: ssh_config is defined and ansible_host != ssh_config.stdout

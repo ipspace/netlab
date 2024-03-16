@@ -63,13 +63,13 @@ You cannot use all supported network devices with all virtualization providers. 
 
 (platform-provider-support)=
 
-| Virtual network device | Vagrant<br />Libvirt | Vagrant<br />Virtualbox | Containerlab |
+| Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | Vagrant<br />[Virtualbox](labs/virtualbox.md) | [Containerlab](labs/clab.md) |
 | -------------------------------------------------- | :-: | :-: | :-: |
 | Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
 | Aruba AOS-CX                                       |          ✅           |              ❌               |            ✅             |
 | Cisco ASAv                                         |          ✅           |              ❌               |            ❌             |
 | Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
-| Cisco IOS XRv                                      |          ✅           |    ❌     |            ❌             |
+| Cisco IOS XRv                                      |          ✅           |    ❌     |            ✅            |
 | Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
 | Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
 | Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats-cumulus) |

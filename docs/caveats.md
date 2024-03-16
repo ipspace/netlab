@@ -80,6 +80,7 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 * Copying Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. The vagrant configuration file uses a fixed SSH password.
 * Maximum interface bandwidth on IOS XRv is 1 Gbps (1000000).
 * It seems IOS XR starts an SSH server before it parses the device configuration[^WCPGW], and newer versions of Vagrant don't like that and will ask you for the password for user **vagrant**. Ignore that prompt and the subsequent error messages[^POT], and you might get a running lab in a few minutes[^MAS].
+* The IOS XRd container seems to be a resource hog. If you experience errors during the initial device configuration, reduce the number of parallel configuration processes -- set the ANSIBLE_FORKS environment variable to one with `export ANSIBLE_FORKS=1`.
 
 [^WCPGW]: Yeah, what could possibly go wrong?
 
