@@ -201,10 +201,23 @@ def docker_is_used(topology: Box) -> bool:
   return 'clab' in topology[topology.provider].providers
 
 #
+# Get local IP address, either the endpoint of the SSH connection or loopback
+#
+def get_local_addr() -> str:
+  ssh_connection = os.environ.get("SSH_CONNECTION")
+  if ssh_connection:
+    ssh_list = ssh_connection.split(" ")
+    if len(ssh_list) >= 4:
+      return ssh_list[2]
+    
+  return "127.0.0.1"
+
+#
 # Execute external tool commands
 #
 def execute_tool_commands(cmds: list, topology: Box) -> None:
   topology.sys.docker_net = ""
+  topology.sys.ipaddr = get_local_addr()
   if docker_is_used(topology):
     topology.sys.docker_net = f"--network={topology.addressing.mgmt.get('_network',None) or 'netlab_mgmt'}"
 
