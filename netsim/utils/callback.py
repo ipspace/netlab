@@ -36,7 +36,9 @@ class Callback():
         print(f"Failed to load specific module: {sys.exc_info()[1]}")
       return None
 
-  def call(self, name: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+  def call(self, name: str, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
     method = getattr(self,name,None)
     if method:
-      method(*args, **kwargs)
+      return method(*args, **kwargs)
+    else:
+      return None

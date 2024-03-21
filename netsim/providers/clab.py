@@ -1,14 +1,13 @@
 #
 # Containerlab provider module
 #
-import subprocess
 import typing
-import shutil
+import json
 from box import Box
 
 from . import _Provider,get_forwarded_ports
 from ..utils import log
-from ..data import filemaps
+from ..data import filemaps, get_empty_box
 from ..cli import is_dry_run,external_commands
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
@@ -133,3 +132,33 @@ class Containerlab(_Provider):
         destroy_ovs_bridge(brname)
       else:
         destroy_linux_bridge(brname)
+
+  def get_lab_status(self) -> Box:
+    try:
+      status = external_commands.run_command(
+                  'docker ps --format json',
+                  check_result=True,
+                  ignore_errors=True,
+                  return_stdout=True)
+      
+      stat_box = get_empty_box()
+      if not isinstance(status,str):
+        return stat_box
+      try:
+        for line in status.split('\n'):
+          if not line.startswith('{'):
+            continue
+          docker_stats = json.loads(line)
+          stat_box[docker_stats['Names']].status = docker_stats['Status']
+          stat_box[docker_stats['Names']].image = docker_stats['Image']
+      except Exception as ex:
+        log.error(f'Cannot get Docker status: {ex}',category=log.FatalError,module='clab')
+        return stat_box
+
+      return stat_box
+    except:
+      log.error('Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')
+      return get_empty_box()
+
+  def get_node_name(self, node: str, topology: Box) -> str:
+    return f'clab-{ topology.name }-{ node }'

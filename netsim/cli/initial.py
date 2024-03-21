@@ -8,6 +8,7 @@ import os
 import argparse
 
 from . import common_parse_args,get_message,load_snapshot_or_topology,lab_status_change
+from . import external_commands
 from . import ansible
 from box import Box
 
@@ -86,6 +87,8 @@ def run(cli_args: typing.List[str]) -> None:
     ansible.playbook('create-config.ansible',rest)
     print("\nInitial configurations have been created in the %s directory" % args.output)
   else:
+    external_commands.LOG_COMMANDS = True
+
     topology = load_snapshot_or_topology(Box({},default_box=True,box_dots=True))
     deploy_text = ', '.join(deploy_parts) or 'complete configuration'
     if not topology is None:

@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 from ..utils import log
+from . import external_commands
 
 try:
   from importlib import resources
@@ -54,7 +55,6 @@ def playbook(name: str, args: typing.List[str]) -> None:
   cmd = ['ansible-playbook',pbname]
   cmd.extend(args)
 
-  try:
-    subprocess.check_call(cmd)
-  except Exception as ex:
-    log.fatal(f"Executing Ansible playbook {pbname} failed:\n  {ex}")
+  OK = external_commands.run_command(cmd)
+  if not OK:
+    log.fatal(f"Executing Ansible playbook {pbname} failed")

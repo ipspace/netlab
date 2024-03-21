@@ -6,8 +6,9 @@ import os
 import subprocess
 from box import Box
 
-from . import is_dry_run
+from . import is_dry_run,lab_status_log
 from ..utils import strings,log
+from ..data import global_vars
 
 def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
   if spacing:
@@ -48,6 +49,21 @@ Flags:
 * ignore_errors -- do not print errors to the console
 * return_stdout -- return the command output instead of True/False
 """
+LOG_COMMANDS: bool = False
+
+def log_command(cmd: typing.Union[str,list], status: str) -> None:
+  global LOG_COMMANDS
+  if not LOG_COMMANDS:
+    return
+
+  topology = global_vars.get_topology()
+  if not topology:
+    log.fatal('Internal error: topology not set',module='log_command')
+    return
+
+  cmd_text = cmd if isinstance(cmd,str) else ' '.join(cmd)
+  lab_status_log(topology,f'{status}: {cmd_text}')
+
 def run_command(
     cmd : typing.Union[str,list],
     check_result : bool = False,
@@ -77,11 +93,16 @@ def run_command(
     if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... run result: {result}')
     if not check_result:
+      log_command(cmd,'OK')
       return True
     if return_stdout:
+      log_command(cmd,'OK')
       return result.stdout
+
+    log_command(cmd,'OK' if result.stdout != "" else 'FAIL')
     return result.stdout != ""
   except Exception as ex:
+    log_command(cmd,'ERROR')
     if not log.QUIET and not ignore_errors:
       print(f"Error executing {stringify(cmd)}:\n  {ex}")
     return False

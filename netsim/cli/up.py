@@ -303,6 +303,7 @@ def run(cli_args: typing.List[str]) -> None:
   if log.QUIET:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
+  external_commands.LOG_COMMANDS = True
   provider_probes(topology)
 
   p_provider = topology.provider
