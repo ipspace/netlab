@@ -26,6 +26,7 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     '-i','--instance',
     dest='instance',
     action='store',
+    type=int,
     help='Display or cleanup specific lab instance(s)')
   parser.add_argument(
     '-l','--log',
