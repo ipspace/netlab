@@ -141,6 +141,16 @@ def print_lab_log(log: typing.List) -> None:
   newline = "\n"
   print(f'{newline.join(log)}{newline}')
 
+def get_lab_status(lab_state: Box) -> str:
+  if lab_state.status == 'started':
+    return lab_state.status
+
+  for line in lab_state.log:
+    if 'started' in line:
+      return line
+
+  return lab_state.status
+
 def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   iid = get_instance(args,lab_states)
   lab_state = lab_states[iid]
@@ -152,7 +162,8 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   if topology is None:
     log.fatal(f'Cannot read topology snapshot file {snapshot}')
 
-  if lab_state.status != 'started':
+  lab_status = get_lab_status(lab_state)
+  if 'started' not in lab_status:
     log.error(
       'Lab is not started, cannot display node/tool status. Displaying lab start/stop log',
       category=log.FatalError,
@@ -162,6 +173,13 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
     return
 
   show_lab_nodes(topology)
+  if lab_status != 'started':
+    print()
+    log.error(
+      "Lab is not in 'started' state, inspect details with 'netlab status --log'",
+      category=Warning,
+      module=''
+    )
 
 def show_lab_log(args: argparse.Namespace, lab_states: Box) -> None:
   iid = get_instance(args,lab_states)

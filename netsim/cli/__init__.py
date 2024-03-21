@@ -139,14 +139,18 @@ def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typ
     if not args.topology:                               # ... then the user wants to use the topology file
       args.topology = 'topology.yml'                    # ... so let's set the default value if needed
 
+  topology = None
   if args.topology:
     topology = load_topology(args)
     augment.main.transform(topology)
     log.exit_on_error()
-    return topology
   else:
     args.snapshot = args.snapshot or 'netlab.snapshot.yml'
-    return _read.read_yaml(filename=args.snapshot)
+    topology = _read.read_yaml(filename=args.snapshot)
+
+  if topology:
+    global_vars.init(topology)
+  return topology
 
 # get_message: get action-specific message from topology file
 #
@@ -188,7 +192,10 @@ def lab_status_update(
 
   if update is not None:                                    # Update lab status from a dictionary
     status[lab_id] = status[lab_id] + update
-    if 'status' in update:                                  # Append change in lab status to log        
+    if 'status' in update:                                  # Append change in lab status to log
+      update['log_line'] = update['status']
+
+    if 'log_line' in update:
       if not 'log' in status[lab_id]:                       # Create empty log if needed
         status[lab_id].log = []
 
@@ -196,9 +203,9 @@ def lab_status_update(
       # This is to avoid excessive log entries when the status is updated multiple times
       # in a row (e.g. when a lab is being created)
       #
-      if not status[lab_id].log or not f': {update["status"]}' in status[lab_id].log[-1]:
+      if not status[lab_id].log or not f': {update["log_line"]}' in status[lab_id].log[-1]:
         timestamp = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()
-        status[lab_id].log.append(f'{timestamp}: {update["status"]}')
+        status[lab_id].log.append(f'{timestamp}: {update["log_line"]}')
 
   if cb is not None:                                        # If needed, perform status-specific callback        
     cb(status[lab_id])
@@ -213,9 +220,19 @@ def lab_status_change(topology: Box, new_status: str) -> None:
 
   _status.change_status(
     topology,
-    callback = lambda s,t: 
+    callback = lambda s,t:
       lab_status_update(t,s,
         update = { 'status': new_status }))
+
+"""
+lab_status_log -- change current lab status
+"""
+def lab_status_log(topology: Box, log_line: str) -> None:
+  _status.change_status(
+    topology,
+    callback = lambda s,t:
+      lab_status_update(t,s,
+        update = { 'log_line': log_line }))
 
 #
 # Main command dispatcher

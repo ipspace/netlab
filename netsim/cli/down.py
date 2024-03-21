@@ -180,6 +180,7 @@ def run(cli_args: typing.List[str]) -> None:
   mismatch = lab_dir_mismatch(topology)
 
   probes_OK = True
+  external_commands.LOG_COMMANDS = True
   lab_status_change(topology,f'lab shutdown requested{" in conflicting directory" if mismatch else ""}')
   try:
     provider_probes(topology)
