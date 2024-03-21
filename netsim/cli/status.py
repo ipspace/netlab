@@ -81,7 +81,7 @@ def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) 
   heading = [ 'id', 'directory', 'status', 'providers' ]
   rows = []
   for id,lab_state in lab_states.items():
-    rows.append([id,lab_state.dir,lab_state.status,",".join(lab_state.providers)])
+    rows.append([str(id),lab_state.dir,lab_state.status,",".join(lab_state.providers)])
 
   strings.print_table(heading,rows)
 
