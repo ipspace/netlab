@@ -50,16 +50,19 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
   parser_add_verbose(parser)
   return parser.parse_args(args)
 
-def get_instance(args: argparse.Namespace, lab_states: Box) -> str:
+Lab_Instance_ID = typing.Union[str,int]
+
+def get_instance(args: argparse.Namespace, lab_states: Box) -> Lab_Instance_ID:
   if args.instance:
-    if not args.instance in lab_states:
+    instance_id = int(args.instance) if args.instance.isdigit() else args.instance
+    if not instance_id in lab_states:
       log.error(
         f"Unknown lab instance {args.instance}.",
         category=log.FatalError,
         module='',
         more_hints="Use 'netlab status --all' to display the list of lab instances")
       sys.exit(1)
-    return args.instance
+    return instance_id
 
   cur_dir = os.getcwd()
   for id,state in lab_states.items():
@@ -85,7 +88,7 @@ def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) 
 
   strings.print_table(heading,rows)
 
-def show_lab_instance(iid: str, lab_state: Box) -> None:
+def show_lab_instance(iid: Lab_Instance_ID, lab_state: Box) -> None:
   print(f'Lab {iid} in {lab_state.dir}')
   print(f'  status: {lab_state.status}')
   print(f'  provider(s): {",".join(lab_state.providers)}')
