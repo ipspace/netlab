@@ -26,7 +26,6 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     '-i','--instance',
     dest='instance',
     action='store',
-    type=int,
     help='Display or cleanup specific lab instance(s)')
   parser.add_argument(
     '-l','--log',
@@ -51,16 +50,17 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
   parser_add_verbose(parser)
   return parser.parse_args(args)
 
-def get_instance(args: argparse.Namespace, lab_states: Box) -> str:
+def get_instance(args: argparse.Namespace, lab_states: Box) -> typing.Union[str,int]:
   if args.instance:
-    if not args.instance in lab_states:
+    instance_id = int(args.instance) if args.instance.isdigit() else args.instance
+    if not instance_id in lab_states:
       log.error(
         f"Unknown lab instance {args.instance}.",
         category=log.FatalError,
         module='',
         more_hints="Use 'netlab status --all' to display the list of lab instances")
       sys.exit(1)
-    return args.instance
+    return instance_id
 
   cur_dir = os.getcwd()
   for id,state in lab_states.items():
