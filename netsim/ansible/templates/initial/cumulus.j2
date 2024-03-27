@@ -19,9 +19,8 @@ hostname {{ inventory_hostname.replace("_","-") }}
 echo "INIT: creating /etc/hosts"
 awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
 echo "127.0.0.1 {{ inventory_hostname }}" >>/tmp/hosts
-{% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
-echo "{%- if v.loopback.ipv4 is defined %}{{ v.loopback.ipv4|ipaddr('address') }} {% endif %}
-{%- for l in v.interfaces|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %}{{ l.ipv4|ipaddr('address') }} {% endfor %}{{ k }}" >>/tmp/hosts
+{% for hname,hdata in hosts.items() if hname != inventory_hostname %}
+echo "{{ (hdata.ipv4|default([]) + hdata.ipv6|default([]))|join (' ') }} {{ hname }}" >>/tmp/hosts
 {% endfor %}
 cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
 {% if ansible_connection != "docker" %}
@@ -35,56 +34,6 @@ sort /tmp/hosts|uniq >>/etc/hosts
 # Disable ZTP
 #
 ztp --disable
-{% else %}
-echo "INIT: recreating /etc/network/interfaces"
-{#
-  DHCP in Cumulus containers is becoming a ever-more-complex mess whenever
-  I update Ubuntu 20.04 LTS -- right now 'ifreload -a' fails because another
-  daemon continuously tries to do something to the network interfaces.
-  
-  Here's the current approach to survive through that mess:
-  
-  * Change /etc/network/interfaces to disable DHCP on management interface
-  * Wait for firstboot processes to disappear
-  * Kill any DHCP clients
-  * At that time there might be more firstboot processes, but we're ignoring them
-  * Keep reloading interfaces until it succeeds
-  * Move on with the rest of the configuration
-#}
-cat >/etc/network/interfaces <<CONFIG
-auto lo
-iface lo inet loopback
-
-auto mgmt
-iface mgmt
-    vrf-table auto
-
-auto eth0
-iface eth0 inet static
-    address {{ mgmt.ipv4 }}
-    vrf mgmt
-
-source /etc/network/interfaces.d/*.intf
-CONFIG
-#
-echo "INIT: waiting for firstboot processing to finish"
-while [ -n "$(pgrep -f firstboot)" ]; do
-  logger "Waiting for firstboot to finish"
-  ps -ef|grep firstboot|logger
-  sleep 1
-done
-#
-echo "INIT: Kill DHCP clients"
-if [ -n "$(pgrep -f dhclient)" ]; then
-  echo "INIT: killing dhclient"
-  kill -9 $(pgrep -f dhclient)
-fi
-#
-echo "INIT: disabling DHCP on eth0"
-until ifreload -a; do
-  logger "ifreload failed, retrying"
-  sleep 1
-done
 {% endif %}
 #
 #
@@ -110,16 +59,15 @@ iface {{ name }} inet6 loopback
 
 cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
 {% if loopback is defined %}
-{{ loopback_interface('lo',loopback,False) }}
+{{ loopback_interface(loopback.ifname,loopback,False) }}
 {% endif %}
 {% for l in interfaces if l.type == 'loopback' %}
 {{ loopback_interface(l.ifname,l,True) }}
 {% endfor %}
 CONFIG
-ps -ef
 #
 until ifreload -a; do
-  sleep 10
+  sleep 1
 done
 #
 echo "INIT: creating other interface"
@@ -127,26 +75,39 @@ cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
 {% for l in interfaces if l.type in ['lan','p2p','stub'] %}
 auto {{ l.ifname }}
 {%   if l.ipv4 is defined %}
+
 iface {{ l.ifname }} inet static
-{%     if l.ipv4 == True and loopback.ipv4 is defined %}
-  address {{ loopback.ipv4 }}
+{%     if l.mtu is defined %}
+  mtu {{ l.mtu }}
+{%     endif %}
+{%     if l.ipv4 == True %}
+{%       if l._parent_ipv4 is defined %}
+  address {{ l._parent_ipv4 }}
+{%       endif %}
 {%     else %}
   address {{ l.ipv4 }}
 {%     endif %}
 {%   endif %}
 {%   if l.ipv6 is defined and l.ipv6 is string %}
+
 iface {{ l.ifname }} inet6 static
+{%     if l.mtu is defined %}
+  mtu {{ l.mtu }}
+{%     endif %}
   address {{ l.ipv6 }}
 {%   endif %}
-{%   if l.mtu is defined %}
+{%   if l.mtu is defined and provider|default(netlab_provider) == 'clab' %}
+
 iface {{ l.ifname }}
   mtu {{ l.mtu }}
-{%   endif %}
+{%     endif %}
 {% endfor %}
 CONFIG
 #
 echo "INIT: executing ifreload"
-ifreload -a
+until ifreload -a; do
+  sleep 1
+done
 #
 # For whatever crazy reason, I had to enable IPv6 in containers
 #
@@ -181,8 +142,10 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
+{% if 'ipv6' not in l.dhcp.client|default({}) %}
  ipv6 nd ra-interval 5
  no ipv6 nd suppress-ra
+{% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
 {% endif %}

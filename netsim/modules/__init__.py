@@ -18,9 +18,9 @@ from ..augment import devices
 # List of attributes we don't want propagated from defaults to global/node
 #
 no_propagate_list = [
-  "attributes","extra_attributes","features",
-  "requires","supported_on","no_propagate",
-  "config_after","transform_after"]
+  "attributes", "extra_attributes", "features",
+  "requires", "supported_on", "no_propagate",
+  "config_after", "transform_after", "warnings" ]
 
 """
 Return the authoritative list of all modules.
@@ -135,11 +135,15 @@ def augment_node_module(topology: Box) -> None:
         path=f'nodes.{name}',
         create_empty=False,
         valid_values=mod_list)
-      continue
-
-    # Copy global modules (if they exist) into non-host devices
-    if g_module and n.get('role') != 'host' and devices.get_device_attribute(n,'role',topology.defaults) != 'host':
-      n.module = g_module
+    else:
+      # Copy global modules (if they exist) into non-host nodes
+      #
+      # non-host nodes are nodes that do not have 'role' set to 'host' or have 'daemon' set to True
+      #
+      daemon   = devices.get_device_attribute(n,'daemon',topology.defaults)
+      is_host  = devices.get_device_attribute(n,'role',topology.defaults) == 'host' or n.get('role') == 'host'
+      if g_module and (not is_host or daemon):
+        n.module = g_module
 
 # Check whether the modules defined on individual nodes are valid module names
 # and supported by the node device type
@@ -258,8 +262,8 @@ def merge_global_module_params(topology: Box) -> None:
         'module')
       continue                                                  # Nope. Weird, but doesn't matter right now.
     mod_def = topology.defaults[m]
-    if not isinstance(mod_def,dict):                               # Are module defaults a dict?
-      log.fatal("Defaults for module %s should be a dict" % m)  # Nope? Too bad, crash right now, we can't live like that...
+    if not isinstance(mod_def,dict):                            # Are module defaults a dict?
+      log.fatal(f"Defaults for module {m} should be a dict")    # Nope? Too bad, crash right now, we can't live like that...
 
     default_copy = data.get_box(mod_def)                        # Got module defaults. Now copy them (we're gonna clobber them)
     no_propagate = list(no_propagate_list)                      # Always remove these default attributes (and make a fresh copy of the list)

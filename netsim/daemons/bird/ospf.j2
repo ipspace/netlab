@@ -1,0 +1,38 @@
+{% if 'router_id' in ospf %}
+router id {{ ospf.router_id }};
+{% endif %}
+{# build a list of OSPF areas #}
+{% set area_list = [ ospf.area ] %}
+{% for l in interfaces|default([]) if 'ospf' in l and 'area' in l.ospf and l.ospf.area not in area_list %}
+{%   set status = area_list.append(l.ospf.area) %}
+{% endfor %}
+{% set KW_NETWORK_TYPE = { 'broadcast': 'bcast', 'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma' } %}
+
+{% for af in ['ipv4','ipv6'] if af in ospf.af %}
+{%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
+protocol ospf {{ ver }} ospf_{{ ver }} {
+{%   for area in area_list %}
+  area {{ area }} {
+    default cost 10;
+{%     if area == ospf.area and af in loopback|default({}) %}
+    interface "lo" {
+      stub;
+    };
+{%     endif %}
+{%     for l in interfaces|default([]) if af in l and 'ospf' in l and 'area' in l.ospf and l.ospf.area == area %}
+    interface "{{ l.ifname }}" {
+{%       if 'network_type' in l.ospf %}
+      type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
+{%       endif %}
+{%       if l.ospf.passive|default(False) %}
+      stub;
+{%       endif %}
+{%       if 'cost' in l.ospf %}
+      cost {{ l.ospf.cost }};
+{%       endif %}
+    };
+{%     endfor %}
+  };
+{%   endfor %}
+}
+{% endfor %}

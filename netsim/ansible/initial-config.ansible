@@ -5,52 +5,14 @@
   strategy: "{{ netlab_strategy|default('linear') }}"
   gather_facts: false
   tasks:
-  - set_fact:
+  - name: Set variables that cannot be set with VARS
+    set_fact:
       netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
-      search_path: [ "{{ lookup('env','PWD') }}/templates","~/.netlab/templates","../templates" ]
+      search_path: "{{ paths_templates.dirs }}"
     tags: [ always ]
 
-#
-# Initial device readiness check
-#
-
-  - block:
-    - set_fact:
-        ready_script: "{{ lookup('first_found',params,errors='ignore') }}"
-      vars:
-        params:
-          paths:
-          - "tasks/readiness-check"
-          files:
-          - "{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml"
-          - "{{netlab_device_type}}.yml"
-          - "{{ansible_network_os}}-{{provider|default(netlab_provider)}}.yml"
-          - "{{ansible_network_os}}.yml"
-
-    - name: Waiting for device to become ready
-      include_tasks: "{{ ready_script }}"
-      when: ready_script|default('')
-      args:
-        apply:
-          tags: [ always ]
-
-    tags: [ always ]
-  
-#
-# Deploy initial configuration
-#
-# Uses 'deploy module' task list but sets the module to 'initial'
-#
-
-  - name: Deploy initial configuration
-    include_tasks: "tasks/deploy-module.yml"
-    args:
-      apply:
-        vars:
-          config_module: initial
-          paths: "{{ search_path }}"
-        tags: [ always ]
-    tags: [ initial ]
+  - import_tasks: tasks/wait-for-ready.yml
+  - import_tasks: tasks/initial-config.yml
 
 #
 # Deploy module-specific configurations
@@ -74,15 +36,18 @@
   strategy: "{{ netlab_strategy|default('linear') }}"
   tags: [ module,test ]
   tasks:
-  - set_fact:
-      modlist: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
-  - include_tasks: "tasks/deploy-module.yml"
+  - name: Set variables that cannot be set with VARS
+    set_fact:
+      mod_select: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
+  - name: Deploy individual configuration modules
+    include_tasks: "tasks/deploy-module.yml"
     args:
       apply:
         vars:
           paths: "{{ search_path }}"
         tags: [ always ]
-    loop: "{{ netlab_module|intersect(modlist) }}"
+    loop: "{{ netlab_module }}"
+    when: config_module in mod_select
     loop_control:
       loop_var: config_module
 
@@ -102,11 +67,15 @@
   strategy: "{{ netlab_strategy|default('linear') }}"
   tags: [ custom,test ]
   tasks:
-  - include_tasks: "tasks/deploy-custom-config.yml"
+  - name: Run custom configuration deployment scripts
+    include_tasks: "tasks/deploy-custom-config.yml"
     args:
       apply:
         tags: [ always ]
-    when: custom_config in config
+    when: >
+      custom_config in config and 
+      custom_config not in _daemon_config|default({}) and
+      custom_config.replace('.','@') not in _daemon_config|default({})
     loop: "{{ netlab_custom_config }}"
     loop_control:
       loop_var: custom_config

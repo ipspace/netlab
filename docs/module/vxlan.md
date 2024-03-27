@@ -83,6 +83,22 @@ The VXLAN module builds ingress replication lists for all nodes with **vxlan.flo
 
 All VLAN-specific ingress replication lists are merged into a node-level ingress replication list. Some devices support per-VLAN replication lists while others might use node-level replication list; the only difference is the amount of irrelevant traffic replicated across the VXLAN transport network.
 
+## Changing the VXLAN VTEP Source interface/address
+
+By default, every node uses the first loopback interface/address as the default VTEP Source interface/address.
+
+If you want your node to use a different loopback interface as VXLAN source, you need to define a *loopback link*, and add the **vxlan.vtep** attribute set to **true**, i.e.:
+
+```
+links:
+- sw1:
+  type: loopback
+  pool: vteps
+  vxlan.vtep: true
+```
+
+If you specify multiple loopback links with the **vxlan.vtep** attribute, **only the first one will be considered**.
+
 ## Example
 
 We want to create a simple two-switch network transporting two VLANs across VXLAN backbone. We have to define the VLANs first:

@@ -9,9 +9,11 @@ message: |
   * r1 should not be able to reach r3
 
 groups:
+  _auto_create: True
   ce:
     members: [ r1,r2,r3,r4  ]
     module: [ bgp ]
+    device: cumulus
   pe:
     members: [ rtr ]
     module: [ vrf, bgp ]
@@ -20,7 +22,9 @@ groups:
 
 vrfs:
   red:
+    links: [ rtr-r1, rtr-r2 ]
   blue:
+    links: [ rtr-r3, rtr-r4 ]
 
 nodes:
   rtr:
@@ -33,12 +37,27 @@ nodes:
   r4:
     bgp.as: 65104
 
-links:
-- rtr: { vrf: red }
-  r1:
-- rtr: { vrf: red } 
-  r2:
-- rtr: { vrf: blue }
-  r3:
-- rtr: { vrf: blue }
-  r4:
+validate:
+  red:
+    description: Ping-based reachability test in VRF red
+    wait: 20
+    wait_msg: Waiting for BGP to start
+    nodes: [ r1 ]
+    devices: [ cumulus ]
+    exec: ping -c 5 -W 1 -A r2
+    valid: |
+      "64 bytes" in stdout
+  blue:
+    description: Ping-based reachability test in VRF blue
+    nodes: [ r3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A r4
+    valid: |
+      "64 bytes" in stdout
+  inter_vrf:
+    description: Ping-based isolation test between blue and red VRF
+    nodes: [ r1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A r4 || true"
+    valid: |
+      "0 packets received" in stdout or "Network is unreachable" in stdout

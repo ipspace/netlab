@@ -1,0 +1,59 @@
+message: |
+  This lab tests whether the OSPF interfaces on device under test are correctly
+  configured as passive interfaces.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+  x1:
+  x2:
+
+links:
+- dut:
+  x1:
+  ospf.cost: 10
+
+- dut:
+    ospf.cost: 15
+    ospf.passive: True
+  x2:
+  prefix.ipv4: 10.42.1.0/24
+  ospf.cost: 100
+
+- x1:
+  x2:
+  ospf.cost: 100
+
+- dut:
+  prefix.ipv4: 10.42.2.0/24
+  ospf.cost: 25
+
+validate:
+  wait:
+    description: Wait for OSPF adjacencies to start
+    wait: 30
+  adj_x1:
+    description: Is DUT a neigbor of X1?
+    pass: OK, X1 has DUT as a neighbor
+    nodes: [ x1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  adj_x2:
+    description: Is DUT a neigbor of X2?
+    nodes: [ x2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id,present=False)
+    pass: OK, X2 cannot see DUT as a neighbor
+  c_p1:
+    description: Check cost of IPv4 prefix on passive interface on DUT
+    nodes: [ x1 ]
+    plugin: ospf_prefix('10.42.1.0/24',cost=25)
+  c_x2:
+    description: Check cost of IPv4 prefix on stub interface on DUT
+    nodes: [ x1 ]
+    plugin: ospf_prefix('10.42.2.0/24',cost=35)

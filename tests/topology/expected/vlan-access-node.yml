@@ -1,19 +1,32 @@
+groups:
+  hosts:
+    device: linux
+    members:
+    - h1
+    - h2
+  switches:
+    device: iosv
+    members:
+    - s1
+    - s2
+    module:
+    - vlan
 input:
 - topology/input/vlan-access-node.yml
 - package:topology-defaults.yml
 links:
 - bridge: input_1
   gateway:
-    ipv4: 172.16.0.2/24
+    ipv4: 172.16.0.1/24
   interfaces:
   - ifindex: 1
     ifname: eth1
-    ipv4: 172.16.0.1/24
+    ipv4: 172.16.0.3/24
     node: h1
   - _vlan_mode: irb
     ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 172.16.0.2/24
+    ipv4: 172.16.0.1/24
     node: s1
     vlan:
       access: red
@@ -27,12 +40,12 @@ links:
   interfaces:
   - ifindex: 2
     ifname: GigabitEthernet0/2
-    ipv4: 172.16.1.2/24
+    ipv4: 172.16.1.1/24
     node: s1
   - _vlan_mode: irb
     ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 172.16.1.3/24
+    ipv4: 172.16.1.2/24
     node: s2
     vlan:
       access: blue
@@ -44,12 +57,12 @@ links:
   type: lan
 - bridge: input_3
   gateway:
-    ipv4: 172.16.1.3/24
+    ipv4: 172.16.1.2/24
   interfaces:
   - _vlan_mode: irb
     ifindex: 2
     ifname: GigabitEthernet0/2
-    ipv4: 172.16.1.3/24
+    ipv4: 172.16.1.2/24
     node: s2
     vlan:
       access: blue
@@ -72,26 +85,26 @@ nodes:
       ipv4: true
     box: generic/ubuntu2004
     device: linux
-    id: 1
+    id: 3
     interfaces:
     - bridge: input_1
       gateway:
-        ipv4: 172.16.0.2/24
+        ipv4: 172.16.0.1/24
       ifindex: 1
       ifname: eth1
-      ipv4: 172.16.0.1/24
+      ipv4: 172.16.0.3/24
       linkindex: 1
       name: h1 -> [s1]
       neighbors:
       - ifname: BVI1
-        ipv4: 172.16.0.2/24
+        ipv4: 172.16.0.1/24
         node: s1
       role: stub
       type: lan
     mgmt:
       ifname: eth0
-      ipv4: 192.168.121.101
-      mac: 08:4f:a9:00:00:01
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
     name: h1
     role: host
   h2:
@@ -103,7 +116,7 @@ nodes:
     interfaces:
     - bridge: input_3
       gateway:
-        ipv4: 172.16.1.3/24
+        ipv4: 172.16.1.2/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.1.4/24
@@ -111,10 +124,10 @@ nodes:
       name: h2 -> [s1,s2]
       neighbors:
       - ifname: GigabitEthernet0/2
-        ipv4: 172.16.1.2/24
+        ipv4: 172.16.1.1/24
         node: s1
       - ifname: BVI1
-        ipv4: 172.16.1.3/24
+        ipv4: 172.16.1.2/24
         node: s2
       type: lan
     mgmt:
@@ -128,7 +141,7 @@ nodes:
       ipv4: true
     box: cisco/iosv
     device: iosv
-    id: 2
+    id: 1
     interfaces:
     - bridge: input_1
       ifindex: 1
@@ -141,12 +154,12 @@ nodes:
     - bridge: input_2
       ifindex: 2
       ifname: GigabitEthernet0/2
-      ipv4: 172.16.1.2/24
+      ipv4: 172.16.1.1/24
       linkindex: 2
       name: s1 -> [s2,h2]
       neighbors:
       - ifname: BVI1
-        ipv4: 172.16.1.3/24
+        ipv4: 172.16.1.2/24
         node: s2
       - ifname: eth1
         ipv4: 172.16.1.4/24
@@ -155,11 +168,11 @@ nodes:
     - bridge_group: 1
       ifindex: 3
       ifname: BVI1
-      ipv4: 172.16.0.2/24
+      ipv4: 172.16.0.1/24
       name: VLAN red (1000) -> [h1]
       neighbors:
       - ifname: eth1
-        ipv4: 172.16.0.1/24
+        ipv4: 172.16.0.3/24
         node: h1
       role: stub
       type: svi
@@ -167,11 +180,15 @@ nodes:
       vlan:
         mode: irb
     loopback:
-      ipv4: 10.0.0.2/32
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
     mgmt:
       ifname: GigabitEthernet0/0
-      ipv4: 192.168.121.102
-      mac: 08:4f:a9:00:00:02
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
     module:
     - vlan
     name: s1
@@ -191,7 +208,7 @@ nodes:
       ipv4: true
     box: cisco/iosv
     device: iosv
-    id: 3
+    id: 2
     interfaces:
     - bridge: input_2
       ifindex: 1
@@ -212,11 +229,11 @@ nodes:
     - bridge_group: 1
       ifindex: 3
       ifname: BVI1
-      ipv4: 172.16.1.3/24
+      ipv4: 172.16.1.2/24
       name: VLAN blue (1001) -> [s1,h2]
       neighbors:
       - ifname: GigabitEthernet0/2
-        ipv4: 172.16.1.2/24
+        ipv4: 172.16.1.1/24
         node: s1
       - ifname: eth1
         ipv4: 172.16.1.4/24
@@ -226,11 +243,15 @@ nodes:
       vlan:
         mode: irb
     loopback:
-      ipv4: 10.0.0.3/32
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
     mgmt:
       ifname: GigabitEthernet0/0
-      ipv4: 192.168.121.103
-      mac: 08:4f:a9:00:00:03
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
     module:
     - vlan
     name: s2

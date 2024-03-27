@@ -10,18 +10,18 @@ To use Arista EOS with containerlab you need to register for a free account on [
 
 cEOS tar archive does not contain the container image name (repository and tag); you have to set them when importing the archive into Docker image repository. To display the default cEOS container image name used by *netlab*, run `netlab show images -d eos`. You can use a different tag for your cEOS image (very useful if you want to test different cEOS versions), but then you'll have to specify it in your topology file.
 
-* Install the Docker image with `docker image import <tar-filename> <tag>`, for example `docker image import cEOS64-lab-4.27.2F.tar ceos:4.27.2F`.
+* Install the Docker image with `docker image import <tar-filename> <tag>`, for example `docker image import cEOS64-lab-4.31.2F.tar ceos:4.31.2F`.
 
 If you used a custom container tag, specify it in the topology file, for example:
 
 ```
-defaults.devices.eos.clab.image: "ceos:4.27.2F"
+defaults.devices.eos.clab.image: "ceos:4.31.2F"
 ```
 
-Alternatively, if you want to use the same cEOS image in all your labs, add the following line to `~/.netlab.yml` file (replacing `ceos:4.27.2F` with your image tag).
+Alternatively, if you want to use the same cEOS image in all your labs, add the following line to `~/.netlab.yml` file (replacing `ceos:4.31.2F` with your image tag).
 
 ```
-devices.eos.clab.image: "ceos:4.27.2F"
+devices.eos.clab.image: "ceos:4.31.2F"
 ```
 
 ## Option 2: Download the container using eos-downloader

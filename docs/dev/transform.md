@@ -22,6 +22,7 @@ The data transformation has three major steps:
 * Perform the basic sanity checks (`netsim.augment.topology.topology_sanity_check`)
 * Check minimum _netlab_ version (`netsim.utils.versioning.check_topology_version`)
 * Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
+* Check basic group data structures and auto-create nodes from group members (`augment.groups.precheck_groups`)
 * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
 * Execute plugin **topology_expand** hook (`netsim.augment.plugin.execute`) for plugins that augment lab topology structures (example: [](../plugins/fabric.md))
 
@@ -37,9 +38,9 @@ The data transformation has three major steps:
 * Check for the presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 
 * Initialize attribute validation (`netsim.data.validate.init_validation`)
-* Initialize node groups (`netsim.augment.groups.init_groups`):
+* Complete node group initialization (`netsim.augment.groups.init_groups`):
 
-	* Check the group data structures
+	* Check the attributes in the group data structures
 	* Add group members based on nodes' **group** attribute
 	* Check recursive groups
 	* Copy group **device** and **module** attribute into nodes
@@ -103,7 +104,12 @@ The data transformation has three major steps:
 
 * Execute **post_transform** plugin hooks
 * Merge group-level and node-level [custom deployment templates](custom-config) (`netsim.augment.groups.node_config_template`)
-* Delete temporary data structures from the topology (list of plugin modules, addressing pools, pointer to provider module)
+* Cleanup node data in `augment.nodes.cleanup` function -- at the moment, the function prunes the `_daemon_config` dictionary.
+* Execute **post_transform** primary provider hook and node-specific **node_post_transform** provider hooks.
+* Process device quirks
+* Cleanup links: remove empty **links** list and **_linkname** attribute from individual links
+* Cleanup groups: remove settings (keys starting with '\_') from **groups** dictionary
+* Delete temporary data structures from the topology: list of plugin modules, addressing pools, and pointers to provider modules.
 
 ## Configuration Module Transformations
 

@@ -15,7 +15,7 @@ from .. import modules
 from ..modules import bgp
 from ..data import get_box,get_empty_box
 from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
+from ..data.types import must_be_dict,must_be_list,must_be_id,transform_asdot
 from . import nodes
 
 '''
@@ -33,7 +33,8 @@ def group_members(topology: Box, group: str, count: int = 0) -> list:
   if count > 99:                    # pragma: no cover (impossible to get here, recursive groups are checked elsewhere)
     log.fatal(
       'Recursive group definition, aborting',
-      'groups')
+      module='groups',
+      header=True)
 
   for m in topology.groups[group].members:
     if m in topology.nodes:
@@ -49,7 +50,55 @@ Check validity of 'groups' data structure
 * groups -- the group data (topology- or default groups)
 * topology -- top-level topology (have to pass it to get attributes from fixed location)
 * prune_members -- remove non-existent group members (used for default groups)
+
+The checks are implemented in two functions:
+
+* check_group_data_sanity: called very early in the transformation process to do basic sanity
+  checks needed before we can auto-create group members (if required)
+* check_group-data_structure: called later when we already known topology-wide modules
+  and can perform full node attribute validation
 '''
+def check_group_data_sanity(
+      topology: Box,
+      parent_path: typing.Optional[str] = '') -> bool:
+
+  parent = topology.get(parent_path) if parent_path else topology
+  grp_namespace = f'{parent_path} ' if parent_path else ''
+
+  if must_be_dict(parent,'groups',parent_path,create_empty=True,module='groups') is None:
+    return False
+
+  '''
+  Transform group-as-list into group-as-dictionary
+  '''
+  for grp in parent.groups.keys():
+    if grp.startswith('_'):                       # Skip stuff starting with underscore
+      continue                                    # ... could be system settings
+
+    gpath = f'{parent_path or "topology"}.groups.{grp}'
+    if parent.groups[grp] is None:
+      log.error(
+        f"Definition of {grp_namespace}group '{grp}' must be a dictionary",
+        log.IncorrectType,
+        'groups')
+      return False
+
+    if isinstance(parent.groups[grp],list):
+      parent.groups[grp] = { 'members': parent.groups[grp] }
+
+    if grp in topology.get('nodes',{}):
+      log.error(
+        f"{grp_namespace}group '{grp}' is also a node name. I can't deal with that level of confusion",
+        log.IncorrectValue,
+        'groups')
+      return False
+
+    if 'members' in parent.groups[grp]:
+      if must_be_list(parent.groups[grp],'members',gpath,create_empty=False,module='groups') is None:
+        return False
+
+  return True
+
 def check_group_data_structure(
       topology: Box,
       parent_path: typing.Optional[str] = '',
@@ -57,28 +106,6 @@ def check_group_data_structure(
 
   parent = topology.get(parent_path) if parent_path else topology
   grp_namespace = f'{parent_path} ' if parent_path else ''
-
-  if must_be_dict(parent,'groups',parent_path,create_empty=True,module='groups') is None:
-    return
-
-  '''
-  Transform group-as-list into group-as-dictionary
-  '''
-  for grp in parent.groups.keys():
-    if parent.groups[grp] is None:
-      log.error(
-        f"Definition of {grp_namespace}group '{grp}' must be a dictionary",
-        log.IncorrectType,
-        'groups')
-      return
-
-    if isinstance(parent.groups[grp],list):
-      parent.groups[grp] = { 'members': parent.groups[grp] }
-    if grp in topology.nodes:
-      log.error(
-        f"{grp_namespace}group '{grp}' is also a node name. I can't deal with that level of confusion",
-        log.IncorrectValue,
-        'groups')
 
   '''
   Sanity checks on global group data
@@ -91,6 +118,9 @@ def check_group_data_structure(
   extra = get_object_attributes(['providers','tools'],topology)
 
   for grp,gdata in parent.groups.items():
+    if grp.startswith('_'):                       # Skip stuff starting with underscore
+      continue                                    # ... could be system settings
+
     must_be_id(parent=None,key=grp,path=f'NOATTR:group name {grp}',module='groups')
 
     gpath = f'{parent_path or "topology"}.groups'
@@ -114,17 +144,26 @@ def check_group_data_structure(
       module='groups',
       modules=g_modules,
       module_source=gm_source,
+      ignored=['_','netlab_','ansible_'],   # Ignore attributes starting with _, netlab_ or ansible_
       extra_attributes=extra)               # Allow provider- and tool-specific settings (not checked at the moment)
 
     if not 'members' in gdata:
       gdata.members = []
 
     if grp == 'all' and gdata.members:
-      log.error(f'{grp_namespace}group "all" should not have explicit members')
+      log.error(
+        text=f'{grp_namespace}group "all" should not have explicit members',
+        category=log.IncorrectValue,
+        module='groups')
 
     must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
 
     if 'node_data' in gdata:                 # Validate node_data attributes (if any)
+      log.error(
+        text=f'Group {grp} uses an obsolete attribute node_data. Migrate node parameters into group definition',
+        category=Warning,
+        module='groups')
+
       validate_attributes(
         data=gdata.node_data,
         topology=topology,
@@ -134,6 +173,7 @@ def check_group_data_structure(
         module='groups',
         modules=g_modules,
         module_source=gm_source,
+        ignored=['_','netlab_','ansible_'],  # Ignore attributes starting with _, netlab_ or ansible_
         extra_attributes=extra)              # Allow provider- and tool-specific settings (not checked at the moment)
 
       for k in ('module','device'):          # Check that the 'module' or 'device' attributes are not in node_data
@@ -160,7 +200,58 @@ def check_group_data_structure(
     else:
       for n in gdata.members:
         if not n in topology.nodes and not n in parent.groups:
-          log.error(f'Member {n} of {grp_namespace}group {grp} is not a valid node or group name')
+          log.error(
+            text=f'Member {n} of {grp_namespace}group {grp} is not a valid node or group name',
+            category=log.IncorrectValue,
+            module='groups')
+
+'''
+Auto-create group members
+
+Inputs:
+* parent object (topology or defaults)
+* topology (needed to add nodes)
+* Global auto-create setting (set to 'False' for default groups)
+'''
+
+def auto_create_members(
+      parent: Box,
+      topology: Box,
+      default_create: bool) -> None:
+
+  if not 'groups' in parent:                      # Parent has no groups, what are we doing here?
+    return
+
+  parent_path = 'groups' if parent is topology else 'defaults.groups'
+  for gname,gdata in parent.groups.items():       # Iterate over groups
+    if gname.startswith('_'):                     # Skip stuff starting with '_' (could be global settings)
+      continue
+
+    if not 'members' in gdata:                    # Does the current group have members?
+      continue                                    # ... nope, nothing to create
+
+    # _auto_create could be set on the group or in global settings
+    #
+    if not gdata.get('_auto_create',False) and not default_create:
+      continue                                    # No auto-create for this group, move on
+
+    for n in gdata.members:                       # Iterate over group members
+      #
+      # Do not create nodes if the group member is another group
+      if n in topology.get('groups',{}) or n in topology.get('defaults.groups',{}):
+        continue
+
+      if n in topology.nodes:                     # Skip if the member is already a known node
+        continue
+
+      topology.nodes[n].name = n                  # Otherwise create an empty node data structure
+      topology.nodes[n].interfaces = []           # ... with an empty interface list
+  
+  '''
+  Transform group-as-list into group-as-dictionary
+  '''
+  for grp in parent.groups.keys():
+    gpath = f'{parent_path or "topology"}.groups.{grp}'
 
 '''
 Add node-level group settings to global groups
@@ -203,12 +294,19 @@ def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Opti
 
 def check_recursive_groups(topology : Box) -> None:
   for gname in topology.groups.keys():
+    if gname.startswith('_'):                  # Skip settings starting with underscore
+      continue
     if check_recursive_chain(topology,[],gname):
       return
 
 def reverse_topsort(topology: Box) -> list:
   group_copy = get_box(topology.groups)        # Make a copy of the group dictionary
   sort_list: typing.List[str] = []
+
+  for g in list(group_copy.keys()):            # Clean up the group data structure
+    if g.startswith('_'):                      # Removing everything starting with underscore
+      group_copy.pop(g,None)                   # ... those are settings, not groups
+
   while group_copy:                            # Keep iterating until we got all groups in order
     for g in sorted(group_copy.keys()):        # Iterate over remaining groups
       OK_to_add = True                         # ... sort them by name to have consistent results
@@ -310,6 +408,8 @@ def export_group_node_data(
   if not unique_keys:
     unique_keys = copy_keys
   for gname,gdata in topology.groups.items():
+    if gname.startswith('_'):                                         # Skip groups starting with '_'
+      continue                                                        # ... those are group settings
     #
     # Find groups with node_data dictionaries
     # and check that the key within node_data dictionary we're interested in is also a dictionary
@@ -341,8 +441,6 @@ def create_bgp_autogroups(topology: Box) -> None:
   if not isinstance(g_module,list):                             # Won't deal with incorrectly formatted 'module' attribute here
     g_module = []                                               # ... just assume it's an empty list
   g_bgpas = data.get_global_parameter(topology,'bgp.as')        # Try to get the global BGP AS
-  if not data.is_true_int(g_bgpas):                             # ... don't worry if it's not int, someone else will complain
-    g_bgpas = 0
 
   for gname,gdata in topology.groups.items():                   # Sanity check: BGP autogroups should not have static members
     if re.match('as\\d+$',gname):
@@ -361,9 +459,11 @@ def create_bgp_autogroups(topology: Box) -> None:
       continue
 
     try:
-      n_bgpas = n_data.get('bgp.as') or g_bgpas                 # Get node-level or global BGP AS
+      n_bgpas = n_data.get('bgp.as',g_bgpas)                    # Get node-level or global BGP AS
+      if not data.is_true_int(n_bgpas):                         # ... if it's not int, it might be as.dot
+        n_bgpas = transform_asdot(n_bgpas)
     except:
-      n_bgpas = g_bgpas
+      n_bgpas = 0
 
     if not n_bgpas:
       continue
@@ -374,16 +474,39 @@ def create_bgp_autogroups(topology: Box) -> None:
 
     topology.groups[grpname].members.append(n_name)             # ... and append the node to AS group
 
-#
-# init_groups:
-#
-# * Check and adjust group data structures
-# * Check recursive groups
-# * Add nodes to groups based on node 'group' attribute
-#
-# Please note that check_group_data_structure creates 'groups' element if needed
-# and 'adjust_groups' deletes it if there are no groups in the topology.
-#
+"""
+precheck_groups:
+
+* Check the baseline group data structure sanity
+* Auto-creates group members
+
+This function is called very early in the transformation process. Be very
+careful when touching other data structures and don't trust anything. Most
+of the topology data hasn't been validated yet.
+"""
+def precheck_groups(topology: Box) -> None:
+  auto_create_default = \
+    topology.get('defaults.groups._auto_create',False) or \
+    topology.get('groups._auto_create',False)     # auto-create could be set in defaults or on groups
+
+  if 'groups' in topology:
+    if check_group_data_sanity(topology):
+      auto_create_members(topology,topology,auto_create_default)
+
+  if 'groups' in topology.defaults:
+    if check_group_data_sanity(topology,'defaults'):
+      auto_create_members(topology.defaults,topology,False)
+
+"""
+init_groups:
+
+* Check and adjust group data structures
+* Check recursive groups
+* Add nodes to groups based on node 'group' attribute
+
+Please note that check_group_data_structure creates 'groups' element if needed
+and 'adjust_groups' deletes it if there are no groups in the topology.
+"""
 
 def init_groups(topology: Box) -> None:
   if 'groups' in topology:
@@ -451,6 +574,9 @@ def node_config_templates(topology: Box) -> None:
   '''
 
   for group_name in topology.groups:
+    if group_name.startswith('_'):                # Skip settings
+      continue
+
     topology.groups[group_name].pop('config',None)
 
   for name,node in topology.nodes.items():
@@ -470,3 +596,19 @@ def node_config_templates(topology: Box) -> None:
       node.config = config_list
     else:
       node.pop('config',None)
+
+"""
+Final step in group processing: remove settings from groups data structure,
+so the templates don't have to guess whether they're dealing with groups
+or settings
+"""
+def cleanup(topology: Box) -> None:
+  if not 'groups' in topology:                    # No groups, no worries
+    return
+
+  for gname in list(topology.groups.keys()):      # Iterate over group names
+    if gname.startswith('_'):                     # ... and if something starts with underscore, it's a setting
+      topology.groups.pop(gname,None)             # ... so remove it
+
+  if not topology.groups:                         # Anything left?
+    topology.pop('groups',None)                   # ... nope, remove the whole 'groups' thingy

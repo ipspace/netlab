@@ -1,0 +1,42 @@
+---
+nodes:
+  c1:
+  c2:
+  server:
+    module: [ dhcp ]
+    device: dnsmasq
+    dhcp.server: true
+    provider: clab
+
+links:
+- c1:
+    ipv4: dhcp
+  c2:
+    ipv4: dhcp
+    dhcp.client.default: False
+  server:
+
+validate:
+  wait:
+    description: Wait a bit for DHCP client and server
+    wait: 5
+  lease:
+    description: Check for DHCP server lease
+    nodes: [ server ]
+    pass: The DHCP server has at least two active IPv4 leases
+    fail: There are no IPv4 leases on the DHCP server
+    show:
+      eos: "dhcp server leases | json"
+    exec:
+      dnsmasq: "cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] ' | wc -l"
+    valid:
+      eos: len(vrfs.default.ipv4ActiveLeases) == 2
+      dnsmasq: stdout.rstrip() == '2'
+
+message: |
+  Use this topology to test the DHCPv4 client on your device. Use 'netlab
+  validate' to check whether your devices requested DHCP leases from the DHCP
+  server.
+
+  If your client suppors configurable 'router option' requests to generate
+  a default route, check that C1 has a default route but C2 does not.

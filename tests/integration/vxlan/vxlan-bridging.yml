@@ -11,6 +11,7 @@ message: |
   STP learning phase
 
 groups:
+  _auto_create: True
   hosts:
     members: [ h1, h2, h3, h4, h5 ]
     device: linux
@@ -23,37 +24,36 @@ vlans:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
+    links: [ s1-h1, s2-h2, s3-h3 ]
   blue:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
+    links: [ s1-h4, s2-h5 ]
 
-nodes:
-  h1:
-  h2:
-  h3:
-  h4:
-  h5:
-  s1:
-  s2:
-  s3:
+links: [ s1-s2, s2-s3, s1-s3 ]
 
-links:
-- h1:
-  s1:
-    vlan.access: red
-- h2:
-  s2:
-    vlan.access: red
-- h3:
-  s3:
-    vlan.access: red
-- h4:
-  s1:
-    vlan.access: blue
-- h5:
-  s2:
-    vlan.access: blue
-- s1:
-  s2:
-  s3:
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for STP and OSPF to stabilize
+    wait: 30
+    nodes: [ h1,h2 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h3
+    valid: |
+      "64 bytes" in stdout
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    nodes: [ h4 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h5
+    valid: |
+      "64 bytes" in stdout
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A h5 || true"
+    valid: |
+      "0 packets received" in stdout

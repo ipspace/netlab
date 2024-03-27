@@ -17,13 +17,15 @@ from . import usage
 from .. import augment
 from .. import __version__
 from ..utils import status as _status, log, read as _read
+from ..data import global_vars
 
 DRY_RUN: bool = False
+NETLAB_SCRIPT: str = ''
 
 def parser_add_debug(parser: argparse.ArgumentParser) -> None:
   parser.add_argument('--debug', dest='debug', action='store',nargs='*',
                   choices=sorted([
-                    'all','addr','cli','links','libvirt','modules','plugin','template',
+                    'all','addr','cli','links','libvirt','clab','modules','plugin','template',
                     'vlan','vrf','quirks','validate','addressing','groups','status',
                     'external','defaults']),
                   help=argparse.SUPPRESS)
@@ -36,13 +38,13 @@ def parser_add_debug(parser: argparse.ArgumentParser) -> None:
 def parser_add_verbose(parser: argparse.ArgumentParser) -> None:
   parser.add_argument('-v','--verbose', dest='verbose', action='count', default = 0,
                   help='Verbose logging (add multiple flags for increased verbosity)')
+  parser.add_argument('-q','--quiet', dest='quiet', action='store_true',
+                  help='Report only major errors')
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
   parser.add_argument('--log', dest='logging', action='store_true',
                   help='Enable basic logging')
-  parser.add_argument('-q','--quiet', dest='quiet', action='store_true',
-                  help='Report only major errors')
   parser.add_argument('--warning', dest='warning', action='store_true',help=argparse.SUPPRESS)
   parser.add_argument('--raise_on_error', dest='raise_on_error', action='store_true',help=argparse.SUPPRESS)
   parser_add_verbose(parser)
@@ -128,6 +130,7 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
     print(f"Cannot read the topology snapshot file {args.snapshot}")
     sys.exit(1)
 
+  global_vars.init(topology)
   return topology
 
 def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typing.Optional[Box]:
@@ -136,14 +139,18 @@ def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typ
     if not args.topology:                               # ... then the user wants to use the topology file
       args.topology = 'topology.yml'                    # ... so let's set the default value if needed
 
+  topology = None
   if args.topology:
     topology = load_topology(args)
     augment.main.transform(topology)
     log.exit_on_error()
-    return topology
   else:
     args.snapshot = args.snapshot or 'netlab.snapshot.yml'
-    return _read.read_yaml(filename=args.snapshot)
+    topology = _read.read_yaml(filename=args.snapshot)
+
+  if topology:
+    global_vars.init(topology)
+  return topology
 
 # get_message: get action-specific message from topology file
 #
@@ -157,7 +164,7 @@ def get_message(topology: Box, action: str, default_message: bool = False) -> ty
     return topology.message if default_message else None    # If the action is OK with getting the default message return it
 
   if not isinstance(topology.message,Box):                  # Otherwise we should be dealing with a dict
-    log.fatal('topology message should be a string or a dict')
+    log.fatal('topology message should be a string or a dict',module='topology',header=True)
 
   return topology.message.get(action,None)                  # Return action-specific message if it exists
 
@@ -185,7 +192,10 @@ def lab_status_update(
 
   if update is not None:                                    # Update lab status from a dictionary
     status[lab_id] = status[lab_id] + update
-    if 'status' in update:                                  # Append change in lab status to log        
+    if 'status' in update:                                  # Append change in lab status to log
+      update['log_line'] = update['status']
+
+    if 'log_line' in update:
       if not 'log' in status[lab_id]:                       # Create empty log if needed
         status[lab_id].log = []
 
@@ -193,9 +203,9 @@ def lab_status_update(
       # This is to avoid excessive log entries when the status is updated multiple times
       # in a row (e.g. when a lab is being created)
       #
-      if not status[lab_id].log or not f': {update["status"]}' in status[lab_id].log[-1]:
+      if not status[lab_id].log or not f': {update["log_line"]}' in status[lab_id].log[-1]:
         timestamp = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()
-        status[lab_id].log.append(f'{timestamp}: {update["status"]}')
+        status[lab_id].log.append(f'{timestamp}: {update["log_line"]}')
 
   if cb is not None:                                        # If needed, perform status-specific callback        
     cb(status[lab_id])
@@ -210,9 +220,19 @@ def lab_status_change(topology: Box, new_status: str) -> None:
 
   _status.change_status(
     topology,
-    callback = lambda s,t: 
+    callback = lambda s,t:
       lab_status_update(t,s,
         update = { 'status': new_status }))
+
+"""
+lab_status_log -- change current lab status
+"""
+def lab_status_log(topology: Box, log_line: str) -> None:
+  _status.change_status(
+    topology,
+    callback = lambda s,t:
+      lab_status_update(t,s,
+        update = { 'log_line': log_line }))
 
 #
 # Main command dispatcher
@@ -232,7 +252,10 @@ quick_commands = {
   'alias': lambda x: usage.print_usage('alias.txt')
 }
 
-def lab_commands() -> None:
+def lab_commands(script: str) -> None:
+  global NETLAB_SCRIPT
+  NETLAB_SCRIPT = script
+
   if len(sys.argv) < 2:
     usage.run([])
     sys.exit()

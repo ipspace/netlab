@@ -39,9 +39,10 @@ setup(
   setup_requires=["wheel"],
   python_requires='>=3.8',  # Due to e.g. 'capture_output' in subprocess.run, and use of typing.Final
   install_requires=reqs,
-  entry_points={
-    "console_scripts": ["netlab=netsim.cli:lab_commands"]
-  },
+  scripts=[ "netlab" ],
+#  entry_points={
+#    "console_scripts": ["netlab=netsim.cli:lab_commands"]
+#  },
   package_data = {
     "netsim": ["templates/*", "ansible/*", "extra/*"]
   }

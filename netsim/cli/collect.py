@@ -65,7 +65,7 @@ def run(cli_args: typing.List[str]) -> None:
   try:
     os.mkdir(args.output)
   except Exception as ex:
-    log.fatal(f"Cannot create output directory {{args.output}}: {{ex}}")
+    log.fatal(f"Cannot create output directory {args.output}: {ex}")
 
   if args.verbose:
     rest = ['-v'] + rest

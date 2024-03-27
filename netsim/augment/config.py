@@ -4,7 +4,7 @@
 
 import typing
 from box import Box
-from ..utils import log
+from ..utils import log,files as _files
 
 """
 Augment module attributes
@@ -98,10 +98,34 @@ def attributes(topology: Box) -> None:
   defaults=topology.defaults
 
   for modname,moddata in defaults.items():                            # Iterate over top-level defaults
-    if not isinstance(moddata,Box) or not 'supported_on' in moddata:  # Skip everything that is not a module
+    if not isinstance(moddata,Box) or not 'attributes' in moddata:    # Skip everything that does not have attributes
       continue
     adjust_attributes(
       attr=moddata.attributes,
       global_no_propagate=moddata.get('no_propagate',[]),
       link_no_propagate=moddata.attributes.get('link_no_propagate',[]),
       node_copy=moddata.attributes.get('node_copy',[]))
+
+'''
+paths: adjust system paths, replacing package: and topology: prefixes
+'''
+def paths(topology: Box) -> None:
+  make_paths_absolute(topology.defaults.paths)
+
+'''
+Recursive function that traverses the 'paths' tree and converts every list into
+a list of absolute paths... unless the key starts with 'files' or 'tasks' in
+which case the list is a list of potential file names and should not be changed.
+'''
+def make_paths_absolute(p_top: Box) -> None:
+  for k in list(p_top.keys()):
+    if k.startswith('files') or k.startswith('tasks'):
+      p_top[k] = [ fn.replace('\n','') for fn in p_top[k] ]
+      continue
+    v = p_top[k]
+    if isinstance(v,str):
+      v = [ v ]
+    if isinstance(v,list):
+      p_top[k] = _files.absolute_search_path(v)
+    elif isinstance(v,Box):
+      make_paths_absolute(v)

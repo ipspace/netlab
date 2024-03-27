@@ -1,0 +1,60 @@
+message: |
+  Use this topology to test the origination and propagation
+  of IPv6 prefixes.
+
+defaults.sources.extra: [ defaults-ipv6.yml ]
+
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+    bgp.advertise_loopback: False
+  dut2:
+    bgp.as: 65001
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+
+links:
+- dut-x1
+- dut-x2
+- dut:
+  dut2:
+  prefix.ipv6: 2001:db8:cafe:e01::/64
+- dut:
+  prefix.ipv6: 2001:db8:cafe:e42::/64
+  bgp.advertise: True
+
+validate:
+  wait:
+    description: Wait for EBGP sessions to come up
+    wait: 3
+  session:
+    description: Check EBGP sessions with DUT
+    nodes: [ x1,x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  loopback:
+    description: Check whether DUT2 originates the loopback prefix
+    nodes: [ x1,x2 ]
+    plugin: bgp_prefix('2001:db8:1:2::/64',af='ipv6')
+  suppress_lb:
+    description: Check whether DUT suppresses the loopback prefix
+    nodes: [ x1,x2 ]
+    plugin: bgp_prefix('2001:db8:1:1::/64',state='missing',af='ipv6')
+  stub:
+    description: Check whether DUT originates a stub prefix
+    nodes: [ x1,x2 ]
+    plugin: bgp_prefix('2001:db8:cafe:e42::/64',af='ipv6')
+  suppress_p2p:
+    description: Check whether DUT originates an unwanted prefix on a P2P link
+    nodes: [ x1,x2 ]
+    plugin: bgp_prefix('2001:db8:cafe:e01::/64',af='ipv6',state='missing')

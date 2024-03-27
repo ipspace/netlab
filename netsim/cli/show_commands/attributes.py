@@ -29,7 +29,7 @@ def parse() -> argparse.ArgumentParser:
 
   return parser
 
-def get_attribute_subset(settings: Box, args: argparse.Namespace) -> typing.Union[dict,Box]:
+def get_attribute_subset(settings: Box, args: argparse.Namespace) -> Box:
   if not args.match and not args.module:
     return settings.attributes
 
@@ -42,7 +42,7 @@ def get_attribute_subset(settings: Box, args: argparse.Namespace) -> typing.Unio
       log.fatal(f"Unknown module {args.module} -- use netlab show modules to display known modules")
 
   if not args.match:
-    return { k:v for k,v in show.attributes.items() if isinstance(v,dict) }    # Remove non-attribute parts
+    return data.get_box({ k:v for k,v in show.attributes.items() if isinstance(v,dict) })  # Remove non-attribute parts
   
   if not args.match in show.attributes:
     log.fatal(f"Unknown attribute type {args.match} -- use less-specific show command to display valid attribute types")
@@ -60,10 +60,17 @@ def get_attribute_subset(settings: Box, args: argparse.Namespace) -> typing.Unio
 def show(settings: Box, args: argparse.Namespace) -> None:
   show = get_attribute_subset(settings, args)
 
+  ns = None
   if args.format in ['text','table']:
-    print(f"""
-You can use the following {args.module or 'global'}{" "+args.match if args.match else ""} lab topology attributes:
-=============================================================================
+    hline = "=" * 78
+    ns = show.pop('_namespace',None)
+    if '_description' in show:
+      print(f'{show._description}\n{hline}')
+      show.pop('_description',None)
+    else:
+      print(f"""
+You can use the following {args.module or 'global'}{" "+args.match if args.match else ""} {'' if args.module else 'lab topology '}attributes:
+{hline}
 """)
 
   if args.format == 'yaml':
@@ -72,8 +79,11 @@ You can use the following {args.module or 'global'}{" "+args.match if args.match
   print(strings.get_yaml_string(show))
 
   if args.format in ['text','table']:
+    if ns:
+      print(f"You can also use {','.join(ns)} attributes with this object")
+
     print(
-"""=============================================================================
+f"""{hline}
 See https://netlab.tools/dev/validation/ for more data type- and
 attribute validation details.
 """)

@@ -5,17 +5,20 @@ message: |
   * r1 and r2 should be able to ping srv but not each other
 
 groups:
+  _auto_create: True
   ce:
     members: [ r1,r2 ]
     module: [ ospf ]
+    device: cumulus
   cs:
     members: [ srv ]
     module: [ bgp ]
     node_data:
       bgp.as: 65100
+    device: cumulus
   pe:
     members: [ rtr ]
-    module: [ vrf, ospf,bgp ]
+    module: [ vrf, ospf, bgp ]
     node_data:
       bgp.as: 65000
 
@@ -30,4 +33,27 @@ vrfs:
     import: [ red, blue, common ]
     links: [ rtr-srv ]
 
-nodes: [ rtr, r1, r2, srv ]
+validate:
+  red:
+    description: r1 trying to reach srv
+    wait: 20
+    wait_msg: Waiting for OSPF and BGP to start
+    nodes: [ r1 ]
+    devices: [ cumulus ]
+    exec: ping -c 5 -W 1 -A srv
+    valid: |
+      "64 bytes" in stdout
+  blue:
+    description: r2 trying to reach srv
+    nodes: [ r2 ]
+    devices: [ cumulus ]
+    exec: ping -c 5 -W 1 -A srv
+    valid: |
+      "64 bytes" in stdout
+  s2s:
+    description: r1 should not be able to reach r2
+    nodes: [ r1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A r2 || true"
+    valid: |
+      "0 packets received" in stdout or "Network is unreachable" in stdout

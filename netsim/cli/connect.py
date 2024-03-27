@@ -21,7 +21,7 @@ from box import Box
 
 from . import external_commands, set_dry_run
 
-from . import load_snapshot
+from . import load_snapshot, parser_add_verbose
 from ..outputs import common as outputs_common
 from ..utils import strings, log
 
@@ -33,16 +33,7 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     prog="netlab connect",
     description='Connect to a network device or an external tool',
     epilog='The rest of the arguments are passed to SSH or docker exec command')
-  parser.add_argument(
-    '-v','--verbose',
-    dest='verbose',
-    action='store_true',
-    help='Verbose logging')
-  parser.add_argument(
-    '-q','--quiet',
-    dest='quiet',
-    action='store_true',
-    help='No logging')
+  parser_add_verbose(parser)
   parser.add_argument(
     '--dry-run',
     dest='dry_run',
@@ -107,7 +98,7 @@ def ssh_connect(
       rest: typing.List[str],
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,str]:
   host = data.ansible_host or data.host
-  c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o','LogLevel ERROR']
+  c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o','LogLevel=ERROR']
 
   if data.ansible_ssh_pass:
     c_args = ['sshpass','-p',data.ansible_ssh_pass ] + c_args
@@ -128,8 +119,11 @@ def ssh_connect(
   if log_level != LogLevel.NONE:
     exec_args = ', executing ' + ' '.join(rest) if rest else ''
     sys.stderr.write(f"Connecting to {host} using SSH port {data.ansible_port or 22}{exec_args}\n")
-    sys.stderr.flush()
 
+  if p_args.verbose >= 2:
+    sys.stderr.write(f'Executing: {c_args}\n')
+
+  sys.stderr.flush()
   need_output = 'output' in p_args and p_args.output
   return run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
 

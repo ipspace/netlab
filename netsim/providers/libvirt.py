@@ -12,7 +12,7 @@ import pathlib
 import tempfile
 import netaddr
 
-from ..data import types
+from ..data import types,get_empty_box
 from ..utils import log
 from ..utils import files as _files
 from . import _Provider
@@ -324,3 +324,32 @@ class Libvirt(_Provider):
         continue
 
       log.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")
+
+  def get_lab_status(self) -> Box:
+    try:
+      status = external_commands.run_command(
+                  'vagrant status --machine-readable',
+                  check_result=True,
+                  ignore_errors=True,
+                  return_stdout=True)
+      
+      stat_box = get_empty_box()
+      if not isinstance(status,str):
+        return stat_box
+      try:
+        for line in status.split('\n'):
+          items = line.split(',')
+          if len(items) >= 4:
+            if items[2] == 'state-human-short':
+              stat_box[items[1]].status = items[3]
+      except Exception as ex:
+        log.error(f'Cannot get Vagrant status: {ex}',category=log.FatalError,module='libvirt')
+        return stat_box
+
+      return stat_box
+    except:
+      log.error('Cannot execute "vagrant status --machine-readable": {ex}',category=log.FatalError,module='libvirt')
+      return get_empty_box()
+
+  def get_node_name(self, node: str, topology: Box) -> str:
+    return f'{ topology.name.split(".")[0] }_{ node }'

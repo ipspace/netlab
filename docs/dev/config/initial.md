@@ -1,8 +1,8 @@
 # Initial Device Configuration
 
-This document describes the device data model parameters one should consider when creating an initial device configuration template. For a wider picture, please see [contributing new devices](../devices.md) document.
+This document describes the device data model parameters to consider when creating an initial device configuration template. For a broader picture, please see the [contributing new devices](../devices.md) document.
 
-Most of the document assumes you already created an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see [Using Ansible Configuration Modules](initial-ansible-config) section at the bottom of this document.
+Most of the document assumes you have already created an Ansible task list that can deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see the [Using Ansible Configuration Modules](initial-ansible-config) section at the bottom of this document.
 
 The device configuration template (in Jinja2 format) should be stored in `netsim/templates/initial/<nos>.j2` with **nos** being the value of **netlab_device_type** or  **ansible_network_os** Ansible variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
 
@@ -35,9 +35,9 @@ features:
 
 ## Static Configuration
 
-Your device template should start with static configuration needed to make your device usable. You might want to configure all relevant parameters or rely on box-building instructions to get the initial configuration set up.
+Your device template should start with the static configuration needed to make your device usable. You can configure all relevant parameters in the initial device configuration or include the relevant configuration snippets in the box-building instructions.
 
-For example, Cisco IOS configuration template enables LLDP, disable DNS lookup and removes banners:
+For example, the Cisco IOS configuration template enables LLDP, turns off DNS lookup, and removes banners:
 
 ```
 no ip domain lookup
@@ -53,7 +53,7 @@ no banner incoming
 
 Use the following variables to set global configuration parameters:
 
-* **inventory_hostname** -- device name. You might need to remove special characters (underscore, dots...) from device name.
+* **inventory_hostname** -- device name. You might need to remove special characters (underscore, dots...) from the device name.
 * **af.ipv4** and **af.ipv6** -- global flags indicating whether IPv4 or IPv6 is enabled on this device.
 * **mtu** -- system-wide MTU (when supported by the device)
 
@@ -78,15 +78,16 @@ interface defaults
 
 ## Loopback Configuration
 
-The device data model assumes every network device has a primary loopback interface with unspecified name (the loopback interface name should be set in the configuration template). The data model may contains these optional loopback-related parameters:
+The device data model assumes every network device has a primary loopback interface. The data model contains these loopback-related parameters:
 
-* **loopback.ipv4** -- IPv4 loopback address in CIDR format
-* **loopback.ipv6** -- IPv6 loopback address in CIDR format.
+* **loopback.ipv4** -- IPv4 loopback address in CIDR format when available.
+* **loopback.ipv6** -- IPv6 loopback address in CIDR format when available.
+* **loopback.ifname** -- Loopback interface name for devices with `loopback_interface_name` parameter.
 
 Either address family might be missing -- you have to check the presence of attributes in your configuration templates. Arista EOS example:
 
 ```
-interface Loopback0
+interface {{ loopback.ifname }}
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4 }}
 {% endif %}
@@ -95,10 +96,10 @@ interface Loopback0
 {% endif %}
 ```
 
-If your device does not accept interface addresses in CIDR format, use **ipaddr** filter to generate the desired address format. Cisco IOS example:
+When your device does not accept interface addresses in CIDR format, use the **ipaddr** filter to generate the desired address format. Cisco IOS example:
 
 ```
-interface Loopback0
+interface {{ loopback.ifname }
 {% if 'ipv4' in loopback %}
  ip address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
 {% endif %}
@@ -109,7 +110,7 @@ interface Loopback0
 
 ## Management Interface Configuration
 
-If you decided to run LLDP on your device (highly recommended), disable it on the management interface. The management interface name SHOULD be specified in **mgmt.ifname** parameter; use a default value just in case something went wrong. Nexus OS example:
+If you decide to run LLDP on your device (highly recommended), turn it off on the management interface. The management interface name SHOULD be specified in **mgmt.ifname** parameter; use a default value in case something goes wrong. Nexus OS example:
 
 ```
 interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
@@ -119,24 +120,26 @@ interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
 
 ## Configuring Interfaces
 
-Device interfaces are specified in the **interfaces** list. Each interface might have these parameters:
+Data-plane device interfaces are specified in the **interfaces** list. Each interface might have these parameters:
 
 * **ifname** -- interface name (always present)
 * **type** -- link type, for example: `stub` (optional)
-* **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...)
+* **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...). Use this parameter to skip physical interface configuration (for example, bandwidth)
 * **role** -- link role (as set by **role** link attribute -- optional)
 * **mtu** -- interface MTU (optional)
 * **bandwidth** -- interface bandwidth (optional)
 * **name** -- interface description (optional)
 * **ipv4** -- IPv4 interface address (optional)
 * **ipv6** -- IPv6 interface address (optional)
+* **_parent_intf** -- name of the parent interface of unnumbered IPv4 interfaces
+* **_parent_ipv4** -- IPv4 address of the parent interface of unnumbered IPv4 interfaces
 
 **Notes:**
 
-* You don't have to support all interface attributes, but it's highly recommended to implement interface addresses, description and MTU.
-* Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
+* You don't have to support all interface attributes, but it's highly recommended to implement interface addresses, the interface description, and the MTU.
+* Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for the presence of optional attributes. Try to be consistent ;)
 
-Interface part of initial device configuration template starts with a **for** loop over all configured interfaces:
+The interface part of the initial device configuration template starts with a **for** loop over all configured interfaces:
 
 ```
 {% for l in interfaces %}
@@ -172,7 +175,7 @@ interface {{ l.ifname }}
 
 ### Virtual Interfaces
 
-If you have to configure additional parameters on physical interfaces (example: choosing between switch ports and router interfaces), use **virtual_interface** parameter to decide whether to include the configuration commands related to physical interfaces. Arista EOS example:
+If you have to configure additional parameters on physical interfaces (for example, choosing between switch ports and router interfaces), use the **virtual_interface** parameter to decide whether to include the configuration commands related to physical interfaces. Arista EOS example:
 
 ```
 {% if l.virtual_interface is not defined %}
@@ -186,7 +189,7 @@ If you have to configure additional parameters on physical interfaces (example: 
 You might want to implement slightly more complex interface descriptions than what _netlab_ generates. For example:
 
 * Interface name is not set on stub interfaces.
-* You might want to add link role to the interface description.
+* You might want to add a link role to the interface description.
 
 Cisco IOS example:
 
@@ -205,7 +208,7 @@ interface {{ l.ifname }}
 
 ### Minimum Interface MTU
 
-Some devices have weird MTU rules. For example, CSR 1000V cannot set the L2 MTU below 1500 bytes or L3 MTU above 1500 bytes. You could use **min_mtu** device setting in those scenarios and generate MTU configuration accordingly.
+Some devices have weird MTU rules. For example, CSR 1000V cannot set the L2 MTU below 1500 bytes or the L3 MTU above 1500 bytes. You could use the **min_mtu** device setting in those scenarios and generate MTU configuration accordingly.
 
 Cisco IOS example:
 
@@ -225,7 +228,7 @@ interface {{ l.ifname }}
 
 ### Interface Addresses
 
-IPv4 and IPv6 interface addresses could be specified as strings in CIDR format or as boolean value if your device supports unnumbered interfaces.
+If your device supports unnumbered interfaces, IPv4 and IPv6 interface addresses could be specified as strings in CIDR format or as boolean values.
 
 If your device doesn't support unnumbered IPv4 or IPv6 addresses, use a configuration template similar to this one (Linux):
 
@@ -246,7 +249,7 @@ Coping with unnumbered interfaces requires a slightly more convoluted decision t
 ```
 {% if 'ipv4' in l %}
 {%   if l.ipv4 == True %}
- ip address unnumbered Loopback 0
+ ip address unnumbered {{ l._parent_intf }}
 {%   elif l.ipv4|ipv4 %}
  ip address {{ l.ipv4 }}
 {%   else %}
@@ -264,9 +267,36 @@ Coping with unnumbered interfaces requires a slightly more convoluted decision t
 {%   endif %}
 ```
 
+Linux-based network operating systems (FRR, Cumulus Linux) set the IPv4 address of an unnumbered IPv4 interface to the IPv4 address of the parent interface. Here's part of the template used to create the `/etc/network/interfaces` file on Cumulus Linux:
+
+```
+auto {{ l.ifname }}
+{%   if l.ipv4 is defined %}
+iface {{ l.ifname }} inet static
+{%     if l.ipv4 == True %}
+{%       if l._parent_ipv4 is defined %}
+  address {{ l._parent_ipv4 }}
+{%       endif %}
+{%     else %}
+  address {{ l.ipv4 }}
+{%     endif %}
+{%   endif %}
+```
+
+This is the relevant part of the template that configures unnumbered IPv4 interfaces on FRR:
+
+```
+interface {{ l.ifname }}
+{% if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
+ ip address {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
+{% else %}
+ ! no ip address
+{% endif %}
+```
+
 ### Setting Interface MAC Address
 
-Interface MAC address is not part of the device data model. If you have to set it (for example, Arista EOS requires a unique MAC address on every interface), use device ID (**id**) and interface index (**ifindex** in interface data) in a configuration template similar to this one:
+The interface MAC address is not part of the device data model. If you have to set it (for example, Arista EOS requires a unique MAC address on every interface), use device ID (**id**) and interface index (**ifindex** in interface data) in a configuration template similar to this one:
 
 ```
 {% for l in interfaces %}
@@ -278,53 +308,64 @@ interface {{ l.ifname }}
 
 ## Setting Static Host Names (Optional)
 
-Your device might support static host-to-address mapping. If that's the case, it's worthwhile configuring it -- users troubleshooting their configurations might appreciate seeing host names instead of IP addresses.
+Your device might support static host-to-address mapping. If that's the case, configuring it is worthwhile -- users troubleshooting their configurations might appreciate seeing hostnames instead of IP addresses.
 
-If your device supports a single IP address associated to a statically configured host, use this template (Nexus OS):
+[Ansible output module](../../outputs/ansible.md) creates a dictionary mapping node names into IPv4/IPv6 address lists. The first address in the list is the loopback IP address (assuming the node has a loopback interface). Here's a sample dictionary for a small lab with a router and two hosts:
 
 ```
-{% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
-{%   if v.loopback.ipv4 is defined %}
-ip host {{ k }} {{ v.loopback.ipv4|ipaddr('address') }}
-{%   elif v.interfaces|default([]) and v.interfaces[0].ipv4 is defined %}
-ip host {{ k }} {{ v.interfaces[0].ipv4|ipaddr('address') }}
-{%   endif %}
+hosts:
+  relay:
+    ipv4:
+    - 10.0.0.1
+    - 172.16.0.1
+    - 172.16.1.1
+    - 172.16.2.1
+    - 172.16.3.1
+  s1:
+    ipv4:
+    - 172.16.2.6
+  s2:
+    ipv4:
+    - 172.16.3.7
+```
+
+**Notes:**
+* The **hosts** dictionary contains a device only when that device has a usable IPv4 or IPv6 address. An entry in the **hosts** dictionary will have at least one key.
+* The device entry contains an address family only when it has a usable IP address in that address family. **ipv4** and **ipv6** values are never empty lists.
+
+If your device supports a single IP address associated with a statically configured host, use this template (Nexus OS):
+
+```
+{% for hname,hdata in hosts.items() if 'ipv4' in hdata and hname != inventory_hostname %}
+ip host {{ hname }} {{ hdata.ipv4[0] }}
 {% endfor %}
-```
-
-Equivalent Junos template:
-
-```
-system {
-  host-name {{ inventory_hostname }}
-    static-host-mapping {
-{% for k,v in hostvars.items() if k != inventory_hostname %}
-{%   if v.loopback.ipv4 is defined %}
-        {{ k|replace('_','') }} inet {{ v.loopback.ipv4|ipaddr('address') }};
-{%   elif v.interfaces|default([]) and v.interfaces[0].ipv4 is defined %}
-        {{ k|replace('_','') }} inet {{ v.interfaces[0].ipv4|ipaddr('address') }};
-{%   endif %}
-{% endfor %}
-    }
-}
 ```
 
 **Notes:**
 
-* The configuration template iterates over all devices known to Ansible
+* The configuration template iterates over all devices with usable IP addresses
 * It skips the current device or devices that don't have IPv4 address family configured
-* For all other devices, it takes the loopback IPv4 address or the IPv4 address of the first interface and configures that as the static DNS entry.
+* For all other devices, it takes the first IPv4 address in the list of IPv4 addresses and configures that as the static DNS entry.
 
-If your device supports multiple IP addresses associated with a single hostname, use this template (Cisco IOS). Take the template as-is and don't try to optimize it... it's been hard enough to make it work with Jinja2 whitespace rules ;)
+If your device supports multiple IP addresses associated with a single hostname, use this template (Arista EOS):
 
 ```
-{% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
-ip host {{ k }}{% if v.loopback.ipv4 is defined %} {{ v.loopback.ipv4|ipaddr('address') }}{% endif %}
-{%- for l in v.interfaces|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %} {{ l.ipv4|ipaddr('address') }}{% endfor %}
-
+{% for hname,hdata in hosts.items() if 'ipv4' in hdata and hname != inventory_hostname %}
+ip host {{ hname|replace('_','') }} {{ hdata.ipv4|join (' ') }}
+{% endfor %}
+{% for hname,hdata in hosts.items() if 'ipv6' in hdata and hname != inventory_hostname %}
+ipv6 host {{ hname|replace('_','') }} {{ hdata.ipv4|join (' ') }}
 {% endfor %}
 ```
 
+Use the following template if your device expects IPv4 and IPv6 addresses listed in the same line (Cisco IOS):
+
+```
+{% for hname,hdata in hosts.items() if hname != inventory_hostname %}
+{%   set addr_list = hdata.ipv4|default([]) + hdata.ipv6|default([]) %}
+ip host {{ hname }} {{ addr_list|join (' ') }}
+{% endfor %}
+```
 (initial-ansible-config)=
 ## Using Ansible Configuration Modules
 
@@ -377,7 +418,7 @@ Fortinet example (**vdom** variable is set as an Ansible group variable in syste
 
 ## Integration Tests
 
-You can use the following integration tests in `tests/integration/initial` directory to test your implementation:
+You can use the following integration tests in the `tests/integration/initial` directory to test your implementation:
 
 * **interfaces.yml** -- basic interface parameters, including IPv6 addresses, MTU and bandwidth
 * **loopback.yml** -- additional loopback interfaces
@@ -386,7 +427,7 @@ You can use the following integration tests in `tests/integration/initial` direc
 To use an integration test to test your configuration templates:
 
 * Execute `netlab up --no-config -d <device> <topology-name>` to start the lab without configuring the devices.
-* Execute `netlab initial -o` to create device configurations in `config` directory.
+* Execute `netlab initial -o` to create device configurations in the `config` directory.
 * Inspect device configurations before proceeding.
 * Execute `netlab initial` to deploy device configurations
 

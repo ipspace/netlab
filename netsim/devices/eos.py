@@ -46,6 +46,18 @@ def check_shared_mac(node: Box, topology: Box) -> None:
       'quirks')
     return
 
+def check_dhcp_clients(node: Box, topology: Box) -> None:
+  if devices.get_provider(node,topology) != 'clab':
+    return
+
+  for intf in node.interfaces:
+    if not intf.get('dhcp.client',False):
+      continue
+    log.error(
+      f"Arista cEOS containers (node {node.name}) cannot run DHCP clients.",
+      category=log.IncorrectType,
+      module='quirks')
+
 class EOS(_Quirks):
 
   @classmethod
@@ -59,3 +71,5 @@ class EOS(_Quirks):
       check_mpls_clab(node,topology)
     if 'gateway' in mods:
       check_shared_mac(node,topology)
+    if 'dhcp' in mods:
+      check_dhcp_clients(node,topology)

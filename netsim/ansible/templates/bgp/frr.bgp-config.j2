@@ -1,6 +1,3 @@
-{% macro community(list) -%}
-{{ "both" if list|length >= 2 else list[0] }}
-{%- endmacro %}
 !
 router bgp {{ bgp.as }}
   no bgp ebgp-requires-policy
@@ -62,13 +59,12 @@ router bgp {{ bgp.as }}
 {%       if bgp.rr|default('') and not n.rr|default('') %}
   neighbor {{ peer }} route-reflector-client
 {%       endif %}
-{%       if bgp.community.ibgp|default([]) %}
-  neighbor {{ peer }} send-community {{ community(bgp.community.ibgp) }}
-{%       endif %}
-{%     else %}
-{%       if bgp.community.ebgp|default([]) %}
-  neighbor {{ peer }} send-community {{ community(bgp.community.ebgp) }}
-{%       endif %}
+{%     endif %}
+{%     if n.type in bgp.community|default({}) %}
+  no neighbor {{ peer }} send-community all
+{%       for c_type in bgp.community[n.type] %}
+  neighbor {{ peer }} send-community {{ c_type }}
+{%       endfor %}
 {%     endif %}
 !
 {%   endfor %}

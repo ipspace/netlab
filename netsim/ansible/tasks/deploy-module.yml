@@ -15,37 +15,43 @@
 # include the configuration task list for the device, it MUST be executed, so
 # we apply the 'always' tag to all tasks in the included task list.
 #
+---
+- name: "Figure out whether to deploy the module {{ config_module }} on current device"
+  set_fact:
+    do_deploy:
+      "{{ (config_module in module|default([]) and
+         config_module not in _daemon_config|default([]))
+         or config_module == 'initial' }}"
+    node_provider: "{{ provider|default(netlab_provider) }}"
 
 - block:
-  - set_fact:
+  - name: "Find configuration template for {{ config_module }}"
+    set_fact:
       config_template: "{{ lookup('first_found',params,errors='ignore') }}"
     vars:
       params:
         paths: "{{ paths }}"
-        files:
-        - "{{ config_module }}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2"
-        - "{{ config_module }}/{{netlab_device_type}}.j2"
-        - "{{ config_module }}/{{ansible_network_os}}-{{provider|default(netlab_provider)}}.j2"
-        - "{{ config_module }}/{{ansible_network_os}}.j2"
+        files: "{{ paths_t_files.files }}"
 
-  - debug:
+  - name: "Print deployed configuration when running in verbose mode"
+    debug:
       msg: |
         {{ config_module }} configuration for {{ inventory_hostname }}
         =========================================
         {{ lookup('template',config_template or paths[0]+'/missing.j2') }}
-      verbosity: 1  
-  
-  - include_tasks: "{{ item }}"
-    with_first_found:
-    - "{{netlab_device_type}}/{{ config_module }}-{{ provider|default(netlab_provider) }}.yml"
-    - "{{netlab_device_type}}/{{ config_module }}.yml"
-    - "deploy-config/{{netlab_device_type}}-{{ provider|default(netlab_provider) }}.yml"
-    - "deploy-config/{{netlab_device_type}}.yml"
-    - "{{ansible_network_os}}/{{ config_module }}-{{ provider|default(netlab_provider) }}.yml"
-    - "{{ansible_network_os}}/{{ config_module }}.yml"
-    - "deploy-config/{{ansible_network_os}}-{{ provider|default(netlab_provider) }}.yml"
-    - "deploy-config/{{ansible_network_os}}.yml"
-    - "../missing.yml"
+    when: ansible_verbosity and config_template
+
+  - name: "Find configuration deployment deploy_script for {{ config_module }}"
+    set_fact:
+      deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
+    vars:
+      params:
+        paths: "{{ paths_deploy.dirs }}"
+        files: "{{ paths_deploy.files }}"
+
+  - name: "Deploy {{ config_module }} configuration"
+    include_tasks: "{{ deploy_script }}"
+    when: do_deploy and deploy_script
     args:
       apply:
         vars:
@@ -53,4 +59,4 @@
           netsim_action: "{{ config_module }}"
         tags: [ always ]
 
-  when: config_module in module|default([]) or config_module == 'initial'
+  when: do_deploy

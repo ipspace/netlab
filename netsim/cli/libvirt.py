@@ -9,14 +9,13 @@ import os
 import string
 import pathlib
 import glob
-import subprocess
 import shutil
-import sys
 
 from box import Box
 
 from ..utils import strings, status, templates, log, read as _read
 from . import external_commands
+from . import parser_add_debug, parser_add_verbose
 from ..providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
 from ..utils import files as _files
 
@@ -25,12 +24,6 @@ def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog='netlab libvirt package',
     description='Package a virtual machine into a libvirt Vagrant box')
-  parser.add_argument(
-    '-v','--verbose',
-    dest='verbose',
-    action='count',
-    default=0,
-    help='Verbose logging')
   parser.add_argument(
     '--skip',
     dest='skip',
@@ -46,6 +39,10 @@ def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
     action='store',
     type=argparse.FileType('r'),
     help='Virtual machine disk (vmdk or qcow2)')
+
+  parser_add_verbose(parser)
+  parser_add_debug(parser)
+
   return parser.parse_args(args)
 
 def abort_on_failure(cmd: str) -> None:
@@ -65,34 +62,26 @@ def lp_create_vm_disk(args: argparse.Namespace) -> None:
 def get_template_data(devdata: Box) -> Box:
   return devdata + { 'user' : { 'cwd' : os.getcwd() }}
 
-def vm_cleanup(name: str) -> None:
-  try:
-    subprocess.run(f"virsh destroy {name}".split(" "))
-  except Exception as ex:
-    print(f"Cannot destroy {name}: {ex}")
+def vm_cleanup(name: str, ignore_destroy: bool = False, ignore_undefine: bool = False) -> None:
+  if not external_commands.run_command(f"virsh destroy {name}",ignore_errors=ignore_destroy):
+    if not ignore_destroy:
+      log.error(f"Cannot destroy VM {name}",category=log.FatalError,module='libvirt')
 
-  try:
-    subprocess.run(f"virsh undefine {name}".split(" "))
-  except Exception as ex:
-    print(f"Cannot undefine {name}: {ex}")
+  if not external_commands.run_command(f"virsh undefine {name}",ignore_errors=ignore_undefine):
+    if not ignore_undefine:
+      log.error(f"Cannot undefine VM {name}",category=log.FatalError,module='libvirt')
 
 def start_vagrant_network() -> None:
   create_vagrant_network()
-  try:
-    result = subprocess.run(['virsh','net-start',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
-  except:
-    pass
+  if not external_commands.run_command(['virsh','net-start',LIBVIRT_MANAGEMENT_NETWORK_NAME]):
+    log.fatal(f"Cannot start network {LIBVIRT_MANAGEMENT_NETWORK_NAME}",module='libvirt')
 
 def stop_vagrant_network() -> None:
-  try:
-    result = subprocess.run(['virsh','net-destroy',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
-  except:
-    pass
+  if not external_commands.run_command(['virsh','net-destroy',LIBVIRT_MANAGEMENT_NETWORK_NAME]):
+    log.error(f"Cannot destroy network {LIBVIRT_MANAGEMENT_NETWORK_NAME}",category=log.FatalError,module='libvirt')
 
-  try:
-    result = subprocess.run(['virsh','net-undefine',LIBVIRT_MANAGEMENT_NETWORK_NAME],capture_output=True,text=True)
-  except:
-    pass
+  if not external_commands.run_command(['virsh','net-undefine',LIBVIRT_MANAGEMENT_NETWORK_NAME]):
+    log.error(f"Cannot undefine network {LIBVIRT_MANAGEMENT_NETWORK_NAME}",category=log.FatalError,module='libvirt')
 
 def lp_preinstall_hook(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
@@ -155,7 +144,7 @@ window and follow the instructions.
     abort_on_failure("virsh define template.xml")
     abort_on_failure("virsh start --console vm_box")
 
-  vm_cleanup('vm_box')
+  vm_cleanup('vm_box',ignore_destroy=True)        # Have to ignore 'destroy' errors as the VM could be powered off
 
 def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
   _files.create_file_from_text(
@@ -250,6 +239,7 @@ status of your lab instances with "netlab status" and stop them with
     return
   settings = topology.defaults
   args = package_parse(cli_args,settings)
+  log.set_logging_flags(args)
   skip = args.skip
 
   print("""
@@ -268,7 +258,14 @@ best not to damage the original virtual disk).
     print('User decided to abort the box building process')
     return
 
-  vm_cleanup('vm_box')
+  # Set environment variables to ensure we have a consistent LIBVIRT environment
+  #
+  os.environ["LIBVIRT_DEFAULT_URI"] = "qemu:///system"      # Create system-wide libvirt networks
+  os.environ["VIRTINSTALL_OSINFO_DISABLE_REQUIRE"] = "1"    # Stop yammering about unknown operating systems
+
+  # Ignore all errors when doing initial VM cleanup as the VM might not have been created before
+  #
+  vm_cleanup('vm_box',ignore_destroy=True,ignore_undefine=True)
   start_vagrant_network()
   if not 'preinstall' in skip:
     lp_preinstall_hook(args,settings)
@@ -315,7 +312,14 @@ def run(cli_args: typing.List[str]) -> None:
     return
 
   if cli_args[0] == 'package':
-    libvirt_package(cli_args[1:],topology)
+    try:
+      libvirt_package(cli_args[1:],topology)
+    except KeyboardInterrupt as ex:
+      print("")
+      log.error(
+        'Aborted by user. VM and management network might still be running',
+        category=log.FatalError,
+        module='libvirt')
   elif cli_args[0] == 'config':
     libvirt_config(cli_args[1:],topology.settings)
   else:

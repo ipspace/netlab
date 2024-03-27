@@ -1,0 +1,71 @@
+message: |
+  Use this topology to test the IBGP RR implementation (rr-clients and
+  cluster-id) and next-hop handling (change next hop on EBGP but not on
+  reflected route).
+
+module: [ bgp,ospf ]
+
+groups:
+  probes:
+    members: [ r1, r2, rr2, x1 ]
+    device: frr
+    provider: clab
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+    bgp.rr: True
+    bgp.rr_cluster_id: 10.0.0.42
+  rr2:
+    bgp.rr: True
+    bgp.rr_cluster_id: 10.0.0.43
+  r1:
+    id: 10
+    bgp.originate: 172.0.42.0/24
+  r2:
+  x1:
+    bgp.as: 65101
+    loopback.ipv4: 172.42.42.1/24
+
+links:
+- dut-r1
+- rr2-r1
+- r1-r2
+- dut-x1
+
+validate:
+  wait:
+    description: Wait for OSPF and BGP to start
+    wait: 30
+  session:
+    description: Check BGP sessions with DUT
+    nodes: [ r1, r2, rr2, x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  prefix:
+    description: Check whether DUT1 propagates the external beacon prefix
+    nodes: [ r1, r2, rr2 ]
+    plugin: bgp_prefix('172.42.42.0/24')
+  nhs:
+    description: Check next-hop handling on DUT
+    nodes: [ r1, r2 ]
+    plugin: >
+      bgp_prefix(
+        '172.42.42.0/24',
+        nh=nodes.dut.loopback.ipv4 if 'loopback' in nodes.dut else nodes.dut.interfaces[0].ipv4)
+  reflect:
+    description: Check route reflection on DUT
+    nodes: [ r2 ]
+    plugin: bgp_prefix('172.0.42.0/24',peer=nodes.dut.bgp.router_id)
+  inact:
+    description: Check route reflection of inactive routes on DUT
+    nodes: [ r2 ]
+    plugin: bgp_prefix('10.0.0.10/32',peer=nodes.dut.bgp.router_id)
+  nhu:
+    description: Check next-hop handling of reflected routes
+    nodes: [ r2 ]
+    plugin: bgp_prefix('172.0.42.0/24',nh='10.0.0.10',peer=nodes.dut.bgp.router_id)
+  cluster:
+    description: Check cluster-id attribute in the BGP update from RR
+    nodes: [ r2 ]
+    plugin: bgp_prefix('172.0.42.0/24',clusterid='10.0.0.42',peer=nodes.dut.bgp.router_id)

@@ -9,12 +9,12 @@ import netaddr
 
 from . import _Module,_routing
 from .. import data
-from ..data.types import must_be_int,must_be_list,must_be_dict
+from ..data.types import must_be_int,must_be_list,must_be_asn
 from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log
 
-def check_bgp_parameters(node: Box) -> None:
+def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
   if not "as" in node.bgp:
@@ -24,7 +24,7 @@ def check_bgp_parameters(node: Box) -> None:
       'bgp')
     return
 
-  must_be_int(parent=node,key='bgp.as',path=f'nodes.{node.name}',min_value=1,max_value=65535,module='bgp')
+  must_be_asn(parent=node,key='bgp.as',path=f'nodes.{node.name}',module='bgp')
 
   if "community" in node.bgp:
     bgp_comm = node.bgp.community
@@ -41,13 +41,16 @@ def check_bgp_parameters(node: Box) -> None:
 
     for k in node.bgp.community.keys():
       if not k in ['ibgp','ebgp']:
-        log.error("Invalid BGP community setting in node %s: %s" % (node.name,k))
+        log.error(
+          text=f"Invalid BGP community setting in {k} node {node.name}",
+          category=log.IncorrectValue,
+          module='bgp')
       else:
         must_be_list(
           parent=node.bgp.community,
           path=f'nodes.{node.name}.bgp.community',
           key=k,
-          valid_values=['standard','extended'],
+          valid_values=topology['defaults.bgp.attributes.global.community.ibgp'],
           module='bgp')
 
 BGP_VALID_AF: typing.Final[list] = ['ipv4','ipv6']
@@ -124,6 +127,22 @@ def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
   return {}
 
 """
+get_remote_ibgp_endpoint: find the remote endpoint of an IBGP session
+
+* Loopback interface if it exists
+* First physical interface if the remote device is a daemon without a loopback interface
+* Otherwise, an empty box (which will result in no IBGP session due to lack of IP addresses)
+"""
+def get_remote_ibgp_endpoint(n: Box) -> Box:
+  if 'loopback' in n:
+    return n.loopback
+
+  if n.get('_daemon',False) and n.interfaces:
+    return n.interfaces[0]
+
+  return data.get_empty_box()
+
+"""
 build_ibgp_sessions: create IBGP session data structure
 
 * BGP route reflectors need IBGP session with all other nodes in the same AS
@@ -131,6 +150,7 @@ build_ibgp_sessions: create IBGP session data structure
 """
 def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   rrlist = find_bgp_rr(node.bgp.get("as"),topology)
+  has_ibgp     = False                            # Assume we have no IBGP sessions (yet)
 
   # If we don't have route reflectors, or if the current node is a route
   # reflector, we need BGP sessions to all other nodes in the same AS
@@ -138,9 +158,11 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
     for name,n in topology.nodes.items():
       if "bgp" in n:
         if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-          neighbor_data = bgp_neighbor(n,n.loopback,'ibgp',sessions,get_neighbor_rr(n))
+          n_intf = get_remote_ibgp_endpoint(n)
+          neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
           if not neighbor_data is None:
             node.bgp.neighbors.append(neighbor_data)
+            has_ibgp = True
 
   #
   # The node is not a route reflector, and we have a non-empty RR list
@@ -148,9 +170,34 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   else:
     for n in rrlist:
       if n.name != node.name:
-        neighbor_data = bgp_neighbor(n,n.loopback,'ibgp',sessions,get_neighbor_rr(n))
+        n_intf = get_remote_ibgp_endpoint(n)
+        neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
         if not neighbor_data is None:
           node.bgp.neighbors.append(neighbor_data)
+          has_ibgp = True
+
+  if not has_ibgp:
+    return
+
+  # Do we have to warn the user that IBGP sessions work better with IGP?
+  # The warning could be disabled in the settings, and we assume it doesn't make
+  # sense complaining if the node has no loopback interfaces (routing on hosts)
+  #
+  ibgp_warning = topology.defaults.bgp.warnings.missing_igp and 'loopback' in node
+  igp_list     = topology.defaults.bgp.warnings.igp_list
+
+  if ibgp_warning:                                # Does the user want to get the warning?
+    for igp in igp_list:                          # If so, check the viable IGPs
+      if igp in node.module:                      # ... and if any one of them is in the list of node modules
+        ibgp_warning = False                      # ... life is good, turn off the warning
+        break
+
+  if ibgp_warning:
+    log.error(
+      f'Node {node.name} has IBGP sessions but no IGP',
+      category=Warning,
+      module='bgp',
+      hint='igp')
 
 """
 build_ebgp_sessions: create EBGP session data structure
@@ -346,7 +393,10 @@ BGP_DEFAULT_SESSIONS: typing.Final[dict] = {
 
 def build_bgp_sessions(node: Box, topology: Box) -> None:
   if not isinstance(node.get('bgp',None),Box) or not node.get('bgp.as',None):   # Sanity check
-    log.fatal(f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???')
+    log.fatal(
+      f'build_bgp_sessions: node {node.name} has no usable BGP AS number, how did we get here???',
+      module='bgp',
+      header=True)
     return                                                                      # ... it's insane, get out of here
 
   node.bgp.neighbors = []
@@ -393,9 +443,17 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
         continue
       if "advertise" in l.bgp:              # Skip interfaces that already have the 'advertise' flag
         continue
-    if l.get("type",None) in stub_roles or l.get("role",None) in stub_roles:
-      l.bgp.advertise = True                # ... otherwise figure out whether to advertise the subnet
-      continue
+
+    role = l.get("role",None)               # Get interface/link role
+    if l.get("type",None) in stub_roles or role in stub_roles:
+      # We have a potential stub link according to advertised_roles, but we still have to check for true stub
+      #
+      if role != "stub":
+        l.bgp.advertise = True              # No problem if the role is not stub
+      else:                                 # Otherwise figure out whether it's a true stub
+        l.bgp.advertise = _routing.is_true_stub(l,topology)
+      continue                              # And move on
+
     if l.get('type',None) == 'loopback' and node.bgp.advertise_loopback:
       l.bgp.advertise = True                # ... also advertise loopback prefixes if bgp.advertise_loopback is set
 
@@ -459,16 +517,18 @@ def process_as_list(topology: Box) -> None:
     for n in as_data.members:
       if 'as' in node_data[n]:
         log.error(
-          f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
-          log.IncorrectValue)
+          text=f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
+          category=log.IncorrectValue,
+          module='bgp')
         continue
       node_data[n]["as"] = asn
 
     for n in as_data.get('rr',{}):
       if node_data[n]["as"] != asn:
         log.error(
-          "Node %s is specified as route reflector in AS %s but is not in member list" % (n,asn),
-          log.IncorrectValue)
+          text=f"Node {n} is specified as route reflector in AS {asn} but is not in member list",
+          category=log.IncorrectValue,
+          module='bgp')
         continue
       node_data[n].rr = True
 
@@ -477,11 +537,44 @@ def process_as_list(topology: Box) -> None:
       node_as = node.bgp.get("as",None)
       if node_as and node_as != node_data[name]["as"]:
         log.error(
-          "Node %s has AS %s but is also in member list of AS %s" % (node.name,node_as,node_data[node.name]["as"]),
-          log.IncorrectValue)
+          text=f'Node {node.name} has AS {node_as} but is also in member list of AS {node_data[node.name]["as"]}',
+          category=log.IncorrectValue,
+          module='bgp')
         continue
 
       node.bgp = node_data[name] + node.bgp
+
+BGP_DEFAULT_COMMUNITY_KW: typing.Final[dict] = {
+  'standard': 'standard',
+  'extended': 'extended'
+}
+
+"""
+bgp_transform_community_list: transform _netlab_ community keywords into device keywords
+"""
+def bgp_transform_community_list(node: Box, topology: Box) -> None:
+  clist = node.get('bgp.community')
+  if not clist:
+    return
+  
+  features = devices.get_device_features(node,topology.defaults)
+  kw_xform = features.get('bgp.community') or BGP_DEFAULT_COMMUNITY_KW
+
+  for s_type in list(clist.keys()):
+    kw_list = clist[s_type]
+    for kw in kw_list:
+      if not kw in kw_xform:
+        log.error(
+          f"Invalid {s_type} BGP community propagation keyword '{kw}' for device {node.device}/node {node.name}",
+          category=log.IncorrectValue,
+          module='bgp',
+          more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ])
+    
+  if 'ibgp_localas' not in clist:
+    clist.ibgp_localas = clist.ibgp
+
+  for s_type in list(clist.keys()):
+    clist[s_type] = data.kw_list_transform(kw_xform,clist[s_type])
 
 class BGP(_Module):
 
@@ -504,7 +597,7 @@ class BGP(_Module):
       if node.name in topology.bgp.rr_list:
         node.bgp.rr = True
 
-    check_bgp_parameters(node)
+    check_bgp_parameters(node, topology)
 
   """
   Link pre-transform: Set link role based on BGP nodes attached to the link.
@@ -549,3 +642,4 @@ class BGP(_Module):
     bgp_set_advertise(node,topology)
     bgp_set_originate_af(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')
+    bgp_transform_community_list(node,topology)

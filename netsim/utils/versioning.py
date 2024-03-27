@@ -54,10 +54,16 @@ def check_topology_version(topology: Box) -> None:
 
   version_set = get_version_specifier(version)
   if version_set is None:
-    log.fatal(f'Invalid version {version} specified in lab topology or user defaults')
+    log.fatal(
+      f'Invalid version {version} specified in lab topology or user defaults',
+      module='topology',
+      header=True)
 
   if not get_netlab_version() in version_set:
-    log.fatal(f'Lab topology cannot be processed with netlab version {__version__}, requires {version}')
+    log.fatal(
+      f'Lab topology cannot be processed with netlab version {__version__}, requires {version}',
+      module='topology',
+      header=True)
 
 """
 get_versioned_topology: given a topology name, find a version of the topology best suited for current netsim version

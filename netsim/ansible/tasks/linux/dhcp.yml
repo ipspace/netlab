@@ -1,0 +1,25 @@
+- name: Install dnsmasq
+  package:
+    name: dnsmasq
+    state: present
+  become: true
+  tags: [ print_action, always ]
+  when: dhcp.server|default(False)
+
+- name: Install isc-dhcp-relay
+  package:
+    name: isc-dhcp-relay
+    state: present
+  become: true
+  tags: [ print_action, always ]
+  when: dhcp.relay|default(False)
+
+- name: Create DHCP deployment script
+  template:
+    src: "{{ config_template }}"
+    dest: /tmp/config.sh
+
+- name: "Execute /tmp/config.sh to deploy {{ netsim_action }} config from {{ config_template }}"
+  command: "{{ docker_shell|default('bash') }} /tmp/config.sh"
+  become: true
+  tags: [ print_action, always ]

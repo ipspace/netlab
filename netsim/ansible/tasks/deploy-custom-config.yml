@@ -1,31 +1,22 @@
 #
 # Deploy module-specific configuration (specified in "item") to a device
 #
-- set_fact:
+
+# Find configuration template. Search in paths_custom.dirs (user defaults, package:extra) for
+# template name specified in paths_custom.files (tons of variations on inventory_hostname, netlab_device_type,
+# node_provider and ansible_network_os
+#
+---
+- name: Find configuration template
+  set_fact:
+    config_module: "{{ custom_config }}"
     config_template: "{{ lookup('first_found',params,errors='ignore') }}"
   tags: [ always ]
   vars:
     node_provider: "{{ provider|default(netlab_provider) }}"
     params:
-      paths:
-      - "{{ lookup('env','PWD') }}"
-      - "~/.netlab"
-      - "../../extra"
-      files:
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '-' + node_provider + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2' }}"
-      - "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2' }}"
-      - "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config }}"
-      - "{{ custom_config + '.j2' }}"
+      paths: "{{ paths_custom.dirs }}"
+      files: "{{ paths_custom.files }}"
 
 - fail: msg="Cannot find configuration template {{ custom_config }} for device {{ inventory_hostname }}"
   when: config_template == ''
@@ -38,28 +29,35 @@
       =========================================
       {{ lookup('template',config_template) }}
     verbosity: 1
-  tags: [ test,custom ]
+  tags: [ test, custom ]
 
-- include_tasks: "{{ item }}"
-  tags: [ custom ]
+# Find deployment task list. It could be a config-specific tasklist (somewhere in paths_custom directories with
+# file name from paths_custom.tasks list) or a generic deployment tasklist from deployment directories and
+# using generic deployment task names (a combination of ansible_network_os and netlab_provider). missing.yml
+# in the deployment directory is the catch-all of last resort.
+#
+- name: Find custom configuration deployment script
+  set_fact:
+    deploy_task:
+      "{{ lookup('first_found',c_params,errors='ignore')
+         or lookup('first_found',d_params,errors='ignore') }}"
   vars:
     node_provider: "{{ provider|default(netlab_provider) }}"
-  with_first_found:
-  - "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy-{{ inventory_hostname }}.yml"
-  - "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ node_provider }}.yml"
-  - "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ netlab_device_type }}.yml"
-  - "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ ansible_network_os }}-{{ node_provider }}.yml"
-  - "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.{{ ansible_network_os }}.yml"
-  - "{{ lookup('env','PWD') }}/{{ custom_config }}/deploy.yml"
-  - "../../extra/{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ node_provider }}.yml"
-  - "../../extra/{{ custom_config }}/deploy.{{ netlab_device_type }}.yml"
-  - "deploy-config/{{netlab_device_type}}-{{ node_provider }}.yml"
-  - "deploy-config/{{netlab_device_type}}.yml"
-  - "../../extra/{{ custom_config }}/deploy.{{ ansible_network_os }}-{{ node_provider }}.yml"
-  - "../../extra/{{ custom_config }}/deploy.{{ ansible_network_os }}.yml"
-  - "deploy-config/{{ansible_network_os}}-{{ node_provider }}.yml"
-  - "deploy-config/{{ansible_network_os}}.yml"
-  - "../missing.yml"
+    c_params:
+      paths: "{{ paths_custom.dirs }}"
+      files: "{{ paths_custom.tasks }}"
+    d_params:
+      paths: "{{ paths_deploy.dirs }}"
+      files: "{{ paths_deploy.tasks_generic }}"
+
+# Now that we have the name of the deployment task list, include it and let it run
+#
+- name: Run the configuration deployment script
+  include_tasks: "{{ deploy_task }}"
+  tags: [ custom ]
+  when: deploy_task
+  vars:
+    node_provider: "{{ provider|default(netlab_provider) }}"
   args:
     apply:
       vars:

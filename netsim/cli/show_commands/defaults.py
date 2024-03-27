@@ -25,6 +25,11 @@ def parse() -> argparse.ArgumentParser:
     dest='plugin',
     action='store',
     help='Add plugin attributes to the system defaults')
+  parser.add_argument(
+    '--evaluate-paths',
+    dest='eval_paths',
+    action='store_true',
+    help='Evaluate system search paths before displaying them')
 
   return parser
 
@@ -35,6 +40,11 @@ def get_attribute_subset(settings: Box, args: argparse.Namespace) -> typing.Opti
   return settings.get(args.match,'None')
 
 def show(settings: Box, args: argparse.Namespace) -> None:
+  if not args.eval_paths:                         # If the user doesn't want to see the transformed paths
+    settings.paths = settings._original_paths     # ... restore the paths saved by the parent CLI handling code
+
+  settings.pop('_original_paths',None)            # ... and make sure the temporary dictionary is not displayed
+                                                  # ... with the system defaults
   show = get_attribute_subset(settings, args)
   if show is None:
     log.fatal('There are no system/user defaults within the {args.match} subtree')

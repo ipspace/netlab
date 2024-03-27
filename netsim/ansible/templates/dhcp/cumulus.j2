@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# Disable IPv6 RA on DHCPv6 client interfaces
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] and l.dhcp.client.ipv6 is defined %}
+{%   if loop.first %}
+echo "Disable IPv6 RA"
+cat >/tmp/config <<CONFIG
+{%   endif %}
+interface {{ l.ifname }}
+  ipv6 nd suppress-ra
+  no ipv6 nd ra-interval
+!
+{%   if loop.last %}
+CONFIG
+vtysh -f /tmp/config
+{%   endif %}
+{% endfor %}
+#
+# Configure DHCP clients on interfaces
+#
+set -e
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] and l.dhcp.client is defined %}
+{%   if loop.first %}
+echo "DHCP: set IP addresses on interfaces"
+cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+{%   endif %}
+{%   if l.dhcp.client.ipv4 is defined %}
+iface {{ l.ifname }} inet dhcp
+{%     if l.mtu is defined %}
+  mtu {{ l.mtu }}
+{%     endif %}
+{%   endif %}
+{%   if l.dhcp.client.ipv6 is defined %}
+iface {{ l.ifname }} inet6 dhcp
+{%     if l.mtu is defined %}
+  mtu {{ l.mtu }}
+{%     endif %}
+{%   endif %}
+{%   if loop.last %}
+CONFIG
+{%   endif %}
+{% endfor %}
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] and l.dhcp.client is defined %}
+{%   if loop.first %}
+echo "DHCP: executing ifup"
+nohup bash -c 'ifreload -a || ifreload -a' &
+{%   endif %}
+{%   if 'ipv6' in l.dhcp.client %}
+sysctl net/ipv6/conf/{{ l.ifname }}/forwarding=0
+sysctl net/ipv6/conf/{{ l.ifname }}/accept_ra=2
+# sysctl net/ipv6/conf/{{ l.ifname }}/accept_ra_from_local=1
+{%   endif %}
+{% endfor %}
+
+{% if dhcp.relay|default(False) %}
+{%   include 'linux-isc-dhcp-relay.j2' %}
+systemctl enable dhcrelay.service
+systemctl restart dhcrelay.service
+{% endif %}

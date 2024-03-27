@@ -1,6 +1,31 @@
 Release notes
 =============
 
+**[Release 1.8.0](release-1.8.0) (2024-03-01)**
+
+* **netlab up** command can [reload saved device configurations](netlab-up-reload) instead of starting the initial device configuration process.
+* [DHCP configuration module](module-dhcp) implements DHCP clients, DHCP servers, and DHCP relays for IPv4 and IPv6.
+* Lab topology can include control plane- and network services [daemons](platform-daemons) running in Linux containers. This release includes BIRD and dnsmasq daemons.
+* [BGP configuration module](module-bgp) supports 4-octet BGP AS numbers and [large BGP communities](bgp-community-propagation).
+* [Validation plugins](validate-plugin) allow you to write more powerful **netlab validate** validation tests without creating complex Jinja2 templates
+* You can build Docker containers for the [supported daemons](platform-daemons) with the **[netlab clab build](netlab-clab-build)** command
+
+[More features...](release-1.8.0)
+
+**Release 1.7.2 (2024-01-26)**
+
+This release contains only [bug fixes](bug-fixes-1.7.2) and [documentation fixes](doc-fixes-1.7.2).
+
+**[Release 1.7.1](release-1.7.1) (2024-01-08)**
+
+* [Automatically create nodes from group members](groups-auto-create)
+* [Add 'wait' parameter](validate-wait) to validation tests
+* Use colors in netlab up/down/test/validate printouts
+* Use color-coded error messages
+* Use the **rich** Python library to pretty-print tables, JSON, and YAML
+
+[More features...](release-1.7.1)
+
 **[Release 1.7.0](release-1.7.0) (2023-12-03)**
 
 * **[netlab validate](netlab/validate.md)** command can be used to execute [lab validation tests](topology/validate.md).
@@ -408,6 +433,7 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.8.md
    release/1.7.md
    release/1.6.md
    release/1.5.md

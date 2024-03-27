@@ -66,7 +66,10 @@ def adjust_global_parameters(topology: Box) -> None:
     topology.defaults.provider = topology.provider
 
   if not topology.provider:
-    log.fatal('Virtualization provider is not defined in either "provider" or "defaults.provider" elements')
+    log.fatal(
+      'Virtualization provider is not defined in either "provider" or "defaults.provider" elements',
+      module='topology',
+      header=True)
 
   if not must_be_string(topology,'provider','',module='topology'):
     log.exit_on_error()
@@ -74,7 +77,10 @@ def adjust_global_parameters(topology: Box) -> None:
   providers = topology.defaults.providers
   if not topology.provider in providers:
     plist = ', '.join(sorted(providers.keys()))
-    log.fatal(f'Unknown virtualization provider {topology.provider}. Supported providers are: {plist}')
+    log.fatal(
+      f'Unknown virtualization provider {topology.provider}. Supported providers are: {plist}',
+      module='topology',
+      header=True)
 
   # Adjust defaults with provider-specific defaults
   #

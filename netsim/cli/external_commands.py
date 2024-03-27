@@ -6,8 +6,9 @@ import os
 import subprocess
 from box import Box
 
-from . import is_dry_run
+from . import is_dry_run,lab_status_log
 from ..utils import strings,log
+from ..data import global_vars
 
 def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
   if spacing:
@@ -21,6 +22,26 @@ def stringify(cmd : typing.Union[str,list]) -> str:
   return str(cmd)
 
 """
+add_netlab_path: Prepend the directory from which the current copy of netlab was ran to the search path
+"""
+def add_netlab_path() -> None:
+  from . import NETLAB_SCRIPT
+
+  netlab_path = os.path.dirname(NETLAB_SCRIPT)
+  path = os.environ['PATH']
+  if netlab_path in path:
+    return
+
+  if log.VERBOSE or log.debug_active('external'):
+    print(f"Adding {netlab_path} to system PATH")
+  os.environ['PATH'] = netlab_path + ":" + os.environ['PATH']
+
+  if log.VERBOSE or log.debug_active('external'):
+    print(f"New system path: {os.environ['PATH']}")
+
+  return
+
+"""
 run_command: Execute an external command specified as a string or a list of CLI parameters
 
 Flags:
@@ -28,6 +49,21 @@ Flags:
 * ignore_errors -- do not print errors to the console
 * return_stdout -- return the command output instead of True/False
 """
+LOG_COMMANDS: bool = False
+
+def log_command(cmd: typing.Union[str,list], status: str) -> None:
+  global LOG_COMMANDS
+  if not LOG_COMMANDS:
+    return
+
+  topology = global_vars.get_topology()
+  if not topology:
+    log.fatal('Internal error: topology not set',module='log_command')
+    return
+
+  cmd_text = cmd if isinstance(cmd,str) else ' '.join(cmd)
+  lab_status_log(topology,f'{status}: {cmd_text}')
+
 def run_command(
     cmd : typing.Union[str,list],
     check_result : bool = False,
@@ -45,6 +81,7 @@ def run_command(
   if log.VERBOSE or log.debug_active('external'):
     print(f"run_command executing: {cmd}")
 
+  add_netlab_path()
   if isinstance(cmd,str):
     cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
 
@@ -53,16 +90,21 @@ def run_command(
 
   try:
     result = subprocess.run(cmd,capture_output=check_result,check=True,text=True)
-    if log.debug_active('external'):
+    if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... run result: {result}')
     if not check_result:
+      log_command(cmd,'OK')
       return True
     if return_stdout:
+      log_command(cmd,'OK')
       return result.stdout
+
+    log_command(cmd,'OK' if result.stdout != "" else 'FAIL')
     return result.stdout != ""
   except Exception as ex:
+    log_command(cmd,'ERROR')
     if not log.QUIET and not ignore_errors:
-      print( f"Error executing {stringify(cmd)}:\n  {ex}" )
+      print(f"Error executing {stringify(cmd)}:\n  {ex}")
     return False
 
 def test_probe(p : typing.Union[str,list,Box],quiet : bool = False) -> bool:
@@ -102,8 +144,9 @@ def run_probes(settings: Box, provider: str, step: int = 0) -> None:
   for p in settings.providers[provider].probe:
     if not test_probe(p):
       log.fatal("%s failed, aborting" % p)
-  if log.VERBOSE or step and not is_dry_run():
-    print(".. all tests succeeded, moving on\n")
+  if not is_dry_run() and not log.QUIET:
+    log.status_success()
+    print(f'{provider} installed and working correctly')
 
 def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   if exec_command is None:
@@ -112,9 +155,8 @@ def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "t
   if not run_command(exec_command):
     log.fatal(f"{exec_command} failed, aborting...",cli_command)
 
-def deploy_configs(step : int = 3, command: str = "test", fast: typing.Optional[bool] = False) -> None:
-  print_step(step,"deploying initial device configurations",spacing = True)
-  cmd = ["netlab","initial"]
+def deploy_configs(command: str = "test", fast: typing.Optional[bool] = False) -> None:
+  cmd = ["netlab","initial","--no-message"]
   if log.VERBOSE:
     cmd.append("-" + "v" * log.VERBOSE)
 
@@ -124,6 +166,9 @@ def deploy_configs(step : int = 3, command: str = "test", fast: typing.Optional[
   if not run_command(set_ansible_flags(cmd)):
     log.fatal("netlab initial failed, aborting...",command)
 
+  log.status_success()
+  print("Lab devices configured")
+
 def custom_configs(config : str, group: str, step : int = 4, command: str = "test") -> None:
   print_step(step,"deploying custom configuration template %s for group %s" % (config,group))
   cmd = ["netlab","config",config,"--limit",group]
@@ -131,8 +176,7 @@ def custom_configs(config : str, group: str, step : int = 4, command: str = "tes
   if not run_command(set_ansible_flags(cmd)):
     log.fatal("netlab config failed, aborting...",command)
 
-def stop_lab(settings: Box, provider: str, step: int = 4, command: str = "test", exec_command: typing.Optional[str] = None) -> None:
-  print_step(step,f"stopping the lab: {provider}",True)
+def stop_lab(settings: Box, provider: str, command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   if exec_command is None:
     exec_command = settings.providers[provider].stop
   if not run_command(exec_command):
@@ -178,10 +222,23 @@ def docker_is_used(topology: Box) -> bool:
   return 'clab' in topology[topology.provider].providers
 
 #
+# Get local IP address, either the endpoint of the SSH connection or loopback
+#
+def get_local_addr() -> str:
+  ssh_connection = os.environ.get("SSH_CONNECTION")
+  if ssh_connection:
+    ssh_list = ssh_connection.split(" ")
+    if len(ssh_list) >= 4:
+      return ssh_list[2]
+    
+  return "127.0.0.1"
+
+#
 # Execute external tool commands
 #
 def execute_tool_commands(cmds: list, topology: Box) -> None:
   topology.sys.docker_net = ""
+  topology.sys.ipaddr = get_local_addr()
   if docker_is_used(topology):
     topology.sys.docker_net = f"--network={topology.addressing.mgmt.get('_network',None) or 'netlab_mgmt'}"
 

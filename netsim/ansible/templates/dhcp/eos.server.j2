@@ -1,0 +1,20 @@
+{% for pool in dhcp.pools|default([]) %}
+{%   if loop.first %}
+dhcp server
+{%   endif %}
+{%   for af in ('ipv4','ipv6') if af in pool %}
+  subnet {{ pool[af] }}
+    range {{ pool[af]|ipaddr(1)|ipaddr('address') }} {{ pool[af]|ipaddr(-2)|ipaddr('address') }}
+    name {{ pool.name }}
+{%     if af == 'ipv4' and pool.gateway[af] is defined %}
+    default-gateway {{ pool.gateway[af] }}
+{%     endif %}
+{%     if pool.excluded[af]|default([]) %}
+    reservations
+{%       for xa in pool.excluded[af] %}
+      mac-address 0000.0000.{{ loop.index + 1 }}
+        {{ af }}-address {{ xa }}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endfor %}

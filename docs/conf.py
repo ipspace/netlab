@@ -19,7 +19,9 @@ from recommonmark.transform import AutoStructify
 # -- Project information -----------------------------------------------------
 
 project = 'netlab'
-copyright = '2020–2023 Ivan Pepelnjak, Jeroen van Bemmel, Stefano Sasso, and other contributors'
+copyright = '''2020–2023 Ivan Pepelnjak, Jeroen van Bemmel, Stefano Sasso, and
+<a href="https://github.com/ipspace/netlab/graphs/contributors">other contributors</a>'''
+
 author = 'Ivan Pepelnjak'
 
 
@@ -29,18 +31,17 @@ author = 'Ivan Pepelnjak'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 #  'recommonmark',
 # ones.
-source_parsers = {
-    '.md': 'recommonmark.parser.CommonMarkParser',
-}
 
 source_suffix = ['.rst', '.md']
 
 extensions = [
   'myst_parser',
-  'sphinxcontrib.jquery'
+  'sphinxcontrib.jquery',
+  'sphinx_rtd_dark_mode'
 ]
 
 myst_heading_anchors = 3
+default_dark_mode = False
 
 myst_enable_extensions = [
     "deflist",
@@ -95,12 +96,4 @@ html_css_files = [ 'css/custom.css' ]
 sys.path.insert(0, os.path.abspath('netlab'))
 
 def setup(app):
-    app.add_config_value('recommonmark_config', {
-        #'url_resolver': lambda url: github_doc_root + url,
-        'auto_toc_tree_section': 'Contents',
-        'enable_math': False,
-        'enable_inline_math': False,
-        'enable_eval_rst': True
-    }, True)
     app.add_transform(AutoStructify)
-

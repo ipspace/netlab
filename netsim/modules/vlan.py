@@ -177,9 +177,10 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         v_attr[attr].node_set.add(obj.node)
         continue
       log.error(
-        f'VLAN {vname} used in vlan.{attr}{node_error} is not defined\n... {link}',
-        log.IncorrectValue,
-        'vlan')
+        text=f'VLAN {vname} used in vlan.{attr}{node_error} is not defined',
+        more_data=f'{link}',
+        category=log.IncorrectValue,
+        module='vlan')
       link_ok = False
 
   return link_ok
@@ -732,7 +733,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
     vlan_data = create_node_vlan(node,access_vlan,topology)
     if vlan_data is None:                                                   # pragma: no-cover
       if vlan_subif:                                                        # We should never get here, but at least we can
-        log.fatal(                                                       # scream before crashing
+        log.fatal(                                                          # scream before crashing
           f'Weird: cannot get VLAN data for VLAN {access_vlan} on node {node.name}, aborting')
       continue
 
@@ -1211,7 +1212,7 @@ class VLAN(_Module):
         return
       create_vlan_links(link,v_attr,topology)
 
-    svi_skipattr = topology.defaults.vlan.attributes.vlan_no_propagate or []      # VLAN attributes not copied into link data
+    svi_skipattr = list(topology.defaults.vlan.attributes.vlan_no_propagate) or [] # VLAN attributes not copied into link data
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
     if not link_vlan is None:

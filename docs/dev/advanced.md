@@ -20,6 +20,7 @@ Want to know how _netlab_ works behind the scenes? These documents might give yo
    versioning.md
    validation.md
    module-attributes.md
+   vlan-interface-attributes.md
    quirks.md
    tests.md
 ```

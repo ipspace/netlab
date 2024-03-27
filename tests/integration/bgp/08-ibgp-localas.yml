@@ -1,0 +1,58 @@
+message: |
+  Use this topology to test the 'local_as' functionality on IBGP sessions. The
+  device under test uses local AS which is identical to remote AS, effectively
+  turning an EBGP session into an IBGP session. It should establish the BGP
+  sessions with X1 and X2, and propagate BGP prefixes between them.
+
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+    bgp.originate: 172.42.42.0/24
+  x1:
+    bgp.as: 65100
+    loopback.ipv4: 172.42.1.0/24
+  x2:
+    bgp.as: 65101
+    loopback.ipv4: 172.42.2.0/24
+
+links:
+- dut:
+    bgp.local_as: 65002
+  x1:
+- dut:
+    bgp.local_as: 65101
+  x2:
+
+validate:
+  wait:
+    description: Wait for BGP sessions to come up
+    wait: 3
+
+  session:
+    description: Check EBGP sessions with DUT
+    nodes: [ x1,x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  prefix:
+    description: Check whether DUT advertises the beacon prefix
+    nodes: [ x1,x2 ]
+    plugin: bgp_prefix('172.42.42.0/24')
+
+  prop_ebgp:
+    description: Check whether DUT propagates EBGP routes to IBGP
+    nodes: [ x2 ]
+    plugin: bgp_prefix('172.42.1.0/24')
+
+  prop_ibgp:
+    description: Check whether DUT propagates IBGP routes to EBGP
+    nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.2.0/24')

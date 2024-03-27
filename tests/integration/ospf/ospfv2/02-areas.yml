@@ -1,0 +1,52 @@
+message: |
+  This lab tests the OSPF areas. The device under test has three interfaces
+  in three different areas and the loopback interface in one of those areas.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, x3 ]
+
+nodes:
+  dut:
+    ospf.area: 2
+    id: 1
+  x1:
+    ospf.area: 0
+  x2:
+    ospf.area: 2
+  x3:
+    ospf.area: 3
+
+links:
+- dut:
+  x1:
+  ospf.area: 0
+
+- dut:
+  x2:
+  ospf.area: 2
+
+- dut:
+  x3:
+  ospf.area: 3
+
+validate:
+  wait:
+    description: Wait for OSPF adjacencies to start
+    wait: 30
+  adj:
+    description: Check for OSPF adjacencies
+    nodes: [ x1, x2, x3 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  lb:
+    description: Check for DUT loopback prefix being an inter-area route in areas 0 and 3
+    nodes: [ x1, x3 ]
+    plugin: ospf_prefix('10.0.0.1/32',rt='N IA')
+  lb2:
+    description: Check for DUT loopback prefix being an intra-area route in area 2
+    nodes: [ x2 ]
+    plugin: ospf_prefix('10.0.0.1/32',rt='N')

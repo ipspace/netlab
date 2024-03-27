@@ -53,13 +53,13 @@ def include_yaml(data: Box, source_file: str) -> None:
     traversable = _files.get_traversable_path(file_path)                           # Get a traversable object
     inc_files = _files.get_globbed_files(traversable,os.path.basename(inc_name))   # Get all files matching the pattern
     if not inc_files:
-      log.fatal(f'Cannot find file {inc_name} to be included into {source_file}')
+      log.fatal(f'Cannot find file {inc_name} to be included into {source_file}','topology',header=True)
       return
 
     for file_name in sorted(inc_files):
       yaml_data = read_yaml(filename=file_name)
       if yaml_data is None:
-        log.fatal(f'Cannot read {file_name} that should be included into {source_file}')
+        log.fatal(f'Cannot read {file_name} that should be included into {source_file}','topology',header=True)
         return
 
       if '_top' in yaml_data:                                   # Do we have to modify parent defaults outside of include scope?
@@ -193,6 +193,29 @@ def build_defaults_list(
   return defaults_list
 
 #
+# include_environment_defaults -- set defaults from environment variables
+#
+# * Consider all environment variables starting with NETLAB_
+# * Replace underscores with dots, turn string into lowercase
+# * Evaluate the resulting string and store the results
+
+def include_environment_defaults(topology: Box) -> None:
+  for k in os.environ:
+    v = os.environ[k]                             # Get the variable value
+    try:
+      v = eval(v,{'__builtins__': {}})            # Try to evaluate it as bool/int/whatever
+    except:
+      pass                                        # Can't do that? No harm, we'll assume it's a string
+
+    k = k.lower()                                 # Normalize to lowercase
+    if not k.startswith('netlab_'):               # Skip non-netlab variables
+      continue
+
+    k = k.replace('netlab_','',1)                 # Drop the netlab_ prefix
+    k = k.replace('_','.')                        # Replace underscores with dots
+    topology.defaults[k] = v                      # And set the value
+
+#
 # Load the topology and defaults
 #
 # * Read the topology from fname
@@ -218,7 +241,7 @@ def load(
     if log.RAISE_ON_ERROR:                                  # ... and if we're under test harness
       raise log.IncorrectValue                              # ... raise a hard error
     else:
-      log.fatal('The "includes" topology element shall not be used')
+      log.fatal('The "includes" topology element shall not be used',module='topology',header=True)
 
   # Now build the list of default sources
   defaults_list = build_defaults_list(topology,user_defaults,system_defaults)
@@ -233,6 +256,9 @@ def load(
         continue                                            # ... skip it
 
     include_defaults(topology,dfname)                       # Merge the defaults
+
+  if user_defaults or user_defaults is None:                # User defaults missing or specified?
+    include_environment_defaults(topology)                  # ... we care about user defaults, add environment vars
 
   return topology
 

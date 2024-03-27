@@ -8,6 +8,7 @@ import os
 import argparse
 
 from . import common_parse_args,get_message,load_snapshot_or_topology,lab_status_change
+from . import external_commands
 from . import ansible
 from box import Box
 
@@ -41,6 +42,10 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     '-o','--output',
     dest='output', action='store',nargs='?',const='config',
     help='Create a directory with initial configurations instead of deploying them (default output directory: config)')
+  parser.add_argument(
+    '--no-message',
+    dest='no_message', action='store_true',
+    help=argparse.SUPPRESS)
   return parser.parse_known_args(args)
 
 def run(cli_args: typing.List[str]) -> None:
@@ -82,13 +87,15 @@ def run(cli_args: typing.List[str]) -> None:
     ansible.playbook('create-config.ansible',rest)
     print("\nInitial configurations have been created in the %s directory" % args.output)
   else:
+    external_commands.LOG_COMMANDS = True
+
     topology = load_snapshot_or_topology(Box({},default_box=True,box_dots=True))
     deploy_text = ', '.join(deploy_parts) or 'complete configuration'
     if not topology is None:
       lab_status_change(topology,f'deploying configuration: {deploy_text}')
 
     ansible.playbook('initial-config.ansible',rest)
-    if topology:
+    if topology and not args.no_message:
       message = get_message(topology,'initial',True)
       if message:
         print(f"\n\n{message}")

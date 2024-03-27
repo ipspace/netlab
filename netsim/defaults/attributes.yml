@@ -15,7 +15,9 @@ global:
   provider: id
   tools:
     type: dict
-    _subtype: dict
+    _subtype:
+      type: dict
+      create_empty: True
   validate:
     type: dict
     _keytype: id
@@ -47,7 +49,9 @@ link_internal:
   linkindex: int
   parentindex: int
 link_no_propagate: [ prefix,interfaces,gateway ]
-link_module_no_propagate: [ vlan ]                  # Do not propagate VLAN attributes to node interfaces -- see #575
+# Do not propagate VLAN attributes to node interfaces -- see #575
+# Also: do not propagate DHCP attributes from links to interfaces
+link_module_no_propagate: [ vlan, dhcp ]
 interface:
   node: id
   ipv4: { type: ipv4, use: interface }
@@ -105,10 +109,12 @@ group:
   device: device
   module: list
 _v_entry:                  # Validation entry
-  _description: Single network validation test
+  _description: Single network validation test (an entry in the validate dictionary)
   description: str
   fail: str
   pass: str
+  wait: int
+  wait_msg: str
   nodes:
     type: list
     _subtype: node_id
@@ -118,9 +124,13 @@ _v_entry:                  # Validation entry
   exec: _v_option
   show: _v_option
   valid: _v_option
+  plugin: str
   stop_on_error: bool
 _v_option:
-  _description: An option in a single network validation test
+  _description: |
+    A "show", "exec" or "valid" parameter in a network validation test. It's a
+    dictionary of device types with each value being a command to execute or
+    expression to evaluate.
   type: dict
   _alt_types: [ str ]
   _keytype: device

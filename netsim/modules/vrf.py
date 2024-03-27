@@ -276,6 +276,18 @@ def validate_vrf_route_leaking(node : Box) -> None:
             log.MissingValue,
             'vrf')
 
+# If we have an in-VRF loopback, fix parent interface for VRF IPv4 unnumbered interfaces
+#
+def fix_vrf_unnumbered(node: Box, vrfname: str, lbdata: Box) -> None:
+  for intf in node.get('interfaces',[]):
+    if 'vrf' not in intf or intf.vrf != vrfname:                # Skip irrelevant interfaces
+      continue
+    if intf.get('ipv4',None) is not True:                       # Skip interfaces that are not unnumbered
+      continue
+
+    intf._parent_intf = lbdata.ifname                           # Make in-VRF loopback the parent interface for in-VRF
+    intf._parent_ipv4 = lbdata.ipv4                             # ... IPv4 unnumbereds
+
 def vrf_loopbacks(node : Box, topology: Box) -> None:
   loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
 
@@ -326,6 +338,9 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
         ifdata[af] = str(vrfaddr[af])
       vrfaddr[af] = str(ifdata[af])                                         # Save string copy in vrfaddr, we need it later
       node.vrfs[vrfname].af[af] = True                                      # Enable the af if not already
+
+    if 'ipv4' in ifdata:                                                    # Can we use VRF loopback for in-VRF unnumbereds?
+      fix_vrf_unnumbered(node,vrfname,ifdata)
 
     if not 'networks' in v:                                                 # List of networks to advertise in VRF BGP instance
       v.networks = []

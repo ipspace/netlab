@@ -12,6 +12,7 @@ groups:
   ce:
     members: [ r1,r2,r3,r4  ]
     module: [ bgp ]
+    device: cumulus
   pe:
     members: [ rtr ]
     module: [ vrf, bgp ]
@@ -20,9 +21,11 @@ groups:
 
 vrfs:
   red:
-    loopback: True
+    loopback: 10.0.0.42/32
+    links: [ rtr-r1, rtr-r2 ]
   blue:
-    loopback: True
+    loopback: 10.0.0.43/32
+    links: [ rtr-r3, rtr-r4 ]
 
 nodes:
   rtr:
@@ -35,12 +38,34 @@ nodes:
   r4:
     bgp.as: 65104
 
-links:
-- rtr: { vrf: red }
-  r1:
-- rtr: { vrf: red } 
-  r2:
-- rtr: { vrf: blue }
-  r3:
-- rtr: { vrf: blue }
-  r4:
+validate:
+  red:
+    description: Ping-based reachability test in VRF red
+    wait: 10
+    wait_msg: Waiting for BGP to start
+    nodes: [ r1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A r2
+    valid: |
+      "64 bytes" in stdout
+  ping:
+    description: Ping-based reachability test in VRF blue
+    nodes: [ r3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A r4
+    valid: |
+      "64 bytes" in stdout
+  red_lb:
+    description: Pinging red VRF loopback
+    nodes: [ r1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A 10.0.0.42
+    valid: |
+      "64 bytes" in stdout
+  blue_lb:
+    description: Pinging blue VRF loopback
+    nodes: [ r3 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A 10.0.0.43
+    valid: |
+      "64 bytes" in stdout

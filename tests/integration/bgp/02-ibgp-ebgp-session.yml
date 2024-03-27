@@ -1,0 +1,44 @@
+message: |
+  Use this topology to test the baseline IPv4 IBGP and EBGP implementation
+  and next-hop-self on IBGP sessions.
+
+module: [ bgp,ospf ]
+
+defaults.bgp.as: 65000
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+  x1:
+  x2:
+    bgp.as: 65100
+    loopback.ipv4: 172.42.42.1/24
+
+links:
+- dut-x1
+- dut-x2
+
+validate:
+  wait:
+    description: Wait for OSPF and IBGP sessions to come up
+    wait: 20
+  session:
+    description: Check BGP sessions with DUT
+    nodes: [ x1,x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  prefix:
+    description: Check whether DUT propagates the beacon prefix
+    nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.42.0/24')
+  nhs:
+    description: Check next-hop handling on DUT
+    nodes: [ x1 ]
+    plugin: >
+      bgp_prefix(
+        '172.42.42.0/24',
+        nh=nodes.dut.loopback.ipv4 if 'loopback' in nodes.dut else nodes.dut.interfaces[0].ipv4)

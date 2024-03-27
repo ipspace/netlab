@@ -1,0 +1,36 @@
+{% set has_v6 = [] %}
+{% for pool in dhcp.pools|default([]) %}
+{%   if pool.excluded.ipv4 is defined %}
+{%     for xa in pool.excluded.ipv4 %}
+{%       set vrf_kw = 'vrf ' + pool.vrf + ' ' if pool.vrf is defined and dhcp.vrf|default(False) %}
+ip dhcp excluded-address {{ vrf_kw }}{{ xa }}
+{%     endfor %}
+!
+{%   endif %}
+{%   if pool.ipv4 is defined %}
+ip dhcp pool {{ pool.clean_name }}
+{%     if pool.vrf is defined and dhcp.vrf|default(False) %}
+ vrf {{ pool.vrf }}
+{%     endif %}
+ network {{ pool.ipv4.split('/')[0] }} {{ pool.ipv4|ipaddr('netmask') }}
+{%     if pool.gateway.ipv4 is defined %}
+ default-router {{ pool.gateway.ipv4 }}
+{%     endif %}
+{%   endif %}
+{%   if pool.ipv6 is defined %}
+!
+{% set ignore = has_v6.append(pool.name) %}
+ipv6 dhcp pool {{ pool.clean_name }}
+{%     if pool.vrf is defined and dhcp.vrf|default(False) %}
+ vrf {{ pool.vrf }}
+{%     endif %}
+ address prefix {{ pool.ipv6 }}
+{%   endif %}
+{% endfor %}
+{% if has_v6 %}
+{%   for intf in interfaces %}
+!
+interface {{ intf.ifname }}
+ ipv6 dhcp server
+{%   endfor %}
+{% endif %}

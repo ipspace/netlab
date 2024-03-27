@@ -68,7 +68,7 @@ def wrong_type_message(
 
   wrong_type = wrong_type_text(value)
   path = get_element_path(path,key)
-  ctxt = ''
+  ctxt = []
   exp_type = err_stat.get('_type','UnSpec')             # _type should be set to expected type on type validation error
   expected = exp_type
 
@@ -78,7 +78,7 @@ def wrong_type_message(
   if '_help' in err_stat:                               # Did the validation function specify extra help?
     if exp_type not in _wrong_type_help:                # Did we print this help before? Adjust context if not
       help = err_stat.get("_help")
-      ctxt = f'\n... FYI: {exp_type} is {help}{ctxt}'
+      ctxt.append(f'FYI: {exp_type} is {help}')
       _wrong_type_help[exp_type] = help
 
   if '_value' in err_stat:                             # _value contains explanation why the value is incorrect
@@ -86,7 +86,7 @@ def wrong_type_message(
   else:
     if isinstance(context,dict) and '_alt_types' in context:
       expected += err_add_alt_types(context)
-      ctxt = ''
+      ctxt = []
     expected += f', found {wrong_type}'                 # A more generic message, add wrong type
 
   if 'NOATTR:' in path:                                 # Deal with values that are not attributes
@@ -102,15 +102,16 @@ def wrong_type_message(
 
     hint_id = err_stat.get('_hint_id') or 'SomeHint'    # ... just in case we have some weird value in the hint ID
     if not _attr_help_cache.hints[hint_id]:             # Did we already display this hint?
-      ctxt += "\n... "+err_stat.get('_hint','')         # ... nope, time to do it now
+      ctxt.append(err_stat.get('_hint',''))             # ... nope, time to do it now
       _attr_help_cache.hints[hint_id] = err_stat.get('_hint','')
   else:
-    ctxt += attr_help(module,data_name)
+    ctxt.append(attr_help(module,data_name))
 
   log.error(
-    f'{path} must be {expected}{ctxt}',
-    log.IncorrectValue if '_value' in err_stat else log.IncorrectType,
-    module or 'topology')
+    text=f'{path} must be {expected}',
+    category=log.IncorrectValue if '_value' in err_stat else log.IncorrectType,
+    module=module or 'topology',
+    more_hints=ctxt)
   return
 
 #
@@ -165,7 +166,7 @@ def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> 
 
   # Looks like we passed all sanity checks, return (hopefully useful) extra information
   #
-  return f"\n... use 'netlab show attributes{' --module '+module if module else ''}" + \
+  return f"use 'netlab show attributes{' --module '+module if module else ''}" + \
          f"{' ' + attr_type if attr_type else ''}' to display valid attributes"
 
 def check_valid_values(
@@ -190,10 +191,12 @@ def check_valid_values(
   path = get_element_path(path,key)
   if '_raw_status' not in context and '_silent' not in context:
     log.error(
-      f'attribute {path} has invalid value(s): {value}\n... valid values are: {",".join(expected)}' + \
-        attr_help(module,data_name),
-      log.IncorrectValue,
-      module or 'topology')
+      text=f'attribute {path} has invalid value(s): {value}',
+      more_hints=[
+        f'valid values are: {",".join(expected)}',
+        attr_help(module,data_name)],
+      category=log.IncorrectValue,
+      module=module or 'topology')
 
   if context.get('_abort',False):
     raise log.IncorrectValue()
@@ -508,13 +511,62 @@ def must_be_bool(value: typing.Any) -> dict:
   return { '_valid': True } if isinstance(value,bool) else { '_type': 'a boolean' }
 
 @type_test()
-def must_be_asn(value: typing.Any) -> dict:
+def must_be_asn2(value: typing.Any) -> dict:                          # 2-octet ASN (in case we need it somewhere)
   err = 'an AS number (integer between 1 and 65535)'
   if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
     return { '_type': err }
 
   if value < 0 or value > 65535:
     return { '_value': err }
+
+  return { '_valid': True }
+
+def transform_asdot(value: str) -> int:
+  asv = 0
+  for asp in value.split('.'):
+    asv = 65536 * asv + int(asp)
+
+  return asv
+
+_ASN_help = 'an integer between 1 and 4294967295, optionally written as asdot string N.N where N <= 65535'
+
+def asdot_parsing(value: str) -> dict:
+  err = 'a 4-octet AS number'
+  global _ASN_help
+
+  as_parts = value.split('.')
+  asv = 0
+  if len(as_parts) > 2:
+    return { '_type': f'{err} with two parts when using as.dot notation' }
+
+  for asn in as_parts:
+    try:
+      asp = int(asn)
+    except:
+      return { '_type': f'{err} with each part of as.dot string being an integer' }
+    if asp < 0 or asp > 65535:
+      return { '_value': f'{err} with each part of as.dot string being a 2-octet value' }
+
+    asv = 65536 * asv + asp
+
+  if asv <= 0 or asv >= 2**32:
+    return { '_value': f'{err} -- specified value is out of bounds' }
+  
+  return { '_valid': True, '_transform': transform_asdot }
+
+@type_test()
+def must_be_asn(value: typing.Any) -> dict:
+  err = 'a 4-octet AS number'
+  global _ASN_help
+
+  if isinstance(value,str):
+    return asdot_parsing(value)
+
+  if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
+    return { '_type': err, '_help': _ASN_help }
+
+  if value < 0 or value > 4294967295:
+    return { '_value': f'{err} -- an integer between 1 and 4294967295' }
 
   return { '_valid': True }
 

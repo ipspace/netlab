@@ -8,6 +8,7 @@ The following configuration modules are included in **netlab** distribution:
 
    module/bfd.md
    module/bgp.md
+   module/dhcp.md
    module/eigrp.md
    module/evpn.md
    module/gateway.md

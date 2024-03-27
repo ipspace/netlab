@@ -1,18 +1,22 @@
+---
 description: Cumulus VX 4.x or 5.x configured without NVUE
 interface_name: swp{ifindex}
-loopback_interface_name: "lo{ifindex}"
+loopback_interface_name: lo{ifindex if ifindex else ""}
 tunnel_interface_name: "tun{ifindex}"
 mgmt_if: eth0
 libvirt:
   image: CumulusCommunity/cumulus-vx:4.4.0
+  mtu: 1500
 virtualbox:
   image: CumulusCommunity/cumulus-vx:4.3.0
+  mtu: 1500
 group_vars:
   ansible_user: vagrant
   ansible_ssh_pass: vagrant
   ansible_network_os: cumulus
   ansible_connection: paramiko
-  netlab_show_command: [ sudo,vtysh,-c,'show $@' ]
+  netlab_show_command: [ sudo, vtysh, -c, 'show $@' ]
+  netlab_initial: always
 evpn._start_transit_vlan: 3900
 features:
   initial:
@@ -20,8 +24,6 @@ features:
       unnumbered: True
     ipv6:
       lla: True
-  ospf:
-    unnumbered: True
   bfd: True
   bgp:
     ipv6_lla: True
@@ -29,23 +31,37 @@ features:
     activate_af: True
     local_as: True
     vrf_local_as: True
-  vlan:
-    model: l3-switch
-    svi_interface_name: "vlan{vlan}"
-    subif_name: "{ifname}.{vlan.access_id}"
-    native_routed: True
-  vrf: True
-  vxlan: True
+    community:
+      standard: [ standard, large ]
+      large: [ large ]
+      extended: [ extended ]
+      2octet: [ standard ]
+  dhcp:
+    client:
+      ipv4: True
+      ipv6: True
+      routing: True
+    relay: True
   evpn:
     irb: True
     asymmetrical_irb: True
   gateway:
     protocol: [ anycast, vrrp ]
+  ospf:
+    unnumbered: True
+  vlan:
+    model: switch
+    svi_interface_name: "vlan{vlan}"
+    subif_name: "{ifname}.{vlan.access_id}"
+  vrf: True
+  vxlan: True
 clab:
   mtu: 1500
   node:
     kind: cvx
     runtime: docker
+    config_templates:
+      interfaces: /etc/network/interfaces
   image: networkop/cx:4.4.0
   group_vars:
     ansible_connection: docker

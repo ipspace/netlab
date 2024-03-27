@@ -1,0 +1,30 @@
+{% if 'server' in dhcp|default({}) %}
+{%   include 'eos.server.j2' %}
+!
+{% endif %}
+{% if dhcp.vrf|default(False) %}
+ip dhcp relay information option
+!
+{% endif %}
+{% for intf in interfaces if dhcp.server is defined or intf.dhcp is defined %}
+interface {{ intf.ifname }}
+{%   if dhcp.server is defined %}
+{%     for afx in ('ipv4','ipv6') if afx in af %}
+  dhcp server {{ afx }}
+{%     endfor %}
+{%   endif %}
+{%   if intf.dhcp.client.ipv4 is defined %}
+{%     if intf.dhcp.client.default|default(True) is sameas true %}
+  dhcp client accept default-route
+{%     endif %}
+  ip address dhcp
+{%   endif %}
+{%   for target in intf.dhcp.relay.ipv4|default([]) %}
+{%     set vrf = intf.dhcp.vrf|default('') %}
+{%     set vrf_kw = ' vrf ' + ('default' if vrf == 'global' else vrf) if vrf else '' %}
+  ip helper-address {{ target }}{{ vrf_kw }}
+{%   endfor %}
+{%   for target in intf.dhcp.relay.ipv6|default([]) %}
+  ipv6 dhcp relay destination {{ target }}
+{%   endfor %}
+{% endfor %}

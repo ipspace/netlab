@@ -18,7 +18,7 @@ def get_config_name(g: dict) -> typing.Optional[str]:
   if config_name:
     return config_name
 
-  log.fatal("Cannot get configuration template name for plugin %s" % g.get('__file__'),'plugin')
+  log.fatal(f"Cannot get configuration template name for plugin { g.get('__file__') }",'plugin')
   return None
 
 '''

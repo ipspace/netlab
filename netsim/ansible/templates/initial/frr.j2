@@ -24,11 +24,11 @@ SCRIPT
 #
 # Build hosts file
 #
-{% for k,v in hostvars.items() if k != inventory_hostname and v.af.ipv4|default(False) %}
-echo "{%- if v.loopback.ipv4 is defined %}{{ v.loopback.ipv4|ipaddr('address') }} {% endif %}
-{%- for l in v.interfaces|default([]) if 'ipv4' in l and l.ipv4 != True and l.ipv4|ipv4 %}{{ l.ipv4|ipaddr('address') }} {% endfor %}{{ k }}" >>/tmp/hosts
+echo "# Created by netlab initial" >>/tmp/hosts
+{% for hname,hdata in hosts.items() %}
+echo "{{ (hdata.ipv4|default([]) + hdata.ipv6|default([]))|join (' ') }} {{ hname }}" >>/tmp/hosts
 {% endfor %}
-sort /tmp/hosts|uniq >>/etc/hosts
+grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
 
 {% if clab is not defined %}
 #
@@ -96,7 +96,7 @@ ipv6 forwarding
 frr defaults {{ frr_defaults }}
 !
 {% if loopback is defined %}
-interface lo0
+interface {{ loopback.ifname }}
  no shutdown
 {%  if loopback.ipv4 is defined %}
  ip address {{ loopback.ipv4 }}
@@ -114,8 +114,8 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if l.ipv4 is defined and (l.ipv4 is string or loopback.ipv4 is defined) %}
- ip address {{ l.ipv4 if l.ipv4 is string else loopback.ipv4 }}
+{% if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
+ ip address {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
 {% else %}
  ! no ip address
 {% endif %}

@@ -9,12 +9,11 @@ import typing
 import textwrap
 import os
 import sys
-import termcolor
 from box import Box
 
 from . import common_parse_args, topology_parse_args, load_topology
 from .. import augment
-from ..utils import log, read as _read
+from ..utils import log, read as _read,strings
 from ..outputs import _TopologyOutput
 
 #
@@ -83,8 +82,8 @@ def run(cli_args: typing.List[str],
   log.exit_on_error()
 
   if args.unlock and os.path.exists('netlab.lock'):
-    print(termcolor.colored("WARNING: ","light_red",attrs=["bold"]) + \
-          "removing netlab.lock file, you're on your own",file=sys.stderr)
+    strings.print_colored_text("WARNING: ","bright_red",stderr=True)
+    print("removing netlab.lock file, you're on your own",file=sys.stderr)
     os.remove('netlab.lock')
 
   for output_format in args.output:

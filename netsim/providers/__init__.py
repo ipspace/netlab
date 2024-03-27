@@ -41,8 +41,29 @@ class _Provider(Callback):
   def get_full_template_path(self) -> str:
     return str(_files.get_moddir()) + '/' + self.get_template_path()
 
-  def find_extra_template(self, node: Box, fname: str) -> typing.Optional[str]:
-    return _files.find_file(fname+'.j2',[ f'./{node.device}','.',f'{ self.get_full_template_path() }/{node.device}'])
+  def find_extra_template(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
+    if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
+      path_prefix = topology.defaults.paths.custom.dirs
+      path_suffix = [ fname ]
+      fname = node.device
+    else:
+      path_suffix = [ node.device ]
+      path_prefix = topology.defaults.paths.templates.dirs + [ self.get_full_template_path() ]
+
+      if node.get('_daemon',False):
+        if '_daemon_parent' in node:
+          path_suffix.append(node._daemon_parent)
+        path_prefix.append(str(_files.get_moddir() / 'daemons'))
+
+    path = [ pf + "/" + sf for pf in path_prefix for sf in path_suffix ]
+    if log.debug_active('clab'):
+      print(f'Searching for {fname}.j2 in {path}')
+
+    found_file = _files.find_file(fname+'.j2',path)
+    if log.debug_active('clab'):
+      print(f'Found file: {found_file}')
+
+    return found_file
 
   def get_output_name(self, fname: typing.Optional[str], topology: Box) -> str:
     if fname:
@@ -99,13 +120,14 @@ class _Provider(Callback):
     cur_binds = node.get(f'{self.provider}.{outkey}',[])
     bind_dict = filemaps.mapping_to_dict(cur_binds)
     for file,mapping in map_dict.items():
+      file = file.replace('@','.')
       if file in bind_dict:
         continue
-      if not self.find_extra_template(node,file):
+      if not self.find_extra_template(node,file,topology):
         log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
-          log.IncorrectValue,
-          self.provider)
+          category=log.IncorrectValue,
+          module=self.provider)
         continue
 
       out_folder = f"{self.provider}_files/{node.name}"
@@ -132,7 +154,7 @@ class _Provider(Callback):
       if not out_folder in file:                  # Skip files that are not mapped into the temporary provider folder
         continue
       file_name = file.replace(out_folder+"/","")
-      template_name = self.find_extra_template(node,file_name)
+      template_name = self.find_extra_template(node,file_name,topology)
       if template_name:
         node_data = node + { 'hostvars': topology.nodes }
         if '/' in file_name:                      # Create subdirectory in out_folder if needed
@@ -148,7 +170,8 @@ class _Provider(Callback):
             text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
             module=self.provider)
 
-        print( f"Created {out_folder}/{file_name} from {template_name.replace(sys_folder,'')}, mapped to {node.name}:{mapping}" )
+        strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+        print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
       else:
         log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
 
@@ -169,7 +192,8 @@ class _Provider(Callback):
 
     _files.create_file_from_text(fname,r_text)
     if fname != '-':
-      print("Created provider configuration file: %s" % fname)
+      log.status_created()
+      print(f"provider configuration file: {fname}")
       self.post_configuration_create(topology)
     else:
       print("\n")
@@ -188,6 +212,12 @@ class _Provider(Callback):
 
   def post_configuration_create(self, topology: Box) -> None:
     pass
+
+  def get_lab_status(self) -> Box:
+    return get_empty_box()
+  
+  def get_node_name(self, node: str, topology: Box) -> str:
+    return node
 
   """
   Generic provider pre-transform processing: Mark multi-provider links
@@ -234,6 +264,9 @@ Execute a topology-wide provider hook
 def execute(hook: str, topology: Box) -> None:
   p_module = get_provider_module(topology,topology.provider)
   p_module.call(hook,topology)
+
+  for node in topology.nodes.values():
+    execute_node(f'node_{hook}',node,topology)
 
 """
 Execute a node-level provider hook

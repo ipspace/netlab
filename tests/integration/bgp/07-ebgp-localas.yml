@@ -1,0 +1,42 @@
+message: |
+  Use this topology to test the 'local AS' functionality on EBGP sessions. The
+  device under test uses a different AS on DUT-X1 session and shall still
+  propagate routes between X1 and X2
+
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+    bgp.originate: 172.42.42.0/24
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+
+links:
+- dut:
+    bgp.local_as: 65002
+  x1:
+- dut-x2
+
+validate:
+  wait:
+    description: Wait for EBGP sessions to come up
+    wait: 3
+  session:
+    description: Check EBGP sessions with DUT
+    nodes: [ x1,x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  prefix:
+    description: Check whether DUT advertises the beacon prefix
+    nodes: [ x1,x2 ]
+    plugin: bgp_prefix('172.42.42.0/24')

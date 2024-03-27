@@ -13,14 +13,24 @@ The topologies (in increasing order of complexity) implement the following scena
 ### VRF Lite with hosts
 
 * `multi-vrf.yml` -- two isolated VRFs on a single device
-* `vrf-route-leaking.yml` -- common services VRF on a single device
 
 ### VRF Lite with OSPF routers
 
 * `multi-vrf-ospf.yml` -- two isolated VRFs with OSPF routers attached to device under test
-* `vrf-common-ospf.yml` -- common services VRF with OSPF routers attached to all VRFs
+* `multi-vrf-mixed.yml` -- similar to other multi-vrf test cases, but using combination of OSPF and BGP in every VRF
 
 ### VRF Lite with BGP routers
 
 * `multi-vrf-bgp.yml` -- two isolated VRFs with BGP CE-routers attached to device under test
 * `multi-vrf-mixed.yml` -- similar to other multi-vrf test cases, but using combination of OSPF and BGP in every VRF
+
+### VRF loopbacks
+
+* `multi-vrf-loopback.yml` -- two isolated VRFs with VRF loopbacks on the PE-router
+* `multi-vrf-bgp-loopback.yml` -- two isolated VRFs with VRF loopbacks on the PE-router and BGP as PE-CE routing protocol
+
+### Inter-VRF Route Leaking
+
+* `vrf-common-hosts.yml` -- common services VRF on a single device
+* `vrf-common-ospf.yml` -- common services VRF with OSPF routers attached to all VRFs
+* `vrf-common-mixed.yml` -- common services VRF with OSPF and BGP routers attached to all VRFs

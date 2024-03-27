@@ -38,10 +38,10 @@ def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
         'links')
     elif not 'node' in n:               # Do we have node name in interface data?
       log.error(                     # ... no? Too bad, throw an error
-        f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute\n' +
-        f'... found {n}',
-        log.MissingValue,
-        'links')
+        text=f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute',
+        more_data=[ f'found {n}' ],
+        category=log.MissingValue,
+        module='links')
     elif not n.node in nodes:           # Is the node name valid?
       log.error(                     # ... it's not, get lost
         f'Interface data {link._linkname}.interfaces[{intf_cnt}] refers to an unknown node {n.node}',
@@ -601,10 +601,10 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       if get_gateway_id(link):
         rq = rq + f' plus first-hop gateway'
       log.error(
-        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}\n' + \
-        strings.extra_data_printout(f'link data: {link}',width=90),
-        log.IncorrectValue,
-        'links')
+        f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}',
+        more_data=f'link data: {link}',
+        category=log.IncorrectValue,
+        module='links')
       continue
 
     if not allocation_policy in IPAM_dispatch:
@@ -671,6 +671,21 @@ def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
     ifdata.name = f'{node_name} -> [{",".join(list(n_list))}]'
 
 """
+set_parent_interface -- set the parent interface and IP address for the IPv4 unnumbered interfaces
+"""
+def set_parent_interface(ifdata: Box, node: Box) -> None:
+  if ifdata.get('ipv4',None) is not True:                         # We're interested only in interfaces that have...
+    return                                                        # ... ipv4 set to True
+
+  lbname = node.get('loopback.ifname',None)                       # Try to get the parent interface name
+  if lbname:                                                      # Found it, save it in an internal attribute
+    ifdata._parent_intf = lbname
+
+  lbipv4 = node.get('loopback.ipv4',None)                         # Try to get the parent IPv4 address
+  if lbipv4:                                                      # Save the parent IPv4 address (needed for static routes)
+    ifdata._parent_ipv4 = lbipv4
+
+"""
 Create node interfaces from link interfaces
 """
 def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box) -> None:
@@ -690,6 +705,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                 link_attr=link_attr_propagate.union(ndict[node].get('module',[])) - set(defaults.attributes.link_module_no_propagate),
                 ifdata=data.get_box(value))
     set_interface_name(ifdata,link,intf_cnt)
+    set_parent_interface(ifdata,ndict[node])
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
     node_intf = add_node_interface(ndict[node],ifdata,defaults)   # Attach new interface to its node
     value.ifindex = node_intf.ifindex                             # Save ifindex and ifname in link interface data
@@ -755,6 +771,9 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
     if not 'role' in link and host_count == node_cnt - 1 and not 'vlan_name' in link:
       link.role = 'stub'
 
+  if link.get('dhcp.subnet.ipv4',None):
+    link.host_count = link.get('host_count',0) + 1
+
   if 'type' in link:                # Link type already set, nothing to do
     return
 
@@ -762,7 +781,7 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
   if node_cnt == 1:
     set_link_loopback_type(link,nodes,defaults)
 
-  if host_count > 0:
+  if link.get('host_count',0) > 0:
     link.type = 'lan'
 
   return
@@ -822,10 +841,10 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
         if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \
             not features.initial.ipv4.unnumbered:
           log.error(
-            f'Device {ndata.device} does not support unnumbered IPv4 interfaces used on\n'+
-            f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
-            log.IncorrectValue,
-            'interfaces')
+            text=f'Device {ndata.device} does not support unnumbered IPv4 interfaces',
+            more_hints=[ f'Used on node {node} interface {ifdata.ifname} (link {ifdata.name})' ],
+            category=log.IncorrectValue,
+            module='interfaces')
       if 'ipv6' in ifdata:
         if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
             not features.initial.ipv6.lla:
@@ -844,17 +863,24 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
     return
 
-#  if 'vlan_name' in link:                                 # Do not try to set first-hop gateways on VLAN links, VLAN module will do that
-#    return
-
   if log.debug_active('links'):
     print(f'Set DGW for {link}')
-  if not 'gateway' in link:
-    gateway = None
-    for ifdata in link.interfaces:
+  if not 'gateway' in link:                               # Do we have first-hop gateway on the link?
+    for ifdata in link.interfaces:                        # Nope, iterate over interfaces, find routers running IPv4
       if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
-        link.gateway.ipv4 = ifdata.ipv4
-        break
+        if ifdata.get('dhcp.client.ipv4',False):
+          continue                                        # Skip routers running DHCP clients
+        link.gateway.ipv4 = ifdata.ipv4                   # Remember the router's IPv4 address
+        if ifdata.ipv4 is not True:                       # ... and if it's not unnumbered
+          break                                           # ... get out, we found it
+
+    if link.get('gateway.ipv4',None) is True:             # Did we find an unnumbered IPv4 address?
+      log.error(                                          # Complain...
+        text=f'Hosts cannot be attached to subnets where all routers have unnumbered interfaces (found in {link._linkname})',
+        category=log.IncorrectValue,
+        module='links')
+      link.pop('gateway',None)                            # ... and remove it, it's useless
+
   elif link.gateway is False:
     return
 

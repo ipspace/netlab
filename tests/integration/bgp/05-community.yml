@@ -1,0 +1,73 @@
+message: |
+  Use this topology to test the BGP community propagation. The device under test
+  is a BGP route reflector that should propagate standard and extended
+  communities to IBGP neighbors but only extended communities to EBGP neighbors
+  (the default setting).
+
+  Three BGP communities are attached to the prefix advertised by RC: a standard
+  one, an extended one, and a long one (standard communitiy using 4-octet AS)
+
+module: [ bgp,ospf ]
+
+groups:
+  probes:
+    members: [ rc, r2, x1 ]
+    device: frr
+    provider: clab
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+    bgp.rr: True
+  rc:
+    id: 10
+    bgp.originate: 172.0.42.0/24
+    config: [ frr-community ]
+  r2:
+  x1:
+    bgp.as: 65101
+
+links:
+- dut-r2
+- r2-rc
+- dut-x1
+
+validate:
+  wait:
+    description: Wait for OSPF and BGP to start
+    wait: 30
+
+  session:
+    description: Check BGP sessions with DUT
+    nodes: [ rc, r2, x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  prefix:
+    description: Check whether DUT propagates the beacon prefix
+    nodes: [ r2, x1 ]
+    plugin: bgp_prefix('172.0.42.0/24')
+  ibgp_comm:
+    description: Check community propagation on IBGP sessions
+    nodes: [ r2 ]
+    plugin: >
+      bgp_prefix_community(
+        '172.0.42.0/24',
+        community='65000:1',
+        extendedCommunity='LB:65000:12500000',
+        largeCommunity='65000:0:1')
+  ebgp_comm:
+    description: Check community propagation on EBGP sessions
+    nodes: [ x1 ]
+    plugin: >
+      bgp_prefix_community(
+        '172.0.42.0/24',
+        community='65000:1',
+        largeCommunity='65000:0:1')
+  ebgp_no_comm:
+    description: Check for lack of extended communities on EBGP sessions
+    nodes: [ x1 ]
+    plugin: >
+      bgp_prefix_community(
+        '172.0.42.0/24',
+        extendedCommunity='LB:65000:12500000',
+        state='missing')

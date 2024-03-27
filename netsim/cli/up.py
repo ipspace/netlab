@@ -8,6 +8,7 @@
 import typing
 import argparse
 import os
+import sys
 
 from box import Box
 from pathlib import Path
@@ -17,7 +18,7 @@ from . import external_commands, set_dry_run, is_dry_run
 from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change
 from .. import providers
-from ..utils import log,status as _status, read as _read
+from ..utils import log,strings,status as _status, read as _read
 
 #
 # Extra arguments for 'netlab up' command
@@ -33,6 +34,11 @@ def up_parse_args(standalone: bool) -> argparse.ArgumentParser:
     dest='no_config',
     action='store_true',
     help='Do not configure lab devices')
+  parser.add_argument(
+    '-r','--reload-config',
+    dest='reload',
+    action='store',
+    help='Reload saved configurations from specified directory')
   parser.add_argument(
     '--no-tools',
     dest='no_tools',
@@ -73,6 +79,7 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
 
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
   else:                                                       # No snapshot file, use 'netlab create' parser
+    log.section_header('Creating','configuration files')
     topology = create.run(cli_args,'up','Create configuration files, start a virtual lab, and configure it',up_args_parser)
 
   return topology
@@ -162,12 +169,13 @@ delete it.
 """
 Execute provider probes
 """
-def provider_probes(topology: Box, step: int = 2) -> None:
+def provider_probes(topology: Box) -> None:
   p_provider = topology.provider
 
-  external_commands.run_probes(topology.defaults,p_provider,step)
+  log.section_header('Checking','virtualization provider installation')
+  external_commands.run_probes(topology.defaults,p_provider)
   for s_provider in topology[p_provider].providers:
-    external_commands.run_probes(topology.defaults,s_provider,step)
+    external_commands.run_probes(topology.defaults,s_provider)
 
 """
 Start lab topology for a single provider
@@ -215,30 +223,49 @@ def recreate_secondary_config(topology: Box, p_provider: str, s_provider: str) -
 """
 Deploy initial configuration
 """
-def deploy_initial_config(args: argparse.Namespace, topology: Box, step: int) -> None:
+def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
   if args.no_config:
-    print("\nInitial configuration skipped, run 'netlab initial' to configure the devices")
+    print()
+    strings.print_colored_text('[SKIPPED] ','yellow',None)
+    print("Initial configuration skipped, run 'netlab initial' to configure the devices")
     return
 
   lab_status_change(topology,f'deploying initial configuration')
-  external_commands.deploy_configs(step,"netlab up",args.fast_config)
-  message = get_message(topology,'up',False)
+  log.section_header('Deploying','initial device configurations')
+  external_commands.deploy_configs("netlab up",args.fast_config)
+  lab_status_change(topology,f'initial configuration complete')
+
+  message = get_message(topology,'initial',True)
   if message:
     print(f"\n\n{message}")
-  lab_status_change(topology,f'initial configuration complete')
+
+"""
+Reload saved configurations
+"""
+def reload_saved_config(args: argparse.Namespace, topology: Box) -> None:
+  lab_status_change(topology,f'reloading saved initial configurations')
+  log.section_header('Reloading','saved initial device configurations')
+  cmd = external_commands.set_ansible_flags(['netlab','config','--reload',args.reload])
+  if not external_commands.run_command(cmd):
+    log.fatal("netlab config --reload failed, aborting...",'netlab up')
+  lab_status_change(topology,f'saved initial configurations reloaded')
+  log.status_success()
+  print("Saved configurations reloaded")
 
 """
 Deploy external tools
 """
-def start_external_tools(args: argparse.Namespace, topology: Box, step: int) -> None:
+def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
   if not 'tools' in topology:
     return
   if args.no_tools:
-    print("\nExternal tools not started, start them manually")
+    print()
+    strings.print_colored_text('[SKIPPED] ','yellow',None)
+    print("External tools not started, start them manually")
     return
 
-  external_commands.print_step(step,f"Starting external tools")
   lab_status_change(topology,f'starting external tools')
+  log.section_header('Starting','external tools')
   for tool in topology.tools.keys():
     cmds = external_commands.get_tool_command(tool,'up',topology)
     if cmds is None:
@@ -252,6 +279,8 @@ def start_external_tools(args: argparse.Namespace, topology: Box, step: int) -> 
       print(("DRY_RUN: " if is_dry_run() else "") + msg + "\n")
 
   lab_status_change(topology,f'external tools started')
+  log.status_success()
+  print("External tools started")
 
 """
 Main "lab start" process
@@ -259,6 +288,9 @@ Main "lab start" process
 def run(cli_args: typing.List[str]) -> None:
   up_args_parser = up_parse_args(False)                       # Try to parse the up-specific arguments
   (args,rest) = up_args_parser.parse_known_args(cli_args)
+  if args.reload and args.no_config:
+    log.fatal('Cannot combine --reload-config and --no-config')
+
   set_dry_run(args)
   if not args.snapshot and not is_dry_run():
     check_existing_lab()
@@ -271,6 +303,7 @@ def run(cli_args: typing.List[str]) -> None:
   if log.QUIET:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
+  external_commands.LOG_COMMANDS = True
   provider_probes(topology)
 
   p_provider = topology.provider
@@ -285,16 +318,21 @@ def run(cli_args: typing.List[str]) -> None:
   if not is_dry_run():
     _status.lock_directory()
 
-  step = 3
-  external_commands.print_step(step,f"Starting the lab: {p_provider}")
+  log.section_header('Starting',f'{p_provider} nodes')
   start_provider_lab(topology,p_provider)
 
   for s_provider in topology[p_provider].providers:
-    step += 1
-    external_commands.print_step(step,f"Starting the lab: {s_provider}",spacing=True)
+    log.section_header('Starting',f'{s_provider} nodes')
     recreate_secondary_config(topology,p_provider,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 
-  deploy_initial_config(args,topology,step+1)
-  start_external_tools(args,topology,step+2)
+  if args.reload:
+    reload_saved_config(args,topology)
+  else:
+    deploy_initial_config(args,topology)
+  start_external_tools(args,topology)
   lab_status_change(topology,'started')
+  if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done
+    _status.lock_directory()                          # .. to have a timestamp of when the lab was started
+
+  log.repeat_warnings('netlab up')

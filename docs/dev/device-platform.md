@@ -43,7 +43,7 @@ There are four types of settings you can change:
 mgmt_if: Management1
 clab:
   mgmt_if: Management0devices:
-  image: ceos:4.25.1F
+  image: ceos:4.31.2F
 ```
 
 **Ansible group variables** (easy) -- values specified in **group_vars** section of device-and-provider-specific settings overwrite the device defaults. 
@@ -103,7 +103,7 @@ libvirt:
 virtualbox:
   image: arista/veos
 clab:
-  image: ceos:4.26.4M
+  image: ceos:4.31.2F
   interface:
     name: et{ifindex}
 ```

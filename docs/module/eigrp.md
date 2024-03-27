@@ -1,6 +1,6 @@
 # EIGRP Configuration Module
 
-This configuration module configures EIGRP routing process on Cisco IOS, Cisco IOS-XE and Cisco Nexus-OS.
+This configuration module configures the EIGRP routing process on Cisco IOS, Cisco IOS-XE, and Cisco Nexus-OS.
 
 Supported features:
 
@@ -23,20 +23,24 @@ Supported features:
 
 ## Using Link Roles
 
-Link roles are used together with link types to decide whether to include an interface in an EIGRP process, and whether to make an interface passive:
+Link roles are used together with link types to decide whether to include an interface in an EIGRP process and whether to make an interface passive:
 
 * External links (links with **role: external**) are not included in the IPv4 EIGRP process on Nexus OS, or in the IPv6 EIGRP processes.
 * External links are configured as *passive* IPv4 EIGRP interfaces on Cisco IOS/IOS XE.
-* Links with **role** set to **stub** or **passive** are configured as *passive* EIGRP interfaces.
+
+The following interfaces are also configured as passive EIGRP interfaces:
+
+* Interfaces with **role** set to **passive**.
+* Interfaces connected to links that have a single router or routing daemon attached.
 
 **Notes:** 
 
-* Link role could be set by the BGP module -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, making inter-AS links passive or excluded from the EIGRP process (see above).
-* Management interfaces are never added to the EIGRP processes on Nexus-OS or to IPv6 EIGRP process on Cisco IOS/IOS-XE. However, as the Cisco IOS/IOS-XE IPv4 EIGRP configuration uses **network 0.0.0.0 255.255.255.255** statement, the management interface could become part of an EIGRP process if it's not in the management VRF. The management interface is made *passive* to ensure there's no exchange of EIGRP updates over it.
+* The BGP module could set link role -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, making inter-AS links passive or excluded from the EIGRP process (see above).
+* Management interfaces are never added to the Nexus-OS EIGRP processes or the IPv6 EIGRP process on Cisco IOS/IOS-XE. However, as the Cisco IOS/IOS-XE IPv4 EIGRP configuration uses **network 0.0.0.0 255.255.255.255** statement, the management interface could become part of an EIGRP process if it's not in the management VRF. The management interface is made *passive* to ensure there's no exchange of EIGRP updates over it.
 
 ## Example
 
-We want to create a three-router EIGRP network testing IOS, IOS-XE and Nexus OS EIGRP implementation.
+We want to create a three-router EIGRP network testing IOS, IOS-XE, and Nexus OS EIGRP implementation.
 
 All devices run EIGRP:
 
@@ -51,7 +55,7 @@ eigrp:
   as: 2
 ```
 
-We'll use IPv4 and IPv6 addressing in our lab. IPv6 addresses will be configured on loopback and LAN interfaces, but not on P2P interfaces.
+We'll use IPv4 and IPv6 addressing in our lab. IPv6 addresses will be configured on loopback and LAN interfaces but not on P2P interfaces.
 
 ```
 addressing:
@@ -75,7 +79,7 @@ nodes:
   device: nxos
 ```
 
-All three devices share a LAN interface. There are two P2P links, and a stub interface connected to each device. The bandwidth of the LAN interface is set to 100 Mbps.
+All three devices share a LAN interface. There are two P2P links and a stub interface connected to each device. The bandwidth of the LAN interface is set to 100 Mbps.
 
 ```
 links:
@@ -94,7 +98,7 @@ links:
 
 The above topology generates the following device configurations [^1].
 
-[^1]: Interface descriptions and bandwidths are included in device configurations for documentation purposes even though they are not part of the EIGRP configuration template.
+[^1]: Interface descriptions and bandwidths are included in device configurations for documentation purposes, even though they are not part of the EIGRP configuration template.
 
 #### R1 (Cisco IOS)
 

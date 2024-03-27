@@ -3,12 +3,15 @@
 #
 
 import pathlib
+import importlib
+import importlib.util
 import os
 import sys
 import typing
 import fnmatch
 
 from . import log
+from ..data import global_vars
 
 try:
   from importlib import resources
@@ -69,6 +72,46 @@ def absolute_path(fname: str, base: typing.Optional[str] = None) -> pathlib.Path
     return (pathlib.Path(base) / fname).resolve()           # Return fully-resolved relative path starting from base directory
   else:
     return pathlib.Path(fname).resolve()                    # Return fully-resolved path
+
+"""
+Transform a search path into an absolute search path
+
+* replace 'package:' with get_moddir()
+* add topology directory to any other path
+"""
+def expand_package(path: str) -> pathlib.Path:
+  return get_moddir () / path.replace('package:','')
+
+def absolute_search_path(
+      path: typing.List[str],
+      curdir: str = '.') -> typing.List[str]:
+  a_path = []
+  for p_entry in path:
+    if 'package:' in p_entry:
+      p_abs = expand_package(p_entry)
+    elif 'topology:' in p_entry:
+      topology = global_vars.get_topology()
+      if topology:
+        topo_name = topology.input[0]
+        if topo_name.startswith('package:'):
+          p_abs = expand_package(os.path.dirname(topo_name))
+        else:
+          topo_dir = os.path.dirname(topo_name)+"/"
+          p_abs = pathlib.Path(p_entry.replace('topology:',topo_dir))
+      else:
+        continue
+    elif p_entry.find('~') == 0:
+      p_abs = pathlib.Path(os.path.expanduser(p_entry))
+    elif p_entry[0] in ['.','/']:
+      p_abs = pathlib.Path(p_entry)    
+    else:
+      p_abs = pathlib.Path(curdir) / p_entry
+
+    p_final = str(p_abs.resolve())
+    if not p_final in a_path:
+      a_path.append(p_final)
+
+  return a_path
 
 # 
 # Find a file in a search path
@@ -141,3 +184,21 @@ def create_file_from_text(fname: str, txt: str) -> None:
     log.fatal('Cannot write to {fname}: {ex}')
     return
   close_output_file(fh)
+
+def load_python_module(module_name: str, module_path: str) -> typing.Any:
+  try:
+    modspec  = importlib.util.spec_from_file_location(module_name,module_path)
+    assert(modspec is not None)
+    pymodule = importlib.util.module_from_spec(modspec)
+    sys.modules[module_name] = pymodule
+    assert(modspec.loader is not None)
+    modspec.loader.exec_module(pymodule)
+  except:
+    log.error(
+      text=f'Failed to load plugin {module_name} from {module_path}',
+      category=log.IncorrectType,
+      more_hints=[ 'Error reported by module loader:', str(sys.exc_info()[1]) ],
+      module='loader')
+    return None
+
+  return pymodule

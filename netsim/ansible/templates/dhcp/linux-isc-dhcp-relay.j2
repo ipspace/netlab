@@ -1,0 +1,32 @@
+{# build the list of client interfaces, upstream interfaces, and DHCP relay addresses #}
+{% set client_list = [] %}
+{% set upstream_list = [] %}
+{% set relay_list = [] %}
+{% for intf in interfaces if 'ipv4' in intf and intf.vrf is not defined %}
+{%   if intf.dhcp.relay.ipv4 is defined %}
+{%     set ignore = client_list.append(intf.ifname) %}
+{%     set ignore = relay_list.extend(intf.dhcp.relay.ipv4) %}
+{%   else %}
+{%     set ignore = upstream_list.append(intf.ifname) %}
+{%   endif %}
+{% endfor %}
+{% set client_intf = client_list | map('regex_replace', '^(.*)$', '-id \\1') | join(' ') %}
+{% set upstream_intf = upstream_list | map('regex_replace', '^(.*)$', '-iu \\1') | join(' ') %}
+{% set relay_list = relay_list | unique %}
+#
+# DHCPv4 information
+# ==================
+# Clients:  {{ client_list }} ({{ client_intf }})
+# Upstream: {{ upstream_list }} ({{ upstream_intf }})
+# Servers:  {{ relay_list }}
+#
+{% if relay_list %}
+cat <<CONFIG >/etc/default/isc-dhcp-relay
+#
+# Created by netlab initial using linux-isc-dhcp-relay template
+#
+SERVERS="{{ relay_list|join(' ') }}"
+INTERFACES=""
+OPTIONS="{{ client_intf }} {{ upstream_intf }}"
+CONFIG
+{% endif %}

@@ -55,7 +55,7 @@ class ISIS(_Module):
       if _routing.external(l,'isis') or not (l.get('ipv4',False) or l.get('ipv6',False)):
         l.pop('isis',None) # Don't run IS-IS on external interfaces, or l2-only
       else:
-        _routing.passive(l,'isis')
+        _routing.passive(l,'isis',topology)
         err = _routing.network_type(l,'isis',['point-to-point'])
         if err:
           log.error(f'{err}\n... node {node.name} link {l}')

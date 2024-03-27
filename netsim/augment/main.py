@@ -17,6 +17,7 @@ from . import addressing
 def topology_init(topology: Box) -> None:
   global_vars.init(topology)
   augment.config.attributes(topology)
+  augment.config.paths(topology)
   augment.devices.augment_device_settings(topology)
 
 def transform_setup(topology: Box) -> None:
@@ -24,6 +25,7 @@ def transform_setup(topology: Box) -> None:
   augment.topology.topology_sanity_check(topology)
   versioning.check_topology_version(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
+  augment.groups.precheck_groups(topology)
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
   augment.plugin.execute('topology_expand',topology)                    # topology-expanding plugins must be called before link checks
 
@@ -87,6 +89,7 @@ def post_transform(topology: Box) -> None:
   modules.post_transform(topology)
   augment.plugin.execute('post_transform',topology)
   augment.groups.node_config_templates(topology)
+  augment.nodes.cleanup(topology)
   providers.execute("post_transform",topology)
   log.exit_on_error()
 
@@ -94,6 +97,7 @@ def post_transform(topology: Box) -> None:
   log.exit_on_error()
   
   augment.links.cleanup(topology)
+  augment.groups.cleanup(topology)
   for remove_attr in ['Plugin','pools','_Providers']:
     topology.pop(remove_attr,None)
 

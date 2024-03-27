@@ -28,10 +28,13 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 
 | Virtual network device | Container image              |
 |------------------------|------------------------------|
-| Arista cEOS            | ceos:4.26.4M                 |
+| Arista cEOS            | ceos: 4.31.2F                 |
+| BIRD                   | netlab/bird:latest           |
+| Cisco IOS XRd          | ios-xr/xrd-control-plane:7.11.1 |
 | Cumulus VX             | networkop/cx:4.4.0           |
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |
 | Dell OS10              | vrnetlab/vr-ftosv            |
+| dnsmasq                | netlab/dnsmasq:latest        |
 | FRR                    | frrouting/frr:v8.4.0         |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
 | Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
@@ -42,8 +45,10 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * Cumulus VX, FRR, Linux, and Nokia SR Linux images are automatically downloaded from Docker Hub.
+* You must build the BIRD and dnsmasq images with the **netlab clab build** command.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS container image (requires a license); see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
+* Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
 
 You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Nexus 9300v, and IOS XR, OpenWRT, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
 
@@ -55,7 +60,7 @@ You might have to change the default loopback address pool when using _vrnetlab_
 
 ### LAN Bridges
 
-For multi-access network topologies, the **[netlab up](../netlab/up.md)** command automatically creates additional standard Linux bridges.
+The **[netlab up](../netlab/up.md)** command automatically creates additional standard Linux bridges for multi-access network topologies.
 
 You might want to use Open vSwitch bridges instead of standard Linux bridges (OVS interferes less with layer-2 protocols). After installing OVS, set **defaults.providers.clab.bridge_type** to **ovs-bridge**, for example:
 
@@ -91,7 +96,7 @@ links:
 [^IFNAME]: Use **ip addr** or **ifconfig** find the interface name.
 
 ```{note}
-In multi-provider topologies, set the **uplink** parameter only for the primary provider (the one specified in the topology-level **provider** attribute); netlab copies the **uplink** parameter to all secondary providers during the lab topology transformation process.
+In multi-provider topologies, set the **uplink** parameter only for the primary provider (specified in the topology-level **provider** attribute); netlab copies the **uplink** parameter to all secondary providers during the lab topology transformation process.
 ```
 
 ### Containerlab Management Network
@@ -100,7 +105,7 @@ In multi-provider topologies, set the **uplink** parameter only for the primary 
 
 * **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
 * **ipv6**: Optional IPv6 management network prefix. It's not set by default.
-* **start**: The offset of the first management IP address in the management network (default: `100`). For example, with **start** set to 50, the device with **node.id** set to 1 will get 51st IP address in the management IP prefix.
+* **start**: The offset of the first management IP address in the management network (default: `100`). For example, with **start** set to 50, the device with **node.id** set to 1 will get the 51st IP address in the management IP prefix.
 * **\_network**: The Docker network name (default: `netlab_mgmt`)
 * **\_bridge**: The name of the underlying Linux bridge (default: unspecified, created by Docker)
 
@@ -108,20 +113,20 @@ In multi-provider topologies, set the **uplink** parameter only for the primary 
 
 *netlab* assigns an IPv4 (and optionally IPv6) address to the management interface of each container regardless of whether the container supports SSH access. That IPv4/IPv6 address is used by *containerlab* to configure the first container interface.
 
-You can change the IPv4/IPv6 address of a device management interface with the **mgmt.ipv4**/**mgmt.ipv6** node parameter, but be aware that nobody checks whether your change will result in overlapping IP addresses.
+You can change a device management interface's IPv4/IPv6 address with the **mgmt.ipv4**/**mgmt.ipv6** node parameter, but be aware that nobody checks whether your change will result in overlapping IP addresses.
 
-It's much better to use the **addressing.mgmt** pool **ipv4**/**ipv6**/**start** parameters to adjust the address range used for management IP addresses, and rely on *netlab* to assign management IP addresses to containers based on [device node ID](node-augment).
+It's much better to use the **addressing.mgmt** pool **ipv4**/**ipv6**/**start** parameters to adjust the address range used for management IP addresses and rely on *netlab* to assign management IP addresses to containers based on [device node ID](node-augment).
 
 (clab-port-forwarding)=
 ### Port Forwarding
 
-*netlab* supports container port forwarding -- mapping of TCP ports on the container management IP address to ports on the host. You can use port forwarding to access the lab devices via the host external IP address without exposing the management network to the outside world.
+*netlab* supports container port forwarding -- mapping of TCP ports on the container management IP address to ports on the host. You can use port forwarding to access the lab devices via the host's external IP address without exposing the management network to the outside world.
 
 ```{warning}
-Some containers do not run a SSH server and cannot be accessed via SSH even if you set up port forwarding for the SSH port.
+Some containers do not run an SSH server and cannot be accessed via SSH, even if you set up port forwarding for the SSH port.
 ```
 
-Port forwarding is disabled by default and can be enabled by configuring the **defaults.providers.clab.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf), dictionary values are start values of host ports. *netlab* assigns a unique host port to every forwarded container port based on the start value and container node ID.
+Port forwarding is turned off by default and can be enabled by configuring the **defaults.providers.clab.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf), and dictionary values are the starting values of host ports. *netlab* assigns a unique host port to every forwarded container port based on the start value and container node ID.
 
 For example, when given the following topology...
 
@@ -144,7 +149,7 @@ nodes:
 (clab-vrnetlab)=
 ### Using vrnetlab Containers
 
-_vrnetlab_ is an open-source project that packages network device virtual machines into containers. The architecture of the packaged container requires an internal network, and it seems that _vrnetlab_ (or the fork used by _containerlab_) uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
+_vrnetlab_ is an open-source project that packages network device virtual machines into containers. The packaged container's architecture requires an internal network, and it seems that _vrnetlab_ (or the fork used by _containerlab_) uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
 
 If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
@@ -186,13 +191,13 @@ nodes:
 ```
 
 ```{tip}
-You don't have to worry about dots in filenames: _netlab_ knows that the keys of the **‌clab.binds** and **‌clab.config_templates** dictionaries are filenames, and does not expand them into hierarchical dictionaries.
+You don't have to worry about dots in filenames: _netlab_ knows that the keys of the **‌clab.binds** and **‌clab.config_templates** dictionaries are filenames. They are not expanded into hierarchical dictionaries.
 ```
 
 (clab-config-template)=
 ### Generating and Binding Custom Configuration Files
 
-In addition to binding pre-existing files, _netlab_ can also generate custom config files on the fly based on Jinja2 templates. For example, this is used internally to create the list of daemons for the **frr** container image:
+In addition to binding pre-existing files, _netlab_ can generate custom config files on the fly based on Jinja2 templates. For example, this is used internally to create the list of daemons for the **frr** container image:
 
 ```
 frr:
@@ -228,10 +233,10 @@ Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon
 
 ### Jinja2 Filters Available in Custom Configuration Files
 
-The custom configuration files are generated within _netlab_ and can therefore use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import the **ipaddr** family of filters, making filters like **ipv4**, **ipv6**, or **ipaddr** available in custom configuration file templates.
+The custom configuration files are generated within _netlab_ and can, therefore, use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import the **ipaddr** family of filters, making filters like **ipv4**, **ipv6**, or **ipaddr** available in custom configuration file templates.
 
 ```{warning}
-Ansible developers love to restructure stuff and move it into different directories. This functionality works with two implementations  of **ipaddr** filters (tested on Ansible 2.10 and Ansible 7.4/ Ansible Core 2.14) but might break in the future -- we're effectively playing whack-a-mole with Ansible developers.
+Ansible developers love to restructure stuff and move it into different directories. This functionality works with two implementations of **ipaddr** filters (tested on Ansible 2.10 and Ansible 7.4/ Ansible Core 2.14) but might break in the future -- we're effectively playing whack-a-mole with Ansible developers.
 ```
 
 [^HB]: Installing Ansible with Homebrew or into a separate virtual environment won't work -- _netlab_ has to be able to import Ansible modules
@@ -247,9 +252,9 @@ You can also change these *containerlab* parameters:
 * **clab.ports** to map container ports to host ports
 * **clab.cmd** to execute a command in a container.
 
-String values (for example, command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file -- make sure you're not using single quotes in your command line.
+String values (for example, command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
 
-You can find the complete list of supported Containerlab attributes in the [system defaults](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22) or print it with the `netlab inspect defaults.providers.clab.attributes` command.
+The complete list of supported Containerlab attributes is in the [system defaults](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22) and can be printed with the `netlab show defaults providers.clab.attributes` command.
 
 To add other *containerlab* attributes to the `clab.yml` configuration file, modify **defaults.providers.clab.node_config_attributes** settings, for example:
 

@@ -1,0 +1,29 @@
+{% if 'server' in dhcp|default({}) %}
+{%   include 'ios.server.j2' %}
+!
+{% endif %}
+{% if dhcp.vrf|default(False) %}
+ip dhcp relay information option vpn
+!
+{% endif %}
+{% for intf in interfaces if intf.dhcp is defined %}
+interface {{ intf.ifname }}
+{%   if intf.dhcp.client.ipv4 is defined %}
+{%     if intf.dhcp.client.default|default(True) is sameas false %}
+  no ip dhcp client request router
+{%     endif %}
+  ip address dhcp
+{%   endif %}
+{%   if intf.dhcp.client.ipv6 is defined %}
+  ipv6 enable
+  ipv6 address dhcp
+{%   endif %}
+{%   for target in intf.dhcp.relay.ipv4|default([]) %}
+{%     set vrf = intf.dhcp.vrf|default('') %}
+{%     set vrf_kw = vrf +' ' if vrf == 'global' else 'vrf ' + vrf + ' ' if vrf else '' %}
+  ip helper-address {{ vrf_kw }}{{ target }}
+{%   endfor %}
+{%   for target in intf.dhcp.relay.ipv6|default([]) %}
+  ipv6 dhcp relay destination {{ target }}
+{%   endfor %}
+{% endfor %}

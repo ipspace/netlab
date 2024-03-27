@@ -1,0 +1,18 @@
+# This is a placeholder file. DHCP is configured during initial configuration
+#
+if [ `grep 'ID=ubuntu' /etc/os-release` ]; then
+  echo "DHCP is supported"
+else
+  echo "netlab supports DHCP only on Ubuntu" >&2
+  exit 1
+fi
+{% if dhcp.server|default(False) %}
+cat <<CONFIG >/etc/dnsmasq.d/pools
+{% include 'dnsmasq.j2' %}
+CONFIG
+service dnsmasq restart
+{% endif %}
+{% if dhcp.relay|default(False) %}
+{%   include 'linux-isc-dhcp-relay.j2' %}
+service isc-dhcp-relay restart
+{% endif %}

@@ -1,0 +1,33 @@
+message: |
+  This lab tests OSPF running over unnumbered IPv4 interfaces.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1 ]
+
+nodes:
+  dut:
+  x1:
+
+links:
+- dut:
+  x1:
+  prefix.ipv4: True
+
+validate:
+  wait:
+    description: Wait for OSPF adjacencies to start
+    wait: 30
+  adj:
+    description: Is DUT a neigbor of X1?
+    pass: OK, X1 has DUT as a neighbor
+    nodes: [ x1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  lb:
+    description: Check the DUT loopback prefix on X1
+    nodes: [ x1 ]
+    plugin: ospf_prefix(nodes.dut.loopback.ipv4,rt='N')

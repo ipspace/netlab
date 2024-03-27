@@ -1,3 +1,4 @@
+(defaults)=
 # Topology Defaults
 
 *netlab* has dozens of system defaults that specify:
@@ -15,16 +16,58 @@
    :backlinks: none
 ```
 
-## Changing System Defaults
+## Changing Defaults
 
-All system defaults specified in the global **topology-defaults.yml** file (shipped with *netlab* package) could be overwritten with the **defaults** element within the lab topology, or from user- or system- defaults files:
+The system defaults are specified in the global **topology-defaults.yml** file (shipped with the *netlab* package). These defaults are imported into the lab topology under the **defaults** top-level attribute. They could be overwritten with the **defaults** element within the lab topology or from user- or system defaults files.
 
-* **topology-defaults.yml** file residing in the same directory as the topology file or in the user's home directory.
-* **.netlab.yml** file residing in user's home directory
-* **/etc/netlab/defaults.yml** file
+### Changing Defaults in Lab Topology
+
+To change a default setting for a single lab topology, set **defaults.$something** attribute to the desired value in the lab topology file.
+
+For example, if you want to change the current lab's default device (**defaults.device**) to Arista EOS, add `defaults.device: eos` to the lab topology file or use the expanded format:
+
+```
+defaults:
+  device: eos
+```
+
+```{tip}
+If you're a novice user, tweak the defaults with the lab topology settings and migrate them to the user defaults file when you get the desired results.
+```
+
+(defaults-user-file)=
+### Changing Defaults in User Defaults Files
+
+Create a YAML file specifying user defaults if you want the same defaults changed for all your lab topologies. _netlab_ tries to find user defaults in the following files (but see also [](defaults-locations)):
+
+* **topology-defaults.yml** file in the lab directory
+* **.netlab.yml** file in the user home directory.
+* System-wide **/etc/defaults/netlab.yml** file
+
+The default settings in the user defaults files are identical to the ones you'd use in the network topology file but without the `defaults.` prefix[^MD].
+
+[^MD]: If you're migrating defaults from a lab topology into a defaults file, remove the **defaults** prefix.
+
+For example, to make sure all labs use Arista EOS as the default device type using a specific cEOS or vEOS image, create the following `.netlab.yml ` file in your home directory:
+
+```
+---
+device: eos
+devices.eos:
+  clab.image: ceos:4.31.2F
+  libvirt.image: arista/veos:4.28.3M
+```
+
+During the topology gathering process, _netlab_ reads the `~/.netlab.yml` file, converts it into a dictionary, and [merges it](defaults-deep-merging) with the **defaults** topology dictionary, resulting in the **defaults.device** entry in the lab topology data structure set to `eos`.
+
+```{tip}
+If you don't know what to change, explore the system defaults with the **‌netlab show defaults** command. See also [](defaults-debug).
+```
 
 (default-device-type)=
-The topology **defaults** value is most commonly used to set default device type; you could also use it to set any other default parameter. For example, the following topology file builds a network of Cisco IOSv devices using a different value for the default IS-IS area:
+### Example: Changing Device Type and Device Image
+
+The topology **defaults** value is most commonly used to set the default device type; you could also use it to set any other default parameter. For example, the following topology file builds a network of Cisco IOSv devices using a different value for the default IS-IS area:
 
 ```
 ---
@@ -36,7 +79,7 @@ defaults:
 ...
 ```
 
-When augmenting default settings, *netlab* uses a [deep dictionary merge](defaults-deep-merging), allowing you to overwrite a single setting deep in the hierarchy without affecting any other related settings. 
+When augmenting default settings, *netlab* uses a [deep dictionary merge](defaults-deep-merging), allowing you to overwrite a single setting deep in the defaults hierarchy without affecting other related settings. 
 
 (default-device-image)=
 For example, it's possible to replace the default Vagrant box name for a network device type without changing any other device parameter[^DD]:
@@ -49,64 +92,92 @@ defaults.device: eos
 defaults.devices.eos.image: arista/vEOS-lab-4.21.14M
 ```
 
-**Note:** If you want to run your topology on multiple virtualization provides, you can set different device image name for every virtualization provider:
+Change the provider-specific device images if you want to run your topology on multiple virtualization providers. This is how you can set different device image names for Arista EOS virtual machines and containers in the lab topology:
 
 ```
 ---
-defaults.device: eos
 defaults.devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
-defaults.devices.eos.clab.image: cEOS:latest
+defaults.devices.eos.clab.image: "cEOS:latest"
 ```
+
+You can also change the default image names in the user defaults file:
+
+```
+---
+devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
+devices.eos.clab.image: "cEOS:latest"
+```
+
+(defaults-env)=
+## Changing Defaults with Environment Variables
+
+You can change _netlab_ defaults with environment variables starting with `netlab_` or `NETLAB_`. These environment variables are processed as follows:
+
+* Convert the variable name to lowercase.
+* Remove the `netlab_` prefix.
+* Replace underscores with dots.
+* Set the corresponding value in the topology defaults.
+
+For example, the `NETLAB_DEVICE` variable sets the **defaults.device** parameter and the `NETLAB_BGP_AS` variable sets the **defaults.bgp.as** parameter.
+
+You can use the environment variables instead of the `--device`, `--provider`, or `--set` arguments of the **netlab up** command. For example, the following command sequence starts a lab topology using Arista EOS containers:
+
+```
+$ export NETLAB_DEVICE=eos
+$ export NETLAB_PROVIDER=clab
+$ netlab up
+```
+
+Environment variables have higher precedence than the system- and user defaults but cannot override the **netlab up** CLI arguments. For example, this is the order of precedence (from highest to lowest) used to select the virtualization provider:
+
+* The `--provider` CLI argument
+* **provider** attribute specified in lab topology
+* `NETLAB_PROVIDER` environment variable
+* **defaults.provider** attribute in the lab topology
+* **provider** attribute in user defaults
+* **provider** attribute is not specified in the system defaults but would have been the value of last resort.
+
+(defaults-debug)=
+## Debugging User Default Files
+
+You can debug the processing of the default files with the `--debug defaults` option of the **[netlab create](netlab/create.md)** command. You can also debug default settings without creating any output with the `netlab create --output none --debug defaults` command.
+
+Use the **[netlab show defaults](netlab-show-defaults)** command to investigate how the system defaults were augmented with the user defaults. For example, execute `netlab show defaults gateway` to inspect the settings of the **gateway** module or `netlab show defaults outputs.d2` to examine the settings of the D2 graphing output module.
+
+You can also use the **[netlab inspect defaults...](netlab/inspect.md)** command after you create the lab configuration files (and the snapshot file) with the **netlab create** or **[netlab up](netlab/up.md)** command. For example, to inspect the Arista EOS device settings, use **netlab inspect defaults.devices.eos**.
+
+Finally, if you want to see how the lab topology defaults interact with user- and system defaults *without creating any output files*, use the **netlab create --output yaml:defaults...** command to process the lab topology and print the collected default values. For example, execute `netlab create --output yaml:defaults.addressing` to display the default address pools your lab topology would use.
+
+## Advanced Topics
 
 (defaults-deep-merging)=
-## Deep Merging
+### Deep Merging
 
-*netlab* uses Python Box package to perform recursive merge of configuration dictionaries:
+*netlab* uses the Python Box package to perform a recursive merge of lab topology with user- and system defaults:
 
-* Dictionary keys not present in target dictionary are added from the defaults dictionary;
-* Whenever a key in the target dictionary is itself a dictionary, and the same key is present in the defaults dictionary, the merge process recurses, resulting in a recursive merge of child dictionaries.
+* Dictionary keys not present in the target dictionary are added from the **defaults** dictionary;
+* Whenever a key in the target dictionary is itself a dictionary and the same key is present in the **defaults** dictionary, the merge process recurses, resulting in a recursive merge of child dictionaries.
 * Lists and scalar values are not merged.
 
-(defaults-user-file)=
-## User Default Settings
-
-*netlab* reads system defaults from the system **topology-defaults.yml** and augments them with:
-
-* **topology-defaults.yml** file in the lab directory
-* **.netlab.yml** file in the user home directory.
-* System-wide **/etc/defaults/netlab.yml** file
-
-The defaults setting in the user defaults files are identical to the ones you'd use in the network topology file but without the `defaults.` prefix.
-
-For example, to make sure all labs use Arista EOS as the default device type using a specific cEOS or vEOS image, create the following **.netlab.yml** file in your home directory:
-
-```
----
-device: eos
-devices.eos:
-  clab.image: ceos:4.27.2F
-  libvirt.image: arista/veos:4.28.3M
-```
-
 (defaults-locations)=
-## Alternate Defaults Files Locations (Advanced)
+## Alternate Defaults Files Locations
 
 By default, *netlab* tries to find:
 
 * User default files in `./topology-defaults.yml`, `~/.netlab.yml` and `~/topology-defaults.yml`
-* System defaults in `/etc/netlab/defaults.yml`and `package:topology-defaults.yml`
+* System defaults in `/etc/netlab/defaults.yml` and `package:topology-defaults.yml`
 
 You can change the locations of user- or system defaults with the `defaults.sources` parameters specified in the lab topology file[^NAE]:
 
 [^NAE]: These parameters cannot be changed anywhere else as they're checked before the default values are merged with the lab topology file.
 
-* `defaults.sources.extra` adds files to the list of user default files. You can use this parameter to add extra defaults to larger projects with a hierarchical directory structure.
-* `defaults.sources.list` (if present) specifies the complete list of default file locations that cannot be changed with other parameters
-* `defaults.sources.user` changes the list of potential user default files.
-* `defaults.sources.system` changes the list of potential system default files.
+* The `defaults.sources.extra` list adds files to the list of user default files. This parameter can be used to add extra defaults to larger projects with a hierarchical directory structure.
+* The `defaults.sources.user` parameter changes the list of potential user default files.
+* The `defaults.sources.system` parameter changes the list of potential system default files.
+* The `defaults.sources.list` parameter (if present) specifies the complete list of default file locations that cannot be changed with other parameters.
 
 ```{warning}
-If you feel the need to change `defaults.sources.system` setting make sure `package:topology-defaults.yml` is the last element in the list or you'll face an interesting troubleshooting exercise.
+If you need to change the `defaults.sources.system` or `default.sources.list` settings, make sure `package:topology-defaults.yml` is the last element in the list.
 ```
 
 For example, the [project-wide defaults file](https://github.com/ipspace/bgplab/blob/main/defaults.yml) in the [BGP Hands-On Labs](https://github.com/ipspace/bgplab/) project specifies the device type you want to use in the labs. Individual lab topologies ([example](https://github.com/ipspace/bgplab/blob/main/basic-session/topology.yml)) are stored in subdirectories and use `defaults.sources.extra` parameter to add project-wide defaults to the lab topology, for example:

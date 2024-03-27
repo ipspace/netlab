@@ -84,17 +84,20 @@ def set_id_counter(name: str, start: int, max_value: int = 4096) -> int:
 	return start
 
 def get_next_id(name: str) -> int:
-	idvar = global_vars.get(f'{name}_id')
-	if not 'next' in idvar:
-		log.fatal(f'Initial {name} value is not set, get_next_id failed')
-	while True:
-		if not idvar.next in idvar.value:
-			idvar.value.add(idvar.next)
-			return idvar.next
+  idvar = global_vars.get(f'{name}_id')
+  if not 'next' in idvar:
+    log.fatal(f'Initial {name} value is not set, get_next_id failed')
+  while True:
+    if not idvar.next in idvar.value:
+      idvar.value.add(idvar.next)
+      return idvar.next
 
-		idvar.next = idvar.next + 1
-		if idvar.next > idvar.max:
-			log.fatal(f'Ran out of {name} values, next value would be greater than {idvar.max}')
+    idvar.next = idvar.next + 1
+    if idvar.next > idvar.max:
+      log.fatal(
+        f'Ran out of {name} values, next value would be greater than {idvar.max}',
+        module='dataplane',
+        header=True)
 
 """
 validate_object_reference_list

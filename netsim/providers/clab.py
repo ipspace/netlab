@@ -1,14 +1,13 @@
 #
 # Containerlab provider module
 #
-import subprocess
 import typing
-import shutil
+import json
 from box import Box
 
 from . import _Provider,get_forwarded_ports
 from ..utils import log
-from ..data import filemaps
+from ..data import filemaps, get_empty_box
 from ..cli import is_dry_run,external_commands
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
@@ -89,17 +88,29 @@ def normalize_clab_filemaps(node: Box) -> None:
       continue
     filemaps.normalize_file_mapping(node,f'nodes.{node.name}',undot_key,'clab')
 
+'''
+add_daemon_filemaps: add device-level daemon_config dictionary to clab.config_templates dictionary
+'''
+
+def add_daemon_filemaps(node: Box, topology: Box) -> None:
+  if '_daemon_config' not in node:                # Does the current node need daemon-specific binds?
+    return                                        # ... nope, get out of here
+
+  node.clab.config_templates = node.clab.config_templates + node._daemon_config
+
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = "clab-%s-%s" % (topology.name,node.name)
-    normalize_clab_filemaps(node)
-
-    self.create_extra_files_mappings(node,topology)
-
     node_fp = get_forwarded_ports(node,topology)
     if node_fp:
       add_forwarded_ports(node,node_fp)
+
+  def node_post_transform(self, node: Box, topology: Box) -> None:
+    add_daemon_filemaps(node,topology)
+    normalize_clab_filemaps(node)
+
+    self.create_extra_files_mappings(node,topology)
 
   def post_configuration_create(self, topology: Box) -> None:
     for n in topology.nodes.values():
@@ -121,3 +132,33 @@ class Containerlab(_Provider):
         destroy_ovs_bridge(brname)
       else:
         destroy_linux_bridge(brname)
+
+  def get_lab_status(self) -> Box:
+    try:
+      status = external_commands.run_command(
+                  'docker ps --format json',
+                  check_result=True,
+                  ignore_errors=True,
+                  return_stdout=True)
+      
+      stat_box = get_empty_box()
+      if not isinstance(status,str):
+        return stat_box
+      try:
+        for line in status.split('\n'):
+          if not line.startswith('{'):
+            continue
+          docker_stats = json.loads(line)
+          stat_box[docker_stats['Names']].status = docker_stats['Status']
+          stat_box[docker_stats['Names']].image = docker_stats['Image']
+      except Exception as ex:
+        log.error(f'Cannot get Docker status: {ex}',category=log.FatalError,module='clab')
+        return stat_box
+
+      return stat_box
+    except:
+      log.error('Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')
+      return get_empty_box()
+
+  def get_node_name(self, node: str, topology: Box) -> str:
+    return f'clab-{ topology.name }-{ node }'

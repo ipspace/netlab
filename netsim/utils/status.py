@@ -95,8 +95,12 @@ lock_file: typing.Final[str] = 'netlab.lock'
 
 def lock_directory() -> None:
   global lock_file
-  with open(lock_file, 'w') as f:
-    f.write('netlab lock file, do not remove')
+
+  if os.path.exists(lock_file):
+    os.utime(lock_file,None)
+  else:
+    with open(lock_file, 'w') as f:
+      f.write('netlab lock file, do not remove')
 
 '''
 unlock_directory -- remove netlab.lock file in current directory
@@ -112,3 +116,13 @@ is_locked -- check if netlab.lock file exists in current directory
 def is_directory_locked() -> bool:
   global lock_file
   return os.path.exists(lock_file)
+
+'''
+lock_timestamp -- return mtime of the lock file or None if it does not exist
+'''
+def lock_timestamp() -> typing.Optional[typing.Union[int,float]]:
+  global lock_file
+  if os.path.exists(lock_file):
+    return os.stat(lock_file).st_mtime
+  else:
+    return None
