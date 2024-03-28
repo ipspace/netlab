@@ -19,6 +19,7 @@ from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change
 from .. import providers
 from ..utils import log,strings,status as _status, read as _read
+from ..data import global_vars
 
 #
 # Extra arguments for 'netlab up' command
@@ -78,6 +79,7 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
       log.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
 
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
+    global_vars.init(topology)    
   else:                                                       # No snapshot file, use 'netlab create' parser
     log.section_header('Creating','configuration files')
     topology = create.run(cli_args,'up','Create configuration files, start a virtual lab, and configure it',up_args_parser)
