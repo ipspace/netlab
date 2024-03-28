@@ -51,6 +51,10 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='nowait', action='store_true',
     help='Skip the waiting period')
   parser.add_argument(
+    '--skip-missing',
+    dest='skip_missing', action='store_true',
+    help=argparse.SUPPRESS)
+  parser.add_argument(
     dest='tests', action='store',
     nargs='*',
     help='Validation test(s) to execute (default: all)')
@@ -664,7 +668,10 @@ def run(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
 
   if 'validate' not in topology:
-    log.fatal('No validation tests defined for the current lab, exiting')
+    if args.skip_missing:
+      sys.exit(2)
+    else:
+      log.fatal('No validation tests defined for the current lab, exiting')
 
   if args.list:
     list_tests(topology)
