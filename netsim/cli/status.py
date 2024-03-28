@@ -248,7 +248,7 @@ def run(cli_args: typing.List[str]) -> None:
   lab_states = status.read_status(topology)
   if not lab_states:
     print('No netlab-managed labs')
-    return
+    sys.exit(1)
 
   if args.all:
     display_active_labs(topology,args,lab_states)
