@@ -41,7 +41,7 @@ def valid_bgp_neighbor(
   if not n_addr in data:
     raise Exception(f'The router has no BGP neighbor with {af} address {n_addr} ({n_id})')
 
-  if data[n_addr].state != state:
+  if data[n_addr].state not in state:
     raise Exception(f'The neighbor {n_addr} ({n_id}) is in state {data[n_addr].state} (expected {state})')  
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].state}'
