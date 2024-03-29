@@ -10,6 +10,7 @@ import argparse
 from . import common_parse_args,get_message,load_snapshot_or_topology,lab_status_change
 from . import external_commands
 from . import ansible
+from ..utils import status as _status
 from box import Box
 
 #
@@ -100,3 +101,6 @@ def run(cli_args: typing.List[str]) -> None:
       if message:
         print(f"\n\n{message}")
       lab_status_change(topology,f'configuration deployment complete')
+
+  if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done
+    _status.lock_directory()                          # .. to have a timestamp of when the lab was started
