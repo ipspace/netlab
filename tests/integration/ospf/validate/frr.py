@@ -104,3 +104,26 @@ def valid_ospf6_prefix(
     raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metricCost}')
 
   return True
+
+def show_ipv6_route(pfx: str, proto: str = '', cost: int = 0) -> str:
+  return f'ipv6 route {proto} json'
+
+def valid_ipv6_route(
+      pfx: str,
+      proto: typing.Optional[str] = None,
+      cost: typing.Optional[int] = None) -> str:
+  global _result
+  if not isinstance(pfx,str):
+    raise Exception(f'Prefix {pfx} is not a string')
+
+  if not _result:
+    raise Exception(f'The routing table has no {proto} routes')
+  
+  if not pfx in _result:
+    raise Exception(f'The prefix {pfx} is not in the routing table or not a {proto} route')
+  
+  pfx_data = _result[pfx][0]
+  if cost is not None and cost != pfx_data.metric:
+    raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metric}')
+
+  return True
