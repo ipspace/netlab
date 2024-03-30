@@ -8,7 +8,6 @@ import importlib.util
 import os
 import sys
 import typing
-import fnmatch
 
 from . import log
 from ..data import global_vars
@@ -128,11 +127,12 @@ def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
 # Get a list of files matching a glob pattern
 #
 def get_globbed_files(path: typing.Any, glob: str) -> list:
+  if isinstance(path,str):
+    path = pathlib.Path(path)
   if isinstance(path,pathlib.Path):
     return [ str(fname) for fname in list(path.glob(glob)) ]
   else:
-    file_names = list(path.iterdir())
-    return fnmatch.filter(file_names,glob)
+    log.fatal(f'Internal error: invalid argument to get_globbed_files: {path}')
 
 #
 # Get a path object that can be used to find files in a file system or in the package
