@@ -1,0 +1,54 @@
+---
+message: |
+  Use this topology to test the 'passive BGP peer' functionality. The DUT should
+  establish an EBGP sesion with X1 (DUT is active) and X2 (X2 is active) but not
+  with X3 (both are passive).
+
+plugin: [ bgp.session, bgp.policy ]
+module: [ bgp ]
+defaults.paths.validate: topology:../validate
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, x3 ]
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+  x3:
+    bgp.as: 65102
+
+links:
+- dut:
+  x1:
+    bgp.passive: True
+- dut:
+    bgp.passive: True
+  x2:
+- dut:
+    bgp.passive: True
+  x3:
+    bgp.passive: True
+
+validate:
+  session:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  wait:
+    description: Wait a few seconds just to be on the safe side
+    wait: 3
+
+  passive:
+    description: Check that there's no EBGP sessions between DUT and X3
+    nodes: [ x3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',state=['Idle','Active'])

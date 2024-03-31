@@ -5,6 +5,17 @@ FRR OSPFv2 validation routines
 from box import Box
 import typing
 
+# Find neighbor IP address from neighbor name
+def get_bgp_neighbor_id(ngb: list, n_id: str, af: str) -> typing.Union[bool, str]:
+  for n in ngb:
+    if n.name != n_id:
+      continue
+    if af not in n:
+      continue
+    return n[af]
+  
+  raise Exception(f'Cannot find the {af} address of the neighbor {n_id}')
+
 def show_bgp_neighbor(ngb: list, n_id: str, **kwargs: typing.Any) -> str:
   return 'bgp summary json'
 
@@ -16,22 +27,13 @@ def valid_bgp_neighbor(
       intf: str = '') -> str:
   global _result
 
-  n_addr = None
-  for n in ngb:                   # Find neighbor IP address from neighbor name
-    if n.name != n_id:
-      continue
-    if af not in n:
-      continue
-    n_addr = n[af]
+  n_addr = get_bgp_neighbor_id(ngb,n_id,af)
 
   if n_addr is True:
     if not intf:
       raise Exception(f'Need an interface name for an unnumbered EBGP neighbor')
     n_addr = intf
   
-  if not n_addr:
-    raise Exception(f'Cannot find the {af} address of the neighbor {n_id}')
-
   struct_name = f'{af}Unicast'
   if struct_name not in _result:
     raise Exception('There are no BGP peers')
@@ -45,6 +47,27 @@ def valid_bgp_neighbor(
     raise Exception(f'The neighbor {n_addr} ({n_id}) is in state {data[n_addr].state} (expected {state})')  
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].state}'
+
+def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
+  n_addr = get_bgp_neighbor_id(ngb,n_id,af)
+  return f'bgp neighbor {n_addr} json'
+
+def valid_bgp_neighbor_details(
+      ngb: list,
+      n_id: str,
+      af: str = 'ipv4',**kwargs) -> str:
+  global _result
+
+  n_addr = get_bgp_neighbor_id(ngb,n_id,af)
+  data = _result[n_addr]
+
+  for k,v in kwargs.items():
+    if not k in data:
+      raise Exception(f'Neighbor data structure does not contain attribute {k}')
+    if data[k] != v:
+      raise Exception(f'{k} expected value {v} actual {data[k]}')
+
+  return f'All specified BGP neighbor parameters have the expected values'
 
 def show_bgp_prefix(pfx: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
   return f"bgp {af} {pfx} json"
@@ -131,3 +154,18 @@ def valid_bgp_prefix_community(pfx: str, af: str = 'ipv4', state: str = 'present
       raise Exception(f'{cname} {cvalue} should not be attached to {pfx}')
 
   return f"The prefix {pfx} contains the expected communities"
+
+def show_bgp_prefix_aspath(pfx: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
+  return f"bgp {af} {pfx} json"
+
+def valid_bgp_prefix_aspath(pfx: str, aspath: str, af: str = 'ipv4') -> str:
+  global _result
+
+  if not valid_bgp_prefix(pfx,af):                          # Offload the baseline processing
+    return
+  
+  for p_element in _result.paths:                           # Iterate over all know paths for the prefix
+    if p_element.aspath.string == aspath:
+      return f"The prefix {pfx} has the expected AS-path {aspath}"
+
+  raise Exception(f'No path to prefix {pfx} has AS-path {aspath}')

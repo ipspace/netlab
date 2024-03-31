@@ -1,0 +1,45 @@
+message:
+  This lab tests the BGP timers functionality. The EBGP session between the
+  probe and the lab device should use the BGP timers dictated by the lab device.
+
+plugin: [ bgp.session ]
+module: [ bgp ]
+defaults.paths.validate: topology:../validate
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+  x1:
+    bgp.as: 65100
+
+links:
+- dut:
+    bgp.timers:
+      keepalive: 17
+      hold: 51
+  x1:
+    bgp.timers:
+      keepalive: 60
+      hold: 180
+      min_hold: 3
+
+validate:
+  session:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  timers:
+    description: Check the EBGP session timers
+    nodes: [ x1 ]
+    plugin: |-
+      bgp_neighbor_details(
+        node.bgp.neighbors,'dut',
+        bgpTimerHoldTimeMsecs=51000,
+        bgpTimerKeepAliveIntervalMsecs=17000)
