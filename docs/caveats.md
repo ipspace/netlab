@@ -72,6 +72,7 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 ## Cisco IOSv
 
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+* BGP configuration is optimized to result in reasonable convergence times under lab conditions. Do not use the same settings in a production network.
 
 (caveats-iosxr)=
 ## Cisco IOS XRv
