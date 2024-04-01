@@ -112,7 +112,7 @@ def valid_ospf6_prefix(
       raise Exception(result_text)
   
   pfx_data = _result[pfx]
-  result_text = f'Found OSPFv3 prefix {pfx} (rt {pfx_data.routeType} cost {pfx_data.cost})'
+  result_text = f'Found OSPFv3 prefix {pfx} (rt {pfx_data.pathType} cost {pfx_data.metricCost})'
   if state == 'missing':
     raise Exception(result_text)
 
