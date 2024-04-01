@@ -86,7 +86,7 @@ def check_device_provider(args: argparse.Namespace, topology: Box) -> None:
       f'Invalid device {device}',
       category=log.IncorrectValue,
       module='',
-      more_hints='Valid devices: {" ".join(dev_list)}')
+      more_hints=f'Valid devices: {" ".join(dev_list)}')
 
   prov_list = list(topology.defaults.providers.keys())
   provider  = os.environ.get('NETLAB_PROVIDER',None)
@@ -95,7 +95,7 @@ def check_device_provider(args: argparse.Namespace, topology: Box) -> None:
       f'Invalid provider {provider}',
       category=log.IncorrectValue,
       module='',
-      more_hints='Valid providers: {" ".join(prov_list)}')
+      more_hints=f'Valid providers: {" ".join(prov_list)}')
 
   log.exit_on_error()
 
@@ -200,7 +200,12 @@ def main() -> None:
           shutil.rmtree(args.logdir)
         log_clean = True
 
-      run_test(test,args)
+      try:
+        run_test(test,args)
+      except KeyboardInterrupt as ex:
+        print()
+        run_cleanup(args)
+        log.fatal('User interrupt, aborting')
       os.chdir(save_dir)
 
   return

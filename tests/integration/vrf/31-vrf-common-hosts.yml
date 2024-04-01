@@ -1,3 +1,4 @@
+---
 message: |
   The device under test has two user VRFs and a common services VRF. The
   lab tests inter-VRF route leaking between common VRF and other VRFs
@@ -9,24 +10,27 @@ groups:
   hosts:
     members: [ h1, h2, srv ]
     device: linux
+    provider: clab
   routers:
-    members: [ rtr ]
+    members: [ dut ]
     module: [ vrf ]
 
 vrfs:
   red:
     import: [ red, common ]
-    links: [ rtr-h1 ]
+    links: [ dut-h1 ]
   blue:
     import: [ blue, common ]
-    links: [ rtr-h2 ]
+    links: [ dut-h2 ]
   common:
     import: [ red, blue, common ]
-    links: [ rtr-srv ]
+    links: [ dut-srv ]
 
 validate:
   red:
     description: h1 trying to reach srv
+    wait: 10
+    wait_msg: Waiting for IPv4 routes
     nodes: [ h1 ]
     devices: [ linux ]
     exec: ping -c 5 -W 1 -A srv
@@ -34,6 +38,7 @@ validate:
       "64 bytes" in stdout
   blue:
     description: h2 trying to reach srv
+    wait: 3
     nodes: [ h1 ]
     devices: [ linux ]
     exec: ping -c 5 -W 1 -A srv

@@ -1,0 +1,102 @@
+---
+message: |
+  The device under test has two VRFs with two interfaces in each VRF.
+  Routers are attached to those interfaces and run BGP with device under test.
+  Assuming the multi-vrf BGP test case succeeded, this one adds VRF loopback
+  interfaces advertised into BGP with network statements.
+
+  * r1 and r2 should be able to ping each other and rtr VRF loopback
+  * r3 and r4 should be able to ping each other and rtr VRF loopback
+  * r1 should not be able to reach r3
+
+defaults.paths.validate: "topology:../bgp/validate"
+defaults.sources.extra: [ defaults-ipv6-only.yml ]
+
+groups:
+  ce:
+    members: [ r1, r2, r3, r4 ]
+    module: [ bgp ]
+    device: frr
+    provider: clab
+  pe:
+    members: [ dut ]
+    module: [ vrf, bgp ]
+    bgp.as: 65000
+
+vrfs:
+  red:
+    loopback.ipv6: 2001:db8:c001:cafe::/64
+    links: [ dut-r1, dut-r2 ]
+  blue:
+    loopback.ipv6: 2001:db8:c001:cafe::/64
+    links: [ dut-r3, dut-r4 ]
+
+nodes:
+  dut:
+  r1:
+    bgp.as: 65101
+  r2:
+    bgp.as: 65102
+  r3:
+    bgp.as: 65103
+  r4:
+    bgp.as: 65104
+
+validate:
+  session:
+    description: Check EBGP sessions with DUT
+    wait_msg: Waiting for EBGP sessions to start
+    wait: 20
+    nodes: [ r1, r2, r3, r4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+    stop_on_error: true
+  pfx_red:
+    description: Check IPv6 BGP prefix on R1
+    wait_msg: Waiting for BGP convergence
+    wait: 5
+    nodes: [ r1 ]
+    plugin: bgp_prefix(nodes.r2.loopback.ipv6,af='ipv6')
+  pfx_blue:
+    description: Check IPv6 BGP prefix on R3
+    wait_msg: Waiting for BGP convergence
+    wait: 5
+    nodes: [ r3 ]
+    plugin: bgp_prefix(nodes.r4.loopback.ipv6,af='ipv6')
+  lb_red:
+    description: Check DUT loopback IPv6 BGP prefix in red VRF
+    wait: 5
+    nodes: [ r1 ]
+    plugin: bgp_prefix(nodes.dut.vrfs.red.loopback_address.ipv6,af='ipv6')
+  lb_blue:
+    description: Check DUT loopback IPv6 BGP prefix in blue VRF
+    wait: 5
+    nodes: [ r3 ]
+    plugin: bgp_prefix(nodes.dut.vrfs.blue.loopback_address.ipv6,af='ipv6')
+  red:
+    description: Ping-based reachability test in VRF red
+    nodes: [ r1 ]
+    devices: [ frr ]
+    exec: ping -c 5 -W 1 -A6 r2
+    valid: |
+      "64 bytes" in stdout
+  ping:
+    description: Ping-based reachability test in VRF blue
+    nodes: [ r3 ]
+    devices: [ frr ]
+    exec: ping -c 5 -W 1 -A6 r4
+    valid: |
+      "64 bytes" in stdout
+  red_lb:
+    description: Pinging red VRF loopback
+    nodes: [ r1 ]
+    devices: [ frr ]
+    exec: ping -c 5 -W 1 -A6 2001:db8:c001:cafe::1
+    valid: |
+      "64 bytes" in stdout
+  blue_lb:
+    description: Pinging blue VRF loopback
+    nodes: [ r3 ]
+    devices: [ frr ]
+    exec: ping -c 5 -W 1 -A 2001:db8:c001:cafe::1
+    valid: |
+      "64 bytes" in stdout

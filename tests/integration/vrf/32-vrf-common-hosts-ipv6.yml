@@ -1,0 +1,56 @@
+---
+message: |
+  The device under test has two user VRFs and a common services VRF. The
+  lab tests inter-VRF route leaking between common VRF and other VRFs
+
+  * h1 and h2 should be able to ping srv but not each other
+
+defaults.sources.extra: [ defaults-ipv6-only.yml ]
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, srv ]
+    device: linux
+    provider: clab
+  routers:
+    members: [ dut ]
+    module: [ vrf ]
+
+vrfs:
+  red:
+    import: [ red, common ]
+    links: [ dut-h1 ]
+  blue:
+    import: [ blue, common ]
+    links: [ dut-h2 ]
+  common:
+    import: [ red, blue, common ]
+    links: [ dut-srv ]
+
+validate:
+  red:
+    description: h1 trying to reach srv
+    wait: 20
+    wait_msg: Waiting for IPv6 routes
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A6 srv
+    valid: |
+      "64 bytes" in stdout
+  blue:
+    description: h2 trying to reach srv
+    wait_msg: Waiting for IPv6 routes
+    wait: 10
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A6 srv
+    valid: |
+      "64 bytes" in stdout
+  s2s:
+    description: h1 should not be able to reach h2
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: "ping -c 5 -W 1 -A6 h2 || true"
+    valid: |
+      "0 packets received" in stdout

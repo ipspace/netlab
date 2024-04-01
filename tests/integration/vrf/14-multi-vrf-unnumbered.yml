@@ -1,3 +1,4 @@
+---
 message: |
   The device under test has two VRFs with two interfaces in each VRF.
   Routers are attached to those interfaces and run BGP with device under test.
@@ -8,56 +9,81 @@ message: |
   * r3 and r4 should be able to ping each other
   * r1 should not be able to reach r3
 
+defaults.paths.validate: "topology:../bgp/validate"
 groups:
   _auto_create: True
   ce:
-    members: [ r1,r2,r3,r4  ]
+    members: [ r1, r2, r3, r4 ]
     module: [ bgp ]
-    device: cumulus
+    device: frr
+    provider: clab
   pe:
-    members: [ rtr ]
+    members: [ dut ]
     module: [ vrf, bgp ]
-    node_data:
-      bgp.as: 65000
+    bgp.as: 65000
+
+addressing:
+  p2p:
+    ipv4: True
 
 vrfs:
   red:
-    links: [ rtr-r1, rtr-r2 ]
+    links: [ dut-r1, dut-r2 ]
   blue:
-    links: [ rtr-r3, rtr-r4 ]
+    links: [ dut-r3, dut-r4 ]
 
 nodes:
-  rtr:
   r1:
     bgp.as: 65101
+    id: 11
   r2:
     bgp.as: 65102
+    id: 12
   r3:
     bgp.as: 65103
+    id: 23
   r4:
     bgp.as: 65104
+    id: 24
 
 validate:
+  session:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    wait_msg: Waiting for BGP sessions to start
+    nodes: [ r1, r2, r3, r4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',intf=node.interfaces[0].ifname)
+    stop_on_error: true
+  pfx_red:
+    description: Check BGP prefix on R1
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ r1 ]
+    plugin: bgp_prefix(nodes.r2.loopback.ipv4)
+  pfx_blue:
+    description: Check BGP prefix on R3
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ r3 ]
+    plugin: bgp_prefix(nodes.r4.loopback.ipv4)
   red:
     description: Ping-based reachability test in VRF red
-    wait: 20
-    wait_msg: Waiting for BGP to start
     nodes: [ r1 ]
-    devices: [ cumulus ]
+    devices: [ frr ]
     exec: ping -c 5 -W 1 -A r2
     valid: |
       "64 bytes" in stdout
   blue:
     description: Ping-based reachability test in VRF blue
     nodes: [ r3 ]
-    devices: [ linux ]
+    devices: [ frr ]
     exec: ping -c 5 -W 1 -A r4
     valid: |
       "64 bytes" in stdout
   inter_vrf:
     description: Ping-based isolation test between blue and red VRF
     nodes: [ r1 ]
-    devices: [ linux ]
+    devices: [ frr ]
     exec: "ping -c 5 -W 1 -A r4 || true"
     valid: |
       "0 packets received" in stdout or "Network is unreachable" in stdout

@@ -1,16 +1,20 @@
+---
 message: |
-  The lab tests the basic VRF lite functionality: the device under
-  test has two VRFs with two interfaces in each VRF.
+  The lab tests the basic VRF lite functionality in an IPv6-only environment.
+  The device under test has two VRFs with two interfaces in each VRF.
 
   * h1 and h2 should be able to ping each other
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
+
+defaults.sources.extra: [ defaults-ipv6-only.yml ]
 
 groups:
   _auto_create: True
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
+    provider: clab
   routers:
     members: [ rtr ]
     module: [ vrf ]
@@ -23,7 +27,8 @@ vrfs:
 
 validate:
   red:
-    description: Ping-based reachability test in VRF red
+    description: Ping-based reachability test in VRF red (wait up to 20 seconds)
+    wait: 20
     nodes: [ h1 ]
     devices: [ linux ]
     exec: ping -c 5 -W 1 -A h3
@@ -31,6 +36,7 @@ validate:
       "64 bytes" in stdout
   ping_blue:
     description: Ping-based reachability test in VRF blue
+    wait: 5
     nodes: [ h2 ]
     devices: [ linux ]
     exec: ping -c 5 -W 1 -A h4

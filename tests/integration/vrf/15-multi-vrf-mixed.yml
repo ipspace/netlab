@@ -1,3 +1,4 @@
+---
 message: |
   The device under test has two VRFs with two interfaces in each VRF.
   Routers are attached to those interfaces and run OSPF and BGP with
@@ -10,25 +11,27 @@ message: |
 
 groups:
   ce_ospf:
-    members: [ r1,r3  ]
+    members: [ r1, r3 ]
     module: [ ospf ]
-    device: cumulus
+    device: frr
+    provider: clab
   ce_bgp:
-    members: [ r2,r4  ]
+    members: [ r2, r4 ]
     module: [ bgp ]
-    device: cumulus
+    device: frr
+    provider: clab
   pe:
-    members: [ rtr ]
-    module: [ vrf, ospf,bgp ]
+    members: [ dut ]
+    module: [ vrf, ospf, bgp ]
 
 vrfs:
   red:
-    links: [ rtr-r1, rtr-r2 ]
+    links: [ dut-r1, dut-r2 ]
   blue:
-    links: [ rtr-r3, rtr-r4 ]
+    links: [ dut-r3, dut-r4 ]
 
 nodes:
-  rtr:
+  dut:
     bgp.as: 65000
   r1:
   r2:
@@ -43,21 +46,21 @@ validate:
     wait: 20
     wait_msg: Waiting for BGP and OSPF to start
     nodes: [ r1 ]
-    devices: [ cumulus ]
+    devices: [ frr ]
     exec: ping -c 5 -W 1 -A r2
     valid: |
       "64 bytes" in stdout
   blue:
     description: Ping-based reachability test in VRF blue
     nodes: [ r3 ]
-    devices: [ linux ]
+    devices: [ frr ]
     exec: ping -c 5 -W 1 -A r4
     valid: |
       "64 bytes" in stdout
   inter_vrf:
     description: Ping-based isolation test between blue and red VRF
     nodes: [ r1 ]
-    devices: [ linux ]
+    devices: [ frr ]
     exec: "ping -c 5 -W 1 -A r4 || true"
     valid: |
       "0 packets received" in stdout or "Network is unreachable" in stdout
