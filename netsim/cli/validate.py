@@ -658,6 +658,7 @@ def execute_validation_test(
     return None
 
   stop_time = start_time + v_entry.get('wait',0)  # Time to wait for successful result
+  wait_msg = v_entry.get('wait_msg',None)         # Message to display if starting sleep after the first try
   n_remaining: list = v_entry.nodes               # Start with all nodes specified in the validation entry
 
   while n_remaining:                              # Keep retrying 
@@ -673,8 +674,16 @@ def execute_validation_test(
       elif OK is False:                           # But if we have a single failure ...
         ret_value = False                         # ... set composite result to False (failure)
 
-      if ret_value is not False and n_remaining:
-        time.sleep(1)
+    if ret_value is not False and n_remaining:
+      if wait_msg:                                # Do we have to display the 'waiting' message?
+        if 'wait' in v_entry:
+          wait_msg = wait_msg + f' (retrying for {v_entry.wait} seconds)'
+        log_info(
+          wait_msg,
+          f_status = 'WAITING',
+          topology=topology)
+        wait_msg = None                           # ... OK, done, but do it only once.
+      time.sleep(1)
 
   if ret_value:                                   # If we got to 'True'
     p_test_pass(v_entry,topology)                 # ... declare Mission Accomplished
