@@ -54,36 +54,47 @@ def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
 
   return True
 
-def show_ospf_prefix(pfx: str, rt: str = '', cost: int = 0) -> str:
+def show_ospf_prefix(pfx: str, **kwargs) -> str:
   return f'ip ospf route json'
 
 def valid_ospf_prefix(
       pfx: str,
       rt: typing.Optional[str] = None,
-      cost: typing.Optional[int] = None) -> str:
+      cost: typing.Optional[int] = None,
+      state: typing.Optional[str] = None) -> str:
   global _result
   if not isinstance(pfx,str):
     raise Exception(f'Prefix {pfx} is not a string')
 
   if not pfx in _result:
-    raise Exception(f'The prefix {pfx} is not in the OSPF topology')
+    result_text = f'The prefix {pfx} is not in the OSPF topology'
+    if state == 'missing':
+      return result_text
+    else:
+      raise Exception(result_text)
   
+
   pfx_data = _result[pfx]
+  result_text = f'Found OSPF prefix {pfx} (rt {pfx_data.routeType} cost {pfx_data.cost})'
+  if state == 'missing':
+    raise Exception(result_text)
+
   if rt is not None and rt != pfx_data.routeType:
     raise Exception(f'Invalid OSPF route type for prefix {pfx}: expected {rt} actual {pfx_data.routeType}')
 
   if cost is not None and cost != pfx_data.cost:
     raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.cost}')
 
-  return True
+  return result_text
 
-def show_ospf6_prefix(pfx: str, rt: str = '', cost: int = 0) -> str:
+def show_ospf6_prefix(pfx: str, **kwargs) -> str:
   return f'ipv6 ospf6 route detail json'
 
 def valid_ospf6_prefix(
       pfx: str,
       rt: typing.Optional[str] = None,
-      cost: typing.Optional[int] = None) -> str:
+      cost: typing.Optional[int] = None,
+      state: typing.Optional[str] = None) -> str:
   global _result
   if not isinstance(pfx,str):
     raise Exception(f'Prefix {pfx} is not a string')
@@ -94,16 +105,24 @@ def valid_ospf6_prefix(
   _result = _result.routes
 
   if not pfx in _result:
-    raise Exception(f'The prefix {pfx} is not in the OSPF topology')
+    result_text = f'The prefix {pfx} is not in the OSPFv3 topology'
+    if state == 'missing':
+      return result_text
+    else:
+      raise Exception(result_text)
   
   pfx_data = _result[pfx]
+  result_text = f'Found OSPFv3 prefix {pfx} (rt {pfx_data.routeType} cost {pfx_data.cost})'
+  if state == 'missing':
+    raise Exception(result_text)
+
   if rt is not None and rt != pfx_data.pathType:
-    raise Exception(f'Invalid OSPF route type for prefix {pfx}: expected {rt} actual {pfx_data.pathType}')
+    raise Exception(f'Invalid OSPFv3 route type for prefix {pfx}: expected {rt} actual {pfx_data.pathType}')
 
   if cost is not None and cost != pfx_data.metricCost:
-    raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metricCost}')
+    raise Exception(f'Invalid OSPFv3 end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metricCost}')
 
-  return True
+  return result_text
 
 def show_ipv6_route(pfx: str, proto: str = '', cost: int = 0) -> str:
   return f'ipv6 route {proto} json'
