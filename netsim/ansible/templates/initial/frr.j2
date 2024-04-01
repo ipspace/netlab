@@ -75,6 +75,19 @@ if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
 fi
 {% endfor %}
 
+# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] %}
+{%   if l.ipv6 is not defined %}
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.disable_ipv6=1
+{%   elif role|default('router') != 'host' %}
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.autoconf=0
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.accept_ra=0
+ip link set {{ l.ifname }} down
+ip link set {{ l.ifname }} up
+{%   endif %}
+{% endfor %}
+
 #
 # Add vtysh.conf file
 echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
@@ -125,10 +138,4 @@ interface {{ l.ifname }}
 do write
 CONFIG
 vtysh -f /tmp/config
-
-# Workaround for FRR issue with disabling ipv6 (https://github.com/FRRouting/frr/issues/7738)
-{% for l in interfaces if l.type in ['lan','p2p','stub'] and l.ipv6 is not defined %}
-sysctl -qw net.ipv6.conf.{{ l.ifname }}.disable_ipv6=1
-{% endfor %}
-
 exit 0
