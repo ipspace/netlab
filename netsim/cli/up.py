@@ -62,6 +62,11 @@ def up_parse_args(standalone: bool) -> argparse.ArgumentParser:
     nargs='?',
     const='netlab.snapshot.yml',
     help='Use netlab snapshot file created by a previous lab run')
+  parser.add_argument(
+    '--validate',
+    dest='validate',
+    action='store_true',
+    help=argparse.SUPPRESS)
   return parser
 
 """
@@ -338,3 +343,6 @@ def run(cli_args: typing.List[str]) -> None:
     _status.lock_directory()                          # .. to have a timestamp of when the lab was started
 
   log.repeat_warnings('netlab up')
+
+  if args.validate:
+    external_commands.run_command('netlab validate')
