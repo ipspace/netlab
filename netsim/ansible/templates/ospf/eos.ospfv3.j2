@@ -1,13 +1,13 @@
 !
-{% if 'ipv6' in loopback %}
+{% if 'ipv6' in loopback and not ospf_vrf %}
 interface Loopback0
- ipv6 ospf {{ pid }} area {{ ospf.area }}
+ ipv6 ospf {{ ospf_pid }} area {{ ospf_data.area }}
 {% endif %}
 !
-{% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
+{% for l in intf_data if 'ospf' in l and 'ipv6' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
- ipv6 ospf {{ pid }} area {{ l.ospf.area }}
+ ipv6 ospf {{ ospf_pid }} area {{ l.ospf.area }}
 {%   if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
 {%     if l.ospf.network_type == "broadcast" %}
  no ipv6 ospf network
@@ -24,11 +24,22 @@ interface {{ l.ifname }}
 !
 {% endfor %}
 !
-ipv6 router ospf {{ pid }}
- router-id {{ ospf.router_id }}
-{% if ospf.reference_bandwidth is defined %}
+{% if ospf_vrf %}}
+ipv6 router ospf {{ ospf_pid }} vrf {{ ospf_vrf }}
+{% else %}
+ipv6 router ospf {{ ospf_pid }}
+{% endif %}
+ router-id {{ ospf_data.router_id|default(ospf.router_id) }}
+{#
+  Get local- or global reference bandwidth. It might be missing
+#}
+{% set bw = ospf_data.reference_bandwidth|default(ospf.reference_bandwidth|default(False)) %}
+{% if bw %}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
 {% endif %}
-{% for l in interfaces|default([]) if l.ospf.passive|default(False) %}
+{% if ospf_vrf and bgp.as is defined %}
+ redistribute bgp include leaked
+{% endif %}
+{% for l in intf_data if l.ospf.passive|default(False) %}
  passive-interface {{ l.ifname }}
 {% endfor %}
