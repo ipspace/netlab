@@ -1,3 +1,7 @@
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+!
+! OSPFv2 configuration
+!
 {% if ospf_vrf %}
 router ospf {{ ospf_pid }} vrf {{ ospf_vrf }}
 {% else %}
@@ -6,30 +10,23 @@ router ospf {{ ospf_pid }}
 {#
   Get local- or global OSPF router ID. Global is always set
 #}
-{% set router_id = ospf_data.router_id|default(ospf.router_id) %}
-{% if router_id|ipv4 %}
- router-id {{ router_id }}
+{% if ospf_data.router_id|ipv4 %}
+ router-id {{ ospf_data.router_id }}
 {% endif %}
  interface unnumbered hello mask tx 0.0.0.0
-{% if ospf_vrf and bgp.as is defined %}
+{% if ospf_vrf %}
+{%   if bgp.as is defined %}
  redistribute bgp include leaked
+{%   endif %}
+ redistribute connected
 {% endif %}
-{#
-  Get local- or global reference bandwidth. It might be missing
-#}
-{% set bw = ospf_data.reference_bandwidth|default(ospf.reference_bandwidth|default(False)) %}
-{% if bw %}
- auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% if ospf_data.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
 {% endif %}
 {% for l in intf_data if l.ospf.passive|default(False) %}
  passive-interface {{ l.ifname }}
 {% endfor %}
 !
-{% if not ospf_vrf %}
-interface Loopback0
- ip ospf area {{ ospf.area }}
-!
-{% endif %}
 {% for l in intf_data if 'ospf' in l and 'ipv4' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
@@ -49,3 +46,4 @@ interface {{ l.ifname }}
 {%   endif %}
 !
 {% endfor %}
+{% endmacro %}
