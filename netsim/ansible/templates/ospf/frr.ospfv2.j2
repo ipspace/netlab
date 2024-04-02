@@ -1,18 +1,27 @@
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+!
+! OSPFv2 FRR configuration
+!
+{% if ospf_vrf %}
+router ospf vrf {{ ospf_vrf }}
+{% else %}
 router ospf
-{% if ospf.router_id|ipv4 %}
- ospf router-id {{ ospf.router_id }}
 {% endif %}
-{% if ospf.reference_bandwidth is defined %}
- auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% if ospf_data.router_id|ipv4 %}
+ ospf router-id {{ ospf_data.router_id }}
+{% endif %}
+{% if ospf_data.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
+{% endif %}
+{% if ospf_vrf  %}
+{%   if bgp.as is defined %}
+ redistribute bgp
+{%   endif %}
+ redistribute connected
 {% endif %}
 exit
 !
-{% if 'ipv4' in loopback %}
-interface {{ loopback.ifname }}
- ip ospf area {{ ospf.area }}
-{% endif %}
-!
-{% for l in interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
+{% for l in intf_data if 'ospf' in l and 'ipv4' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
  ip ospf area {{ l.ospf.area }}
@@ -35,3 +44,4 @@ interface {{ l.ifname }}
 {%   endif %}
 !
 {% endfor %}
+{% endmacro %}

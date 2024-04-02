@@ -1,3 +1,5 @@
+{% import "frr.ospfv2.j2" as ospfv2 %}
+{% import "frr.ospfv3.j2" as ospfv3 %}
 cat >/tmp/vrf_config <<CONFIG
 {% for vname,vdata in vrfs.items() %}
 vrf {{ vname }}
@@ -12,7 +14,10 @@ router bgp {{ bgp.as|default(vrf.as) }}
 !
 {% for vname,vdata in vrfs.items() if vdata.ospf is defined %}
 {%  if vdata.af.ipv4|default(False) %}
-{%    include 'frr.ospfv2-vrf.j2' %}
+{{     ospfv2.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%  endif %}
+{%  if vdata.af.ipv6|default(False) %}
+{{     ospfv3.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
 {%  endif %}
 !
 {% endfor %}
