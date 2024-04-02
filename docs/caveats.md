@@ -76,6 +76,7 @@ See also Cisco IOSv OSPF and BGP caveats.
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
 * BGP configuration is optimized to result in reasonable convergence times under lab conditions. Do not use the same settings in a production network.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
+* The OSPFv3 process on Cisco IOS advertises loopback addresses as /128 prefixes unless the OSPF network type is set to `point-to-point`. _netlab_ configures OSPFv3 `point-to-point` network type on all loopback interfaces to get results comparable to other implementations.
 
 (caveats-iosxr)=
 ## Cisco IOS XRv
