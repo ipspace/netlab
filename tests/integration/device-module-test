@@ -131,12 +131,16 @@ def run_cleanup(args: argparse.Namespace,final: bool = True) -> None:
     print()
     log.fatal(f"netlab down --cleanup failed, check the log files in {args.logdir}")
 
-def run_test(test: str, args: argparse.Namespace) -> None:
+def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   test_path = os.path.abspath(test)
   os.makedirs(args.workdir,exist_ok=True)
   os.makedirs(args.logdir,exist_ok=True)
   os.chdir(args.workdir)
   subprocess.run(['sudo','true'])
+
+  if first:
+    print("Pre-test cleanup:",end=" ",flush=True)
+    run_cleanup(args,True)
 
   print(f"{test}:",end=" ",flush=True)
   if execute(f"netlab create {test_path}",args,test=test,log="create",err="create").returncode == 0:
@@ -182,6 +186,7 @@ def main() -> None:
   check_device_provider(args,topology)
   args.limit = (args.limit or "[0-9]") + "*.yml"
   log_clean = False
+  first_test = True
   for path in args.tests:
     if args.verbose:
       print(f"Test search path: {path}/{args.limit}")
@@ -201,7 +206,8 @@ def main() -> None:
         log_clean = True
 
       try:
-        run_test(test,args)
+        run_test(test,args,first_test)
+        first_test = False
       except KeyboardInterrupt as ex:
         print()
         run_cleanup(args)
