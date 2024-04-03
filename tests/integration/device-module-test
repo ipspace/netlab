@@ -14,6 +14,7 @@ from box import Box
 from netsim.utils import log,read as _read
 from netsim.cli import parser_add_verbose
 from netsim.utils import files as _files
+from netsim.data import get_empty_box
 
 def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
@@ -48,6 +49,16 @@ def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
     action='store',
     default='/tmp/netlab_log',
     help='Logging directory')
+  parser.add_argument(
+    '--split-log',
+    dest='split_log',
+    action='store_true',
+    help='Split STDOUT and STDERR')
+  parser.add_argument(
+    '--batch',
+    dest='batch',
+    action='store_true',
+    help='Run in batch mode (save validate results into a file)')
   parser_add_verbose(parser)
 
   return parser.parse_args(args)
@@ -121,15 +132,28 @@ def execute(
       err: typing.Optional[str] = None) -> subprocess.CompletedProcess:
 
   log_stream = open_stream(test,log,'.log',args)
-  err_stream = open_stream(test,err,'.err',args)  
+  if args.split_log:
+    err_stream = open_stream(test,err,'.err',args)
+  else:
+    err_stream = log_stream
+
   return subprocess.run(cmd.split(' '),stdout=log_stream,stderr=err_stream)
 
-def run_cleanup(args: argparse.Namespace,final: bool = True) -> None:
+def run_cleanup(args: argparse.Namespace,final: bool = True, abort: bool = True) -> None:
   if execute(f"netlab down --cleanup --force --force",args,test="cleanup",log="down",err="down").returncode == 0:
     print("cleanup(ok)",end="\n" if final else " ",flush=True)
   else:
     print()
-    log.fatal(f"netlab down --cleanup failed, check the log files in {args.logdir}")
+    if abort:
+      log.fatal(f"netlab down --cleanup failed, check the log files in {args.logdir}")
+
+RESULTS: Box = {}
+
+def log_result(test: str, stage: str, result: bool) -> None:
+  global RESULTS
+
+  test = os.path.basename(test)
+  RESULTS[test][stage] = result
 
 def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   test_path = os.path.abspath(test)
@@ -140,40 +164,50 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
 
   if first:
     print("Pre-test cleanup:",end=" ",flush=True)
-    run_cleanup(args,True)
+    run_cleanup(args,final=True,abort=False)
 
   print(f"{test}:",end=" ",flush=True)
   if execute(f"netlab create {test_path}",args,test=test,log="create",err="create").returncode == 0:
     print("create(ok)",end=" ",flush=True)
+    log_result(test,'create',True)
   else:
     print("create(FAIL)",flush=True)
+    log_result(test,'create',False)
     return
 
   if execute(f"netlab up --snapshot --no-config",args,test=test,log="up",err="up").returncode == 0:
     print("up(ok)",end=" ",flush=True)
+    log_result(test,'up',True)
   else:
     print("up(FAIL)",end=" ",flush=True)
+    log_result(test,'up',False)
     run_cleanup(args)
     return
 
   if execute(f"netlab initial",args,test=test,log="initial",err="initial").returncode == 0:
     print("config(ok)",end=" ",flush=True)
+    log_result(test,'config',True)
   else:
     print("config(FAIL)",end=" ",flush=True)
+    log_result(test,'config',False)
     run_cleanup(args)
     return
 
   valid_cmd = "netlab validate --skip-missing"
-  if not args.verbose:
+  if not args.verbose and not args.batch:
     valid_cmd += " --error-only"
 
-  valid_capture = "validate" if args.quiet else None
+  valid_capture = "validate" if args.quiet or args.batch else None
   valid = execute(valid_cmd,args,test=test,log=valid_capture,err=valid_capture)
   if valid.returncode == 0:
+    log_result(test,'validate',True)
     print("validate(ok)",end=" ",flush=True)
   elif valid.returncode == 2:
     print("validate(SKIPPED)",end=" ",flush=True)
   else:
+    if args.quiet or args.batch:
+      print("validate(FAIL)",end= " ",flush=True)
+    log_result(test,'validate',False)
     run_cleanup(args)
     return
 
@@ -181,6 +215,9 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   print("OK",flush=True)
 
 def main() -> None:
+  global RESULTS
+
+  RESULTS = get_empty_box()
   topology = load_system_defaults()
   args = test_parse(sys.argv[1:],topology)
   check_device_provider(args,topology)
@@ -214,6 +251,7 @@ def main() -> None:
         log.fatal('User interrupt, aborting')
       os.chdir(save_dir)
 
+  RESULTS.to_yaml(filename=args.logdir+"/results.yaml")
   return
 
 if __name__ == "__main__":
