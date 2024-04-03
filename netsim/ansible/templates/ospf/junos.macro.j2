@@ -1,17 +1,23 @@
-
+{% macro config(ospf_proto,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+{% set KW_NETWORK_TYPE = {'point-to-point': 'p2p','point-to-multipoint': 'p2mp', 'non-broadcast': 'nbma' } %}
+{% if ospf_vrf %}
+routing-instances {
+  {{ ospf_vrf }} {
+{% endif %}
 protocols {
-  delete: ospf3;
+  delete: {{ ospf_proto }};
 }
 
 protocols {
-  ospf3 {
-{% if ospf.reference_bandwidth is defined %}
-    reference-bandwidth {{ ospf.reference_bandwidth * 1000000 }};
+  {{ ospf_proto }} {
+{% if ospf_vrf %}
+{# configure VRF route redistribution policy #}
+    export vrf-{{ ospf_vrf  }}-ospf-export;
 {% endif %}
-    area {{ ospf.area }} {
-      interface lo0.0;
-    }
-{% for l in interfaces|default([]) if 'ospf' in l %}
+{% if ospf_data.reference_bandwidth is defined %}
+    reference-bandwidth {{ ospf_data.reference_bandwidth * 1000000 }};
+{% endif %}
+{% for l in intf_data if 'ospf' in l %}
     area {{ l.ospf.area }} {
       interface {{ l.ifname }} {
 {%   if l.ospf.network_type is defined and l.ospf.network_type != 'broadcast' %}
@@ -37,3 +43,8 @@ protocols {
 {% endfor %}
   }
 }
+{% if ospf_vrf %}
+{# Close the routing-instances vname brackets #}
+} }
+{% endif %}
+{% endmacro %}

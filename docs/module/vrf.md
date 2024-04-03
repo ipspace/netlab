@@ -46,9 +46,9 @@ These platforms support routing protocols in VRFs:
 | Cumulus Linux         | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| Juniper vMX           | ✅  |  ❌  | ✅  |
-| Juniper vPTX          | ✅  |  ❌  | ✅  |
-| Juniper vSRX 3.0      | ✅  |  ❌  | ✅  |
+| Juniper vMX           | ✅  | ✅  | ✅  |
+| Juniper vPTX          | ✅  | ✅  | ✅  |
+| Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |
 | SR Linux              | ✅  |  ❌  | ✅  |
