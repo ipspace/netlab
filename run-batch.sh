@@ -1,12 +1,12 @@
 #!/bin/bash
 #
 . vars.sh
-for dev in frr cumulus eos; do
-  run-device-provider $dev clab
-done
+#for dev in frr cumulus eos; do
+#  run-device-provider.sh $dev clab
+#done
 
 for dev in iosv csr vptx; do
-  run-device-provider $dev libvirt
+  run-device-provider.sh $dev libvirt
 done
 
 find . -name '*log' -empty -delete
