@@ -26,3 +26,5 @@ for dev in iosv csr vptx; do
   run_device $dev libvirt
 done
 
+find . -name '*log' -empty -delete
+
