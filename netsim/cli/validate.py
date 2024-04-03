@@ -17,6 +17,7 @@ from box import Box
 from . import load_snapshot,parser_add_debug,parser_add_verbose
 from ..utils import log,templates,strings,status as _status, files as _files
 from ..data import global_vars
+from ..augment import devices
 from .. import data
 from .connect import connect_to_node,LogLevel
 
@@ -154,6 +155,43 @@ def p_test_pass(v_entry: Box, topology: Box) -> None:
   log_progress(msg,topology)
 
 _validation_plugins: dict = {}
+
+'''
+extend_first_wait_time: some devices need extra time to start working, even when
+the configuration process has completed. Assuming we can't (or don't want to)
+catch that during the device readiness check, we should add extra delay to the
+validation process.
+
+This function walks through the lab nodes, checks the features.initial.delay of
+each device, and adds the maximum delay to the first 'wait' parameter.
+'''
+
+def extend_first_wait_time(args: argparse.Namespace, topology: Box) -> None:
+  max_delay = 0
+  d_device  = None
+  for n_data in topology.nodes.values():
+    d_features = devices.get_device_features(n_data,topology.defaults)
+    d_delay = d_features.get('initial.delay',None)
+    if not d_delay:
+      continue
+    if d_delay > max_delay:                                           # Found a device that requires a delay
+      max_delay = d_delay                                             # ... take the max value of the delay
+      d_device  = n_data.device                                       # ... and remember the device causing it
+
+  if not max_delay:                                                   # No slow devices in lab topology, exit
+    return
+
+  for v_entry in topology.validate:
+    if not v_entry.get('wait',0):                                     # No wait associated with this entry, move on
+      continue
+
+    v_entry.wait = v_entry.wait + max_delay
+    if not args.error_only:
+      log.error(
+        f'Initial wait time extended by {max_delay} seconds required by {d_device}',
+        category=Warning,
+        module='')
+    return
 
 '''
 load_plugin: try to load the validation plugin for the specified device
@@ -657,8 +695,11 @@ def execute_validation_test(
     test_skip_count += 1
     return None
 
-  stop_time = start_time + v_entry.get('wait',0)  # Time to wait for successful result
-  wait_msg = v_entry.get('wait_msg',None)         # Message to display if starting sleep after the first try
+  wait_time = v_entry.get('wait',0)
+  stop_time = start_time + wait_time              # Time to wait for successful result
+  wait_msg  = v_entry.get('wait_msg',None)        # Message to display if starting sleep after the first try
+  wait_time = time.time()                         # Time to display first 'waiting' message
+  wait_cnt  = 0                                   # How many 'waiting' messages did we display?
   n_remaining: list = v_entry.nodes               # Start with all nodes specified in the validation entry
 
   while n_remaining:                              # Keep retrying 
@@ -674,15 +715,18 @@ def execute_validation_test(
       elif OK is False:                           # But if we have a single failure ...
         ret_value = False                         # ... set composite result to False (failure)
 
-    if ret_value is not False and n_remaining:
-      if wait_msg:                                # Do we have to display the 'waiting' message?
-        if 'wait' in v_entry:
-          wait_msg = wait_msg + f' (retrying for {v_entry.wait} seconds)'
+    if ret_value is not False and n_remaining and wait_msg:
+      if wait_time < time.time():
+        if 'wait' in v_entry and wait_cnt == 0:
+          extra_msg = f' (retrying for {v_entry.wait} seconds)'
+        else:
+          extra_msg = f' ({int(stop_time - time.time())} seconds left)'
         log_info(
-          wait_msg,
+          wait_msg + extra_msg,
           f_status = 'WAITING',
           topology=topology)
-        wait_msg = None                           # ... OK, done, but do it only once.
+        wait_cnt += 1                             # Next message will be X seconds left
+        wait_time += 15                           # ... and it will happen after 15 seconds
       time.sleep(1)
 
   if ret_value:                                   # If we got to 'True'
@@ -762,6 +806,7 @@ def run(cli_args: typing.List[str]) -> None:
 
   filter_by_tests(args,topology)
   filter_by_nodes(args,topology)
+  extend_first_wait_time(args,topology)
   log.exit_on_error()
 
   templates.load_ansible_filters()
