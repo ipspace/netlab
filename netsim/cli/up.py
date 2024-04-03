@@ -345,4 +345,7 @@ def run(cli_args: typing.List[str]) -> None:
   log.repeat_warnings('netlab up')
 
   if args.validate:
-    external_commands.run_command('netlab validate')
+    if args.no_config:
+      log.error('Lab is not configured, skipping the validation phase',Warning,'')
+    else:
+      external_commands.run_command('netlab validate')
