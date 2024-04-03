@@ -65,13 +65,27 @@ validate:
     wait: 5
     nodes: [ r3 ]
     plugin: ospf6_prefix(nodes.r4.loopback.ipv6.replace('::1','::'))
-  ping_red:
-    description: Ping-based reachability test in VRF red
+  red_lb_ping:
+    description: Loopback-to-loopback reachability test in VRF red
     wait: 20
-    wait_msg: Waiting for BGP and OSPF to start
+    wait_msg: Waiting for BGP and OSPFv3 to start
+    nodes: [ r1 ]
+    devices: [ frr ]
+    exec: ping -c 5 -W 1 -A r2 -I {{ loopback.ipv6.split('/')[0] }}
+    valid: |
+      "64 bytes" in stdout
+  red_c_ospf:
+    description: Check for connected routes in OSPFv3
     nodes: [ r2 ]
     devices: [ frr ]
-    exec: ping -c 5 -W 1 -A6 r1
+    exec: ping -c 5 -W 1 -A r1
+    valid: |
+      "64 bytes" in stdout
+  red_c_bgp:
+    description: Check for connected routes in BGP
+    nodes: [ r1 ]
+    devices: [ frr ]
+    exec: ping -c 5 -W 1 -A r2
     valid: |
       "64 bytes" in stdout
   ping_blue:
