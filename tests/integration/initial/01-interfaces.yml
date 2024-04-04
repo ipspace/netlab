@@ -27,20 +27,11 @@ links:
 validate:
   ping:
     description: IPv4 ping H1 => H2
-    wait: 3
+    wait: 10
     wait_msg: Wait for IPv4 interfaces to become operational
     nodes: [ h1 ]
     devices: [ linux ]
     exec: ping -c 5 -W 1 -A h2
-    valid: |
-      "64 bytes" in stdout
-  ping6:
-    description: IPv6 ping H1 => H2
-    wait: 10
-    wait_msg: Wait for IPv6 interfaces to become operational
-    nodes: [ h1 ]
-    devices: [ linux ]
-    exec: ping6 -c 5 -W 1 -A6 {{ hostvars['h2'].interfaces[0].ipv6|ipaddr('address') }}
     valid: |
       "64 bytes" in stdout
   pmtud:
@@ -57,3 +48,22 @@ validate:
     exec: ping -c 1 -W 1 -s 1400 h1
     valid: |
       "1408 bytes" in stdout
+  ra:
+    description: Check RA-generated default route on H1
+    wait: 10
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h1, h2 ]
+    devices: [ linux ]
+    exec: ip -6 route list default
+    stop_on_error: True
+    valid: |
+      "default" in stdout
+  ping6:
+    description: IPv6 ping H1 => H2
+    wait: 10
+    wait_msg: Wait for IPv6 interfaces to become operational
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping6 -c 5 -W 1 -A6 {{ hostvars['h2'].interfaces[0].ipv6|ipaddr('address') }}
+    valid: |
+      "64 bytes" in stdout
