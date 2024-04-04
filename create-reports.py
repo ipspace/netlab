@@ -50,6 +50,7 @@ def sum_results(data: Box) -> None:
       continue
     if not data[k]:
       increase_counter(data,'unsupported')
+      data[k].supported = False
     OK = True
     for step in data[k].keys():
       if data[k][step] is False:
