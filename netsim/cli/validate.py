@@ -60,6 +60,13 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='skip_missing', action='store_true',
     help=argparse.SUPPRESS)
   parser.add_argument(
+    '--dump',
+    action='store',
+    choices=['result'],
+    nargs='+',
+    default=[],
+    help='Dump additional information during validation process')
+  parser.add_argument(
     dest='tests', action='store',
     nargs='*',
     help='Validation test(s) to execute (default: all)')
@@ -663,9 +670,15 @@ def execute_node_validation(
   elif 'plugin' in v_entry:                     # If not, try to call the plugin function
     OK = execute_validation_plugin(v_entry,node,topology,result,args.verbose,report_error)
 
-  if OK is False and not report_error:          # Validation failed, but we still don't have to report it?
-    return (False, None)                        # ... return (not processed, unknown)
-
+  if OK is False:                               # Validation failed...
+    if not report_error:                        # ... but we still don't have to report it?
+      return (False, None)                      # ... return (not processed, unknown)
+    if 'result' in args.dump:                   # Do we have to dump the result for further troubleshooting?
+      for kw in ['re']:                         # ... remove extra keys first
+        result.pop(kw,None)
+      if isinstance(result.result,Box):         # ... and remove the 'result' key if it's not needed
+        result.pop('result',None)
+      print(f'Returned result\n{"=" * 80}\n{result.to_yaml()}')
   return (True, OK)                             # ... otherwise return (processed, validation result)
 
 '''
