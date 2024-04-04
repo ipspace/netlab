@@ -92,14 +92,19 @@ def read_results(top: str, results: Box, path: str = '') -> None:
       new_path = path + ("." if path else "") + fname
       read_results(str(fpath),results,new_path)
 
-def create_html_page(args: argparse.Namespace, j2: str, data: Box, fname: str) -> None:
+def create_html_page(
+      args: argparse.Namespace,
+      j2: str,
+      data: Box,
+      output_fname: str,
+      output_dir: str = '_html' ) -> None:
   j2_path = os.path.abspath(os.path.dirname('__file__')) + '/_reports'
   body = templates.render_template(data=data,j2_file=j2,extra_path=['_reports'])
   templates.write_template(
     in_folder=j2_path,j2='page.html.j2',
     data={ 'html': body },
-    out_folder='_html',filename=fname)
-  print(f'.. created {fname}')
+    out_folder=output_dir,filename=output_fname)
+  print(f'.. created {output_fname}')
 
 def create_recursive_html(args: argparse.Namespace, results: Box, topology: Box) -> None:
   for item,i_data in results.items():
@@ -111,7 +116,7 @@ def create_recursive_html(args: argparse.Namespace, results: Box, topology: Box)
     create_recursive_html(args,i_data,topology)
 
 def create_html_reports(args: argparse.Namespace, results: Box, topology: Box) -> None:
-  create_html_page(args,'index.html.j2',topology + { 'results': results },'index.html')
+  create_html_page(args,'index.html.j2',topology + { 'results': results },'index.html',output_dir='.')
   create_recursive_html(args,results,topology)
 
 def main() -> None:
