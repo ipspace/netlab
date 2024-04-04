@@ -383,6 +383,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
         n.loopback.ifindex = 0
         n.loopback.type = 'loopback'
         n.loopback.neighbors = []
+        n.loopback.virtual_interface = True
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
