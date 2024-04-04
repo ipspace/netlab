@@ -20,6 +20,14 @@ fi
 export NETLAB_DEVICE=$1
 export NETLAB_PROVIDER=$2
 export PATH=.:$PATH
+shift
+shift
+if [[ -n $@ ]]; then
+  for mod in $@; do
+    run-test.sh $mod
+  done
+  exit
+fi
 run-test.sh initial
 run-test.sh ospf/ospfv2 ospf
 run-test.sh ospf/ospfv3 ospf
