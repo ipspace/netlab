@@ -64,7 +64,10 @@ def get_instance(args: argparse.Namespace, lab_states: Box) -> Lab_Instance_ID:
       sys.exit(1)
     return instance_id
 
-  cur_dir = os.getcwd()
+  try:
+    cur_dir = os.getcwd()
+  except Exception as ex:
+    log.fatal(f'Cannot get curent directory: {ex}','')
   for id,state in lab_states.items():
     if state.dir == cur_dir:
       return id
