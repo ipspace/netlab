@@ -1,6 +1,7 @@
 {# description: top-level integration results tests #}
 <h2>Integration test results</h2>
-{% set data_path = results._path.split('/',3) %}
+{% set github_url = "https://github.com/ipspace/netlab/blob/dev/tests/integration/" %}
+{% set data_path = results._path.split('/',2) %}
 <table>
 {% for hdr in ('Device','Provider','Test suite') %}
 {%   if data_path|length >= loop.index %}
@@ -17,14 +18,15 @@
    Display summary test result with pointer to the next HTML file
 #}
 {% macro suite_result(t_data,cnt,txt,show_final = False) %}
-<td>
+{%   set pass_mark = cnt not in t_data.count and not show_final or show_final and 'pass' in t_data._count %}
+<td class="{{ 'center' if pass_mark else 'left' }}">
 {%   if cnt in t_data._count %}
-  {{ t_data._count[cnt] }} {{ txt }}{% if show_final and 'pass' in t_data._count %},{% endif %}
+  {{ t_data._count[cnt] }} {{ txt }}{% 
+    if show_final and 'pass' in t_data._count %}, {{ t_data._count.pass }} passed{% endif %}
 {%   elif not show_final %}
-  passed
-{%   endif %}
-{%   if show_final and 'pass' in t_data._count %}
-  {{ t_data._count.pass }} passed
+  &#x2705;
+{%   elif show_final and 'pass' in t_data._count %}
+  &#x2705;
 {%   endif %}
 </td>
 {% endmacro %}
@@ -32,10 +34,10 @@
    Display individual test result with pointer to the log file
 #}
 {% macro test_result(t_name,t_data,cnt,fname) %}
-<td>
+<td class='center'>
 {%   if cnt in t_data %}
   <a href="../{{ results._path }}/{{ t_name }}.yml-{{ fname }}.log">
-{{ 'passed' if t_data[cnt] else 'failed' }}
+{{ '&#x2705;' if t_data[cnt] else '&#x274C;' + (' (more)' if cnt == 'validate' else '') }}
   </a>
 {%   endif %}
 {% endmacro %}
@@ -43,9 +45,9 @@
 <table>
   <tr>
     <th>Test</th>
-    <th>Supported</th>
-    <th>Configured</th>
-    <th>Validated</th>
+    <th class='center'>Supported</th>
+    <th class='center'>Configured</th>
+    <th class='center'>Validated</th>
   </tr>
 {% for test in results.keys()|sort if '_' not in test %}
 {%   set t_data = results[test] %}
@@ -57,8 +59,9 @@
     {{ suite_result(t_data,'validate','validation failed',True) }}
   </tr>
 {%   else %}
+{%     set testurl = github_url + data_path[2] + "/" + test + ".yml" %}
   <tr>
-    <td>{{ test }}</td>
+    <td><a href="{{ testurl }}">{{ test }}</a></td>
     {{ test_result(test,t_data,'supported','create') }}
     {{ test_result(test,t_data,'config','initial') }}
     {{ test_result(test,t_data,'validate','validate') }}
