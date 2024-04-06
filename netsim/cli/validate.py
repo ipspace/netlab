@@ -710,6 +710,7 @@ def execute_validation_test(
     return None
 
   wait_time = v_entry.get('wait',0)
+  start_time= time.time()
   stop_time = start_time + wait_time              # Time to wait for successful result
   wait_msg  = v_entry.get('wait_msg',None)        # Message to display if starting sleep after the first try
   wait_time = time.time()                         # Time to display first 'waiting' message
@@ -744,6 +745,11 @@ def execute_validation_test(
       time.sleep(1)
 
   if ret_value:                                   # If we got to 'True'
+    if wait_cnt:
+      log_info(
+        f'Succeeded in { round(time.time() - start_time,1) } seconds',
+        f_status = 'PASS',
+        topology=topology)
     p_test_pass(v_entry,topology)                 # ... declare Mission Accomplished
 
   return ret_value
