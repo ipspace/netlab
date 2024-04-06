@@ -676,7 +676,8 @@ def execute_node_validation(
     if 'result' in args.dump:                   # Do we have to dump the result for further troubleshooting?
       for kw in ['re']:                         # ... remove extra keys first
         result.pop(kw,None)
-      if isinstance(result.result,Box):         # ... and remove the 'result' key if it's not needed
+      # ... and remove the 'result' key if it's not needed
+      if 'result' in result and isinstance(result.result,Box):
         result.pop('result',None)
       print(f'Returned result\n{"=" * 80}\n{result.to_yaml()}')
   return (True, OK)                             # ... otherwise return (processed, validation result)
