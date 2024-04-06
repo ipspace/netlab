@@ -13,7 +13,7 @@ import typing
 import netaddr
 
 from ..utils import log
-from ..augment import addressing
+from ..augment import addressing,devices
 from .. import data
 
 # Build routing protocol address families
@@ -276,6 +276,40 @@ def remove_vrf_routing_blocks(node: Box, proto: str) -> None:
       continue
 
     vdata.pop(proto,None)                                                   # Got rid of the false flag
+
+"""
+check_vrf_support: Check whether a node supports the desired routing protocol in a VRF
+
+Inputs:
+* Node to check
+* netlab protocol (ospf / bgp)
+* protocol address family (ipv4 for ospfv2, ipv6 for ospfv3)
+* feature to check in device features
+* topology (to get defaults)
+"""
+def check_vrf_protocol_support(
+      node: Box,
+      proto: str,
+      af: typing.Optional[str],
+      feature: str,
+      topology: Box) -> None:
+  if not 'vrfs' in node:                          # No VRFs in the current node, nothing to check
+    return
+  
+  for v_name,v_data in node.vrfs.items():         # Iterate over VRFs
+    if not proto in v_data:                       # Are we running the target protocol in the VRF?
+      continue
+    if af and not af in v_data.af:                # Does the VRF use the target address family?
+      continue
+
+    # We found the protocol to check in the current VRF, time to check device features
+    d_feature = devices.get_device_features(node,topology.defaults)
+    if not d_feature.get(f'vrf.{feature}',False): # Does the device support the target protocol/AF combo?
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support {feature} in VRFs (found in VRF {v_name})',
+        category=log.IncorrectValue,
+        module=proto)
+      return
 
 """
 get_remote_cp_endpoint: find the remote control-plane endpoint

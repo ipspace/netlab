@@ -643,3 +643,4 @@ class BGP(_Module):
     bgp_set_originate_af(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')
     bgp_transform_community_list(node,topology)
+    _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)

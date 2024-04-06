@@ -129,3 +129,5 @@ class OSPF(_Module):
     _routing.remove_vrf_routing_blocks(node,'ospf')
     propagate_node_attributes(node,topology)
     _routing.remove_unused_igp(node,'ospf')
+    _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
+    _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)
