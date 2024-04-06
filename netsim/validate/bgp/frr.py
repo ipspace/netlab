@@ -4,6 +4,7 @@ FRR OSPFv2 validation routines
 
 from box import Box
 import typing
+from netsim.data import global_vars
 
 # Find neighbor IP address from neighbor name
 def get_bgp_neighbor_id(ngb: list, n_id: str, af: str) -> typing.Union[bool, str]:
@@ -25,7 +26,7 @@ def valid_bgp_neighbor(
       af: str = 'ipv4',
       state: str = 'Established',
       intf: str = '') -> str:
-  global _result
+  _result = global_vars.get_result_dict('_result')
 
   n_addr = get_bgp_neighbor_id(ngb,n_id,af)
 
@@ -55,8 +56,8 @@ def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', **kwargs: 
 def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
-      af: str = 'ipv4',**kwargs) -> str:
-  global _result
+      af: str = 'ipv4',**kwargs: typing.Any) -> str:
+  _result = global_vars.get_result_dict('_result')
 
   n_addr = get_bgp_neighbor_id(ngb,n_id,af)
   data = _result[n_addr]
@@ -79,7 +80,7 @@ def valid_bgp_prefix(
       peer: typing.Optional[str] = None,
       nh: typing.Optional[str] = None,
       clusterid: typing.Optional[str] = None) -> str:
-  global _result
+  _result = global_vars.get_result_dict('_result')
 
   exit_miss = f'The prefix {pfx} is not in the BGP table'
   exit_msg = f'The prefix {pfx} is in the BGP table'
@@ -134,11 +135,15 @@ def valid_bgp_prefix(
 def show_bgp_prefix_community(pfx: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
   return f"bgp {af} {pfx} json"
 
-def valid_bgp_prefix_community(pfx: str, af: str = 'ipv4', state: str = 'present', **kwargs: typing.Any) -> str:
-  global _result
+def valid_bgp_prefix_community(
+      pfx: str,
+      af: str = 'ipv4',
+      state: str = 'present',
+      **kwargs: typing.Any) -> typing.Optional[str]:
+  _result = global_vars.get_result_dict('_result')
 
   if not valid_bgp_prefix(pfx,af):                          # Offload the baseline processing
-    return
+    return None
   
   OK: dict = {}
   for p_element in _result.paths:                           # Iterate over all know paths for the prefix
@@ -158,11 +163,11 @@ def valid_bgp_prefix_community(pfx: str, af: str = 'ipv4', state: str = 'present
 def show_bgp_prefix_aspath(pfx: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
   return f"bgp {af} {pfx} json"
 
-def valid_bgp_prefix_aspath(pfx: str, aspath: str, af: str = 'ipv4') -> str:
-  global _result
+def valid_bgp_prefix_aspath(pfx: str, aspath: str, af: str = 'ipv4') -> typing.Optional[str]:
+  _result = global_vars.get_result_dict('_result')
 
   if not valid_bgp_prefix(pfx,af):                          # Offload the baseline processing
-    return
+    return None
   
   for p_element in _result.paths:                           # Iterate over all know paths for the prefix
     if p_element.aspath.string == aspath:

@@ -9,6 +9,7 @@ from box import Box
 
 _topology: typing.Optional[Box] = None
 _globals:  typing.Optional[Box] = None
+_glob_dict: dict = {}
 
 '''
 init -- create 'globals' entry in 'topology.defaults' and save a pointer to it
@@ -28,15 +29,31 @@ def init(topology: Box) -> None:
 get -- get a pointer to a global Box (referenced by name) hidden in topology
 '''
 
-def get(varname: str) -> Box:
-  if _globals is None:
-    from ..utils.log import fatal
-    from ..data import get_empty_box
+def missing_globals(varname: str) -> typing.NoReturn:
+  from ..utils.log import fatal
+  fatal(f'Trying to use global variable {varname} before the global_vars subsystem is initialized')
 
-    fatal(f'Trying to get global variable {varname} before the global_vars subsystem is initialized')
-    return get_empty_box()              # pragma: no cover -- fatal aborts, but we need to return the right object to keep mypy happy
+def get(varname: str) -> Box:
+  global _globals
+  if _globals is None:
+    missing_globals(varname)
 
   return _globals[varname]
+
+def set(varname: str, value: typing.Any) -> None:
+  global _globals
+  if _globals is None:
+    missing_globals(varname)
+
+  _globals[varname] = value
+
+def get_result_dict(varname: str) -> Box:
+  global _glob_dict
+  return _glob_dict.get(varname,Box({}))
+
+def set_result_dict(varname: str, value: Box) -> None:
+  global _glob_dict
+  _glob_dict[varname] = value
 
 def get_topology() -> typing.Optional[Box]:
   global _topology

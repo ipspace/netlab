@@ -4,12 +4,13 @@ FRR OSPFv2 validation routines
 
 from box import Box
 import typing
+from netsim.data import global_vars
 
 def show_ospf_neighbor(id: str, present: bool = True) -> str:
   return f'ip ospf neighbor {id} json'
 
 def valid_ospf_neighbor(id: str, present: bool = True) -> bool:
-  global _result
+  _result = global_vars.get_result_dict('_result')
 
   if 'default' not in _result:
     raise Exception('OSPF is not running')
@@ -32,7 +33,7 @@ def show_ospf6_neighbor(id: str, present: bool = True) -> str:
   return f'ipv6 ospf6 neighbor {id} json'
 
 def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
-  global _result
+  _result = global_vars.get_result_dict('_result')
 
   n_state = None
   for n_idx in _result.keys():
@@ -54,7 +55,7 @@ def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
 
   return True
 
-def show_ospf_prefix(pfx: str, **kwargs) -> str:
+def show_ospf_prefix(pfx: str, **kwargs: typing.Any) -> str:
   return f'ip ospf route json'
 
 def valid_ospf_prefix(
@@ -62,7 +63,7 @@ def valid_ospf_prefix(
       rt: typing.Optional[str] = None,
       cost: typing.Optional[int] = None,
       state: typing.Optional[str] = None) -> str:
-  global _result
+  _result = global_vars.get_result_dict('_result')
   if not isinstance(pfx,str):
     raise Exception(f'Prefix {pfx} is not a string')
 
@@ -87,7 +88,7 @@ def valid_ospf_prefix(
 
   return result_text
 
-def show_ospf6_prefix(pfx: str, **kwargs) -> str:
+def show_ospf6_prefix(pfx: str, **kwargs: typing.Any) -> str:
   return f'ipv6 ospf6 route detail json'
 
 def valid_ospf6_prefix(
@@ -95,7 +96,7 @@ def valid_ospf6_prefix(
       rt: typing.Optional[str] = None,
       cost: typing.Optional[int] = None,
       state: typing.Optional[str] = None) -> str:
-  global _result
+  _result = global_vars.get_result_dict('_result')
   if not isinstance(pfx,str):
     raise Exception(f'Prefix {pfx} is not a string')
 
@@ -130,8 +131,8 @@ def show_ipv6_route(pfx: str, proto: str = '', cost: int = 0) -> str:
 def valid_ipv6_route(
       pfx: str,
       proto: typing.Optional[str] = None,
-      cost: typing.Optional[int] = None) -> str:
-  global _result
+      cost: typing.Optional[int] = None) -> typing.Union[str,bool]:
+  _result = global_vars.get_result_dict('_result')
   if not isinstance(pfx,str):
     raise Exception(f'Prefix {pfx} is not a string')
 
@@ -145,4 +146,4 @@ def valid_ipv6_route(
   if cost is not None and cost != pfx_data.metric:
     raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metric}')
 
-  return True
+  return f'Prefix {pfx} is in the IPv6 routing table'

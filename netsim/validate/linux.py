@@ -4,8 +4,7 @@ FRR OSPFv2 validation routines
 
 from box import Box
 import typing
-
-_result: Box
+from netsim.data import global_vars
 
 def exec_ping(
       host: str,
@@ -35,7 +34,7 @@ def valid_ping(
       count: int = 5,
       pkt_len: typing.Optional[int] = None,
       expect: typing.Optional[str] = None) -> str:
-  global _result
+  _result = global_vars.get_result_dict('_result')
 
   host = host.split('/')[0]
   msg = f'Ping to {af + " " if af else ""}{host}'
@@ -58,7 +57,7 @@ def exec_default6() -> str:
   return 'ip -6 route list default'
 
 def valid_default6() -> str:
-  global _result
+  _result = global_vars.get_result_dict('_result')
   if 'default' in _result.stdout:
     return 'IPv6 default route is present'
   
@@ -73,7 +72,7 @@ def exec_route(pfx: str, af: str = 'ipv4', intf: str = '', state: str = '') -> s
   return cmd
 
 def valid_route(pfx: str, af: str = 'ipv4', intf: str = '', state: str = '') -> str:
-  global _result
+  _result = global_vars.get_result_dict('_result')
 
   miss_msg = f'{af} route {pfx} is not in the routing table' + (f' or does not point to {intf}' if intf else '')
   if state == 'missing':

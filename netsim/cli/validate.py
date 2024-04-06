@@ -296,6 +296,7 @@ def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Op
   if plugin is None:                              # Not found, the test is skipped
     return None
   plugin._result = result
+  global_vars.set_result_dict('_result',result or Box({}))
   exec_data[p_name] = plugin
 
   try:
@@ -709,7 +710,7 @@ def execute_validation_test(
     test_skip_count += 1
     return None
 
-  wait_time = v_entry.get('wait',0)
+  wait_time = 0 if args.nowait else v_entry.get('wait',0)
   start_time= time.time()
   stop_time = start_time + wait_time              # Time to wait for successful result
   wait_msg  = v_entry.get('wait_msg',None)        # Message to display if starting sleep after the first try
