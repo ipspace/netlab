@@ -14,10 +14,11 @@ message: |
 groups:
   _auto_create: True
   hosts:
-    members: [ h1, h2, h3, h4, h5 ]
+    members: [ h1, h2, h3, h4 ]
     device: linux
+    provider: clab
   switches:
-    members: [ s1, s2, s3 ]
+    members: [ s1, s2 ]
     module: [ vlan, vxlan, ospf ]
 
 vlans:
@@ -25,36 +26,30 @@ vlans:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s1-h1, s2-h2, s3-h3 ]
+    links: [ s1-h1, s2-h2 ]
   blue:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s1-h4, s2-h5 ]
+    links: [ s1-h3, s2-h4 ]
 
-links: [ s1-s2, s2-s3, s1-s3 ]
+links: [ s1-s2 ]
 
 validate:
   ping_red:
-    description: Ping-based reachability test in VLAN red (wait up to 30 seconds)
-    wait: 30
-    nodes: [ h1, h2 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h3
-    valid: |
-      "64 bytes" in stdout
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')
   ping_blue:
-    description: Ping-based reachability test in VLAN blue (wait up to 10 seconds)
+    description: Ping-based reachability test in VLAN blue
+    wait_msg: We might have to wait a bit longer
     wait: 10
-    nodes: [ h4 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h5
-    valid: |
-      "64 bytes" in stdout
+    nodes: [ h3 ]
+    plugin: ping('h4')
   inter_vlan:
     description: Ping-based reachability test between blue and red VLANs
     nodes: [ h1 ]
     devices: [ linux ]
-    exec: "ping -c 5 -W 1 -A h5 || true"
-    valid: |
-      "0 packets received" in stdout
+    plugin: ping('h4',expect='fail')
