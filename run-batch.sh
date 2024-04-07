@@ -2,10 +2,10 @@
 #
 . vars.sh
 for dev in frr cumulus eos; do
-  run-device-provider.sh $dev clab
+  run-device-provider.sh $dev clab $@
 done
 
-for dev in iosv csr vptx vyos; do
-  run-device-provider.sh $dev libvirt
+for dev in iosv csr nxos vptx vyos; do
+  run-device-provider.sh $dev libvirt $@
 done
 commit-log.sh
