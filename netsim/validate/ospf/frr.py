@@ -5,22 +5,24 @@ FRR OSPFv2 validation routines
 from box import Box
 import typing
 from netsim.data import global_vars
+import netaddr
 
-def show_ospf_neighbor(id: str, present: bool = True) -> str:
-  return f'ip ospf neighbor {id} json'
+def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
+  try:
+    netaddr.IPAddress(id)
+  except:
+    raise Exception(f'OSPF router ID {id} is not a valid IP address')
+  return f'ip ospf vrf {vrf} neighbor {id} json'
 
-def valid_ospf_neighbor(id: str, present: bool = True) -> bool:
+def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> bool:
   _result = global_vars.get_result_dict('_result')
 
-  if 'default' not in _result:
-    raise Exception('OSPF is not running')
-
-  if not id in _result.default:
+  if not id in _result:
     if not present:
       return True
     raise Exception(f'There is no OSPF neighbor {id}')
   
-  n_state = _result.default[id][0]
+  n_state = _result[id][0]
   if not present:
     raise Exception(f'Unexpected neighbor {id} in state {n_state.nbrState}')
 
