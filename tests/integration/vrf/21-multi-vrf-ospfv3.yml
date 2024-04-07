@@ -31,7 +31,7 @@ vrfs:
 validate:
   red_adj:
     description: Check OSPF adjacencies in red VRF
-    wait: 20
+    wait: 30
     nodes: [ r1, r2 ]
     plugin: ospf6_neighbor(nodes.dut.vrfs.red.ospf.router_id)
     stop_on_error: true
@@ -58,21 +58,12 @@ validate:
     description: Ping-based reachability test in VRF red
     wait: 20
     nodes: [ r1 ]
-    devices: [ frr ]
-    exec: ping -c 5 -W 1 -A6 r2
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('r2',af='ipv6')
   ping_blue:
     description: Ping-based reachability test in VRF blue
     nodes: [ r3 ]
-    devices: [ frr ]
-    exec: ping -c 5 -W 1 -A6 r4
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('r4',af='ipv6')
   inter_ping:
     description: Ping-based isolation test between blue and red VRF
     nodes: [ r1 ]
-    devices: [ frr ]
-    exec: "ping -c 5 -W 1 -A6 r4 || true"
-    valid: |
-      "0 packets received" in stdout or "Network unreachable" in stdout
+    plugin: ping('r4',af='ipv6',expect='fail')

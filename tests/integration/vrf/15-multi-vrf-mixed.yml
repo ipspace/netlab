@@ -73,36 +73,21 @@ validate:
     wait: 20
     wait_msg: Waiting for BGP and OSPF to start
     nodes: [ r1 ]
-    devices: [ frr ]
-    exec: ping -c 5 -W 1 -A r2 -I {{ loopback.ipv4.split('/')[0] }}
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('r2',src=nodes.r1.loopback.ipv4)
   red_c_ospf:
     description: Check for connected routes in OSPF
     nodes: [ r2 ]
-    devices: [ frr ]
-    exec: ping -c 5 -W 1 -A r1
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('r1')
   red_c_bgp:
     description: Check for connected routes in BGP
     nodes: [ r1 ]
-    devices: [ frr ]
-    exec: ping -c 5 -W 1 -A r2
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('r2')
   blue_lb_ping:
     description: Loopback-to-loopback reachability test in VRF blue
     wait: 10
     nodes: [ r3 ]
-    devices: [ frr ]
-    exec: ping -c 5 -W 1 -A r4 -I {{ loopback.ipv4.split('/')[0] }}
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('r4',src=nodes.r3.loopback.ipv4)
   inter_vrf:
     description: Ping-based isolation test between blue and red VRF
     nodes: [ r1 ]
-    devices: [ frr ]
-    exec: "ping -c 5 -W 1 -A r4 || true"
-    valid: |
-      "0 packets received" in stdout or "Network is unreachable" in stdout
+    plugin: ping('r4',expect='fail')
