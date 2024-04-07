@@ -1,3 +1,4 @@
+---
 message: |
   The device under test is a layer-3 switch bridging VLAN
   between ports and having an IP address in the red VLAN
@@ -9,6 +10,7 @@ groups:
   hosts:
     members: [ h1, h2 ]
     device: linux
+    provider: clab
   switches:
     members: [ s1 ]
     module: [ vlan ]
@@ -18,11 +20,13 @@ vlans:
     links: [ s1-h1, s1-h2 ]
 
 validate:
-  ping:
+  ping_host:
     description: Intra-VLAN reachability
-    wait: 30
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
     nodes: [ h1 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h2
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('h2')
+  ping_sw:
+    description: Host-to-switch reachability
+    nodes: [ h1, h2 ]
+    plugin: ping('s1')

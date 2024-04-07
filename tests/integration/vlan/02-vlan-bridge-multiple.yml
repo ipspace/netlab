@@ -1,3 +1,4 @@
+---
 message: |
   The device under test is a simple bridge without an IP address in the red
   or blue VLAN. Both VLANs are using the same IP prefix to identify potential
@@ -12,6 +13,7 @@ groups:
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
+    provider: clab
   switches:
     members: [ s1 ]
     module: [ vlan ]
@@ -31,23 +33,16 @@ vlans:
 validate:
   ping_red:
     description: Ping-based reachability test in VLAN red
-    wait: 30
     nodes: [ h1 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h2
-    valid: |
-      "64 bytes" in stdout
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
   ping_blue:
     description: Ping-based reachability test in VLAN blue
     nodes: [ h3 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h4
-    valid: |
-      "64 bytes" in stdout
+    wait: 5
+    plugin: ping('h4')
   inter_vlan:
     description: Ping-based reachability test between blue and red VLANs
     nodes: [ h1 ]
-    devices: [ linux ]
-    exec: "ping -c 5 -W 1 -A h3 || true"
-    valid: |
-      "0 packets received" in stdout
+    plugin: ping('h3',expect='fail')

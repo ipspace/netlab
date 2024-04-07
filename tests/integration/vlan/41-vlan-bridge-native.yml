@@ -1,8 +1,9 @@
+---
 message: |
   The devices under test are simple bridges with a VLAN trunk between
   them. One of the trunk members is a native VLAN. Both VLANs are
   using the same IP prefix to identify potential inter-VLAN leaking.
-  
+
   * h1 and h2 should be able to ping each other
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
@@ -15,8 +16,9 @@ groups:
   hosts:
     members: [ h1, h2, h3, h4 ]
     device: linux
+    provider: clab
   switches:
-    members: [ s1,s2 ]
+    members: [ s1, s2 ]
     module: [ vlan ]
 
 vlans:
@@ -40,23 +42,17 @@ links:
 validate:
   ping_red:
     description: Ping-based reachability test in VLAN red
-    wait: 30
+    wait: 45
+    wait_msg: Waiting for STP to enable the ports
     nodes: [ h1 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h2
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('h2')
   ping_blue:
     description: Ping-based reachability test in VLAN blue
+    wait: 15
+    wait_msg: Waiting for STP to enable the ports
     nodes: [ h3 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h4
-    valid: |
-      "64 bytes" in stdout
+    plugin: ping('h4')
   inter_vlan:
     description: Ping-based reachability test between blue and red VLANs
     nodes: [ h1 ]
-    devices: [ linux ]
-    exec: "ping -c 5 -W 1 -A h3 || true"
-    valid: |
-      "0 packets received" in stdout
+    plugin: ping('h3',expect='fail')
