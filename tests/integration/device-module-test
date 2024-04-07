@@ -38,6 +38,11 @@ def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
     action='store',
     help='Limit the tests to execute with a pattern prefix')
   parser.add_argument(
+    '--redo',
+    dest='redo',
+    action='store',
+    help='Redo tests that failed due to transient errors')
+  parser.add_argument(
     '-w','--workdir',
     dest='workdir',
     action='store',
@@ -152,7 +157,7 @@ RESULTS: Box = {}
 def log_result(test: str, stage: str, result: bool) -> None:
   global RESULTS
 
-  test = os.path.basename(test)
+  test = os.path.basename(test).split('.')[0]
   RESULTS[test][stage] = result
 
 def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
@@ -220,13 +225,19 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
 def main() -> None:
   global RESULTS
 
-  RESULTS = get_empty_box()
   topology = load_system_defaults()
   args = test_parse(sys.argv[1:],topology)
   check_device_provider(args,topology)
-  args.limit = (args.limit or "[0-9]") + "*.yml"
-  log_clean = False
+  args.limit = (args.limit or args.redo or "[0-9]") + "*.yml"
+  log_clean = bool(args.redo)
   first_test = True
+
+  result_fname = args.logdir + '/results.yaml'
+  if args.redo and os.path.exists(result_fname):
+    RESULTS = Box.from_yaml(filename=result_fname,default_box=True,box_dots=True)
+  else:
+    RESULTS = get_empty_box()
+
   for path in args.tests:
     if args.verbose:
       print(f"Test search path: {path}/{args.limit}")
@@ -237,6 +248,8 @@ def main() -> None:
       log.fatal(f'Cannot find tests in {path}: {ex}')
 
     for test in test_list:
+      if args.redo:
+        print(f"Redoing {test}")
       save_dir = os.getcwd()
       if not log_clean:
         if args.verbose:
@@ -253,7 +266,7 @@ def main() -> None:
         run_cleanup(args)
         log.fatal('User interrupt, aborting')
       os.chdir(save_dir)
-      RESULTS.to_yaml(filename=args.logdir+"/results.yaml")
+      RESULTS.to_yaml(filename=result_fname)
 
   return
 
