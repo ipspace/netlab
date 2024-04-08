@@ -213,6 +213,7 @@ def include_environment_defaults(topology: Box) -> None:
 
     k = k.replace('netlab_','',1)                 # Drop the netlab_ prefix
     k = k.replace('_','.')                        # Replace underscores with dots
+    k = k.replace('..','_')                       # Turn __ (..) back into a single underscore
     topology.defaults[k] = v                      # And set the value
 
 #

@@ -115,7 +115,7 @@ You can change _netlab_ defaults with environment variables starting with `netla
 
 * Convert the variable name to lowercase.
 * Remove the `netlab_` prefix.
-* Replace underscores with dots.
+* Replace underscores with dots. Replace double underscores with underscores.
 * Set the corresponding value in the topology defaults.
 
 For example, the `NETLAB_DEVICE` variable sets the **defaults.device** parameter and the `NETLAB_BGP_AS` variable sets the **defaults.bgp.as** parameter.
@@ -126,6 +126,12 @@ You can use the environment variables instead of the `--device`, `--provider`, o
 $ export NETLAB_DEVICE=eos
 $ export NETLAB_PROVIDER=clab
 $ netlab up
+```
+
+Some _netlab_ defaults have an underscore in their names. To set those parameters with environment variables, use a double underscore. For example, to set the *libvirt* **batch_size** parameter, use:
+
+```
+$ export NETLAB_PROVIDERS_LIBVIRT_BATCH__SIZE=1
 ```
 
 Environment variables have higher precedence than the system- and user defaults but cannot override the **netlab up** CLI arguments. For example, this is the order of precedence (from highest to lowest) used to select the virtualization provider:
@@ -171,7 +177,7 @@ You can change the locations of user- or system defaults with the `defaults.sour
 
 [^NAE]: These parameters cannot be changed anywhere else as they're checked before the default values are merged with the lab topology file.
 
-* The `defaults.sources.extra` list adds files to the list of user default files. This parameter can be used to add extra defaults to larger projects with a hierarchical directory structure.
+* The `defaults.sources.extra` list adds files to the list of user default files. This parameter can add extra defaults to larger projects with a hierarchical directory structure.
 * The `defaults.sources.user` parameter changes the list of potential user default files.
 * The `defaults.sources.system` parameter changes the list of potential system default files.
 * The `defaults.sources.list` parameter (if present) specifies the complete list of default file locations that cannot be changed with other parameters.
