@@ -221,7 +221,7 @@ class Libvirt(_Provider):
         if not 'public' in l.libvirt:                            # ... but no 'public' libvirt attr
           l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
 
-      if l.get('libvirt.provider',None):
+      if l.get('libvirt.provider',None) and 'vlan' not in l.type:
         l.type = 'lan'
         if not 'bridge' in l:
           l.bridge = "%s_%d" % (topology.name[0:10],l.linkindex)
