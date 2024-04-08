@@ -1,7 +1,7 @@
 Release notes
 =============
 
-**[Release 1.8.0](release-1.8.1) (2024-04-08)**
+**[Release 1.8.1](release-1.8.1) (2024-04-08)**
 
 * Refactor the **[netlab status](netlab-status)** printout
 * Add '[retry tests until the timeout](validate-retry)' functionality to **[netlab validate](netlab-validate)** (including the actual time it took to get the expected results).
