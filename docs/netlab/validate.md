@@ -1,3 +1,4 @@
+(netlab-validate)=
 # Validate Lab Network
 
 **netlab validate** executes tests defined in the **[validate](../topology/validate.md)** lab topology attribute on a running lab. It can be used in training labs to check whether the user has successfully completed the lab assignment.

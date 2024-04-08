@@ -43,13 +43,13 @@ These platforms support routing protocols in VRFs:
 | Cisco IOS             | ✅ [❗](caveats-iosv) | ✅  | ✅  |
 | Cisco IOS XE          | ✅ [❗](caveats-csr) | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
-| Cumulus Linux         | ✅  | ✅  | ✅  |
+| Cumulus Linux         | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
 | Juniper vMX           | ✅  | ✅  | ✅  |
 | Juniper vPTX          | ✅  | ✅  | ✅  |
 | Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
-| Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |
+| Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |
 | SR Linux              | ✅  |  ❌  | ✅  |
 | VyOS                  | ✅  |  ❌  | ✅  |
@@ -57,7 +57,6 @@ These platforms support routing protocols in VRFs:
 ```{note}
 * IS-IS and EIGRP cannot be run within a VRF, but both configuration modules are VRF-aware -- they will not try to configure IS-IS or EIGRP routing on VRF interfaces
 * IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers
-* On Mikrotik RouterOS BGP configuration/implementation, a BGP VRF instance cannot have the same Router ID as the default one. The current configuration template uses the IP Address of the last interface in the VRF as the VRF instance Router ID.
 ```
 
 ## Parameters

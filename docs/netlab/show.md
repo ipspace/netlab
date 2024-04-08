@@ -1,3 +1,4 @@
+(netlab-show)=
 # Display System Information
 
 **netlab show** command displays system settings in a tabular, text, or YAML format. The command can display system settings (as shipped with the *networklab* package) or system settings augmented with [user defaults](../defaults.md).

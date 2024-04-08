@@ -1,6 +1,17 @@
 Release notes
 =============
 
+**[Release 1.8.0](release-1.8.1) (2024-04-08)**
+
+* Refactor the **[netlab status](netlab-status)** printout
+* Add '[retry tests until the timeout](validate-retry)' functionality to **[netlab validate](netlab-validate)** (including the actual time it took to get the expected results).
+* [OSPFv3 in VRFs](module-vrf-platform-routing-support), implemented on Arista EOS, Cisco IOS, Cisco IOS-XE, FRR, and Junos (vMX, vPTX, vSRX).
+* [EBGP sessions over IPv4 unnumbered and IPv6 LLA interfaces](bgp-platform) on Arista EOS
+* Cisco IOS XRd container support
+* [Numerous configuration template fixes](release-1.8.1-device-fixes), including reduced OSPF SPF/LSA and IPv6 ND RA timers.
+
+[More features...](release-1.8.1)
+
 **[Release 1.8.0](release-1.8.0) (2024-03-01)**
 
 * **netlab up** command can [reload saved device configurations](netlab-up-reload) instead of starting the initial device configuration process.
