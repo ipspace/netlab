@@ -14,6 +14,8 @@ from . import load_snapshot
 from ..outputs import _TopologyOutput
 from ..outputs import common as outputs_common
 from ..utils import strings,log
+from ..data.types import must_be_id
+from ..data import global_vars
 
 #
 # CLI parser for 'netlab inspect' command
@@ -56,6 +58,14 @@ def run(cli_args: typing.List[str]) -> None:
   inspect_module = _TopologyOutput.load(o_param,topology.defaults.outputs[o_module])
 
   if args.node:
+    log.init_log_system(False)
+    must_be_id(
+      parent=None,
+      key=args.node,
+      path=f'NOATTR:--node parameter',
+      max_length=global_vars.get_const('MAX_NODE_ID_LENGTH',16),
+      module='inspect')
+    log.exit_on_error()
     if args.node in topology.nodes:
       topology = outputs_common.adjust_inventory_host(
                 node=topology.nodes[args.node],

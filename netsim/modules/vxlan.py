@@ -107,12 +107,19 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
       loopback_name = intf.ifname
       break
 
-  if topology.defaults.vxlan.use_v6_vtep and not 'ipv6' in vtep_interface:
-    log.error(
-      f'You want to use IPv6 VTEP -- VXLAN module needs an IPv6 address on loopback interface of {node.name}',
-      log.IncorrectValue,
-      'vxlan')
-    return False
+  if topology.defaults.vxlan.use_v6_vtep:
+    features = devices.get_device_features(node,topology.defaults)
+    if not features.get('vxlan.vtep6'):
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support VXLAN over IPv6',
+        log.IncorrectValue,
+        'vxlan')
+    if 'ipv6' not in vtep_interface:
+      log.error(
+        f'You want to use IPv6 VTEP -- VXLAN module needs an IPv6 address on loopback interface of {node.name}',
+        log.IncorrectValue,
+        'vxlan')
+      return False
 
   if not 'ipv4' in vtep_interface and not topology.defaults.vxlan.use_v6_vtep:
     log.error(

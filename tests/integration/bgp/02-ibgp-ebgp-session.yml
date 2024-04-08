@@ -1,8 +1,9 @@
+---
 message: |
   Use this topology to test the baseline IPv4 IBGP and EBGP implementation
   and next-hop-self on IBGP sessions.
 
-module: [ bgp,ospf ]
+module: [ bgp, ospf ]
 
 defaults.bgp.as: 65000
 
@@ -24,19 +25,28 @@ links:
 - dut-x2
 
 validate:
-  wait:
-    description: Wait for OSPF and IBGP sessions to come up
-    wait: 20
+  ospf_adj:
+    description: Check OSPF adjacencies with DUT
+    wait: 40
+    nodes: [ x1 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
   session:
     description: Check BGP sessions with DUT
-    nodes: [ x1,x2 ]
+    wait_msg: Wait for BGP sessions to be established
+    wait: 20
+    nodes: [ x1, x2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   prefix:
     description: Check whether DUT propagates the beacon prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
     nodes: [ x1 ]
     plugin: bgp_prefix('172.42.42.0/24')
   nhs:
     description: Check next-hop handling on DUT
+    wait: 5
+    wait_msg: Wait for BGP convergence
     nodes: [ x1 ]
     plugin: >
       bgp_prefix(

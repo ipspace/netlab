@@ -1,0 +1,32 @@
+---
+message: |
+  The device under test is a layer-3 switch bridging VLAN
+  between ports and having an IP address in the red VLAN
+
+  h1 and h2 should be able to ping s1 and each other
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1 ]
+    module: [ vlan ]
+
+vlans:
+  red:
+    links: [ s1-h1, s1-h2 ]
+
+validate:
+  ping_host:
+    description: Intra-VLAN reachability
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_sw:
+    description: Host-to-switch reachability
+    nodes: [ h1, h2 ]
+    plugin: ping('s1')

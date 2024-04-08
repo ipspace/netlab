@@ -1,0 +1,47 @@
+---
+message: |
+  The devices under test are VLAN-to-VXLAN layer-3 switches between two access
+  VLANs and two VXLAN VNIs. Both switches perform inter-VLAN bridging, resulting
+  in asymmetrical IRB.
+
+  All hosts should be able to ping each other and all switch loopback IPs
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase.
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, ospf ]
+
+vlans:
+  red:
+    role: external
+    links: [ s1-h1, s2-h2 ]
+  blue:
+    role: external
+    links: [ s1-h3, s2-h4 ]
+
+links:
+- s1:
+  s2:
+
+validate:
+  ping_h4:
+    description: Host-to-host ping-based reachability test
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1, h2 ]
+    plugin: ping('h3')
+
+  ping_sw:
+    description: Host-to-switch ping-based reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1, h2, h3, h4 ]
+    plugin: ping('s1')

@@ -13,7 +13,7 @@ Lab topology can include a series of automated tests. Once the lab runs, you can
 (validate-tests)=
 ## Specifying Validation Tests
 
-The **validate** topology element is a dictionary of tests that are executed in the order in which they're specified in the lab topology.
+The **validate** topology element is a dictionary of tests that are executed in the order specified in the lab topology.
 
 Each test has a name (dictionary key) and description (dictionary value) -- another dictionary with these attributes:
 
@@ -23,7 +23,7 @@ Each test has a name (dictionary key) and description (dictionary value) -- anot
 * **exec** (string or dictionary) -- any other valid network device command. The command will be executed with the `netlab connect` command.
 * **valid** (string or dictionary, optional) -- Python code that will be executed once the **show** or **exec** command has completed. The test succeeds if the Python code returns any value that evaluates to `True` when converted to a boolean[^TEX]. The Python code can use the results of the **show** command as variables; the **exec** command printout is available in the `stdout` variable.
 * **plugin** (valid Python function call as string, optional) -- a method of a custom [validation plugin](validate-plugin) that provides either a command to execute or validation results.
-* **wait** (integer, optional) -- Time to wait before starting the test. The first wait time is measured from when the lab was started; subsequent times are measured from the previous test containing the **wait** parameter.
+* **wait** (integer, optional) -- Time to wait (when specified as the only action in the test) or retry (when used together with other actions). The first wait/retry timeout is measured from when the lab was started; subsequent times are measured from the previous test containing the **wait** parameter.
 * **wait_str** (string, optional) -- Message to print before starting the wait.
 * **stop_on_error** (bool, optional) -- When set to `True`, the validation tests stop if the current test fails on at least one of the devices.
 
@@ -35,7 +35,7 @@ You can also set these test string attributes to prettify the test results:
 * **fail**: message to print when the test fails
 * **pass**: message to print when the test succeeds
 
-The **show**, **exec**, and **valid** parameters can be strings or dictionaries. If you're building a lab that will be used with a single platform, specify them as strings; if you want to be able to execute tests on different platforms, specify a dictionary of commands and Python validation snippets. The values of these parameters can be Jinja2 expressions (see [](validate-multi-platform) for more details).
+The **show**, **exec**, and **valid** parameters can be strings or dictionaries. If you're building a lab that will be used with a single platform, specify them as strings; if you want to execute tests on different platforms, specify a dictionary of commands and Python validation snippets. The values of these parameters can be Jinja2 expressions (see [](validate-multi-platform) for more details).
 
 **Notes:**
 
@@ -69,6 +69,28 @@ Control-plane protocols might need tens of seconds to establish adjacencies and 
 
 ```
 validate:
+  wait:
+    description: Waiting for STP and OSPF to stabilize
+    wait: 45
+
+  ping:
+    description: Ping-based reachability test
+    nodes: [ h1,h2 ]
+    devices: [ linux ]
+    exec: ping -c 5 -W 1 -A h3
+    valid: |
+      "64 bytes" in stdout
+```
+
+(validate-retry)=
+## Retry Validations Example
+
+Instead of waiting a fixed amount of time, you can specify the **wait** parameter together with other test parameters. **netlab validate** will keep retrying the specified action(s) and validating their results until it gets a positive outcome or the wait time expires.
+
+For example, the following validation test checks whether H1 and H2 can ping H3, retrying for at least 45 seconds.
+
+```
+validate:
   ping:
     description: Ping-based reachability test
     wait_msg: Waiting for STP and OSPF to stabilize
@@ -80,21 +102,8 @@ validate:
       "64 bytes" in stdout
 ```
 
-Alternatively, you could add a dummy test that does nothing more than wait for the control-plane protocols to stabilize:
-
-```
-validate:
-	wait:
-    description: Waiting for STP and OSPF to stabilize
-    wait: 45
-
-  ping:
-    description: Ping-based reachability test
-    nodes: [ h1,h2 ]
-    devices: [ linux ]
-    exec: ping -c 5 -W 1 -A h3
-    valid: |
-      "64 bytes" in stdout
+```{tip}
+When retrying the validation actions, **‌netlab validate** executes them only on the nodes that have not passed the validation test. The failure notice is printed only after the wait time expires, resulting in concise output containing a single PASS/FAIL line per node.
 ```
 
 (validate-multi-platform)=
@@ -136,7 +145,7 @@ session:
 ```
 
 ```{tip}
-It might be easier to use [validation plugins](validate-plugin) to create complex validation tests.
+Use [validation plugins](validate-plugin) to create complex validation tests.
 ```
 
 The test will be used by students configuring BGP routers; it includes the **description**, **pass**, and **fail** parameters to make the test results easier to understand.
@@ -159,7 +168,7 @@ A similar approach cannot be used for Cisco IOSv. The only way to validate the c
 (validate-plugin)=
 ## Validation Plugins
 
-Simple validation tests are easy to write, particularly if you're willing to hard-code node names or IP addresses in the **show**, **exec**, and **valid** parameters.
+Simple validation tests are easy to write, particularly if you can hard-code node names or IP addresses in the **show**, **exec**, and **valid** parameters.
 
 Jinja2 templates within the validation parameters can bring you further, but they tend to get complex and challenging to read or maintain. Even worse, you might have to copy-paste them around if you have a set of labs with similar validation requirements.
 
@@ -211,10 +220,10 @@ def valid_ospf_neighbor(id: str) -> bool:
 The function calls specified in the **plugin** validation test parameter can contain arguments that can be constants or local variables. The following local variables can be used:
 
 * Any topology value. For example, you can use the `nodes` dictionary, the `links` list, or any expression that evaluates to a valid topology element, for example, `nodes.dut.ospf.router_id`.
-* Current node parameters are available in the `node` variable. For example, use `node.name` to get the name of the node on which the test is executed or `node.ospf.router_id` to get the local OSPF router ID.
+* Current node parameters are available in the `node` variable. For example, use `node.name` to get the node name on which the test is executed or `node.ospf.router_id` to get the local OSPF router ID.
 * The validation function can access the parsed results of the **show** or **exec** command as the global `_result` variable.
 
-The same input parameters are passed to **show_XXX**, **exec_XXX**, and **valid_XXX** functions. If you want to have flexible validation functions, they might need many arguments that are not relevant to the **show_XXX**/**exec_XXX** functions. In that case, use the `**kwargs` parameter to ignore the extra parameters, for example:
+The same input parameters are passed to **show_XXX**, **exec_XXX**, and **valid_XXX** functions. If you want flexible validation functions, they might need many arguments that are irrelevant to the **show_XXX**/**exec_XXX** functions. In that case, use the `**kwargs` parameter to ignore the extra parameters, for example:
 
 ```
 def show_bgp_neighbor(ngb: list, n_id: str, **kwargs: typing.Any) -> str:

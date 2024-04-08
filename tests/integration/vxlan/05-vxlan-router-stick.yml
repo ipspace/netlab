@@ -1,0 +1,44 @@
+---
+message: |
+  The devices under test are VLAN-to-VXLAN bridge and VXLAN router-on-a-stick.
+  Assuming 'vxlan-bridging' test case succeeded, this one tests VXLAN-to-VXLAN
+  routing
+
+  * h1 and h2 should be able to ping each other
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+
+vlans:
+  red:
+    vrf: tenant
+    links: [ s1-h1 ]
+  blue:
+    vrf: tenant
+    links: [ s1-h2 ]
+
+vrfs:
+  tenant:
+
+nodes:
+  s1:
+    module: [ vlan, vxlan, ospf ]
+    vlan.mode: bridge
+  ros:
+    module: [ vlan, vxlan, ospf, vrf ]
+    vlans:                                      # Bring VLANs to ROS (until we agree on a better solution)
+      red:
+      blue:
+
+links: [ s1-ros ]
+
+validate:
+  ping:
+    description: Host-to-host ping-based reachability tests
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')

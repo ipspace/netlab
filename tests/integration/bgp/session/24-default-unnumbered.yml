@@ -1,0 +1,52 @@
+message:
+  This lab tests the BGP default route origination over an interface EBGP
+  session. Assuming the 04-default-originate test passed, this test checks
+  whether the bgp.session configuration template implements interface EBGP
+  sessions.
+
+plugin: [ bgp.session ]
+module: [ bgp ]
+defaults.paths.validate: topology:../validate
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1 ]
+
+defaults.bgp.as: 65000
+bgp.advertise_loopback: false
+
+addressing:
+  p2p:
+    ipv6: 2001:db8:3::/48
+
+nodes:
+  dut:
+  x1:
+    bgp.as: 65100
+
+links:
+- dut:
+    bgp.default_originate: true
+  x1:
+  prefix:
+    ipv4: true
+    ipv6: true
+
+validate:
+  session:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',intf=node.interfaces[0].ifname)
+  def_ipv4:
+    description: Check whether DUT advertises IPv4 default route to X1
+    wait: 5
+    nodes: [ x1 ]
+    plugin: bgp_prefix('0.0.0.0/0')
+  def_ipv6:
+    description: Check whether DUT advertises IPv6 default route to X1
+    wait: 5
+    nodes: [ x1 ]
+    plugin: bgp_prefix('::/0',af='ipv6')

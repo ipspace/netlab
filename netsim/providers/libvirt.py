@@ -16,6 +16,7 @@ from ..data import types,get_empty_box
 from ..utils import log
 from ..utils import files as _files
 from . import _Provider
+from ..augment import devices
 from ..augment.links import get_link_by_index
 from ..cli import is_dry_run,external_commands
 
@@ -185,7 +186,8 @@ def create_vagrant_batches(topology: Box) -> None:
   batch_size = libvirt_defaults.batch_size
   start_cmd  = libvirt_defaults.start
   libvirt_defaults.start = []
-  node_list = list(topology.nodes.keys())
+  node_list = [ n_name for n_name in topology.nodes.keys() 
+                  if devices.get_provider(topology.nodes[n_name],topology.defaults) == 'libvirt' ]
 
   while True:
     libvirt_defaults.start.append(start_cmd + " " + " ".join(node_list[:batch_size]))     # Add up to batch_size nodes to the start command
@@ -219,7 +221,7 @@ class Libvirt(_Provider):
         if not 'public' in l.libvirt:                            # ... but no 'public' libvirt attr
           l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
 
-      if l.get('libvirt.provider',None):
+      if l.get('libvirt.provider',None) and 'vlan' not in l.type:
         l.type = 'lan'
         if not 'bridge' in l:
           l.bridge = "%s_%d" % (topology.name[0:10],l.linkindex)

@@ -1,3 +1,4 @@
+---
 message: |
   This lab tests whether the OSPF interfaces on device under test are correctly
   configured as passive interfaces.
@@ -36,24 +37,26 @@ links:
   ospf.cost: 25
 
 validate:
-  wait:
-    description: Wait for OSPF adjacencies to start
-    wait: 30
   adj_x1:
     description: Is DUT a neigbor of X1?
+    wait: 30
+    wait_msg: Waiting for OSPFv3 adjacencies to come up
     pass: OK, X1 has DUT as a neighbor
     nodes: [ x1 ]
     plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  wait:
+    description: Wait extra 15 seconds just to be on the safe side ;)
+    wait: 15
   adj_x2:
     description: Is DUT a neigbor of X2?
     nodes: [ x2 ]
     plugin: ospf6_neighbor(nodes.dut.ospf.router_id,present=False)
     pass: OK, X2 cannot see DUT as a neighbor
   c_p1:
-    description: Check cost of IPv4 prefix on passive interface on DUT
+    description: Check cost of IPv6 prefix on passive interface on DUT
     nodes: [ x1 ]
-    plugin: ospf6_prefix('2001:db8:cafe:1::/64',cost=25)
+    plugin: ipv6_route('2001:db8:cafe:1::/64',proto='ospf6',cost=25)
   c_x2:
-    description: Check cost of IPv4 prefix on stub interface on DUT
+    description: Check cost of IPv6 prefix on stub interface on DUT
     nodes: [ x1 ]
-    plugin: ospf6_prefix('2001:db8:cafe:2::/64',cost=35)
+    plugin: ipv6_route('2001:db8:cafe:2::/64',proto='ospf6',cost=35)

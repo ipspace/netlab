@@ -20,22 +20,15 @@ feature interface-vlan
 {% include 'nxos.vrf.j2' %}
 !
 {% endif %}
-interface {{ loopback.ifname }}
-{% if 'ipv4' in loopback %}
- ip address {{ loopback.ipv4 }}
-{% endif %}
-{% if 'ipv6' in loopback %}
- ipv6 address {{ loopback.ipv6 }}
-{% endif %}
 !
 interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
  no lldp transmit
  no lldp receive
 !
-{% for l in interfaces|default([]) %}
+{% for l in netlab_interfaces %}
 interface {{ l.ifname }}
  no shutdown
-{% if l.virtual_interface is not defined and l.vlan is not defined %}
+{% if l.virtual_interface is not defined %}
  no switchport
  mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
 {% endif %}
@@ -77,6 +70,7 @@ interface {{ l.ifname }}
 {%   else %}
 ! Invalid IPv6 address {{ l.ipv6 }}
 {%   endif %}
+ ipv6 nd ra-interval 5 min 3
 {% endif %}
 !
 {% endfor %}

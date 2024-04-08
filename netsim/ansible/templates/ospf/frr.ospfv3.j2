@@ -1,9 +1,8 @@
-{% if 'ipv6' in loopback %}
-interface {{ loopback_name }}
- ipv6 ospf6 area {{ ospf.area }}
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
 !
-{% endif %}
-{% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
+! OSPFv3 FRR configuration
+!
+{% for l in intf_data if 'ospf' in l and 'ipv6' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
  ipv6 ospf6 area {{ l.ospf.area }}
@@ -27,9 +26,22 @@ interface {{ l.ifname }}
 !
 {% endfor %}
 !
+{% if ospf_vrf %}
+router ospf6 vrf {{ ospf_vrf }}
+{% else %}
 router ospf6
- ospf6 router-id {{ ospf.router_id }}
-{% if ospf.reference_bandwidth is defined %}
- auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+ ospf6 router-id {{ ospf_data.router_id }}
+ timers lsa min-arrival 100
+ timers throttle spf 10 50 500
+{% if ospf_vrf %}
+{%   if bgp.as is defined %}
+ redistribute bgp
+{%   endif %}
+ redistribute connected
+{% endif %}
+{% if ospf_data.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
 {% endif %}
 exit
+{% endmacro %}

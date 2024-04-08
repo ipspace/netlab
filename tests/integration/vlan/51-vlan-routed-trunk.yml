@@ -1,0 +1,63 @@
+---
+message: |
+  A router-on-a-stick is attached to a VLAN trunk and runs OSPF
+  on all attached VLANs
+
+  * r1, r2, and ros should be able to ping each other
+
+  Please note it might take a while for the lab to work due to
+  STP and OSPF setup phase
+
+groups:
+  _auto_create: True
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan ]
+    device: frr
+    provider: clab
+  routers:
+    members: [ r1, r2, ros ]
+    module: [ ospf ]
+  external:
+    members: [ r1, r2 ]
+    device: frr
+    provider: clab
+
+vlans:
+  red:
+    links: [ r1-s1 ]
+  blue:
+    links: [ r2-s1 ]
+
+nodes:
+  ros:
+    module: [ ospf, vlan ]
+    vlan.mode: route
+
+links:
+- s1:
+  s2:
+  vlan.trunk: [ red, blue ]
+- s2:
+  ros:
+  vlan.trunk: [ red, blue ]
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: 120
+    nodes: [ r1, r2 ]
+    plugin: ospf_neighbor(nodes.ros.ospf.router_id)
+  ping_ros:
+    description: Reaching router-on-stick
+    wait: 20
+    wait_msg: Waiting for OSPF SPF to do its magic
+    nodes: [ r1 ]
+    plugin: ping('ros',src=nodes.r1.loopback.ipv4)
+  ping_x:
+    description: Cross-VLAN reachability
+    wait: 5
+    wait_msg: Waiting for OSPF SPF to do its magic
+    nodes: [ r1 ]
+    plugin: ping('r2',src=nodes.r1.loopback.ipv4)

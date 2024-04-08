@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+#
+# Run automated integration tests for the specified device/provider combo
+#
+
+import typing
+import argparse
+import sys
+import os
+import subprocess
+import shutil
+from box import Box
+
+from netsim.utils import log,read as _read
+from netsim.cli import parser_add_verbose
+from netsim.utils import files as _files
+from netsim.data import get_empty_box
+
+def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
+  parser = argparse.ArgumentParser(
+    description='Run automated integration tests for the specified device/provider combo')
+  parser.add_argument(
+    dest='tests', nargs='*', action='store',
+    help='Tests to run')
+  parser.add_argument(
+    '-d','--device',
+    dest='device',
+    action='store',
+    help='Device type to test')
+  parser.add_argument(
+    '-p','--provider',
+    dest='provider',
+    action='store',
+    help='Virtualization provider to use')
+  parser.add_argument(
+    '-l','--limit',
+    dest='limit',
+    action='store',
+    help='Limit the tests to execute with a pattern prefix')
+  parser.add_argument(
+    '--redo',
+    dest='redo',
+    action='store',
+    help='Redo tests that failed due to transient errors')
+  parser.add_argument(
+    '-w','--workdir',
+    dest='workdir',
+    action='store',
+    default='/tmp/netlab_wk',
+    help='Working directory')
+  parser.add_argument(
+    '--logdir',
+    dest='logdir',
+    action='store',
+    default='/tmp/netlab_log',
+    help='Logging directory')
+  parser.add_argument(
+    '--split-log',
+    dest='split_log',
+    action='store_true',
+    help='Split STDOUT and STDERR')
+  parser.add_argument(
+    '--batch',
+    dest='batch',
+    action='store_true',
+    help='Run in batch mode (save validate results into a file)')
+  parser_add_verbose(parser)
+
+  return parser.parse_args(args)
+
+def load_system_defaults() -> Box:
+  empty_file = "package:cli/empty.yml"
+  topology = _read.load(empty_file)
+  if not topology:
+    log.fatal('Cannot load system defaults')
+
+  return topology
+
+def check_device_provider(args: argparse.Namespace, topology: Box) -> None:
+  if args.device:
+    os.environ['NETLAB_DEVICE'] = args.device
+
+  if args.provider:
+    os.environ['NETLAB_PROVIDER'] = args.provider
+
+  if not 'NETLAB_DEVICE' in os.environ:
+    log.error(
+      'Specify device to test with NETLAB_DEVICE environment variable or -d argument',
+      category=log.MissingValue,
+      module='')
+
+  if not 'NETLAB_PROVIDER' in os.environ:
+    log.error(
+      'Specify provider to use with NETLAB_PROVIDER environment variable or -p argument',
+      category=log.MissingValue,
+      module='')
+
+  dev_list = list(topology.defaults.devices.keys()) + list(topology.defaults.daemons.keys())
+  device   = os.environ.get('NETLAB_DEVICE',None)
+  if device and not device in dev_list:
+    log.error(
+      f'Invalid device {device}',
+      category=log.IncorrectValue,
+      module='',
+      more_hints=f'Valid devices: {" ".join(dev_list)}')
+
+  prov_list = list(topology.defaults.providers.keys())
+  provider  = os.environ.get('NETLAB_PROVIDER',None)
+  if provider and not provider in prov_list:
+    log.error(
+      f'Invalid provider {provider}',
+      category=log.IncorrectValue,
+      module='',
+      more_hints=f'Valid providers: {" ".join(prov_list)}')
+
+  log.exit_on_error()
+
+def open_stream(
+      test: str,
+      stream: typing.Optional[str],
+      suffix: str,
+      args: argparse.Namespace) -> typing.Any:
+  if not stream:
+    return None
+
+  stream_name = f"{args.logdir}/{os.path.basename(test)}-{stream}{suffix}"
+  try:
+    return open(stream_name,"w")
+  except Exception as ex:
+    log.fatal(f"Cannot open {stream_name} for writing: {ex}")
+
+def execute(
+      cmd: str,
+      args: argparse.Namespace,
+      test: str,
+      log: typing.Optional[str] = None,
+      err: typing.Optional[str] = None) -> subprocess.CompletedProcess:
+
+  log_stream = open_stream(test,log,'.log',args)
+  if args.split_log:
+    err_stream = open_stream(test,err,'.err',args)
+  else:
+    err_stream = log_stream
+
+  return subprocess.run(cmd.split(' '),stdout=log_stream,stderr=err_stream)
+
+def run_cleanup(args: argparse.Namespace,final: bool = True, abort: bool = True) -> None:
+  if execute(f"netlab down --cleanup --force --force",args,test="cleanup",log="down",err="down").returncode == 0:
+    print("cleanup(ok)",end="\n" if final else " ",flush=True)
+  else:
+    print()
+    if abort:
+      log.fatal(f"netlab down --cleanup failed, check the log files in {args.logdir}")
+
+RESULTS: Box = {}
+
+def log_result(test: str, stage: str, result: bool) -> None:
+  global RESULTS
+
+  test = os.path.basename(test).split('.')[0]
+  RESULTS[test][stage] = result
+
+def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
+  test_path = os.path.abspath(test)
+  os.makedirs(args.workdir,exist_ok=True)
+  os.makedirs(args.logdir,exist_ok=True)
+  os.chdir(args.workdir)
+  subprocess.run(['sudo','true'])
+
+  if first:
+    print("Pre-test cleanup:",end=" ",flush=True)
+    run_cleanup(args,final=True,abort=False)
+
+  print(f"{test}:",end=" ",flush=True)
+  if execute(f"netlab create {test_path}",args,test=test,log="create",err="create").returncode == 0:
+    print("create(ok)",end=" ",flush=True)
+    log_result(test,'create',True)
+  else:
+    print("create(FAIL)",flush=True)
+    log_result(test,'create',False)
+    return
+
+  if execute(f"netlab up --snapshot --no-config",args,test=test,log="up",err="up").returncode == 0:
+    print("up(ok)",end=" ",flush=True)
+    log_result(test,'up',True)
+  else:
+    print("up(FAIL)",end=" ",flush=True)
+    log_result(test,'up',False)
+    run_cleanup(args)
+    return
+
+  if execute(f"netlab initial",args,test=test,log="initial",err="initial").returncode == 0:
+    print("config(ok)",end=" ",flush=True)
+    log_result(test,'config',True)
+  else:
+    print("config(FAIL)",end=" ",flush=True)
+    log_result(test,'config',False)
+    run_cleanup(args)
+    return
+
+  valid_cmd = "netlab validate --skip-missing"
+  if not args.verbose and not args.batch:
+    valid_cmd += " --error-only"
+
+  if args.batch:
+    valid_cmd += " --dump result"
+
+  valid_capture = "validate" if args.quiet or args.batch else None
+  valid = execute(valid_cmd,args,test=test,log=valid_capture,err=valid_capture)
+  if valid.returncode == 0:
+    log_result(test,'validate',True)
+    print("validate(ok)",end=" ",flush=True)
+  elif valid.returncode == 2:
+    print("validate(SKIPPED)",end=" ",flush=True)
+  else:
+    if args.quiet or args.batch:
+      print("validate(FAIL)",end= " ",flush=True)
+    log_result(test,'validate',False)
+    run_cleanup(args)
+    return
+
+  run_cleanup(args,False)
+  print("OK",flush=True)
+
+def main() -> None:
+  global RESULTS
+
+  topology = load_system_defaults()
+  args = test_parse(sys.argv[1:],topology)
+  check_device_provider(args,topology)
+  args.limit = (args.limit or args.redo or "[0-9]") + "*.yml"
+  log_clean = bool(args.redo)
+  first_test = True
+
+  result_fname = args.logdir + '/results.yaml'
+  if args.redo and os.path.exists(result_fname):
+    RESULTS = Box.from_yaml(filename=result_fname,default_box=True,box_dots=True)
+  else:
+    RESULTS = get_empty_box()
+
+  for path in args.tests:
+    if args.verbose:
+      print(f"Test search path: {path}/{args.limit}")
+
+    try:
+      test_list = sorted(_files.get_globbed_files(path,args.limit))
+    except Exception as ex:
+      log.fatal(f'Cannot find tests in {path}: {ex}')
+
+    for test in test_list:
+      if args.redo:
+        print(f"Redoing {test}")
+      save_dir = os.getcwd()
+      if not log_clean:
+        if args.verbose:
+          print(f"Cleaning up {args.logdir}")
+        if os.path.exists(args.logdir):
+          shutil.rmtree(args.logdir)
+        log_clean = True
+
+      try:
+        run_test(test,args,first_test)
+        first_test = False
+      except KeyboardInterrupt as ex:
+        print()
+        run_cleanup(args)
+        log.fatal('User interrupt, aborting')
+      os.chdir(save_dir)
+      RESULTS.to_yaml(filename=result_fname)
+
+  return
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,252 @@
+input:
+- topology/input/vlan-routed-multiprovider.yml
+- package:topology-defaults.yml
+libvirt:
+  providers:
+    clab: true
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    node: s
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  - ifindex: 1
+    ifname: Ethernet1
+    node: r
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 1
+  node_count: 2
+  prefix: {}
+  type: lan
+  vlan:
+    trunk:
+      blue: {}
+      red: {}
+module:
+- vlan
+name: input
+nodes:
+  r:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: Ethernet1
+      linkindex: 1
+      name: r -> s
+      neighbors:
+      - ifname: eth1
+        node: s
+      subif_index: 2
+      type: lan
+    - bridge_group: 1
+      ifindex: 2
+      ifname: Ethernet1.1
+      ipv4: 172.16.1.1/24
+      name: r -> [s]
+      neighbors:
+      - ifname: vlan1001
+        ipv4: 172.16.1.2/24
+        node: s
+      parent_ifindex: 1
+      parent_ifname: Ethernet1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1001
+        mode: route
+    - bridge_group: 2
+      ifindex: 3
+      ifname: Ethernet1.2
+      ipv4: 172.16.0.1/24
+      name: r -> [s]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.2/24
+        node: s
+      parent_ifindex: 1
+      parent_ifname: Ethernet1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1000
+        mode: route
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - vlan
+    name: r
+    vlan:
+      max_bridge_group: 2
+      mode: route
+    vlans:
+      blue:
+        bridge_group: 1
+        id: 1001
+        mode: route
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      red:
+        bridge_group: 2
+        id: 1000
+        mode: route
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+  s:
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:9.1.0
+    clab:
+      binds:
+      - clab_files/s/daemons:/etc/frr/daemons
+      - clab_files/s/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-s
+    id: 2
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      linkindex: 1
+      mtu: 1500
+      name: s -> r
+      neighbors:
+      - ifname: Ethernet1
+        node: r
+      subif_index: 2
+      type: lan
+    - ifindex: 2
+      ifname: eth1.1001
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: blue
+        access_id: 1001
+    - ifindex: 3
+      ifname: eth1.1000
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 4
+      ifname: vlan1001
+      ipv4: 172.16.1.2/24
+      name: VLAN blue (1001) -> [r]
+      neighbors:
+      - ifname: Ethernet1.1
+        ipv4: 172.16.1.1/24
+        node: r
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    - bridge_group: 2
+      ifindex: 5
+      ifname: vlan1000
+      ipv4: 172.16.0.2/24
+      name: VLAN red (1000) -> [r]
+      neighbors:
+      - ifname: Ethernet1.2
+        ipv4: 172.16.0.1/24
+        node: r
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - vlan
+    mtu: 1500
+    name: s
+    provider: clab
+    vlan:
+      max_bridge_group: 2
+      mode: irb
+    vlans:
+      blue:
+        bridge_group: 1
+        id: 1001
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      red:
+        bridge_group: 2
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+provider: libvirt
+vlans:
+  blue:
+    host_count: 0
+    id: 1001
+    neighbors:
+    - ifname: Ethernet1.1
+      ipv4: 172.16.1.1/24
+      node: r
+    - ifname: vlan1001
+      ipv4: 172.16.1.2/24
+      node: s
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.1.0/24
+  red:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: Ethernet1.2
+      ipv4: 172.16.0.1/24
+      node: r
+    - ifname: vlan1000
+      ipv4: 172.16.0.2/24
+      node: s
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.0.0/24

@@ -79,7 +79,7 @@ ipv6 router ospf {{ pid }}
 
 ## Loopback Configuration
 
-The device data model assumes that the loopback interface will be placed into the default OSPF area. Use **ospf.area** and **loopback.ipv4** or **loopback.ipv6** attributes to configure OSPF on loopback interface:
+The device data model assumes that the loopback interface will be placed into the default OSPF area. Use **ospf.area** and **loopback.ipv4** or **loopback.ipv6** attributes to configure OSPF on the loopback interface.
 
 Nexus OS example (**pid** variable was set in the [](#global-ospf-configuration)).
 
@@ -98,6 +98,8 @@ interface Loopback0
 {% endif %}
 ```
 
+Alternatively, use the **netlab_interfaces** list and configure the loopback interface like any other interface (the OSPF configuration module sets the **ospf.area** parameter on the loopback interface).
+
 ## Configuring OSPF Interfaces
 
 OSPF interface parameters are specified within the **ospf** dictionary on individual interfaces. That dictionary may contain these parameters:
@@ -108,9 +110,13 @@ OSPF interface parameters are specified within the **ospf** dictionary on indivi
 * **cost** -- interface cost
 * **bfd** -- BFD is active on the interface (see [](igp-bfd-interaction) and [](igp-bfd-config) for more details).
 
-Interface part of OSPF configuration template starts with a **for** loop over all configured interfaces that have OSPF parameters. You MUST check for presence of **ospf** interface dictionary to exclude external (inter-AS) interfaces from the OSPF routing process.
+```{tip}
+The **ospf.area‌** parameter is also present on the loopback interface
+```
 
-You might want to use interface description as a comment to help you troubleshoot the final configuration snippets:
+The interface part of the OSPF configuration template starts with a **for** loop over all configured interfaces that have OSPF parameters. You MUST check for presence of **ospf** interface dictionary to exclude external (inter-AS) interfaces from the OSPF routing process.
+
+You might want to use the interface description as a comment to help you troubleshoot the final configuration snippets:
 
 ```
 {% for l in interfaces if 'ospf' in l %}
@@ -120,7 +126,7 @@ interface {{ l.ifname }}
 {% endfor %}
 ```
 
-If you want to support OSPFv2 and OSPFv3 you should also check whether IPv4/IPv6 is configured on the interfaces. OSPFv3 example:
+If you want to support OSPFv2 and OSPFv3, you should also check whether IPv4/IPv6 is configured on the interfaces. OSPFv3 example:
 
 ```
 {% for l in interfaces if 'ospf' in l and 'ipv6' in l %}

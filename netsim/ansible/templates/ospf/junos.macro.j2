@@ -1,0 +1,50 @@
+{% macro config(ospf_proto,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+{% set KW_NETWORK_TYPE = {'point-to-point': 'p2p','point-to-multipoint': 'p2mp', 'non-broadcast': 'nbma' } %}
+{% if ospf_vrf %}
+routing-instances {
+  {{ ospf_vrf }} {
+{% endif %}
+protocols {
+  delete: {{ ospf_proto }};
+}
+
+protocols {
+  {{ ospf_proto }} {
+{% if ospf_vrf %}
+{# configure VRF route redistribution policy #}
+    export vrf-{{ ospf_vrf  }}-ospf-export;
+{% endif %}
+{% if ospf_data.reference_bandwidth is defined %}
+    reference-bandwidth {{ ospf_data.reference_bandwidth * 1000000 }};
+{% endif %}
+{% for l in intf_data if 'ospf' in l %}
+    area {{ l.ospf.area }} {
+      interface {{ l.ifname }} {
+{%   if l.ospf.network_type is defined and l.ospf.network_type != 'broadcast' %}
+        interface-type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
+{%   endif %}
+{%   if l.ospf.passive|default(False) %}
+        passive;
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+        metric {{ l.ospf.cost }};
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+        bfd-liveness-detection {
+          minimum-receive-interval {{ l.bfd.min_rx|default(bfd.min_rx)|default(500) }};
+          multiplier {{ l.bfd.multiplier|default(bfd.multiplier)|default(3) }};
+          transmit-interval {
+            minimum-interval {{ l.bfd.min_tx|default(bfd.min_tx)|default(500) }};
+          }
+        }
+{%   endif %}
+      }
+    }
+{% endfor %}
+  }
+}
+{% if ospf_vrf %}
+{# Close the routing-instances vname brackets #}
+} }
+{% endif %}
+{% endmacro %}

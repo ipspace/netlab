@@ -1,0 +1,55 @@
+---
+addressing:
+  loopback:
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv6: 2001:db8:1::/48
+  vrf_loopback:
+    ipv6: 2001:db8:cafe::/48
+
+nodes:
+  r:
+  h1:
+    device: linux
+    provider: clab
+  h2:
+    device: linux
+    provider: clab
+
+links:
+- r:
+  h1:
+- r:
+  h2:
+- r:
+  type: loopback
+  pool: vrf_loopback
+
+validate:
+  ping4:
+    description: IPv4 ping to device loopback
+    wait: 10
+    wait_msg: Waiting for IPv4 interfaces to become ready
+    nodes: [ h1, h2 ]
+    plugin: ping(nodes.r.loopback.ipv4)
+  ra:
+    description: Check RA-generated default route
+    wait: 30
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h1, h2 ]
+    plugin: default6()
+    stop_on_error: True
+  ping6:
+    description: IPv6 ping to device loopback
+    wait: 10
+    wait_msg: Waiting for IPv6 interfaces to become ready
+    nodes: [ h1, h2 ]
+    plugin: ping(nodes.r.loopback.ipv6,af='ipv6')
+  ping_x4:
+    description: IPv4 ping to extra loopback
+    nodes: [ h1, h2 ]
+    plugin: ping(nodes.r.interfaces[2].ipv4)
+  ping_x6:
+    description: IPv6 ping to extra loopback
+    nodes: [ h1, h2 ]
+    plugin: ping(nodes.r.interfaces[2].ipv6)

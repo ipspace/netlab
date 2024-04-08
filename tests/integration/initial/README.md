@@ -10,6 +10,6 @@ netlab up -p <provider> -d <device> <topology-file>
 
 The topologies implement the following scenarios:
 
-* `interfaces.yml` -- IPv4 and IPv6 addressing on loopback and physical interfaces, interface MTU, and bandwidth. Validation tests check IPv4 and IPv6 connectivity between attached Linux hosts.
-* `loopback.yml` -- primary and additional loopbacks configured with IPv4 and IPv6 addresses. Validation tests check IPv4 and IPv6 connectivity between loopback interfaces and attached Linux hosts.
-* `unnumbered.yml` -- unnumbered IPv4 and IPv6 interfaces.
+* `01-interfaces.yml` -- IPv4 and IPv6 addressing on loopback and physical interfaces, interface MTU, and bandwidth. Validation tests check IPv4 and IPv6 connectivity between attached Linux hosts.
+* `02-loopback.yml` -- primary and additional loopbacks configured with IPv4 and IPv6 addresses. Validation tests check IPv4 and IPv6 connectivity between loopback interfaces and attached Linux hosts.
+* `03-unnumbered.yml` -- unnumbered IPv4 and IPv6 interfaces.

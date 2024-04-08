@@ -1,0 +1,82 @@
+---
+message: |
+  The device under test has two VRFs with two interfaces in each VRF.
+  Routers are attached to those interfaces and run OSPF with device under test.
+  Assuming the multi-vrf test case succeeded, this one adds OSPF routing with
+  CE routers.
+
+  * r1 and r2 should be able to ping each other
+  * r3 and r4 should be able to ping each other
+  * r1 should not be able to reach r3
+
+groups:
+  _auto_create: True
+  ce:
+    members: [ r1, r2, r3, r4 ]
+    module: [ ospf ]
+    device: frr
+    provider: clab
+  pe:
+    members: [ dut ]
+    module: [ vrf, ospf ]
+
+vrfs:
+  red:
+    links: [ dut-r1, dut-r2 ]
+  blue:
+    links: [ dut-r3, dut-r4 ]
+
+nodes:          # Set different router ID on every OSPF process
+  dut:          # ... to keep Cisco IOS happy
+    id: 1
+    vrfs:
+      red:
+        ospf.router_id: 10.100.0.1
+      blue:
+        ospf.router_id: 10.101.0.1
+
+validate:
+  red_adj:
+    description: Check OSPF adjacencies in red VRF
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: 70
+    nodes: [ r1, r2 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
+    stop_on_error: true
+  blue_adj:
+    description: Check OSPF adjacencies in blue VRF
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: 30
+    nodes: [ r3, r4 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
+    stop_on_error: true
+  red_route:
+    description: Check OSPF routes in red VRF
+    wait: 10
+    wait_msg: Waiting for OSPF SPF run
+    nodes: [ r1 ]
+    plugin: ospf_prefix(nodes.r2.loopback.ipv4)
+  blue_route:
+    description: Check OSPF routes in blue VRF
+    wait_msg: Waiting for OSPF SPF run
+    wait: 10
+    nodes: [ r3 ]
+    plugin: ospf_prefix(nodes.r4.loopback.ipv4)
+  inter_route:
+    description: Check for blue OSPF routes in red VRF
+    nodes: [ r1 ]
+    plugin: ospf_prefix(nodes.r4.loopback.ipv4,state='missing')
+  ping_red:
+    description: Ping-based reachability test in VRF red
+    wait: 5
+    nodes: [ r1 ]
+    plugin: ping('r2')
+  ping_blue:
+    description: Ping-based reachability test in VRF blue
+    wait: 5
+    nodes: [ r3 ]
+    plugin: ping('r4')
+  inter_ping:
+    description: Ping-based isolation test between blue and red VRF
+    nodes: [ r1 ]
+    plugin: ping('r4',expect='fail')

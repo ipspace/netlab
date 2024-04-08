@@ -37,7 +37,7 @@ def get_attribute_subset(settings: Box, args: argparse.Namespace) -> typing.Opti
   if not args.match:
     return settings
   
-  return settings.get(args.match,'None')
+  return settings.get(args.match,None)
 
 def show(settings: Box, args: argparse.Namespace) -> None:
   if not args.eval_paths:                         # If the user doesn't want to see the transformed paths
@@ -47,7 +47,7 @@ def show(settings: Box, args: argparse.Namespace) -> None:
                                                   # ... with the system defaults
   show = get_attribute_subset(settings, args)
   if show is None:
-    log.fatal('There are no system/user defaults within the {args.match} subtree')
+    log.fatal(f'There are no system/user defaults within the {args.match} subtree')
 
   if args.format in ['text','table']:
     print(f"""

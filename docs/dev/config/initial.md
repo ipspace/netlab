@@ -1,6 +1,6 @@
 # Initial Device Configuration
 
-This document describes the device data model parameters to consider when creating an initial device configuration template. For a broader picture, please see the [contributing new devices](../devices.md) document.
+This document describes the device data model parameters to consider when creating an initial device configuration template. Please see the [contributing new devices](../devices.md) document for a broader picture.
 
 Most of the document assumes you have already created an Ansible task list that can deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see the [Using Ansible Configuration Modules](initial-ansible-config) section at the bottom of this document.
 
@@ -84,6 +84,10 @@ The device data model assumes every network device has a primary loopback interf
 * **loopback.ipv6** -- IPv6 loopback address in CIDR format when available.
 * **loopback.ifname** -- Loopback interface name for devices with `loopback_interface_name` parameter.
 
+```{tip}
+You could use the **‌netlab_interfaces** list to configure the loopback interface like any other interface. If you take this approach, you should skip interface parameters not applicable to the loopback interface(s) while configuring them.
+```
+
 Either address family might be missing -- you have to check the presence of attributes in your configuration templates. Arista EOS example:
 
 ```
@@ -134,10 +138,14 @@ Data-plane device interfaces are specified in the **interfaces** list. Each inte
 * **_parent_intf** -- name of the parent interface of unnumbered IPv4 interfaces
 * **_parent_ipv4** -- IPv4 address of the parent interface of unnumbered IPv4 interfaces
 
+```{tip}
+You can use the **‌netlab_interfaces** instead of the **‌interfaces** list. **‌netlab_interfaces** list includes the loopback interface *‌on devices that are not hosts*, allowing you to configure all interfaces with the same code.
+```
+
 **Notes:**
 
-* You don't have to support all interface attributes, but it's highly recommended to implement interface addresses, the interface description, and the MTU.
-* Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for the presence of optional attributes. Try to be consistent ;)
+* You don't have to support all interface attributes, but it's highly recommended that interface addresses, the description, and the MTU be implemented.
+* Use `if sth is defined`, `sth|default(value)`, or `if 'sth' in ifdata` in your Jinja2 templates to check for the presence of optional attributes. Try to be consistent ;)
 
 The interface part of the initial device configuration template starts with a **for** loop over all configured interfaces:
 
@@ -184,6 +192,8 @@ If you have to configure additional parameters on physical interfaces (for examp
 {% endif %}
 ```
 
+If you use the **netlab_interfaces** list to configure the interfaces, check the interface type (`l.type`). It is set to **loopback** for loopback interfaces or **stub** for stub interfaces (interfaces with no neighbors).
+
 ### Setting Interface Description
 
 You might want to implement slightly more complex interface descriptions than what _netlab_ generates. For example:
@@ -208,7 +218,7 @@ interface {{ l.ifname }}
 
 ### Minimum Interface MTU
 
-Some devices have weird MTU rules. For example, CSR 1000V cannot set the L2 MTU below 1500 bytes or the L3 MTU above 1500 bytes. You could use the **min_mtu** device setting in those scenarios and generate MTU configuration accordingly.
+Some devices have weird MTU rules. For example, CSR 1000V cannot set the L2 MTU below 1500 bytes or the L3 MTU above 1500. In those scenarios, you could use the **min_mtu** device setting and generate the MTU configuration accordingly.
 
 Cisco IOS example:
 

@@ -1,0 +1,61 @@
+---
+message: |
+  Use this topology to test the IPv6 LLA EBGP implementation and
+  propagation of routes between EBGP speakers.
+
+defaults.sources.extra: [ defaults-ipv6.yml ]
+
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, x3 ]
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+    loopback.ipv6: 2001:db8:cafe:1::1/64
+  x3:
+    bgp.as: 65102
+    loopback.ipv6: 2001:db8:bad:cafe::1/64
+
+links:
+- dut:
+  x1:
+  prefix:
+    ipv4: False
+    ipv6: True
+- dut:
+  x2:
+  prefix:
+    ipv4: False
+    ipv6: True
+- dut-x3
+
+validate:
+  session:
+    description: Check EBGP IPv6 LLA sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    nodes: [ x1, x2, x3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',intf=node.interfaces[0].ifname,af='ipv6')
+
+  pre_x2:
+    description: Check whether DUT propagates the X2 prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ x1 ]
+    plugin: bgp_prefix('2001:db8:cafe:1::/64',af='ipv6')
+
+  pre_x3:
+    description: Check whether DUT propagates the X3 prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ x1 ]
+    plugin: bgp_prefix('2001:db8:bad:cafe::/64',af='ipv6')

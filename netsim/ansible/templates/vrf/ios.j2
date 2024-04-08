@@ -1,6 +1,13 @@
+{% import "ios.ospfv2.j2" as ospfv2 %}
+{% import "ios.ospfv3.j2" as ospfv3 %}
 {% if bgp.as is defined %}
 {% include 'ios.bgp.j2' %}
 {% endif %}
 {% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
-{%   include 'ios.ospfv2-vrf.j2' %}
+{%   if vdata.af.ipv4|default(False) %}
+{{     ospfv2.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
+{%   if vdata.af.ipv6|default(False) %}
+{{     ospfv3.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
 {% endfor %}

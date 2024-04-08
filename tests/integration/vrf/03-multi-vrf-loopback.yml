@@ -1,0 +1,46 @@
+---
+message: |
+  The device under test has two VRFs with two interfaces in each VRF.
+  Each VRF has a loopback interface.
+
+  * h1 and h2 should be able to ping each other and the VRF loopback interface
+  * h3 and h4 should be able to ping each other and the VRF loopback interface
+  * h1 should not be able to reach h3
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  routers:
+    members: [ dut ]
+    module: [ vrf ]
+
+vrfs:
+  red:
+    loopback: 10.0.0.42/32
+    links: [ dut-h1, dut-h2 ]
+  blue:
+    loopback: 10.0.0.43/32
+    links: [ dut-h3, dut-h4 ]
+
+validate:
+  red:
+    description: Ping-based reachability test in VRF red (wait up to 10 seconds)
+    wait: 10
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping:
+    description: Ping-based reachability test in VRF blue
+    wait: 5
+    nodes: [ h3 ]
+    plugin: ping('h4')
+  red_lb:
+    description: Pinging red VRF loopback
+    nodes: [ h1 ]
+    plugin: ping('10.0.0.42')
+  blue_lb:
+    description: Pinging blue VRF loopback
+    nodes: [ h3 ]
+    plugin: ping('10.0.0.43')

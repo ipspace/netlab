@@ -115,12 +115,17 @@ confirm: print the prompt and wait for a yes/no answer
 def confirm(prompt: str) -> bool:
   prompt = f'{prompt} [y/n]'
 
-  while True:
-    answer = input(prompt).lower()
-    if answer in ['y','yes']:
-      return True
-    if answer in ['n','no']:
-      return False
+  try:
+    while True:
+      answer = input(prompt).lower()
+      if answer in ['y','yes']:
+        return True
+      if answer in ['n','no']:
+        return False
+  except KeyboardInterrupt as ex:
+    from . import log
+    print()
+    log.fatal('Aborted by user')
 
 """
 print text table

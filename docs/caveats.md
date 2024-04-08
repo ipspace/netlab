@@ -68,10 +68,15 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 * Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
 * VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 
+See also Cisco IOSv OSPF and BGP caveats.
+
 (caveats-iosv)=
 ## Cisco IOSv
 
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+* BGP configuration is optimized to result in reasonable convergence times under lab conditions. Do not use the same settings in a production network.
+* Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
+* The OSPFv3 process on Cisco IOS advertises loopback addresses as /128 prefixes unless the OSPF network type is set to `point-to-point`. _netlab_ configures OSPFv3 `point-to-point` network type on all loopback interfaces to get results comparable to other implementations.
 
 (caveats-iosxr)=
 ## Cisco IOS XRv
@@ -107,6 +112,7 @@ _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux
 
 * *ifupdown2* version shipping with Cumulus Linux 4.4.0 refuses to create VLAN subinterfaces in combination with a VLAN-aware bridge. The _netlab_-generated Cumulus Linux VLAN configuration, therefore, cannot use routed subinterfaces.
 * *ifupdown2* enslaves physical ports to the bridge, and subsequently cannot configure IP addresses on physical ports. The _netlab_-generated Cumulus Linux VLAN configuration, therefore, cannot use routed native VLAN.
+* FRRouting version bundled with Cumulus Linux 4.4 cannot run OSPFv3 in VRFs, and fails to advertise local IPv6 prefixes in other areas.
 
 ### Running Cumulus Linux in Containerlab
 
@@ -167,12 +173,19 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
 * FRR container needs host kernel modules for MPLS forwarding. If your Ubuntu 22.04 distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
 
+(caveats-junos)=
+## Common Junos caveats
+
+* Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
+
 (caveats-vmx)=
 ## Juniper vMX in Containerlab
 
 Juniper vMX runs as a container in _containerlab_. You have to use _vrnetlab_ to build the container from a vMX disk image. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vmx/) for further details.
 
 The Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
+
+See also [](caveats-junos).
 
 (caveats-vptx)=
 ## Juniper vPTX
@@ -186,6 +199,8 @@ The rest of this section lists information you might find helpful if you're a lo
 * It seems that the DHCP Client of the management interface does not install a default route, even if received by the DHCP server.
 * The VM will complain about missing licenses. You can ignore that.
 
+See also [](caveats-junos).
+
 (caveats-vsrx)=
 ## Juniper vSRX in Containerlab
 
@@ -198,12 +213,15 @@ vSRX container built with *vrnetlab* uses **flow based forwarding**. You have tw
 * Configure security zones, and attach interfaces and rules to them;
 * Change the mode to [**packet based forwarding**](https://supportportal.juniper.net/s/article/SRX-How-to-change-forwarding-mode-for-IPv4-from-flow-based-to-packet-based).
 
+See also [](caveats-junos).
+
 (caveats-routeros6)=
 ## Mikrotik RouterOS 6
 
 * Runs with the *CHR* image.
-* LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 * The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the ```/system license renew``` command.
+* LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
+* A BGP VRF instance cannot have the same Router ID as the default one. The current configuration template uses the IP address of the last interface in the VRF as the VRF instance Router ID.
 
 (caveats-routeros7)=
 ## Mikrotik RouterOS 7
@@ -232,6 +250,8 @@ python3 -m pip install grpcio protobuf==3.20.1
 ```
 sudo pip3 install --upgrade ansible==4.10.0
 ```
+
+* Inter-VRF route leaking is supported only in combination with BGP EVPN
 
 (caveats-sros)=
 ## Nokia SR OS

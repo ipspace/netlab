@@ -1,0 +1,50 @@
+---
+message: |
+  The device under test has two VRFs with two interfaces in each VRF.
+  Each VRF has a loopback interface.
+
+  * h1 and h2 should be able to ping each other and the VRF loopback interface
+  * h3 and h4 should be able to ping each other and the VRF loopback interface
+  * h1 should not be able to reach h3
+
+defaults.sources.extra: [ defaults-ipv6-only.yml ]
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  routers:
+    members: [ dut ]
+    module: [ vrf ]
+
+vrfs:
+  red:
+    loopback:
+      ipv6: 2001:db8:c001:cafe::/64
+    links: [ dut-h1, dut-h2 ]
+  blue:
+    loopback:
+      ipv6: 2001:db8:c001:cafe::/64
+    links: [ dut-h3, dut-h4 ]
+
+validate:
+  red:
+    description: Ping-based reachability test in VRF red
+    wait: 35
+    nodes: [ h1 ]
+    plugin: ping('h2',af='ipv6')
+  ping:
+    description: Ping-based reachability test in VRF blue
+    wait: 15
+    nodes: [ h3 ]
+    plugin: ping('h4',af='ipv6')
+  red_lb:
+    description: Pinging red VRF IPv6 loopback
+    nodes: [ h1 ]
+    plugin: ping('2001:db8:c001:cafe::1',af='ipv6')
+  blue_lb:
+    description: Pinging blue VRF IPv6 loopback
+    nodes: [ h3 ]
+    plugin: ping('2001:db8:c001:cafe::1',af='ipv6')

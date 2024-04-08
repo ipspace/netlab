@@ -1,3 +1,4 @@
+---
 message: |
   Use this topology to test the unnumbered IPv4 EBGP implementation and
   propagation of routes between EBGP speakers.
@@ -8,7 +9,7 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1, x2 ]
+    members: [ x1, x2, x3 ]
 
 defaults.bgp.as: 65000
 
@@ -19,7 +20,12 @@ nodes:
   x2:
     bgp.as: 65101
     loopback.ipv4: 172.42.42.1/24
+  x3:
+    bgp.as: 65102
+    loopback.ipv4: 172.42.43.1/24
 
+# Two IPv6 LLA EBGP sessions, one regular EBGP session to test both template options in a single test
+#
 links:
 - dut:
   x1:
@@ -27,17 +33,26 @@ links:
 - dut:
   x2:
   prefix.ipv4: True
+- dut-x3
 
 validate:
-  wait:
-    description: Wait for EBGP sessions to come up
-    wait: 3
   session:
-    description: Check EBGP sessions with DUT
-    nodes: [ x1,x2 ]
+    description: Check EBGP sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    wait_msg: Wait for BGP sessions to be established
+    nodes: [ x1, x2, x3 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',intf=node.interfaces[0].ifname)
 
-  prefix:
-    description: Check whether DUT propagates the beacon prefix
+  pfx_x2:
+    description: Check whether DUT propagates the X2 prefix
+    wait: 5
+    wait_msg: Wait for BGP convergence
     nodes: [ x1 ]
     plugin: bgp_prefix('172.42.42.0/24')
+
+  pfx_x3:
+    description: Check whether DUT propagates the X3 prefix
+    wait: 5
+    wait_msg: Wait for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.43.0/24')

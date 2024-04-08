@@ -1,0 +1,44 @@
+---
+message: |
+  The device under test has two user VRFs and a common services VRF. The
+  lab tests inter-VRF route leaking between common VRF and other VRFs
+
+  * h1 and h2 should be able to ping srv but not each other
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, srv ]
+    device: linux
+    provider: clab
+  routers:
+    members: [ dut ]
+    module: [ vrf ]
+
+vrfs:
+  red:
+    import: [ red, common ]
+    links: [ dut-h1 ]
+  blue:
+    import: [ blue, common ]
+    links: [ dut-h2 ]
+  common:
+    import: [ red, blue, common ]
+    links: [ dut-srv ]
+
+validate:
+  red:
+    description: h1 trying to reach srv
+    wait: 40
+    wait_msg: Waiting for IPv4 routes
+    nodes: [ h1 ]
+    plugin: ping('srv')
+  blue:
+    description: h2 trying to reach srv
+    wait: 10
+    nodes: [ h2 ]
+    plugin: ping('srv')
+  s2s:
+    description: h1 should not be able to reach h2
+    nodes: [ h1 ]
+    plugin: ping('h2',expect='fail')

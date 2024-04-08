@@ -31,7 +31,7 @@ The following table describes per-platform support of individual VXLAN features:
 | Cisco Nexus OS     | ✅  | ✅  |  ❌  |
 | Cumulus Linux      | ✅  | ✅  |  ❌  |
 | Dell OS10          | ✅  | ✅  |  ❌  |
-| FRR                | ✅  | ✅  |  ❌  |
+| FRR                | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  |  ❌  |  ❌  |
 | Nokia SR OS        | ✅  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  | ✅  |

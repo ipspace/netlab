@@ -44,7 +44,7 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
   parser.add_argument(
     '--force',
     dest='force',
-    action='store_true',
+    action='count', default = 0,
     help='Force shutdown or cleanup (use at your own risk)')
   parser.add_argument(
     '--snapshot',
@@ -107,13 +107,16 @@ def stop_provider_lab(
 '''
 lab_dir_mismatch -- check if the lab instance is running in the current directory
 '''
-def lab_dir_mismatch(topology: Box) -> bool:
+def lab_dir_mismatch(topology: Box, args: argparse.Namespace) -> bool:
   lab_id = status.get_lab_id(topology)
   lab_status = status.read_status(topology)       # Find current running instance(s)
   if not lab_id in lab_status:                    # This could be a lab instance from pre-status days
     return False                                  # ... in which case we can shut it down
   if lab_id in lab_status and lab_status[lab_id].dir == os.getcwd():
     return False                                 # Lab instance is known  and this is the correct directory        
+
+  if args.force >= 2:
+    return True
 
   print(f'''
 According to the netlab status file, the lab instance '{lab_id}' is running
@@ -177,7 +180,7 @@ def run(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
   print(f"Read transformed lab topology from snapshot file {args.snapshot}")
 
-  mismatch = lab_dir_mismatch(topology)
+  mismatch = lab_dir_mismatch(topology,args)
 
   probes_OK = True
   external_commands.LOG_COMMANDS = True

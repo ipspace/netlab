@@ -1,0 +1,58 @@
+---
+message: |
+  The devices under test are simple bridges with a VLAN trunk between
+  them. One of the trunk members is a native VLAN. Both VLANs are
+  using the same IP prefix to identify potential inter-VLAN leaking.
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan ]
+
+vlans:
+  red:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h1, s2-h2 ]
+  blue:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h3, s2-h4 ]
+
+links:
+- s1:
+  s2:
+  vlan.trunk: [ red, blue ]
+  vlan.native: red
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait: 45
+    wait_msg: Waiting for STP to enable the ports
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    wait: 15
+    wait_msg: Waiting for STP to enable the ports
+    nodes: [ h3 ]
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    plugin: ping('h3',expect='fail')

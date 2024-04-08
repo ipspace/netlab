@@ -1,3 +1,4 @@
+(netlab-status)=
 # Display Running Lab Instances
 
 **netlab status** command displays the running lab instances and the provider-specific workloads (*[libvirt](../labs/libvirt.md)* virtual machines or *[containerlab](../labs/clab.md)* containers).

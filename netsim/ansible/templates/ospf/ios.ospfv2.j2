@@ -1,24 +1,29 @@
-{% set pid = ospf.process|default(1) %}
-router ospf {{ pid }}
-{% if ospf.router_id|ipv4 %}
- router-id {{ ospf.router_id }}
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+{% if ospf_vrf %}
+router ospf {{ ospf_pid }} vrf {{ ospf_vrf }}
+{% else %}
+router ospf {{ ospf_pid }}
 {% endif %}
-{% if ospf.reference_bandwidth is defined %}
- auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% if ospf_data.router_id|ipv4 %}
+ router-id {{ ospf_data.router_id }}
 {% endif %}
-{% for l in interfaces|default([]) if l.ospf.passive|default(False) %}
+{% if ospf_data.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
+{% endif %}
+{% for l in intf_data if l.ospf.passive|default(False) %}
  passive-interface {{ l.ifname }}
 {% endfor %}
-!
-{% if 'ipv4' in loopback %}
-interface Loopback0
- ip ospf {{ pid }} area {{ ospf.area }}
+{% if ospf_vrf %}
+ redistribute connected
+{%   if bgp.as is defined %}
+ redistribute bgp {{ bgp.as }} subnets
+{%   endif %}
 {% endif %}
 !
-{% for l in interfaces|default([]) if 'ospf' in l and ('ipv4' in l or 'ipv4' in l.dhcp.client|default({})) %}
+{% for l in intf_data if 'ospf' in l and ('ipv4' in l or 'ipv4' in l.dhcp.client|default({})) %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
- ip ospf {{ pid }} area {{ l.ospf.area }}
+ ip ospf {{ ospf_pid }} area {{ l.ospf.area }}
 {%   if l.ospf.network_type is defined %}
  ip ospf network {{ l.ospf.network_type }}
 {%   endif %}
@@ -30,3 +35,4 @@ interface {{ l.ifname }}
 {%   endif %}
 !
 {% endfor %}
+{% endmacro %}

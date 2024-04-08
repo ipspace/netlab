@@ -19,21 +19,6 @@ system {
 {% endif %}
 
 interfaces {
-  lo0 {
-    unit 0 {
-{% if 'ipv4' in loopback %}
-      family inet {
-        address {{ loopback.ipv4 }};
-      }
-{% endif %}
-{% if 'ipv6' in loopback %}
-      family inet6 {
-        address {{ loopback.ipv6 }};
-      }
-{% endif %}
-    }
-  }
-
 {# Handle MTU outside the main interface loop, since it needs to be applied only to the master interface #}
 {% for l in interfaces|default([]) %}
 {%   if l.mtu is defined %}
@@ -43,7 +28,7 @@ interfaces {
 {%   endif %}
 {% endfor %}
 
-{% for l in interfaces|default([]) %}
+{% for l in netlab_interfaces %}
   {{ l.ifname }} {
 {% if l.name is defined %}
     description "{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}";
@@ -95,4 +80,13 @@ protocols {
     }
     interface all;
   }
+{% for l in netlab_interfaces if 'ipv6' in l and l.type != 'loopback' %}
+{%   if loop.first %}
+  router-advertisement {
+{%   endif %}
+    interface {{ l.ifname }};
+{%   if loop.last %}
+  }
+{%   endif %}
+{% endfor %}
 }

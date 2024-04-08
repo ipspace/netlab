@@ -17,6 +17,7 @@ from box import Box
 from . import load_snapshot,parser_add_debug,parser_add_verbose
 from ..utils import log,templates,strings,status as _status, files as _files
 from ..data import global_vars
+from ..augment import devices
 from .. import data
 from .connect import connect_to_node,LogLevel
 
@@ -51,11 +52,31 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='nowait', action='store_true',
     help='Skip the waiting period')
   parser.add_argument(
+    '-e','--error-only',
+    dest='error_only', action='store_true',
+    help='Display only validation errors (on stderr)')
+  parser.add_argument(
+    '--skip-missing',
+    dest='skip_missing', action='store_true',
+    help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--dump',
+    action='store',
+    choices=['result'],
+    nargs='+',
+    default=[],
+    help='Dump additional information during validation process')
+  parser.add_argument(
     dest='tests', action='store',
     nargs='*',
     help='Validation test(s) to execute (default: all)')
 
   return parser.parse_args(args)
+
+# I'm cheating. Declaring a global variable is easier than passing 'args' argument around
+#
+ERROR_ONLY: bool = False
+TEST_HEADER: dict = {}
 
 '''
 list_tests: display validation tests defined for the current lab topology
@@ -76,33 +97,54 @@ def list_tests(topology: Box) -> None:
 
 # Prints test status (colored text in fixed width)
 #
-def p_status(txt: str, color: str, topology: Box) -> None:
+def p_status(txt: str, color: str, topology: Box, stderr: bool = False) -> None:
   txt = f'[{txt}]{" " * 80}'[:topology._v_len+3]
-  strings.print_colored_text(txt,color)
+  strings.print_colored_text(txt,color,stderr=stderr)
 
 # Print test header
 #
 def p_test_header(v_entry: Box,topology: Box) -> None:
+  global TEST_HEADER
+  h_text = v_entry.get('description','Starting test') + \
+           (f' [ node(s): {",".join(v_entry.nodes)} ]' if v_entry.nodes else '')
+
+  if ERROR_ONLY:
+    TEST_HEADER = { 'name': v_entry.name, 'text': h_text }
+    return
+
   p_status(v_entry.name,"bright_cyan",topology)
-  print(
-    v_entry.get('description','Starting test') + \
-    (f' [ node(s): {",".join(v_entry.nodes)} ]' if v_entry.nodes else ''))
+  print(h_text)
 
 # Print generic "test failed" message
 #
 def log_failure(msg: str, topology: Box, f_status: str = 'FAIL') -> None:
-  p_status(f_status,'bright_red',topology)
-  print(msg)
+  global TEST_HEADER,ERROR_ONLY
+  if TEST_HEADER:
+    print(file=sys.stderr)
+    p_status(TEST_HEADER['name'],'red',topology,stderr=True)
+    print(TEST_HEADER['text'],file=sys.stderr)
+    TEST_HEADER = {}
+
+  p_status(f_status,'bright_red',topology,stderr=ERROR_ONLY)
+  print(msg,file=sys.stderr if ERROR_ONLY else sys.stdout)
 
 # Print generic "making progress" message
 #
 def log_progress(msg: str, topology: Box, f_status: str = 'PASS') -> None:
+  global ERROR_ONLY
+  if ERROR_ONLY:
+    return
+
   p_status(f_status,'light_green',topology)
   print(msg)
 
 # Print generic "ambivalent info" message
 #
 def log_info(msg: str, topology: Box, f_status: str = 'INFO') -> None:
+  global ERROR_ONLY
+  if ERROR_ONLY:
+    return
+
   p_status(f_status,'yellow',topology)
   print(msg)
 
@@ -120,6 +162,43 @@ def p_test_pass(v_entry: Box, topology: Box) -> None:
   log_progress(msg,topology)
 
 _validation_plugins: dict = {}
+
+'''
+extend_first_wait_time: some devices need extra time to start working, even when
+the configuration process has completed. Assuming we can't (or don't want to)
+catch that during the device readiness check, we should add extra delay to the
+validation process.
+
+This function walks through the lab nodes, checks the features.initial.delay of
+each device, and adds the maximum delay to the first 'wait' parameter.
+'''
+
+def extend_first_wait_time(args: argparse.Namespace, topology: Box) -> None:
+  max_delay = 0
+  d_device  = None
+  for n_data in topology.nodes.values():
+    d_features = devices.get_device_features(n_data,topology.defaults)
+    d_delay = d_features.get('initial.delay',None)
+    if not d_delay:
+      continue
+    if d_delay > max_delay:                                           # Found a device that requires a delay
+      max_delay = d_delay                                             # ... take the max value of the delay
+      d_device  = n_data.device                                       # ... and remember the device causing it
+
+  if not max_delay:                                                   # No slow devices in lab topology, exit
+    return
+
+  for v_entry in topology.validate:
+    if not v_entry.get('wait',0):                                     # No wait associated with this entry, move on
+      continue
+
+    v_entry.wait = v_entry.wait + max_delay
+    if not args.error_only:
+      log.error(
+        f'Initial wait time extended by {max_delay} seconds required by {d_device}',
+        category=Warning,
+        module='')
+    return
 
 '''
 load_plugin: try to load the validation plugin for the specified device
@@ -217,6 +296,7 @@ def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Op
   if plugin is None:                              # Not found, the test is skipped
     return None
   plugin._result = result
+  global_vars.set_result_dict('_result',result or Box({}))
   exec_data[p_name] = plugin
 
   try:
@@ -305,7 +385,7 @@ def get_parsed_result(v_entry: Box, n_name: str, topology: Box, verbosity: int) 
 
   # Set up arguments for the 'netlab connect' command and execute it
   #
-  args = argparse.Namespace(quiet=True,host=n_name,output=True,show=v_cmd)
+  args = argparse.Namespace(quiet=True,host=n_name,output=True,show=v_cmd,verbose=False)
   result = connect_to_node(args=args,rest=[],topology=topology,log_level=LogLevel.NONE)
 
   if verbosity >= 3:                                        # Extra-verbose: print the results we got
@@ -333,7 +413,12 @@ def get_parsed_result(v_entry: Box, n_name: str, topology: Box, verbosity: int) 
 '''
 Execute a command on the device and return stdout
 '''
-def get_result_string(v_entry: Box, n_name: str, topology: Box) -> typing.Union[bool,str]:
+def get_result_string(
+      v_entry: Box,
+      n_name: str,
+      topology: Box,
+      report_error: bool = True) -> typing.Union[bool,str]:
+
   node = topology.nodes[n_name]                             # Get the node data
   v_cmd = get_exec_list(v_entry,'exec',node,topology)       # ... and the 'exec' action for the current node
   if not v_cmd:                                             # We should not get here, but we could...
@@ -345,12 +430,13 @@ def get_result_string(v_entry: Box, n_name: str, topology: Box) -> typing.Union[
 
   # Set up arguments for the 'netlab connect' command and execute it
   #
-  args = argparse.Namespace(quiet=True,host=n_name,output=True,show=None)
+  args = argparse.Namespace(quiet=True,host=n_name,output=True,show=None,verbose=False)
   result = connect_to_node(args=args,rest=v_cmd,topology=topology,log_level=LogLevel.NONE)
 
   if result is False:                                       # Report an error if 'netlab connect' failed
-    log_failure(
-      f'Failed to execute command {v_cmd} on {n_name} (device {node.device})',topology)
+    if report_error:
+      log_failure(
+        f'Failed to execute command "{" ".join(v_cmd)}" on {n_name} (device {node.device})',topology)
 
   return result
 
@@ -362,10 +448,12 @@ find_test_action -- find something that can be executed on current node
   setup. Run with whatever the user specified
 * If the user specified a multi-vendor setup, try to use the device-specific
   action
+* If there's no relevant 'show' or 'exec' action, try the plugin
+* If there's no plugin, but we have 'wait' action, return 'wait'
 * If everything fails, return None (nothing usable for the current node)
 '''
 def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
-  for kw in ('show','exec','wait'):
+  for kw in ('show','exec'):
     if kw not in v_entry:
       continue
     if isinstance(v_entry[kw],(str,int)):
@@ -373,10 +461,13 @@ def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
     if node.device in v_entry[kw]:
       return kw
 
-  if 'plugin' not in v_entry:
-    return None
+  if 'plugin' in v_entry:
+    return find_plugin_action(v_entry,node)
 
-  return find_plugin_action(v_entry,node)
+  if 'wait' in v_entry:
+    return 'wait'
+
+  return None
 
 '''
 wait_before_testing -- wait for specified time since lab start time or previous test
@@ -438,7 +529,8 @@ def execute_validation_expression(
       node: Box,
       topology: Box,
       result: Box,
-      verbosity: int) -> typing.Optional[bool]:
+      verbosity: int,
+      report_error: bool) -> typing.Optional[bool]:
 
   global test_skip_count,test_result_count,test_pass_count
   global BUILTINS
@@ -473,8 +565,9 @@ def execute_validation_expression(
       print(f'Result received from {node.name}\n{"-" * 80}\n{result.to_json()}\n')
 
   if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
-    p_test_fail(node.name,v_entry,topology)
-    test_result_count += 1
+    if report_error:
+      p_test_fail(node.name,v_entry,topology)
+      test_result_count += 1
     return bool(OK)
   elif OK:                                    # ... or we might have a positive result
     log_progress(f'Validation succeeded on {node.name}',topology)
@@ -499,16 +592,19 @@ def execute_validation_plugin(
       node: Box,
       topology: Box,
       result: Box,
-      verbosity: int) -> typing.Optional[bool]:
+      verbosity: int,
+      report_error: bool) -> typing.Optional[bool]:
 
   global test_skip_count,test_result_count,test_pass_count
 
   try:
     OK = exec_plugin_function('valid',v_entry,node,result)
     if OK is not None and not OK:
-      p_test_fail(node.name,v_entry,topology)
+      if report_error:
+        p_test_fail(node.name,v_entry,topology)
   except Exception as ex:
-    log_failure(f'{node.name}: {str(ex)}',topology)
+    if report_error:
+      log_failure(f'{node.name}: {str(ex)}',topology)
     OK = False
 
   if (not OK and verbosity) or verbosity >= 2:
@@ -517,13 +613,75 @@ def execute_validation_plugin(
     print(f'Evaluated result {OK}')
 
   if OK is not None:
-    test_result_count += 1
+    if report_error or OK:
+      test_result_count += 1
     if OK:
       msg = f'{node.name}: {OK}' if isinstance(OK,str) else f'Validation succeeded on {node.name}'
       log_progress(msg,topology)
       test_pass_count += 1
 
   return bool(OK)
+
+'''
+Execute node validation
+'''
+def execute_node_validation(
+      v_entry: Box,
+      topology: Box,
+      n_name: str,
+      report_error: bool,
+      args: argparse.Namespace) -> typing.Tuple[typing.Optional[bool],typing.Optional[bool]]:
+
+  global test_skip_count,test_result_count,test_pass_count
+
+  node = topology.nodes[n_name]
+  result = data.get_empty_box()
+
+  action = find_test_action(v_entry,node)       # Find the action to show/execute/wait
+  if action == 'wait':                          # Test with pure 'wait'
+    return (True,True)                          # is assumed to be successful
+
+  if action is None:                            # None found, skip this node
+    log_info(
+      f'Test action not defined for device {node.device} / node {n_name}',
+      f_status='SKIPPED',
+      topology=topology)
+    test_skip_count += 1                        # Increment skip count for test results summary
+    return (True,None)                          # Processed, unknown result
+
+  if args.verbose >= 2:                         # Print out what will be executed
+    cmd = get_entry_value(v_entry,action,node,topology)
+    print(f'{action} on {node.name}/{node.device}: {cmd}')
+
+  if action == 'show':                          # We got a 'show' action, try to get parsed results
+    result = get_parsed_result(v_entry,n_name,topology,args.verbose)
+    if '_error' in result:                      # OOPS, we failed (unrecoverable)
+      test_result_count += 1                    # Increase result count
+      return (True, False)                      # ... and return (processed, failed)
+  elif action == 'exec':                        # We got an 'exec' action, try to get something out of the device
+    result.stdout = get_result_string(v_entry,n_name,topology,report_error)
+    if result.stdout is False:                  # Did the exec command fail?
+      if report_error:
+        test_result_count += 1
+        return (True, False)                    # Return (processed, failed)
+
+  OK = None
+  if 'valid' in v_entry:                        # Do we have a validation expression in the test entry?
+    OK = execute_validation_expression(v_entry,node,topology,result,args.verbose,report_error)
+  elif 'plugin' in v_entry:                     # If not, try to call the plugin function
+    OK = execute_validation_plugin(v_entry,node,topology,result,args.verbose,report_error)
+
+  if OK is False:                               # Validation failed...
+    if not report_error:                        # ... but we still don't have to report it?
+      return (False, None)                      # ... return (not processed, unknown)
+    if 'result' in args.dump:                   # Do we have to dump the result for further troubleshooting?
+      for kw in ['re']:                         # ... remove extra keys first
+        result.pop(kw,None)
+      # ... and remove the 'result' key if it's not needed
+      if 'result' in result and isinstance(result.result,Box):
+        result.pop('result',None)
+      print(f'Returned result\n{"=" * 80}\n{result.to_yaml()}')
+  return (True, OK)                             # ... otherwise return (processed, validation result)
 
 '''
 Execute a single validation test on all specified nodes
@@ -539,13 +697,12 @@ def execute_validation_test(
   ret_value = None
 
   p_test_header(v_entry,topology)                 # Print test header
-  if 'wait' in v_entry and not args.nowait:
-    wait_before_testing(v_entry,start_time,topology)
+  if 'wait' in v_entry and not v_entry.nodes:     # Handle pure wait case
+    if not args.nowait:
+      wait_before_testing(v_entry,start_time,topology)
+    return None
 
   if not v_entry.nodes:
-    if 'wait' in v_entry:
-      return None
-
     log_info(
       f'There are no nodes specified for this test, skipping...',
       f_status='SKIPPED',
@@ -553,52 +710,47 @@ def execute_validation_test(
     test_skip_count += 1
     return None
 
-  for n_name in v_entry.nodes:                    # Iterate over all specified nodes
-    node = topology.nodes[n_name]
-    result = data.get_empty_box()
+  wait_time = 0 if args.nowait else v_entry.get('wait',0)
+  start_time= time.time()
+  stop_time = start_time + wait_time              # Time to wait for successful result
+  wait_msg  = v_entry.get('wait_msg',None)        # Message to display if starting sleep after the first try
+  wait_time = time.time()                         # Time to display first 'waiting' message
+  wait_cnt  = 0                                   # How many 'waiting' messages did we display?
+  n_remaining: list = v_entry.nodes               # Start with all nodes specified in the validation entry
 
-    action = find_test_action(v_entry,node)       # Find the action to show/execute/wait
-    if action == 'wait':                          # Skip tests with pure wait action
-      continue                                    # ... note that wait is the last action keyword considered
+  while n_remaining:                              # Keep retrying 
+    for n_name in n_remaining:                    # Iterate over remaining nodes
+      (proc,OK) = execute_node_validation(v_entry,topology,n_name,time.time() >= stop_time,args)
 
-    if action is None:                            # None found, skip this node
-      log_info(
-        f'Test action not defined for device {node.device} / node {n_name}',
-        f_status='SKIPPED',
-        topology=topology)
-      test_skip_count += 1                        # Increment skip count for test results summary
-      continue
+      if proc:                                    # Have we processed this node? Remove node from remaining list
+        n_remaining = [ x for x in n_remaining if x != n_name ]
 
-    if args.verbose >= 2:                         # Print out what will be executed
-      cmd = get_entry_value(v_entry,action,node,topology)
-      print(f'{action} on {node.name}/{node.device}: {cmd}')
+      # The result could be 'True', 'False', or 'None' (don't know)
+      if OK is True and ret_value is None:        # If we have a True result and we don't know the composite result yet
+        ret_value = True                          # ... set composite result to True
+      elif OK is False:                           # But if we have a single failure ...
+        ret_value = False                         # ... set composite result to False (failure)
 
-    if action == 'show':                          # We got a 'show' action, try to get parsed results
-      result = get_parsed_result(v_entry,n_name,topology,args.verbose)
-      if '_error' in result:                      # OOPS, we failed
-        ret_value = False
-        test_result_count += 1
-        continue
-    elif action == 'exec':                        # We got an 'exec' action, try to get something out of the device
-      result.stdout = get_result_string(v_entry,n_name,topology)
-      if result.stdout is False:                  # Store device printout in 'stdout'
-        test_result_count += 1
-        ret_value = False
-        continue
-
-    OK = None
-    if 'valid' in v_entry:                        # Do we have a validation expression in the test entry?
-      OK = execute_validation_expression(v_entry,node,topology,result,args.verbose)
-    elif 'plugin' in v_entry:                     # If not, try to call the plugin function
-      OK = execute_validation_plugin(v_entry,node,topology,result,args.verbose)
-
-    # The result could be 'True', 'False', or 'None' (don't know)
-    if OK is True and ret_value is None:          # If we have a True result and we don't know the composite result yet
-      ret_value = True                            # ... set composite result to True
-    elif OK is False:                             # But if we have a single failure ...
-      ret_value = False                           # ... set composite result to False (failure)
+    if ret_value is not False and n_remaining and wait_msg:
+      if wait_time < time.time():
+        if 'wait' in v_entry and wait_cnt == 0:
+          extra_msg = f' (retrying for {v_entry.wait} seconds)'
+        else:
+          extra_msg = f' ({int(stop_time - time.time())} seconds left)'
+        log_info(
+          wait_msg + extra_msg,
+          f_status = 'WAITING',
+          topology=topology)
+        wait_cnt += 1                             # Next message will be X seconds left
+        wait_time += 15                           # ... and it will happen after 15 seconds
+      time.sleep(1)
 
   if ret_value:                                   # If we got to 'True'
+    if wait_cnt:
+      log_info(
+        f'Succeeded in { round(time.time() - start_time,1) } seconds',
+        f_status = 'PASS',
+        topology=topology)
     p_test_pass(v_entry,topology)                 # ... declare Mission Accomplished
 
   return ret_value
@@ -658,13 +810,16 @@ def filter_by_nodes(args: argparse.Namespace, topology: Box) -> None:
 Main routine: run all tests, handle validation errors, print summary results
 '''
 def run(cli_args: typing.List[str]) -> None:
-  global test_skip_count,test_result_count,test_pass_count
+  global test_skip_count,test_result_count,test_pass_count,ERROR_ONLY
   args = validate_parse(cli_args)
   log.set_logging_flags(args)
   topology = load_snapshot(args)
 
   if 'validate' not in topology:
-    log.fatal('No validation tests defined for the current lab, exiting')
+    if args.skip_missing:
+      sys.exit(2)
+    else:
+      log.fatal('No validation tests defined for the current lab, exiting')
 
   if args.list:
     list_tests(topology)
@@ -672,20 +827,22 @@ def run(cli_args: typing.List[str]) -> None:
 
   filter_by_tests(args,topology)
   filter_by_nodes(args,topology)
+  extend_first_wait_time(args,topology)
   log.exit_on_error()
 
   templates.load_ansible_filters()
 
+  ERROR_ONLY = args.error_only
   status = True
   cnt = 0
   test_skip_count = 0
   test_result_count = 0
   test_pass_count = 0
   topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
-  start_time = _status.lock_timestamp()
+  start_time = _status.lock_timestamp() or time.time()
 
   for v_entry in topology.validate:
-    if cnt:
+    if cnt and not ERROR_ONLY:
       print()
 
     try:
@@ -709,13 +866,14 @@ def run(cli_args: typing.List[str]) -> None:
 
     cnt = cnt + 1
 
-  print()
-  if test_pass_count and test_pass_count == test_result_count:
-    log_progress(f'Tests passed: {test_pass_count}',topology,f_status='SUCCESS')
-  elif test_result_count:
-    log_failure('Tests completed, validation failed',topology)
+  if not ERROR_ONLY:
+    print()
+    if test_pass_count and test_pass_count == test_result_count:
+      log_progress(f'Tests passed: {test_pass_count}',topology,f_status='SUCCESS')
+    elif test_result_count:
+      log_failure('Tests completed, validation failed',topology)
 
-  if test_skip_count:
-    log_info('Some tests were skipped, the results are not reliable',topology)
+    if test_skip_count:
+      log_info('Some tests were skipped, the results are not reliable',topology)
 
   sys.exit(0 if status else 1)

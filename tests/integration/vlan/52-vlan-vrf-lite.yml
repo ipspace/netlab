@@ -1,0 +1,92 @@
+# A device has to support the following features to pass this test case:
+#
+# * Routed VLAN interfaces
+# * VRFs
+# * OSPF in VRFs
+#
+---
+message: |
+  VRF lite implementation with VLAN trunks
+
+  * h1, h2, and h5 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+
+  Please note it might take a while for the lab to work due to
+  STP and OSPF setup phase
+
+groups:
+  _auto_create: True
+  routers:
+    members: [ r1, r2, r3 ]
+    module: [ ospf, vrf, vlan ]
+  x_routers:
+    members: [ r2 ]
+    device: frr
+    provider: clab
+  hosts:
+    members: [ h1, h2, h3, h4, h5 ]
+    device: linux
+    provider: clab
+
+vrfs:
+  red:
+  blue:
+
+vlans:
+  red:
+    mode: route
+    vrf: red
+    links: [ r1-h1, r3-h2, r1-h5 ]
+  blue:
+    mode: route
+    vrf: blue
+    links: [ r1-h3, r3-h4 ]
+
+links:
+- r1:
+  r2:
+  vlan.trunk: [ red, blue ]
+- r2:
+  r3:
+  vlan.trunk: [ red, blue ]
+
+validate:
+  adj_r1_b:
+    description: Check OSPF adjacencies (R2-R1)
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: 120
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.r1.vrfs.blue.ospf.router_id,vrf='blue')
+  adj_r1_r:
+    description: Check OSPF adjacencies (R2-R1)
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: 20
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.r1.vrfs.red.ospf.router_id,vrf='red')
+  adj_r3_b:
+    description: Check OSPF adjacencies (R2-R3)
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: 30
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.r3.vrfs.blue.ospf.router_id,vrf='blue')
+  adj_r3_r:
+    description: Check OSPF adjacencies (R2-R3)
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: 30
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.r3.vrfs.red.ospf.router_id,vrf='red')
+  red:
+    description: Intra-VLAN reachability (red)
+    wait_msg: Waiting for STP forwarding state
+    wait: 30
+    nodes: [ h1, h2 ]
+    plugin: ping('h5')
+  blue:
+    description: Intra-VLAN reachability (blue)
+    nodes: [ h3 ]
+    devices: [ linux ]
+    plugin: ping('h4')
+  filter:
+    description: Inter-VLAN isolation (red - blue)
+    nodes: [ h1, h2 ]
+    plugin: ping('h3',expect='fail')

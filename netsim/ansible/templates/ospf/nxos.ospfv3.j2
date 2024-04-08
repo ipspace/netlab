@@ -12,17 +12,14 @@ router ospfv3 {{ pid }}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }} Mbps
 {% endif %}
 !
-{% if 'ipv6' in loopback %}
-interface loopback0
- ipv6 router ospfv3 {{ pid }} area {{ ospf.area }}
-!
-{% endif %}
-{% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
+{% for l in netlab_interfaces if 'ospf' in l and 'ipv6' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
  ipv6 router ospfv3 {{ pid }} area {{ l.ospf.area }}
 {%   if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
  ospfv3 network {{ l.ospf.network_type }}
+{%   elif l.type == 'loopback' %}
+ ospfv3 network point-to-point
 {%   endif %}
 {%   if l.ospf.cost is defined %}
  ospfv3 cost {{ l.ospf.cost }}

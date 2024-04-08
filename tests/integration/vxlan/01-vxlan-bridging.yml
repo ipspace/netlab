@@ -1,0 +1,55 @@
+---
+message: |
+  The devices under test are VLAN-to-VXLAN bridges between two access VLANs
+  and two VXLAN VNIs. Both VLANs are using the same IP prefix to identify
+  potential inter-VLAN leaking.
+
+  * h1, h2 and h3 should be able to ping each other
+  * h4 and h5 should be able to ping each other
+  * h1 should not be able to reach h4 or h5
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, ospf ]
+
+vlans:
+  red:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h1, s2-h2 ]
+  blue:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h3, s2-h4 ]
+
+links: [ s1-s2 ]
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h3 ]
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    devices: [ linux ]
+    plugin: ping('h4',expect='fail')

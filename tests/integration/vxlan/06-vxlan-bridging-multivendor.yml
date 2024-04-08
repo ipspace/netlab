@@ -1,0 +1,60 @@
+---
+message: |
+  This is the multi-vendor version of the vxlan-bridging lab.
+  Use it to test compatibility of your VXLAN implementation with
+  Cumulus Linux
+
+  * h1, h2 and h3 should be able to ping each other
+  * h4, h5 and h6 should be able to ping each other
+
+  Please note it might take a while for the lab to work due to
+  OSPF adjacency establishment and STP learning phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4, h5, h6 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2, s3 ]
+    module: [ vlan, vxlan, ospf ]
+
+vlans:
+  red:
+    mode: bridge
+    links: [ s1-h1, s2-h2, s3-h3 ]
+  blue:
+    mode: bridge
+    links: [ s1-h4, s2-h5, s3-h6 ]
+
+nodes:
+  s3:
+    device: cumulus
+    provider: clab
+
+links: [ s1-s2, s2-s3, s1-s3 ]
+
+validate:
+  ping_h3:
+    description: "VLAN red: ping H3"
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1, h2 ]
+    plugin: ping('h3')
+  ping_h2:
+    description: "VLAN red: ping H2"
+    wait: 10
+    wait_msg: Wait some more just in case
+    nodes: [ h1, h3 ]
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    wait: 10
+    wait_msg: Wait some more just in case
+    nodes: [ h4, h6 ]
+    plugin: ping('h5')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    plugin: ping('h5',expect='fail')

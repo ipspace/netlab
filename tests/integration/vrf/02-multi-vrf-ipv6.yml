@@ -1,0 +1,52 @@
+---
+message: |
+  The lab tests the basic VRF lite functionality in an IPv6-only environment.
+  The device under test has two VRFs with two interfaces in each VRF.
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3
+
+defaults.sources.extra: [ defaults-ipv6-only.yml ]
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  routers:
+    members: [ rtr ]
+    module: [ vrf ]
+
+vrfs:
+  red:
+    links: [ rtr-h1, rtr-h3 ]
+  blue:
+    links: [ rtr-h2, rtr-h4 ]
+
+validate:
+  ra:
+    description: Check RA-generated default route
+    wait: 40
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h1, h2, h3, h4 ]
+    plugin: default6()
+    stop_on_error: True
+  red:
+    description: Ping-based reachability test in VRF red
+    wait: 10
+    wait_msg: Waiting for RA to generate the default route
+    nodes: [ h1 ]
+    plugin: ping('h3',af='ipv6')
+  ping_blue:
+    description: Ping-based reachability test in VRF blue
+    wait: 10
+    wait_msg: Waiting for RA to generate the default route
+    nodes: [ h2 ]
+    plugin: ping('h4',af='ipv6')
+  inter_vlan:
+    description: Ping-based isolation test between blue and red VRF
+    nodes: [ h1 ]
+    devices: [ linux ]
+    plugin: ping('h4',af='ipv6',expect='fail')

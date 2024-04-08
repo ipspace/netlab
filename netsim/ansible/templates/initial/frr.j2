@@ -66,7 +66,7 @@ echo "{{ frr_m }}=yes" >>/etc/frr/daemons
 #
 # Create loopbacks and stub devices
 #
-{% for i in (interfaces+[{ 'type': 'loopback', 'ifname': 'lo0'}]) if i.type in ['loopback','stub'] %}
+{% for i in netlab_interfaces if i.type in ['loopback','stub'] %}
 if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
   if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
     ip link add {{ i.ifname }} type dummy
@@ -75,12 +75,25 @@ if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
 fi
 {% endfor %}
 
+# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] %}
+{%   if l.ipv6 is not defined %}
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.disable_ipv6=1
+{%   elif role|default('router') != 'host' %}
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.autoconf=0
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.accept_ra=0
+ip link set {{ l.ifname }} down
+ip link set {{ l.ifname }} up
+{%   endif %}
+{% endfor %}
+
 #
 # Add vtysh.conf file
 echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
 #
 # Set Ethernet interface MTU
-{% for l in interfaces|default([]) if l.mtu is defined %}
+{% for l in interfaces if l.mtu is defined %}
 ip link set {{ l.ifname }} mtu {{ l.mtu }}
 {% endfor %}
 #
@@ -95,20 +108,9 @@ ipv6 forwarding
 {% set frr_defaults = netlab_frr_defaults|default('datacenter') %}
 frr defaults {{ frr_defaults }}
 !
-{% if loopback is defined %}
-interface {{ loopback.ifname }}
- no shutdown
-{%  if loopback.ipv4 is defined %}
- ip address {{ loopback.ipv4 }}
-{%  endif %}
-{%  if loopback.ipv6 is defined %}
- ipv6 address {{ loopback.ipv6 }}
-{%  endif %}
-!
-{% endif %}
-{% for l in interfaces|default([]) %}
+{% for l in netlab_interfaces %}
 interface {{ l.ifname }}
-! no shutdown
+ no shutdown
 {% if l.name is defined %}
  description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
 {% elif l.type|default("") == "stub" %}
@@ -123,11 +125,10 @@ interface {{ l.ifname }}
 {%  if l.ipv6 is string and l.ipv6|ipv6 %}
  ipv6 address {{ l.ipv6 }}
 {%  endif %}
+{%  if l.type != 'loopback' %}
  ipv6 nd ra-interval 5
  no ipv6 nd suppress-ra
-{% else %}
- ! Note, currently does not take for OS configured interfaces; known issue
- ipv6 nd suppress-ra
+{%  endif %}
 {% endif %}
 {% if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
@@ -137,10 +138,4 @@ interface {{ l.ifname }}
 do write
 CONFIG
 vtysh -f /tmp/config
-
-# Workaround for FRR issue with disabling ipv6 (https://github.com/FRRouting/frr/issues/7738)
-{% for l in interfaces if l.type in ['lan','p2p','stub'] and l.ipv6 is not defined %}
-sysctl -qw net.ipv6.conf.{{ l.ifname }}.disable_ipv6=1
-{% endfor %}
-
 exit 0

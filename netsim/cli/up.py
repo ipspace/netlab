@@ -19,6 +19,7 @@ from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change
 from .. import providers
 from ..utils import log,strings,status as _status, read as _read
+from ..data import global_vars
 
 #
 # Extra arguments for 'netlab up' command
@@ -61,6 +62,11 @@ def up_parse_args(standalone: bool) -> argparse.ArgumentParser:
     nargs='?',
     const='netlab.snapshot.yml',
     help='Use netlab snapshot file created by a previous lab run')
+  parser.add_argument(
+    '--validate',
+    dest='validate',
+    action='store_true',
+    help=argparse.SUPPRESS)
   return parser
 
 """
@@ -78,6 +84,7 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
       log.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
 
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
+    global_vars.init(topology)    
   else:                                                       # No snapshot file, use 'netlab create' parser
     log.section_header('Creating','configuration files')
     topology = create.run(cli_args,'up','Create configuration files, start a virtual lab, and configure it',up_args_parser)
@@ -336,3 +343,9 @@ def run(cli_args: typing.List[str]) -> None:
     _status.lock_directory()                          # .. to have a timestamp of when the lab was started
 
   log.repeat_warnings('netlab up')
+
+  if args.validate:
+    if args.no_config:
+      log.error('Lab is not configured, skipping the validation phase',Warning,'')
+    else:
+      external_commands.run_command('netlab validate')

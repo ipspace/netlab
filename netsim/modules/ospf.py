@@ -52,6 +52,31 @@ def ospf_unnumbered(node: Box, features: Box) -> bool:
 
   return OK
 
+"""
+Propagate node attributes into VRFs and loopback interface:
+
+* OSPF area, reference_bandwidth, and router_id are copied into vrfs.x.ospf if needed
+* OSPF area is copied into the loopback interface
+"""
+
+def propagate_node_attributes(node: Box, topology: Box) -> None:
+  if 'ospf' not in node:
+    return
+
+  if 'loopback' in node and 'area' in node.ospf:
+    node.loopback.ospf.area = node.ospf.area
+
+  if not 'vrfs' in node:
+    return
+
+  for vname,vdata in node.vrfs.items():
+    if not 'ospf' in vdata:
+      continue
+
+    for kw in topology.defaults.ospf.attributes.vrf_copy:
+      if kw in node.ospf and kw not in vdata.ospf:
+        vdata.ospf[kw] = node.ospf[kw]
+
 class OSPF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
@@ -96,9 +121,13 @@ class OSPF(_Module):
     # * Calculate address families
     # * Enable BFD
     # * Remove OSPF module if there are no OSPF-enabled global or VRF interfaces
+    # * Propagate OSPF attributes into loopback interface and VRFs
     #
     _routing.remove_unaddressed_intf(node,'ospf')
     _routing.build_vrf_interface_list(node,'ospf',topology)
     _routing.routing_af(node,'ospf')
     _routing.remove_vrf_routing_blocks(node,'ospf')
+    propagate_node_attributes(node,topology)
     _routing.remove_unused_igp(node,'ospf')
+    _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
+    _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)
