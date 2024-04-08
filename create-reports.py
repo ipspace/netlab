@@ -28,7 +28,7 @@ def report_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
   return parser.parse_args(args)
 
 def skip_single_key(data: Box) -> Box:
-  if len(data.keys()) == 1:
+  if len(data.keys()) == 1 and 'yml' in data:
     for k in data.keys():
       return data[k]
     
@@ -48,7 +48,7 @@ def sum_results(data: Box) -> None:
   for k in list(data.keys()):
     if k.startswith('_'):
       continue
-    if not data[k]:
+    if not data[k] or data[k].get('create',None) is False:
       increase_counter(data,'unsupported')
       data[k].supported = False
     OK = True
