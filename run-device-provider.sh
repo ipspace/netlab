@@ -33,6 +33,6 @@ run-test.sh ospf/ospfv2 ospf
 run-test.sh ospf/ospfv3 ospf
 run-test.sh bgp
 run-test.sh vrf
-# run-test.sh vlan
+run-test.sh vlan
 run-test.sh vxlan
 run-test.sh dhcp
