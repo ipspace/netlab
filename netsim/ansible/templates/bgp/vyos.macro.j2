@@ -31,6 +31,14 @@ set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast nexthop-se
 {%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
   set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-reflector-client
 {%   endif %}
+
+{# community handling -> need to configure what NOT TO SEND (set protocols bgp neighbor XXX address-family XXX disable-send-community <extended|standard>) #}
+{%   for ctype in ['standard', 'extended'] %}
+{%     if not ctype in bgp.community[n.type] %}
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast disable-send-community {{ ctype }}
+{%     endif %}
+{%   endfor %}
+
 {%- endmacro -%}
 {#
    BGP network statement
