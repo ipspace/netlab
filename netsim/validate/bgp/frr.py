@@ -114,7 +114,7 @@ def valid_bgp_prefix(
         OK = OK or nh_element.ip == nh
 
     if not OK:
-      raise Exception(f'The next hop for prefix {pfx} is {_result.nexthops[0][af]}, not {nh}')
+      raise Exception(f'The next hop(s) for prefix {pfx} is/are {",".join(found_nh)}, not {nh}')
 
     exit_msg = f'One of the next hops for prefix {pfx} is {nh}'
 
