@@ -140,6 +140,34 @@ def passive(intf: Box, proto: str, topology: Box) -> None:
   # triggers the generation of default gateway which is used for default routing on daemons
   intf[proto].passive = is_true_stub(intf,topology,proto)
 
+# Get a router ID prefix from the router_id pool
+#
+def get_router_id_prefix(node: Box, proto: str, pools: Box, use_id: bool = True) -> typing.Optional[Box]:
+  if not pools.router_id:
+    log.error(
+      f'Cannot create a router ID for protocol {proto} on node {node.name}: router_id addressing pool is not defined',
+      log.MissingValue,
+      proto)
+    return None
+
+  pool = 'router_id'
+  pfx = addressing.get(pools,[ pool ],node.id if use_id else None)
+  if not pfx:
+    log.error(
+      f'Cannot create a router ID prefix from {pool} pool for protocol {proto} on node {node.name}',
+      log.IncorrectValue,
+      proto)
+    return None
+
+  if not pfx.get('ipv4',None):
+    log.error(
+      f'{pool} pool did not return a usable IPv4 address to use as router ID for protocol {proto} on node {node.name}',
+      log.IncorrectValue,
+      proto)
+    return None
+
+  return pfx
+
 # Create router ID if needed
 #
 def router_id(node: Box, proto: str, pools: Box) -> None:
@@ -153,7 +181,7 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
         proto)
     return
 
-  if 'router_id' in node:                     # Node as configured router ID, copy it and get out
+  if 'router_id' in node:                     # Node has a configured router ID, copy it and get out
     try:
       node.router_id = str(netaddr.IPAddress(node.router_id).ipv4())
       node[proto].router_id = node.router_id
@@ -168,26 +196,8 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
     node[proto].router_id = str(netaddr.IPNetwork(node.loopback.ipv4).ip)
     return
 
-  if not pools.router_id:
-    log.error(
-      f'Cannot create a router ID for protocol {proto} on node {node.name}: router_id addressing pool is not defined',
-      log.MissingValue,
-      proto)
-    return
-
-  pfx = addressing.get(pools,['router_id'],node.id)
+  pfx = get_router_id_prefix(node,proto,pools)
   if not pfx:
-    log.error(
-      f'Cannot create a router ID prefix from router_id pool for protocol {proto} on node {node.name}',
-      log.IncorrectValue,
-      proto)
-    return
-
-  if not pfx.get('ipv4',None):
-    log.error(
-      f'router_id pool did not return a usable IPv4 address to use as router ID for protocol {proto} on node {node.name}',
-      log.IncorrectValue,
-      proto)
     return
 
   node.router_id = str(netaddr.IPNetwork(pfx['ipv4']).ip)
@@ -324,3 +334,67 @@ def get_remote_cp_endpoint(n: Box) -> Box:
     return n.interfaces[0]                                  # ... if it does, return that
 
   return data.get_empty_box()                               # Otherwise return an empty box
+
+"""
+get_router_id_blacklist: As we generate router IDs in various ways, we have no way of
+figuring out which ones were already used. The only bruteforce method is thus to build
+a list of router ID per protocol
+"""
+def get_router_id_blacklist(topology: Box, proto: str) -> list:
+  blist = []
+  for ndata in topology.nodes.values():                     # Iterate over all nodes
+    blist.append(ndata.get(f'{proto}.router_id',None))      # Blindly add router ID from global proto instance
+    for vdata in ndata.get('vrfs',{}).values():
+      blist.append(vdata.get(f'{proto}.router_id',None))    # ... and from all VRFs
+
+  return [ x for x in blist if x is not None ]              # Obviously some of those values do not exist
+                                                            # ... so we have to filter them out
+
+"""
+get_unique_router_ids: change router IDs in VRF routing protocols for devices that want
+to have a unique router_id per routing protocol instance (Cisco IOSv)
+
+This could be part of IOSv quirks, but we might have other devices with similarly weird
+behavior
+"""
+def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
+  if 'vrfs' not in node:
+    return
+
+  rid_list: list = []                                       # Keep track of on-device RIDs
+  rid_blacklist: list = []                                  # ... and a global list of already-used RIDs
+  if proto in node:
+    rid_list.append(node.get(f'{proto}.router_id'))         # The node is running a global copy of the protocol
+
+  for vname,vdata in node.vrfs.items():                     # Now iterate over all VRFs
+    if proto not in vdata:                                  # ... protocol not running in VRF, move on
+      continue
+    rid = vdata.get(f'{proto}.router_id')
+    if rid not in rid_list:                                 # VRF router ID is unique, move on
+      rid_list.append(rid)
+      continue
+
+    if not rid_blacklist:                                   # Get the global black lisf if needed
+      rid_blacklist = get_router_id_blacklist(topology,proto)
+      print(f'blacklist: {rid_blacklist}')
+
+    while True:                                             # Try to get the next router ID from the pool
+      rid_pfx = get_router_id_prefix(node,proto,topology.pools,use_id=False)
+      if not rid_pfx:
+        break
+      router_id = str(netaddr.IPNetwork(rid_pfx['ipv4']).ip)
+      if router_id not in rid_blacklist:                    # ... until it's not in the blacklist
+        break
+
+    if rid_pfx:                                             # If we have a prefix, we also have a RID
+      vdata[proto].router_id = router_id                    # ... so set it and report the change
+      log.error(
+        f'router ID for VRF {vname} on node {node.name} was changed from {rid} to {vdata[proto].router_id}',
+        category=Warning,
+        module=proto,
+        more_hints=f'Device {node.device} requires a unique router ID for each {proto} instance')
+    else:                                                   # Ran out of RID pool, report another error
+      log.error(
+        f'Cannot change router ID for VRF {vname} on node {node.name}',
+        category=Warning,
+        module=proto)
