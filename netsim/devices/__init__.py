@@ -46,7 +46,7 @@ def device_quirk(node: Box, topology: Box, method: str = 'device_quirks') -> Non
   global mod_load
 
   if log.debug_active('quirks'):
-    print(f'Processing {method} device quirks')
+    print(f'Processing device quirks: method {method}, node {node.name}/{node.device}')
   device = node.device
 
   if not device in mod_load:
