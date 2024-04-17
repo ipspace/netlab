@@ -76,7 +76,7 @@ def run(cli_args: typing.List[str]) -> None:
     rest = ['-t','custom'] + rest
 
   if args.output:
-    rest = ['-e','config_dir='+os.path.abspath(args.output) ] + rest
+    rest = ['-e',f'config_dir="{os.path.abspath(args.output)}"' ] + rest
 
   if args.fast or os.environ.get('NETLAB_FAST_CONFIG',None):
     rest = ['-e','netlab_strategy=free'] + rest
