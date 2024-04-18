@@ -7,7 +7,7 @@
     config_dir: "{{ lookup('env','PWD') }}/config"
   tasks:
   - block:
-    - name: Set variables that cannot be set with VARS
+    - name: Set variables that cannot be set with vars
       set_fact:
         netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
         netlab_interfaces: "{{ ([ loopback ] if loopback is defined else []) + interfaces|default([]) }}"
@@ -31,25 +31,28 @@
 - name: Create module-specific configurations
   hosts: modules
   tasks:
-  - name: Set variables that cannot be set with VARS
-    set_fact:
-      modlist: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
+  - block:
+    - name: Set variables that cannot be set with vars
+      set_fact:
+        mod_select: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
 
-  - name: Create device configurations for {{ netlab_module|intersect(modlist) }}
-    include_tasks: "tasks/create-config.yml"
-    loop: "{{ netlab_module|intersect(modlist) }}"
-    loop_control:
-      loop_var: config_item
-    when: config_item in module|default([])
-    args:
-      apply:
-        vars:
-          paths: "{{ paths_templates.dirs }}"
+    - name: Create device configurations for {{ mod_select }}
+      include_tasks: "tasks/create-config.yml"
+      loop: "{{ netlab_module }}"
+      when: config_item in mod_select
+      loop_control:
+        loop_var: config_item
+      args:
+        apply:
+          vars:
+            paths: "{{ paths_templates.dirs }}"
+
+    delegate_to: localhost
 
 - name: Create custom deployment templates
   hosts: custom_configs
   tasks:
-  - name: Create {{ custom_config }} custom device configuration
+  - name: Create {{ config }} custom device configuration
     include_tasks: "tasks/create-custom-config.yml"
     when: custom_config in config
     loop: "{{ netlab_custom_config }}"

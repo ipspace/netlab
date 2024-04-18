@@ -1,0 +1,334 @@
+bgp:
+  advertise_loopback: true
+  as: 65001
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65001:
+    members:
+    - r1
+    - r2
+input:
+- topology/input/mpls-vpn-simple.yml
+- package:topology-defaults.yml
+isis:
+  area: '49.0001'
+  type: level-2
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- bridge: input_2
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.0.1/24
+    node: r1
+  linkindex: 2
+  node_count: 1
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: stub
+  vrf: red
+- bridge: input_3
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.1.2/24
+    node: r2
+  linkindex: 3
+  node_count: 1
+  prefix:
+    ipv4: 172.16.1.0/24
+  type: stub
+  vrf: red
+module:
+- bgp
+- isis
+- mpls
+- vrf
+mpls:
+  ldp: true
+  vpn: true
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ipv4: 10.0.0.2
+        name: r2
+        type: ibgp
+        vpnv4: 10.0.0.2
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: quay.io/frrouting/frr:9.1.0
+    clab:
+      binds:
+      - clab_files/r1/daemons:/etc/frr/daemons
+      - clab_files/r1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      ldp:
+        passive: false
+      linkindex: 1
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      type: p2p
+    - bgp:
+        advertise: true
+      bridge: input_2
+      ifindex: 2
+      ifname: eth2
+      ipv4: 172.16.0.1/24
+      linkindex: 2
+      mtu: 1500
+      name: r1 -> stub
+      neighbors: []
+      type: stub
+      vrf: red
+    - ifindex: 10001
+      ifname: lo1
+      ipv4: 10.2.0.1/32
+      name: VRF Loopback red
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: red
+    isis:
+      af:
+        ipv4: true
+      area: '49.0001'
+      type: level-2
+    ldp:
+      router_id: 10.0.0.1
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - bgp
+    - isis
+    - mpls
+    - vrf
+    mpls:
+      vpn:
+        ipv4:
+        - ibgp
+    mtu: 1500
+    name: r1
+    vrf:
+      as: 65000
+      loopback: true
+    vrfs:
+      red:
+        af:
+          ipv4: true
+        export:
+        - '65001:1'
+        id: 1
+        import:
+        - '65001:1'
+        loopback_address:
+          ipv4: 10.2.0.1/32
+        networks:
+        - ipv4: 10.2.0.1/32
+        rd: '65001:1'
+        vrfidx: 100
+  r2:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ipv4: 10.0.0.1
+        name: r1
+        type: ibgp
+        vpnv4: 10.0.0.1
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: quay.io/frrouting/frr:9.1.0
+    clab:
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/r2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      ldp:
+        passive: false
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      type: p2p
+    - bgp:
+        advertise: true
+      bridge: input_3
+      ifindex: 2
+      ifname: eth2
+      ipv4: 172.16.1.2/24
+      linkindex: 3
+      mtu: 1500
+      name: r2 -> stub
+      neighbors: []
+      type: stub
+      vrf: red
+    - ifindex: 10001
+      ifname: lo1
+      ipv4: 10.2.0.2/32
+      name: VRF Loopback red
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+      vrf: red
+    isis:
+      af:
+        ipv4: true
+      area: '49.0001'
+      type: level-2
+    ldp:
+      router_id: 10.0.0.2
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - bgp
+    - isis
+    - mpls
+    - vrf
+    mpls:
+      vpn:
+        ipv4:
+        - ibgp
+    mtu: 1500
+    name: r2
+    vrf:
+      as: 65000
+      loopback: true
+    vrfs:
+      red:
+        af:
+          ipv4: true
+        export:
+        - '65001:1'
+        id: 1
+        import:
+        - '65001:1'
+        loopback_address:
+          ipv4: 10.2.0.2/32
+        networks:
+        - ipv4: 10.2.0.2/32
+        rd: '65001:1'
+        vrfidx: 100
+provider: clab
+vrf:
+  as: 65000
+  loopback: true
+vrfs:
+  red:
+    export:
+    - '65001:1'
+    id: 1
+    import:
+    - '65001:1'
+    rd: '65001:1'

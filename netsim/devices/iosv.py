@@ -5,6 +5,7 @@ from box import Box
 
 from . import _Quirks
 from ..utils import log
+from ..modules import _routing
 from ..augment import devices
 
 # Cisco IOSv does not support VRRP on BVI interfaces. Go figure...
@@ -30,3 +31,6 @@ class IOS(_Quirks):
     mods = node.get('module',[])
     if 'gateway' in mods:
       check_vrrp_bvi(node,topology)
+
+    if 'ospf' in mods:
+      _routing.get_unique_router_ids(node,'ospf',topology)

@@ -253,8 +253,8 @@ def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
       prefixes[af] = pools[p][af]
       continue
 
+    subnet_cache = 'cache_%s' % af
     if n:                                                             # Allocating a specific prefix or IP address from a subnet
-      subnet_cache = 'cache_%s' % af
       if not subnet_cache in pools[p]:                                # Set up a cache to speed up things
         pools[p][subnet_cache] = []
       try:
