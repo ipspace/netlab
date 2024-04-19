@@ -24,4 +24,18 @@ router bgp {{ bgp.as }}
 {%     endfor %}
 {%   endfor %}
 
+{# additional tweaking for VRF BGP AF activation - activate only the current AF, deactivate the other one #}
+{%   for n in vdata.bgp.neighbors|default([]) %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n[af] is string %}
+{%       set other_af = (['ipv4','ipv6'] | difference([af])) | first %}
+!
+  neighbor {{ n[af] }}
+     address-family {{ af }} unicast
+       soft-reconfiguration inbound
+       activate
+     address-family {{ other_af }} unicast
+       no activate
+{%     endfor %}
+{%   endfor %}
+
 {% endfor %}
