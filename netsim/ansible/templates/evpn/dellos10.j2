@@ -37,6 +37,7 @@ evpn
 {%     set export_target = v.export|join(' ') -%}
 
 evpn
+  no arp-nd-suppression disable
   vrf {{ n }}
     rd {{ bgp.router_id }}:{{ v.vrfidx }}
     route-target {{ v.import|join(' ') }} import
@@ -47,15 +48,31 @@ evpn
 {%     if v.evpn.transit_vni is defined %} 
     vni {{ v.evpn.transit_vni }}
 {%     endif %}
+
+{%     if v.af.ipv4|default(false) %}
     advertise ipv4 connected
     advertise ipv4 static
     advertise ipv4 ospf
     advertise ipv4 bgp
+{%     endif %}
+{%     if v.af.ipv6|default(false) %}
+    advertise ipv6 connected
+    advertise ipv6 static
+    advertise ipv6 ospf
+    advertise ipv6 bgp
+{%     endif %}
+
 !
 router bgp {{ bgp.as }}
   vrf {{ n }}
+{%     if v.af.ipv4|default(false) %}
     address-family ipv4 unicast
       redistribute l2vpn evpn
+{%     endif %}
+{%     if v.af.ipv6|default(false) %}
+    address-family ipv6 unicast
+      redistribute l2vpn evpn
+{%     endif %}
 !
 {%   endfor %}
 {% endif %}
