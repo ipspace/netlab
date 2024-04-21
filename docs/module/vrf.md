@@ -64,17 +64,13 @@ These platforms support routing protocols in VRFs:
 The following parameters can be set globally or per node:
 
 * **vrfs**: A dictionary of VRF definitions (see below)
-* **vrf.loopback** (bool): Create loopback interfaces for all VRFs on this node
+* **vrf.loopback** (bool): Create loopback interfaces for all VRFs used on this node
 * **vrf.as**: The default AS number used in RD/RT values when **bgp.as** is not set. The system default for **vrf.as** is 65000.
 
 (module-vrf-definition)=
 ## VRF Definition
 
 VRFs are defined in a global or node-specific **vrfs** dictionary, allowing you to create VRFs that are used network-wide or only on a single node.
-
-```{warning}
-Do not reuse VRF names when defining node-specific VRFs. A subtle interaction between global- and node-specific VRFs is needed to implement complex VPN topologies.
-```
 
 The keys of the **vrfs** dictionary are VRF names; the values are VRF definitions. A VRF definition could be empty or a dictionary with one or more of these attributes:
 
@@ -86,6 +82,13 @@ The keys of the **vrfs** dictionary are VRF names; the values are VRF definition
 * A VRF definition can also contain other link- or interface-level parameters (for example, OSPF cost).
 
 Empty VRF definition will get [default RD and RT values](default-vrf-values) assigned during the topology transformation process.
+
+```{warning}
+* Do not reuse VRF names when defining node-specific VRFs. To implement complex VPN topologies, a subtle interaction between global and node-specific VRFs is needed, and _netlab_ assumes that the VRFs with the same name refer to the same routing and forwarding instance.
+* Global VRFs will not be instantiated on a node using the _vrf_ module unless the node is attached to a [VRF link](module-vrf-interface). If you want to create a VRF that uses no external interfaces, add the VRF name to the node **‌vrfs** dictionary.
+* The **‌vrfs** dictionary and the _vrf_ module will be removed from a node with no VRF interfaces or [VRF loopback interfaces](vrf-loopback).
+```
+
 
 ### Additional VRF Parameters
 
@@ -110,7 +113,7 @@ A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loo
 * A dictionary of address families specifying IPv4 and/or IPv6 prefixes to be used on the loopback interface
 
 ```{warning}
-The explicit IPv4/IPv6 loopback addresses should not be used in the global VRF definition; they should be used only in the node VRF definition.
+The explicit IPv4/IPv6 loopback addresses should be used only in the node VRF definition, not in the global VRF definition.
 ```
 
 ### RD and RT Values
@@ -201,8 +204,8 @@ nodes:
 
 Notes:
 
-* Global RD/RT values are generated using the system default **vrf.as** value (65000).
-* Global RT values for the *red* VRF are copied into the node data structures. Global RD value is not copied because it's set in the node VRF definition.
+* The global RD/RT values are generated using the system default **vrf.as** value (65000).
+* The global RT values for the *red* VRF are copied into the node data structures. The global RD value is not copied because it's set in the node VRF definition.
 * Node RD value for the *red* VRF is generated using the node **bgp.as** value (65001).
 
 (module-vrf-interface)=
