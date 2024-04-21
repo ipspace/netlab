@@ -458,7 +458,7 @@ class VRF(_Module):
 
     for ifdata in node.interfaces:
       if 'vrf' in ifdata:
-        vrf_count = vrf_count + 1
+        vrf_count += 1
         if not node.vrfs[ifdata.vrf].rd:
           log.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} does not have a usable RD',
@@ -471,8 +471,13 @@ class VRF(_Module):
             node.af[f'vpn{af}'] = True
             node.vrfs[ifdata.vrf].af[f'ip{af}'] = True
 
+    vrf_lb = node.get('vrf.loopback',False)
+    for vdata in node.get('vrfs',{}).values():
+      if 'loopback' in vdata or vrf_lb:
+        vrf_count += 1
+
     if log.debug_active('vrf'):
-      print( f"vrf node_post_transform on {node.name}: counted {vrf_count} VRFs on interfaces" )
+      print( f"vrf node_post_transform on {node.name}: counted {vrf_count} VRFs on interfaces/loopbacks" )
     features = devices.get_device_features(node,topology.defaults)
     if not vrf_count and ('vrf' not in features or not features.vrf.keep_module): # Remove VRF module from the node if the node has no VRFs, unless flag set
       node.module = [ m for m in node.module if m != 'vrf' ]
