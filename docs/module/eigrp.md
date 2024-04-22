@@ -17,6 +17,10 @@ Supported features:
 
 * **eigrp.as** -- per-node EIGRP AS number (default: 1 -- inherited from global defaults)
 
+```{tip}
+The EIGRP configuration module is automatically removed from a node that does not run EIGRP on any non-loopback interface. In that case, _netlab_ generates a warning that can be turned off by setting **‌defaults.eigrp.warnings.inactive** to **‌False**.
+```
+
 ## Link Parameters
 
 * **eigrp.passive** -- Make this link/interface a passive interface regardless of the global passive interface rules (note: cannot be used to make an interface active).
@@ -31,7 +35,7 @@ Link roles are used together with link types to decide whether to include an int
 The following interfaces are also configured as passive EIGRP interfaces:
 
 * Interfaces with **role** set to **passive**.
-* Interfaces connected to links that have a single router or routing daemon attached.
+* Interfaces connected to links with a single router or routing daemon attached.
 
 **Notes:** 
 
@@ -55,7 +59,7 @@ eigrp:
   as: 2
 ```
 
-We'll use IPv4 and IPv6 addressing in our lab. IPv6 addresses will be configured on loopback and LAN interfaces but not on P2P interfaces.
+In our lab, we'll use IPv4 and IPv6 addressing. IPv6 addresses will be configured on loopback and LAN interfaces but not on P2P interfaces.
 
 ```
 addressing:
@@ -79,7 +83,7 @@ nodes:
   device: nxos
 ```
 
-All three devices share a LAN interface. There are two P2P links and a stub interface connected to each device. The bandwidth of the LAN interface is set to 100 Mbps.
+All three devices share a LAN interface with bandwidth set to 100 Mbps. Each device is also connected to one or two P2P links and a stub interface.
 
 ```
 links:

@@ -16,3 +16,4 @@ class EIGRP(_Module):
     _routing.remove_unaddressed_intf(node,'eigrp')
     _routing.remove_vrf_interfaces(node,'eigrp')
     _routing.routing_af(node,'eigrp')
+    _routing.remove_unused_igp(node,'eigrp',topology.defaults.get('eigrp.warnings.inactive',False))

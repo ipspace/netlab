@@ -104,7 +104,7 @@ The following table documents the interface-level OSPF features:
 
 **Notes:**
 * Arista EOS, Cisco Nexus OS, SR Linux, and Dell OS10 support point-to-point and broadcast network types. Other network types will not be configured.
-* SR OS supports point-to-point, broadcast, and non-broadcast network types. Point-to-multipoint network type will not be configured.
+* SR OS supports point-to-point, broadcast, and non-broadcast network types. It will not configure a point-to-multipoint network type.
 
 OSPF routing daemons support these interface-level features:
 
@@ -143,21 +143,21 @@ You can specify most node parameters as global values (top-level topology elemen
 * **ospf.cost** -- OSPF cost
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
 * **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
-* **ospf.bfd** -- enable or disable BFD for OSPF on an individual link or interface (boolean value, overrides node **ospf.bfd** setting)
-* **ospf.passive** -- explicitly enable or disable [passive interfaces](routing.md#passive-interfaces)
-
-To disable OSPF on a link, set **ospf** to *False* (see also [](routing_disable)).
+* **ospf.bfd** -- turn BFD for OSPF on or off on an individual link or interface (boolean value, overrides node **ospf.bfd** setting)
+* **ospf.passive** -- explicitly enable or disable [passive interfaces](routing_passive)
 
 [^NS]: Some OSPF network types (non-broadcast or point-to-multipoint) are not supported by all platforms.
 
 **Note:** The same parameters can be specified for individual link nodes.
 
-OSPF configuration module also supports [passive interfaces](routing.md#passive-interfaces) and [external links](routing.md#external-interfaces).
+OSPF is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable OSPF on an intra-AS link, set **ospf** to *False* (see also [](routing_disable)).
 
 ```{tip}
-Management interfaces are never added to the OSPF process. They are not in the set of device links and, thus, not considered in the OSPF configuration template.
+* Management interfaces are never added to the OSPF process. They are not in the set of device links and, thus, not considered in the OSPF configuration template.
+* The OSPF configuration module is automatically removed from a node that does not run OSPF on any non-loopback interface or VRF. In that case, _netlab_ generates a warning that can be turned off by setting **‌defaults.ospf.warnings.inactive** to **‌False**.
 ```
 
+(ospf-default-link)=
 ## Default Link Parameters
 
 Unless the OSPF network type is specified with the **ospf.network_type**, it's set to **point-to-point** on links with exactly two non-host nodes attached to them and left unspecified otherwise (implying platform default, which is almost always **broadcast**).
@@ -170,7 +170,7 @@ When the **ospf.passive** attribute is not specified on a link or an interface, 
 
 **Notes:** 
 
-* The BGP module could set the link role -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the OSPF process.
+* The BGP module could set the link role. Links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the OSPF process.
 * Management interfaces are never added to the OSPF process. They are not in the set of device links and, thus, not considered in the OSPF configuration template.
 
 ## Example
