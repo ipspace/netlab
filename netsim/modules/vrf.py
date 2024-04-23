@@ -31,15 +31,21 @@ def get_node_vrf_data(vname: str, node: Box, topology: Box) -> typing.Optional[B
                                                       # ... note that the result will always be a Box
 
 #
-# Build the global data structures needed for ID/RD allocation and populate
-# them with preconfigured global- and node VRF data
+# Initialize global data structures needed for ID/RD allocation
+#
+
+def init_vrf_static_ids(topology: Box) -> None:
+  for k in ('id','rd'):
+    _dataplane.create_id_set(f'vrf_{k}')
+
+  _dataplane.set_id_counter('vrf_id',1,4095)
+
+#
+# Populate the global ID/RD/RT data structures with preconfigured global- and node VRF data
 #
 def populate_vrf_static_ids(topology: Box) -> None:
   for k in ('id','rd'):
-    _dataplane.create_id_set(f'vrf_{k}')
     _dataplane.extend_id_set(f'vrf_{k}',_dataplane.build_id_set(topology,'vrfs',k,'topology'))
-
-  _dataplane.set_id_counter('vrf_id',1,4095)
 
   for n in topology.nodes.values():
     for k in ('id','rd'):
@@ -393,6 +399,8 @@ class VRF(_Module):
 
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vrfs','vrf',copy_keys=['rd','export','import'])
+
+    init_vrf_static_ids(topology)
 
     if not 'vrfs' in topology:                          # No global VRFs, nothing to do
       return
