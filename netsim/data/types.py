@@ -6,6 +6,8 @@ import typing,typing_extensions,types
 import functools
 import netaddr
 import re
+import textwrap
+
 from box import Box
 from ..utils import log
 from . import global_vars
@@ -78,7 +80,7 @@ def wrong_type_message(
   if '_help' in err_stat:                               # Did the validation function specify extra help?
     if exp_type not in _wrong_type_help:                # Did we print this help before? Adjust context if not
       help = err_stat.get("_help")
-      ctxt.append(f'FYI: {exp_type} is {help}')
+      ctxt.extend(textwrap.wrap(f'FYI: {exp_type} is {help}'))
       _wrong_type_help[exp_type] = help
 
   if '_value' in err_stat:                             # _value contains explanation why the value is incorrect
@@ -92,7 +94,7 @@ def wrong_type_message(
   if 'NOATTR:' in path:                                 # Deal with values that are not attributes
     path = path.replace('NOATTR:','')
   else:
-    path = f'attribute {path}'
+    path = f"attribute '{path}'"
 
   # Display hint only when we know the hint ID
   if '_hint_id' in err_stat:
@@ -449,7 +451,7 @@ def must_be_id(value: typing.Any, max_length: int = 16) -> dict:
     return {
       '_valid': False,
       '_type' : f'a {max_length}-character identifier',
-      '_help' : f'a string containing up to {max_length} alphanumeric characters, numbers and underscores'
+      '_help' : f'a string starting with a letter or an underscore and containing up to {max_length} letters, numbers, or underscores'
     }
 
   return { '_valid': True } 

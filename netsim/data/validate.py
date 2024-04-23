@@ -141,7 +141,7 @@ def check_required_keys(data: Box, attributes: Box, path: str,module: str) -> bo
       if k in data:
         continue
       log.error(
-        f'Mandatory attribute {path}.{k} is missing',
+        f"Mandatory attribute '{path}.{k}' is missing",
         log.MissingValue,
         module)
       result = False
@@ -219,7 +219,7 @@ def validate_dictionary(
   for k in data.keys():                           # Iterate over the elements
     if not k in data_type._keys:                  # ... and report elements with invalid name
       log.error(
-        f'Incorrect {data_name} attribute {k} in {parent_path}',
+        f"Incorrect {data_name} attribute '{k}' in {parent_path}",
         log.IncorrectAttr,
         module)
       return_value = False
