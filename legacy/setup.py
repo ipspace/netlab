@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.append('..')
 
-version="1.8.1"
+version="1.8.1-post1"
 
 long_description = (Path(__file__).parent / "README.md").read_text()
 
@@ -23,9 +23,12 @@ setup(
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
   ],
   url="https://github.com/ipspace/netlab",
-  python_requires='>=3.7',  # Due to e.g. 'capture_output' in subprocess.run
+  python_requires='>=3.8',  # Due to e.g. 'capture_output' in subprocess.run
 )

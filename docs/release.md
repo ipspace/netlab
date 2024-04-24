@@ -1,6 +1,10 @@
 Release notes
 =============
 
+**Release 1.8.1-post1 (2024-04-24)**
+
+This release contains only [bug fixes](bug-fixes-1.8.1-post1) and [documentation fixes](doc-fixes-1.8.1-post1).
+
 **[Release 1.8.1](release-1.8.1) (2024-04-08)**
 
 * Refactor the **[netlab status](netlab-status)** printout
