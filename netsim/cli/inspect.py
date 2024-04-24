@@ -8,9 +8,9 @@ import os
 import sys
 import argparse
 
-from box import Box
+from box import Box,BoxList
 
-from . import load_snapshot
+from . import load_snapshot,_nodeset
 from ..outputs import _TopologyOutput
 from ..outputs import common as outputs_common
 from ..utils import strings,log
@@ -35,7 +35,7 @@ def inspect_parse(args: typing.List[str]) -> argparse.Namespace:
   parser.add_argument(
     '--node',
     dest='node', action='store',
-    help='Display data for selected node')
+    help='Display data for selected node(s)')
   parser.add_argument(
     '--format',
     dest='format', action='store',
@@ -49,36 +49,47 @@ def inspect_parse(args: typing.List[str]) -> argparse.Namespace:
 
   return parser.parse_args(args)
 
+def inspect_value(topology: Box, args: argparse.Namespace) -> None:
+  o_module = args.format or 'yaml'
+  o_param  = f'{o_module}:{args.expr or "."}'
+  inspect_module = _TopologyOutput.load(o_param,topology.get('defaults.outputs.{o_module}',{}))
+  if not inspect_module:
+    log.fatal(f'Cannot load the data inspection output module {o_module}, aborting')
+
+  inspect_module.write(topology)
+
+def fmt_value(v: typing.Union[Box,BoxList], fmt: str) -> str:
+  value = v.to_yaml() if fmt == 'yaml' else v.to_json()
+  return value.strip('\n')
+
+def inspect_node(topology: Box, node_list: list, args: argparse.Namespace) -> None:
+  o_format = args.format or 'yaml'
+  hdr_row: list = []
+  data_row: list = []
+
+  for node in node_list:
+    node_data = outputs_common.adjust_inventory_host(
+                  node=topology.nodes[node],
+                  defaults=topology.defaults,
+                  group_vars=True)
+    if len(node_list) == 1:
+      inspect_value(node_data,args)
+      return
+    else:
+      select = node_data.get(args.expr,None) if args.expr else node_data
+      value  = fmt_value(select,o_format) if isinstance(select,Box) or isinstance(select,BoxList) else str(select)
+      hdr_row.append(node)
+      data_row.append(value)
+
+  strings.print_table(hdr_row,[ data_row ])
+
 def run(cli_args: typing.List[str]) -> None:
   args = inspect_parse(cli_args)
   topology = load_snapshot(args)
-
-  o_module = args.format or 'yaml'
-  o_param  = f'{o_module}:{args.expr or "."}'
-  inspect_module = _TopologyOutput.load(o_param,topology.defaults.outputs[o_module])
+  log.init_log_system(False)
 
   if args.node:
-    log.init_log_system(False)
-    must_be_id(
-      parent=None,
-      key=args.node,
-      path=f'NOATTR:--node parameter',
-      max_length=global_vars.get_const('MAX_NODE_ID_LENGTH',16),
-      module='inspect')
-    log.exit_on_error()
-    if args.node in topology.nodes:
-      topology = outputs_common.adjust_inventory_host(
-                node=topology.nodes[args.node],
-                defaults=topology.defaults,
-                group_vars=True)
-    else:
-      log.fatal(
-        f'Unknown node {args.node}\n'+ \
-        strings.extra_data_printout(
-          f'Valid node names are: {", ".join(list(topology.nodes.keys()))}'),
-        module='inspect')
-
-  if inspect_module:
-    inspect_module.write(topology)
+    node_list = _nodeset.parse_nodeset(args.node,topology)
+    inspect_node(topology,node_list,args)
   else:
-    log.fatal('Cannot load the data inspection output module, aborting')
+    inspect_value(topology,args)
