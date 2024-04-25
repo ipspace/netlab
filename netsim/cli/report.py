@@ -6,7 +6,7 @@
 import typing
 import argparse
 
-from . import load_snapshot
+from . import load_snapshot,_nodeset
 from ..outputs import _TopologyOutput, common as outputs_common
 from ..utils import strings,log
 
@@ -26,6 +26,10 @@ def report_parse(args: typing.List[str]) -> argparse.Namespace:
     const='netlab.snapshot.yml',
     help='Transformed topology snapshot file')
   parser.add_argument(
+    '--node',
+    dest='node', action='store',
+    help='Limit the report to selected node(s)')
+  parser.add_argument(
     dest='report', action='store',
     help='Name of the report you want to create')
   parser.add_argument(
@@ -43,6 +47,9 @@ def run(cli_args: typing.List[str]) -> None:
                      topology.defaults.outputs.report)
   if not report_module:
     log.fatal('Cannot load the reporting output module, aborting')
+
+  if args.node:
+    topology = _nodeset.get_nodeset(topology,_nodeset.parse_nodeset(args.node,topology))
 
   for n in list(topology.nodes.keys()):                     # Add group variables to topology nodes
     topology.nodes[n] = outputs_common.adjust_inventory_host(

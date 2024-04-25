@@ -7,13 +7,18 @@ updates:
 {%  for af in ('ipv4','ipv6') %}
 {%   if intf.gateway.protocol in ['anycast','vrrp'] and af in intf.gateway %}
    {{ af }}:
+{% if af=='ipv6' %}
+    address:
+    - ipv6-address: "{{ intf.ipv6|default('')|ipaddr('address') }}"
+      duplicate-address-detection: False
+{% endif %}
     vrrp:
     - virtual-router-id: {{ intf.gateway.vrrp.group|default(1) }}
       admin-state: enable
       ping-reply: True
       backup: [ "{{ intf.gateway[af]|ipaddr('address') }}" ]
       passive: {{ intf.gateway.protocol == 'anycast' }}
-{%    if intf.gateway.anycast.mac is defined %}
+{%    if intf.gateway.anycast.mac is defined and 'ixr' not in clab.type %}
       mac: {{ intf.gateway.anycast.mac|hwaddr('linux') }}
 {%    endif %}
 {%    if intf.gateway.protocol == 'vrrp' %}

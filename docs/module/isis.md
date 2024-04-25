@@ -41,8 +41,8 @@ The following table describes per-platform support of individual IS-IS features:
 | VyOS               | ✅  | ✅  | ✅  |  ❌  | ✅  | ✅ |
 
 **Notes:**
-* On Arista EOS, IPv6 is enabled on all interfaces as soon as one of them has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
-* On VyOS, IPv6 is enabled on all interfaces as soon as one of them has an IPv6 address.
+* On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
+* On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
 * Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
 
 ## Global Parameters
@@ -70,12 +70,20 @@ You can specify node parameters as global values (top-level topology elements) o
 **Note:**
 * When specifying **isis.net**, avoid values in range *area.0000.0000.0001.00* through *area.0000.0000.0099.00* as they are used for auto-generated NETs.
 
+IS-IS is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable IS-IS on an intra-AS link, set the **isis** link parameter to *False* (see also [](routing_disable)).
+
+```{tip}
+The IS-IS configuration module is automatically removed from a node that does not run IS-IS on any non-loopback interface. In that case, _netlab_ generates a warning that can be turned off by setting **‌defaults.isis.warnings.inactive** to **‌False**.
+```
+
 ## Link Parameters
 
 * **isis.type** -- Link type (**level-1**, **level-2** or **level-1-2**). Recognized as a valid attribute but not implemented. Please feel free to fix the configuration templates and submit a pull request.
 * **isis.network_type** -- Set IS-IS network type. Valid values are **point-to-point** or *False* (do not set the network type). See also [Default Link Parameters](#default-link-parameters).
 * **isis.metric** or **isis.cost** -- Interface cost. Both parameters are recognized to make IS-IS configuration similar to OSPF (*metric* takes precedence over *cost*)
 * **isis.bfd** -- enable or disable BFD on individual interfaces. Like with the node-level **isis.bfd** parameter, this parameter could be a boolean value (*True* to enable BFD for all address families, *False* to disable IS-IS BFD on the interface) or a dictionary of address families, for example:
+
+Example:
 
 ```
 links:
@@ -99,7 +107,7 @@ When the **isis.passive** interface parameter is not set on a link or an interfa
 
 **Notes:** 
 
-* The BGP module could set link role -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the IS-IS process.
+* The BGP module could set link role. Links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the IS-IS process.
 * Management interfaces are never added to the IS-IS process. They are not in the set of device links and, thus, not considered in the IS-IS configuration template.
 
 ## Example

@@ -65,7 +65,7 @@ class _TopologyOutput(Callback):
       return fname
 
     if self.settings:
-      return self.settings.filename
+      return self.settings.get('filename',None)
 
     return None
 

@@ -10,7 +10,7 @@ import sys
 from box import Box
 
 from .. import data
-from ..augment import main
+from ..augment import main,config
 from ..utils import log,read as _read
 from .usage import print_usage
 
@@ -110,6 +110,7 @@ def run(cli_args: typing.List[str]) -> None:
     topology.plugin = args.plugin
 
   if args.action in ['defaults']:                       # Save original paths for the "show defaults" command
+    config.adjust_paths(topology.defaults.paths)
     topology.defaults._original_paths = data.get_box(topology.defaults.paths)
 
   main.transform_setup(topology)

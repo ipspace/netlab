@@ -83,7 +83,8 @@ def expand_package(path: str) -> pathlib.Path:
 
 def absolute_search_path(
       path: typing.List[str],
-      curdir: str = '.') -> typing.List[str]:
+      curdir: str = '.',
+      skip_missing: bool = False) -> typing.List[str]:
   a_path = []
   for p_entry in path:
     if 'package:' in p_entry:
@@ -108,7 +109,8 @@ def absolute_search_path(
 
     p_final = str(p_abs.resolve())
     if not p_final in a_path:
-      a_path.append(p_final)
+      if p_abs.is_dir() or not skip_missing:
+        a_path.append(p_final)
 
   return a_path
 

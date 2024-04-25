@@ -148,17 +148,42 @@ window and follow the instructions.
 
 def lp_create_box(args: argparse.Namespace,settings: Box) -> None:
   _files.create_file_from_text(
+    fname="Vagrantfile",
+    txt='''
+Vagrant.configure("2") do |config|
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = "kvm"
+    libvirt.host = ""
+    libvirt.connect_via_ssh = false
+    libvirt.storage_pool_name = "default"
+  end
+end
+''')
+  abort_on_failure('cp vm.qcow2 box.img')
+  img_json = external_commands.run_command('qemu-img info --output=json box.img',check_result=True,return_stdout=True)
+
+  try:
+    if isinstance(img_json,str) and img_json:
+      img_data = Box.from_json(json_string=img_json,box_dots=True)
+    else:
+      raise Exception('qemu-img failed')
+  except Exception as ex:
+    log.fatal(f'Cannot parse qemu-img virtual disk information: {ex}')
+
+  v_size = int((img_data['virtual-size'] - 1)/(2**30)) + 1
+
+  _files.create_file_from_text(
     fname="metadata.json",
-    txt='{"provider":"libvirt","format":"qcow2","virtual_size":4}\n')
-  print("Downloading vagrant-libvirt create_box.sh script")
-  abort_on_failure('curl -O https://raw.githubusercontent.com/vagrant-libvirt/vagrant-libvirt/master/tools/create_box.sh')
+    txt=f'{{"provider":"libvirt","format":"qcow2","virtual_size":{v_size}}}\n')
 
   boxfile = f"{args.device}.box"
   if os.path.isfile(boxfile):
     print(f"Removing old {boxfile}")
     os.remove(boxfile)
 
-  abort_on_failure(f'bash create_box.sh vm.qcow2 {boxfile}')
+  print(f'Creating tar archive {boxfile}')
+  abort_on_failure(f'tar cfz {boxfile} Vagrantfile metadata.json box.img')
+  abort_on_failure('rm box.img')
 
   devdata = settings.devices[args.device]
   boxname = devdata.libvirt.image

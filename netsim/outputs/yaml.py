@@ -19,7 +19,7 @@ class YAML(_TopologyOutput):
   DESCRIPTION :str = 'Inspect transformed data in YAML format'
 
   def write(self, topo: Box) -> None:
-    outfile = self.settings.filename or '-'
+    outfile = self.settings.get('filename',None) or '-'
     modname = type(self).__name__
 
     if hasattr(self,'filenames'):

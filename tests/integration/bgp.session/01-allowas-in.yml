@@ -1,0 +1,88 @@
+---
+message: |
+  Use this topology to test the 'allowas-in' functionality. The DUT AS is
+  prepended to a prefix advertised by X2. DUT should propagate the prefix to X1.
+
+plugin: [ bgp.session, bgp.policy ]
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, x3 ]
+
+defaults.bgp.as: 65000
+
+addressing:
+  p2p:
+    ipv6: 2001:db8:3::/48
+  lan:
+    ipv6: 2001:db8:4::/48
+
+nodes:
+  dut:
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+    loopback.ipv4: 172.42.42.1/24
+    loopback.ipv6: 2001:db8:a01::1/64
+  x3:
+    bgp.as: 65102
+    loopback.ipv4: 172.42.43.1/24
+    loopback.ipv6: 2001:db8:a02::1/64
+
+links:
+- dut:
+  x1:
+- dut:
+    bgp.allowas_in: True
+  x2:
+    bgp.prepend.path: "65000"
+- dut:
+  x3:
+    bgp.prepend.path: "65000"
+
+validate:
+  session_v4:
+    description: Check IPv4 EBGP sessions with dut
+    wait_msg: Waiting for EBGP session establishment
+    wait: 20
+    nodes: [ x1, x2, x3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+
+  session_v6:
+    description: Check IPv6 EBGP sessions with dut
+    wait_msg: Waiting for EBGP session establishment
+    wait: 20
+    nodes: [ x1, x2, x3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+
+  pfx_v4_allow:
+    description: Check whether DUT disabled AS check on IPv4 EBGP session with X2
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.42.0/24')
+
+  pfx_v6_allow:
+    description: Check whether DUT disabled AS check on IPv6 EBGP session with X2
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('2001:db8:a01::/64',af='ipv6')
+
+  pfx_v4_deny:
+    description: Check whether DUT still performs AS check on IPv4 EBGP session with X3
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.43.0/24',state='missing')
+
+  pfx_v6_deny:
+    description: Check whether DUT still performs AS check on IPv6 EBGP session with X3
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('2001:db8:a02::/64',af='ipv6',state='missing')

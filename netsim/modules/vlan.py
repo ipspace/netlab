@@ -1028,6 +1028,32 @@ def check_mixed_trunks(node: Box, topology: Box) -> None:
     err_ifmap[parent_intf.ifindex] = True
 
 """
+Another scenario that can trip us is a native routed VLAN combined with bridged VLAN trunk.
+This works well on devices acting as routers, and fails consistently on devices that use
+the l3-switch model.
+"""
+def check_mixed_native_trunk(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  if not 'switch' in features.vlan.model:                             # Device is not using 'switch' model, we're OK
+    return
+
+  for intf in node.interfaces:                                        # Check all interfaces
+    if intf.get('virtual_interface',False):                           # Skip the virtual ones
+      continue
+
+    if 'ipv4' not in intf and 'ipv6' not in intf:                     # Skip interfaces that don't do routing on
+      continue                                                        # ... native VLAN
+
+    if not intf.get('vlan.trunk_id',[]):                              # Skip interfaces that don't have a trunk of
+      continue                                                        # ... bridged VLANs
+
+    log.error(
+      f'Device type {node.device} (node {node.name}) cannot have a routed native VLAN with a bridged trunk',
+      category=log.IncorrectValue,
+      module='vlan',
+      more_data=f'Found on interface {intf.ifname} ({intf.name})')
+
+"""
 fix_vlan_gateways -- set VLAN-wide gateway IP
 
 The link augmentation code sets gateway IP for hosts connected to physical links. That approach does not work
@@ -1258,6 +1284,7 @@ class VLAN(_Module):
         rename_vlan_subinterfaces(n,topology)
         cleanup_routed_native_vlan(n,topology)
         check_mixed_trunks(n,topology)
+        check_mixed_native_trunk(n,topology)
 
     for n in topology.nodes.values():
       set_svi_neighbor_list(n,topology)

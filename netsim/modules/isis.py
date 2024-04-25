@@ -73,4 +73,4 @@ class ISIS(_Module):
     _routing.remove_unaddressed_intf(node,'isis')
     _routing.remove_vrf_interfaces(node,'isis')
     _routing.routing_af(node,'isis')
-    _routing.remove_unused_igp(node,'isis')
+    _routing.remove_unused_igp(node,'isis',topology.defaults.get('isis.warnings.inactive',False))

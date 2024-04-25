@@ -1,6 +1,6 @@
 # Running Multiple Labs on Linux Servers
 
-Using the default settings, _netlab_ cannot run more than a single lab instance on a Linux server as it relies on default network names and IP prefixes used by the *vagrant-libvirt* plugin and *containerlab* orchestration system.
+Using the default settings, *netlab* cannot run more than a single lab instance on a Linux server as it relies on the default network names and IP prefixes used by the *vagrant-libvirt* plugin and *containerlab* orchestration system.
 
 The *multilab* plugin modifies virtualization defaults for every lab instance, allowing you to run multiple *libvirt*- or container-based labs in parallel. Using its default settings, the plugin modifies:
 
@@ -11,7 +11,8 @@ The *multilab* plugin modifies virtualization defaults for every lab instance, a
 The plugin has been tested with **[libvirt](../labs/libvirt.md)** and **[clab](../labs/clab.md)** _netlab_ virtualization providers.
 
 ```{warning}
-While you can use the same topology file for multiple lab instances, you MUST run each lab instance in a different working directory.
+* While you can use the same topology file for multiple lab instances, you MUST run each lab instance in a different working directory.
+* The *‌multilab* plugin changes the lab topology parameters *‌after* the topology file, user- and system [defaults](defaults) have been processed. You cannot change a parameter controlled by the *‌multilab* plugin with a topology file setting; you must change the corresponding **defaults.multilab.change** parameter. See also [](multilab-behind-the-scenes)
 ```
 
 ## Using the Plugin
@@ -39,9 +40,9 @@ multilab.id: 12
 ```
 
 ```{warning}
-Use the system-wide _netlab_ status file if multiple users are starting lab instances on the same Linux server. You can change the location of the status file with the **‌defaults.lab_status_file** parameter.
+Use the system-wide _netlab_ status file if multiple users start lab instances on the same Linux server. You can change the location of the status file with the **‌defaults.lab_status_file** parameter.
 
-The _netlab_ status file and the parent directory should be writeable by all users using _netlab_.
+All _netlab_ users should be able to write to the _netlab_ status file and the parent directory.
 ```
 
 **Dynamic labs:** Users can run multiple lab instances, including several instances of the same lab topology. Each instance still needs a unique multilab ID that has to be allocated by an external system that passes **defaults.multilab.id** to _netlab_.
@@ -65,6 +66,7 @@ $ export NETLAB_PLUGIN=multilab
 $ export NETLAB_MULTILAB_ID=17
 ```
 
+(multilab-behind-the-scenes)=
 ## Behind the Scenes
 
 *multilab* plugin uses *lab id* specified in **defaults.multilab.id** to change system defaults or topology parameters listed in **defaults.multilab.change** dictionary. The default parameters *multilab* plugin changes are specified in the `netsim/defaults/multilab.yml` file; you can add your parameters if needed.

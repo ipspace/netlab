@@ -8,7 +8,7 @@ You can also mix and match the two approaches. For example, you could have a gen
 (dev-config-deploy-paths)=
 ## Configuration Deployment Search Paths
 
-Before starting the configuration deployment process, **netlab initial** Ansible playbook tries to find an Ansible task list that can be used to check the readiness of a lab device. If that task list is found, it's executed before the initial device configuration deployment starts. You can use that task list to check the device's SSH server (Arista cEOS) or interface initialization state (Cisco Nexus OS). **netlab initial** uses these default parameters to find the device readiness task list ([more details](deploy-search-paths)):
+Before starting the configuration deployment process, **netlab initial** Ansible playbook tries to find an Ansible task list that can be used to check the readiness of a lab device. If that task list is found, it's executed before the initial device configuration deployment starts. You can use that task list to check the device's SSH server (Arista cEOS) or interface initialization state (Cisco Nexus OS). **netlab initial** uses these default parameters to find the device readiness task list ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
@@ -17,7 +17,7 @@ Before starting the configuration deployment process, **netlab initial** Ansible
 
 The **netlab initial** Ansible playbook tries to find device-specific task lists or templates using *netlab_device_type* or *ansible_network_os* (when *netlab_device_type* is missing) Ansible variable, including a combination with *netlab_provider* (for provider-specific configuration). These variables are usually defined as device group variables in system settings.
 
-Directory- and file search paths are defined in these default parameters ([more details](deploy-search-paths)):
+Directory- and file search paths are defined in these default parameters ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
@@ -25,7 +25,7 @@ Directory- and file search paths are defined in these default parameters ([more 
 | **paths.t_files.files** | Filename search patterns for configuration templates |
 
 (deploy-task-list)=
-After finding the Jinja2 template, the initial configuration deployment playbook tries to find the device/module-specific Ansible task list to deploy the configuration (*config_module* is set to *initial* when deploying the initial device configuration). The task list search process uses these default parameters ([more details](deploy-search-paths)):
+After finding the Jinja2 template, the initial configuration deployment playbook tries to find the device/module-specific Ansible task list to deploy the configuration (*config_module* is set to *initial* when deploying the initial device configuration). The task list search process uses these default parameters ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
@@ -35,14 +35,14 @@ After finding the Jinja2 template, the initial configuration deployment playbook
 (dev-find-custom)=
 ## Finding Custom Configuration Templates
 
-The following paths are searched when looking for custom configuration templates specified in the **config** list or through a plugin ([more details](deploy-search-paths)):
+The following paths are searched when looking for custom configuration templates specified in the **config** list or through a plugin ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
 | **paths.custom.dirs** | Directory search paths for custom configuration templates |
 | **paths.custom.files** | Filename search patterns for custom configuration templates |
 
-The custom configuration could be deployed via a dedicated task list or a generic configuration deployment task list. These parameters are used to find the custom configuration deployment task ([more details](deploy-search-paths)):
+The custom configuration could be deployed via a dedicated task list or a generic configuration deployment task list. These parameters are used to find the custom configuration deployment task ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
@@ -142,12 +142,22 @@ Unfortunately, the Nexus 9300v linecards become active almost a minute after com
     src: "{{ config_template }}"
 ```
 
-(deploy-search-paths)=
+(change-search-paths)=
 ## Changing and Troubleshooting Search Paths
 
-The directory and filename search paths used by the **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](defaults). You can change these parameters but cannot append values to them; if you want to modify a search path, you have to get its current value, prepend or append your entries, and set the system default parameter to the new value.
+The directory and filename search paths used by the **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](defaults). You can change these parameters or prepend/append another list to them:
 
-You can inspect the default value of any search path with the **netlab show defaults paths._path_name_** command. For example, to inspect the file search path used for custom configuration templates, use the **netlab show defaults paths.custom.dirs** command:
+* To change a search path list, set the corresponding **defaults.paths** variable in lab topology or user defaults.
+* To prepend a list of path components to a search path list, set the **defaults.paths.prepend._path_name_** list.
+* To append a list of path components to a search path list, set the **defaults.paths.append._path_name_** list.
+
+For example, to append the `~/templates` directory to the custom configuration template search list, set the **defaults.paths.append.custom.dirs** parameter to `[ ~/templates ]`.
+
+```{warning}
+_netlab_ does not report errors in **‌defaults** settings. Make sure you're using the expected attribute paths and list (not string) values.
+```
+
+You can inspect the default value of any search path with the **netlab show defaults paths._path_name_** command. For example, to inspect the directory search path used for custom configuration templates, use the **netlab show defaults paths.custom.dirs** command:
 
 ```
 $ netlab show defaults paths.custom.dirs

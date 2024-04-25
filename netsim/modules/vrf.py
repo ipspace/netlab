@@ -31,15 +31,21 @@ def get_node_vrf_data(vname: str, node: Box, topology: Box) -> typing.Optional[B
                                                       # ... note that the result will always be a Box
 
 #
-# Build the global data structures needed for ID/RD allocation and populate
-# them with preconfigured global- and node VRF data
+# Initialize global data structures needed for ID/RD allocation
+#
+
+def init_vrf_static_ids(topology: Box) -> None:
+  for k in ('id','rd'):
+    _dataplane.create_id_set(f'vrf_{k}')
+
+  _dataplane.set_id_counter('vrf_id',1,4095)
+
+#
+# Populate the global ID/RD/RT data structures with preconfigured global- and node VRF data
 #
 def populate_vrf_static_ids(topology: Box) -> None:
   for k in ('id','rd'):
-    _dataplane.create_id_set(f'vrf_{k}')
     _dataplane.extend_id_set(f'vrf_{k}',_dataplane.build_id_set(topology,'vrfs',k,'topology'))
-
-  _dataplane.set_id_counter('vrf_id',1,4095)
 
   for n in topology.nodes.values():
     for k in ('id','rd'):
@@ -394,6 +400,8 @@ class VRF(_Module):
     if 'groups' in topology:
       groups.export_group_node_data(topology,'vrfs','vrf',copy_keys=['rd','export','import'])
 
+    init_vrf_static_ids(topology)
+
     if not 'vrfs' in topology:                          # No global VRFs, nothing to do
       return
 
@@ -458,7 +466,7 @@ class VRF(_Module):
 
     for ifdata in node.interfaces:
       if 'vrf' in ifdata:
-        vrf_count = vrf_count + 1
+        vrf_count += 1
         if not node.vrfs[ifdata.vrf].rd:
           log.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} does not have a usable RD',
@@ -471,34 +479,51 @@ class VRF(_Module):
             node.af[f'vpn{af}'] = True
             node.vrfs[ifdata.vrf].af[f'ip{af}'] = True
 
+    vrf_lb = node.get('vrf.loopback',False)
+    for vdata in node.get('vrfs',{}).values():
+      if 'loopback' in vdata or vrf_lb:
+        vrf_count += 1
+
     if log.debug_active('vrf'):
-      print( f"vrf node_post_transform on {node.name}: counted {vrf_count} VRFs on interfaces" )
+      print( f"vrf node_post_transform on {node.name}: counted {vrf_count} VRFs on interfaces/loopbacks" )
     features = devices.get_device_features(node,topology.defaults)
-    if not vrf_count and ('vrf' not in features or not features.vrf.keep_module): # Remove VRF module from the node if the node has no VRFs, unless flag set
-      node.module = [ m for m in node.module if m != 'vrf' ]
-      node.pop('vrfs',None)
-    else:
-      node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
-      vrfidx = 100
 
-      # Check that all VRFs have a well-defined data structure (should be at this point, unless someone used groups.node_data)
-      for k,v in node.vrfs.items():
-        if v is None or not 'id' in v:
-          log.error(
-            f"Found invalid VRF {k} on node {node.name}. Did you mention it only in groups.node_data? You can't do that.",
-            log.IncorrectValue,
-            'vrf')
-          log.exit_on_error()
+    # Do we have any need for the VRF module?
+    if not vrf_count:
+      if topology.defaults.get('vrf.warnings.inactive',False):
+        log.error(
+          f"Node {node.name} uses no VRFs, removing 'vrf' from node modules",
+          category=Warning,
+          module='vrf',
+          hint='inactive')
+      # Remove VRF module from the node if the node has no VRFs, unless the vrf.keep_module flag is set
+      if not features.get('vrf.keep_module',False):
+        node.module = [ m for m in node.module if m != 'vrf' ]
+        node.pop('vrfs',None)
+      
+      return
 
-      # We need unique VRF index to create OSPF processes, assign in order sorted by VRF ID "for consistency"
-      for v in sorted(node.vrfs.values(),key=lambda v: v.id):
-        v.vrfidx = vrfidx
-        vrfidx = vrfidx + 1
+    node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
+    vrfidx = 100
 
-      validate_vrf_route_leaking(node)
+    # Check that all VRFs have a well-defined data structure (should be at this point, unless someone used groups.node_data)
+    for k,v in node.vrfs.items():
+      if v is None or not 'id' in v:
+        log.error(
+          f"Found invalid VRF {k} on node {node.name}. Did you mention it only in groups.node_data? You can't do that.",
+          log.IncorrectValue,
+          'vrf')
+        log.exit_on_error()
 
-      # Set additional loopbacks (one for each defined VRF)
-      vrf_loopbacks(node, topology)
+    # We need unique VRF index to create OSPF processes, assign in order sorted by VRF ID "for consistency"
+    for v in sorted(node.vrfs.values(),key=lambda v: v.id):
+      v.vrfidx = vrfidx
+      vrfidx = vrfidx + 1
+
+    validate_vrf_route_leaking(node)
+
+    # Set additional loopbacks (one for each defined VRF)
+    vrf_loopbacks(node, topology)
 
     # Finally, set BGP router ID if we set BGP AS number
     #
