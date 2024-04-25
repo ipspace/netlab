@@ -145,9 +145,19 @@ Unfortunately, the Nexus 9300v linecards become active almost a minute after com
 (deploy-search-paths)=
 ## Changing and Troubleshooting Search Paths
 
-The directory and filename search paths used by the **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](defaults). You can change these parameters but cannot append values to them; if you want to modify a search path, you have to get its current value, prepend or append your entries, and set the system default parameter to the new value.
+The directory and filename search paths used by the **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](defaults). You can change these parameters or prepend/append another list to them:
 
-You can inspect the default value of any search path with the **netlab show defaults paths._path_name_** command. For example, to inspect the file search path used for custom configuration templates, use the **netlab show defaults paths.custom.dirs** command:
+* To change a search path list, set the corresponding **defaults.paths** variable in lab topology or user defaults.
+* To prepend a list of path components to a search path list, set the **defaults.paths.prepend._path_name_** list.
+* To append a list of path components to a search path list, set the **defaults.paths.append._path_name_** list.
+
+For example, to append the `~/templates` directory to the custom configuration template search list, set the **defaults.paths.append.custom.dirs** parameter to `[ ~/templates ]`.
+
+```{warning}
+_netlab_ does not report errors in **‌defaults** settings. Make sure you're using the expected attribute paths and list (not string) values.
+```
+
+You can inspect the default value of any search path with the **netlab show defaults paths._path_name_** command. For example, to inspect the directory search path used for custom configuration templates, use the **netlab show defaults paths.custom.dirs** command:
 
 ```
 $ netlab show defaults paths.custom.dirs

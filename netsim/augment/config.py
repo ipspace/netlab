@@ -3,7 +3,7 @@
 #
 
 import typing
-from box import Box
+from box import Box,BoxList
 from ..utils import log,files as _files
 
 """
@@ -110,7 +110,31 @@ def attributes(topology: Box) -> None:
 paths: adjust system paths, replacing package: and topology: prefixes
 '''
 def paths(topology: Box) -> None:
+  adjust_paths(topology.defaults.paths)
   make_paths_absolute(topology.defaults.paths)
+
+'''
+adjust_paths: prepend or append path elements to default paths
+'''
+def adjust_paths(paths: Box) -> None:
+  if 'prepend' in paths and isinstance(paths.prepend,Box):
+    adjust_path_list(paths.prepend,paths,False)
+    paths.pop('prepend',None)
+
+  if 'append' in paths and isinstance(paths.append,Box):
+    adjust_path_list(paths.append,paths,True)
+    paths.pop('append',None)
+
+def adjust_path_list(adjust: Box, paths: Box, append: bool) -> None:
+  for k,v in adjust.items():                                          # Iterate over prepend/append elements
+    if isinstance(v,BoxList):                                         # ... act only on lists
+      if k not in paths:                                              # Unknown path specification?
+        paths[k] = v                                                  # ... just use it, maybe it's not a typo
+      else:
+        if isinstance(paths[k],BoxList):                              # Otherwise modify only if the target is a list
+          paths[k] = paths[k] + v if append else v + paths[k]         # ... prepend or append the adjustment
+    elif isinstance(v,Box) and isinstance(paths[k],Box):              # If both trees have further branches recurse
+      adjust_path_list(adjust[k],paths[k],append)
 
 '''
 Recursive function that traverses the 'paths' tree and converts every list into
