@@ -150,6 +150,6 @@ def make_paths_absolute(p_top: Box) -> None:
     if isinstance(v,str):
       v = [ v ]
     if isinstance(v,list):
-      p_top[k] = _files.absolute_search_path(v)
+      p_top[k] = _files.absolute_search_path(v,skip_missing=True)
     elif isinstance(v,Box):
       make_paths_absolute(v)
