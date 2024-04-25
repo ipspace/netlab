@@ -13,7 +13,7 @@ import tempfile
 import netaddr
 
 from ..data import types,get_empty_box
-from ..utils import log
+from ..utils import log,strings
 from ..utils import files as _files
 from . import _Provider
 from ..augment import devices
@@ -125,15 +125,18 @@ def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
   else:
     if log.debug_active('libvirt'):
       print(f"Deleting libvirt management network {mgmt_net}")
+    
+    # Remove management network if it exists
     external_commands.run_command(
-      ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True)    # Remove management network
+      ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True,return_stdout=True)
     external_commands.run_command(
-      ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True)   # ... if it exists
+      ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True,return_stdout=True)
 
   if not create_net:
     return
 
   if not log.QUIET:
+    strings.print_colored_text('[CREATED] ','green',None)
     print(f'creating libvirt management network {mgmt_net}')
 
   if topology is None:

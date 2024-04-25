@@ -39,7 +39,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 
 * **[netlab install](install.md)** installs additional Ubuntu software, Ansible, and libvirt/vagrant.
 * **[netlab test](test.md)** tests virtual lab installation
-* **netlab libvirt** [builds Vagrant boxes](../labs/libvirt.md#building-your-own-boxes) for *[vagrant-libvirt](../labs/libvirt.md)* provider.
+* **[netlab libvirt](libvirt.md)** builds [Vagrant boxes](../labs/libvirt.md#building-your-own-boxes) for *[vagrant-libvirt](../labs/libvirt.md)* provider.
 
 ## Provider-Specific Commands
 
@@ -62,6 +62,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab initial <initial.md>
    netlab inspect <inspect.md>
    netlab install <install.md>
+   netlab libvirt <libvirt.md>
    netlab report <report.md>
    netlab restart <restart.md>
    netlab show <show.md>

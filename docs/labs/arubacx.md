@@ -9,7 +9,6 @@ Aruba AOS-CX 10 is supported by the **netlab libvirt package** command. To build
 
 ```{warning}
 * The **‌netlab libvirt package arubacx** command has been tested on Ubuntu 20.04 LTS and might not work on other Linux distros.
-* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
 * *‌virt-install* might report a fatal error on Ubuntu 22.04. Execute `export VIRTINSTALL_OSINFO_DISABLE_REQUIRE=1` in your shell and restart the build process.
 ```
 
