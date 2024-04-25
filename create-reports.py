@@ -74,7 +74,7 @@ def aggregate_results(results: Box, data: Box, path: str) -> None:
 def add_results(results: Box, top: str, path: str) -> None:
   data = Box.from_yaml(filename=f'{top}/results.yaml',default_box=True,box_dots=True)
   data = skip_single_key(data)
-  data._path = path.replace('.','/')
+  data._path = path.replace('.','/').replace('#','.')
   sum_results(data)
   aggregate_results(results,data,path)
   results[path] = data
@@ -86,10 +86,10 @@ def read_results(top: str, results: Box, path: str = '') -> None:
     if fname == 'results.yaml':
       add_results(results,top,path)
       continue
-    if '.' in fname or fname.startswith('_'):
+    if fname.startswith('.') or fname.startswith('_'):
       continue
     if fpath.is_dir():
-      new_path = path + ("." if path else "") + fname
+      new_path = path + ("." if path else "") + fname.replace('.','#')
       read_results(str(fpath),results,new_path)
 
 def create_html_page(
