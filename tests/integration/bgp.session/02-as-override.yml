@@ -1,0 +1,86 @@
+---
+message: |
+  Use this topology to test the 'as-override' functionality. The DUT has to
+  replace the AS 65100 with AS 65000 in outgoing updates, causing X1 and X2 to
+  accept EBGP updates from another site with the same AS.
+
+plugin: [ bgp.session ]
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+    bgp.sessions:
+      ipv4: [ ebgp ]
+      ipv6: [ ebgp ]
+
+defaults.bgp.as: 65000
+
+addressing:
+  p2p:
+    ipv6: 2001:db8:3::/48
+  lan:
+    ipv6: 2001:db8:4::/48
+
+nodes:
+  dut:
+  x1:
+    bgp.as: 65100
+    loopback.ipv4: 172.42.42.1/24
+    loopback.ipv6: 2001:db8:a02::1/64
+  x2:
+    bgp.as: 65100
+    loopback.ipv4: 172.42.43.1/24
+    loopback.ipv6: 2001:db8:a03::1/64
+links:
+- dut:
+    bgp.as_override: True
+  x1:
+- dut:
+    bgp.as_override: True
+  x2:
+
+validate:
+  session_v4:
+    description: Check IPv4 EBGP sessions with dut
+    wait_msg: Waiting for EBGP session establishment
+    wait: 20
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+
+  session_v6:
+    description: Check IPv6 EBGP sessions with dut
+    wait_msg: Waiting for EBGP session establishment
+    wait: 20
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+
+  pfx_x1_v4:
+    description: Check whether DUT replaced AS 65100 in the IPv4 EBGP update sent to X1
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.43.0/24')
+
+  pfx_x1_v6:
+    description: Check whether DUT replaced AS 65100 in the IPv6 EBGP update sent to X1
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('2001:db8:a03::/64',af='ipv6')
+
+  pfx_x2_v4:
+    description: Check whether DUT replaced AS 65100 in the EBGP update sent to X2
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x2 ]
+    plugin: bgp_prefix('172.42.42.0/24')
+
+  pfx_x2_v6:
+    description: Check whether DUT replaced AS 65100 in the IPv6 EBGP update sent to X2
+    wait: 5
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('2001:db8:a02::/64',af='ipv6')
