@@ -1,7 +1,8 @@
 {% from "templates/initial/sros.j2" import if_name with context %}
 
-updates:
-- path: configure/router[router-name=Base]
+{% macro isis_config(l,vrf=None) %}
+{% set path = "router[router-name=Base]" if not vrf else "service/vprn[service-name="+vrf+"]" %}
+- path: configure/{{ path }}
   val:
    isis:
    - isis-instance: 0
@@ -13,9 +14,6 @@ updates:
       ipv6-unicast: True
 {%   endif %}
      interface:
-     - interface-name: system
-       passive: True
-{%   for l in interfaces|default([]) if 'isis' in l %}
      - interface-name: {{ if_name(l,l.ifname) }}
        interface-type: {{ l.isis.network_type|default('broadcast') }}
        passive: {{ l.isis.passive }}
@@ -40,4 +38,11 @@ updates:
 {%       endif %}
 {%     endfor %}
 {%     endif %}
-{%   endfor %}
+{% endmacro %}
+
+updates:
+{{ isis_config( { 'ifname': 'system', 'isis': { 'passive' : True } } ) }}
+
+{% for l in interfaces|default([]) if 'isis' in l %}
+{{ isis_config(l,l.vrf|default('default' if l.vlan.mode|default('irb')!='route' else None)) }}
+{% endfor %}
