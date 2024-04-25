@@ -1,16 +1,18 @@
 # Developing Plugins
 
-Plugins are either Python files or directories containing Python code plus configuration templates. They are loaded from the user search path[^USP] or `netsim/extra` _networklab_ package directory.
+Plugins are either Python files or directories containing Python code plus configuration templates. *netlab* tries to locate them in the *plugin search path* (specified in the **defaults.paths.plugin** setting), which usually includes the user search path and the `netsim/extra` _networklab_ package directory.
 
-[^USP]: User search path includes current directory, `~/.netlab` and `/etc/netlab`.
-
-For simple plugins, the plugin name specifies the file name (without the `.py` extension). For plugin packages, the plugin name specifies the directory with `plugin.py` Python module and optional plugin defaults (`defaults.yml`) and Jinja2 templates (one per supported **netlab_device_type**/**ansible_network_os**).
-
-```{warning}
-This is an underdocumented feature. Performing operations beyond simple data transformation might require digging through the source code. You might want to [open a discussion on *netsim-tools* GitHub repository](https://github.com/ipspace/netlab/discussions) before proceeding.
+```{tip}
+You can inspect the plugin search path with the **netlab show defaults paths.plugin** command and [modify it if needed](change-search-paths).
 ```
 
-Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md) which includes these steps:
+The plugin name specifies either a Python file name (without the `.py` extension) or a directory with the `plugin.py` Python module, optional plugin defaults (`defaults.yml`), and Jinja2 templates (one per supported **netlab_device_type**/**ansible_network_os**).
+
+```{warning}
+This is an underdocumented feature. Performing operations beyond simple data transformation might require digging through the source code. Before proceeding, you might want to [open a discussion on *netlab* GitHub repository](https://github.com/ipspace/netlab/discussions).
+```
+
+Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md), which includes these steps:
 
 * execute plugin **init** function
 * check topology top-level elements
@@ -27,21 +29,21 @@ Plugins can define well-known functions that are invoked during the [topology tr
 * execute module **post_transform** function
 * execute plugin **post_transform** function
 
-Every plugin function is called with a single *topology* argument: the current topology data structure. The node- or link-manipulation functions must iterate over `topology.nodes` dictionary or `topology.links` list.
+Every plugin function is called with a single *topology* argument: the current topology data structure. The node or link-manipulation functions must iterate over the `topology.nodes` dictionary or the `topology.links` list.
 
-Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) have to be extended with the plugin defaults or in the plugin **init** function before any module validation code is executed.
+Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) must be extended before any module validation code is executed, either with the plugin defaults or in the plugin **init** function.
 
 ## Plugin Metadata
 
-Plugin can specify global variables that are used to influence the plugin behavior or order-of-execution:
+A plugin can specify global variables that are used to influence the plugin behavior or order of execution:
 
-* `_requires`: A list of prerequisite modules and plugins. _netlab_ will abort if any of the prerequisite plugins is not listed in the **topology.plugin** list, or if any of the prerequisite modules is not used by at least one node.
-* `_execute_after`: A list of plugins that should execute before the current plugin. For example, **ebgp.multihop** plugin has to execute after **ebgp.utils** plugin, and therefore defines `_execute_after = [ 'ebgp.utils' ]`
-* `_config_name`: The name of extra configuration templates to add to the node **config** attribute when a node using the plugin functionality requires additional device configuration.  The value of this variable is set during the plugin initialization process, but it's still recommended to define it in the plugin and set its value to a string to prevent **mypy** complaints.
+* `_requires`: A list of prerequisite modules and plugins. _netlab_ will abort if any prerequisite plugins are not listed in the **topology.plugin** list, or if any of the prerequisite modules are not used by at least one node.
+* `_execute_after`: A list of plugins that should execute before the current plugin. For example, the **ebgp.multihop** plugin has to be executed after **ebgp.utils** plugin, and therefore defines `_execute_after = [ 'ebgp.utils' ]`
+* `_config_name`: The name of extra configuration templates to add to the node **config** attribute when a node using the plugin functionality requires additional device configuration. This variable is set during the plugin initialization process, but it's still recommended to define it in the plugin and set its value to a string to prevent **mypy** complaints.
 
 ## Sample Plugin
 
-All anycast servers in a BGP anycast topology should have the same AS number, but [do not need IBGP sessions between themselves](https://blog.ipspace.net/2022/01/netsim-plugins.html). A [custom plugin](https://github.com/ipspace/netlab-examples/tree/master/plugins/adjust-bgp-sessions) deletes IBGP sessions for any node with **bgp.anycast** attribute.
+All anycast servers in a BGP anycast topology should have the same AS number but [do not need IBGP sessions between themselves](https://blog.ipspace.net/2022/01/netsim-plugins.html). A [custom plugin](https://github.com/ipspace/netlab-examples/tree/master/plugins/adjust-bgp-sessions) deletes IBGP sessions for any node with **bgp.anycast** attribute.
 
 The topology file used in the BGP anycast example uses [group node data](../groups.md#setting-node-data-in-groups) on a [BGP AS group](../groups.md#automatic-bgp-groups) to set **bgp.anycast** node attribute on any node in AS 65101
 
@@ -102,7 +104,7 @@ def post_transform(topo: Box) -> None:
 ...
 ```
 
-The **post_transform** function also sets the **config** node parameter to deploy [custom configuration template](custom-config) that creates additional loopback interface with the anycast IP address.
+The **post_transform** function also sets the **config** node parameter to deploy a [custom configuration template](custom-config) that creates additional loopback interface with the anycast IP address.
 
 ```
 def post_transform(topo: Box) -> None:
@@ -116,10 +118,10 @@ def post_transform(topo: Box) -> None:
 
 Notes:
 
-* The global `_config_name` variable is set during the plugin initialization process.
+* The global `_config_name` variable is set during the plugin initialization.
 * `api.node_config` appends the specified custom configuration template to the list of node configuration templates. While equivalent to...\
   \
   `node.config.append(template)`\
   \
-  ... the utility function handles edge cases like missing **config** attribute or duplicate configuration templates.
+  ... the utility function handles edge cases like a missing **config** attribute or duplicate configuration templates.
 

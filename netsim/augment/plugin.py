@@ -191,7 +191,7 @@ def init(topology: Box) -> None:
 
   topology.Plugin = []
   load_error = False
-  search_path = get_search_path(pkg_path_component='extra')   # Search the usual places plus the 'extra' package directory
+  search_path = topology.defaults.paths.plugin
   for pname in list(topology.plugin):                         # Iterate over all plugins
     for path in search_path:
       plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
