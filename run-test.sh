@@ -14,11 +14,13 @@ fi
 MODULE=$1
 FEATURE=${2:-$1}
 LOG_PATH=$CICD_LOG_PATH/$NETLAB_DEVICE/$NETLAB_PROVIDER/$MODULE
-echo "Checking feature $FEATURE for module $MODULE"
-netlab show defaults devices.$NETLAB_DEVICE.features.$FEATURE >/dev/null 2>/dev/null
-if [ $? -ne 0 ]; then
-  echo "Feature $FEATURE is not supported by device $NETLAB_DEVICE, skipping tests"
-  exit
+if [ "$FEATURE" != "skip" ]; then
+  echo "Checking feature $FEATURE for module $MODULE"
+  netlab show defaults devices.$NETLAB_DEVICE.features.$FEATURE >/dev/null 2>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Feature $FEATURE is not supported by device $NETLAB_DEVICE, skipping tests"
+    exit
+  fi
 fi
 
 rm -r "$LOG_PATH"

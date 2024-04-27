@@ -28,10 +28,11 @@ if [[ -n $@ ]]; then
   done
   exit
 fi
-run-test.sh initial
+run-test.sh initial skip
 run-test.sh ospf/ospfv2 ospf
 run-test.sh ospf/ospfv3 ospf
 run-test.sh bgp
+run-test.sh bgp.session bgp
 run-test.sh vrf
 run-test.sh vlan
 run-test.sh vxlan
