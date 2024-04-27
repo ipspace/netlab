@@ -384,10 +384,12 @@ def run(cli_args: typing.List[str], topology: Box) -> None:
   workdir = f'/tmp/build_{args.device}'
   homedir = os.path.realpath(os.getcwd())
 
-  if not 'preinstall' in skip:
-    lp_preinstall_hook(args,settings)
   if workdir:
     create_workdir(workdir,args)
+    os.environ["NETLAB_PACKAGE_WORKDIR"] = workdir          # Pass the build directory to preinstall hooks
+
+  if not 'preinstall' in skip:
+    lp_preinstall_hook(args,settings)
   try:
     if not 'disk' in skip:
       lp_create_vm_disk(args,workdir)
