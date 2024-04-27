@@ -24,7 +24,7 @@ Cisco Nexus 9300v is supported by the **netlab libvirt package** command. To bui
 
 ```{warning}
 * The box building process generates a random device serial number that will be used by all Nexus 9300v devices created from the Vagrant box. As NX-OS uses device serial number as its DHCP client ID, you might experience problems starting a lab with more than one Nexus 9300v device on newer versions of KVM/libvirt. The workaround-of-last-resort is [setting libvirt **batch_size** to 1](libvirt.md#starting-virtual-machines-in-batches).
-* The **‌netlab libvirt package nxos** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
+* If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ```{tip}
