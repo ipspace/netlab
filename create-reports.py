@@ -52,8 +52,17 @@ def sum_results(data: Box) -> None:
       increase_counter(data,'unsupported')
       data[k].supported = False
     OK = True
+
+    if 'caveat' in data[k]:
+      if data[k].get('validate',None) is True:
+        data[k].pop('caveat',None)
+
     for step in data[k].keys():
-      if data[k][step] is False:
+      if step == 'validate' and 'caveat' in data[k]:
+        OK = False
+        continue
+
+      if data[k][step] is False or step == 'caveat':
         increase_counter(data,step)
         OK = False
 
@@ -71,20 +80,21 @@ def aggregate_results(results: Box, data: Box, path: str) -> None:
 
       results[path]._count[k] += data._count[k]
 
-def add_results(results: Box, top: str, path: str) -> None:
-  data = Box.from_yaml(filename=f'{top}/results.yaml',default_box=True,box_dots=True)
+def add_results(results: Box, top: str, fname: str, path: str) -> None:
+  data = Box.from_yaml(filename=f'{top}/{fname}',default_box=True,box_dots=True)
   data = skip_single_key(data)
   data._path = path.replace('.','/').replace('#','.')
-  sum_results(data)
-  aggregate_results(results,data,path)
+  data = results[path] + data
+  if 'results' in fname:
+    sum_results(data)
+    aggregate_results(results,data,path)
   results[path] = data
-  return
 
 def read_results(top: str, results: Box, path: str = '') -> None:
-  for fpath in Path(top).glob('*'):
+  for fpath in sorted(Path(top).glob('*')):
     fname = fpath.name
-    if fname == 'results.yaml':
-      add_results(results,top,path)
+    if fname == 'results.yaml' or fname.startswith('_caveats.'):
+      add_results(results,top,fname,path)
       continue
     if fname.startswith('.') or fname.startswith('_'):
       continue
