@@ -189,7 +189,7 @@ Start lab topology for a single provider
 """
 def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = None) -> None:
   p_name   = sname or pname
-  p_module = providers._Provider.load(p_name,topology.defaults.providers[p_name])
+  p_module = providers.get_provider_module(topology,p_name)
 
   if sname is not None:
     p_topology = providers.select_topology(topology,p_name)
@@ -221,7 +221,7 @@ def recreate_secondary_config(topology: Box, p_provider: str, s_provider: str) -
   if not sp_data.recreate_config:                                     # Do we need to recreate the config file?
     return
 
-  sp_module  = providers._Provider.load(s_provider,topology.defaults.providers[s_provider])
+  sp_module  = providers.get_provider_module(topology,s_provider)
   s_topology = providers.select_topology(topology,s_provider)         # Create secondary provider subtopology
   filename = sp_data.filename                                         # Get the secondary configuration filename
   print(f"Recreating {filename} configuration file for {s_provider} provider")
@@ -314,9 +314,11 @@ def run(cli_args: typing.List[str]) -> None:
   provider_probes(topology)
 
   p_provider = topology.provider
-  p_module = providers._Provider.load(p_provider,topology.defaults.providers[p_provider])
+  p_module = providers.get_provider_module(topology,p_provider)
   providers.mark_providers(topology)
   p_module.call('pre_output_transform',topology)
+
+  providers.validate_images(topology)
 
   status_start_lab(topology)
   if 'err_conflict' in topology.defaults:

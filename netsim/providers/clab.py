@@ -9,6 +9,7 @@ from . import _Provider,get_forwarded_ports
 from ..utils import log
 from ..data import filemaps, get_empty_box
 from ..cli import is_dry_run,external_commands
+from ..augment import devices
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
   return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 and not 'external_bridge' in l.clab }
@@ -162,3 +163,34 @@ class Containerlab(_Provider):
 
   def get_node_name(self, node: str, topology: Box) -> str:
     return f'clab-{ topology.name }-{ node }'
+
+  def validate_node_image(self, node: Box, topology: Box) -> None:
+    if not getattr(self,'image_cache',None):                # Create an image cache on first call
+      self.image_cache: dict = {}
+
+    log.print_verbose(f'clab: validating node {node.name} image {node.box}')
+    if node.box in self.image_cache:                        # We already checked this image, move on
+      return
+    
+    docker_image = external_commands.run_command(           # Get image status from Docker
+                      ['docker', 'image', 'ls', '--format', 'json', node.box],
+                      check_result=True, ignore_errors=True, return_stdout=True)
+    self.image_cache[node.box] = docker_image
+
+    if docker_image:                                        # If we got something back, the image is installed
+      return
+    
+    log.print_verbose(f'clab: image {node.box} is not installed: {docker_image}')
+    dp_data = devices.get_provider_data(node,topology.defaults)
+    if 'build' not in dp_data:                              # We have no build recipe, let's hope it's downloadable
+      return
+
+    log.error(
+      f'Container {node.box} used by node {node.name} is not installed',
+      category=log.IncorrectValue,
+      module='clab',
+      more_hints=[ 
+        f"This container image is not available on Docker Hub and has to be installed locally.",
+        f"If you're using a private Docker repository, use the 'docker image pull {node.box}'",
+        f"command to pull the image from it or build/install it using this recipe:",
+        dp_data.build ])
