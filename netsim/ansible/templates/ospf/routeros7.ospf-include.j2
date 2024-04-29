@@ -1,6 +1,6 @@
 {% set KW_NETWORK_TYPE = {'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma','broadcast': 'broadcast' } %}
 
-{% set area = ospf.area|default("0.0.0.0") %}
+{% set area = (ospf.area|default("0.0.0.0"))|string|ansible.utils.ipaddr('address') %}
 
 {% if ospf_router_id|ipv4 %}
 /routing/ospf/instance add name={{instance}} version={{ospf_version}} router-id={{ ospf_router_id }} vrf={{ospf_vrf|default('main')}}
@@ -21,11 +21,11 @@
   For each unique area, add to area configuration
 #}
 {% for a_def in area_list|unique %}
-/routing/ospf/area add instance={{instance}} name="{{ospf_vrf|default('main')}}_{{ospf_version}}_{{ a_def }}" area-id={{ a_def }}
+/routing/ospf/area add instance={{instance}} name="{{ospf_vrf|default('main')}}_{{ospf_version}}_{{ a_def }}" area-id={{ a_def|string|ansible.utils.ipaddr('address') }}
 {% endfor %}
 
 {% if ospf_main_vrf is defined and ospf_main_vrf %}
-/routing/ospf/interface-template add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }} and instance={{instance}}] interface=loopback passive
+/routing/ospf/interface-template add area=[/routing ospf area find area-id={{ (l.ospf.area|default(area))|string|ansible.utils.ipaddr('address') }} and instance={{instance}}] interface=loopback passive
 {% endif %}
 
 {% for l in ospf_interfaces|default([]) if 'ospf' in l and ospf_afi_check in l %}
@@ -52,7 +52,7 @@
 ## BFD Currently not supported in ROS7 for OSPF
 {%     endif %}
 
-/routing/ospf/interface-template add area=[/routing ospf area find area-id={{ l.ospf.area|default(area) }} and instance={{instance}}] interface={{ l.ifname }} {{ ospf_intf_params|join(' ') }}
+/routing/ospf/interface-template add area=[/routing ospf area find area-id={{ (l.ospf.area|default(area))|string|ansible.utils.ipaddr('address') }} and instance={{instance}}] interface={{ l.ifname }} {{ ospf_intf_params|join(' ') }}
 
 {%   endif %}
 
