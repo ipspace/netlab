@@ -252,6 +252,7 @@ The virtual machines are batched based on their order in **‌nodes** list/dicti
    :maxdepth: 1
    :hidden:
 
+   libvirt-box-caveats.md
    eos.md
    arubacx.md
    asav.md

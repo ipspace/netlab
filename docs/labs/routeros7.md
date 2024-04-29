@@ -7,7 +7,7 @@ Mikrotik RouterOS 7 CHR is supported by the **netlab libvirt package** command. 
 * Execute **netlab libvirt package routeros7 _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
-* The **‌netlab libvirt package routeros7** command has been tested on Ubuntu 22.04 LTS and might not work on other Linux distros.
+If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ## Initial Device Configuration

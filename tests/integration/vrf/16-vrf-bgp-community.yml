@@ -1,0 +1,62 @@
+---
+message: |
+  Use this topology to test in-VRF BGP community propagation. The device under
+  should propagate only standard communities to VRF EBGP neighbors.
+
+  Three BGP communities are attached to the prefix advertised by x1: a standard
+  one, an extended one, and a long one (standard communitiy using 4-octet AS)
+
+groups:
+  probes:
+    members: [ x1, x2 ]
+    device: frr
+    provider: clab
+    module: [ bgp ]
+
+vrfs:
+  red:
+    links:
+    - dut-x1
+    - dut-x2
+
+nodes:
+  dut:
+    bgp.as: 65000
+    module: [ vrf, bgp ]
+  x1:
+    id: 10
+    bgp.as: 65010
+    bgp.originate: 172.0.42.0/24
+    config: [ frr-community ]
+  x2:
+    id: 11
+    bgp.as: 65011
+
+validate:
+  session:
+    description: Check BGP sessions with DUT
+    wait_msg: Wait for BGP sessions to be established
+    wait: 10
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  prefix:
+    description: Check whether DUT propagates the beacon prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ x2 ]
+    plugin: bgp_prefix('172.0.42.0/24')
+  std_comm:
+    description: Check standard community propagation on VRF EBGP sessions
+    nodes: [ x2 ]
+    plugin: >
+      bgp_prefix_community(
+        '172.0.42.0/24',
+        community='65000:1')
+  ext_comm:
+    description: Check extended community propagation on VRF EBGP sessions
+    nodes: [ x2 ]
+    plugin: >
+      bgp_prefix_community(
+        '172.0.42.0/24',
+        extendedCommunity='LB:65000:12500000',
+        state='missing')

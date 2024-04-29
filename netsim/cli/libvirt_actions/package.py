@@ -164,7 +164,16 @@ def abort_on_failure(cmd: str) -> None:
 def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
   name = args.disk.name
 
-  if 'vmdk' in name:
+  if '.ova' in name:
+    strings.print_colored_text('[UNPACK]  ','green',None)
+    print(f"Unpacking OVA archive {name}")
+    abort_on_failure(f'tar xvf {name}')
+    vmdk = _files.get_globbed_files('.','*.vmdk')
+    if not vmdk:
+      log.fatal('The OVA archive did not contain a VMDK disk, aborting','libvirt')
+    name = vmdk[0]
+
+  if '.vmdk' in name:
     strings.print_colored_text('[CONVERT] ','green',None)
     print(f"Converting {name} into qcow2 format")
     abort_on_failure(f'qemu-img convert -f vmdk -O qcow2 {name} {workdir}/vm.qcow2')
@@ -286,7 +295,7 @@ end
 
   strings.print_colored_text('[ARCHIVE] ','green',None)
   print(f'Creating Vagrant box tar archive')
-  with tarfile.open(name=target,mode='x:gz') as tar:
+  with tarfile.open(name=target,mode='x') as tar:
     tar.add('Vagrantfile')
     tar.add('metadata.json')
     tar.add('vm.qcow2',arcname='box.img')
@@ -349,9 +358,8 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
   strings.print_colored_text('[IMPORT]  ','green',None)
   print(f"Importing Vagrant box {boxname} version {version}")
   if not external_commands.run_command("vagrant box add box.json"):
-    log.error(
-      'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add box.json" to add it.',
-      category=log.FatalError,module='libvirt')
+    log.fatal(
+      'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add box.json" to add it.','libvirt')
 
 def run(cli_args: typing.List[str], topology: Box) -> None:
   check_running_labs(topology)

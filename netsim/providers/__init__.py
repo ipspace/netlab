@@ -91,6 +91,9 @@ class _Provider(Callback):
   def transform_node_images(self, topology: Box) -> None:
     pass
 
+  def validate_node_image(self, node: Box, topology: Box) -> None:
+    pass
+
   def transform(self, topology: Box) -> None:
     self.transform_node_images(topology)
     if "processor" in topology.defaults:
@@ -322,3 +325,15 @@ def get_forwarded_ports(node: Box, topology: Box) -> list:
     node_fp.append([ fstart + node.id, pmap[fp]])               # Append [host,device] port mapping
 
   return node_fp
+
+"""
+validate_images -- check the images used by individual nodes against provider image repo
+"""
+
+def validate_images(topology: Box) -> None:
+  p_cache: dict = {}
+
+  for n_data in topology.nodes.values():
+    execute_node('validate_node_image',n_data,topology)
+
+  log.exit_on_error()

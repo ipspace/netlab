@@ -9,11 +9,8 @@ from .. import providers
 from ..augment import nodes
 from ..utils import log,strings
 
-def get_provider_module(topology: Box, provider: str) -> providers._Provider:
-  return providers._Provider.load(provider,topology.defaults.providers[provider])
-
 def write_provider_file(topology: Box, provider: str, filename: typing.Optional[str]) -> None:
-  p_module = get_provider_module(topology,provider)
+  p_module = providers.get_provider_module(topology,provider)
   p_module.create(topology,filename)
 
 class ProviderConfiguration(_TopologyOutput):
@@ -34,7 +31,7 @@ class ProviderConfiguration(_TopologyOutput):
     # Creates a "ghost clean" topology after transformation
     # (AKA, remove unmanaged devices)
     topology = nodes.ghost_buster(topology)
-    p_module = get_provider_module(topology,topology.provider)
+    p_module = providers.get_provider_module(topology,topology.provider)
     providers.mark_providers(topology)
     p_module.call('pre_output_transform',topology)
     write_provider_file(providers.select_topology(topology,topology.provider),topology.provider,filename)

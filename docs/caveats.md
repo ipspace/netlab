@@ -25,6 +25,7 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 
 * Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
 * Limitations of the Aruba AOS-CX Simulator can be found [here](https://feature-navigator.arubanetworks.com/), selecting *CX Simulator* as platform.
+* It seems Aruba AOS-CX Simulator is not able to generate ICMP Fragmentation-Needed messages.
 
 ### VRF and L3VPN Caveats
 
@@ -62,6 +63,11 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 * OSPFv3 does not advertise the prefix configured on the loopback interface even when the loopback interface is part of the OSPFv3 process.
 * If the BGP next hop of a reflected IBGP route is reachable as an OSPF route, BIRD advertises a link-local address as one of the next hops of the IBGP IPv6 prefix, potentially resulting in broken IPv6 connectivity.
 
+(caveats-asav)=
+## Cisco ASAv Caveats
+
+* Some ASAv versions use older SSH protocols. For more details, see the [Cisco IOSv SSH caveats](cisco-iosv-ssh).
+
 (caveats-csr)=
 ## Cisco CSR 1000v
 
@@ -77,7 +83,24 @@ See also Cisco IOSv SSH, OSPF, and BGP caveats.
 * BGP configuration is optimized to result in reasonable convergence times under lab conditions. Do not use the same settings in a production network.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * The OSPFv3 process on Cisco IOS advertises loopback addresses as /128 prefixes unless the OSPF network type is set to `point-to-point`. _netlab_ configures OSPFv3 `point-to-point` network type on all loopback interfaces to get results comparable to other implementations.
-* Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions. For example, you have to execute `sudo update-crypto-policies --set LEGACY` on AlmaLinux/RHEL to access Cisco IOSv devices.
+* Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions.
+
+(cisco-iosv-ssh)=
+SSH protocol workaround:
+
+* Add the following configuration to `~/.ssh/config` file[^CSP]:
+
+```
+Host 192.168.121.*
+    KexAlgorithms +diffie-hellman-group1-sha1,diffie-hellman-group14-sha1
+    PubkeyAcceptedKeyTypes +ssh-rsa
+    HostbasedAcceptedAlgorithms +ssh-rsa
+    HostKeyAlgorithms +ssh-rsa
+```
+
+* Execute `sudo update-crypto-policies --set LEGACY` on AlmaLinux/RHEL.
+
+[^CSP]: Change the address range if you're using a different IP prefix for the management network or if you're using the *multilab* plugin.
 
 (caveats-iosxr)=
 ## Cisco IOS XRv
@@ -275,9 +298,7 @@ sudo pip3 install --upgrade ansible==4.10.0
 (caveats-vyos)=
 ## VyOS
 
-**netlab** uses VyOS 1.4, which for now is a *rolling release* with daily builds (or custom builds).
-
-This is because the stable release (*1.3*) lacks (or has limitations on) some of the nice features we are using such as MPLS, VRF/L3VPN, EVPN, ...
+**netlab** uses VyOS 1.5, which for now is a *rolling release* with daily builds (or custom builds). However, all the configuration *should* work also on the *1.4 LTS* release (since it was tested just before it became the new LTS).
 
 The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 

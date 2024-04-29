@@ -4,8 +4,7 @@ Dell OS10 is supported by the **netlab libvirt package** command.
 
 ```{warning}
 * Dell provides the OS10 Virtual image as a set of vmdk and gns3a files to be used within GNS3. The following procedure will "convert" the required files for using them with Vagrant.
-* The **‌netlab libvirt package dellos10** command has been tested on Ubuntu and might not work on other Linux distros.
-* *‌virt-install* might report a fatal error on Ubuntu 22.04. Execute `export VIRTINSTALL_OSINFO_DISABLE_REQUIRE=1` in your shell and restart the build process.
+* If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 To prepare for the build:
@@ -35,5 +34,8 @@ During the box-building process you'll have to copy-paste initial device configu
    :literal:
 ```
 
+## Ansible Galaxy for Dell OS10
+
+You must install the Ansible modules for Dell OS10 with the  `ansible-galaxy collection install dellemc.os10` command.
 
 

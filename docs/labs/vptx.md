@@ -8,8 +8,8 @@ Juniper vPTX (known as `vJunos EVO` or `vJunos Evolved`) is supported by the **n
 
 ```{warning}
 * Use *netlab* release 1.7.0 or higher with Juniper vPTX devices.
-* The **‌netlab libvirt package vptx** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
 * Juniper vJunos EVO uses Linux instead of BSD as the underlying OS. The management interface name became `re0:mgmt-0`.
+* If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ## Initial Device Configuration

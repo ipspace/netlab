@@ -7,8 +7,7 @@ Juniper vSRX 3.0 is supported by the **netlab libvirt package** command. To buil
 * Execute **netlab libvirt package vsrx _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
-* The **‌netlab libvirt package vsrx** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
-* *‌virt-install* might report a fatal error on Ubuntu 22.04. Execute `export VIRTINSTALL_OSINFO_DISABLE_REQUIRE=1` in your shell and restart the build process.
+If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ## Preparing the Box Configuration

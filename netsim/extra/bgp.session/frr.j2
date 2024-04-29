@@ -1,20 +1,21 @@
 #!/bin/bash
 #
 {% macro ebgp_session(n,af) -%}
+{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
 {%   if n.password is defined %}
-  neighbor {{ n[af] }} password {{ n.password }}
+  neighbor {{ peer }} password {{ n.password }}
 {%   endif %}
 {%   if n.gtsm is defined %}
-  neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
+  neighbor {{ peer }} ttl-security hops {{ n.gtsm }}
 {%   endif %}
 {%   if n.timers is defined %}
-  neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+  neighbor {{ peer }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
 {%   endif %}
 {%   if n.bfd|default(False) %}
-  neighbor {{ n[af] }} bfd
+  neighbor {{ peer }} bfd
 {%   endif %}
 {%   if n.passive|default(False) %}
-  neighbor {{ n[af] }} passive
+  neighbor {{ peer }} passive
 {%   endif %}
 {%- endmacro %}
 {#
@@ -47,6 +48,7 @@ cat >/tmp/config <<CONFIG
 router bgp {{ bgp.as }}
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
 {{     ebgp_session(n,af) }}
 {%   endfor %}
 {% endfor %}
