@@ -34,5 +34,8 @@ During the box-building process you'll have to copy-paste initial device configu
    :literal:
 ```
 
+## Ansible Galaxy for Dell OS10
+
+You must install the Ansible modules for Dell OS10 with the  `ansible-galaxy collection install dellemc.os10` command.
 
 
