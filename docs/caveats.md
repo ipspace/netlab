@@ -25,6 +25,7 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 
 * Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
 * Limitations of the Aruba AOS-CX Simulator can be found [here](https://feature-navigator.arubanetworks.com/), selecting *CX Simulator* as platform.
+* It seems Aruba AOS-CX Simulator is not able to generate ICMP Fragmentation-Needed messages.
 
 ### VRF and L3VPN Caveats
 
@@ -297,9 +298,7 @@ sudo pip3 install --upgrade ansible==4.10.0
 (caveats-vyos)=
 ## VyOS
 
-**netlab** uses VyOS 1.4, which for now is a *rolling release* with daily builds (or custom builds).
-
-This is because the stable release (*1.3*) lacks (or has limitations on) some of the nice features we are using such as MPLS, VRF/L3VPN, EVPN, ...
+**netlab** uses VyOS 1.5, which for now is a *rolling release* with daily builds (or custom builds). However, all the configuration *should* work also on the *1.4 LTS* release (since it was tested just before it became the new LTS).
 
 The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 
