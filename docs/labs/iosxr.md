@@ -3,18 +3,16 @@
 Cisco IOS XR is supported by the **netlab libvirt package** command. To build an IOS XR box:
 
 * Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
-* Download IOS XR software, and unpack the image archive to get the `qcow2` disk image (example: `xrv9k-fullk9-x-7.4.2.qcow2`).
+* Download IOS XR software and unpack the image archive to get the `qcow2` disk image (example: `xrv9k-fullk9-x-7.4.2.qcow2`).
 * Execute **netlab libvirt package iosxr _virtual-disk-file-name_** and follow the instructions.
 
 ```{warning}
-* The **netlab libvirt package iosxr** command has been tested on Ubuntu 20.04 LTS and might not work on other Linux distros.
-* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
-* *‌virt-install* might report a fatal error on Ubuntu 22.04. Execute `export VIRTINSTALL_OSINFO_DISABLE_REQUIRE=1` in your shell and restart the build process.
+If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ## Initial Device Configuration
 
-During the box-building process (inspired by [this solution](https://codingpackets.com/blog/cisco-iosxrv-vagrant-libvirt-box-install/)) you'll have to copy-paste initial device configuration. **netlab libvirt config iosxr** command displays the build recipe:
+During the box-building process (inspired by [this solution](https://codingpackets.com/blog/cisco-iosxrv-vagrant-libvirt-box-install/)), you'll have to copy-paste the initial device configuration. **netlab libvirt config iosxr** command displays the build recipe:
 
 ```{eval-rst}
 .. include:: iosxr.txt

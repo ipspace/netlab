@@ -1,35 +1,32 @@
-# Building an Mikrotik RouterOS 7 CHR Libvirt Box
+# Building a Mikrotik RouterOS 7 CHR Libvirt Box
 
 Mikrotik RouterOS 7 CHR is supported by the **netlab libvirt package** command. To build it:
 
 * Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
-* Download the CHR 7 vmdk disk image into that directory
-* Convert the image to the *qcow2* format (`qemu-img convert -f vmdk -O qcow2 chr-7.5.vmdk chr-7.5.qcow2`)
+* Download the CHR 7 vmdk disk image into that directory (unzip the ZIP archive if you downloaded a .zip file)
 * Execute **netlab libvirt package routeros7 _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
-* The **‌netlab libvirt package routeros7** command has been tested on Ubuntu 20.04 LTS and might not work on other Linux distros.
-* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
-* *‌virt-install* might report a fatal error on Ubuntu 22.04. Execute `export VIRTINSTALL_OSINFO_DISABLE_REQUIRE=1` in your shell and restart the build process.
+If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ## Initial Device Configuration
 
-During the box-building process (inspired by the [step-by-step instructions by Stefano Sasso](http://stefano.dscnet.org/a/mikrotik_vagrant/)) you'll have to copy-paste initial device configuration. **netlab libvirt config routeros7** command displays the build recipe:
+During the box-building process (inspired by the [step-by-step instructions by Stefano Sasso](http://stefano.dscnet.org/a/mikrotik_vagrant/)), you'll have to copy-paste the initial device configuration. **netlab libvirt config routeros7** command displays the build recipe:
 
 ```{eval-rst}
 .. include:: routeros7.txt
    :literal:
 ```
 
-## Hack for ether1 interface
+## Hack for the ether1 Interface
 
-The initial device configuration includes an hack for having a DHCP address on the first ethernet interface of the new VM (*ether1*).
+The initial device configuration includes a hack to create a DHCP address on the new VM's first ethernet interface (*ether1*).
 
-*RouterOS* saves somewhere the existing network interfaces, together with their own names, checking for their existance on the subsequent boots. Every time it founds a new ethernet interface, this will be added to the list with a "sequence number", i.e., ether2, ether3, and so on.
+*RouterOS* saves the existing network interfaces, together with their names, and checks for their existence on subsequent boots. Every time it finds a new ethernet interface, the new interface is added to the list with a "sequence number," i.e., ether2, ether3, and so on.
 
-The network interface we are using during the installation won't be present anymore on the next boot time, and the "new" first interface will be called *ether2* - which we don’t like.
+The network interface we used during the installation will no longer be present at the next boot time, and the "new" first interface will be called *ether2*, which we don’t like.
 
-But, we can simply rename the current interface to something different than *ether1*. Doing so, the "new" first interface will be called exactly *ether1*. Much better!
+However, if we rename the current interface to something other than *ether1*, the "new" first interface will be called *ether1* -- exactly what we need.
 
-At the same time, since any configuration about DHCP Client is linked to the current interface (and the configuration is referenced by ID, not by interface name), we need to change the DHCP Client config on every boot to use the new *ether1* interface. This can be done using a system scheduler script at every system startup.
+At the same time, since the DHCP client configuration is linked to the current interface (and the configuration is referenced by ID, not by interface name), we need to change the DHCP Client configuration on every boot to use the new *ether1* interface -- that's the role of the system scheduler script included in the initial configuration.

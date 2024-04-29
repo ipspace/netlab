@@ -12,8 +12,7 @@ Use the `eos-downloader` Python package to simplify vEOS image download. See the
 * Execute **netlab libvirt package eos _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
-* The **‌netlab libvirt package eos** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
-* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read and execute access to the VM disk file. It's easiest if you create Vagrant boxes in a subdirectory of the `/tmp` directory.
+If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ## Initial Device Configuration

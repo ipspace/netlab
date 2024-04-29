@@ -97,16 +97,14 @@ def show_lab_instance(iid: Lab_Instance_ID, lab_state: Box) -> None:
   print(f'  provider(s): {",".join(lab_state.providers)}')
   print()
 
-def load_provider_status(p_module: dict, p_status: dict, provider: str, topology: Box) -> None:
-  if not provider in p_module:
-    p_module[provider] = providers._Provider.load(provider,topology.defaults.providers[provider])
+def load_provider_status(p_status: dict, provider: str, topology: Box) -> None:
+  p_module = providers.get_provider_module(topology,provider)
 
   if not provider in p_status:
-    p_status[provider] = p_module[provider].call('get_lab_status') or get_empty_box()
+    p_status[provider] = p_module.call('get_lab_status') or get_empty_box()
 
 def show_lab_nodes(topology: Box) -> None:
   p_status: dict = {}
-  p_module: dict = {}
   rows = []
   heading = [ 'node', 'device', 'image', 'mgmt IPv4', 'connection', 'provider', 'VM/container', 'status']
 
@@ -117,10 +115,11 @@ def show_lab_nodes(topology: Box) -> None:
               group_vars=True)
 
     n_provider = n_data.get('provider',topology.defaults.provider)
-    load_provider_status(p_module,p_status,n_provider,topology)
+    p_module   = providers.get_provider_module(topology,n_provider)
+    load_provider_status(p_status,n_provider,topology)
 
     row = [ n_data.name, n_data.device, n_data.box, n_data.mgmt.ipv4, n_ext.ansible_connection, n_provider ]
-    wk_name = p_module[n_provider].call('get_node_name',n_name,topology)
+    wk_name = p_module.call('get_node_name',n_name,topology)
     row.append(wk_name)
 
     wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
@@ -129,7 +128,7 @@ def show_lab_nodes(topology: Box) -> None:
 
   for t_name,t_data in topology.tools.items():
     n_provider = 'clab'
-    load_provider_status(p_module,p_status,n_provider,topology)
+    load_provider_status(p_status,n_provider,topology)
 
     wk_name = f'{topology.name}_{t_name}'
     wk_state = p_status[n_provider].get(wk_name,get_empty_box())

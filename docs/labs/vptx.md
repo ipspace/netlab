@@ -7,10 +7,9 @@ Juniper vPTX (known as `vJunos EVO` or `vJunos Evolved`) is supported by the **n
 * Execute **netlab libvirt package vptx _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
-* *netlab* release 1.7.0 supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
-* The **‌netlab libvirt package vptx** command has been tested on Ubuntu 20.04 LTS and 22.04 LTS and might not work on other Linux distros.
-* On Ubuntu 22.04 LTS, `libvirt-qemu` user needs read- and execute access to the VM disk file. It's easiest to create Vagrant boxes in a subdirectory of the `/tmp` directory.
+* Use *netlab* release 1.7.0 or higher with Juniper vPTX devices.
 * Juniper vJunos EVO uses Linux instead of BSD as the underlying OS. The management interface name became `re0:mgmt-0`.
+* If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
 ## Initial Device Configuration

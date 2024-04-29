@@ -13,7 +13,7 @@ import tempfile
 import netaddr
 
 from ..data import types,get_empty_box
-from ..utils import log
+from ..utils import log,strings
 from ..utils import files as _files
 from . import _Provider
 from ..augment import devices
@@ -125,15 +125,18 @@ def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
   else:
     if log.debug_active('libvirt'):
       print(f"Deleting libvirt management network {mgmt_net}")
+    
+    # Remove management network if it exists
     external_commands.run_command(
-      ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True)    # Remove management network
+      ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True,return_stdout=True)
     external_commands.run_command(
-      ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True)   # ... if it exists
+      ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True,return_stdout=True)
 
   if not create_net:
     return
 
   if not log.QUIET:
+    strings.print_colored_text('[CREATED] ','green',None)
     print(f'creating libvirt management network {mgmt_net}')
 
   if topology is None:
@@ -355,3 +358,38 @@ class Libvirt(_Provider):
 
   def get_node_name(self, node: str, topology: Box) -> str:
     return f'{ topology.name.split(".")[0] }_{ node }'
+
+  def validate_node_image(self, node: Box, topology: Box) -> None:
+    box_list = getattr(self,'box_list',None)
+    if not box_list:                                        # Create an box cache on first call
+      box_list = external_commands.run_command(             # Get the list of Vagrant boxes
+                      ['vagrant', 'box', 'list'],
+                      check_result=True, ignore_errors=True, return_stdout=True)
+      box_list = box_list if isinstance(box_list,str) else ''
+      self.box_list = box_list.split('\n')
+
+    log.print_verbose(f'libvirt: validating node {node.name} image {node.box}')
+    box_specs = node.box.split(':')
+    box_name = box_specs[0]
+    box_version = box_specs[1] if len(box_specs) > 1 else ''
+
+    for box_line in self.box_list:                          # Iterate over Vagrant boxes
+      if '(libvirt' not in box_line:                        # Ignore non-libvirt boxes
+        continue
+      if box_name + ' ' in box_line and box_version + ')' in box_line:
+        return                                              # Matching box name and version
+
+    log.print_verbose(f'libvirt: image {node.box} is not installed')
+    dp_data = devices.get_provider_data(node,topology.defaults)
+    if 'build' not in dp_data:                              # We have no build recipe, let's hope it's downloadable
+      return
+
+    log.error(
+      f'Vagrant box {node.box} used by node {node.name} is not installed',
+      category=log.IncorrectValue,
+      module='libvirt',
+      more_hints=[ 
+        f"This box is not available on Vagrant Cloud and has to be installed locally.",
+        f"If you have the Vagrant box available in a private repository, use the",
+        f"'vagrant box add <url>' command to add it, or use this recipe to build it:",
+        dp_data.build ])

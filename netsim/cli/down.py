@@ -94,7 +94,7 @@ def stop_provider_lab(
       sname: typing.Optional[str] = None) -> None:
   p_name = sname or pname
   p_topology = providers.select_topology(topology,p_name)
-  p_module   = providers._Provider.load(p_name,topology.defaults.providers[p_name])
+  p_module   = providers.get_provider_module(topology,p_name)
 
   exec_command = None
   if sname is not None:
@@ -151,7 +151,7 @@ def stop_all(topology: Box, args: argparse.Namespace) -> None:
     stop_external_tools(args,topology)
 
   p_provider = topology.provider
-  p_module = providers._Provider.load(p_provider,topology.defaults.providers[p_provider])
+  p_module = providers.get_provider_module(topology,p_provider)
   providers.mark_providers(topology)
   p_module.call('pre_output_transform',topology)
 
