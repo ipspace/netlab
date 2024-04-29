@@ -14,7 +14,7 @@ If you're using a *‌netlab* release older than 1.8.2, or if you're using a Lin
 
 ## Aruba AOS-CX download notes
 
-The *Aruba AOS-CX 10 Switch Simulator* image can be downloaded from the *Aruba Support Portal* (requires user registration). Search for the `Aruba_AOS-CX_Switch_Simulator`. For example, the release **10.13** can be downloaded from [here](https://asp.arubanetworks.com/downloads/software/RmlsZTowOTRjZDU3ZS04Y2VkLTExZWUtOGRiNy0yMzkyMDY4ZjdmZmU%3D).
+The *Aruba AOS-CX 10 Switch Simulator* image can be downloaded from the *Aruba Support Portal* (requires user registration). Search for the `Aruba_AOS-CX_Switch_Simulator`. For example, the release **10.13** can be downloaded from [here](https://networkingsupport.hpe.com/downloads/software/RmlsZToyOGE0NDJmYS1jMDgxLTExZWUtYmJjMi01ZmNmNDVkNDc4NDk%3D).
 
 ## Initial Device Configuration
 
