@@ -1,3 +1,4 @@
+(netlab-libvirt)=
 # Libvirt Utilities
 
 **netlab libvirt** performs these *libvirt*-related functions:

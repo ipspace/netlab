@@ -1,3 +1,4 @@
+(netlab-inspect)=
 # Inspect Data Structures in Transformed Lab Topology
 
 **netlab inspect** prints data structures in transformed lab topology (usually stored in `netlab.snapshot.yml`) created by **netlab create** command. You can display data in YAML or JSON format, and select a subset of data from the transformed topology or from an individual node.
@@ -48,6 +49,7 @@ Finally, the data selection argument is evaluated as a Python expression, so you
 |--------------------------------|---------------------|
 | node names                     | `netlab inspect 'list(nodes.keys())'` |
 
+(netlab-inspect-node)=
 ## Node Inspection Examples
 
 You can use the `--node` parameter to inspect the data structure of a single node, a list of nodes (separated by commas), or a wildcard expression.
