@@ -20,14 +20,7 @@ def run(cli_args: typing.List[str]) -> None:
     return
 
   if cli_args[0] == 'package':
-    try:
-      package.run(cli_args[1:],topology)
-    except KeyboardInterrupt as ex:
-      print("")
-      log.error(
-        'Aborted by user. VM and management network might still be running',
-        category=log.FatalError,
-        module='libvirt')
+    package.run(cli_args[1:],topology)
   elif cli_args[0] == 'config':
     config.run(cli_args[1:],topology.settings)
   else:
