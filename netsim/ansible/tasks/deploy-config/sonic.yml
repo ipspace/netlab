@@ -1,0 +1,17 @@
+- template:
+    src: "{{ config_template }}"
+    dest: /tmp/config.sh
+
+- set_fact: deployed_config={{ lookup('template',config_template) }}
+
+- name: "run /tmp/config.sh to deploy {{netsim_action}} config from {{ config_template }}"
+  command: bash /tmp/config.sh
+  when: not ansible_check_mode and ("#!/bin/bash" in deployed_config)
+  become: true
+
+- name: "run vtysh to import {{netsim_action}} config from {{ config_template }}"
+  shell: |
+    mv /tmp/config.sh /etc/sonic/frr/do_config
+    docker exec bgp vtysh -f /etc/frr/do_config
+  when: not ansible_check_mode and not ("#!/bin/bash" in deployed_config)
+  become: true

@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+set -e
+set -x
+{% include 'linux/bash_profile.j2' +%}
+{% include 'linux/hosts.j2' +%}
+#
+# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] %}
+{%   if l.ipv6 is not defined %}
+config interface ipv6 disable use-link-local-only {{ l.ifname }}
+{%   endif %}
+{% endfor %}
+#
+# Configure interfaces
+#
+config hostname {{ inventory_hostname.replace("_","-") }}
+{% for l in netlab_interfaces %}
+{%   if l.type in ['loopback'] %}
+if ip link|grep {{ l.ifname }}; then
+  echo {{ l.ifname }} already exists
+else
+  config loopback add {{ l.ifname }}
+fi
+{%   endif %}
+{%   if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
+{%     set addr = l.ipv4 if l.ipv4 is string else l._parent_ipv4 %}
+if show ip interface|grep {{ l.ifname }}|grep {{ addr }}; then
+  echo {{ addr }} already configured on {{ l.ifname }}
+else
+  config interface ip add {{ l.ifname }} {{ addr }}
+fi
+{%   endif %}
+{%   if l.ipv6 is defined %}
+{%     if not (l.virtual_interface|default(False)) %}
+config interface ipv6 enable use-link-local-only {{ l.ifname }}
+{%     endif %}
+{%     if l.ipv6 is string and l.ipv6|ipv6 %}
+if show ipv6 interface|grep {{ l.ifname }}|grep {{ l.ipv6 }}; then
+  echo {{ l.ipv6 }} already configured on {{ l.ifname }}
+else
+  config interface ip add {{ l.ifname }} {{ l.ipv6 }}
+fi
+{%     endif %}
+{%   endif %}
+{%   if l.mtu is defined and l.mtu >= 1500 and not (l.virtual_interface|default(False)) %}
+config interface mtu {{ l.ifname }} {{ l.mtu + 48 }}
+{%   endif %}
+!
+{% endfor %}
+#
+# Rest of initial configuration done through VTYSH
+# Make sure it's ready
+#
+if vtysh -c 'show running' >/dev/null; then
+  echo vtysh is ready
+else
+  echo 'giving vtysh some more time :('
+  sleep 5
+fi
+#
+# And now let's configure the interfaces
+#
+cat >/etc/sonic/frr/do_config <<CONFIG
+hostname {{ inventory_hostname }}
+!
+{% if 'ipv6' in af %}
+ipv6 forwarding
+{% endif %}
+!
+{% for l in netlab_interfaces %}
+interface {{ l.ifname }}
+ no shutdown
+{%   if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{%   elif l.type|default("") == "stub" %}
+ description Stub interface
+{%   endif %}
+{%   if l.type != 'loopback' and 'ipv6' in l %}
+ ipv6 nd ra-interval 5
+ no ipv6 nd suppress-ra
+{%   endif %}
+{%   if l.bandwidth is defined %}
+ bandwidth {{ l.bandwidth  }}
+{%   endif %}
+!
+{% endfor %}
+do write
+CONFIG
+docker exec bgp vtysh -f /etc/frr/do_config
+exit 0
