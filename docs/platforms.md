@@ -31,9 +31,10 @@
 | Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
 | Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           |
-| Nokia SR Linux [❗](caveats-srlinux)      | srlinux            |
-| Nokia SR OS [❗](caveats-sros)            | sros               |
-| VyOS 1.4 [❗](caveats-vyos)               | vyos               |
+| Nokia SR Linux [❗](caveats-srlinux)      | srlinux |
+| Nokia SR OS [❗](caveats-sros)            | sros    |
+| Sonic [❗](caveats-sonic)                 | sonic   |
+| VyOS 1.4 [❗](caveats-vyos)               | vyos    |
 
 (platform-daemons)=
 *netlab* also supports the following daemons (control-plane software running in containers):
@@ -64,28 +65,29 @@ You cannot use all supported network devices with all virtualization providers. 
 (platform-provider-support)=
 
 | Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | Vagrant<br />[Virtualbox](labs/virtualbox.md) | [Containerlab](labs/clab.md) |
-| -------------------------------------------------- | :-: | :-: | :-: |
-| Arista vEOS                                        |          ✅           |              ✅               |            ✅             |
-| Aruba AOS-CX                                       |          ✅           |              ❌               |            ✅             |
-| Cisco ASAv                                         |          ✅           |              ❌               |            ❌             |
-| Cisco IOSv                                         |          ✅           |    ✅    |            ❌             |
-| Cisco IOS XRv                                      |          ✅           |    ❌     |            ✅            |
-| Cisco CSR 1000v                                    |          ✅           |    ✅    |            ❌             |
-| Cisco Nexus 9300v                                  |          ✅           |              ✅               |            ❌             |
-| Cumulus Linux                                      |          ✅           |              ✅               | ✅[❗](caveats-cumulus) |
-| Cumulus Linux 5.0 (NVUE)                           |          ✅           |              ✅               | ✅[❗](caveats-cumulus) |
-| Dell OS10                                          |          ✅           |              ❌               |            ✅             |
-| Fortinet FortiOS                                   |          ✅           |              ❌               |            ❌             |
+| ------------------ | :-: | :-: | :-: |
+| Arista vEOS        | [✅](build-eos)  | ✅  | [✅](build-ceos)  |
+| Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  | ✅  |
+| Cisco ASAv         | [✅](build-asav)  |  ❌  |  ❌  |
+| Cisco IOSv         | [✅](build-iosxr)  | ✅  |  ❌  |
+| Cisco IOS XRv      | [✅](build-iosv)  |  ❌  | ✅  |
+| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ❌  |
+| Cisco Nexus 9300v  | [✅](build-nxos)  | ✅  |  ❌  |
+| Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
+| Cumulus Linux 5.0 (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
+| Dell OS10          | [✅](build-dellos10)  |  ❌  | ✅  |
+| Fortinet FortiOS   | ✅  |  ❌  |  ❌  |
 | FRR | ✅[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
-| Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) |          ✅           |              ✅               |            ✅             |
-| Juniper vMX                                        |          ❌           | ❌ |            ✅[❗](caveats-vmx)             |
-| Juniper vPTX                                       |          ✅           | ❌                            |            ✅            |
-| Juniper vSRX 3.0                                   |          ✅           | ✅ |            ✅[❗](caveats-vsrx)             |
-| Mikrotik RouterOS 6                                |          ✅           |              ❌               |            ❌             |
-| Mikrotik RouterOS 7                                |          ✅           |              ❌               |            ❌             |
-| Nokia SR Linux                                     |          ❌           |              ❌               |            ✅             |
-| Nokia SR OS                                        |          ❌           |              ❌               |            ✅             |
-| VyOS                                               |          ✅           |              ❌               |            ✅[❗](caveats-vyos)             |
+| Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) | ✅  | ✅  | ✅  |
+| Juniper vMX        |  ❌  |  ❌  | ✅[❗](caveats-vmx)   |
+| Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅  |
+| Juniper vSRX 3.0   | [✅](build-vsrx)  | ✅  | ✅[❗](caveats-vsrx)  |
+| Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
+| Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
+| Nokia SR Linux      |  ❌  |  ❌  | ✅  |
+| Nokia SR OS         |  ❌  |  ❌  | ✅  |
+| Sonic               | [✅](build-sonic)  |  ❌  |  ❌  | 
+| VyOS                | ✅  |  ❌  | ✅[❗](caveats-vyos) |
 
 **Note:**
 
@@ -112,6 +114,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Juniper vPTX               | vptx               |    4 |   8192 | virtio (*libvirt default*) |
 | Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio (*libvirt default*) |
 | Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000                      |
+| Sonic                      | sonic              |    2 | 4096 | virtio (*libvirt default*) |
 | VyOS                       | vyos               |    2 |   1024 | virtio (*libvirt default*) |
 
 ## Configuration Deployments
@@ -139,6 +142,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Mikrotik RouterOS 7   |          ✅           |           ✅           |
 | Nokia SR Linux        |          ✅           |           ✅           |
 | Nokia SR OS           |          ✅           |           ✅           |
+| Sonic                 |          ✅           |           ❌           |
 | VyOS                  |          ✅           |           ✅           |
 
 ## Initial Device Configurations
@@ -148,26 +152,27 @@ The following system-wide features are configured on supported network operating
 (platform-initial-config)=
 | Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
-| Arista EOS            |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Aruba AOS-CX          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| Cisco ASAv            |    ✅     |     ✅      |             ❌             |             ❌              |             ❌              |
-| Cisco IOS/IOS XE      |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Cisco IOS XRv         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Cisco Nexus OS        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Cumulus Linux         |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Cumulus Linux 5.0 (NVUE) | ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Dell OS10             |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Fortinet FortiOS      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| FRR                   |    ✅     |     ✅      |             ❌             |             ✅              |             ✅              |
-| Generic Linux         |    ✅     |     ✅      |  ✅[❗](linux-lldp)   |             ✅              |             ✅              |
-| Juniper vMX           |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| Juniper vPTX          |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| Juniper vSRX 3.0      |    ✅     |     ❌      |             ✅             |             ✅              |             ✅              |
-| Mikrotik RouterOS 6   |    ✅     |     ✅      | ✅[❗](caveats-routeros6) |             ✅              |             ✅              |
-| Mikrotik RouterOS 7   |    ✅     |     ✅      | ✅[❗](caveats-routeros7) |             ✅              |             ✅              |
-| Nokia SR Linux        |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| Nokia SR OS           |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
-| VyOS                  |    ✅     |     ✅      |             ✅             |             ✅              |             ✅              |
+| Arista EOS               | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Aruba AOS-CX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Cisco ASAv               | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
+| Cisco IOS/IOS XE         | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XRv            | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco Nexus OS           | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux            | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux 5.0 (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Dell OS10                | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| FRR                      | ✅  | ✅  |  ❌  | ✅  | ✅  |
+| Generic Linux            | ✅  | ✅  |  ✅[❗](linux-lldp) | ✅  | ✅  |
+| Juniper vMX              | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Juniper vPTX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Juniper vSRX 3.0         | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
+| Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
+| Nokia SR Linux           | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR OS              | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Sonic                    | ✅  | ✅  |  ❌  | ✅  | ✅  |
+| VyOS                     | ✅  | ✅  | ✅  | ✅  | ✅  |
 
 (platform-initial-interfaces)=
 The following interface parameters are configured on supported network operating systems as part of the initial device configuration:
@@ -193,33 +198,36 @@ The following interface parameters are configured on supported network operating
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR OS           | ✅  |  ❌  | ✅  | ✅  |
+| Sonic                 | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  |  ❌  | ✅  | ✅  |
 
 (platform-initial-addresses)=
 The following interface addresses are supported on various platforms:
 
-| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />interfaces |
-| --------------------- | :-----------------: | :-----------------: | :------------------------: |
-| Arista EOS            |          ✅          |          ✅          |             ✅              |
-| Aruba AOS-CX          |          ✅          |          ✅          |             ❌              |
-| Cisco ASAv            |          ✅          |          ✅          |             ❌              |
-| Cisco IOS/IOS XE      |          ✅          |          ✅          |             [❗](caveats-iosv)        |
-| Cisco IOS XRv         |          ✅          |          ✅          |             ✅              |
-| Cisco Nexus OS        |          ✅          |          ✅          |             ✅              |
-| Cumulus Linux         |          ✅          |          ✅          |             ✅              |
-| Cumulus Linux 5.0 (NVUE) |       ✅          |          ✅          |             ✅              |
-| Dell OS10             |          ✅          |          ✅          |             ❌              |
-| Fortinet FortiOS      |          ✅          |          ✅          |             ❌              |
-| FRR                   |          ✅          |          ✅          |             ❌              |
-| Generic Linux         |          ✅          |          ✅          |             ❌              |
-| Juniper vMX           |          ✅          |          ✅          |             ✅              |
-| Juniper vPTX          |          ✅          |          ✅          |             ✅              |
-| Juniper vSRX 3.0      |          ✅          |          ✅          |             ✅              |
-| Mikrotik RouterOS 6   |          ✅          |          ✅          |             ❌              |
-| Mikrotik RouterOS 7   |          ✅          |          ✅          |             ❌              |
-| Nokia SR Linux        |          ✅          |          ✅          |             ❌              |
-| Nokia SR OS           |          ✅          |          ✅          |             ✅              |
-| VyOS                  |          ✅          |          ✅          |             ✅              |
+| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />IPv4 interfaces |
+| --------------------- | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  |  ❌  |
+| Cisco ASAv            | ✅  | ✅  |  ❌  |
+| Cisco IOSv            | ✅  | ✅  |  ❌  |
+| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cisco IOS XRv         | ✅  | ✅  | ✅  |
+| Cisco Nexus OS        | ✅  | ✅  | ✅  |
+| Cumulus Linux         | ✅  | ✅  | ✅  |
+| Cumulus Linux 5.0 (NVUE) | ✅ | ✅ | ✅ |
+| Dell OS10             | ✅  | ✅  |  ❌  |
+| Fortinet FortiOS      | ✅  | ✅  |  ❌  |
+| FRR                   | ✅  | ✅  | ✅  |
+| Generic Linux         | ✅  | ✅  |  ❌  |
+| Juniper vMX           | ✅  | ✅  | ✅  |
+| Juniper vPTX          | ✅  | ✅  | ✅  |
+| Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
+| Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
+| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |
+| Nokia SR Linux        | ✅  | ✅  |  ❌  |
+| Nokia SR OS           | ✅  | ✅  | ✅  |
+| Sonic                 | ✅  | ✅  | ✅  |
+| VyOS                  | ✅  | ✅  | ✅  |
 
 ## Supported Configuration Modules
 
@@ -249,6 +257,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
 | Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
+| Sonic                 |  ❌   |   ❌   |   ❌   | ✅  |  ❌  | ❌  |  ❌  |
 | VyOS                  | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
 
 **Notes:**
@@ -324,6 +333,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Mikrotik RouterOS 7   |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
 | Nokia SR OS           |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
+| Sonic                 |          ✅          |   ❌    |    ❌ |         ❌          |        ✅         |    ❌    |
 | VyOS                  |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 
 (platform-unknown)=

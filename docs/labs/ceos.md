@@ -1,3 +1,4 @@
+(build-ceos)=
 # Installing Arista EOS Container
 
 To use Arista EOS with containerlab you need to register for a free account on [Arista's website](https://www.arista.com/en/login).  You then have two options to download the EOS container.

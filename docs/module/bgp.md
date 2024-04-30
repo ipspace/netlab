@@ -70,6 +70,7 @@ The following features are only supported on a subset of platforms:
 | FRR                   |  ✅ |  ❌  |  ✅ |  ✅  |  ✅ |
 | Nokia SR Linux        |  ✅ |  ❌  |  ✅ |  ✅  |  ✅  |
 | Nokia SR OS           |  ❌  |  ❌  |  ✅ |  ✅  |  ✅  |
+| Sonic                 |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | VyOS                  |  ✅ |  ✅ |  ✅ |  ❌  |  ✅  |
 
 ## Global BGP Configuration Parameters

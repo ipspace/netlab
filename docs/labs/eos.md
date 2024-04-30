@@ -1,3 +1,4 @@
+(build-eos)=
 # Building an Arista EOS Vagrant Libvirt Box
 
 Arista EOS is supported by the **netlab libvirt package** command. To build an Arista EOS box:

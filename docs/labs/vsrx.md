@@ -1,3 +1,4 @@
+(build-vsrx)=
 # Building a Juniper vSRX 3.0
 
 Juniper vSRX 3.0 is supported by the **netlab libvirt package** command. To build a vSRX 3.0 box:

@@ -1,3 +1,4 @@
+(build-iosxr)=
 # Building a Cisco IOS XR Vagrant Libvirt Box
 
 Cisco IOS XR is supported by the **netlab libvirt package** command. To build an IOS XR box:

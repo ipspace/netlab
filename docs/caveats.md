@@ -295,6 +295,15 @@ sudo pip3 install --upgrade ansible==4.10.0
 
 * OpenConfig support depends on a [pending PR](https://github.com/nokia/ansible-networking-collections/pull/21)
 
+(caveats-sonic)=
+## Sonic
+
+* Sonic implementation was tested with Azure sonic-vs VM image (release 2023-11) with FRR running in a container. Other Sonic distributions might use different approaches that would require significant modifications to the configuration deployment process.
+* BGP is the only routing protocol running on Azure Sonic. The choice is hardcoded in FRR compilation flags.
+* You cannot use IBGP as there's no IGP protocol to resolve IBGP next hops, unless you believe in running IBGP over EBGP.
+* The Azure Sonic VM image has to be started with a preconfigured BGP AS number (specified in **config_db.json**); otherwise, it does not start the FRR container. That BGP process is removed during the initial BGP configuration and replaced with the actual BGP AS number specified in the lab topology.
+* _netlab_ configures BGP on Sonic through vtysh, not through **config_db**.
+
 (caveats-vyos)=
 ## VyOS
 
