@@ -1,3 +1,4 @@
+(build-csr)=
 # Building a Cisco CSR 1000v Vagrant Libvirt Box
 
 Cisco CSR 1000v is supported by the **netlab libvirt package** command. To build a CSR 1000v box:

@@ -244,7 +244,7 @@ Virtual network devices supported by netlab
 │ vmx          │ Juniper vMX container                                     │
 │ vptx         │ Juniper vPTX                                              │
 │ vsrx         │ Juniper vSRX 3.0                                          │
-│ vyos         │ Vyatta VyOS VM/container                                  │
+│ vyos         │ VyOS VM/container                                         │
 └──────────────┴───────────────────────────────────────────────────────────┘
 
 Networking daemons supported by netlab

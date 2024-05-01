@@ -1,3 +1,4 @@
+(build-arubacx)=
 # Building an ArubaOS-CX Libvirt Box
 
 Aruba AOS-CX 10 is supported by the **netlab libvirt package** command. To build it:

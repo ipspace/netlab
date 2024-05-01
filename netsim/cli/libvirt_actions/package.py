@@ -135,7 +135,7 @@ def cleanup(workdir: typing.Optional[str] = None) -> None:
   log.section_header('Cleanup','Removing vm_box VM and Vagrant management network')
   vm_cleanup('vm_box',ignore_errors=True)
   stop_vagrant_network(ignore_errors=True)
-  if workdir:
+  if workdir and os.path.isdir(workdir):
     strings.print_colored_text('[CLEANUP] ','green',None)
     print(f'Removing the build directory {workdir}')
     shutil.rmtree(workdir)
@@ -361,15 +361,10 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
     log.fatal(
       'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add box.json" to add it.','libvirt')
 
-def run(cli_args: typing.List[str], topology: Box) -> None:
-  check_running_labs(topology)
-
-  settings = topology.defaults
-  args = package_parse(cli_args,settings)
-  log.set_logging_flags(args)
+def build(args: argparse.Namespace, topology: Box, workdir: str) -> None:
   skip = args.skip
-
   box_build_confirm()
+  settings = topology.defaults
 
   # Set environment variables to ensure we have a consistent LIBVIRT environment
   #
@@ -381,7 +376,6 @@ def run(cli_args: typing.List[str], topology: Box) -> None:
   cleanup()
   start_vagrant_network()
 
-  workdir = f'/tmp/build_{args.device}'
   homedir = os.path.realpath(os.getcwd())
 
   if workdir:
@@ -418,3 +412,22 @@ def run(cli_args: typing.List[str], topology: Box) -> None:
   os.chdir(homedir)
   if not 'install' in skip:
     lp_install_box(args,settings)
+
+def run(cli_args: typing.List[str], topology: Box) -> None:
+  check_running_labs(topology)
+
+  settings = topology.defaults
+  args = package_parse(cli_args,settings)
+  log.set_logging_flags(args)
+
+  workdir = f'/tmp/build_{args.device}'
+  try:
+    build(args,topology,workdir)
+  except KeyboardInterrupt as ex:
+    print("")
+    log.error(
+      'Aborted by user. Trying to clean up',
+      category=log.FatalError,
+      module='libvirt')
+    cleanup(workdir=workdir)
+  

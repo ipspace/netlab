@@ -1,6 +1,10 @@
 Release notes
 =============
 
+**[Release 1.8.2](release-1.8.2) (tbd)***
+
+[More features...](release-1.8.2)
+
 **Release 1.8.1-post1 (2024-04-24)**
 
 This release contains only [bug fixes](bug-fixes-1.8.1-post1) and [documentation fixes](doc-fixes-1.8.1-post1).
