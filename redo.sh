@@ -15,6 +15,6 @@ LOG_PATH=$CICD_LOG_PATH/$NETLAB_DEVICE/$NETLAB_PROVIDER/$MODULE
 for limit in $@; do
   pushd $(realpath "$CICD_TEST_PATH") >/dev/null
   echo "Starting device $NETLAB_DEVICE provider $NETLAB_PROVIDER module $MODULE limit $limit logging on $LOG_PATH"
-  ./device-module-test $MODULE --workdir /tmp/netlab_cicd --logdir "$LOG_PATH" --batch --redo $limit
+  ./device-module-test $MODULE --workdir ${NETLAB_WORKDIR:-/tmp/netlab_cicd} --logdir "$LOG_PATH" --batch --redo $limit
   popd >/dev/null
 done

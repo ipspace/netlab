@@ -1,0 +1,13 @@
+./redo.sh arubacx libvirt $1 $2
+./redo.sh csr libvirt $1 $2
+./redo.sh cumulus clab $1 $2
+./redo.sh dellos10 libvirt $1 $2
+./redo.sh eos clab $1 $2
+./redo.sh frr clab $1 $2
+./redo.sh iosv libvirt $1 $2
+./redo.sh nxos libvirt $1 $2
+./redo.sh routeros7 libvirt $1 $2
+./redo.sh srlinux clab $1 $2
+./redo.sh vptx libvirt $1 $2
+./redo.sh vyos clab $1 $2
+./redo.sh vyos libvirt $1 $2

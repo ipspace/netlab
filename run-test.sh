@@ -26,5 +26,5 @@ fi
 rm -r "$LOG_PATH"
 pushd $(realpath "$CICD_TEST_PATH") >/dev/null
 echo "Starting device $NETLAB_DEVICE provider $NETLAB_PROVIDER module $1 logging on $LOG_PATH"
-./device-module-test $1 --workdir /tmp/netlab_cicd --logdir "$LOG_PATH" --batch
+./device-module-test $1 --workdir ${NETLAB_WORKDIR:-/tmp/netlab_cicd} --logdir "$LOG_PATH" --batch
 popd >/dev/null
