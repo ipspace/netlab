@@ -102,6 +102,91 @@ def read_results(top: str, results: Box, path: str = '') -> None:
       new_path = path + ("." if path else "") + fname.replace('.','#')
       read_results(str(fpath),results,new_path)
 
+SUMMARY_MAP: dict = {
+  'supported': 'unsupported',
+  'create': 'unsupported',
+  'up': 'crashed',
+  'config': 'config failed',
+  'validate': 'failed'
+}
+
+LOG_MAP: dict = {
+  'supported': 'create',
+  'create': 'create',
+  'up': 'up',
+  'config': 'initial',
+  'validate': 'validate'
+}
+
+def summary_results(test_data: Box, log_path: str) -> Box:
+  summary = Box(default_box=True,box_dots=True)
+  summary.result = '✅'
+  for kw in SUMMARY_MAP.keys():
+    if kw in test_data and test_data[kw] is False:
+      summary.result = SUMMARY_MAP[kw]
+      summary.url = f'{log_path}-{LOG_MAP[kw]}.log'
+      if summary.result == 'failed' and 'caveat' in test_data:
+        summary.result = 'caveat'
+      return summary
+  
+  summary.passed = True
+  return summary
+
+def remap_summary(results: Box, remap: Box, path: str) -> None:
+  for device in results.keys():
+    for platform in results[device].keys():
+      data = results[device][platform]
+      if not isinstance(data,Box):
+        continue
+
+      if path not in data:
+        continue
+
+      data = data[path]
+      for test,test_data in data.items():
+        if test in remap.tests:
+          dev_key = f'{device}/{platform}'
+          log_path = f"{dev_key}/{path.replace('.','/').replace('#','.')}/{test}.yml"
+          summary = summary_results(test_data,log_path)
+          remap.results[dev_key][test] = summary
+          if 'passed' in summary:
+            increase_counter(remap,'pass')
+          else:
+            increase_counter(remap,summary.result)
+
+def remap_batches(remap: Box) -> None:
+  test_keys = list(remap.tests.keys())
+  batches = int(len(test_keys)/6) + 1
+  batch_size = int(len(test_keys)/batches + 0.999)
+
+  remap._batches = []
+  while test_keys:
+    if len(test_keys) <= batch_size:
+      remap._batches.append(test_keys)
+      test_keys = []
+    else:
+      remap._batches.append(test_keys[:batch_size])
+      test_keys = test_keys[batch_size:]
+
+def remap_results(results: Box, remap: typing.Optional[Box] = None, path: str = '') -> Box:
+  if remap is None:
+    remap = Box.from_yaml(filename=f'map-tests.yml',default_box=True,box_dots=True)
+
+  for k in list(remap.keys()):
+    remap_path = f'{path}.{k}' if path else k
+    if 'title' in remap[k]:
+      remap_summary(results,remap[k],remap_path)
+      remap_batches(remap[k])
+      remap[k]._path = f'coverage.{remap_path}'
+    elif isinstance(remap[k],Box):
+      remap[k] = remap_results(results,remap[k],remap_path)
+      for kw in remap[k].keys():
+        if isinstance(remap[k][kw],Box) and 'title' in remap[k][kw]:
+          remap[kw] = remap[k][kw]
+      remap.pop(k,None)
+
+  return remap
+
 def create_html_page(
       args: argparse.Namespace,
       j2: str,
@@ -116,29 +201,42 @@ def create_html_page(
     out_folder=output_dir,filename=output_fname)
   print(f'.. created {output_fname}')
 
-def create_recursive_html(args: argparse.Namespace, results: Box, topology: Box) -> None:
+def create_recursive_html(
+      args: argparse.Namespace,
+      results: Box,
+      topology: Box,
+      template: str = 'results',
+      recursive: bool = True) -> None:
   for item,i_data in results.items():
     if '_' in item:
       continue
     if not '_path' in i_data:
       continue
-    create_html_page(args,'results.html.j2',topology + { 'results': i_data },i_data._path.replace('/','-')+".html")
-    create_recursive_html(args,i_data,topology)
+    create_html_page(args,f'{template}.html.j2',topology + { 'results': i_data },i_data._path.replace('/','-')+".html")
+    if recursive:
+      create_recursive_html(args,i_data,topology)
 
-def create_html_reports(args: argparse.Namespace, results: Box, topology: Box) -> None:
-  create_html_page(args,'index.html.j2',topology + { 'results': results },'index.html',output_dir='.')
+def create_html_reports(args: argparse.Namespace, results: Box, coverage: Box, topology: Box) -> None:
+  create_html_page(
+    args,
+    'index.html.j2',
+    topology + { 'results': results, 'coverage': coverage },
+    'index.html',
+    output_dir='.')
   create_recursive_html(args,results,topology)
+  create_recursive_html(args,coverage,topology,template='coverage',recursive=False)
 
 def main() -> None:
   topology = _read.load('package:cli/empty.yml')
   args = report_parse(sys.argv[1:],topology)
   results = get_empty_box()
   read_results('.',results)
+  coverage = remap_results(results)
 
   if args.yaml:
     print(results.to_yaml())
   elif args.html:
-    create_html_reports(args,results,topology)
+    create_html_reports(args,results,coverage,topology)
 
 if __name__ == '__main__':
   main()
