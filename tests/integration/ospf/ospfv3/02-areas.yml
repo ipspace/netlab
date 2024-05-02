@@ -35,6 +35,10 @@ links:
   x3:
   ospf.area: 3
 
+- dut:
+  prefix.ipv6: 2001:db8:bad:cafe::/64
+  ospf.area: 2
+
 validate:
   adj:
     description: Check OSPFv3 adjacencies
@@ -42,14 +46,15 @@ validate:
     wait: 30
     nodes: [ x1, x2, x3 ]
     plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
-  lb:
-    description: Check for DUT loopback prefix being an inter-area route in areas 0 and 3
-    wait: 20
+  stub_ar:
+    description: Check for DUT stub prefix being an intra-area route in area 2
+    wait: 15
+    wait_msg: Waiting for DUT and SPF to do their magic
+    nodes: [ x2 ]
+    plugin: ospf6_prefix('2001:db8:bad:cafe::/64',rt='Intra-Area')
+  stub_ia:
+    description: Check for DUT stub prefix being an inter-area route in areas 0 and 3
+    wait: 10
     wait_msg: Waiting for DUT and SPF to do their magic
     nodes: [ x1, x3 ]
-    plugin: ospf6_prefix('2001:db8:1:1::/64',rt='Inter-Area')
-  lb2:
-    description: Check for DUT loopback prefix being an intra-area route in area 2
-    wait: 10
-    nodes: [ x2 ]
-    plugin: ospf6_prefix('2001:db8:1:1::/64',rt='Intra-Area')
+    plugin: ospf6_prefix('2001:db8:bad:cafe::/64',rt='Inter-Area')
