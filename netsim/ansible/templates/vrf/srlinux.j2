@@ -1,5 +1,6 @@
 {% from "templates/ospf/srlinux.macro.j2" import ospf_config %}
 {% from "templates/bgp/srlinux.macro.j2" import bgp_config with context %}
+
 updates:
 {% for vname,vdata in vrfs.items() %}
 
@@ -28,7 +29,7 @@ updates:
 - path: routing-policy/community-set[name=C{{ c|replace(':','_') }}]
   val:
    member:
-   - "{{c}}" # Single member, else matching is AND
+   - "target:{{ c }}" # Single member, else matching is AND
 {% endfor -%}
 {% endif %}
 
@@ -38,11 +39,49 @@ updates:
   val:
    member:
 {%  for c in vdata.export %}
-   - "{{ c }}"
+   - "target:{{ c }}"
 {%  endfor %}
 {% endif %}
 
 {% if 'bgp' in vdata %}
 {{ bgp_config(vname,bgp.as,bgp.router_id,vdata.bgp,vdata) }}
+{% endif %}
+
+- path: network-instance[name={{vname}}]/protocols/bgp-vpn
+  val:
+   bgp-instance:
+   - id: 1
+     route-distinguisher:
+      rd: "{{ vdata.rd }}"
+
+{% if vdata.export|default([]) and vdata.import|default([]) %}
+- path: network-instance[name={{vname}}]/inter-instance-policies
+  val:
+   apply-policy:
+    export-policy: "{{ vname }}_vpn_export"
+    import-policy: "{{ vname }}_vpn_import"
+
+- path: routing-policy/policy[name={{ vname }}_vpn_export]
+  val:
+   default-action:
+    policy-result: "accept"
+    bgp:
+     communities:
+      add: "{{vname}}_export"
+
+- path: routing-policy/policy[name={{ vname }}_vpn_import]
+  val:
+   default-action:
+    policy-result: "reject"
+   statement:
+{%  for c in vdata.import %}
+   - name: {{ 10 + loop.index }}
+     match:
+      bgp:
+       community-set: "C{{ c|replace(':','_') }}"
+     action:
+      policy-result: "accept"
+{%  endfor %}
+
 {% endif %}
 {% endfor %}
