@@ -58,11 +58,11 @@ class LAG(_Module):
                    category=log.IncorrectValue,
                    module='lag')
                  continue
-               p : Box = topology.nodes[peer]
+               nb = topology.nodes[peer]
 
                # TODO: Sanity check that the same lag exists
 
-               peers[p.name] = str(netaddr.IPNetwork(p.loopback.ipv4).ip)
+               peers[nb.name] = str(netaddr.IPNetwork(nb.loopback.ipv4).ip)
             if_data.lag.peer = peers
 
           lag_ifs.append( if_data )
