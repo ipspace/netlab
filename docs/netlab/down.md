@@ -17,8 +17,6 @@ options:
   --cleanup             Remove all configuration files created by netlab create
   --dry-run             Print the commands that would be executed, but do not execute them
   --force               Force shutdown or cleanup (use at your own risk)
-  --snapshot [SNAPSHOT]
-                        Transformed topology snapshot file
 ```
 
 Notes:

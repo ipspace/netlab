@@ -220,7 +220,6 @@ def error(
     return
 
   mod_hints = topology.defaults.hints[module]                       # Get static hints for current module
-
   if mod_hints[hint]:                                               # Do we know what to do?
     hint_printout = extra_data_printout(mod_hints[hint],width=90)   # Format the hint for traditional printout
     if category is not Warning:

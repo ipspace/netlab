@@ -28,12 +28,14 @@ To build a Linux environment needed to run network devices as virtual machines o
 * **ssh** to connect to the virtual machines.
 * **sshpass** to pass admin passwords to **ssh** (we're not brave enough to believe SSH keys work on all network devices).
 * **ansible-playbook** to configure network devices
-* **kvm-ok** to test if KVM works on the server.
+* **kvm-ok** to test if KVM works on the server[^KVMOK].
 * **virsh** to create libvirt networks
 * **ip** to create network interfaces and turn them on or off
 * **brctl** to manage Linux bridges
 * **sysctl** to change system settings
 * **qemu-img** to get virtual disk information while building Vagrant boxes
+
+[^KVMOK]: The easiest way to meet this requirement might be to [download the **kvm-ok** source code](https://bazaar.launchpad.net/~cpu-checker-dev/cpu-checker/trunk/view/head:/kvm-ok) and make it an executable script somewhere in your PATH.
 
 To see the Linux commands executed by various _netlab_ commands, use the `--dry-run` option of **netlab up**, **netlab down**, or **netlab connect**.
 

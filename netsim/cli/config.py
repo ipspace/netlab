@@ -8,7 +8,7 @@ import argparse
 import os
 import glob
 
-from . import parser_add_verbose
+from . import parser_add_verbose,parser_add_snapshot,load_snapshot
 from .external_commands import set_ansible_flags
 from . import ansible
 from ..utils import log
@@ -29,6 +29,7 @@ def custom_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespa
   parser.add_argument(
     dest='template', action='store',
     help='Configuration template or a directory with templates')
+  parser_add_snapshot(parser,hide=True)
   parser_add_verbose(parser)
 
   return parser.parse_known_args(args)
@@ -37,6 +38,8 @@ def run(cli_args: typing.List[str]) -> None:
   (args,rest) = custom_config_parse(cli_args)
   log.set_logging_flags(args)
   set_ansible_flags(rest)
+
+  topology = load_snapshot(args)
 
   if args.template != '-':
     if os.path.exists(args.template) or \
@@ -52,3 +55,5 @@ def run(cli_args: typing.List[str]) -> None:
     ansible.playbook('reload-config.ansible',rest)
   else:
     ansible.playbook('config.ansible',rest)
+
+  log.repeat_warnings('netlab initial')

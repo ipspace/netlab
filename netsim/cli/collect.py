@@ -9,7 +9,7 @@ import argparse
 import shutil
 import subprocess
 
-from . import common_parse_args,fs_cleanup
+from . import fs_cleanup,parser_add_snapshot,load_snapshot
 from . import ansible
 from . import external_commands
 from ..utils import log
@@ -50,6 +50,8 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     dest='cleanup',
     action='store_true',
     help='Clean up config directory and modified configuration file after creating tarball')
+  parser_add_snapshot(parser,hide=True)
+
   return parser.parse_known_args(args)
 
 def get_tarball_file(tarball: str) -> str:
@@ -60,6 +62,8 @@ def get_tarball_file(tarball: str) -> str:
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = initial_config_parse(cli_args)
   log.set_logging_flags(args)
+
+  topology = load_snapshot(args)
 
   fs_cleanup([ args.output ])
   try:
@@ -97,3 +101,5 @@ def run(cli_args: typing.List[str]) -> None:
         external_commands.print_step(3,"Cleanup config directory",spacing = True)
       fs_cleanup([ args.output ],args.verbose)
       print("... done")
+
+  log.repeat_warnings('netlab collect')

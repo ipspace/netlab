@@ -7,10 +7,10 @@ import typing
 import os
 import argparse
 
-from . import common_parse_args,get_message,load_snapshot_or_topology,lab_status_change
+from . import common_parse_args,get_message,load_snapshot,lab_status_change,parser_add_snapshot
 from . import external_commands
 from . import ansible
-from ..utils import status as _status
+from ..utils import log,status as _status
 from box import Box
 
 #
@@ -47,10 +47,14 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     '--no-message',
     dest='no_message', action='store_true',
     help=argparse.SUPPRESS)
+  parser_add_snapshot(parser,hide=True)
+
   return parser.parse_known_args(args)
 
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = initial_config_parse(cli_args)
+
+  topology = load_snapshot(args)
 
   deploy_parts = []
   if args.verbose:
@@ -89,8 +93,6 @@ def run(cli_args: typing.List[str]) -> None:
     print("\nInitial configurations have been created in the %s directory" % args.output)
   else:
     external_commands.LOG_COMMANDS = True
-
-    topology = load_snapshot_or_topology(Box({},default_box=True,box_dots=True))
     deploy_text = ', '.join(deploy_parts) or 'complete configuration'
     if not topology is None:
       lab_status_change(topology,f'deploying configuration: {deploy_text}')
@@ -104,3 +106,5 @@ def run(cli_args: typing.List[str]) -> None:
 
   if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done
     _status.lock_directory()                          # .. to have a timestamp of when the lab was started
+
+  log.repeat_warnings('netlab initial')
