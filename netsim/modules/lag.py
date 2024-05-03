@@ -22,10 +22,6 @@ class LAG(_Module):
   node_post_transform: Create virtual consolidated 'lag' interfaces for all LAGs, moving L3 attributes
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    log.status_created()
-    print("node_post_transform")
-    print( node )
-
     lag_ifs = [] # Freshly created virtual LAG interfaces to add
 
     for i in node.interfaces:
@@ -80,16 +76,12 @@ class LAG(_Module):
         # Remove attributes from physical interface
         for p in list(i.keys()):
           if p not in topology.defaults.lag.attributes.keep_intf:
-            print( f"Removing '{p}' from {i}" )
             i.pop(p,None)
 
         for n in i.get('neighbors',{}):
           for p in list(n.keys()):
             if p not in topology.defaults.lag.attributes.keep_intf:
-              print( f"Removing '{p}' from neighbor {n}" )
               n.pop(p,None)
 
-    print("Virtual LAG interfaces to be added:")
-    print( lag_ifs )
     node.interfaces.extend( lag_ifs )
 
