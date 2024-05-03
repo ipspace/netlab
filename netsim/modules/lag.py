@@ -1,3 +1,4 @@
+import typing
 import netaddr
 
 from box import Box
@@ -22,7 +23,7 @@ class LAG(_Module):
   node_post_transform: Create virtual consolidated 'lag' interfaces for all LAGs, moving L3 attributes
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    lag_ifs = [] # Freshly created virtual LAG interfaces to add
+    lag_ifs : typing.List[Box] = [] # Freshly created virtual LAG interfaces to add
 
     for i in node.interfaces:
       # 1. Check if the interface is part of a LAG
