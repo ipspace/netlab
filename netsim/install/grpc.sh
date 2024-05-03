@@ -31,9 +31,10 @@ fi
 # Install Ansible grpc plug-in and its dependencies from github repo
 ansible-galaxy collection install 'git+https://github.com/nokia/ansible-networking-collections.git#/grpc/'
 
-# The last version of Ansible working with Nokia Ansible collection is 4.10.0
-#
-sudo python3 -m pip install --upgrade ansible==4.10.0
+echo "We have to upgrade Ansible to release 9.5.1 or greater or it will break"
+echo "Alternatively, you can manually downgrade it to release 4.10.0 or earlier"
+echo
+sudo python3 -m pip install --upgrade 'ansible>=9.5.1'
 
 # grpc sources contain generated pb2 file which is not compatible with newer versions of protobuf
 python3 -m pip install grpcio protobuf==3.20.1 --upgrade

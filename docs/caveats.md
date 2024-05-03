@@ -269,10 +269,10 @@ ansible-galaxy collection install git+https://github.com/nokia/ansible-networkin
 python3 -m pip install grpcio protobuf==3.20.1
 ```
 
-* As of September 2023, the Nokia Ansible Galaxy collection crashes with Ansible versions 5.x and later. To downgrade Ansible to 4.10.0, use the following commands (also included as part of **netlab install grpc** script):
+* As of May 2024, the Nokia Ansible Galaxy collection crashes with Ansible versions between 4.10.0 and 9.5.1. We recommend upgrading to Ansible release 9.5.1 (also included as part of **netlab install grpc** script):
 
 ```
-sudo pip3 install --upgrade ansible==4.10.0
+sudo pip3 install --upgrade 'ansible>=9.5.1'
 ```
 
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
@@ -287,13 +287,11 @@ ansible-galaxy collection install git+https://github.com/nokia/ansible-networkin
 python3 -m pip install grpcio protobuf==3.20.1
 ```
 
-* As of September 2023, the Nokia Ansible Galaxy collection crashes with Ansible versions 5.x and later. To downgrade Ansible to 4.10.0, use the following commands (also included as part of **netlab install grpc** script):
+* As of May 2024, the Nokia Ansible Galaxy collection crashes with Ansible versions between 4.10.0 and 9.5.1. We recommend upgrading to Ansible release 9.5.1 (also included as part of **netlab install grpc** script):
 
 ```
-sudo pip3 install --upgrade ansible==4.10.0
+sudo pip3 install --upgrade 'ansible>=9.5.1'
 ```
-
-* OpenConfig support depends on a [pending PR](https://github.com/nokia/ansible-networking-collections/pull/21)
 
 (caveats-sonic)=
 ## Sonic
