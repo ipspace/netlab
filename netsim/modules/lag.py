@@ -53,9 +53,9 @@ class LAG(_Module):
               # TODO check at least one side 'active' in case of LACP
 
           # Resolve any MC-LAG peer ids to their loopback IP
-          if 'peer' in if_data:
+          if 'peer' in if_data.lag:
             peers = {}
-            for peer in if_data.peer if isinstance(if_data.peer,list) else [if_data.peer]:
+            for peer in if_data.lag.peer if isinstance(if_data.lag.peer,list) else [if_data.lag.peer]:
                if peer not in topology.get("nodes"):
                  log.error(
                    text=f'{peer} peer for lag on interface {i.name} not found)',
@@ -67,7 +67,7 @@ class LAG(_Module):
                # TODO: Sanity check that the same lag exists
 
                peers[p.name] = str(netaddr.IPNetwork(p.loopback.ipv4).ip)
-            if_data.peer = peers
+            if_data.lag.peer = peers
 
           lag_ifs.append( if_data )
         else:

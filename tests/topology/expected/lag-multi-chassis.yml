@@ -1,0 +1,325 @@
+input:
+- topology/input/lag-multi-chassis.yml
+- package:topology-defaults.yml
+isis:
+  area: '49.0001'
+  type: level-2
+lag:
+  lacp: 'off'
+  lacp_mode: active
+  lacp_mux_control: independent
+  lacp_xmit_stdby: true
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: 1/1/c1
+    ipv4: 10.1.0.1/30
+    node: r2
+  - ifindex: 1
+    ifname: 1/1/c1
+    ipv4: 10.1.0.2/30
+    node: r3
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- interfaces:
+  - ifindex: 1
+    ifname: 1/1/c1
+    ipv4: 10.1.0.5/30
+    lag:
+      id: 1
+    node: r1
+  - ifindex: 2
+    ifname: 1/1/c2
+    ipv4: 10.1.0.6/30
+    lag:
+      id: 1
+      peer:
+      - r3
+    node: r2
+  lag:
+    id: 1
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: 1/1/c2
+    ipv4: 10.1.0.9/30
+    lag:
+      id: 1
+    node: r1
+  - ifindex: 2
+    ifname: 1/1/c2
+    ipv4: 10.1.0.10/30
+    lag:
+      id: 1
+      peer:
+      - r2
+    node: r3
+  lag:
+    id: 1
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  type: p2p
+module:
+- isis
+- lag
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: vrnetlab/vr-sros
+    clab:
+      kind: vr-sros
+      license: /Projects/SR_OS_VSR-SIM_license.txt
+      type: sr-1
+    device: sros
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - clab:
+        name: eth1
+      ifindex: 1
+      ifname: 1/1/c1
+      lag:
+        id: 1
+      linkindex: 2
+      name: r1 -> r2
+      type: p2p
+    - clab:
+        name: eth2
+      ifindex: 2
+      ifname: 1/1/c2
+      lag:
+        id: 1
+      linkindex: 3
+      name: r1 -> r3
+      type: p2p
+    - _lag: 1
+      ifindex: 3
+      ifname: lag-1
+      ipv4: 10.1.0.5/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      lag:
+        id: 1
+      links: 2
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: lag-1
+        ipv4: 10.1.0.6/30
+        lag:
+          id: 1
+          peer:
+          - r3
+        node: r2
+      type: lag
+    isis:
+      af:
+        ipv4: true
+      area: '49.0001'
+      type: level-2
+    lag:
+      lacp: 'off'
+      lacp_mode: active
+      lacp_mux_control: independent
+      lacp_xmit_stdby: true
+    loopback:
+      ifindex: 0
+      ifname: loopback.0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: A/1
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - lag
+    - isis
+    mtu: 1500
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    box: vrnetlab/vr-sros
+    clab:
+      kind: vr-sros
+      license: /Projects/SR_OS_VSR-SIM_license.txt
+      type: sr-1
+    device: sros
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - clab:
+        name: eth1
+      ifindex: 1
+      ifname: 1/1/c1
+      ipv4: 10.1.0.1/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> r3
+      neighbors:
+      - ifname: 1/1/c1
+        ipv4: 10.1.0.2/30
+        node: r3
+      type: p2p
+    - clab:
+        name: eth2
+      ifindex: 2
+      ifname: 1/1/c2
+      lag:
+        id: 1
+        peer:
+        - r3
+      linkindex: 2
+      name: r2 -> r1
+      type: p2p
+    - _lag: 1
+      ifindex: 3
+      ifname: lag-1
+      ipv4: 10.1.0.6/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      lag:
+        id: 1
+        peer:
+          r3: 10.0.0.3
+      links: 1
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: lag-1
+        ipv4: 10.1.0.5/30
+        lag:
+          id: 1
+        node: r1
+      type: lag
+    isis:
+      af:
+        ipv4: true
+      area: '49.0001'
+      type: level-2
+    lag:
+      lacp: 'off'
+      lacp_mode: active
+      lacp_mux_control: independent
+      lacp_xmit_stdby: true
+    loopback:
+      ifindex: 0
+      ifname: loopback.0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: A/1
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - lag
+    - isis
+    mtu: 1500
+    name: r2
+  r3:
+    af:
+      ipv4: true
+    box: vrnetlab/vr-sros
+    clab:
+      kind: vr-sros
+      license: /Projects/SR_OS_VSR-SIM_license.txt
+      type: sr-1
+    device: sros
+    hostname: clab-input-r3
+    id: 3
+    interfaces:
+    - clab:
+        name: eth1
+      ifindex: 1
+      ifname: 1/1/c1
+      ipv4: 10.1.0.2/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      linkindex: 1
+      mtu: 1500
+      name: r3 -> r2
+      neighbors:
+      - ifname: 1/1/c1
+        ipv4: 10.1.0.1/30
+        node: r2
+      type: p2p
+    - clab:
+        name: eth2
+      ifindex: 2
+      ifname: 1/1/c2
+      lag:
+        id: 1
+        peer:
+        - r2
+      linkindex: 3
+      name: r3 -> r1
+      type: p2p
+    - _lag: 1
+      ifindex: 3
+      ifname: lag-1
+      ipv4: 10.1.0.10/30
+      isis:
+        network_type: point-to-point
+        passive: false
+      lag:
+        id: 1
+        peer:
+          r2: 10.0.0.2
+      links: 1
+      mtu: 1500
+      name: r3 -> r1
+      neighbors:
+      - ifname: lag-1
+        ipv4: 10.1.0.9/30
+        lag:
+          id: 1
+        node: r1
+      type: lag
+    isis:
+      af:
+        ipv4: true
+      area: '49.0001'
+      type: level-2
+    lag:
+      lacp: 'off'
+      lacp_mode: active
+      lacp_mux_control: independent
+      lacp_xmit_stdby: true
+    loopback:
+      ifindex: 0
+      ifname: loopback.0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: A/1
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    module:
+    - lag
+    - isis
+    mtu: 1500
+    name: r3
+provider: clab
