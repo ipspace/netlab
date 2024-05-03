@@ -6,7 +6,8 @@
 
 {% macro declare_router(i,sub_path="") -%}
 {%  set service_name = i.vrf if i.vrf is defined else 'default' %}
-{%  set in_base = i.vrf is not defined and (i.vlan is not defined or i.vlan.mode|default('irb')=='route') %}
+{%  set in_base = i.vrf is not defined and i.lag is not defined and
+                 (i.vlan is not defined or i.vlan.mode|default('irb')=='route') %}
 {%  set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
 
 {# Minimal service config must exist #}
@@ -16,7 +17,7 @@
    service-id: {{ vrfs[i.vrf].vrfidx if i.vrf is defined else 1 }}
    customer: "1"
    admin-state: enable
-   ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
+   ecmp: {{ 2 if 'ixr' in clab.type else 64 }}
 {%  endif %}
 
 - path: configure/{{ base_path }}{{ sub_path }}
@@ -48,9 +49,10 @@
    admin-state: enable
    description: "{{ desc }} vlan={{vlan}}"
 {% if port %}
-{%  if l.vrf is defined %}
+{%  if l.vrf is defined or l.lag is defined %}
    sap:
    - sap-id: "{{ port }}"
+     description: "{{ l.name|default('.') }}"
 {%  else %}
    port: "{{ port }}"
 {%  endif %}
@@ -78,7 +80,8 @@
 {% macro port(l,vlan=0,tagged=False,native=False) %}
 {%  set v4 = l.ipv4|default(False) %}
 {%  set v6 = l.ipv6|default(False) %}
-{%  set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
+{%  set in_base = l.vrf is not defined and l.lag is not defined
+                  and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
 
 {%  if l.name is defined %}
 {%   set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
@@ -87,7 +90,7 @@
 {%  endif %}
 
 {%  set portname = l.parent_ifname if l.type=='vlan_member' else l.ifname %}
-{%  if 'ixr' in clab.type and clab.type != 'ixr-x' %}
+{%  if 'ixr' in clab.type and 'ixr-x' not in clab.type %}
 {#  Remove connector from port name for IXR platform #}
 {%  set portname = portname.replace("c","") %}
 {%  endif %}
@@ -119,7 +122,33 @@
 {%    set portname = portname + ':' + vlan|string %}
     encap-type: dot1q
 {%   endif %}
+{%  if 'lag' in l %}
+    # autonegotiate: "limited"
+{% endif %}
 {%  endif %}
+
+{% if 'lag' in l %}
+- path: configure/lag[lag-name=lag-{{l.lag.id}}]
+  val:
+   mode: access
+{% if tagged %}
+   encap-type: dot1q
+{% endif %}
+   port:
+   - port-id: {{ portname }}
+{% if l.lag.lacp|default("off")!="off" %}
+   lacp-mux-control: {{ lag.lacp_mux_control }}
+   lacp-xmit-stdby: {{ lag.lacp_xmit_stdby }}
+   lacp-xmit-interval: {{ l.lag.lacp }}
+   lacp:
+    mode: {{ lag.lacp_mode }}
+    administrative-key: {{ l.lag.id }}
+    system-id: "00:00:00:00:00:{{ '%02x'|format(l.lag.id) }}"
+    system-priority: 100
+{% endif %}
+   admin-state: enable
+{% set portname = "lag-" + l.lag.id|string %}
+{% endif %}
 
 {% if v4 or v6 %}
 {%  if l.type not in ['loopback','stub','svi'] %}
@@ -135,12 +164,12 @@ updates:
 - path: configure/system/resource
   val:
    ecmp-profile:
-   - profile-id: 1
+   - profile-id: 2
      type: ip # or mpls
      links: 16
      groups: 64
 {%  if 'mpls' in module %}
-   - profile-id: 2
+   - profile-id: 1
      type: mpls
      links: 16
      groups: 64
@@ -150,7 +179,7 @@ updates:
 {# Enable ECMP=64 by default #}
 - path: configure/router[router-name=Base]
   val:
-   ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
+   ecmp: {{ 2 if 'ixr' in clab.type else 64 }}
 
 {% if loopback.ipv4|default('')|ipv4 or 'ipv6' in loopback %}
 {% set _v4 = loopback.ipv4|default(False) %}

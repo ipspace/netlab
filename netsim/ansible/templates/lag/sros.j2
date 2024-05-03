@@ -1,0 +1,22 @@
+# Configure MC-lag as needed
+
+updates:
+{% for i in interfaces if 'lag' in i and 'peer' in i.lag %}
+- path: configure/redundancy/multi-chassis
+  val:
+   peer:
+{%  for n,ip in i.lag.peer.items() %}
+   - ip-address: {{ ip }}
+     peer-name: {{ n }}
+     source-address: {{ loopback.ipv4|ipaddr('address') }}
+     admin-state: enable
+     mc-lag:
+      admin-state: enable
+      lag:
+      - lag-name: lag-{{ i.lag.id }}
+        lacp-key: {{ 32768 + i.lag.id|int }}
+        system-id: "00:00:00:00:00:{{ "%02x" | format(i.lag.id) }}"
+        system-priority: 100
+        remote-lag: lag-{{ i.lag.id }}
+{%  endfor %}
+{% endfor %}
