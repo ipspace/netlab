@@ -53,6 +53,16 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
 
   return parser
 
+def parser_add_snapshot(parser: argparse.ArgumentParser, hide: bool = False) -> None:
+  parser.add_argument(
+    '--snapshot',
+    dest='snapshot',
+    action='store',
+    nargs='?',
+    default='netlab.snapshot.yml',
+    const='netlab.snapshot.yml',
+    help=argparse.SUPPRESS if hide else 'Transformed topology snapshot file')
+
 def topology_parse_args() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common topology arguments',add_help=False)
   parser.add_argument('--defaults', dest='defaults', action='store',nargs='*',
@@ -117,8 +127,8 @@ def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   log.exit_on_error()
   return topology
 
-# Snapshot-or-topology loader (used by down)
-
+# Snapshot loading code -- loads the specified snapshot file and checks its modification date
+#
 def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
   if not os.path.isfile(args.snapshot):
     print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
@@ -131,8 +141,31 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
     sys.exit(1)
 
   global_vars.init(topology)
+  check_modified_source(args.snapshot,topology)
   return topology
 
+def check_modified_source(snapshot: str, topology: typing.Optional[Box] = None) -> None:
+  if topology is None:
+    return
+
+  snap_time = os.path.getmtime(snapshot)
+
+  for infile in topology.get('input',[]):
+    if not os.path.exists(infile):
+      continue
+    in_time = os.path.getmtime(infile)
+    if in_time <= snap_time:
+      continue
+
+    log.error(
+      text=f'Lab topology source file {infile} has been modified',
+      more_data=f'after the snapshot {snapshot} has been created',
+      category=Warning,
+      module='cli',
+      hint='recreate')
+
+# Load snapshot or topology -- used by 'netlab initial'
+#
 def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typing.Optional[Box]:
   log.set_logging_flags(args)
   if args.device or args.provider or args.settings:     # If we have -d, -p or -s flag
@@ -146,10 +179,8 @@ def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typ
     log.exit_on_error()
   else:
     args.snapshot = args.snapshot or 'netlab.snapshot.yml'
-    topology = _read.read_yaml(filename=args.snapshot)
+    return load_snapshot(args)
 
-  if topology:
-    global_vars.init(topology)
   return topology
 
 # get_message: get action-specific message from topology file

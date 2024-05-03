@@ -13,7 +13,7 @@ import sys
 from box import Box
 
 from . import external_commands, set_dry_run, is_dry_run
-from . import lab_status_change,fs_cleanup,load_snapshot
+from . import lab_status_change,fs_cleanup,load_snapshot,parser_add_snapshot
 from .. import providers
 from ..utils import status,strings,log
 from .up import provider_probes
@@ -46,14 +46,7 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='force',
     action='count', default = 0,
     help='Force shutdown or cleanup (use at your own risk)')
-  parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help='Transformed topology snapshot file')
+  parser_add_snapshot(parser,hide=True)
 
   return parser.parse_args(args)
 
