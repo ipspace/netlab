@@ -58,7 +58,7 @@ class LAG(_Module):
                    category=log.IncorrectValue,
                    module='lag')
                  continue
-               p = topology.nodes[peer]
+               p : Box = topology.nodes[peer]
 
                # TODO: Sanity check that the same lag exists
 
