@@ -80,10 +80,22 @@ def aggregate_results(results: Box, data: Box, path: str) -> None:
 
       results[path]._count[k] += data._count[k]
 
+def is_supported(data: Box, path: str) -> bool:
+  for result in data.values():
+    if not isinstance(result,Box):
+      continue
+    if 'up' in result:
+      return True
+    
+  print(f'{path} is unsupported, skipping')
+  return False
+
 def add_results(results: Box, top: str, fname: str, path: str) -> None:
   data = Box.from_yaml(filename=f'{top}/{fname}',default_box=True,box_dots=True)
   data = skip_single_key(data)
   data._path = path.replace('.','/').replace('#','.')
+  if fname == 'results.yaml' and not is_supported(data,path):
+    return
   data = results[path] + data
   if 'results' in fname:
     sum_results(data)
