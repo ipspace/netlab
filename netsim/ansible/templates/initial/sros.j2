@@ -6,7 +6,7 @@
 
 {% macro declare_router(i,sub_path="") -%}
 {%  set service_name = i.vrf if i.vrf is defined else 'default' %}
-{%  set in_base = i.vrf is not defined and i.lag is not defined and
+{%  set in_base = i.vrf is not defined and (i.lag is not defined or i.lag.peer is not defined) and
                  (i.vlan is not defined or i.vlan.mode|default('irb')=='route') %}
 {%  set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
 
@@ -49,7 +49,7 @@
    admin-state: enable
    description: "{{ desc }} vlan={{vlan}}"
 {% if port %}
-{%  if l.vrf is defined or l.lag is defined %}
+{%  if l.vrf is defined or (l.lag is defined and l.lag.peer is defined) %}
    sap:
    - sap-id: "{{ port }}"
      description: "{{ l.name|default('.') }}"
@@ -80,7 +80,7 @@
 {% macro port(l,vlan=0,tagged=False,native=False) %}
 {%  set v4 = l.ipv4|default(False) %}
 {%  set v6 = l.ipv6|default(False) %}
-{%  set in_base = l.vrf is not defined and l.lag is not defined
+{%  set in_base = l.vrf is not defined and (l.lag is not defined or l.lag.peer is not defined)
                   and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
 
 {%  if l.name is defined %}
@@ -112,42 +112,43 @@
     mtu: {{ l.mtu + eth_header }} # max 9800
 {%   endif %}
 {%   if l.vlan.trunk_id is defined or (l.parent_ifindex is defined and interfaces[l.parent_ifindex-1].vlan.trunk_id is defined) %}
-    mode: hybrid # Support mixed trunks by using hybrid ports
+{%    set port_mode = 'hybrid' %}{# Support mixed trunks by using hybrid ports #}
 {%   elif not in_base %}
-    mode: access
+{%    set port_mode = 'access' %}
 {%   else %}
-    mode: network
+{%    set port_mode = 'network' %}
 {%   endif %}
+    mode: {{ port_mode }}
 {%   if tagged %}
 {%    set portname = portname + ':' + vlan|string %}
     encap-type: dot1q
 {%   endif %}
 {%  if 'lag' in l %}
     # autonegotiate: "limited"
-{% endif %}
 {%  endif %}
 
-{% if 'lag' in l %}
+{%  if 'lag' in l %}
 - path: configure/lag[lag-name=lag-{{l.lag.id}}]
   val:
-   mode: access
-{% if tagged %}
+   mode: {{ port_mode }}
+{%   if tagged %}
    encap-type: dot1q
-{% endif %}
+{%   endif %}
    port:
    - port-id: {{ portname }}
-{% if l.lag.lacp|default("off")!="off" %}
+{%   if l.lag.lacp|default("off")!="off" %}
    lacp-mux-control: {{ lag.lacp_mux_control }}
    lacp-xmit-stdby: {{ lag.lacp_xmit_stdby }}
    lacp-xmit-interval: {{ l.lag.lacp }}
    lacp:
-    mode: {{ lag.lacp_mode }}
+    mode: {{ l.lag.lacp_mode|default(lag.lacp_mode) }}
     administrative-key: {{ l.lag.id }}
     system-id: "00:00:00:00:00:{{ '%02x'|format(l.lag.id) }}"
     system-priority: 100
-{% endif %}
+{%   endif %}
    admin-state: enable
 {% set portname = "lag-" + l.lag.id|string %}
+{%  endif %}
 {% endif %}
 
 {% if v4 or v6 %}
