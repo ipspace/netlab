@@ -25,20 +25,15 @@ class LAG(_Module):
     lag_ifs = [] # Freshly created virtual LAG interfaces to add
 
     for i in node.interfaces:
-      # Skip virtual lag interfaces
-      if '_lag' in i:
-        continue
-
       # 1. Check if the interface is part of a LAG
       if 'lag' in i:
 
         # If not already, create virtual lag interface on first link in LAG (per node)
-        virt_if = [ v for v in lag_ifs if v._lag == i.lag.id ]
+        virt_if = [ v for v in lag_ifs if v.lag.id == i.lag.id ]
         if not virt_if:
           if_data = data.get_box(i)
           if_data.ifname = f"lag-{i.lag.id}"
           if_data.ifindex = max([j.ifindex for j in (node.interfaces+lag_ifs)]) + 1
-          if_data._lag = i.lag.id
           if_data.links = 1
           if_data.type = 'lag'
 
