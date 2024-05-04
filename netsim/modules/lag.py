@@ -5,6 +5,7 @@ from box import Box
 from . import _Module
 from .. import data
 from ..utils import log
+from ..augment import devices
 
 class LAG(_Module):
 
@@ -24,7 +25,7 @@ class LAG(_Module):
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
     lag_ifs : typing.List[Box] = [] # Freshly created virtual LAG interfaces to add
-
+    features = devices.get_device_features(node,topology.defaults)
     for i in node.interfaces:
       # 1. Check if the interface is part of a LAG
       if 'lag' in i:
@@ -33,13 +34,13 @@ class LAG(_Module):
         virt_if = [ v for v in lag_ifs if v.lag.id == i.lag.id ]
         if not virt_if:
           if_data = data.get_box(i)
-          if_data.ifname = f"lag-{i.lag.id}"
+          if_data.ifname = features.lag.if_name.format(**i)
           if_data.ifindex = max([j.ifindex for j in (node.interfaces+lag_ifs)]) + 1
           if_data.links = 1
           if_data.type = 'lag'
 
           # Remove unwanted data
-          for p in ['clab','linkindex']:
+          for p in ['clab','linkindex','mtu']:
             if_data.pop(p,None)
 
           # Fix neighbors
@@ -50,6 +51,10 @@ class LAG(_Module):
 
           # Resolve any MC-LAG peer ids to their loopback IP
           if 'peer' in if_data.lag:
+            if not features.lag.get('mc_lag',False):
+              log.fatal( f'Device {node.device} does not support MC-LAG requested on interface {i.ifname}')
+              continue
+
             peers = {}
             for peer in if_data.lag.peer if isinstance(if_data.lag.peer,list) else [if_data.lag.peer]:
                if peer not in topology.get("nodes"):
@@ -63,11 +68,23 @@ class LAG(_Module):
                # TODO: Sanity check that the same lag exists
 
                peers[nb.name] = str(netaddr.IPNetwork(nb.loopback.ipv4).ip)
+
+               # Pick IP parameters from peer with lowest id
+               peer_if = [ j for j in nb.interfaces if j.type=='lag' and j.lag.id==i.lag.id]
+               if peer_if:
+                 _if = peer_if[0]
+                 for af in ['ipv4','ipv6']:  # TODO gateway? other module parameters?
+                   if nb.id < node.id and af in _if:
+                     if_data[af] = _if[af]
+                   elif af in if_data:
+                     _if[af] = if_data[af]
+
             if_data.lag.peer = peers
 
           lag_ifs.append( if_data )
         else:
           virt_if[0].links = virt_if[0].links + 1
+          virt_if[0].name = virt_if[0].name + ',' + i.name
 
         # Remove attributes from physical interface
         for p in list(i.keys()):
