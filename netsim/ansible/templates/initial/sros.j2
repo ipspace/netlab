@@ -136,15 +136,19 @@
 {%   endif %}
    port:
    - port-id: {{ portname }}
-{%   if l.lag.lacp|default("off")!="off" %}
+{%   if l.lag.lacp|default(lag.lacp)!="off" %}
    lacp-mux-control: {{ lag.lacp_mux_control }}
    lacp-xmit-stdby: {{ lag.lacp_xmit_stdby }}
-   lacp-xmit-interval: {{ l.lag.lacp }}
+   lacp-xmit-interval: {{ l.lag.lacp|default(lag.lacp) }}
    lacp:
     mode: {{ l.lag.lacp_mode|default(lag.lacp_mode) }}
     administrative-key: {{ l.lag.id }}
     system-id: "00:00:00:00:00:{{ '%02x'|format(l.lag.id) }}"
     system-priority: 100
+{%   elif 'peer' in l.lag %}
+   standby-signaling: "power-off"
+   selection-criteria:
+    mode: "best-port"
 {%   endif %}
    admin-state: enable
 {% set portname = "lag-" + l.lag.id|string %}
