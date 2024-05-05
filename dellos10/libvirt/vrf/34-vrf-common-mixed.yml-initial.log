@@ -65,8 +65,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [srv]
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [srv]
@@ -74,9 +74,9 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
-changed: [srv]
 changed: [r2]
+changed: [srv]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [srv]
@@ -88,8 +88,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [srv]
 ok: [dut]
+ok: [srv]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=bgp)
@@ -105,8 +105,8 @@ ok: [dut]
 TASK [Find configuration template for bgp] *************************************
 skipping: [r1]
 skipping: [r2]
-ok: [srv]
 ok: [dut]
+ok: [srv]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -130,13 +130,7 @@ TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
 TASK [dellos10_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/dellos10.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  command: network 10.0.0.1/32
-  msg: |-
-    network 10.0.0.1/32
-    % Error: Unrecognized command.
-    dut(config-router-bgp-template-af)#
-  rc: -32603
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [srv]
@@ -153,14 +147,17 @@ changed: [srv]
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
 ok: [r2]
+ok: [dut]
 ok: [srv]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [srv]
 ok: [r1]
 ok: [r2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
@@ -169,14 +166,22 @@ TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [srv]
 ok: [r1]
 ok: [r2]
+ok: [dut]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [srv]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2
 
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/dellos10.j2] ***
+changed: [dut]
+
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -187,20 +192,23 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
 ok: [srv]
+ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
@@ -209,21 +217,33 @@ TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
+ok: [dut]
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/dellos10.j2] ***
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=17   changed=1    unreachable=0    failed=1    skipped=6    rescued=0    ignored=0   
+dut                        : ok=28   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 r1                         : ok=23   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 r2                         : ok=23   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 srv                        : ok=23   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The device under test has two user VRFs and a common services VRF.
+Routers are attached to those interfaces and run OSPF or BGP with device under test.
+
+* r1 and r2 should be able to ping srv but not each other
+
