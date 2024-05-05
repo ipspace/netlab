@@ -44,6 +44,12 @@ def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], a
     OK = OK and _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name)
     ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
     api.node_config(node,_config_name)                  # And remember that we have to do extra configuration
+    if not node.bgp._session_clear:
+      node.bgp._session_clear = []
+
+    for af in ('ipv4','ipv6'):
+      if af in ngb and ngb[af] not in node.bgp._session_clear:
+        node.bgp._session_clear.append(ngb[af])
 
   return OK
 
