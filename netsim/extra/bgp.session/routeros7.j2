@@ -1,7 +1,7 @@
 # AllowAS-IN
 {% for n in bgp.neighbors if n.allowas_in is defined %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=default] input.allow-as={{ n.allowas_in }}
+/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=main] input.allow-as={{ n.allowas_in }}
 {%   endfor %}
 {% endfor %}
 
@@ -18,7 +18,7 @@
 # AS-Override
 {% for n in bgp.neighbors if n.as_override is defined %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=default] as-override=yes
+/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=main] as-override=yes
 {%   endfor %}
 {% endfor %}
 
@@ -35,7 +35,7 @@
 # Default Originate
 {% for n in bgp.neighbors if n.default_originate is defined %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined and n.default_originate %}
-/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=default] output.default-originate=always
+/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=main] output.default-originate=always
 {%   endfor %}
 {% endfor %}
 
@@ -52,7 +52,7 @@
 # Password
 {% for n in bgp.neighbors if n.password is defined %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=default] tcp-md5-key={{ n.password }}
+/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=main] tcp-md5-key={{ n.password }}
 {%   endfor %}
 {% endfor %}
 
@@ -61,6 +61,23 @@
 {%   for n in vdata.bgp.neighbors|default([]) if n.password is defined %}
 {%     for af in ['ipv4','ipv6'] if n[af] is defined and n.password %}
 /routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates={{vname}}] tcp-md5-key={{ n.password }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
+
+# Remove Private AS
+{% for n in bgp.neighbors if n.remove_private_as|default([]) %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined and n.remove_private_as %}
+/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates=main] output.remove-private-as=yes
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) if n.remove_private_as|default([]) %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.remove_private_as %}
+/routing/bgp/connection set [/routing/bgp/connection find remote.address={{ n[af] }} and templates={{vname}}] output.remove-private-as=yes
 {%     endfor %}
 {%   endfor %}
 {% endfor %}

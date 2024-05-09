@@ -1,0 +1,74 @@
+---
+message: |
+  This lab tests whether (large) IS-IS costs are correctly applied
+  to physical interfaces, and whether the device is using wide metrics.
+
+module: [ isis ]
+defaults.interfaces.mtu: 1500
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+isis.type: level-1-2
+
+nodes:
+  dut:
+  x1:
+    id: 2
+  x2:
+    id: 3
+
+links:
+- dut:
+    isis.cost: 17
+  x1:
+  isis.cost: 70000
+
+- dut:
+  x2:
+  isis.cost: 80000
+
+validate:
+  adj:
+    description: Check IS-IS adjacencies
+    wait_msg: Waiting for IS-IS adjacency process to complete
+    wait: 30
+    nodes: [ x1, x2 ]
+    plugin: isis_neighbor('dut')
+  pfx_l1:
+    description: Check L1 IS-IS prefix
+    wait_msg: Waiting for IS-IS SPF run
+    wait: 45
+    nodes: [ x1 ]
+    plugin: isis_prefix(pfx=nodes.x2.loopback.ipv4,level='1')
+  pfx_l2_x1:
+    description: Check L2 IS-IS prefix on X1
+    wait_msg: Waiting for IS-IS SPF run
+    wait: 5
+    nodes: [ x1 ]
+    plugin: isis_prefix(pfx=nodes.x2.loopback.ipv4,level='2')
+  pfx_l2_x2:
+    description: Check L2 IS-IS prefix on X2
+    wait_msg: Waiting for IS-IS SPF run
+    wait: 15
+    nodes: [ x2 ]
+    plugin: isis_prefix(pfx=nodes.x1.loopback.ipv4,level='2')
+  c_x1_l1:
+    description: Check level-1 cost X2 => X1
+    nodes: [ x1 ]
+    plugin: isis_prefix(nodes.x2.loopback.ipv4,level='1',cost=150010)
+  c_x1_l2:
+    description: Check level-2 cost X2 => X1
+    nodes: [ x1 ]
+    plugin: isis_prefix(nodes.x2.loopback.ipv4,level='2',cost=150010)
+  c_x2_l1:
+    description: Check level-1 cost X1 => X2
+    nodes: [ x2 ]
+    plugin: isis_prefix(nodes.x1.loopback.ipv4,level='1',cost=80027)
+  c_x2_l2:
+    description: Check level-2 cost X1 => X2
+    nodes: [ x2 ]
+    plugin: isis_prefix(nodes.x1.loopback.ipv4,level='2',cost=80027)

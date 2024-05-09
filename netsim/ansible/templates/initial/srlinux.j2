@@ -2,20 +2,20 @@
 - path: interface[name={{name}}]/subinterface[index={{index}}]
   val:
    description: "{{ intf.name | default( 'No description' )|replace('->','~')|regex_replace('[\\[\\]]','') }}"
-{% if 'ipv4' in intf and intf.ipv4|bool %}
+{% if 'ipv4' in intf %}
    ipv4:
     admin-state: enable
-{%  if intf.ipv4 is string %}
+{%   if intf.ipv4|bool %}
+    unnumbered:
+      admin-state: enable
+      interface: "system0.0"
+{%   else %}
     address:
     - ip-prefix: "{{ intf.ipv4 }}"
-{%   if not is_system %}
+{%     if not is_system %}
       primary: [null]
+{%     endif %}
 {%   endif %}
-{%  else %}
-    unnumbered:
-     admin-state: enable
-     interface: "system0.0"
-{%  endif %}
 {% endif %}
 {% if 'ipv6' in intf %}
    ipv6:
@@ -40,13 +40,15 @@
 updates:
 {% if mtu is defined %}
 {% if (clab.type in ['ixr6','ixr10'] and (mtu+14)>9486)
-   or (clab.type in ['ixrd1','ixrd2','ixrd3','ixrh1','ixrh2'] and (mtu+14)>9398) %}
+   or (clab.type in ['ixrd1','ixrd2','ixrd3','ixrh1','ixrh2','ixrh3','ixrd2l','ixrd3l'] and (mtu+14)>9398) %}
 {{ mtu_too_large | mandatory( 'IP MTU '+str(mtu)+' too large for given hardware platform: ' + clab.type ) }}
 {% else %}
 - path: system/mtu
   val:
    default-port-mtu: {{ [mtu + 14,1500]|max }}
+{%  if 'ixrh' not in clab.type %}
    default-l2-mtu: {{ [mtu + 14,1500]|max }}
+{%  endif %}
    default-ip-mtu: {{ mtu }}
    _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
 {% endif %}

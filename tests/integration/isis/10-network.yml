@@ -1,0 +1,46 @@
+---
+message: |
+  This lab tests the IS-IS network type settings. The device under test has two
+  interfaces with IS-IS network type set to 'broadcast' and 'point-to-point'. It
+  has to establish IS-IS adjacencies over both.
+
+module: [ isis ]
+defaults.interfaces.mtu: 1500
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+  x1:
+  x2:
+
+links:
+- dut:
+  x1:
+  isis.network_type: False
+
+- dut:
+  x2:
+  isis.network_type: point-to-point
+
+validate:
+  ifdown:
+    nodes: [ x1, x2 ]
+    devices: [ frr ]
+    exec: ip link set dev eth1 down
+    pass: Link to DUT shut down
+  ifup:
+    nodes: [ x1, x2 ]
+    devices: [ frr ]
+    exec: ip link set dev eth1 up
+    pass: Link to DUT reenabled
+  adj:
+    description: Check IS-IS adjacencies
+    wait_msg: Waiting for IS-IS adjacency process to complete
+    wait: 50
+    nodes: [ x1, x2 ]
+    plugin: isis_neighbor('dut',state='Up')

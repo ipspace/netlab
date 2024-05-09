@@ -117,7 +117,12 @@ def p_test_header(v_entry: Box,topology: Box) -> None:
 
 # Print generic "test failed" message
 #
-def log_failure(msg: str, topology: Box, f_status: str = 'FAIL') -> None:
+def log_failure(
+      msg: str,
+      topology: Box,
+      f_status: str = 'FAIL',
+      more_data: typing.Optional[str] = None) -> None:
+
   global TEST_HEADER,ERROR_ONLY
   if TEST_HEADER:
     print(file=sys.stderr)
@@ -125,8 +130,12 @@ def log_failure(msg: str, topology: Box, f_status: str = 'FAIL') -> None:
     print(TEST_HEADER['text'],file=sys.stderr)
     TEST_HEADER = {}
 
+  o_file = sys.stderr if ERROR_ONLY else sys.stdout
   p_status(f_status,'bright_red',topology,stderr=ERROR_ONLY)
-  print(msg,file=sys.stderr if ERROR_ONLY else sys.stdout)
+  print(msg,file=o_file)
+  if more_data:
+    p_status('MORE','bright_black',topology,stderr=ERROR_ONLY)
+    print(more_data,file=o_file)
 
 # Print generic "making progress" message
 #
@@ -204,7 +213,10 @@ def extend_first_wait_time(args: argparse.Namespace, topology: Box) -> None:
 load_plugin: try to load the validation plugin for the specified device
 '''
 
+PLUGIN_ERROR: dict = {}
+
 def load_plugin(device: str) -> typing.Any:
+  global PLUGIN_ERROR
   topology = global_vars.get_topology()
   if topology is None:                                                # Abort if we can't get a point to the topology
     return None
@@ -218,6 +230,11 @@ def load_plugin(device: str) -> typing.Any:
     v_file = f'{v_entry}/{device}.py'                                 # ... trying to find the device-specific plugin
     if os.path.exists(v_file):                                        # Got it?
       return _files.load_python_module(f'validate_{device}',v_file)   # ... cool, try to load the Python module
+
+  err_key = f'plugin_{device}'
+  if err_key not in PLUGIN_ERROR:
+    log.error('Cannot find validation plugin for device {device}',category=log.MissingDependency,module='validate')
+    PLUGIN_ERROR[err_key] = True
 
   return None
 
@@ -246,6 +263,8 @@ Figure out whether the validation plugin for the device under test providers the
 desired functionality (show_ or exec_ function). If not, the test is skipped.
 '''
 def find_plugin_action(v_entry: Box, node: Box) -> typing.Optional[str]:
+  global PLUGIN_ERROR
+
   if 'plugin' not in v_entry:
     return None
 
@@ -258,6 +277,13 @@ def find_plugin_action(v_entry: Box, node: Box) -> typing.Optional[str]:
     if getattr(plugin,f'{kw}_{func_name}',None):
       return kw
 
+  err_key = 'action_{node.device}_{func_name}'
+
+  if err_key not in PLUGIN_ERROR:
+    log.error(
+      f"Validation plugin for device {node.device} has no action for test '{func_name}'",
+      category=log.MissingDependency,
+      module='validate')
   return None
 
 class PluginEvalError(Exception):     # Exception class used to raise plugin evaluation exceptions
@@ -366,6 +392,39 @@ def get_exec_list(v_entry: Box, action: str, node: Box, topology: Box) -> list:
   return []
 
 '''
+Try to parse the results returned from a lab device as a JSON
+
+* Cleanup the returned text
+* If the cleaned-up text starts with [ we have a list: create a bogus
+  wrapper JSON, parse it, and return the inside list
+* Otherwise, try to parse the returned text as JSON object
+
+Cleanup part:
+* Remove the leading and trailing whitespace
+* Find the first [ or { and skip everything in front of it (might be
+  an error message mixed with the JSON data)
+'''
+def parse_JSON(result: str) -> typing.Union[Box,Exception]:
+  result = result.strip()
+  low_idx = len(result)
+  for s_char in ('[','{'):
+    p_char = result.find(s_char,0,low_idx)
+    if p_char >= 0 and p_char < low_idx:
+      low_idx = p_char
+
+  if low_idx < len(result):
+    result = result[low_idx:]
+
+  try:
+    if result.startswith('['):
+      result = f'{{ "rx": {result} }}'
+      return Box.from_json(result).rx
+    else:
+      return Box.from_json(result)
+  except Exception as ex:
+    return ex
+
+'''
 Execute a 'show' command. The return value is expected to be parseable JSON
 '''
 def get_parsed_result(v_entry: Box, n_name: str, topology: Box, verbosity: int) -> Box:
@@ -402,13 +461,15 @@ def get_parsed_result(v_entry: Box, n_name: str, topology: Box, verbosity: int) 
 
   # Try to parse the results we got back as JSON data
   #
-  try:
-    return Box.from_json(result)
-  except:
+  j_result = parse_JSON(result)
+  if isinstance(j_result,Exception):
     log_failure(
       f'Failed to parse result output of "{" ".join(v_cmd)}" on {n_name} (device {node.device}) as JSON',
+      more_data = str(j_result),
       topology=topology)
     return err_value
+
+  return j_result
 
 '''
 Execute a command on the device and return stdout
@@ -670,6 +731,8 @@ def execute_node_validation(
     OK = execute_validation_expression(v_entry,node,topology,result,args.verbose,report_error)
   elif 'plugin' in v_entry:                     # If not, try to call the plugin function
     OK = execute_validation_plugin(v_entry,node,topology,result,args.verbose,report_error)
+  elif 'pass' in v_entry:
+    log_progress(f"{node.name}: {v_entry['pass']}",topology)
 
   if OK is False:                               # Validation failed...
     if not report_error:                        # ... but we still don't have to report it?

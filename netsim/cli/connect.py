@@ -218,6 +218,7 @@ def get_log_level(args: argparse.Namespace) -> LogLevel:
 
 def run(cli_args: typing.List[str]) -> None:
   (args,rest) = connect_parse(cli_args)
+  log.set_logging_flags(args)
   log_level = get_log_level(args)
   set_dry_run(args)
 
