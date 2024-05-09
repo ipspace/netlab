@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 . vars.sh
+set +e
 usage() {
   echo
   echo 'Usage: run-device-provider $device $provider'
@@ -33,6 +34,7 @@ run-test.sh ospf/ospfv2 ospf
 run-test.sh ospf/ospfv3 ospf
 run-test.sh bgp
 run-test.sh bgp.session bgp
+run-test.sh isis
 run-test.sh vrf
 run-test.sh vlan
 run-test.sh vxlan

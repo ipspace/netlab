@@ -3,12 +3,12 @@
 . vars.sh
 if [[ -z $NETLAB_DEVICE ]]; then
   echo "NETLAB_DEVICE is not set, aborting"
-  exit
+  exit 1
 fi
 
 if [[ -z $NETLAB_PROVIDER ]]; then
   echo "NETLAB_PROVIDER is not set, aborting"
-  exit
+  exit 1
 fi
 
 MODULE=$1
@@ -26,5 +26,6 @@ fi
 rm -r "$LOG_PATH"
 pushd $(realpath "$CICD_TEST_PATH") >/dev/null
 echo "Starting device $NETLAB_DEVICE provider $NETLAB_PROVIDER module $1 logging on $LOG_PATH"
+set +e
 ./device-module-test $1 --workdir ${NETLAB_WORKDIR:-/tmp/netlab_cicd} --logdir "$LOG_PATH" --batch
 popd >/dev/null
