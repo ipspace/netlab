@@ -4,5 +4,6 @@
 #
 from box import Box
 from netsim.validate.ospf.frr import *
+from netsim.validate.isis.frr import *
 from netsim.validate.bgp.frr import *
 from netsim.validate.linux import *

@@ -1,0 +1,51 @@
+---
+message: |
+  This lab tests level-1 IS-IS with IPv4. The device under test is a level-1
+  router with two LAN interfaces connected to adjacent IS-IS routers. One of
+  the adjacent routers is a level-1-2 router to catch the potential router
+  level mismatch.
+
+module: [ isis ]
+defaults.interfaces.mtu: 1500
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+isis.type: level-1
+isis.area: "49.0042"
+
+nodes:
+  dut:
+  x1:
+  x2:
+    isis.type: level-1-2
+
+links:
+- dut:
+  x1:
+
+- dut:
+  x2:
+
+validate:
+  adj:
+    description: Check IS-IS adjacencies
+    wait_msg: Waiting for IS-IS adjacency process to complete
+    wait: 30
+    nodes: [ x1, x2 ]
+    plugin: isis_neighbor('dut',level='L1',area='49.0042')
+  pfx:
+    description: Check IS-IS prefix
+    wait_msg: Waiting for IS-IS SPF run
+    wait: 45
+    nodes: [ x1 ]
+    plugin: isis_prefix(pfx=nodes.x2.loopback.ipv4,level='1')
+  ping:
+    description: End-to-end connectivity test
+    wait_msg: Waiting for IS-IS SPF run
+    wait: 10
+    nodes: [ x1 ]
+    plugin: ping(nodes.x2.loopback.ipv4,src=nodes.x1.loopback.ipv4)
