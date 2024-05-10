@@ -36,7 +36,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Juniper vMX        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Juniper vPTX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Juniper vSRX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
-| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Nokia SR Linux     | ✅  | ✅  | ❌  | ✅  | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | VyOS               | ✅  | ✅  | ✅  |  ❌  | ✅  | ✅ |
 
