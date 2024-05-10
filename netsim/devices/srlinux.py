@@ -22,4 +22,11 @@ class SRLINUX(_Quirks):
                     f'Inter-VRF route leaking on ({node.name}) only supported in combination with BGP EVPN.\n',
                     log.IncorrectType,
                     'quirks')
-                return
+                break
+
+    if 'isis' in mods:
+      if node.get('isis.af.ipv6',False):
+         log.error(
+                    f'SR Linux on ({node.name}) does not support IS-IS multi-topology required for ipv6.\n',
+                    log.IncorrectType,
+                    'quirks')
