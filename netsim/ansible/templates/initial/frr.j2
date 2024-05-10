@@ -48,6 +48,28 @@ else
   echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list
   apt-get update -qq && apt-get install -qq frr frr-pythontools
 fi
+{% else %}
+{%   if netlab_mgmt_vrf|default(False) %}
+#
+# Get the current next hop for the default route
+#
+def_nh=$(ip route list default|awk '{ print $3 }')
+#
+# Create the management VRF and add eth0 to it
+#
+if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+  ip link add mgmt type vrf table 42
+fi
+ip link set mgmt up
+sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+ip link set eth0 master mgmt
+#
+# Reinstall the default route if we had it before
+#
+if [[ -n "$def_nh" ]]; then
+  ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+fi
+{%   endif %}
 {% endif %}
 #
 # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
