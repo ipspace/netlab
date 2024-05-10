@@ -1,17 +1,17 @@
-{% from "templates/initial/sros.j2" import if_name with context %}
+{% from "templates/initial/sros.j2" import if_name, declare_router with context %}
 
-{% macro isis_config(l,vrf=None) %}
-{% set path = "router[router-name=Base]" if not vrf else "service/vprn[service-name="+vrf+"]" %}
-- path: configure/{{ path }}
+{% macro isis_config(l) %}
+{{ declare_router(l) }}
   val:
    isis:
    - isis-instance: 0
      admin-state: enable
      area-address: ["{{ isis.net | default( "%s.0000.0000.%04d.00" % (isis.area,id) ) }}"]
      level-capability: "{{ '2' if isis.type=='level-2' else ('1' if isis.type=='level-1' else '1/2') }}"
-{%   if isis.af.ipv6 is defined %}
+{%   if isis.af.ipv6 is defined and isis.af.ipv4 is defined %}
      multi-topology:
       ipv6-unicast: True
+      ipv4-unicast: True
 {%   endif %}
      interface:
      - interface-name: {{ if_name(l,l.ifname) }}
@@ -44,5 +44,5 @@ updates:
 {{ isis_config( { 'ifname': 'system', 'isis': { 'passive' : True } } ) }}
 
 {% for l in interfaces|default([]) if 'isis' in l %}
-{{ isis_config(l,l.vrf|default('default' if l.vlan.mode|default('irb')!='route' else None)) }}
+{{ isis_config(l) }}
 {% endfor %}

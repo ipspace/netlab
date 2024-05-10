@@ -74,3 +74,10 @@ class ISIS(_Module):
     _routing.remove_vrf_interfaces(node,'isis')
     _routing.routing_af(node,'isis')
     _routing.remove_unused_igp(node,'isis',topology.defaults.get('isis.warnings.inactive',False))
+
+    # If multi-topology is requested, check that it is supported
+    if node.get('isis.af.ipv4',False) and node.get('isis.af.ipv6',False):
+      if not features.get('isis.multi_topology',False):
+        log.error( f'Device {node.name} (device {node.device}) does not support ' +
+                    'multi-topology (ipv4+ipv6) for IS-IS', 
+                    category=log.IncorrectValue, module='isis')

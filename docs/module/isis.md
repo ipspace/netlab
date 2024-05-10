@@ -6,7 +6,7 @@ The module supports the following IS-IS features:
 
 * IPv4 and IPv6
 * IS type (L1 and/or L2)
-* Multi-topology IPv6 (enabled by default as soon as the node has at least one IPv6 address, cannot be disabled)
+* Multi-topology IPv6 (enabled for dual-stack configurations)
 * Wide metrics (enabled by default, cannot be turned off)
 * Unnumbered IPv4 interfaces
 * Passive interfaces
@@ -36,7 +36,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Juniper vMX        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Juniper vPTX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Juniper vSRX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
-| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Nokia SR Linux     | ✅  | ✅  | ❌  | ✅  | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | VyOS               | ✅  | ✅  | ✅  |  ❌  | ✅  | ✅ |
 
