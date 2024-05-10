@@ -749,10 +749,10 @@ def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   if not lb_name:
     return
 
-  if features.stub_loopback is False:
+  if 'stub_loopback' not in features:
     return
-
-  if not defaults.links.stub_loopback and not features.stub_loopback:
+  
+  if not defaults.links.stub_loopback and 'stub_loopback' not in features:
     return
 
   link.type = 'loopback'
