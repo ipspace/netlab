@@ -68,15 +68,19 @@ def run_command(
     cmd : typing.Union[str,list],
     check_result : bool = False,
     ignore_errors: bool = False,
-    return_stdout: bool = False) -> typing.Union[bool,str]:
+    return_stdout: bool = False,
+    run_always: bool = False) -> typing.Union[bool,str]:
 
   if log.debug_active('cli'):
     print(f"Not running: {cmd}")
     return True
 
   if is_dry_run():
-    print(f"DRY RUN: {cmd}")
-    return True
+    if run_always:
+      print(f"RUNNING: {cmd}")
+    else:
+      print(f"DRY RUN: {cmd}")
+      return True
 
   if log.VERBOSE or log.debug_active('external'):
     print(f"run_command executing: {cmd}")

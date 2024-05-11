@@ -140,7 +140,8 @@ class Containerlab(_Provider):
                   'docker ps --format json',
                   check_result=True,
                   ignore_errors=True,
-                  return_stdout=True)
+                  return_stdout=True,
+                  run_always=True)
       
       stat_box = get_empty_box()
       if not isinstance(status,str):
