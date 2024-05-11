@@ -33,11 +33,9 @@ updates:
      - interface-name: {{ ifname }}
        circuit-type: {{ l.isis.network_type|default("broadcast") }}
        passive: {{ l.isis.passive }}
-{%     if 'ipv4' in l and 'ipv4' in isis.af %}
        ipv4-unicast:
-        admin-state: enable
+        admin-state: {{ 'enable' if 'ipv4' in l and 'ipv4' in isis.af else 'disable' }}
         enable-bfd: {{ l.isis.bfd.ipv4|default(False) }}
-{%     endif %}
 {%     if 'ipv6' in l and 'ipv6' in isis.af  %}
        ipv6-unicast:
         admin-state: enable
@@ -45,12 +43,14 @@ updates:
 {%     endif %}
 {%     if l.isis.metric is defined or l.isis.cost is defined %}
        level:
+{%      if isis.type!='level-2' %}
        - level-number: 1
-         metric-style: wide
          metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%      endif %}
+{%      if isis.type!='level-1' %}
        - level-number: 2
-         metric-style: wide
          metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%      endif %}
 {%     endif %}
 {%    endif %}
 {%   endfor %}

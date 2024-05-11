@@ -192,10 +192,11 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 ## FRR
 
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
-* VM version of FRR is a Ubuntu VM. FRR package is downloaded and installed during the initial configuration process.
-* You can change FRR default profile with **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
+* VM version of FRR is an Ubuntu VM. The FRR package is downloaded and installed during the initial configuration process.
+* You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
-* FRR container needs host kernel modules for MPLS forwarding. If your Ubuntu 22.04 distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
+* FRR containers need host kernel modules for MPLS forwarding. If your Ubuntu 22.04 distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
+* FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
 
 (caveats-junos)=
 ## Common Junos caveats
