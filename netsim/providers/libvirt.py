@@ -364,7 +364,7 @@ class Libvirt(_Provider):
     if not box_list:                                        # Create an box cache on first call
       box_list = external_commands.run_command(             # Get the list of Vagrant boxes
                       ['vagrant', 'box', 'list'],
-                      check_result=True, ignore_errors=True, return_stdout=True)
+                      check_result=True, ignore_errors=True, return_stdout=True, run_always=True)
       box_list = box_list if isinstance(box_list,str) else ''
       self.box_list = box_list.split('\n')
 
