@@ -6,7 +6,7 @@
 #
 from box import Box
 
-from . import _Quirks
+from . import _Quirks,need_ansible_collection
 from ..utils import log
 
 class SRLINUX(_Quirks):
@@ -30,3 +30,6 @@ class SRLINUX(_Quirks):
                     f'SR Linux on ({node.name}) does not support IS-IS multi-topology required for ipv6.\n',
                     log.IncorrectType,
                     'quirks')
+
+  def check_config_sw(self, node: Box, topology: Box) -> None:
+    need_ansible_collection(node,'nokia.grpc')
