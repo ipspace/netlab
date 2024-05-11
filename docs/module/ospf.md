@@ -98,7 +98,7 @@ The following table documents the interface-level OSPF features:
 | Juniper vSRX 3.0         | ✅ | ✅ | ✅ | ✅ |
 | Mikrotik RouterOS 6      | ✅ | ✅ | ❌  | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ❌  | ✅ |
-| Nokia SR Linux           | ✅ | ✅ | ❌  | ✅ |
+| Nokia SR Linux           | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR OS              | ✅ | ✅ | ✅ | ✅ |
 | VyOS                     | ✅ | ✅ | ✅ | ✅ |
 
