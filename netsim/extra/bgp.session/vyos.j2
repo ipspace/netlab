@@ -9,73 +9,75 @@ fi
 
 configure
 
-# AllowAS-IN
-{% for n in bgp.neighbors if n.allowas_in is defined %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast allowas-in number {{ n.allowas_in }}
-{%   endfor %}
-{% endfor %}
+# Catch all config stuff on the same loop (and avoid multiple loopings)
 
-{% if vrfs is defined %}
-{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
-{%   for n in vdata.bgp.neighbors|default([]) if n.allowas_in is defined %}
-{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.allowas_in %}
-set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast allowas-in number {{ n.allowas_in }}
-{%     endfor %}
-{%   endfor %}
-{% endfor %}
-{% endif %}
+# main routing table
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+
+# AllowAS-IN
+{%     if n.allowas_in is defined %}
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast allowas-in number {{ n.allowas_in }}
+{%     endif %}
 
 # AS-Override
-{% for n in bgp.neighbors if n.as_override is defined %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast as-override
-{%   endfor %}
-{% endfor %}
-
-{% if vrfs is defined %}
-{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
-{%   for n in vdata.bgp.neighbors|default([]) if n.as_override is defined %}
-{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.as_override %}
-set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast as-override
-{%     endfor %}
-{%   endfor %}
-{% endfor %}
-{% endif %}
+{%     if n.as_override is defined %}
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast as-override
+{%     endif %}
 
 # Default Originate
-{% for n in bgp.neighbors if n.default_originate is defined %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined and n.default_originate %}
-set protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast default-originate
-{%   endfor %}
-{% endfor %}
-
-{% if vrfs is defined %}
-{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
-{%   for n in vdata.bgp.neighbors|default([]) if n.default_originate is defined %}
-{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.default_originate %}
-set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} address-family {{ af }}-unicast default-originate
-{%     endfor %}
-{%   endfor %}
-{% endfor %}
-{% endif %}
+{%     if n.default_originate is defined %}
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast default-originate
+{%     endif %}
 
 # Password
-{% for n in bgp.neighbors if n.password is defined %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-set protocols bgp neighbor {{ n[af] }} password {{ n.password }}
+{%     if n.password is defined %}
+set protocols bgp neighbor {{ peer }} password {{ n.password }}
+{%     endif %}
+
+# Remote Private AS
+{%     if n.remove_private_as is defined %}
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast remove-private-as
+{%     endif %}
+
 {%   endfor %}
 {% endfor %}
 
-{% if vrfs is defined %}
-{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
-{%   for n in vdata.bgp.neighbors|default([]) if n.password is defined %}
-{%     for af in ['ipv4','ipv6'] if n[af] is defined and n.password %}
-set vrf name {{ vname }} protocols bgp neighbor {{ n[af] }} password {{ n.password }}
+# Specific VRFs
+{% for vname,vdata in (vrfs|default({})).items() if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%       set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+
+# AllowAS-IN
+{%       if n.allowas_in is defined %}
+set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast allowas-in number {{ n.allowas_in }}
+{%       endif %}
+
+# AS-Override
+{%       if n.as_override is defined %}
+set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast as-override
+{%       endif %}
+
+# Default Originate
+{%       if n.default_originate is defined %}
+set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast default-originate
+{%       endif %}
+
+# Password
+{%       if n.password is defined %}
+set vrf name {{ vname }} protocols bgp neighbor {{ peer }} password {{ n.password }}
+{%       endif %}
+
+# Remote Private AS
+{%       if n.remove_private_as is defined %}
+set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast remove-private-as
+{%       endif %}
+
 {%     endfor %}
 {%   endfor %}
 {% endfor %}
-{% endif %}
 
 # Commit, save and exit from subshell
 
