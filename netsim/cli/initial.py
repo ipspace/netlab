@@ -11,6 +11,7 @@ from . import common_parse_args,get_message,load_snapshot,lab_status_change,pars
 from . import external_commands
 from . import ansible
 from ..utils import log,status as _status
+from .. import devices
 from box import Box
 
 #
@@ -94,7 +95,8 @@ def run(cli_args: typing.List[str]) -> None:
   else:
     external_commands.LOG_COMMANDS = True
     deploy_text = ', '.join(deploy_parts) or 'complete configuration'
-    if not topology is None:
+    if topology is not None:
+      devices.process_config_sw_check(topology)
       lab_status_change(topology,f'deploying configuration: {deploy_text}')
 
     ansible.playbook('initial-config.ansible',rest)
