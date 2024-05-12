@@ -745,17 +745,19 @@ def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   ndata = nodes[node]
   features = devices.get_device_features(ndata,defaults)
 
+  # If we don't know how to create loopbacks on this device, it makes no sense to proceed
+  #
   lb_name = devices.get_device_attribute(ndata,'loopback_interface_name',defaults)
   if not lb_name:
     return
 
-  if features.stub_loopback is False:
-    return
-
-  if not defaults.links.stub_loopback and not features.stub_loopback:
-    return
-
-  link.type = 'loopback'
+  # Check the device feature first, then the system default. Set the link type if the first
+  # one you get is True. Also note that a True feature gets translated into Box({}) early
+  # in the transformation process (don't ask).
+  #
+  make_loopback = features.get('stub_loopback',defaults.get('links.stub_loopback',None))
+  if make_loopback or isinstance(make_loopback,Box):
+    link.type = 'loopback'
 
 def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None:
   node_cnt = len(link.interfaces)   # Set the number of attached nodes (used in many places further on)

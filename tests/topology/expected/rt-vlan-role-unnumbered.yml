@@ -1,6 +1,5 @@
 groups:
   fabric:
-    device: srlinux
     members:
     - leaf
 input:
@@ -9,13 +8,13 @@ input:
 links:
 - interfaces:
   - ifindex: 1
-    ifname: ethernet-1/1
+    ifname: eth1
     node: leaf
     vlan:
       trunk:
         vxlan: {}
   - ifindex: 1
-    ifname: ethernet-1/1
+    ifname: eth1
     node: host
     vlan:
       trunk:
@@ -35,29 +34,33 @@ nodes:
     af:
       ipv4: true
       ipv6: true
-    box: ghcr.io/nokia/srlinux:24.3.2
+    box: quay.io/frrouting/frr:9.1.0
     clab:
-      kind: srl
-      type: ixrd2
-    device: srlinux
+      binds:
+      - clab_files/host/daemons:/etc/frr/daemons
+      - clab_files/host/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
     hostname: clab-input-host
     id: 2
     interfaces:
-    - clab:
-        name: e1-1
-      ifindex: 1
-      ifname: ethernet-1/1
+    - ifindex: 1
+      ifname: eth1
       linkindex: 1
+      mtu: 1500
       name: host -> leaf
       neighbors:
-      - ifname: ethernet-1/1
+      - ifname: eth1
         node: leaf
       subif_index: 1
       type: p2p
     - ifindex: 2
-      ifname: ethernet-1/1.1000
+      ifname: eth1.1000
       parent_ifindex: 1
-      parent_ifname: ethernet-1/1
+      parent_ifname: eth1
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -65,12 +68,12 @@ nodes:
         access_id: 1000
     - bridge_group: 1
       ifindex: 3
-      ifname: irb0.1000
+      ifname: vlan1000
       ipv4: true
       ipv6: true
       name: VLAN vxlan (1000) -> [leaf]
       neighbors:
-      - ifname: irb0.1000
+      - ifname: vlan1000
         ipv4: true
         ipv6: true
         node: leaf
@@ -81,17 +84,18 @@ nodes:
         mode: irb
     loopback:
       ifindex: 0
-      ifname: lo0.0
+      ifname: lo
       ipv4: 10.0.0.2/32
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: mgmt0
+      ifname: eth0
       ipv4: 192.168.121.102
       mac: 08:4f:a9:00:00:02
     module:
     - vlan
+    mtu: 1500
     name: host
     vlan:
       max_bridge_group: 1
@@ -109,29 +113,33 @@ nodes:
     af:
       ipv4: true
       ipv6: true
-    box: ghcr.io/nokia/srlinux:24.3.2
+    box: quay.io/frrouting/frr:9.1.0
     clab:
-      kind: srl
-      type: ixrd2
-    device: srlinux
+      binds:
+      - clab_files/leaf/daemons:/etc/frr/daemons
+      - clab_files/leaf/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
     hostname: clab-input-leaf
     id: 1
     interfaces:
-    - clab:
-        name: e1-1
-      ifindex: 1
-      ifname: ethernet-1/1
+    - ifindex: 1
+      ifname: eth1
       linkindex: 1
+      mtu: 1500
       name: leaf -> host
       neighbors:
-      - ifname: ethernet-1/1
+      - ifname: eth1
         node: host
       subif_index: 1
       type: p2p
     - ifindex: 2
-      ifname: ethernet-1/1.1000
+      ifname: eth1.1000
       parent_ifindex: 1
-      parent_ifname: ethernet-1/1
+      parent_ifname: eth1
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -139,12 +147,12 @@ nodes:
         access_id: 1000
     - bridge_group: 1
       ifindex: 3
-      ifname: irb0.1000
+      ifname: vlan1000
       ipv4: true
       ipv6: true
       name: VLAN vxlan (1000) -> [host]
       neighbors:
-      - ifname: irb0.1000
+      - ifname: vlan1000
         ipv4: true
         ipv6: true
         node: host
@@ -155,17 +163,18 @@ nodes:
         mode: irb
     loopback:
       ifindex: 0
-      ifname: lo0.0
+      ifname: lo
       ipv4: 10.0.0.1/32
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: mgmt0
+      ifname: eth0
       ipv4: 192.168.121.101
       mac: 08:4f:a9:00:00:01
     module:
     - vlan
+    mtu: 1500
     name: leaf
     vlan:
       max_bridge_group: 1
@@ -185,11 +194,11 @@ vlans:
     host_count: 0
     id: 1000
     neighbors:
-    - ifname: irb0.1000
+    - ifname: vlan1000
       ipv4: true
       ipv6: true
       node: host
-    - ifname: irb0.1000
+    - ifname: vlan1000
       ipv4: true
       ipv6: true
       node: leaf
