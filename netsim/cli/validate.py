@@ -738,11 +738,12 @@ def execute_node_validation(
     if not report_error:                        # ... but we still don't have to report it?
       return (False, None)                      # ... return (not processed, unknown)
     if 'result' in args.dump:                   # Do we have to dump the result for further troubleshooting?
-      for kw in ['re']:                         # ... remove extra keys first
-        result.pop(kw,None)
-      # ... and remove the 'result' key if it's not needed
-      if 'result' in result and isinstance(result.result,Box):
-        result.pop('result',None)
+      if isinstance(result,Box):                # If the result is a Box, clean it first
+        for kw in ['re']:                       # ... remove extra keys first
+          result.pop(kw,None)
+        # ... and remove the 'result' key if it's not needed
+        if 'result' in result and isinstance(result.result,Box):
+          result.pop('result',None)
       print(f'Returned result\n{"=" * 80}\n{result.to_yaml()}')
   return (True, OK)                             # ... otherwise return (processed, validation result)
 
