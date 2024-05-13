@@ -197,6 +197,7 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
 * FRR containers need host kernel modules for MPLS forwarding. If your Ubuntu 22.04 distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
+* FRR release 9.0 and later creates malformed IS-IS LSPs ([details](https://github.com/FRRouting/frr/issues/14514)). Most other devices do not care; Arista EOS refuses to accept them. It's thus impossible to build an IS-IS network using Arista EOS and a recent FRR release.
 
 (caveats-junos)=
 ## Common Junos caveats
@@ -277,6 +278,7 @@ sudo pip3 install --upgrade 'ansible>=9.5.1'
 ```
 
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
+* SR Linux does not support multi-topology IS-IS.
 
 (caveats-sros)=
 ## Nokia SR OS
@@ -306,11 +308,15 @@ sudo pip3 install --upgrade 'ansible>=9.5.1'
 (caveats-vyos)=
 ## VyOS
 
-**netlab** uses VyOS 1.5, which for now is a *rolling release* with daily builds (or custom builds). However, all the configuration *should* work also on the *1.4 LTS* release (since it was tested just before it became the new LTS).
+**netlab ** uses VyOS 1.5, which is currently a rolling release with daily builds. However, all the configurations should also work on the 1.4 LTS release (since it was tested just before it became the new LTS).
 
 The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 
-Additionally, using always the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current), should allow to easily track and react to any configuration syntax change (which anyway is a very rare event). In any case, if you find a mis-alignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
+Using the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current) should allow us to easily track and react to any configuration syntax change (which, anyway, is a very rare event). In any case, if you find a misalignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
 
 (vyos-clab)=
 It looks like the official VyOS container is not updated as part of the daily builds; *netlab* uses a [third-party container](https://github.com/sysoleg/vyos-container) (`ghcr.io/sysoleg/vyos-container`) to run VyOS with *containerlab*.
+
+Other VyOS caveats:
+
+* Multi-topology IS-IS (assumed by the [IS-IS configuration module](module-isis)) cannot be configured with VyOS IS-IS CLI.
