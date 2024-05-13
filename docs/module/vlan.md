@@ -38,6 +38,10 @@ VLANs are supported on these platforms:
 | Nokia SR OS           | ✅  | ✅  | ✅   | ✅ | ✅ |
 | VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
 
+```{tip}
+See [VLAN Integration Tests Results](https://release.netlab.tools/_html/coverage.vlan) for more details.
+```
+
 ## VLAN Connectivity Model
 
 The VLAN configuration module assumes you're creating a sane design in which:

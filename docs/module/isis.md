@@ -46,6 +46,10 @@ The following table describes per-platform support of individual IS-IS features:
 * On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
 * Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
 
+```{tip}
+See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
+```
+
 ## Global Parameters
 
 * **isis.area** -- CLNS area prefix. Router address (NET) is computed from area prefix, 6-byte system ID (using **id** node attribute), and NSAP selector (.00)

@@ -268,7 +268,6 @@ See also [](caveats-junos).
 * Only supported on top of *Containerlab*
 * Supports container image release 23.3.1 or later (due to YANG model changes)
 * Requires the latest `nokia.grpc` Ansible Galaxy collection and its dependencies to be installed from the git repo. You can also use the **netlab install grpc** command to install them
-* MPLS and LDP only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
 
 ```
 ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
@@ -281,6 +280,8 @@ python3 -m pip install grpcio protobuf==3.20.1
 sudo pip3 install --upgrade 'ansible>=9.5.1'
 ```
 
+* MPLS and LDP are only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
+* Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
 * SR Linux does not support multi-topology IS-IS.
 
@@ -323,4 +324,4 @@ It looks like the official VyOS container is not updated as part of the daily bu
 
 Other VyOS caveats:
 
-* Multi-topology IS-IS (assumed by the [IS-IS configuration module](module-isis)) cannot be configured with VyOS IS-IS CLI.
+* Multi-topology IS-IS (assumed by the [IS-IS configuration module](module-isis)) cannot be configured with VyOS IS-IS CLI ([bug report](https://vyos.dev/T6332)).

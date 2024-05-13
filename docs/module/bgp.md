@@ -73,6 +73,10 @@ The following features are only supported on a subset of platforms:
 | Sonic                 |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | VyOS                  |  ✅ |  ✅ |  ✅ |  ❌  |  ✅  |
 
+```{tip}
+See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
+```
+
 ## Global BGP Configuration Parameters
 
 You could use *global* or *per-node* parameters to configure BGP autonomous systems and route reflectors:
