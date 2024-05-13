@@ -6,6 +6,8 @@ import typing
 import argparse
 from pathlib import Path
 from box import Box
+
+from netsim import __version__
 from netsim.data import get_empty_box
 from netsim.utils import read as _read,templates
 
@@ -17,6 +19,11 @@ def report_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
     dest='html',
     action='store_true',
     help='Create HTML reports')
+  parser.add_argument(
+    '--release',
+    dest='release',
+    action='store_true',
+    help='Create release reports')
   parser.add_argument(
     '--yaml',
     dest='yaml',
@@ -241,6 +248,9 @@ def create_html_reports(args: argparse.Namespace, results: Box, coverage: Box, t
 def main() -> None:
   topology = _read.load('package:cli/empty.yml')
   args = report_parse(sys.argv[1:],topology)
+  if args.release:
+    topology._version = __version__
+
   results = get_empty_box()
   read_results('.',results)
   coverage = remap_results(results)
