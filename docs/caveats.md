@@ -255,9 +255,13 @@ See also [](caveats-junos).
 * Runs with the *CHR* image.
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 * The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the ```/system license renew``` command.
-* At the time of the build, testing is being performed with releases **7.5** (claimed as *stable*) and **7.6beta8**. On both of them:
+* At the time of the build, testing is being performed with releases **7.14** (claimed as *stable*). With that release:
   * MPLS dataplane seems to have issues when using *virtio* networking, while the LDP and VPNv4 control plane work fine. With *e1000* everything works fine.
-  * BGP-based route leaking is working on the control plane, but not on the dataplane.
+  * BGP-to-OSPF route leaking is working on the control plane, but not on the dataplane.
+  * There's not an easy way to control the BGP community propagation.
+  * Even if you configure the BGP RR cluster-id, this is not announced.
+  * Route Reflection of inactive routes does not work.
+  * There are still problems with VRFs and IPv6.
 
 (caveats-srlinux)=
 ## Nokia SR Linux
