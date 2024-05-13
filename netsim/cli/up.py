@@ -20,6 +20,7 @@ from . import lab_status_update, lab_status_change
 from .. import providers
 from ..utils import log,strings,status as _status, read as _read
 from ..data import global_vars
+from ..devices import process_config_sw_check
 
 #
 # Extra arguments for 'netlab up' command
@@ -312,6 +313,8 @@ def run(cli_args: typing.List[str]) -> None:
 
   external_commands.LOG_COMMANDS = True
   provider_probes(topology)
+  if not args.no_config:
+    process_config_sw_check(topology)
 
   p_provider = topology.provider
   p_module = providers.get_provider_module(topology,p_provider)

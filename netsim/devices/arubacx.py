@@ -7,7 +7,7 @@
 #
 from box import Box
 
-from . import _Quirks
+from . import _Quirks,need_ansible_collection
 from ..augment import devices
 from ..utils import log
 
@@ -27,3 +27,6 @@ class ARUBACX(_Quirks):
                 return
             node.vrfs[vrf]['ospfidx'] = ospfidx
             ospfidx = ospfidx + 1
+
+  def check_config_sw(self, node: Box, topology: Box) -> None:
+    need_ansible_collection(node,'arubanetworks.aoscx')
