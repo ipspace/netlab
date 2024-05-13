@@ -19,6 +19,7 @@ from ..augment import devices,links
 from ..data import get_box,get_empty_box,filemaps
 from ..utils import files as _files
 from ..utils import templates,log,strings
+from ..outputs.ansible import get_host_addresses
 
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
@@ -159,7 +160,7 @@ class _Provider(Callback):
       file_name = file.replace(out_folder+"/","")
       template_name = self.find_extra_template(node,file_name,topology)
       if template_name:
-        node_data = node + { 'hostvars': topology.nodes }
+        node_data = node + { 'hostvars': topology.nodes, 'hosts': get_host_addresses(topology) }
         if '/' in file_name:                      # Create subdirectory in out_folder if needed
           pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
         try:

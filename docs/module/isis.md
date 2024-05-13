@@ -1,3 +1,4 @@
+(module-isis)=
 # IS-IS Configuration Module
 
 This configuration module configures the IS-IS routing process on Cisco IOS, Cisco NX-OS, Arista EOS, Junos (tested on vSRX), Nokia SR OS, and Nokia SR Linux.
@@ -38,12 +39,16 @@ The following table describes per-platform support of individual IS-IS features:
 | Juniper vSRX       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Nokia SR Linux     | ✅  | ✅  | ❌  | ✅  | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
-| VyOS               | ✅  | ✅  | ✅  |  ❌  | ✅  | ✅ |
+| VyOS               | ✅  | ✅  | ❌  |  ❌  | ✅  | ✅ |
 
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
 * On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
 * Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
+
+```{tip}
+See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
+```
 
 ## Global Parameters
 

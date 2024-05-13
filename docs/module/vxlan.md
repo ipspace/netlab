@@ -32,12 +32,12 @@ The following table describes per-platform support of individual VXLAN features:
 | Cumulus Linux      | ✅  | ✅  |  ❌  |
 | Dell OS10          | ✅  | ✅  |  ❌  |
 | FRR                | ✅  | ✅  | ✅  |
-| Nokia SR Linux     | ✅  |  ❌  |  ❌  |
+| Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
 | Nokia SR OS        | ✅  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  | ✅  |
 
-```{note}
-* Nokia SR Linux needs EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
+```{tip}
+See [VXLAN Integration Tests Results](https://release.netlab.tools/_html/coverage.vxlan) for more details.
 ```
 
 ## Global and Node Parameters

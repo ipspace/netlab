@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from . import _Quirks
+from . import _Quirks,need_ansible_collection
 from ..utils import log
 from ..augment import devices
 
@@ -28,3 +28,6 @@ class OS10(_Quirks):
     check_vlan_ospf(node.name,node.get('interfaces',[]),'default')
     for vname,vdata in node.get('vrfs',{}).items():
       check_vlan_ospf(node.name,vdata.get('ospf.interfaces',[]),vname)
+
+  def check_config_sw(self, node: Box, topology: Box) -> None:
+    need_ansible_collection(node,'dellemc.os10')

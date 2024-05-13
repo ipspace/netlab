@@ -14,6 +14,7 @@ from ..augment import devices
 from ..augment import plugin
 from ..utils import templates,strings,log
 from ..utils import files as _files
+from ..data import global_vars
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
@@ -68,25 +69,38 @@ def ansible_inventory_host(node: Box, topology: Box) -> Box:
   return host
 
 """
-Create a 'hosts' dictionary as an 'all' group variable listing usable IPv4 and
-IPv6 addresses of all lab devices.
+Create a 'hosts' dictionary listing usable IPv4 and IPv6 addresses of all lab devices.
 """
-def add_host_addresses(topology: Box, inventory: Box) -> None:
+def get_host_addresses(topology: Box) -> Box:
+  hosts = global_vars.get('hosts')                          # Try to use a cached version
+  if hosts:
+    return hosts
+
   for name,node in topology.nodes.items():
     intf_list = node.interfaces
     if 'loopback' in node:                                  # Create a list of all usable interfaces
       intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
 
     for intf in intf_list:                                  # Now iterate over interfaces
+      h_name = f'{name}-{intf.vrf}' if 'vrf' in intf else name
       for af in ('ipv4','ipv6'):                            # ... and collect IPv4 and IPv6 addresses
         if not isinstance(intf.get(af,False),str):          # Is the IP address a string (= usable IP address)?
           continue
       
-        if not af in inventory.all.vars.hosts[name]:        # Edge case: first interface
-          inventory.all.vars.hosts[name][af] = []           # ... have to start with an empty list
+        if not af in hosts[h_name]:                         # Edge case: first interface
+          hosts[h_name][af] = []                            # ... have to start with an empty list
 
         addr = str(netaddr.IPNetwork(intf[af]).ip)          # Extract IP address from the CIDR prefix
-        inventory.all.vars.hosts[name][af].append(addr)     # ... and append it to the list of usable IP addresses
+        hosts[h_name][af].append(addr)                      # ... and append it to the list of usable IP addresses
+
+  global_vars.set('hosts',hosts)                            # Cache the hosts dictionary
+  return hosts
+
+"""
+Add the hosts dictionary to Ansible inventory as an 'all' group variable 
+"""
+def add_host_addresses(topology: Box, inventory: Box) -> None:
+  inventory.all.vars.hosts = get_host_addresses(topology)
 
 """
 Copy defaults.paths dictionary into ALL group. Create separate variables

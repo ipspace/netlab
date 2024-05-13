@@ -197,6 +197,7 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
 * FRR containers need host kernel modules for MPLS forwarding. If your Ubuntu 22.04 distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
+* FRR release 9.0 and later creates malformed IS-IS LSPs ([details](https://github.com/FRRouting/frr/issues/14514)). Most other devices do not care; Arista EOS refuses to accept them. It's thus impossible to build an IS-IS network using Arista EOS and a recent FRR release.
 
 (caveats-junos)=
 ## Common Junos caveats
@@ -254,16 +255,19 @@ See also [](caveats-junos).
 * Runs with the *CHR* image.
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 * The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the ```/system license renew``` command.
-* At the time of the build, testing is being performed with releases **7.5** (claimed as *stable*) and **7.6beta8**. On both of them:
+* At the time of the build, testing is being performed with releases **7.14** (claimed as *stable*). With that release:
   * MPLS dataplane seems to have issues when using *virtio* networking, while the LDP and VPNv4 control plane work fine. With *e1000* everything works fine.
-  * BGP-based route leaking is working on the control plane, but not on the dataplane.
+  * BGP-to-OSPF route leaking is working on the control plane, but not on the dataplane.
+  * There's not an easy way to control the BGP community propagation.
+  * Even if you configure the BGP RR cluster-id, this is not announced.
+  * Route Reflection of inactive routes does not work.
+  * There are still problems with VRFs and IPv6.
 
 (caveats-srlinux)=
 ## Nokia SR Linux
 * Only supported on top of *Containerlab*
 * Supports container image release 23.3.1 or later (due to YANG model changes)
 * Requires the latest `nokia.grpc` Ansible Galaxy collection and its dependencies to be installed from the git repo. You can also use the **netlab install grpc** command to install them
-* MPLS and LDP only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
 
 ```
 ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
@@ -276,7 +280,10 @@ python3 -m pip install grpcio protobuf==3.20.1
 sudo pip3 install --upgrade 'ansible>=9.5.1'
 ```
 
+* MPLS and LDP are only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
+* Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
+* SR Linux does not support multi-topology IS-IS.
 
 (caveats-sros)=
 ## Nokia SR OS
@@ -306,11 +313,15 @@ sudo pip3 install --upgrade 'ansible>=9.5.1'
 (caveats-vyos)=
 ## VyOS
 
-**netlab** uses VyOS 1.5, which for now is a *rolling release* with daily builds (or custom builds). However, all the configuration *should* work also on the *1.4 LTS* release (since it was tested just before it became the new LTS).
+**netlab ** uses VyOS 1.5, which is currently a rolling release with daily builds. However, all the configurations should also work on the 1.4 LTS release (since it was tested just before it became the new LTS).
 
 The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 
-Additionally, using always the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current), should allow to easily track and react to any configuration syntax change (which anyway is a very rare event). In any case, if you find a mis-alignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
+Using the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current) should allow us to easily track and react to any configuration syntax change (which, anyway, is a very rare event). In any case, if you find a misalignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
 
 (vyos-clab)=
 It looks like the official VyOS container is not updated as part of the daily builds; *netlab* uses a [third-party container](https://github.com/sysoleg/vyos-container) (`ghcr.io/sysoleg/vyos-container`) to run VyOS with *containerlab*.
+
+Other VyOS caveats:
+
+* Multi-topology IS-IS (assumed by the [IS-IS configuration module](module-isis)) cannot be configured with VyOS IS-IS CLI ([bug report](https://vyos.dev/T6332)).

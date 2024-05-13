@@ -1,3 +1,4 @@
+(netlab-initial)=
 # Deploying Initial Device Configurations
 
 **netlab initial** command uses expanded Ansible inventory data created with **[netlab create](create.md)** command, device-specific Jinja2 templates, and an internal Ansible playbook to deploy initial device configurations.

@@ -57,6 +57,7 @@ These platforms support routing protocols in VRFs:
 ```{note}
 * IS-IS and EIGRP cannot be run within a VRF, but both configuration modules are VRF-aware -- they will not try to configure IS-IS or EIGRP routing on VRF interfaces
 * IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers
+* See [VRF Integration Tests Results](https://release.netlab.tools/_html/coverage.vrf) for more details.
 ```
 
 ## Parameters

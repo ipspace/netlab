@@ -71,6 +71,10 @@ The following table describes per-platform support of individual router-level OS
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
 
+```{tip}
+See [OSPFv2](https://release.netlab.tools/_html/coverage.ospf.ospfv2) and [OSPFv3](https://release.netlab.tools/_html/coverage.ospf.ospfv3) Integration Tests Results for more details.
+```
+
 OSPF is also supported on these [routing daemons](platform-daemons):
 
 | Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  | BFD<br/>Strict-Mode |

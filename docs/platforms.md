@@ -229,6 +229,10 @@ The following interface addresses are supported on various platforms:
 | Sonic                 | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |
 
+```{tip}
+See [Initial Configuration Integration Tests Results](https://release.netlab.tools/_html/coverage.initial) for more details.
+```
+
 ## Supported Configuration Modules
 
 (platform-routing-support)=
@@ -262,6 +266,10 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 **Notes:**
 * FRHP = First-Hop Redundancy Protocol (anycast gateway or VRRP)
+
+```{tip}
+See [integration test results](https://release.netlab.tools/) for more details.
+```
 
 Routing protocol [configuration modules](module-reference.md) are also supported on these daemons:
 
