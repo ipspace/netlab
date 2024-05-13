@@ -1,3 +1,4 @@
+(topo-links)=
 # Links between Network Devices
 
 Links between virtual lab devices are specified in the **links** element of the topology file -- a list of links in one of these formats:
