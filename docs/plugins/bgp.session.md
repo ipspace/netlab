@@ -18,6 +18,7 @@ The plugin adds the following BGP session attributes:
 * **bgp.bfd** is a boolean attribute that enables BFD with BGP neighbors.
 * **bgp.default_originate** is a boolean attribute that controls whether a BGP router advertises a default route to its neighbor(s).
 * **bgp.gtsm** is an integer attribute that enables the Generic TTL Security Mechanism (GTSM). A *true* value sets it to 1 (remote router can be up to one hop away).
+* **bgp.link_bandwidth** is an flag that enables link bandwidth to be considered as a factor for weighted ECMP
 * **bgp.passive** is a boolean attribute that makes a node act as a passive BGP peer[^PBP] on an interface or on all applicable sessions (when specified as a node parameter).
 * **bgp.password** is a string attribute that specifies the MD5  or TCP-AO password used on EBGP sessions.
 * **bgp.remove_private_as** is a boolean/string/list attribute that describes the desired removal of private autonomous system(s) from AS path. See [](bgp-session-remove-private-as) section for more details.
@@ -109,6 +110,24 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Nokia SR Linux      |  ✅  |  ✅  |   ✅  |
 | Nokia SR OS         |  ✅  |  ✅  |   ❌  |
 | VyOS                |  ✅  |  ✅  |   ❌  |
+
+(bgp-session-link-bandwidth)=
+The plugin implements a link-bandwidth nerd knob to enable weighted ECMP based on link capacity
+
+| Operating system    | link-bandwidth |
+| ------------------- | :--: |
+| Arista EOS          | ❌  |
+| Aruba AOS-CX        | ❌  |
+| Cisco IOSv          | ❌  |
+| Cisco IOS-XE        | ❌  |
+| Cisco Nexus OS      | ❌  |
+| Cumulus Linux       | ❌  |
+| FRR                 | ❌  |
+| Juniper vMX/vPTX/vSRX | ❌  |
+| Mikrotik RouterOS 7 | ❌  |
+| Nokia SR Linux      | ❌  |
+| Nokia SR OS         |  ✅  |
+| VyOS                | ❌  |
 
 (bgp-session-apply)=
 ## Applying BGP Session Attributes to IBGP Sessions
