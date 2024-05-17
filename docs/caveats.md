@@ -195,8 +195,9 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 * VM version of FRR is an Ubuntu VM. The FRR package is downloaded and installed during the initial configuration process.
 * You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
-* FRR containers need host kernel modules for MPLS forwarding. If your Ubuntu 22.04 distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
+* FRR containers need host kernel modules for MPLS forwarding. If your Ubuntu distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
+* FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with the `sudo apt install linux-generic` and reboot the server.
 * FRR release 9.0 and later creates malformed IS-IS LSPs ([details](https://github.com/FRRouting/frr/issues/14514)). Most other devices do not care; Arista EOS refuses to accept them. It's thus impossible to build an IS-IS network using Arista EOS and a recent FRR release.
 
 (caveats-junos)=
