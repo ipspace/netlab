@@ -3,7 +3,19 @@
 {%   if 'weight' in n %}
     neighbor {{ n[af] }} weight {{ n.weight }}
 {%   endif %}
+{%   if 'bandwidth' in n %}
+    neighbor {{ n[af] }} dmzlink-bw
+{%   endif %}
 {{   routemap.apply_route_map(n,af) }}
+{%- endmacro %}
+{% macro fix_intf_bw(bgp,interfaces) %}
+{%   for n in bgp.neighbors if n.bandwidth.in is defined %}
+{%     for intf in interfaces if n.ifindex == intf.ifindex %}
+interface {{ intf.ifname }}
+ bandwidth {{ n.bandwidth.in * 1000 }}
+!
+{%     endfor %}
+{%   endfor %}
 {%- endmacro %}
 !
 {% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) -%}
@@ -35,3 +47,12 @@ router bgp {{ bgp.as }}
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+!
+{# Apply EBGP bgp.bandwidth to interfaces -- the only way to get it done in Cisco IOS #}
+{{ fix_intf_bw(bgp,interfaces) }}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+{{     fix_intf_bw(vdata.bgp,interfaces) }}
+{%   endfor %}
+{% endif %}
+do clear ip bgp * soft

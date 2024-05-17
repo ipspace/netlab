@@ -16,11 +16,13 @@ The **bgp.policy** plugin implements simple BGP routing policies :
 
 The plugin adds the following BGP attributes:
 
-* **bgp.bandwidth** link attribute sets the BGP Link Bandwidth extended community. It can be an integer, in which case the Link Bandwidth community is attached to inbound updates, or a dictionary with **in** and **out** keys if you want to set the Link Bandwidth community in both directions (or just on the outbound updates).
+* **bgp.bandwidth** link attribute sets the BGP Link Bandwidth extended community. It can be an integer (in megabytes), in which case the Link Bandwidth community is attached to inbound EBGP updates[^BCP], or a dictionary with **in** and **out** integer values if you want to set the Link Bandwidth community in both directions (or just on the outbound updates).
 * **bgp.locpref** is an integer attribute that sets default local preference when applied to a node, or sets local preference on BGP updates received from an EBGP neighbor.
 * **bgp.med** is an integer attribute that sets MED attribute on BGP updates sent to an EBGP neighbor.
 * **bgp.prepend** is a dictionary that configures outbound AS-path prepending. It can contain a **count** attribute (number of times the node AS is prepended) or a **path** attribute (the prepended AS-path as a string[^ASPS])
 * **bgp.weight** is an integer attribute that sets per-neighbor weight.
+
+[^BCP]: _netlab_ configures network devices to propagate BGP Link Bandwidth extended community on IBGP sessions. The value advertised in IBGP updates is device-dependent and could be the value attached to the best path or the aggregate of EBGP values.
 
 [^ASPS]: You must quote a single AS number that you want to prepend with the **path** attribute, otherwise the YAML parser treats it as an integer.
 
@@ -40,11 +42,11 @@ The plugin implements BGP policy attributes on these devices:
 
 | Operating system    | Local<br>preference | MED | Weight | AS-path<br>prepending | Link<br>bandwidth |
 |---------------------|:----:|:----:|:----:|:-----:|:----:|
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
+| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | VyOS                |  ✅  |  ✅  |  ❌  |   ✅  |   ❌  |

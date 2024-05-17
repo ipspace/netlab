@@ -1,6 +1,6 @@
 import typing
 from box import Box
-from netsim.utils import bgp as _bgp
+from netsim.utils import bgp as _bgp, log
 from netsim import api,data
 
 _config_name = 'bgp.policy'
@@ -38,6 +38,28 @@ _direct: list = []
 _compound: dict = {}
 
 '''
+Check whether the specified attribute can be applied in the requested direction. For example,
+bgp.bandwidth does not work on outbound updates on Cisco IOSv
+'''
+def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, attr_value: typing.Any) -> None:
+  global _config_name
+
+  if not isinstance(attr_value,dict):                   # Attribute value does not have in/out values, nothing to check
+    return
+
+  a_feature = _bgp.get_device_bgp_feature(attr,ndata,topology)
+  if not isinstance(a_feature,dict):                    # Device has no restrictions, nothing to check
+    return
+
+  for kw in attr_value.keys():
+    if kw in a_feature:
+      continue
+    log.error(
+      f'You cannot use bgp.{attr}.{kw} on {ndata.device} (node {ndata.name})',
+      category=log.IncorrectType,
+      module=_config_name)
+
+'''
 Apply attributes supported by bgp.policy plugin to a single neighbor
 Returns True if at least some relevant attributes were found
 '''
@@ -58,6 +80,7 @@ def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bo
     ngb[attr] = attr_value                              # Apply attribute value to the neighbor
                                                         # ... some implementations can apply compound attributes directly
     if attr in _compound:                               # Compound attributes have to be applied to route maps
+      check_attribute_direction(node,ngb,topology,attr,attr_value)
       append_policy_attribute(ngb,attr,_compound[attr],attr_value)
     api.node_config(node,_config_name)                  # And remember that we have to do extra configuration
 
@@ -116,6 +139,7 @@ def post_transform(topology: Box) -> None:
       policy_idx += 1
       if intf.get('bgp.bandwidth',False):
         fix_bgp_bandwidth(intf)
+        ndata.bgp._bandwidth = True
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
