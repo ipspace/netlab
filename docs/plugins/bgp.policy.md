@@ -16,6 +16,7 @@ The **bgp.policy** plugin implements simple BGP routing policies :
 
 The plugin adds the following BGP attributes:
 
+* **bgp.bandwidth** link attribute sets the BGP Link Bandwidth extended community. It can be an integer, in which case the Link Bandwidth community is attached to inbound updates, or a dictionary with **in** and **out** keys if you want to set the Link Bandwidth community in both directions (or just on the outbound updates).
 * **bgp.locpref** is an integer attribute that sets default local preference when applied to a node, or sets local preference on BGP updates received from an EBGP neighbor.
 * **bgp.med** is an integer attribute that sets MED attribute on BGP updates sent to an EBGP neighbor.
 * **bgp.prepend** is a dictionary that configures outbound AS-path prepending. It can contain a **count** attribute (number of times the node AS is prepended) or a **path** attribute (the prepended AS-path as a string[^ASPS])
@@ -27,6 +28,7 @@ BGP policy attributes can be specified on a node or an interface (node-to-link a
 
 | BGP policy | Node | Interface |
 |------------|:----:|:---------:|
+| bandwidth  |  ❌   |    ✅     |
 | locpref    |  ✅  |    ✅     |
 | med        |  ❌   |    ✅     |
 | prepend    |  ❌   |    ✅     |
@@ -36,16 +38,16 @@ BGP policy attributes can be specified on a node or an interface (node-to-link a
 
 The plugin implements BGP policy attributes on these devices:
 
-| Operating system    | Local<br>preference | MED | Weight | AS-path<br>prepending |
-|---------------------|:----:|:----:|:----:|:----:|
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ✅  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
-| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |
-| VyOS                |  ✅  |  ✅  |  ❌  |   ✅  |
+| Operating system    | Local<br>preference | MED | Weight | AS-path<br>prepending | Link<br>bandwidth |
+|---------------------|:----:|:----:|:----:|:-----:|:----:|
+| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+| VyOS                |  ✅  |  ✅  |  ❌  |   ✅  |   ❌  |
 
 **Notes:**
 

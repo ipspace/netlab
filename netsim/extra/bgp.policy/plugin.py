@@ -19,6 +19,14 @@ configuration templates
 '''
 
 def append_policy_attribute(ngb: Box, attr: str, direction: str, attr_value: typing.Any) -> None:
+  if direction == 'both':                               # Some attributes could be applied in both directions
+    for bidir in ('in','out'):                          # ... in which case check for 'in' and 'out' values in the attribute
+      if bidir in attr_value:                           # ... and if the directional value is set, apply it
+        append_policy_attribute(ngb,attr,bidir,attr_value[bidir])
+    return                                              # ... then get out of here, recursive calls got the job done
+
+  # Simple case: single direction (in or out)
+  #
   if not ngb.policy[direction]:                         # Create an empty policy list if needed
     ngb.policy[direction] = [ data.get_empty_box() ]
 
@@ -63,6 +71,18 @@ def set_policy_name(intf: Box, ngb: Box, policy_idx: int) -> None:
   ngb._policy_name = f'{vrf_pfx}{ngb.name}-{policy_idx}'
 
 '''
+fix_bgp_bandwidth: transform the bandwidth-as-int shortcut into bandwidth.in: int
+'''
+
+def fix_bgp_bandwidth(intf: Box) -> None:
+  bw = intf.get('bgp.bandwidth',None)
+  if bw is None:
+    return
+  
+  if isinstance(bw,int):
+    intf.bgp.bandwidth = { 'in': bw }
+
+'''
 post_transform hook
 
 As we're applying interface attributes to BGP sessions, we have to copy
@@ -94,6 +114,8 @@ def post_transform(topology: Box) -> None:
     #
     for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
       policy_idx += 1
+      if intf.get('bgp.bandwidth',False):
+        fix_bgp_bandwidth(intf)
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
