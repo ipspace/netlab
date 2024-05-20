@@ -1,33 +1,41 @@
 # See https://documentation.nokia.com/sr/23-7-1/books/system-management/security-system-management.html?hl=tcp%20enhanced%20authentication%20option
 
 {% macro ebgp_neighbor(n,af,vrf) -%}
-{% set path = "router[router-name=Base]" if not vrf else "service/vprn[service-name="+vrf+"]" %}
-- path: configure/{{ path }}/bgp
+- path: configure/{{ "router[router-name=Base]" if not vrf else "service/vprn[service-name="+vrf+"]" }}
   val:
+{% if n.link_bandwidth|default(False) %}
+   weighted-ecmp: "true" # Enabled due to bgp.link_bandwidth to support UECMP proportional to bandwidth
+{% endif %}
+   bgp:
 {% if n.type=='ebgp' and af=='ipv6' and n.ipv6|default(0) == True %}
-   group:
-   - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
-{% else %}
-   neighbor:
-   - ip-address: {{ n[af]|ipaddr('address') }}
+    group:
+    - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
+{%  else %}
+    neighbor:
+    - ip-address: {{ n[af]|ipaddr('address') }}
 {% endif %}
 {% if n.default_originate|default(False) %}
 {%   set activate = n.activate|default( {'ipv4':True,'ipv6':True} ) %}
-     send-default:
-      ipv4: {{ activate.ipv4|default(False) }}
-      ipv6: {{ activate.ipv6|default(False) }}
+      send-default:
+       ipv4: {{ activate.ipv4|default(False) }}
+       ipv6: {{ activate.ipv6|default(False) }}
 {% endif %}
 {%   if n.allowas_in is defined %}
-     # allow-own-as: {{ n.allowas_in|int }}
+      allow-own-as: {{ n.allowas_in|int }}
 {%   endif %}
 {%   if n.as_override|default(False) %}
-     as-override: True
+      as-override: True
 {%   endif %}
+{% if n.link_bandwidth|default(False) %}
+      link-bandwidth:
+       add-to-received-ebgp:
+        {{ af }}: True
+{% endif %}
 {%   if n.password is defined and (n.type!='ebgp' or n.ipv6|default('') is string) %}
 {%    if n.tcp_ao|default('x')=='' or bgp.tcp_ao|default('')=='' %}
-     authentication-key: "{{ n.password }}"
+      authentication-key: "{{ n.password }}"
 {%    else %}
-     authentication-keychain: "peer-{{n.name}}"
+      authentication-keychain: "peer-{{n.name}}"
 
 - path: configure/system/security/keychains/keychain[keychain-name=peer-{{n.name}}]
   val:
