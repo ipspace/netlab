@@ -26,6 +26,20 @@ def get_attribute_list(apply_list: typing.Any, topology: Box) -> list:
   return list(apply_list)
 
 '''
+Mark that the node needs a plugin config, and potentially cleared BGP sessions
+'''
+def mark_plugin_config(node: Box, ngb: Box) -> None:
+  global _config_name
+
+  api.node_config(node,_config_name)                  # Remember that we have to do extra configuration
+  if not node.bgp._session_clear:                     # Create a list of sessions to clear if needed
+    node.bgp._session_clear = []
+
+  for af in ('ipv4','ipv6'):                          # Add sessions that have to be cleared
+    if af in ngb and ngb[af] not in node.bgp._session_clear:
+      node.bgp._session_clear.append(ngb[af])
+
+'''
 Apply attributes supported by bgp.session plugin to a single neighbor
 Returns False is some of the attributes are not supported
 '''
@@ -43,13 +57,7 @@ def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], a
     # Check that the node(device) supports the desired attribute
     OK = OK and _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name)
     ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
-    api.node_config(node,_config_name)                  # And remember that we have to do extra configuration
-    if not node.bgp._session_clear:
-      node.bgp._session_clear = []
-
-    for af in ('ipv4','ipv6'):
-      if af in ngb and ngb[af] not in node.bgp._session_clear:
-        node.bgp._session_clear.append(ngb[af])
+    mark_plugin_config(node,ngb)                        # Remember that we have to do extra configuration
 
   return OK
 
@@ -121,6 +129,70 @@ def process_bfd_requests(ndata: Box, topology: Box) -> None:
         _config_name)
 
 '''
+Given a neighbor (ngb) of a route server (ndata), set the rs_client flag on the
+neighbor's EBGP session with the route server.
+
+If the neighbor is another route server, remove IPv4 and IPv6 addresses from the
+EBGP session to ensure we don't have RS-to-RS sessions
+
+The only way to get this done is to do a reverse lookup, trying to find us in
+the neighbor's neighbor list. Note that this will find any EBGP session with the
+route server. Let's just say that parallel EBGP sessions with route servers
+should be discouraged ;)
+'''
+def set_rs_client(ndata: Box, ngb: Box, topology: Box) -> None:
+  global _config_name
+
+  r_ndata = topology.nodes.get(ngb.name,{})               # Get neighbor's node data
+  for r_ngb in _bgp.neighbors(r_ndata):                   # Iterate over neighbor's neighbors
+    if r_ngb.name != ndata.name:                          # Nope, not us
+      continue
+    if r_ngb.get('rs',False):                             # RS-to-RS session?
+      for af in ('ipv4','ipv6'):                          # Remove IPv4 and IPv6 addresses from the neighbor
+        ngb.pop(af,None)                                  # ... that will ensure no neighbor session is
+        r_ngb.pop(af,None)                                # ... configured
+    else:
+      r_ngb.rs_client = True                              # Else mark remote node as being a RS client
+      mark_plugin_config(r_ndata,r_ngb)                   # Remember that we have to do extra configuration
+      if not _bgp.check_device_attribute_support('rs_client',r_ndata,r_ngb,topology,_config_name):
+        log.error(
+          f'Node {r_ndata.name} cannot have an EBGP session with a BGP Route Server {ndata.name}',
+          category=log.IncorrectType,
+          module='bgp.session')
+
+'''
+Deal with RS requests:
+
+* Remove EBGP sessions between route servers
+* Set (and check) rs_client flag on RS neighbors
+'''
+def process_rs_requests(ndata: Box,topology: Box) -> None:
+  global _config_name
+
+  # First pass: set rs_client flag on Route Server clients
+  for ngb in _bgp.neighbors(ndata):                         # Iterate over all neighbors
+    if not ngb.get('rs',False):                             # Neighbor is not a RS client, get out
+      continue
+    if ngb.type == 'ibgp':                                  # Cannot have an IBGP RS session
+      ngb.pop('rs')
+      continue
+    set_rs_client(ndata,ngb,topology)
+
+'''
+Remove full mesh of EBGP sessions on links with route servers
+'''
+def cleanup_rs_mesh(ndata: Box, topology: Box) -> None:
+  for ngb in _bgp.neighbors(ndata,select=['ebgp']):         # Iterate over all neighbors
+    if not ngb.get('rs_client',False):                      # Neighbor is not a RS, get out
+      continue
+    for x_ngb in _bgp.neighbors(ndata,select=['ebgp']):     # Found an EBGP session with a RS, now inspect all other neighbors
+      if x_ngb.get('rs_client',False):                      # Another session with a RS, leave it alone
+        continue
+      if x_ngb.get('ifindex',None) == ngb.ifindex:          # EBGP session over the same interface?
+        for rm in ('ipv4','ipv6','ifindex'):                # Remove anything that could be used to configure an
+          x_ngb.pop(rm,None)                                # EBGP neighbor
+
+'''
 post_transform hook
 
 As we're applying interface attributes to BGP sessions, we have to copy
@@ -128,11 +200,19 @@ interface BGP parameters supported by this plugin into BGP neighbor parameters
 '''
 
 def post_transform(topology: Box) -> None:
-  for n, ndata in topology.nodes.items():
-    if not 'bgp' in ndata.module:                           # Skip nodes not running BGP
+  for ndata in topology.nodes.values():
+    if not 'bgp' in ndata.get('module',[]):                 # Skip nodes not running BGP
       continue
 
     _bgp.cleanup_neighbor_attributes(ndata,topology,topology.defaults.bgp.attributes.session.attr)
     copy_local_attributes(ndata,topology)
     process_tcpao_secrets(ndata,topology)
     process_bfd_requests(ndata,topology)
+    process_rs_requests(ndata,topology)
+
+  # We need to do the RS-related EBGP session cleanup in a second pass
+  #
+  for ndata in topology.nodes.values():
+    if not 'bgp' in ndata.get('module',[]):                 # Skip nodes not running BGP
+      continue
+    cleanup_rs_mesh(ndata,topology)

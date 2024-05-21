@@ -166,11 +166,14 @@ def show_bgp_prefix_aspath(pfx: str, af: str = 'ipv4', **kwargs: typing.Any) -> 
 def valid_bgp_prefix_aspath(pfx: str, aspath: str, af: str = 'ipv4') -> typing.Optional[str]:
   _result = global_vars.get_result_dict('_result')
 
+  p_found = []
   if not valid_bgp_prefix(pfx,af):                          # Offload the baseline processing
     return None
   
   for p_element in _result.paths:                           # Iterate over all know paths for the prefix
     if p_element.aspath.string == aspath:
       return f"The prefix {pfx} has the expected AS-path {aspath}"
+    else:
+      p_found.append(p_element.aspath.string)
 
-  raise Exception(f'No path to prefix {pfx} has AS-path {aspath}')
+  raise Exception(f'No path to prefix {pfx} has AS-path {aspath} (found { ",".join(p_found) })')
