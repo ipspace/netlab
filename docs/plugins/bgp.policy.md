@@ -45,6 +45,7 @@ The plugin implements BGP policy attributes on these devices:
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |
+| VyOS                |  ✅  |  ✅  |  ❌  |   ✅  |
 
 **Notes:**
 
