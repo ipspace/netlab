@@ -7,6 +7,7 @@ from box import Box
 
 from ..data.validate import must_be_list
 from ..utils import log,strings
+from ..data import append_to_list,global_vars
 
 '''
 get_config_name: get the name of configuration to be added to node.config attribute
@@ -25,10 +26,14 @@ def get_config_name(g: dict) -> typing.Optional[str]:
 node_config: add custom configuration item to the node.config list
 '''
 def node_config(node: Box, config_name: typing.Optional[str]) -> None:
-  if config_name:
-    config = node.get('config',[])
-    if not config_name in config:
-      node.config =  config + [ config_name ]
+  if not config_name:
+    return
 
+  append_to_list(node,'config',config_name)
+  append_to_list(global_vars.get_topology(),'_plugin_config',config_name)
+
+'''
+Make sure an attribute is a list (not sure anyone uses this)
+'''
 def list_attribute(parent: Box, key: str, path: str) -> typing.Optional[list]:
   return must_be_list(parent,key,path)

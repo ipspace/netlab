@@ -404,9 +404,18 @@ def cleanup_daemon_config(n: Box) -> None:
     n._daemon_config.pop(k,None)
 
 def cleanup(topology: Box) -> None:
+  plugin_config = topology.get('_plugin_config',[])
+
   for name,n in topology.nodes.items():
     if '_daemon_config' in n:
       cleanup_daemon_config(n)
+
+    # Put plugin configs in front of node custom configs
+    if 'config' in n:
+      n.config = [ cfg for cfg in n.config if cfg in plugin_config ] + \
+                 [ cfg for cfg in n.config if cfg not in plugin_config ]
+
+  topology.pop('_plugin_config',None)
 
 '''
 Return a copy of the topology (leaving original topology unchanged) with unmanaged devices removed
