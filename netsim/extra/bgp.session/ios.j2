@@ -35,6 +35,9 @@
   neighbor {{ n[af] }} remove-private-as {{ rpa[rpo] }}
 {%     endfor %}
 {%   endif %}
+{%   if n.rs|default(False) %}
+  neighbor {{ n[af] }} route-server-client
+{%   endif %} 
 {%- endmacro %}
 !
 {% for pwd in bgp._ao_secrets|default([]) %}
@@ -47,6 +50,9 @@ key chain tcp-ao-{{ loop.index }} tcp
 !
 {% endfor %}
 router bgp {{ bgp.as }}
+{% if bgp.rs_client|default(False) %}
+ no bgp enforce-first-as
+{% endif %}
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {{     ebgp_session(n,af,bgp) }}

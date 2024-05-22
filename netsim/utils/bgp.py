@@ -10,6 +10,9 @@ import typing
 # Return all global and optionaly VRF neighbors
 #
 def neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) -> typing.Generator:
+  if 'bgp' not in node:
+    return
+
   for ngb in node.get('bgp.neighbors',[]):
     if ngb.type in select:
       yield ngb
