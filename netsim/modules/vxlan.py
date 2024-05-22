@@ -207,13 +207,13 @@ class VXLAN(_Module):
       # Build the list of VRFs using VXLAN L3VNI
       #
       if 'vrfs' in ndata:
-        l3vni = [ vname for vname,vdata in ndata.vrfs.items() if vdata.get('evpn.transit_vni',False) ]
-        if l3vni:
-          ndata.vxlan.l3vni = l3vni
+        l3vnis = [ vname for vname,vdata in ndata.vrfs.items() if vdata.get('evpn.transit_vni',False) ]
+        if l3vnis:
+          ndata.vxlan.l3vnis = l3vnis
 
       # Do we have a good reason to use VXLAN on this node?
       #
-      if not ndata.vxlan.get('vlans',[]) and not ndata.vxlan.get('l3vni',[]):
+      if not ndata.vxlan.get('vlans',[]) and not ndata.vxlan.get('l3vnis',[]):
         ndata.module = [ m for m in ndata.module if m != 'vxlan' ]
         ndata.pop('vxlan',None)
         continue
