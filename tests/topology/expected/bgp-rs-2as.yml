@@ -1,0 +1,424 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+  as65001:
+    members:
+    - r2
+  as65100:
+    members:
+    - rs1
+  as65101:
+    members:
+    - rs2
+input:
+- topology/input/bgp-rs-2as.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.1/24
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.2/24
+    node: r2
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.3/24
+    node: rs1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.4/24
+    node: rs2
+  linkindex: 1
+  node_count: 4
+  prefix:
+    ipv4: 172.16.0.0/24
+  role: external
+  type: lan
+module:
+- bgp
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 172.16.0.3
+      - 172.16.0.4
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 172.16.0.3
+        name: rs1
+        rs_client: true
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 1
+        ipv4: 172.16.0.4
+        name: rs2
+        rs_client: true
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+      rs_client: true
+    box: quay.io/frrouting/frr:9.1.0
+    clab:
+      binds:
+      - clab_files/r1/daemons:/etc/frr/daemons
+      - clab_files/r1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    config:
+    - bgp.session
+    device: frr
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      mtu: 1500
+      name: r1 -> [r2,rs1,rs2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.2/24
+        node: r2
+      - ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: rs1
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: rs2
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - bgp
+    mtu: 1500
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 172.16.0.3
+      - 172.16.0.4
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 172.16.0.3
+        name: rs1
+        rs_client: true
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 1
+        ipv4: 172.16.0.4
+        name: rs2
+        rs_client: true
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+      rs_client: true
+    box: quay.io/frrouting/frr:9.1.0
+    clab:
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/r2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    config:
+    - bgp.session
+    device: frr
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.2/24
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> [r1,rs1,rs2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: rs1
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: rs2
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - bgp
+    mtu: 1500
+    name: r2
+  rs1:
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 172.16.0.1
+      - 172.16.0.2
+      - 172.16.0.4
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 172.16.0.1
+        name: r1
+        rs: true
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 172.16.0.2
+        name: r2
+        rs: true
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+      rs: true
+    box: quay.io/frrouting/frr:9.1.0
+    clab:
+      binds:
+      - clab_files/rs1/daemons:/etc/frr/daemons
+      - clab_files/rs1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    config:
+    - bgp.session
+    device: frr
+    hostname: clab-input-rs1
+    id: 3
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.3/24
+      linkindex: 1
+      mtu: 1500
+      name: rs1 -> [r1,r2,rs2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: eth1
+        ipv4: 172.16.0.2/24
+        node: r2
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: rs2
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    module:
+    - bgp
+    mtu: 1500
+    name: rs1
+  rs2:
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 172.16.0.3
+      - 172.16.0.1
+      - 172.16.0.2
+      advertise_loopback: true
+      as: 65101
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 172.16.0.1
+        name: r1
+        rs: true
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 172.16.0.2
+        name: r2
+        rs: true
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.4
+      rs: true
+      rs_client: true
+    box: quay.io/frrouting/frr:9.1.0
+    clab:
+      binds:
+      - clab_files/rs2/daemons:/etc/frr/daemons
+      - clab_files/rs2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    config:
+    - bgp.session
+    device: frr
+    hostname: clab-input-rs2
+    id: 4
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.4/24
+      linkindex: 1
+      mtu: 1500
+      name: rs2 -> [r1,r2,rs1]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.1/24
+        node: r1
+      - ifname: eth1
+        ipv4: 172.16.0.2/24
+        node: r2
+      - ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: rs1
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:00:00:04
+    module:
+    - bgp
+    mtu: 1500
+    name: rs2
+plugin:
+- bgp.session
+provider: clab
