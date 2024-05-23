@@ -231,7 +231,8 @@ def create_recursive_html(
       continue
     if not '_path' in i_data:
       continue
-    create_html_page(args,f'{template}.html.j2',topology + { 'results': i_data },i_data._path.replace('/','-')+".html")
+    path = i_data._path.replace('/','-').replace('#','.')
+    create_html_page(args,f'{template}.html.j2',topology + { 'results': i_data },path+".html")
     if recursive:
       create_recursive_html(args,i_data,topology)
 
