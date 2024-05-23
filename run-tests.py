@@ -10,6 +10,7 @@ from box import Box
 
 import netsim.utils.read as _read
 import netsim.utils.log as log
+import netsim.utils.strings as _strings
 import netsim.augment.devices as devices
 from netsim.cli.external_commands import run_command
 
@@ -118,7 +119,12 @@ def device_supports_test(device: str, t_data: Box, setup: Box) -> bool:
   return True
 
 def run_single_test(device: str, provider: str, test: str, limit: typing.Optional[str], setup: Box) -> bool:
+  print()
+  _strings.print_colored_text('[RUNNING]    ',color='green')
   print(f'Device: {device} Provider: {provider} Test suite: {test} Limit: {limit} (abort with ctrl/c)')
+  _strings.print_colored_text('[LASTCHANCE] ',color='green')
+  print('Abort with CTRL/C')
+  print()
   time.sleep(1)
 
   os.environ['NETLAB_DEVICE'] = device
