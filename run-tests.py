@@ -55,10 +55,12 @@ def prune_setup(setup: Box, args: argparse.Namespace) -> None:
     log.fatal('You have to specify the devices to test, using either --device or --all flag',module='tests')
 
   if args.device:
-    if args.device not in setup.devices.keys():
-      log.fatal(f'We have not configured integration tests for device {args.device}',module='tests')
+    i_devices = args.device.split(',')
+    for device in i_devices:
+      if device not in setup.devices.keys():
+        log.fatal(f'We have not configured integration tests for device {args.device}',module='tests')
 
-    setup.devices = { args.device: setup.devices[args.device] }
+    setup.devices = { k:v for k,v in setup.devices.items() if k in i_devices }
 
   elif args.exclude:
     x_devices = args.exclude.split(',')
