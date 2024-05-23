@@ -10,6 +10,7 @@ from box import Box
 
 import netsim.utils.read as _read
 import netsim.utils.log as log
+import netsim.augment.devices as devices
 from netsim.cli.external_commands import run_command
 
 def tests_parse(args: typing.List[str]) -> argparse.Namespace:
@@ -154,6 +155,7 @@ def run_tests(setup: Box, limit: typing.Optional[str]) -> None:
 def main() -> None:
   args = tests_parse(sys.argv[1:])
   setup = _read.load('setup.yml')
+  devices.augment_device_settings(setup)
   prune_setup(setup,args)
 #  print(setup.to_yaml())
 
