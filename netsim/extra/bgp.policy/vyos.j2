@@ -1,0 +1,57 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+
+configure
+
+{% import '_route_map_vyos.j2' as routemap with context %}
+
+{% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) -%}
+{{   routemap.common_route_map_entry(p_entry) }}
+{%- endcall %} 
+
+{% set directions_map = { 'in':'import', 'out':'export' } %}
+
+# Catch all config stuff on the same loop (and avoid multiple loopings)
+
+# main routing table
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+
+{%   if 'policy' in n %}
+{%     for direction in [ 'in','out' ] if direction in n.policy %}
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-map {{ directions_map[direction] }} bp-{{ n._policy_name }}-{{ direction }}
+{%     endfor %}
+{%   endif %}
+
+{%   endfor %}
+{% endfor %}
+
+# Specific VRFs
+{% for vname,vdata in (vrfs|default({})).items() if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%       set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+
+{%   if 'policy' in n %}
+{%     for direction in [ 'in','out' ] if direction in n.policy %}
+set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-map {{ directions_map[direction] }} bp-{{ n._policy_name }}-{{ direction }}
+{%     endfor %}
+{%   endif %}
+
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
+

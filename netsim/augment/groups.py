@@ -441,6 +441,7 @@ def create_bgp_autogroups(topology: Box) -> None:
   if not isinstance(g_module,list):                             # Won't deal with incorrectly formatted 'module' attribute here
     g_module = []                                               # ... just assume it's an empty list
   g_bgpas = data.get_global_parameter(topology,'bgp.as')        # Try to get the global BGP AS
+  err_list = []
 
   for gname,gdata in topology.groups.items():                   # Sanity check: BGP autogroups should not have static members
     if re.match('as\\d+$',gname):
@@ -469,10 +470,21 @@ def create_bgp_autogroups(topology: Box) -> None:
       continue
 
     grpname = f"as{n_bgpas}"                                    # BGP auto-group name
+    if grpname in topology.nodes:
+      if grpname not in err_list:
+        log.error(
+          f"Cannot create group '{grpname}' for BGP AS {n_bgpas}, node {grpname} already exists",
+          category=log.IncorrectValue,
+          module='groups')
+      err_list.append(grpname)
+
     if not 'members' in topology.groups[grpname]:               # Set members of a new group to an empty list
       topology.groups[grpname].members = []                     # ... because we're using Box this also creates an empty group dict
 
     topology.groups[grpname].members.append(n_name)             # ... and append the node to AS group
+
+  if err_list:
+    log.exit_on_error()
 
 """
 precheck_groups:

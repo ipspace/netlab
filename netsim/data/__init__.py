@@ -27,6 +27,25 @@ def get_a_list(x: typing.Any, ctx: typing.Optional[str] = None) -> list:
 
   return [ x ]
 
+"""
+append_to_list: Given a box, a list name, and an item:
+
+* Return if the box is None
+* Create an empty list if it does not exist
+* Append the item to the list
+"""
+def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any) -> list:
+  if BX is None:
+    return []
+
+  if not list_name in BX:
+    BX[list_name] = []
+
+  if not item in BX[list_name]:
+    BX[list_name].append(item)
+
+  return BX[list_name]
+
 #
 # Change all NULL values in a nested dictionary structure to empty strings
 # to make them nicer in YAML printouts

@@ -1,0 +1,46 @@
+---
+message: |
+  Use this topology to test the 'route server' functionality. The DUT has to act
+  as a route server, propagating routes without adding its AS number to the AS path.
+
+plugin: [ bgp.session ]
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ r1, r2 ]
+
+nodes:
+  dut:
+    bgp.as: 65100
+    bgp.rs: True
+  r1:
+    bgp.as: 65000
+  r2:
+    bgp.as: 65001
+    id: 10
+
+links:
+- dut-r1-r2
+
+validate:
+  session:
+    description: Check IPv4 EBGP sessions with DUT
+    wait_msg: Waiting for EBGP session establishment
+    wait: 10
+    nodes: [ r1, r2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx:
+    description: Check that DUT propagates the R2 loopback to R3
+    wait_msg: Waiting for EBGP update propagation
+    wait: 10
+    nodes: [ r1 ]
+    plugin: bgp_prefix(nodes.r2.loopback.ipv4)
+
+  aspath:
+    description: Check that DUT acts as a route server
+    nodes: [ r1 ]
+    plugin: bgp_prefix_aspath(nodes.r2.loopback.ipv4,aspath='65001')

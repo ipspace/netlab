@@ -1,0 +1,74 @@
+{% macro prepend_set(s_param,asn) -%}
+{%   if s_param.path|default('') %}
+set set as-path prepend {{ s_param.path }}
+{%   elif s_param.count|default(0) %}
+set set as-path prepend {{ (asn + " ") * s_param.count }}
+{%   endif %}
+{%- endmacro %}
+
+{#
+   This macro generates the elements of route-map entries
+#}
+{% macro common_route_map_entry(p_entry) -%}
+{%   if 'set' in p_entry %}
+{%     if 'locpref' in p_entry.set %}
+set set local-preference {{ p_entry.set.locpref }}
+{%     endif %}
+{%     if 'med' in p_entry.set %}
+set set metric {{ p_entry.set.med }}
+{%     endif %}
+{%     if 'prepend' in p_entry.set %}
+{{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
+{%     endif %}
+{%   endif %}
+{%- endmacro %}
+
+{#
+   This macro builds a single route map and uses the callback to define a route map entry.
+#}
+{% macro build_route_map(n) -%}
+{%   for direction in [ 'in','out' ] if direction in n.policy %}
+{%     for p_entry in n.policy[direction] %}
+
+set policy route-map bp-{{ n._policy_name }}-{{ direction }} rule {{ loop.index * 10 }} action {{ p_entry.action|default('permit') }}
+
+edit policy route-map bp-{{ n._policy_name }}-{{ direction }} rule {{ loop.index * 10 }}
+{{       caller(p_entry) }}
+top
+
+{%     endfor %}
+
+{%   endfor %}
+{%- endmacro %}
+
+{#
+   This macro creates route maps for all neighbors in a VRF or global routing table
+
+   The callback defines a route map entry.
+#}
+{% macro create_neighbor_route_maps(bgp) -%}
+{%   set cb = caller %}
+{%   for n in bgp.neighbors|default([]) if 'policy' in n %}
+{%    call(p_entry) build_route_map(n) -%}
+{{       cb(p_entry) }}
+{%-    endcall %}
+{%   endfor %}
+{%- endmacro %}
+
+
+{#
+   Top-level route-map macro: creates route maps for global and VRF neighbors
+
+   The callback defines a route map entry.
+#}
+{% macro create_route_maps(bgp,vrfs) -%}
+{%   set cb = caller %}
+{%   call(p_entry) create_neighbor_route_maps(bgp) -%}
+{{     cb(p_entry) }}
+{%-  endcall %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%     call(p_entry) create_neighbor_route_maps(vdata.bgp) -%}
+{{       cb(p_entry) }}
+{%-    endcall %}
+{%   endfor %}
+{%- endmacro %}

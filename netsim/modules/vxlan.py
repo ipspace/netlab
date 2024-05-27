@@ -198,14 +198,26 @@ class VXLAN(_Module):
           log.MissingValue,
           'vxlan')
         continue
-      if not 'vlans' in ndata:                                      # Skip VXLAN-enabled nodes without VLANs
-        if 'vxlan' in ndata:                                        # ... but make sure there's no vxlan.vlans list left on them
-          ndata.vxlan.pop('vlans',None)
-        continue
 
       # Build the final per-node VXLAN list -- all VLANs with VNI attribute are VXLAN-enabled in one way or another
       #
-      ndata.vxlan.vlans = [ vname for vname,vdata in ndata.vlans.items() if 'vni' in vdata and vdata.vni ]
+      if 'vlans' in ndata:
+        ndata.vxlan.vlans = [ vname for vname,vdata in ndata.vlans.items() if 'vni' in vdata and vdata.vni ]
+
+      # Build the list of VRFs using VXLAN L3VNI
+      #
+      if 'vrfs' in ndata:
+        l3vnis = [ vname for vname,vdata in ndata.vrfs.items() if vdata.get('evpn.transit_vni',False) ]
+        if l3vnis:
+          ndata.vxlan.l3vnis = l3vnis
+
+      # Do we have a good reason to use VXLAN on this node?
+      #
+      if not ndata.vxlan.get('vlans',[]) and not ndata.vxlan.get('l3vnis',[]):
+        ndata.module = [ m for m in ndata.module if m != 'vxlan' ]
+        ndata.pop('vxlan',None)
+        continue
+
       if not node_set_vtep(ndata,topology):                         # Set VTEP IP address
         continue
 
@@ -225,6 +237,5 @@ class VXLAN(_Module):
           if 'vni' in vlan:                                         # Are we dealing with VXLAN-enabled VLAN?
             vtep_list = build_vtep_list(vlan,node,nodes,topology)   # Build VLAN-specific VTEP list
             vtep_set.update(vtep_list)                              # ... and add it to node-level VTEP set
-
 
         ndata.vxlan.vtep_list = sorted(list(vtep_set))              # Convert node-level VTEP set into a list

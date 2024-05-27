@@ -1,0 +1,45 @@
+---
+message: |
+  Use this topology to test the 'disable first AS check ' functionality. The DUT has
+  to accept EBGP updates where the first AS in the AS path is not equal to the neighbor's
+  AS (the neighbor is a route server).
+
+plugin: [ bgp.session ]
+module: [ bgp ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ rs, r2, r3 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+  r2:
+    bgp.as: 65001
+    id: 10
+  r3:
+    bgp.as: 65002
+  rs:
+    bgp.as: 65100
+    bgp.rs: True
+
+links:
+- dut-r2-rs
+- dut-r3
+
+validate:
+  session:
+    description: Check IPv4 EBGP sessions with DUT
+    wait_msg: Waiting for EBGP session establishment
+    wait: 10
+    nodes: [ rs, r3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx:
+    description: Check that DUT propagates the R2 loopback to R3
+    wait_msg: Waiting for EBGP update propagation
+    wait: 10
+    nodes: [ r3 ]
+    plugin: bgp_prefix(nodes.r2.loopback.ipv4)
