@@ -31,5 +31,13 @@ class SRLINUX(_Quirks):
                     log.IncorrectType,
                     'quirks')
 
+    if 'bgp' in mods:
+      for c,vals in topology.get('bgp.community',[]).items():
+        if 'extended' not in vals:
+           log.error(
+                      f'SR Linux on ({node.name}) does not support filtering out extended communities for BGP. {c}:{vals}\n',
+                      log.IncorrectType,
+                      'quirks')
+
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.grpc')
