@@ -83,8 +83,10 @@
    import-policy: accept_all
    export-policy: accept_all
    peer-as: {{ neighbor.as }}
+{%  if transport_ip %}
    transport:
     local-address: {{ transport_ip }}
+{%  endif %}
 {%  if vrf_bgp.rr|default(0) %}
     passive-mode: True
     _annotate_passive-mode: "Improve robustness during startup"
@@ -120,6 +122,9 @@
   {{ bgp_families(n,ipv4=(af=='ipv4' or 'ipv4' not in n),ipv6=(af=='ipv6')) | indent(2) }}
 {% if 'ebgp' in n.type %}
      peer-as: {{ n.as }}
+{% elif n.type=='localas_ibgp' %}
+     transport:
+      local-address: {{ interfaces[n.ifindex-1][af]|ipaddr('address') }}
 {% elif vrf_bgp.rr|default(False) and n.rr|default(False) %}
      route-reflector:
       client: False # Don't reflect routes between ibgp route reflectors
