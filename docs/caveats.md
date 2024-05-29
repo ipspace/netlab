@@ -285,6 +285,7 @@ sudo pip3 install --upgrade 'ansible>=9.5.1'
 * Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
 * SR Linux does not support multi-topology IS-IS.
+* SR Linux does not support generic filtering (removal) of extended communities, only standard or large
 
 (caveats-sros)=
 ## Nokia SR OS
