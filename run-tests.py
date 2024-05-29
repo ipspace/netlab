@@ -78,10 +78,12 @@ def prune_setup(setup: Box, args: argparse.Namespace) -> None:
       log.fatal(f'Provider {args.provider} is not used in any integration tests',module='tests')
 
   if args.tests:
-    if args.tests not in setup.tests.keys():
-      log.fatal(f'Unknown integration test {args.tests}',module='tests')
+    x_tests = args.tests.split(',')
+    for test in x_tests:
+      if test not in setup.tests.keys():
+        log.fatal(f'Unknown integration test {args.tests}',module='tests')
 
-    setup.tests = { args.tests: setup.tests[args.tests] }
+    setup.tests = { k:v for k,v in setup.tests.items() if k in x_tests }
 
   for test in list(setup.tests.keys()):
     if setup.tests[test] is None:
