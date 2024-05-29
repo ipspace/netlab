@@ -79,7 +79,7 @@
 {% endif %}
 {% endmacro %}
 
-{% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
+{% macro bgp_peer_group(name,af,type,neighbor,transport_ip) %}
 - path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
   val:
    admin-state: enable
@@ -95,7 +95,8 @@
     _annotate_large: "Assuming 'standard' implies 'large' here"
    import-policy: accept_all
 {% if 'ibgp' in type %}
-   export-policy: {{ (vrf + "_export") if type=='localas_ibgp' else "accept_all" }}
+   export-policy: {{ (vrf + "_export") if type=='localas_ibgp' 
+                     else ("next_hop_self_ebgp_"+af) if bgp.next_hop_self|default(False) else "accept_all" }}
    peer-as: {{ neighbor.as }}
 {%  if transport_ip %}
    transport:
@@ -127,7 +128,7 @@
 {# (Re)create peer group #}
 {% set peer_group = 'ebgp' if n.type=='ebgp' else 'ibgp-local-as' if n.type=='localas_ibgp' else ('ibgp-'+af) %}
 {% set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
-{{ bgp_peer_group(peer_group,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip) }}
+{{ bgp_peer_group(peer_group,af,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip) }}
 
 - path: network-instance[name={{vrf}}]/protocols/bgp
   val:
@@ -161,7 +162,7 @@
 {% endif %}
 
 {% set peer_group = n.type + "-unnumbered" + (('-' + n.local_as|string()) if n.local_as is defined else '') %}
-{{ bgp_peer_group(peer_group,n.type,n,None) }}
+{{ bgp_peer_group(peer_group,af,n.type,n,None) }}
 {% if n.local_as is defined %}
    local-as:
     as-number: {{ n.local_as }}
