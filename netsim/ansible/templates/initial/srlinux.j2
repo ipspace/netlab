@@ -1,6 +1,6 @@
 {% macro ip_addresses(name,index,intf,ipv6_ra=True,is_system=False) %}
-- path: interface[name={{name}}]/subinterface[index={{index}}]
-  val:
+- path: /interface[name={{name}}]/subinterface[index={{index}}]
+  value:
    description: "{{ intf.name | default( 'No description' )|replace('->','~')|regex_replace('[\\[\\]]','') }}"
 {% if 'ipv4' in intf %}
    ipv4:
@@ -43,8 +43,8 @@ updates:
    or (clab.type in ['ixrd1','ixrd2','ixrd3','ixrh1','ixrh2','ixrh3','ixrd2l','ixrd3l'] and (mtu+14)>9398) %}
 {{ mtu_too_large | mandatory( 'IP MTU '+str(mtu)+' too large for given hardware platform: ' + clab.type ) }}
 {% else %}
-- path: system/mtu
-  val:
+- path: /system/mtu
+  value:
    default-port-mtu: {{ [mtu + 14,1500]|max }}
 {%  if 'ixrh' not in clab.type %}
    default-l2-mtu: {{ [mtu + 14,1500]|max }}
@@ -61,8 +61,8 @@ updates:
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
 {% set if_desc = l.name|default( l.ifname )|replace('->','~')|regex_replace('[\\[\\]]','') %}
-- path: interface[name={{ if_name }}]
-  val:
+- path: /interface[name={{ if_name }}]
+  value:
 {% if l.mtu is defined and l.type!='loopback' %} # min 1500; max 9412 for 7220, 9500 for 7250 platforms
    mtu: {{ [l.mtu + 14,1500]|max }}
 {% endif %}
@@ -81,8 +81,8 @@ updates:
 {% set if_name_index = l.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
-- path: network-instance[name={{ vrf }}]
-  val:
+- path: /network-instance[name={{ vrf }}]
+  value:
    type: {{ 'default' if vrf=='default' else 'ip-vrf' }}
    interface:
    - name: {{ if_name }}.{{ if_index }}
@@ -90,8 +90,8 @@ updates:
 {% endmacro %}
 
 {# Make sure the default VRF is called 'default', and has system0.0 interface #}
-- path: network-instance[name=default]
-  val:
+- path: /network-instance[name=default]
+  value:
    type: default
    interface:
    - name: system0.0
