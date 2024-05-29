@@ -36,7 +36,7 @@ class SRLINUX(_Quirks):
         if 'extended' not in vals:
            log.error(
                       f'SR Linux on ({node.name}) does not support filtering out extended communities for BGP. {c}:{vals}\n',
-                      log.IncorrectType,
+                      Warning,
                       'quirks')
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
