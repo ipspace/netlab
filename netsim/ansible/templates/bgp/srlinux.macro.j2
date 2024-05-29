@@ -1,14 +1,25 @@
 {% macro bgp_export_prefix(vrf,prefix) %}
-- path: routing-policy/prefix-set[name={{vrf}}_export]
-  val:
+- path: /routing-policy/prefix-set[name={{vrf}}_export]
+  value:
    prefix:
    - ip-prefix: {{ prefix }}
      mask-length-range: exact
 {% endmacro %}
 
 {% macro bgp_config(vrf,_as,router_id,vrf_bgp,vrf_context) %}
-- path: network-instance[name={{vrf}}]/protocols/bgp
-  val:
+
+{% if 'import' in vrf_context %}
+{% set import_policy = vrf + "_ebgp_import" %}
+{{ bgp_policy(vrf,1,vrf_context.import,vrf_context) }}
+{% else %}
+{% set import_policy = "accept_all" %}
+{% endif -%}
+
+{% set export_policy = vrf + "_ebgp_export" %}
+{{ bgp_policy(vrf,0,vrf_context.export|default({}),vrf_context) }}
+
+- path: /network-instance[name={{vrf}}]/protocols/bgp
+  value:
    admin-state: enable
    autonomous-system: {{ _as }}
    router-id: {{ router_id }}
@@ -28,11 +39,11 @@
 
 {# Create route export policies #}
 - path: routing-policy/prefix-set[name={{vrf}}_export]
-  val:
+  value:
    prefix: [] # Make sure it exists
 
 - path: routing-policy/policy[name={{vrf}}_export]
-  val:
+  value:
    default-action:
     policy-result: reject
    statement:
@@ -79,9 +90,9 @@
 {% endif %}
 {% endmacro %}
 
-{% macro bgp_peer_group(name,af,type,neighbor,transport_ip) %}
-- path: network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
-  val:
+{% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
+- path: /network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
+  value:
    admin-state: enable
 {{ bgp_families(neighbor) }}
    timers:
@@ -130,8 +141,8 @@
 {% set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
 {{ bgp_peer_group(peer_group,af,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip) }}
 
-- path: network-instance[name={{vrf}}]/protocols/bgp
-  val:
+- path: /network-instance[name={{vrf}}]/protocols/bgp
+  value:
    neighbor:
    - peer-address: "{{ n[af] }}"
      description: {{ n.name }}
@@ -170,8 +181,8 @@
 {% endif %}
 
 {% if n.ipv4_rfc8950|default(False) %}
-- path: network-instance[name={{vrf}}]/ip-forwarding
-  val:
+- path: /network-instance[name={{vrf}}]/ip-forwarding
+  value:
    receive-ipv4-check: false
    _annotate_receive-ipv4-check: "Allow IPv4 on IPv6 unnumbered interfaces"
 {% endif %}
@@ -180,8 +191,8 @@
 {% set if_name_index = i.ifname.split('.') %}
 {% set if_name = if_name_index[0] %}
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
-- path: network-instance[name={{vrf}}]/protocols/bgp/dynamic-neighbors/interface[interface-name={{if_name}}.{{if_index}}]
-  val:
+- path: /network-instance[name={{vrf}}]/protocols/bgp/dynamic-neighbors/interface[interface-name={{if_name}}.{{if_index}}]
+  value:
    peer-group: "{{ peer_group }}"
    allowed-peer-as: [ {{ n.as }}..{{ n.as }} ]
 
@@ -195,13 +206,13 @@
 #}
 {% for pfx in vrf_bgp.originate|default([]) %}
 {% if loop.first %}
-- path: network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
-  val:
+- path: /network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
+  value:
    blackhole:
      generate-icmp: True
 {% endif %}
-- path: network-instance[name={{vrf}}]/static-routes
-  val:
+- path: /network-instance[name={{vrf}}]/static-routes
+  value:
    route:
    - prefix: "{{ pfx }}"
      next-hop-group: blackhole
@@ -210,7 +221,7 @@
 {% if 'sr' in module|default([]) or ('mpls' in module|default([]) and ldp is defined) %}
 {# Configure BGP shortcuts via SR-ISIS or LDP #}
 - path: network-instance[name={{vrf}}]/protocols/bgp/afi-safi[afi-safi-name=ipv4-unicast]/ipv4-unicast/next-hop-resolution
-  val:
+  value:
    ipv4-next-hops:
     tunnel-resolution:
      mode: prefer
