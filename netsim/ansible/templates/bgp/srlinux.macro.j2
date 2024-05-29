@@ -15,8 +15,6 @@
    ebgp-default-policy:
     export-reject-all: False
     import-reject-all: False
-   import-policy: "accept_all"  # Set eBGP policy globally, override for iBGP
-   export-policy: "accept_all"
 
 {# Configure BGP address families globally #}
 {% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
@@ -32,6 +30,22 @@
 - path: routing-policy/prefix-set[name={{vrf}}_export]
   val:
    prefix: [] # Make sure it exists
+
+- path: routing-policy/policy[name={{vrf}}_export]
+  val:
+   default-action:
+    policy-result: reject
+   statement:
+   - name: prefixes
+     match:
+      prefix-set: {{vrf}}_export
+     action:
+      policy-result: accept
+   - name: bgp
+     match:
+      protocol: bgp
+     action:
+      policy-result: accept
 
 {% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
 {% if loopback[af] is defined and bgp.advertise_loopback and vrf=='default' %}
@@ -79,9 +93,9 @@
     standard: {{ 'standard' in list }}
     large: {{ 'standard' in list }}
     _annotate_large: "Assuming 'standard' implies 'large' here"
-{% if 'ibgp' in type %}
    import-policy: accept_all
-   export-policy: accept_all
+{% if 'ibgp' in type %}
+   export-policy: {{ (vrf + "_export") if type=='localas_ibgp' else "accept_all" }}
    peer-as: {{ neighbor.as }}
 {%  if transport_ip %}
    transport:
@@ -93,6 +107,8 @@
 {%  else %}
    next-hop-self: {{ vrf_bgp.next_hop_self|default(False) }}
 {%  endif %}
+{% else %}
+   export-policy: {{ (vrf + "_export") }}
 {% endif %}
 {% if vrf_bgp.rr|default(0) %}
    route-reflector:
