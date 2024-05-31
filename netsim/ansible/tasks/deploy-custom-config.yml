@@ -22,6 +22,17 @@
   when: config_template == ''
   tags: [ always ]
 
+- name: Check is the configuration template is a file
+  stat:
+    path: "{{ config_template }}"
+  register: config_stat
+  delegate_to: localhost
+
+- fail:
+    msg: Cannot find template for device {{ netlab_device_type }} in custom config directory {{ config_template }}
+  when:
+    config_stat.stat.isdir|default(False)
+
 - name: "Process template {{ config_template }} for {{ inventory_hostname }}"
   debug:
     msg: |

@@ -1,21 +1,11 @@
 """
-FRR OSPFv2 validation routines
+FRR BGP validation routines
 """
 
 from box import Box
 import typing
 from netsim.data import global_vars
-
-# Find neighbor IP address from neighbor name
-def get_bgp_neighbor_id(ngb: list, n_id: str, af: str) -> typing.Union[bool, str]:
-  for n in ngb:
-    if n.name != n_id:
-      continue
-    if af not in n:
-      continue
-    return n[af]
-  
-  raise Exception(f'Cannot find the {af} address of the neighbor {n_id}')
+from ._common import get_bgp_neighbor_id
 
 def show_bgp_neighbor(ngb: list, n_id: str, **kwargs: typing.Any) -> str:
   return 'bgp summary json'
@@ -83,7 +73,8 @@ def valid_bgp_prefix(
   _result = global_vars.get_result_dict('_result')
 
   exit_miss = f'The prefix {pfx} is not in the BGP table'
-  exit_msg = f'The prefix {pfx} is in the BGP table'
+  where = f'advertised by BGP router with ID {peer}' if peer else 'in the BGP table'
+  exit_msg = f'The prefix {pfx} is {where}'
 
   if 'prefix' not in _result:
     if state != 'missing':
@@ -99,10 +90,10 @@ def valid_bgp_prefix(
       if state != 'missing':
         raise Exception(f'Peer {peer} does not advertise the BGP prefix {pfx}')
       else:
-        return exit_miss
+        return f'The prefix {pfx} is not advertised by BGP router with ID {peer}'
 
   if _result.paths and state == 'missing':
-    raise Exception(f'The prefix {pfx} should not be in the BGP table')
+    raise Exception(f'The prefix {pfx} should not be {where}')
 
   if nh:                                          # Checking for the next hop
     nh = nh.split('/')[0]                         # Get IP address from a CIDR address
