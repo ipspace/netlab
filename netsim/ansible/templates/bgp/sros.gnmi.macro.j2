@@ -1,5 +1,50 @@
-{% macro bgp_config(vrf_bgp,vrf=None) %}
-{% set path = "router[router-name=Base]" if not vrf else "service/vprn[service-name="+vrf+"]" %}
+{% macro bgp_export_prefix(vrf,prefix) %}
+- path: configure/policy-options/prefix-list[name={{vrf}}_export]
+  val:
+   prefix:
+   - ip-prefix: {{ prefix }}
+     type: exact
+{% endmacro %}
+
+{% macro bgp_config(vrf,vrf_bgp,vrf_context) %}
+
+{# Create route export policies #}
+- path: configure/policy-options/prefix-list[name={{vrf}}_export]
+  val:
+   prefix: [] # Make sure it exists
+
+- path: configure/policy-options/policy-statement[name={{vrf}}_export]
+  val:
+   default-action:
+    action-type: reject
+   entry:
+   - entry-id: 10
+     from:
+      prefix-list: [ "{{vrf}}_export" ]
+     action:
+      action-type: accept
+   - entry-id: 20
+     from:
+      protocol: 
+       name: ["bgp"]
+     action:
+      action-type: accept
+
+{% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
+{% if loopback[af] is defined and bgp.advertise_loopback and vrf=="default" %}
+{{ bgp_export_prefix(vrf,loopback[af]|ipaddr('address')|ipaddr('host')) }}
+{% endif %}
+
+{% for l in interfaces|default([]) if l.bgp.advertise|default(0) and l[af]|default(False) is string and l.vrf|default("default")==vrf %}
+{{ bgp_export_prefix(vrf,l[af]|ipaddr('subnet')) }}
+{% endfor %}
+
+{% for pfx in vrf_bgp.originate|default([]) if af == 'ipv4' %}
+{{ bgp_export_prefix(vrf,pfx) }}
+{% endfor %}
+{% endfor %}
+
+{% set path = "router[router-name=Base]" if vrf=="default" else "service/vprn[service-name="+vrf+"]" %}
 - path: configure/{{ path }}
   val:
    router-id: "{{ vrf_bgp.router_id|default(bgp.router_id) }}"
@@ -8,7 +53,7 @@
     ebgp-default-reject-policy:
      import: False
      export: False
-{% if not vrf %}
+{% if vrf=="default" %}
     vpn-apply-export: True
     vpn-apply-import: True
 {% endif %}
@@ -39,7 +84,8 @@
    import:
     policy: ["accept_all"]
    export:
-    policy: [ "{{ 'next-hop-self-ebgp-routes-only' if 'ibgp' in type and bgp.next_hop_self|default(False) else 'accept_all' }}" ]
+    policy: [ "{{ (vrf + "_export") if type in ['localas_ibgp','ebgp'] else 
+                  'next-hop-self-ebgp-routes-only' if 'ibgp' in type and bgp.next_hop_self|default(False) else 'accept_all' }}" ]
 
 {% if bgp.community[ type ]|default([])|length < 2 %}
    send-communities:
