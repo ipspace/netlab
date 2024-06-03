@@ -23,12 +23,13 @@ To build a Linux environment needed to run network devices as virtual machines o
 
 [^CSV]: We must change the recommended Vagrant release every few months. Please check the [libvirt installation script](https://github.com/ipspace/netlab/blob/dev/netsim/install/libvirt.sh) for details.
 
+(linux-commands-mandatory)=
 *netlab* also needs (at least) these Linux commands to provide its full functionality:
 
 * **ssh** to connect to the virtual machines.
 * **sshpass** to pass admin passwords to **ssh** (we're not brave enough to believe SSH keys work on all network devices).
 * **ansible-playbook** to configure network devices
-* **kvm-ok** to test if KVM works on the server[^KVMOK].
+* **kvm-ok** to test if KVM works on the server[^KVMOK] (but see also [](libvirt-probes))
 * **virsh** to create libvirt networks
 * **ip** to create network interfaces and turn them on or off
 * **brctl** to manage Linux bridges
