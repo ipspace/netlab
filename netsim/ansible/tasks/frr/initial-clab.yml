@@ -1,0 +1,17 @@
+- name: Attempt to load VRF kernel module 
+  block:
+    - name: "Load VRF kernel module"
+      when: netlab_mgmt_vrf|default(False) or 'vrf' in module
+      shell: |
+        modprobe vrf
+      become: true
+      delegate_to: localhost
+      run_once: true
+      tags: [ print_action, always ]
+  rescue:
+    - name: Unable to load vrf kernel module - disable use of VRFs
+      set_fact: 
+        netlab_mgmt_vrf: False
+
+- include_tasks: deploy-config.yml
+  tags: [ print_action, always ]
