@@ -1,0 +1,42 @@
+---
+message: |
+  Use this topology to test the 'auto bgp bandwidth' functionality. The DUT has to copy
+  interface bandwidth into BGP bandwidth community and propagate that on IBGP updates.
+
+plugin: [ bgp.policy ]
+module: [ bgp, ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+    id: 1
+  x1:
+    bgp.as: 65000
+  x2:
+    bgp.as: 65101
+
+links:
+- dut:
+  x1:
+- dut:
+    bgp.bandwidth: auto
+  x2:
+
+validate:
+  session:
+    description: Check BGP sessions with DUT
+    wait: 40
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  prefix:
+    description: Check for X2 prefix on X1
+    wait: 5
+    nodes: [ x1, x2 ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4)

@@ -2,10 +2,29 @@ import typing
 from box import Box
 from netsim.utils import bgp as _bgp, log
 from netsim import api,data
+from netsim.data import types
 
 _config_name = 'bgp.policy'
 
 _requires    = [ 'bgp' ]
+
+@types.type_test()
+def must_be_autobw(
+      value: typing.Any,
+      min_value:  typing.Optional[int] = None,          # Minimum value
+      max_value:  typing.Optional[int] = None,          # Maximum value
+                ) -> dict:
+  
+  expected_type = { '_type': 'auto-bandwidth (an integer or keyword "auto")' }
+
+  if isinstance(value,str):
+    if value == 'auto':
+      return { '_valid': True } 
+    
+  result = types.check_int_type(value,min_value,max_value)
+  return expected_type if '_type' in result else result
+
+types.register_type('autobw',must_be_autobw)
 
 '''
 append_policy_attribute
@@ -41,8 +60,11 @@ _compound: dict = {}
 Check whether the specified attribute can be applied in the requested direction. For example,
 bgp.bandwidth does not work on outbound updates on Cisco IOSv
 '''
+
+_attr_error: Box = data.get_empty_box()
+
 def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, attr_value: typing.Any) -> None:
-  global _config_name
+  global _config_name,_attr_error
 
   if not isinstance(attr_value,dict):                   # Attribute value does not have in/out values, nothing to check
     return
@@ -52,10 +74,38 @@ def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, at
     return
 
   for kw in attr_value.keys():
-    if kw in a_feature:
+    if kw not in a_feature:                             # Does the device support the specified keyword?
+      if _attr_error[ndata.name][attr][kw]:             # Skip multiple errors
+        continue                                        # ... display a single 'wrong key' error per node
+
+      _attr_error[ndata.name][attr][kw] = { 'attr': True }
+
+      log.error(
+        f'You cannot use bgp.{attr}.{kw} on {ndata.device} (node {ndata.name})',
+        category=log.IncorrectType,
+        module=_config_name)
       continue
+
+    if isinstance(a_feature[kw],bool):                  # Does the device have any further restrictions?
+      continue
+
+    if not isinstance(a_feature[kw],list):
+      a_feature[kw] = [ a_feature[kw] ]
+
+    if type(attr_value[kw]).__name__ in a_feature[kw] or attr_value[kw] in a_feature[kw]:
+      continue                                          # The value matches expected type or value
+
+    # Skip multiple errors (otherwise we would display one per neighbor)
+    # Display at most one error per value per node
+    #
+    if _attr_error[ndata.name][attr][kw][attr_value[kw]]:
+      continue
+
+    _attr_error[ndata.name][attr][kw][attr_value[kw]] = True
+
     log.error(
-      f'You cannot use bgp.{attr}.{kw} on {ndata.device} (node {ndata.name})',
+      f'bgp.{attr}.{kw} should be {",".join(a_feature[kw])} on device {ndata.device} (node {ndata.name})' + \
+      f' found "{attr_value[kw]}"',
       category=log.IncorrectType,
       module=_config_name)
 
@@ -102,7 +152,7 @@ def fix_bgp_bandwidth(intf: Box) -> None:
   if bw is None:
     return
   
-  if isinstance(bw,int):
+  if not isinstance(bw,dict):
     intf.bgp.bandwidth = { 'in': bw }
 
 '''
