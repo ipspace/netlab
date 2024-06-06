@@ -57,6 +57,10 @@ echo "Install Ansible Python dependencies"
 echo ".. pynacl lxml"
 $SUDO pip3 install $REPLACE $IGNORE $FLAG_PIP pynacl lxml
 echo ".. paramiko netmiko ansible-pylibssh"
+#
+# Install ansible-pylibssh build dependency
+#
+sudo apt install -y libssh-dev
 $SUDO pip3 install $REPLACE $FLAG_PIP paramiko netmiko ansible-pylibssh
 #
 echo "Install optional Python components"
