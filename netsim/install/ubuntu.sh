@@ -63,7 +63,7 @@ $SUDO apt-get -y $FLAG_APT install git ack-grep jq tree sshpass colordiff
 # Install Ansible and NAPALM dependencies
 #
 echo "Install Python development and build modules"
-$SUDO apt-get -y $FLAG_APT install build-essential python3-dev libffi-dev
+$SUDO apt-get -y $FLAG_APT install build-essential python3-dev libffi-dev libssh-dev
 echo "Installing XML libraries"
 $SUDO apt-get -y $FLAG_APT install libxslt1-dev libssl-dev
 echo
