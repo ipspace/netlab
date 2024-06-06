@@ -408,6 +408,9 @@ def type_test(
 
   return test_wrapper
 
+def register_type(tname: str, validator: typing.Callable) -> None:
+  globals()[f'must_be_{tname}'] = validator
+
 """
 Individual data type validators
 ===============================
@@ -456,23 +459,11 @@ def must_be_id(value: typing.Any, max_length: int = 16) -> dict:
 
   return { '_valid': True } 
 
-@type_test()
-def must_be_int(
+def check_int_type(
       value: typing.Any,
       min_value:  typing.Optional[int] = None,          # Minimum value
       max_value:  typing.Optional[int] = None,          # Maximum value
                 ) -> dict:
-
-  def transform_to_int(value: typing.Any) -> int:
-    return int(value)
-
-  if isinstance(value,str):                             # Try to convert STR to INT
-    try:
-      transform_to_int(value)
-      return { '_valid': True, '_transform': transform_to_int }
-    except:
-      pass
-
   if not isinstance(value,int):                         # value must be an int
     return { '_type': 'an integer' }
 
@@ -490,6 +481,25 @@ def must_be_int(
       return { '_value': f'an integer less than or equal to {max_value}' }
 
   return { '_valid': True } 
+
+@type_test()
+def must_be_int(
+      value: typing.Any,
+      min_value:  typing.Optional[int] = None,          # Minimum value
+      max_value:  typing.Optional[int] = None,          # Maximum value
+                ) -> dict:
+
+  def transform_to_int(value: typing.Any) -> int:
+    return int(value)
+
+  if isinstance(value,str):                             # Try to convert STR to INT
+    try:
+      transform_to_int(value)
+      return { '_valid': True, '_transform': transform_to_int }
+    except:
+      pass
+
+  return(check_int_type(value,min_value,max_value))
 
 @type_test()
 def must_be_bool(value: typing.Any) -> dict:
