@@ -16,7 +16,7 @@ The **bgp.policy** plugin implements simple BGP routing policies :
 
 The plugin adds the following BGP attributes:
 
-* **bgp.bandwidth** link attribute sets the BGP Link Bandwidth extended community. It can be an integer (in megabytes), in which case the Link Bandwidth community is attached to inbound EBGP updates[^BCP], a dictionary with **in** and **out** integer values if you want to set the Link Bandwidth community in both directions (or just on the outbound updates), or **auto** keyword if you want to copy interface bandwidth into incoming EBGP updates[^PSV].
+* **bgp.bandwidth** link attribute sets the BGP Link Bandwidth extended community. It can be an integer (in Mbps), in which case the Link Bandwidth community is attached to inbound EBGP updates[^BCP], a dictionary with **in** and **out** integer values if you want to set the Link Bandwidth community in both directions (or just on the outbound updates), or **auto** keyword if you want to copy interface bandwidth into incoming EBGP updates[^PSV].
 * **bgp.locpref** is an integer attribute that sets default local preference when applied to a node, or sets local preference on BGP updates received from an EBGP neighbor.
 * **bgp.med** is an integer attribute that sets MED attribute on BGP updates sent to an EBGP neighbor.
 * **bgp.prepend** is a dictionary that configures outbound AS-path prepending. It can contain a **count** attribute (number of times the node AS is prepended) or a **path** attribute (the prepended AS-path as a string[^ASPS])
@@ -50,7 +50,8 @@ The plugin implements BGP policy attributes on these devices:
 | Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ❌  |   ❌  |   ❌  |
+| Nokia SR OS         |  ✅  |  ✅  |  ❌  |   ❌  |  ✅  |
 | VyOS                |  ✅  |  ✅  |  ❌  |   ✅  |   ❌  |
 
 **Notes:**
