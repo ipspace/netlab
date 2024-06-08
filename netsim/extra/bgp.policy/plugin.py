@@ -191,7 +191,7 @@ def post_transform(topology: Box) -> None:
       if bgp_bandwidth:
         fix_bgp_bandwidth(intf)
         ndata.bgp._bandwidth = True
-        if 'out' in bgp_bandwidth:
+        if isinstance(bgp_bandwidth,dict) and 'out' in bgp_bandwidth:
           communities = ndata.get("bgp.community.ebgp",[])  # Get a reference to the ebgp communities
           if 'extended' not in communities:                 # Enable extended communities if not already
             communities.append('extended')
