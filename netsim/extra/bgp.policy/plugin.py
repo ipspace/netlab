@@ -176,7 +176,7 @@ def post_transform(topology: Box) -> None:
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
-    # node-level locpref to all EBGP neighbors. That test is a bit convolutaed to make
+    # node-level locpref to all EBGP neighbors. That test is a bit convoluted to make
     # sure we don't get tripped up by None values
     #
     default_locpref = _bgp.get_device_bgp_feature('_default_locpref',ndata,topology)
@@ -187,9 +187,14 @@ def post_transform(topology: Box) -> None:
     #
     for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
       policy_idx += 1
-      if intf.get('bgp.bandwidth',False):
+      bgp_bandwidth = intf.get('bgp.bandwidth',False)
+      if bgp_bandwidth:
         fix_bgp_bandwidth(intf)
         ndata.bgp._bandwidth = True
+        if isinstance(bgp_bandwidth,dict) and 'out' in bgp_bandwidth:
+          communities = ndata.get("bgp.community.ebgp",[])  # Get a reference to the ebgp communities
+          if 'extended' not in communities:                 # Enable extended communities if not already
+            communities.append('extended')
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
