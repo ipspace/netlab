@@ -4,6 +4,10 @@
 {%   if 'weight' in n %}
     neighbor {{ peer }} weight {{ n.weight }}
 {%   endif %}
+{%   if 'bandwidth' in n %}
+    neighbor {{ peer }} send-community add extended
+    neighbor {{ peer }} send-community add link-bandwidth aggregate
+{%   endif %}
 {%   if 'policy' in n %}
 {%     for direction in [ 'in','out' ] if direction in n.policy %}
     neighbor {{ peer }} route-map bp-{{ n._policy_name }}-{{ direction }} {{ direction }}
@@ -12,6 +16,9 @@
 {%- endmacro %}
 !
 {% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) -%}
+{%   if 'bandwidth' in p_entry.set %}
+  set extcommunity lbw {{ p_entry.set.bandwidth }}M
+{%   endif %}
 {{   routemap.common_route_map_entry(p_entry) }}
 {%- endcall %} 
 !

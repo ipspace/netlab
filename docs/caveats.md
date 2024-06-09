@@ -84,6 +84,7 @@ See also Cisco IOSv SSH, OSPF, and BGP caveats.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * The OSPFv3 process on Cisco IOS advertises loopback addresses as /128 prefixes unless the OSPF network type is set to `point-to-point`. _netlab_ configures OSPFv3 `point-to-point` network type on all loopback interfaces to get results comparable to other implementations.
 * Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions.
+* Cisco IOSv cannot set the BGP Link Bandwidth community with a route map. All it can do is copy interface bandwidth into incoming EBGP updates. The **bgp.policy** plugin must change the interface bandwidth for the BGP Link Bandwidth community to work.
 
 (cisco-iosv-ssh)=
 SSH protocol workaround:
