@@ -21,7 +21,7 @@ from .. import data
 # * If the address families are not set, calculate them based on interface address families
 # * Otherwise parse and validate the AF attribute
 #
-def routing_af(node: Box, proto: str) -> None:
+def routing_af(node: Box, proto: str, features: typing.Optional[Box] = None) -> None:
   if 'af' in node[proto]:               # Is the AF attribute set for the routing protocol?
     if isinstance(node[proto].af,list): # Turn a list of address families into a dictionary
       node[proto].af = { af: True for af in node[proto].af }
@@ -54,9 +54,18 @@ def routing_af(node: Box, proto: str) -> None:
           node[proto].af[af] = True                   # Found it - we need it the module
           continue
 
+  p_features = features.get(proto,{}) if features else {}
+
   for af in ['ipv4','ipv6']:                          # Remove unused address families
     if not node[proto].af.get(af,False):
       node[proto].af.pop(af,False)
+      continue
+
+    if af in p_features and p_features[af] is False:
+      log.error(
+        f'Device {node.device} (node {node.name}) cannot run {proto} on {af}',
+        log.IncorrectValue,
+        proto)
 
 # Set network type for an interface:
 #
