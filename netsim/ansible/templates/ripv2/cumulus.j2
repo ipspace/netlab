@@ -1,1 +1,24 @@
-frr.j2
+#!/bin/bash
+#
+set -e
+#
+# Try to configure ripd, it will fail the first time
+#
+cat >/tmp/config <<CONFIG
+{% if ripv2.af.ipv4|default(False) %}
+router rip
+  version 2
+{% endif %}
+{% if ripv2.af.ipv6|default(False) %}
+router ripng
+{% endif %}
+CONFIG
+vtysh -f /tmp/config
+#
+# Now for the real deal
+#
+cat >/tmp/config <<CONFIG
+{% include 'frr.j2' %}
+do write
+CONFIG
+vtysh -f /tmp/config

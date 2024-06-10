@@ -95,27 +95,31 @@ You cannot use all supported network devices with all virtualization providers. 
 
 Configuration files for Virtualbox and KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
 
-| Virtual network device     | netlab device type | CPUs | memory | libvirt NIC model          |
+| Virtual network device     | netlab<br>device type | CPUs | memory | libvirt NIC model          |
 | -------------------------- | ------------------ | ---: | -----: | -------------------------: |
-| Arista vEOS                | eos                |    2 |   2048 | virtio (*libvirt default*) |
-| Aruba AOS-CX               | arubacx            |    2 |   4096 | virtio (*libvirt default*) |
-| Cisco ASAv                 | asav               |    1 |   2048 | virtio (*libvirt default*) |
+| Arista vEOS                | eos                |    2 |   2048 | virtio |
+| Aruba AOS-CX               | arubacx            |    2 |   4096 | virtio |
+| Cisco ASAv                 | asav               |    1 |   2048 | virtio |
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
 | Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000                     |
-| Cisco CSR 1000v            | csr                |    2 |   4096 | virtio (*libvirt default*) |
+| Cisco CSR 1000v            | csr                |    2 |   4096 | virtio |
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats-nxos)| e1000 |
-| Cumulus Linux              | cumulus            |    2 |   1024 | virtio (*libvirt default*) |
-| Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio (*libvirt default*) |
+| Cumulus Linux              | cumulus            |    2 |   1024 | virtio |
+| Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
-| Fortinet FortiOS           | fortios            |    1 |   1024 | virtio (*libvirt default*) |
-| FRR                        | frr                |    1 |   1024 | virtio (*libvirt default*) |
-| Generic Linux host         | linux              |    1 |   1024 | virtio (*libvirt default*) |
-| Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio (*libvirt default*) |
-| Juniper vPTX               | vptx               |    4 |   8192 | virtio (*libvirt default*) |
-| Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio (*libvirt default*) |
+| Fortinet FortiOS           | fortios            |    1 |   1024 | virtio |
+| FRR                        | frr                |    1 |   1024 | virtio |
+| Generic Linux host         | linux              |    1 |   1024 | virtio |
+| Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio |
+| Juniper vPTX               | vptx               |    4 |   8192 | virtio |
+| Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio |
 | Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000                      |
-| Sonic                      | sonic              |    2 | 4096 | virtio (*libvirt default*) |
-| VyOS                       | vyos               |    2 |   1024 | virtio (*libvirt default*) |
+| Sonic                      | sonic              |    2 | 4096 | virtio |
+| VyOS                       | vyos               |    2 |   1024 | virtio |
+
+```{tip}
+**‌virtio** is the default KVM/libvirt NIC model.
+```
 
 ## Configuration Deployments
 
@@ -240,29 +244,56 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 [^NSM]: Use **[netlab show module-support](netlab/show.md)** command to display the current system settings
 
-| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [EIGRP](module/eigrp.md) | [BGP](module/bgp.md) | [BFD](module/bfd.md) | [EVPN](module/evpn.md) | [FHRP](module/gateway.md) |
-| --------------------- | :--: | :---: | :---: | :-: | :-: | :--: | :--: |
-| Arista EOS            | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅   |  ❌   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Cisco ASAv            | ❌   |  ✅   |  ❌   | ✅  | ❌  |  ❌  |  ❌  |
-| Cisco IOSv            | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
-| Cisco IOS XE          | ✅   |  ✅   |  ✅   | ✅  | ✅  |  ❌  | ✅  |
-| Cisco IOS XRv         | ✅   |  ✅   |   ❌   | ✅  |  ❌  |  ❌  |  ❌  |
-| Cisco Nexus OS        | ✅   |  ✅   |  ✅   | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅   |   ❌   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.0 (NVUE)        | ✅   |   ❌   |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |  ❌  |  ❌  |
-| Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
-| Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |  ❌  |  ❌  |
-| FRR                   | ✅   |  ✅   |   ❌   | ✅  |  ❌  | ✅  |  ❌  |
-| Juniper vMX           | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
-| Juniper vPTX          | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
-| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
-| Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
-| Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌   | ✅  | ✅  |  ❌  |  ❌  |
-| Nokia SR Linux        | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS           | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  | ✅  |
-| Sonic                 |  ❌   |   ❌   |   ❌   | ✅  |  ❌  | ❌  |  ❌  |
-| VyOS                  | ✅   |  ✅   |   ❌   | ✅  | ✅  | ✅  |  ❌  |
+| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [EIGRP](module/eigrp.md) | [BGP](module/bgp.md) | [RIPv2/ng](module/ripv2.md)
+| --------------------- | :--: | :--: | :--: | :--: | :--: |
+| Arista EOS            | ✅   |  ✅  |   ❌  |  ✅  |  ✅  |
+| Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
+| Cisco ASAv            | ❌    |  ✅  |   ❌  |  ✅  |   ❌  |
+| Cisco IOSv            | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS XE          | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS XRv         | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
+| Cisco Nexus OS        | ✅   |  ✅  |  ✅  |  ✅  |   ❌  |
+| Cumulus Linux         | ✅   |   ❌  |   ❌  |  ✅  |  ✅  |
+| Cumulus Linux 5.0 (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
+| Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  |  ❌  |
+| Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
+| FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
+| Juniper vMX           | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+| Juniper vPTX          | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+| Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
+| Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
+| Nokia SR Linux        | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+| Nokia SR OS           | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+| Sonic                 |  ❌   |   ❌   |   ❌  | ✅  |   ❌  |
+| VyOS                  | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+
+Routing protocol [configuration modules](module-reference.md) are also supported on these daemons:
+
+| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [BGP](module/bgp.md) | [RIPv2/ng](module/ripv2.md) |
+|------------------------------|:--:|:--:|:--:|:--:|
+| BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ✅ [❗](caveats-bird) | ❌ |
+
+These devices support additional control-plane protocols or BGP address families:
+
+| Operating system | [BFD](module/bfd.md) | [EVPN](module/evpn.md) | [MPLS/VPN](module/mpls.md) | [FHRP](module/gateway.md) |
+| --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOSv            | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOS XE          | ✅  |  ❌  | ✅  | ✅  |
+| Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
+| Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
+| Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
+| FRR                   | ✅  | ✅  | ✅  |  ❌  |
+| Juniper vMX           | ✅  |  ❌  | ✅  |  ❌  |
+| Juniper vPTX          | ✅  |  ❌  | ✅  |  ❌  |
+| Juniper vSRX 3.0      | ✅  |  ❌  |  ❌  |  ❌  |
+| Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
+| Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |  ❌  |
+| Nokia SR Linux        | ✅  | ✅  |  ❌  | ✅  |
+| Nokia SR OS           | ✅  | ✅  | ✅  | ✅  |
+| VyOS                  | ✅  | ✅  | ✅  |  ❌  |
 
 **Notes:**
 * FRHP = First-Hop Redundancy Protocol (anycast gateway or VRRP)
@@ -270,12 +301,6 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 ```{tip}
 See [integration test results](https://release.netlab.tools/) for more details.
 ```
-
-Routing protocol [configuration modules](module-reference.md) are also supported on these daemons:
-
-| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [BGP](module/bgp.md) | [BFD](module/bfd.md) |
-|------------------------------|:--:|:--:|:--:|:--:|
-| BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ✅ [❗](caveats-bird) | ❌ |
 
 (platform-dataplane-support)=
 The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:

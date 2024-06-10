@@ -1,6 +1,6 @@
 # List of Configuration Modules
 
-The following configuration modules are included in **netlab** distribution:
+The following configuration modules are included in the **netlab** distribution:
 
 ```eval_rst
 .. toctree::
@@ -15,10 +15,17 @@ The following configuration modules are included in **netlab** distribution:
    module/isis.md
    MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
    module/ospf.md
+   module/ripv2.md
    module/sr-mpls.md
    module/vlan.md
    module/vrf.md
    module/vxlan.md
+```
+
+```{tip}
+* Use the **‌[netlab show modules](netlab-show-modules)** command to display the list of supported configuration modules and the devices each module supports.
+* Use the **‌[netlab show module-support](netlab-show-module-support)** command to display configuration modules supported on individual devices.
+* Use the **‌[netlab show modules --m _module_](netlab-show-modules)** command to display the device support for the module-specific features.
 ```
 
 ## Common Routing Protocol Features
@@ -32,7 +39,7 @@ The following configuration modules are included in **netlab** distribution:
 
 ## Experimental Modules
 
-Experimental modules are usually implemented on a small set of devices. We're also not (yet) completely sure about the data model describing their features; it might change in future releases as we gain more experience with them.
+Experimental modules are usually implemented on a small set of devices. We're also not (yet) entirely sure about the data model describing their features; it might change in future releases as we gain more experience with them.
 
 ```eval_rst
 .. toctree::

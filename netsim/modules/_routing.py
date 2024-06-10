@@ -120,16 +120,33 @@ def is_true_stub(intf: Box, topology: Box, proto: str = '') -> bool:
 
   return True                                               # Found no exceptions, must be a true stub
 
-# Figure out whether an IGP interface should be passive
-#
-# * The proto.passive flag is set
-# * The link role is 'passive' (set manually) or the link is a stub link (single node attached to it)
-# * The link is a stub link (so it has at most one non-host attached)
-#   and other devices on the link are not running the same protocol (so no daemons)
-#
-def passive(intf: Box, proto: str, topology: Box) -> None:
+'''
+Figure out whether an IGP interface should be passive
+
+* The proto.passive flag is set
+* The link role is 'passive' (set manually) or the link is a stub link (single node attached to it)
+* The link is a stub link (so it has at most one non-host attached)
+  and other devices on the link are not running the same protocol (so no daemons)
+
+Also, report an error if we have an explicit 'passive' flag used on a device that does not support
+passive interfaces (most other 'passive' use cases are primarily cosmetic).
+'''
+def passive(
+      intf: Box,                                            # Interface to check
+      proto: str,                                           # Routing protocol to check
+      topology: Box,                                        # We need reference to full topology to check for full stub
+      features: typing.Optional[Box] = None,                # Optional for protocols that have problems with 'passive' interfaces
+      ndata: typing.Optional[Box] = None) -> None:          # ... and node data in case we have to report an error
+
   if 'passive' in intf[proto]:                              # Explicit 'passive' flag
     intf[proto].passive = bool(intf[proto].passive)         # ... turn it into bool (just in case)
+    if features and ndata:
+      p_flag = features.get(f'{proto}.passive',None)
+      if p_flag is False:
+        log.error(
+          f'Device {ndata.device} (node {ndata.name}) does not support passive {proto} interfaces',
+          log.IncorrectType,
+          proto)
     return
 
   role = intf.get('role',"")

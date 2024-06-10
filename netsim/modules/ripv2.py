@@ -22,8 +22,8 @@ class RIPv2(_Module):
     #
     # Cleanup routing protocol from external/disabled interfaces
     for intf in node.get('interfaces',[]):
-      if not _routing.external(intf,'ripv2'):               # Remove external interfaces from RIPv2 process
-        _routing.passive(intf,'ripv2',topology)             # Set passive flag on other RIPv2 interfaces
+      if not _routing.external(intf,'ripv2'):                   # Remove external interfaces from RIPv2 process
+        _routing.passive(intf,'ripv2',topology,features,node)   # Set passive flag on other RIPv2 interfaces
 
     #
     # Final steps:
