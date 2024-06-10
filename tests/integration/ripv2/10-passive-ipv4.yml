@@ -1,0 +1,39 @@
+---
+message: |
+  This lab tests the RIPv2 passive interfaces. DUT has a passive interface on
+  the link with X2, so the route from X2 to DUT should go over X1 (and have
+  metric=3)
+
+module: [ ripv2 ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+  x1:
+  x2:
+
+links:
+- dut:                        # Circuitous link to X2
+  x1:
+
+- dut:                        # Direct link to X2
+    ripv2.passive: True
+  x2:
+
+- x1:                         # Second leg of the circuitous link
+  x2:
+
+- dut:                        # A stub network in case we have to deal with stuff like FRR
+
+validate:
+  pfx_x2:
+    description: Check RIPv2 prefixes on X2
+    wait_msg: Waiting for RIPv2 startup
+    wait: 50
+    nodes: [ x2 ]
+    plugin: rt_prefix(nodes.dut.interfaces[-1].ipv4,af='ipv4',proto='rip',metric=3)

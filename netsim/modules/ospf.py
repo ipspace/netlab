@@ -125,7 +125,7 @@ class OSPF(_Module):
     #
     _routing.remove_unaddressed_intf(node,'ospf')
     _routing.build_vrf_interface_list(node,'ospf',topology)
-    _routing.routing_af(node,'ospf')
+    _routing.routing_af(node,'ospf',features)
     _routing.remove_vrf_routing_blocks(node,'ospf')
     propagate_node_attributes(node,topology)
     _routing.remove_unused_igp(node,'ospf',topology.defaults.get('ospf.warnings.inactive',False))
