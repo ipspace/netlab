@@ -1,5 +1,5 @@
 """
-FRR OSPFv2 validation routines
+FRR routing table validation routines
 """
 
 from box import Box

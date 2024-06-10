@@ -1,5 +1,5 @@
 #
-# OSPF transformation module
+# RIPv2/RIPng transformation module
 #
 import typing
 
@@ -27,11 +27,9 @@ class RIPv2(_Module):
 
     #
     # Final steps:
-    # * move OSPF-enabled VRF interfaces into VRF dictionary
+    # * move RIP-enabled VRF interfaces into VRF dictionary
     # * Calculate address families
-    # * Enable BFD
-    # * Remove OSPF module if there are no OSPF-enabled global or VRF interfaces
-    # * Propagate OSPF attributes into loopback interface and VRFs
+    # * Remove RIPv2 module if there are no RIPv2-enabled global or VRF interfaces
     #
     _routing.remove_unaddressed_intf(node,'ripv2')
     _routing.build_vrf_interface_list(node,'ripv2',topology)
