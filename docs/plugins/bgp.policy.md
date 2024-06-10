@@ -16,10 +16,15 @@ The **bgp.policy** plugin implements simple BGP routing policies :
 
 The plugin adds the following BGP attributes:
 
+* **bgp.bandwidth** link attribute sets the BGP Link Bandwidth extended community. It can be an integer (in Mbps), in which case the Link Bandwidth community is attached to inbound EBGP updates[^BCP], a dictionary with **in** and **out** integer values if you want to set the Link Bandwidth community in both directions (or just on the outbound updates), or **auto** keyword if you want to copy interface bandwidth into incoming EBGP updates[^PSV].
 * **bgp.locpref** is an integer attribute that sets default local preference when applied to a node, or sets local preference on BGP updates received from an EBGP neighbor.
 * **bgp.med** is an integer attribute that sets MED attribute on BGP updates sent to an EBGP neighbor.
 * **bgp.prepend** is a dictionary that configures outbound AS-path prepending. It can contain a **count** attribute (number of times the node AS is prepended) or a **path** attribute (the prepended AS-path as a string[^ASPS])
 * **bgp.weight** is an integer attribute that sets per-neighbor weight.
+
+[^BCP]: _netlab_ configures network devices to propagate BGP Link Bandwidth extended community on IBGP sessions. The value advertised in IBGP updates is device-dependent and could be the value attached to the best path or the aggregate of EBGP values.
+
+[^PSV]: The allowed values are platform-dependent. For example, Arista EOS and FRR can set bandwidth values in both directions but cannot add interface bandwidth, while Cisco IOS/XE can only add interface bandwidth to incoming EBGP updates.
 
 [^ASPS]: You must quote a single AS number that you want to prepend with the **path** attribute, otherwise the YAML parser treats it as an integer.
 
@@ -27,6 +32,7 @@ BGP policy attributes can be specified on a node or an interface (node-to-link a
 
 | BGP policy | Node | Interface |
 |------------|:----:|:---------:|
+| bandwidth  |  ❌   |    ✅     |
 | locpref    |  ✅  |    ✅     |
 | med        |  ❌   |    ✅     |
 | prepend    |  ❌   |    ✅     |
@@ -36,16 +42,17 @@ BGP policy attributes can be specified on a node or an interface (node-to-link a
 
 The plugin implements BGP policy attributes on these devices:
 
-| Operating system    | Local<br>preference | MED | Weight | AS-path<br>prepending |
-|---------------------|:----:|:----:|:----:|:----:|
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ✅  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
-| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |
-| VyOS                |  ✅  |  ✅  |  ❌  |   ✅  |
+| Operating system    | Local<br>preference | MED | Weight | AS-path<br>prepending | Link<br>bandwidth |
+|---------------------|:----:|:----:|:----:|:-----:|:----:|
+| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
+| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
+| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ❌  |   ❌  |   ❌  |
+| Nokia SR OS         |  ✅  |  ✅  |  ❌  |   ❌  |  ✅  |
+| VyOS                |  ✅  |  ✅  |  ❌  |   ✅  |   ❌  |
 
 **Notes:**
 

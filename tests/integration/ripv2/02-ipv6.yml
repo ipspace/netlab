@@ -1,0 +1,43 @@
+---
+message: |
+  This lab tests the basic RIPng deployment. The device under test has two
+  RIPng interfaces and has to exchange RIPng routes over both of them.
+
+defaults.sources.extra: [ ipv6-defaults.yml ]
+
+module: [ ripv2 ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+  x1:
+  x2:
+
+links:
+- dut:
+  x1:
+
+- dut:
+  x2:
+
+- x1:                     # FRR does not advertise loopback prefixes over RIPNG, so we have to add
+- x2:                     # ... bogus stub links to have advertisable prefixes
+
+validate:
+  pfx_x1:
+    description: Check RIPng prefixes on X1
+    wait_msg: Waiting for RIPng startup
+    wait: 60
+    nodes: [ x1 ]
+    plugin: rt_prefix(nodes.x2.interfaces[1].ipv6,af='ipv6',proto='ripng')
+  pfx_x2:
+    description: Check RIPng prefixes on X2
+    wait_msg: Waiting for RIPng startup
+    wait: 20
+    nodes: [ x2 ]
+    plugin: rt_prefix(nodes.x1.interfaces[1].ipv6,af='ipv6',proto='ripng')

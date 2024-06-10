@@ -74,7 +74,7 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 * Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
 * VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 
-See also Cisco IOSv SSH, OSPF, and BGP caveats.
+See also Cisco IOSv SSH, OSPF, RIPng, and BGP caveats.
 
 (caveats-iosv)=
 ## Cisco IOSv
@@ -82,7 +82,8 @@ See also Cisco IOSv SSH, OSPF, and BGP caveats.
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
 * BGP configuration is optimized to result in reasonable convergence times under lab conditions. Do not use the same settings in a production network.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
-* The OSPFv3 process on Cisco IOS advertises loopback addresses as /128 prefixes unless the OSPF network type is set to `point-to-point`. _netlab_ configures OSPFv3 `point-to-point` network type on all loopback interfaces to get results comparable to other implementations.
+* It's impossible to configure RIPv2 on individual subnets on Cisco IOS. RIPv2 might be running on more interfaces than intended. _netlab_ configures those interfaces to be *passive*.
+* Cisco IOS does not support passive interfaces in RIPng.
 * Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions.
 
 (cisco-iosv-ssh)=
