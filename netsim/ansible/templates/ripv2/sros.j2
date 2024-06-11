@@ -1,0 +1,34 @@
+{% from "templates/initial/sros.j2" import if_name with context %}
+
+updates:
+
+- path: configure/policy-options/policy-statement[name=accept_all]
+  val:
+   default-action:
+    action-type: accept
+
+{% macro rip_config(af) %}
+{% if ripv2.af[af]|default(False) %}
+- path: configure/router[router-name=Base]
+  val:
+   {{ 'rip' if af=='ipv4' else 'ripng' }}:
+    admin-state: enable
+    receive: {{ 'version-2' if af=='ipv4' else 'ripng' }}
+    export-policy: [ accept_all ]
+    import-policy: [ accept_all ]
+{%   for intf in netlab_interfaces if 'ripv2' in intf and af in intf and intf.type!='loopback' %}
+{%    if loop.first %}
+    group:
+     group-name: "neighbors"
+     neighbor:
+{%    endif %}
+     - interface-name: "{{ if_name(intf) }}"
+{%     if intf.ripv2.passive|default(False) %}
+       send: "none"
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% endmacro %}
+
+{{ rip_config('ipv4') }}
+{{ rip_config('ipv6') }}
