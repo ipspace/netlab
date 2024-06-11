@@ -3,7 +3,8 @@ cat <<EOM
 Ubuntu Packages Installation Script
 =====================================================================
 This script updates your system, installs additional APT packages,
-and nice-to-have tools like git, jq...
+and nice-to-have tools like git, jq... The script was tested on Debian
+12 (bookworm) and Ubuntu 20.04, 22.04, and 24.04.
 
 NOTE: the script is set to abort on first error. If the installation
 completed you're probably OK even though you might have seen errors
@@ -12,22 +13,9 @@ during the installation process.
 
 EOM
 
-# If we have sudo command, then we use it to set environment variables
-if [ -x "$(command -v sudo)" ]; then
-  SUDO='sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a'
-else
-#
-# no sudo command, if we're not root we can't proceed
-  SUDO=""
-  if [ "$UID" != "0" ]; then
-    echo 'Script requires root privileges.'
-    exit 0
-  fi
-fi
-
 if [[ -z "$FLAG_YES" ]]; then
   # Remove implied default of Y - ghostinthenet 20220418
-  read -p "Are you sure you want to proceed [y/n] " -n 1 -r
+  read -p "Are you sure you want to proceed [y/n]: " -n 1 -r
   echo
   if ! [[ $REPLY =~ [Yy] ]]; then
    echo "Aborting..."

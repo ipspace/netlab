@@ -3,8 +3,9 @@ cat <<EOM
 Ansible installation script
 =====================================================================
 This script installs Ansible and related Python3 packages required
-to run netlab Ansible playbooks. The script was tested on
-Ubuntu 20.04.
+to run netlab Ansible playbooks. The script was tested on Ubuntu
+20.04, 22.04, and 24.04, and Debian 12 (bookworm), and should work
+on other Linux distributions as well.
 
 The script assumes that you already set up Python3 environment. If
 that's not the case, please run "netlab install ubuntu" first.
@@ -15,21 +16,6 @@ during the installation process.
 =====================================================================
 
 EOM
-
-# Add sudo / root check - ghostinthenet 20220418
-SUDO=''
-if [ "$UID" != "0" ]; then
-  if [ -x "$(command -v sudo)" ]; then
-    SUDO=sudo PIP_ROOT_USER_ACTION=ignore
-  else
-    echo 'Script requires root privileges.'
-    exit 1
-  fi
-fi
-
-if [ ! -z $VIRTUAL_ENV ]; then
-  SUDO=""
-fi
 
 if [[ -z "$FLAG_YES" ]]; then
   # Remove implied default of Y - ghostinthenet 20220418
@@ -73,4 +59,8 @@ $SUDO pip3 install $REPLACE $FLAG_PIP ansible
 echo
 echo "Installation complete. Let's test Ansible version"
 echo
-ansible-playbook --version
+if [[ -z "$FLAG_USER" ]]; then
+  ansible-playbook --version
+else
+  ~/.local/bin/ansible-playbook --version
+fi

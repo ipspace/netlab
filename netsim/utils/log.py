@@ -39,8 +39,9 @@ err_class_map = {                       # Map error classes into short error cod
 }
 
 err_color_map = {
-  'FATAL': 'red',
-  'WARNING': 'magenta'
+  'FATAL':   'red',
+  'WARNING': 'magenta',
+  'INFO':    'bright_cyan'
 }
 
 class MissingDependency(Warning):
@@ -166,7 +167,6 @@ def print_more_hints(
 """
 Display an error message, including error category, calling module and optional hints
 """
-
 def error(
       text: str,                                                    # Error text
       category: typing.Type[Warning] = UserWarning,                 # Category (must be one of the classes defined above)
@@ -232,6 +232,31 @@ def error(
       print(hint_printout,file=sys.stderr)
 
     mod_hints[hint] = ''
+
+"""
+Print informational message. The arguments are similar to the ones used in 'error' function
+"""
+def info(
+      text: str,                                                    # Information text
+      module: str = '',                                             # Module generating the information text
+      more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
+      more_data: typing.Optional[typing.Union[str,list]] = None) -> None:
+
+  global err_color_map
+
+  mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
+  if strings.rich_err_color:
+    r_color = err_color_map['INFO']
+    strings.print_colored_text(strings.pad_err_code('INFO'),r_color)
+  else:
+    mod_txt += ' [INFO] '
+
+  print(f'{mod_txt}{text}')
+  if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
+    print_more_hints(more_hints,h_warning=True)
+
+  if more_data is not None:                                         # Caller supplied data, print it with DATA label
+    print_more_hints(more_data,'DATA','bright_black',h_warning=True)
 
 def exit_on_error() -> None:
   global _ERROR_LOG

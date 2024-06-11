@@ -112,8 +112,11 @@ def eval_format(fmt: str, data: dict) -> str:
 """
 confirm: print the prompt and wait for a yes/no answer
 """
-def confirm(prompt: str) -> bool:
-  prompt = f'{prompt} [y/n]'
+def confirm(prompt: str,blank_line: bool = False) -> bool:
+  if blank_line:
+    print()
+
+  prompt = f'{prompt} [y/n]: '
 
   try:
     while True:
