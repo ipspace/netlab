@@ -132,7 +132,11 @@ def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bo
     if attr in _compound:                               # Compound attributes have to be applied to route maps
       check_attribute_direction(node,ngb,topology,attr,attr_value)
       append_policy_attribute(ngb,attr,_compound[attr],attr_value)
-    api.node_config(node,_config_name)                  # And remember that we have to do extra configuration
+
+    api.node_config(node,_config_name)                  # Remember that we have to do extra configuration
+    for af in ('ipv4','ipv6'):                          # ... and add sessions that have to be cleared
+      if af in ngb:
+        data.append_to_list(node.bgp,'_session_clear',ngb[af])
 
   return Found
 
