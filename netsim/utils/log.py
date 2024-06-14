@@ -65,6 +65,9 @@ class FatalError(Warning):
 class ErrorAbort(Exception):
   pass
 
+class Result(Exception):
+  pass
+
 # Try to print 'Errors encountered while processing _filename_' header
 #
 

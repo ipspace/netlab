@@ -327,6 +327,8 @@ def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Op
 
   try:
     return eval(exec,{},exec_data)
+  except log.Result as wn:
+    return str(wn)
   except AttributeError as ex:
     if p_name in str(ex):
       return None
