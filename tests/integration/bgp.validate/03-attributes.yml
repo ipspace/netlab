@@ -1,0 +1,135 @@
+---
+message: |
+  Use this topology to test the BGP path attributes check in the 'bgp_prefix'
+  function.
+
+module: [ bgp ]
+plugin: [ bgp.policy ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, r3 ]
+  ibgp:
+    module: [ bgp, ospf ]
+    bgp.as: 65000
+    members: [ dut, d2, r3 ]
+
+nodes:
+  dut:
+    bgp.rr: True
+    bgp.rr_cluster_id: 10.0.0.42
+  d2:
+  r3:
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+    config: [ frr-attributes ]
+
+links:
+- dut:
+    bgp.locpref: 42
+  x1:
+    bgp.med: 173
+- dut:
+  x2:
+    bgp.prepend.path: 65201 65202
+- dut:
+  d2:
+- dut:
+  r3:
+
+validate:
+  ebgp:
+    description: Check EBGP sessions
+    wait_msg: Wait for BGP sessions to be established
+    wait: 10
+    nodes: [ dut ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1')
+
+  ibgp:
+    description: Check IBGP sessions
+    wait_msg: Wait for IBGP sessions to be established
+    wait: 30
+    nodes: [ d2, r3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx_x1:
+    description: Check for X1 IPv4 prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  pfx_x2:
+    description: Check for X2 IPv4 prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  pfx_r3:
+    description: Check for R3 IPv4 prefix on D2
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ d2 ]
+    plugin: bgp_prefix(nodes.r3.loopback.ipv4)
+
+  locpref_1:
+    description: Check for locpref on X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,locpref=42)
+
+  locpref_2:
+    description: Check for locpref on X2 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4,locpref=42,state='missing')
+
+  med_1:
+    description: Check for metric on X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,med=173)
+
+  med_2:
+    description: Check for metric on X2 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4,med=173,state='missing')
+
+  aspath_1:
+    description: Check for AS Path on X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,aspath='65101',state='missing')
+
+  aspath_2:
+    description: Check for AS Path on X2 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4,aspath='65101 65201 65202')
+
+  ase_1:
+    description: Check for AS Path elements on X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,as_elements=[ 65100, 65101 ],state='missing')
+
+  ase_2:
+    description: Check for AS Path elements on X2 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4,as_elements=[ 65201, 65202 ])
+
+  rr_cid_ok:
+    description: Check for BGP cluster ID
+    nodes: [ d2 ]
+    plugin: >-
+      bgp_prefix(
+        nodes.r3.loopback.ipv4,
+        clusterid='10.0.0.42')
+
+  rr_cid_x:
+    description: Check for incorrect BGP cluster ID
+    nodes: [ d2 ]
+    plugin: >-
+      bgp_prefix(
+        nodes.r3.loopback.ipv4,
+        clusterid='10.0.0.73',
+        state='missing')
