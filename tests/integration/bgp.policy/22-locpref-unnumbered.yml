@@ -1,0 +1,101 @@
+---
+message: |
+  Use this topology to test BGP local preference on IPv4 and IPv6 prefixes. DUT
+  has to set node-wide local preference on prefixes received from X1 and
+  neighbor-specific local preference on prefixes received from X2.
+
+plugin: [ bgp.policy ]
+module: [ bgp, ospf ]
+
+defaults.sources.extra: [ defaults-ds.yml ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, probe ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+    id: 1
+    bgp.locpref: 17
+  probe:
+    bgp.as: 65000
+  x1:
+    bgp.as: 65100
+    module: [ bgp ]
+    loopback.ipv4: 172.42.42.1/24
+    loopback.ipv6: 2001:db8:cafe:42::1/64
+  x2:
+    bgp.as: 65101
+    module: [ bgp ]
+    loopback.ipv4: 172.42.43.1/24
+    loopback.ipv6: 2001:db8:cafe:43::1/64
+
+links:
+- dut:
+  x1:
+  unnumbered: True
+- dut:
+    bgp.locpref: 42
+  x2:
+  unnumbered: True
+- dut-probe
+
+validate:
+  ebgp:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',intf=node.interfaces[0].ifname)
+
+  ibgp:
+    description: Check IBGP sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    nodes: [ probe ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx_x1_v4:
+    description: Check for IPv4 X1 prefix on Probe
+    wait: 5
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  pfx_x1_v6:
+    description: Check for IPv6 X1 prefix on Probe
+    wait: 5
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6')
+
+  pfx_x2_v4:
+    description: Check for IPv4 X2 prefix on Probe
+    wait: 5
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4)
+
+  pfx_x2_v6:
+    description: Check for IPv6 X2 prefix on Probe
+    wait: 5
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv6,af='ipv6')
+
+  locpref_x1_v4:
+    description: Check for node-wide locpref set on IPv4 X1 prefix
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,locpref=17)
+
+  locpref_x1_v6:
+    description: Check for node-wide locpref set on IPv6 X1 prefix
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6',locpref=17)
+
+  locpref_x2_v4:
+    description: Check for session-level locpref set on IPv4 X2 prefix
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4,locpref=42)
+
+  locpref_x2_v6:
+    description: Check for session-level locpref set on IPv4 X2 prefix
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv6,af='ipv6',locpref=42)
