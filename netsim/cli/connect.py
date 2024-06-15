@@ -186,6 +186,7 @@ def connect_to_node(
 
 def connect_to_tool(tool: str, rest: list, topology: Box, log_level: LogLevel = LogLevel.INFO) -> None:
   cmds = external_commands.get_tool_command(tool,'connect',topology,verbose=False)
+  topology.sys.ipaddr = external_commands.get_local_addr()
   if cmds is None:
     msg = external_commands.get_tool_message(tool,topology)
     if not msg:
