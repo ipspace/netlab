@@ -23,6 +23,12 @@ def get_pure_prefix(pfx: str) -> str:
   pfx = f'{pfx_net.network}/{pfx_net.prefixlen}'
   return pfx
 
+def report_state(exit_msg: str, OK: bool) -> typing.NoReturn:
+  if OK:
+    raise log.Result(exit_msg)
+  else:
+    raise Exception(exit_msg)
+
 def check_for_prefix(
       pfx: str,
       lookup: typing.Callable,
@@ -32,11 +38,9 @@ def check_for_prefix(
 
   result = lookup(pfx,data)
   if result is None:
-    stat = f'The prefix {pfx} is not in the {table}'
-    if state == 'missing':
-      raise log.Result(stat)
-    else:
-      raise Exception(stat)
+    report_state(
+      exit_msg=f'The prefix {pfx} is not in the {table}',
+      OK=state == 'missing')
   
   if not isinstance(result,Box) and not isinstance(result,BoxList):
     raise Exception('internal error: check_for_prefix got bad result from the lookup function')
@@ -69,11 +73,9 @@ def run_prefix_checks(
     if k in kwargs:
       data = checks[k](data=data,value=kwargs[k],pfx=pfx,state=state,**rest)
       if not data:
-        stat = f'There is no path to {pfx} in the {table} with {names[k]}={kwargs[k]}'
-        if state != 'missing':
-          raise Exception(stat)
-        else:
-          raise log.Result(stat)
+        report_state(
+          exit_msg=f'There is no path to {pfx} in the {table} with {names[k]}={kwargs[k]}',
+          OK=state == 'missing')
       else:
         if state == 'missing':
           raise Exception(f'The prefix {pfx} with {names[k]}={kwargs[k]} should not be in the {table}')
