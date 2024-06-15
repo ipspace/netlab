@@ -1,0 +1,59 @@
+---
+message: |
+  This lab tests the OSPFv3 prefix validation.
+
+module: [ ospf ]
+defaults.sources.extra: [ defaults-ds.yml ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+    id: 1
+  x1:
+  x2:
+    ospf.area: 2
+
+links:
+- dut:
+  x1:
+  mtu: 1500
+
+- x1:
+  x2:
+  mtu: 1500
+  ospf.area: 2
+
+validate:
+  adj:
+    description: Check OSPFv3 adjacencies
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ dut, x2 ]
+    plugin: ospf6_neighbor(nodes.x1.ospf.router_id)
+  pfx:
+    description: Check for X2 loopback prefix being an OSPF route
+    wait: 20
+    wait_msg: Waiting for SPF to do its magic
+    nodes: [ dut ]
+    plugin: ospf6_prefix(nodes.x2.loopback.ipv6)
+  cost:
+    description: Check for the cost of the X2 loopback prefix
+    nodes: [ dut ]
+    plugin: ospf6_prefix(nodes.x2.loopback.ipv6,cost=20)
+  cost_m:
+    description: Check for the cost of the X2 loopback prefix
+    nodes: [ dut ]
+    plugin: ospf6_prefix(nodes.x2.loopback.ipv6,cost=10,state='missing')
+  rt:
+    description: Check for the route type of the X2 loopback prefix
+    nodes: [ dut ]
+    plugin: ospf6_prefix(nodes.x2.loopback.ipv6,rt='Inter-Area')
+  rt_m:
+    description: Check for the route type of the X2 loopback prefix
+    nodes: [ dut ]
+    plugin: ospf6_prefix(nodes.x2.loopback.ipv6,rt='Intra-Area',state='missing')

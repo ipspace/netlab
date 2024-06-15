@@ -81,8 +81,8 @@ def check_ospf_rt(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
 
 def valid_ospf_prefix(
       pfx: str,
-      state: typing.Optional[str] = None,
-      **kwargs) -> str:
+      state: str = 'present',
+      **kwargs: typing.Any) -> str:
 
   return _common.run_prefix_checks(
             pfx = pfx,
@@ -101,8 +101,8 @@ def show_ospf6_prefix(pfx: str, **kwargs: typing.Any) -> str:
 
 def valid_ospf6_prefix(
       pfx: str,
-      state: typing.Optional[str] = None,
-      **kwargs) -> str:
+      state: str = 'present',
+      **kwargs: typing.Any) -> str:
 
   return _common.run_prefix_checks(
             pfx = pfx,
