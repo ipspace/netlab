@@ -23,6 +23,9 @@ def get_pure_prefix(pfx: str) -> str:
   pfx = f'{pfx_net.network}/{pfx_net.prefixlen}'
   return pfx
 
+def get_address(pfx: str) -> str:
+  return pfx.split('/')[0]
+
 def report_state(exit_msg: str, OK: bool) -> typing.NoReturn:
   if OK:
     raise log.Result(exit_msg)
