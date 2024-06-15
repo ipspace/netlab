@@ -65,7 +65,10 @@ class FatalError(Warning):
 class ErrorAbort(Exception):
   pass
 
-class Result(Exception):
+class Result(Exception):            # Used to pass validation result far up the chain
+  pass
+
+class Skipped(Exception):           # Used to pass "can't do that" validation message up the chain
   pass
 
 # Try to print 'Errors encountered while processing _filename_' header
@@ -76,7 +79,7 @@ _error_header_printed: bool = False
 """
 Print "errors found in _topologyname_" error header
 """
-def print_error_header() -> None:
+def print_error_header(indent: int = 10) -> None:
   global _error_header_printed
   if _error_header_printed:                     # Header already printed, get out
     return
@@ -90,7 +93,7 @@ def print_error_header() -> None:
     if topology.input:                          # If we know where we got the topology from, print the error message
       toponame = os.path.basename(topology.input[0])
       if strings.rich_err_color:                # Error is going to terminal with color capabilities
-        strings.print_colored_text(strings.pad_err_code('ERRORS'),'red',stderr=True)
+        strings.print_colored_text(strings.pad_err_code('ERRORS',indent),'red',stderr=True)
         print(f'Errors found in {toponame}',file=sys.stderr)
       else:                                     # Plain old teletype (or file), print error message
         print(f'Errors encountered while processing {toponame}',file=sys.stderr)
@@ -101,7 +104,7 @@ def print_error_header() -> None:
 """
 Print the final error message and abort
 """
-def fatal(text: str, module: str = 'netlab', header: bool = False) -> typing.NoReturn:
+def fatal(text: str, module: str = 'netlab', header: bool = False, indent: int = 10) -> typing.NoReturn:
   global _ERROR_LOG
 
   err_line = f'Fatal error in {module}: {text}'
@@ -114,9 +117,9 @@ def fatal(text: str, module: str = 'netlab', header: bool = False) -> typing.NoR
       warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
     else:
       if header:
-        print_error_header()
+        print_error_header(indent)
       if strings.rich_err_color:                  # Color-capable terminal
-        strings.print_colored_text(strings.pad_err_code('FATAL'),'red',stderr=True)
+        strings.print_colored_text(strings.pad_err_code('FATAL',indent),'red',stderr=True)
         if module != 'netlab':
           print(f'{module}: ',end='',file=sys.stderr)
         print(text,file=sys.stderr)
@@ -138,12 +141,13 @@ def print_more_hints(
       h_name: str='HINT',               # Hint header
       h_color: str='green',             # Color of hint header
       h_warning: bool=False,            # is this a warning hint?
-      cleanup: bool=True) -> None:      # Remove empty lines from hint lines?
+      cleanup: bool=True,               # Remove empty lines from hint lines?
+      indent: int = 10) -> None:
 
   if isinstance(h_list,str):
     h_width = min(strings.rich_err_width,100)
     if strings.rich_err_color:
-      h_width = h_width - 10
+      h_width = h_width - indent
 
     h_list = strings.wrap_text_into_lines(h_list,width=h_width)
 
@@ -159,11 +163,11 @@ def print_more_hints(
       _ERROR_LOG.append(f"... {line}")                      # Convention: hints in traditional output are prefaced with ...
     if strings.rich_err_color:
       if h_first:                                           # First hint line on color-capable TTY: print hint header
-        strings.print_colored_text(strings.pad_err_code(h_name),h_color,stderr=True)
+        strings.print_colored_text(strings.pad_err_code(h_name,indent),h_color,stderr=True)
         print(line,file=sys.stderr)
         h_first = False
       else:
-        print(" "*10+line,file=sys.stderr)                  # Otherwise print another line indented to align with the previous one
+        print(" "*indent+line,file=sys.stderr)                  # Otherwise print another line indented to align with the previous one
     else:
       print(f"... {line}",file=sys.stderr)                  # Teletype/file, just print the line
 
@@ -176,7 +180,8 @@ def error(
       module: str = 'topology',                                     # Module generating the error
       hint: typing.Optional[str] = None,                            # Pointer to a static hint
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
-      more_data: typing.Optional[typing.Union[str,list]] = None) -> None:
+      more_data: typing.Optional[typing.Union[str,list]] = None,
+      indent: int = 10) -> None:
 
   global _ERROR_LOG,err_class_map,_WARNING_LOG,QUIET,err_color_map
   err_name = category.__name__
@@ -194,11 +199,11 @@ def error(
     return
   else:
     if category is not Warning:
-      print_error_header()
+      print_error_header(indent)
     if strings.rich_err_color and err_name in err_class_map:
       err_code = err_class_map[err_name]
       strings.print_colored_text(
-        strings.pad_err_code(err_code),
+        strings.pad_err_code(err_code,indent),
         err_color_map.get(err_code,'yellow'),
         stderr=True)
       mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
@@ -207,10 +212,10 @@ def error(
       print(err_line,file=sys.stderr)
 
   if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
-    print_more_hints(more_hints,h_warning=category is Warning)
+    print_more_hints(more_hints,h_warning=category is Warning,indent=indent)
 
   if more_data is not None:                                         # Caller supplied data, print it with DATA label
-    print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning)
+    print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning,indent=indent)
 
   if hint is None:                                                  # No pointers to static hints
     return
@@ -228,7 +233,7 @@ def error(
     if category is not Warning:
       _ERROR_LOG.extend(hint_printout.split("\n"))
     if strings.rich_err_color:
-      l_width = min(strings.rich_err_width-10,100)
+      l_width = min(strings.rich_err_width-indent,100)
       hint_lines = strings.wrap_text_into_lines(mod_hints[hint],width=l_width)
       print_more_hints(hint_lines,'HINT','green',h_warning=category is Warning)
     else:
@@ -243,23 +248,24 @@ def info(
       text: str,                                                    # Information text
       module: str = '',                                             # Module generating the information text
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
-      more_data: typing.Optional[typing.Union[str,list]] = None) -> None:
+      more_data: typing.Optional[typing.Union[str,list]] = None,
+      indent: int = 10) -> None:
 
   global err_color_map
 
   mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
   if strings.rich_err_color:
     r_color = err_color_map['INFO']
-    strings.print_colored_text(strings.pad_err_code('INFO'),r_color)
+    strings.print_colored_text(strings.pad_err_code('INFO',indent),r_color)
   else:
     mod_txt += ' [INFO] '
 
   print(f'{mod_txt}{text}')
   if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
-    print_more_hints(more_hints,h_warning=True)
+    print_more_hints(more_hints,h_warning=True,indent=indent)
 
   if more_data is not None:                                         # Caller supplied data, print it with DATA label
-    print_more_hints(more_data,'DATA','bright_black',h_warning=True)
+    print_more_hints(more_data,'DATA','bright_black',h_warning=True,indent=indent)
 
 def exit_on_error() -> None:
   global _ERROR_LOG
