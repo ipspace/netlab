@@ -72,18 +72,21 @@ def run_prefix_checks(
   if isinstance(data,Box):
     data = [ data ]
 
+  checked = []
+  params = ''
+
   for k in checks:
     if k in kwargs:
       data = checks[k](data=data,value=kwargs[k],pfx=pfx,state=state,**rest)
+
+      checked.append(k)
+      params = " with " + ",".join([ f'{names[k]}={kwargs[k]}' for k in checked ])
       if not data:
         report_state(
-          exit_msg=f'There is no path to {pfx} in the {table} with {names[k]}={kwargs[k]}',
+          exit_msg=f'There is no path to {pfx} in the {table}{params}',
           OK=state == 'missing')
       else:
         if state == 'missing':
-          raise Exception(f'The prefix {pfx} with {names[k]}={kwargs[k]} should not be in the {table}')
+          raise Exception(f'The prefix {pfx}{params} should not be in the {table}')
   
-  params = ",".join([ f'{names[k]}={kwargs[k]}' for k in kwargs ])
-  if params:
-    params = ' with ' + params
   return f'The prefix {pfx} is in the {table}{params}'
