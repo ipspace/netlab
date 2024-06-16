@@ -7,7 +7,7 @@ import typing
 from netsim.data import global_vars
 from netsim.utils import log
 from .. import _common
-from . import BGP_PREFIX_NAMES
+from . import BGP_PREFIX_NAMES,check_community_kw
 
 def check_vrf_data(data: Box, vrf: str, key: str, missing_data: str) -> Box:
   if 'vrfs' not in data:
@@ -193,6 +193,7 @@ def check_community(data: list, value: typing.Any, pfx: str, state: str, **kwarg
           OK[cname] = True
 
   for cname,cvalue in value.items():                        # Now we know what we found, let's generate some errors
+    check_community_kw(cname)
     if state == 'present' and not cname in OK:
       raise Exception(f'{cname} community {cvalue} is not attached to {pfx}')
     if state == 'missing' and cname in OK:

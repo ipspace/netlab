@@ -9,3 +9,10 @@ BGP_PREFIX_NAMES: dict = {
   'med': 'BGP MED',
   'best': 'best path' }
 
+BGP_COMMUNITY_KW = ['community', 'largeCommunity', 'extendedCommunity']
+
+def check_community_kw(kw: str) -> None:
+  global BGP_COMMUNITY_KW
+
+  if kw not in BGP_COMMUNITY_KW:
+    raise Exception(f'Invalid BGP community keyword {kw} (allowed: {",".join(BGP_COMMUNITY_KW)})')

@@ -6,7 +6,7 @@ from box import Box,BoxList
 import typing
 from netsim.data import global_vars
 from .. import _common
-from . import BGP_PREFIX_NAMES
+from . import BGP_PREFIX_NAMES,check_community_kw
 from ...utils import log
 
 def show_bgp_neighbor(ngb: list, n_id: str, **kwargs: typing.Any) -> str:
@@ -133,6 +133,7 @@ def check_community(data: list, value: typing.Any, pfx: str, state: str) -> list
           OK[cname] = True
 
   for cname,cvalue in value.items():                        # Now we know what we found, let's generate some errors
+    check_community_kw(cname)
     if state == 'present' and not cname in OK:
       raise Exception(f'{cname} community {cvalue} is not attached to {pfx}')
     if state == 'missing' and cname in OK:
