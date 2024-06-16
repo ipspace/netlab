@@ -62,7 +62,7 @@ def run_prefix_checks(
       **rest: typing.Any) -> str:
   
   pfx = get_pure_prefix(pfx)
-  data = check_for_prefix(pfx,lookup,data,table,state)
+  data = check_for_prefix(pfx=pfx,lookup=lookup,data=data,table=table,state=state)
 
   keys = list(checks.keys())
   for k in kwargs:
@@ -89,4 +89,7 @@ def run_prefix_checks(
         if state == 'missing':
           raise Exception(f'The prefix {pfx}{params} should not be in the {table}')
   
+  if state == 'missing':
+    raise Exception(f'The prefix {pfx}{params} should not be in the {table}')
+
   return f'The prefix {pfx} is in the {table}{params}'
