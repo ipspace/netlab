@@ -82,6 +82,13 @@ def filter_bgp_nh(data: list, value: typing.Any, pfx: str, state: str, **kwargs:
   return result
 
 """
+Select the best path(s)
+"""
+def filter_best(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
+  result = [ p for p in data if p.get('routeType',{}).get('active',None) == value ]
+  return result
+
+"""
 Check BGP cluster ID on BGP paths
 """
 def check_cluster_id(data: list, value: typing.Any, pfx: str, state: str, **kwargs: typing.Any) -> list:
@@ -221,12 +228,13 @@ def valid_bgp_prefix(
             checks = {
                'peer': filter_bgp_peer,
                'nh':   filter_bgp_nh,
+               'best': filter_best,
                'clusterid': check_cluster_id,
                'community': check_community,
                'as_elements': check_as_elements,
                'aspath': check_aspath,
                'locpref': check_locpref,
-               'med': check_med
+               'med': check_med,
             },
             names = BGP_PREFIX_NAMES,
             vrf = vrf)

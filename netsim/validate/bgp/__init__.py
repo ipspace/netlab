@@ -6,5 +6,6 @@ BGP_PREFIX_NAMES: dict = {
   'as_elements': 'AS numbers',
   'aspath': 'AS path',
   'locpref': 'BGP local preference',
-  'med': 'BGP MED' }
+  'med': 'BGP MED',
+  'best': 'best path' }
 
