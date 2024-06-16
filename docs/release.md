@@ -6,7 +6,7 @@ Release Notes
 * [RIPv2/RIPng configuration module](module-ripv2)
 * BGP Link Bandwidth community in [bgp.policy](plugin-bgp-policy) plugin
 * BGP route server/client in [bgp.session](plugin-bgp-session) plugin.
-* Installation scripts work with Ubuntu 22.04
+* Installation scripts work with Ubuntu 24.04. They were also tested on Ubuntu 22.04, Ubuntu 20.04, and Debian Bookworm.
 
 [More features...](release-1.8.3)
 
