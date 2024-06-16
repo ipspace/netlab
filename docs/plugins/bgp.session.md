@@ -1,3 +1,4 @@
+(plugin-bgp-session)=
 # BGP Sessions Plugin
 
 The **bgp.session** plugin (initially contributed by Stefano Sasso) implements numerous BGP session ~~nerd knobs~~ attributes, from BGP session protection to AS path manipulation.

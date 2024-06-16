@@ -1,3 +1,4 @@
+(plugin-bgp-policy)=
 # BGP Routing Policies Plugin
 
 The **bgp.policy** plugin implements simple BGP routing policies :

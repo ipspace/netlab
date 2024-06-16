@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+**[Release 1.8.3](release-1.8.3) (2024-06-16)**
+
+* [RIPv2/RIPng configuration module](module-ripv2)
+* BGP Link Bandwidth community in [bgp.policy](plugin-bgp-policy) plugin
+* BGP route server/client in [bgp.session](plugin-bgp-session) plugin.
+* Installation scripts work with Ubuntu 22.04
+
+[More features...](release-1.8.3)
+
 **[Release 1.8.2](release-1.8.2) (2024-05-13)**
 
 * [Create reports](netlab-report) from a subset of nodes
@@ -8,7 +17,6 @@ Release Notes
 * Check for the presence of Vagrant boxes or Docker containers before [starting the lab](netlab-up) and display pointers to build recipes.
 * Check installed Ansible collections before starting **[netlab up](netlab-up)** or **[netlab initial](netlab-initial)**
 * Support for [Sonic VM](platform-devices) based on Azure sonic-vs images.
-
 * [Numerous improvements](release-1.8.2-vagrant) in the Vagrant box-building process
 
 [More features...](release-1.8.2)
