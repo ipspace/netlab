@@ -195,7 +195,7 @@ def check_locpref(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
 Check MED
 """
 def check_med(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
-  return [ p for p in data if p.metric == value ]
+  return [ p for p in data if p.get('metric',None) == value ]
 
 """
 BGP prefix validation function:
