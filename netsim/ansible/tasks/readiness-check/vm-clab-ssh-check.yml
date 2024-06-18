@@ -1,0 +1,18 @@
+#
+# Use this task list to figure out when a VM in a container is started
+#
+---
+- name: Execute local ssh command to check {{ ansible_network_os|default('') }} readiness
+  local_action:
+    module: shell
+    cmd: >
+      sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ansible_user }}@{{ ansible_host }} '{{ ck_command | default("show version") }}'
+  register: command_out
+  until: command_out.rc == 0
+  retries: "{{ ck_retries | default(20) }}"
+  delay: "{{ ck_delay | default(5) }}"
+
+- name: Confirm {{ inventory_hostname }} SSH server works
+  debug:
+    msg: "Node {{ inventory_hostname }} is ready."
+  when: command_out.rc == 0
