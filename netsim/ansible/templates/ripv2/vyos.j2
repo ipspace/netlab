@@ -1,0 +1,39 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+
+configure
+
+{% if ripv2.af.ipv4|default(False) %}
+
+set protocols rip version 2
+
+{%   for intf in netlab_interfaces if 'ipv4' in intf and not 'vrf' in intf %}
+set protocols rip network {{ intf.ipv4|ipaddr(0) }}
+{%     if intf.ripv2.passive|default(False) or not 'ripv2' in intf %}
+set protocols rip passive-interface {{ intf.ifname }}
+{%     endif %}
+{%   endfor %}
+
+{% endif %}
+
+{% if ripv2.af.ipv6|default(False) %}
+{%   for intf in netlab_interfaces if 'ipv6' in intf and not 'vrf' in intf %}
+
+set protocols ripng network {{ intf.ipv6|ipaddr(0) }}
+{%     if intf.ripv2.passive|default(False) or not 'ripv2' in intf %}
+set protocols ripng passive-interface {{ intf.ifname }}
+{%     endif %}
+
+{%   endfor %}
+{% endif %}
+
+commit
+save
+exit
+
