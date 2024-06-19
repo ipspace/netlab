@@ -24,6 +24,7 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 | Cisco IOS XE       | ✅  | ✅  | ✅ [❗](caveats-iosv) |
 | Cumulus Linux      | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  |
+| VyOS               | ✅  | ✅  | ✅  |
 
 ```{tip}
 See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.ripv2) for more details.
