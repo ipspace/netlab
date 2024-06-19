@@ -67,12 +67,12 @@ You cannot use all supported network devices with all virtualization providers. 
 | Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | Vagrant<br />[Virtualbox](labs/virtualbox.md) | [Containerlab](labs/clab.md) |
 | ------------------ | :-: | :-: | :-: |
 | Arista vEOS        | [✅](build-eos)  | ✅  | [✅](build-ceos)  |
-| Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  | ✅  |
+| Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Cisco ASAv         | [✅](build-asav)  |  ❌  |  ❌  |
 | Cisco IOSv         | [✅](build-iosxr)  | ✅  |  ❌  |
 | Cisco IOS XRv      | [✅](build-iosv)  |  ❌  | ✅  |
-| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ❌  |
-| Cisco Nexus 9300v  | [✅](build-nxos)  | ✅  |  ❌  |
+| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab)  |
+| Cisco Nexus 9300v  | [✅](build-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
 | Cumulus Linux 5.0 (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
 | Dell OS10          | [✅](build-dellos10)  |  ❌  | ✅  |
