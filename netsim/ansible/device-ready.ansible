@@ -1,0 +1,15 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Deploy initial device configuration
+  hosts: all:!unprovisioned
+  strategy: "{{ netlab_strategy|default('linear') }}"
+  gather_facts: false
+  tasks:
+  - name: Set variables that cannot be set with VARS
+    set_fact:
+      netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
+      netlab_interfaces: "{{ ([ loopback ] if loopback is defined else []) + interfaces|default([]) }}"
+      search_path: "{{ paths_templates.dirs }}"
+    tags: [ always ]
+
+  - import_tasks: tasks/wait-for-ready.yml

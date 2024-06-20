@@ -37,6 +37,10 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     dest='custom', action='store_true',
     help='Deploy custom configuration templates (specified in "config" group or node attribute)')
   parser.add_argument(
+    '--ready',
+    dest='ready', action='store_true',
+    help='Wait for devices to become ready')
+  parser.add_argument(
     '--fast',
     dest='fast', action='store_true',
     help='Use "free" strategy in Ansible playbook for faster configuration deployment')
@@ -92,6 +96,11 @@ def run(cli_args: typing.List[str]) -> None:
   if args.output:
     ansible.playbook('create-config.ansible',rest)
     print("\nInitial configurations have been created in the %s directory" % args.output)
+    return
+  elif args.ready:
+    ansible.playbook('device-ready.ansible',rest)
+    if topology:
+      lab_status_change(topology,'devices are ready')
   else:
     external_commands.LOG_COMMANDS = True
     deploy_text = ', '.join(deploy_parts) or 'complete configuration'
