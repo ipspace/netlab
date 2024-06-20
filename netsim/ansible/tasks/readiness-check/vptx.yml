@@ -1,22 +1,9 @@
-- name: Wait for at least 10 minutes for vPTX inside CLAB...
-  pause:
-    minutes: 10
-  when: |
-    netlab_provider == 'clab'
-
-- name: Execute local ssh command to check vPTX readiness
-  local_action:
-    module: command
-    cmd: "sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ansible_user }}@{{ ansible_host }} 'show system information'"
-  register: command_out
-  until: command_out.rc == 0
-  retries: 20
-  delay: 30
-  when: clab.kind is defined
-
-- name: Wait one more minute for vPTX inside CLAB...
-  pause:
-    minutes: 1
-  when: |
-    netlab_provider == 'clab'
-
+---
+- name: Wait for et-0/0/1 to appear
+  junos_command:
+    commands:
+    - show interfaces terse
+    wait_for:
+    - result[0] contains et-0/0/1
+    interval: 5
+    retries: 30
