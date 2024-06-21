@@ -5,16 +5,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
+ok: [s2]
 ok: [r1]
 ok: [s1]
-ok: [s2]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
-ok: [h2]
 ok: [r1]
-ok: [s1]
+ok: [h2]
 ok: [s2]
+ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -27,17 +27,17 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, s1, s2, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [r1]
 ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
+ok: [r1]
 ok: [h2]
 ok: [s1]
-ok: [r1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -48,9 +48,9 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h2]
 ok: [r1]
 ok: [h1]
+ok: [h2]
 ok: [s1]
 ok: [s2]
 
@@ -62,33 +62,57 @@ TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-An exception occurred during task execution. To see the full traceback, use -vvv. The error was: jinja2.exceptions.TemplateNotFound: cat8000v.vlan.j2
-fatal: [s2]: FAILED! => 
-  msg: 'Unexpected failure during module execution: cat8000v.vlan.j2'
-  stdout: ''
-An exception occurred during task execution. To see the full traceback, use -vvv. The error was: jinja2.exceptions.TemplateNotFound: cat8000v.vlan.j2
-fatal: [s1]: FAILED! => 
-  msg: 'Unexpected failure during module execution: cat8000v.vlan.j2'
-  stdout: ''
 changed: [r1]
+changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-fbCFRUGk-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-sCrxRmMj-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
+
+TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cat8000v.j2] ***
+changed: [s2]
+changed: [s1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -97,9 +121,16 @@ PLAY RECAP *********************************************************************
 h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 r1                         : ok=8    changed=1    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-s1                         : ok=7    changed=0    unreachable=0    failed=1    skipped=2    rescued=0    ignored=0   
-s2                         : ok=7    changed=0    unreachable=0    failed=1    skipped=2    rescued=0    ignored=0   
+s1                         : ok=15   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+s2                         : ok=15   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The devices under test are simple bridges with a VLAN trunk between them.
+An external router with two interfaces (one per VLAN) is attached to one of them.
+
+* h1 and h2 should be able to ping each other
+
+Please note it might take a while for the lab to work due to
+STP learning phase
+
