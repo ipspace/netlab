@@ -206,15 +206,6 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
 
-(caveats-vmx)=
-## Juniper vMX in Containerlab
-
-Juniper vMX runs as a container in _containerlab_. You have to use _vrnetlab_ to build the container from a vMX disk image. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vmx/) for further details.
-
-The Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
-
-See also [](caveats-junos).
-
 (caveats-vptx)=
 ## Juniper vPTX
 

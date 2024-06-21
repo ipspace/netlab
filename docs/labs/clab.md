@@ -16,9 +16,7 @@
 
 ## Supported Versions
 
-Recent _netlab_ releases were tested with _containerlab_ version 0.44.3. That's also the version the **netlab install containerlab** command installs.
-
-The minimum supported _containerlab_ version is 0.37.1 (2023-2-27) -- that version introduced some changes to the location of generated certificate files.
+Recent _netlab_ releases were tested with _containerlab_ version 0.55.0. That's also the version the **netlab install containerlab** command installs.
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
@@ -30,7 +28,9 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 |------------------------|------------------------------|
 | Arista cEOS            | ceos: 4.31.2F                 |
 | BIRD                   | netlab/bird:latest           |
+| Cisco CSR 1000v        | vrnetlab/vr-csr:17.03.04     |
 | Cisco IOS XRd          | ios-xr/xrd-control-plane:7.11.1 |
+| Cisco Nexus OS         | vrnetlab/vr-n9kv:9.3.8       |
 | Cumulus VX             | networkop/cx:4.4.0           |
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |
 | Dell OS10              | vrnetlab/vr-ftosv            |
@@ -53,7 +53,8 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Nexus 9300v, and IOS XR, OpenWRT, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
 
 ```{warning}
-You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
+* You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
+* The _vrnetlab_ process generates container tags based on the underlying VM image name. You will probably have to [change the container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
 ```
 
 ## Containerlab Networking
@@ -147,9 +148,21 @@ nodes:
 * SSH port on management interface of R2 to host port 2042 (R2 has static ID 42)
 
 (clab-vrnetlab)=
-### Using vrnetlab Containers
+## Using vrnetlab Containers
 
-_vrnetlab_ is an open-source project that packages network device virtual machines into containers. The packaged container's architecture requires an internal network, and it seems that _vrnetlab_ (or the fork used by _containerlab_) uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
+[_vrnetlab_](https://containerlab.dev/manual/vrnetlab/) is an open-source project that packages network device virtual machines into containers. The resulting containers have a launch process that starts **qemu** (KVM) to spin up a virtual machine. Running *vrnetlab* containers on a VM, therefore, requires nested virtualization.
+
+```{warning}
+_vrnetlab_ is an independent open-source project. If it fails to produce a working container image, please get in touch with them.
+```
+
+### Image Names
+
+The build process generates container tags based on the underlying VM image name. You will probably have to [change the default _netlab_ container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
+
+### Internal Container Networking
+
+The packaged container's architecture requires an internal network and the _vrnetlab_ fork supported by _containerlab_ uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
 
 If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
@@ -160,6 +173,16 @@ addressing:
   router_id:
     ipv4: 10.255.0.0/24
 ```
+
+Alternatively, add the same settings to the user defaults file.
+
+### Waiting for the VM
+
+During the **netlab up** process, *containerlab* starts the containers and reports success. The virtual machines in those containers might need minutes to start, which means that _netlab_ cannot continue with the initial configuration process.
+
+_vrnetlab_-based supported platforms go through an extra "_is the device ready_" check during the initial configuration process: _netlab_ tries to establish an SSH session with the device and execute a command. The SSH session is retried up to 20 times, and as each retry usually takes 30 seconds (due to TCP timeouts), **netlab initial** waits up to 10 minutes for a VM to become ready.
+
+If your virtual machines take even longer to boot, increase the number of retries. You can set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](defaults) and [](defaults-user-file))
 
 ## Advanced Topics
 
@@ -252,7 +275,7 @@ You can also change these *containerlab* parameters:
 * **clab.ports** to map container ports to host ports
 * **clab.cmd** to execute a command in a container.
 
-String values (for example, command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
+String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
 
 The complete list of supported Containerlab attributes is in the [system defaults](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22) and can be printed with the `netlab show defaults providers.clab.attributes` command.
 
