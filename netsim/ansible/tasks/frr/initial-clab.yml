@@ -1,17 +1,18 @@
-- name: Attempt to load VRF kernel module 
-  block:
-    - name: "Load VRF kernel module"
-      when: netlab_mgmt_vrf|default(False) or 'vrf' in module
-      shell: |
-        modprobe vrf
-      become: true
-      delegate_to: localhost
-      run_once: true
-      tags: [ print_action, always ]
-  rescue:
-    - name: Unable to load vrf kernel module - disable use of VRFs
-      set_fact: 
-        netlab_mgmt_vrf: False
+---
+- name: Attempt to load VRF kernel module
+  when: netlab_mgmt_vrf|default(False) or 'vrf' in module|default([])
+  shell: |
+    modprobe vrf || echo "FAILED"
+  become: true
+  delegate_to: localhost
+  tags: [ print_action, always ]
+  register: modprobe_result
+  ignore_errors: True
+
+- name: Disable FRR management VRF when modprobe fails
+  when: modprobe_result.stdout|default('') is search("FAILED")
+  set_fact:
+    netlab_mgmt_vrf: False
 
 - include_tasks: deploy-config.yml
   tags: [ print_action, always ]
