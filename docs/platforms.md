@@ -26,7 +26,7 @@
 | Fortinet FortiOS [❗](caveats-fortios)    | fortios            |
 | FRRouting (FRR) [❗](caveats-frr)         | frr                |
 | [Generic Linux host](labs/linux.md)       | linux              |
-| Juniper vMX [❗](caveats-vmx)             | vmx                |
+| Juniper vMX [❗](caveats-junos)             | vmx                |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
 | Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
 | Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           |
@@ -79,8 +79,8 @@ You cannot use all supported network devices with all virtualization providers. 
 | Fortinet FortiOS   | ✅  |  ❌  |  ❌  |
 | FRR | ✅[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
 | Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) | ✅  | ✅  | ✅  |
-| Juniper vMX        |  ❌  |  ❌  | ✅[❗](caveats-vmx)   |
-| Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅  |
+| Juniper vMX        |  ❌  |  ❌  | ✅[❗](clab-vrnetlab)   |
+| Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅[❗](clab-vrnetlab)  |
 | Juniper vSRX 3.0   | [✅](build-vsrx)  | ✅  | ✅[❗](caveats-vsrx)  |
 | Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
