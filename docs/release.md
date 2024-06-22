@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+**[Release 1.8.4](release-1.8.4) (2024-06-22)**
+
+* Support for [Cisco Catalyst 8000v](platform-devices)
+* Unified support of [vrnetlab containers](clab-vrnetlab) (including ArubaCX, Cisco Catalyst 8000v, Cisco CSR 1000v, Dell OS10, Cisco Nexus 9000v, Mikrotik RouterOS, Juniper vMX, vPTX and vSRX)
+* Automated build of [GitHub Codespaces devcontainer](https://github.com/users/ipspace/packages/container/package/netlab%2Fdevcontainer)
+* Handle keyboard interrupts in long-running netlab commands, including **[netlab up](netlab-up)**, **[netlab initial](netlab-initial)** and **[netlab validate](netlab-validate)**.
+* Add `--ready` action to **[netlab initial](netlab-initial)** command to wait for lab devices to become ready without configuring them.
+
 **[Release 1.8.3](release-1.8.3) (2024-06-16)**
 
 * [RIPv2/RIPng configuration module](module-ripv2)

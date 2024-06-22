@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/devcontainers/python:3.11-bookworm
 
 ENV NETLAB_DEVICES_FRR_CLAB_GROUP__VARS_NETLAB__MGMT__VRF=False
 ENV ANSIBLE_CONFIG=./ansible.cfg
+LABEL org.opencontainers.image.source https://github.com/ipspace/netlab
 
 RUN echo "deb [trusted=yes] https://netdevops.fury.site/apt/ /" | \
     tee -a /etc/apt/sources.list.d/netdevops.list
