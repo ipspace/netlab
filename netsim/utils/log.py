@@ -35,11 +35,13 @@ err_class_map = {                       # Map error classes into short error cod
   'IncorrectType':      'TYPE',
   'FatalError':         'FATAL',
   'UserWarning':        'WRONG',
+  'ErrorAbort':         'ERROR',
   'Warning':            'WARNING'
 }
 
 err_color_map = {
   'FATAL':   'red',
+  'ERROR':   'red',
   'WARNING': 'magenta',
   'INFO':    'bright_cyan'
 }
@@ -176,16 +178,21 @@ Display an error message, including error category, calling module and optional 
 """
 def error(
       text: str,                                                    # Error text
-      category: typing.Type[Warning] = UserWarning,                 # Category (must be one of the classes defined above)
+      category: typing.Union[typing.Type[Warning],typing.Type[Exception]] = UserWarning,
       module: str = 'topology',                                     # Module generating the error
       hint: typing.Optional[str] = None,                            # Pointer to a static hint
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
       more_data: typing.Optional[typing.Union[str,list]] = None,
-      indent: int = 10) -> None:
+      indent: int = 10,
+      skip_header: typing.Optional[bool] = None) -> None:
 
-  global _ERROR_LOG,err_class_map,_WARNING_LOG,QUIET,err_color_map
+  global _ERROR_LOG,err_class_map,_WARNING_LOG,QUIET,err_color_map,_error_header_printed
+
   err_name = category.__name__
   err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
+
+  if skip_header is not None:
+    _error_header_printed = skip_header
 
   if category is Warning:
     if QUIET:
@@ -194,7 +201,7 @@ def error(
   else:
     _ERROR_LOG.extend(err_line.split("\n"))                         # Append traditional error line to the CI error log
 
-  if WARNING:                                                       # CI flag: raise warning during pytest
+  if WARNING and isinstance(category,Warning):                      # CI flag: raise warning during pytest
     warnings.warn_explicit(text,category,filename=module,lineno=len(_ERROR_LOG))
     return
   else:
