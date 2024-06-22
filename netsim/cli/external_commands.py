@@ -3,6 +3,7 @@
 #
 import typing
 import os
+import sys
 import subprocess
 from box import Box
 
@@ -259,3 +260,20 @@ def get_tool_message(tool: str, topology: Box) -> typing.Optional[str]:
     return None
 
   return strings.eval_format(msg,topology)
+
+#
+# Keyboard interrupt handler
+#
+def interrupted(cmd: str, hint: str = 'interrupt') -> typing.NoReturn:
+  print()
+  msg = f'{cmd} command was interrupted'
+  log.error(
+    msg,
+    category=log.ErrorAbort,
+    module='cli',
+    hint=hint,
+    skip_header=True)
+  topology = global_vars.get_topology()
+  if topology is not None:
+    lab_status_log(topology,msg)
+  sys.exit(1)

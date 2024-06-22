@@ -56,7 +56,7 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
 
   return parser.parse_known_args(args)
 
-def run(cli_args: typing.List[str]) -> None:
+def run_initial(cli_args: typing.List[str]) -> None:
   (args,rest) = initial_config_parse(cli_args)
 
   topology = load_snapshot(args)
@@ -119,3 +119,9 @@ def run(cli_args: typing.List[str]) -> None:
     _status.lock_directory()                          # .. to have a timestamp of when the lab was started
 
   log.repeat_warnings('netlab initial')
+
+def run(cli_args: typing.List[str]) -> None:
+  try:
+    run_initial(cli_args)
+  except KeyboardInterrupt:
+    external_commands.interrupted('netlab initial')

@@ -11,7 +11,7 @@ import os
 import sys
 from box import Box
 
-from . import common_parse_args, topology_parse_args, load_topology
+from . import common_parse_args, topology_parse_args, load_topology, lab_status_log
 from .. import augment
 from ..utils import log, read as _read,strings
 from ..outputs import _TopologyOutput
@@ -85,6 +85,7 @@ def run(cli_args: typing.List[str],
     strings.print_colored_text("WARNING: ","bright_red",stderr=True)
     print("removing netlab.lock file, you're on your own",file=sys.stderr)
     os.remove('netlab.lock')
+    lab_status_log(topology,'Configuration files have been recreated')
 
   for output_format in args.output:
     output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format.split(':')[0]])
