@@ -51,7 +51,7 @@ The following table describes per-platform support of individual router-level OS
 | Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
-| Cisco IOS XE             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Cisco IOS XE[^18v]       |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌          |
@@ -66,6 +66,8 @@ The following table describes per-platform support of individual router-level OS
 | Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ✅  |       ✅          |
 | VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
 **Notes:**
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.

@@ -16,6 +16,7 @@
 | Arista vEOS                               | eos                |
 | Aruba AOS-CX [❗](caveats-aruba)          | arubacx        |
 | Cisco ASAv                                | asav               |
+| Cisco Catalyst 8000v [❗](caveats-cat8000v) | cat8000v                |
 | Cisco CSR 1000v [❗](caveats-csr)         | csr                |
 | Cisco IOSv [❗](caveats-iosv)             | iosv               |
 | Cisco IOS XRv  [❗](caveats-iosxr)        | iosxr              |
@@ -69,9 +70,10 @@ You cannot use all supported network devices with all virtualization providers. 
 | Arista vEOS        | [✅](build-eos)  | ✅  | [✅](build-ceos)  |
 | Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Cisco ASAv         | [✅](build-asav)  |  ❌  |  ❌  |
+| Cisco Catalyst 8000v | [✅](build-cat8000v) |  ❌  |  ✅[❗](clab-vrnetlab)  |
+| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cisco IOSv         | [✅](build-iosxr)  | ✅  |  ❌  |
 | Cisco IOS XRv      | [✅](build-iosv)  |  ❌  | ✅  |
-| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cisco Nexus 9300v  | [✅](build-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
 | Cumulus Linux 5.0 (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
@@ -100,9 +102,10 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Arista vEOS                | eos                |    2 |   2048 | virtio |
 | Aruba AOS-CX               | arubacx            |    2 |   4096 | virtio |
 | Cisco ASAv                 | asav               |    1 |   2048 | virtio |
+| Cisco Catalyst 8000v       | cat8000v           |    2 |   4096 | virtio |
+| Cisco CSR 1000v            | csr                |    2 |   4096 | virtio |
 | Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
 | Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000                     |
-| Cisco CSR 1000v            | csr                |    2 |   4096 | virtio |
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats-nxos)| e1000 |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio |
 | Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
@@ -131,7 +134,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Arista EOS            |          ✅           |           ✅           |
 | Aruba AOS-CX          |          ✅           |           ✅           |
 | Cisco ASAv            |          ✅           |           ✅           |
-| Cisco IOS / IOS XE    |          ✅           |           ✅           |
+| Cisco IOS/IOS XE[^18v]|          ✅           |           ✅           |
 | Cisco IOS XRv         |          ✅           |           ✅           |
 | Cisco Nexus OS        |          ✅           |           ✅           |
 | Cumulus Linux         |          ✅           |           ✅           |
@@ -149,6 +152,8 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Sonic                 |          ✅           |           ❌           |
 | VyOS                  |          ✅           |           ✅           |
 
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+
 ## Initial Device Configurations
 
 The following system-wide features are configured on supported network operating systems as part of the initial device configuration:
@@ -159,7 +164,7 @@ The following system-wide features are configured on supported network operating
 | Arista EOS               | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Cisco ASAv               | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
-| Cisco IOS/IOS XE         | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS/IOS XE[^18v]   | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XRv            | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS           | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux            | ✅  | ✅  | ✅  | ✅  | ✅  |
@@ -186,7 +191,7 @@ The following interface parameters are configured on supported network operating
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
 | Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
-| Cisco IOS/IOS XE      | ✅  | ✅  | ✅[❗](caveats-iosv) | ✅  |
+| Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅[❗](caveats-iosv) | ✅  |
 | Cisco IOS XRv         | ✅  | ✅ [❗](caveats-iosxr) | ✅ |  ❌  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
@@ -214,7 +219,7 @@ The following interface addresses are supported on various platforms:
 | Aruba AOS-CX          | ✅  | ✅  |  ❌  |
 | Cisco ASAv            | ✅  | ✅  |  ❌  |
 | Cisco IOSv            | ✅  | ✅  |  ❌  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cisco IOS XRv         | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
@@ -250,7 +255,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
 | Cisco ASAv            | ❌    |  ✅  |   ❌  |  ✅  |   ❌  |
 | Cisco IOSv            | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XE          | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS XE[^18v]    | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XRv         | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
 | Cisco Nexus OS        | ✅   |  ✅  |  ✅  |  ✅  |   ❌  |
 | Cumulus Linux         | ✅   |   ❌  |   ❌  |  ✅  |  ✅  |
@@ -280,8 +285,9 @@ These devices support additional control-plane protocols or BGP address families
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
+| Cisco CSR 1000v       | ✅  |  ❌  | ✅  | ✅  |
+| Cisco Catalyst 8000v  | ✅  |  ❌  |  ❌  | ✅  |
 | Cisco IOSv            | ✅  |  ❌  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
@@ -309,8 +315,9 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
 | Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Aruba AOS-CX          |  ✅  | ✅  |  ✅[❗](caveats-aruba)   | [❗](caveats-aruba)   |    ❌    |  ❌   |
+| Cisco Catalyst 8000v  |  ✅  | ✅  |  ❌   |  ❌   |    ❌    |  ❌   |
+| Cisco CSR 1000v       |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
-| Cisco IOS XE          |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
 | Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
 | Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module-vrf-platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
@@ -331,8 +338,8 @@ Network services [configuration modules](module-reference.md) are supported on t
 | Operating system      | [DHCP](module/dhcp.md) | [DHCPv6](module/dhcp.md) |
 | --------------------- | :--: | :--: |
 | Arista EOS            | ✅   |  ✅  |
+| Cisco CSR 1000v       | ✅   |  ✅  |
 | Cisco IOSv            | ✅   |  ✅  |
-| Cisco IOS XE          | ✅   |  ✅  |
 | Cumulus Linux         | ✅   |  ✅  |
 
 Network services [configuration modules](module-reference.md) are also supported on these daemons:
@@ -351,7 +358,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Aruba AOS-CX          |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Cisco ASAv            |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cisco IOSv            |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
-| Cisco IOS XE          |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
+| Cisco IOS XE[^18v]    |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |

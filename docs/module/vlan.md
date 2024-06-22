@@ -24,6 +24,7 @@ VLANs are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Aruba AOS-CX          | ✅  | ✅  | ❌  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Cisco Catalyst 8000v  | ✅  | ✅  | ❌[❗](caveats-csr)   | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅  | ✅  | ❌[❗](caveats-csr)   | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cumulus Linux         | ✅  | ✅  | ❌[❗](caveats-cumulus)  | ✅ | ✅ |

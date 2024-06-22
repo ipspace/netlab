@@ -19,6 +19,7 @@ The module is supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
+| Cisco Catalyst 8000v  |  ❌  | ✅  | ✅  |
 | Cisco CSR 1000v       |  ❌  | ✅  | ✅  |
 | Cisco IOSv            |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
@@ -32,7 +33,7 @@ The module is supported on these platforms:
 
 The module supports the following global parameters:
 
-* **gateway.protocol** (default: *anycast*) -- the first-hop gateway resolution protocol. The only supported value is currently *anycast*
+* **gateway.protocol** (default: *anycast*) -- the first-hop gateway resolution protocol. The supported values are *anycast* and *vrrp*.
 * **gateway.id** (default: -1) -- the IP address within the subnet used for the gateway IP address
 
 ## Link Parameters

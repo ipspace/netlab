@@ -62,7 +62,7 @@ The following features are only supported on a subset of platforms:
 | Arista EOS            |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | Aruba AOS-CX          |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | BIRD                  |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
-| Cisco IOS/IOS XE      |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
+| Cisco IOS/IOS XE[^18v]|  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
 | Cisco IOS XRv         |  ❌  |  ❌  |  ❌  |  ❌  |  ✅ |
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
@@ -76,6 +76,8 @@ The following features are only supported on a subset of platforms:
 ```{tip}
 See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
 ```
+
+[^18v]: Includes Cisco IOSv, Cisco CSR 1000v and Cisco Catalyst 8000v
 
 ## Global BGP Configuration Parameters
 

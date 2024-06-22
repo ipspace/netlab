@@ -30,7 +30,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
 | Cisco ASAv         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
 | Cisco IOS          | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
-| Cisco IOS XE       | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
+| Cisco IOS XE[^18v] | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌ |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌ |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ❌  | ❌ |
@@ -40,6 +40,8 @@ The following table describes per-platform support of individual IS-IS features:
 | Nokia SR Linux     | ✅  | ✅  | ❌  | ✅  | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
 | VyOS               | ✅  | ✅  | ❌  |  ❌  | ✅  | ✅ |
+
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.

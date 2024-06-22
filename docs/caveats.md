@@ -68,13 +68,21 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 
 * Some ASAv versions use older SSH protocols. For more details, see the [Cisco IOSv SSH caveats](cisco-iosv-ssh).
 
+(caveats-cat8000v)=
+## Cisco Catalyst 8000v
+
+* Apart from the VLAN configuration, Catalyst 8000v implementation uses the same configuration templates as CSR 1000v.
+* Catalyst 8000v accepts CSR 1000v-based VXLAN configuration, but the validation tests fail. You cannot configure VXLAN on Catalyst 8000v with the current _netlab_ release.
+
+See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
+
 (caveats-csr)=
 ## Cisco CSR 1000v
 
 * Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
 * VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 
-See also Cisco IOSv SSH, OSPF, RIPng, and BGP caveats.
+See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 
 (caveats-iosv)=
 ## Cisco IOSv

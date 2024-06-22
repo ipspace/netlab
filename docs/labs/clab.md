@@ -28,6 +28,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 |------------------------|------------------------------|
 | Arista cEOS            | ceos: 4.31.2F                 |
 | BIRD                   | netlab/bird:latest           |
+| Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
 | Cisco CSR 1000v        | vrnetlab/vr-csr:17.03.04     |
 | Cisco IOS XRd          | ios-xr/xrd-control-plane:7.11.1 |
 | Cisco Nexus OS         | vrnetlab/vr-n9kv:9.3.8       |
