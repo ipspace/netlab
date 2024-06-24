@@ -919,7 +919,6 @@ def run(cli_args: typing.List[str]) -> None:
 
   filter_by_tests(args,topology)
   filter_by_nodes(args,topology)
-  extend_first_wait_time(args,topology)
   log.exit_on_error()
 
   templates.load_ansible_filters()
@@ -933,6 +932,7 @@ def run(cli_args: typing.List[str]) -> None:
   topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
   start_time = _status.lock_timestamp() or time.time()
   log.init_log_system(header=False)
+  extend_first_wait_time(args,topology)
 
   for v_entry in topology.validate:
     if cnt and not ERROR_ONLY:
