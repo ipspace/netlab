@@ -587,6 +587,10 @@ def must_be_asn(value: typing.Any) -> dict:
 #
 @type_test()
 def must_be_ipv4(value: typing.Any, use: str) -> dict:
+
+  def transform_to_ipaddr(value: int) -> str:
+    return str(netaddr.IPAddress(value))
+
   if isinstance(value,bool):                                          # bool values are valid only on interfaces
     if use not in ('interface','prefix'):
       return { '_value' : 'an IPv4 address (boolean value is valid only on an interface)' }
@@ -598,6 +602,8 @@ def must_be_ipv4(value: typing.Any, use: str) -> dict:
       return { '_value': 'an IPv4 prefix (integer value is only valid as a 32-bit ID)' }
     if value < 0 or value > 2**32-1:
       return { '_value': 'an IPv4 address or an integer between 0 and 2**32' }
+    if use == 'id':
+      return { '_valid': True, '_transform': transform_to_ipaddr }
     return { '_valid': True }
 
   if not isinstance(value,str):
