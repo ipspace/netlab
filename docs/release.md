@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 1.8.4-post1 (2024-07-01)**
+
+This release contains only [bug fixes](bug-fixes-1.8.4-post1) and [documentation fixes](doc-fixes-1.8.4-post1).
+
 **[Release 1.8.4](release-1.8.4) (2024-06-22)**
 
 * Support for [Cisco Catalyst 8000v](platform-devices)
