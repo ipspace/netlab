@@ -57,7 +57,7 @@ _netlab_ supports most BGP features on [all platforms supporting BGP configurati
 
 The following features are only supported on a subset of platforms:
 
-| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered IPv4<br />EBGP sessions | EBGP<br>local AS | IBGP<br>local AS | Configurable<br>default AF |
+| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered IPv4<br />EBGP sessions[^INTv4] | EBGP<br>local AS | IBGP<br>local AS | Configurable<br>default AF |
 | --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | Aruba AOS-CX          |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
@@ -67,7 +67,7 @@ The following features are only supported on a subset of platforms:
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
 | Dell OS10             |  ✅ |  ✅ |  ✅ |  ❌  |  ✅  |
-| FRR                   |  ✅ |  ❌  |  ✅ |  ✅  |  ✅ |
+| FRR                   |  ✅ |  ✅ |  ✅ |  ✅  |  ✅ |
 | Nokia SR Linux        |  ✅ |  ❌  |  ✅ |  ✅  |  ✅  |
 | Nokia SR OS           |  ❌  |  ❌  |  ✅ |  ✅  |  ✅  |
 | Sonic                 |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
@@ -78,6 +78,8 @@ See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.
 ```
 
 [^18v]: Includes Cisco IOSv, Cisco CSR 1000v and Cisco Catalyst 8000v
+
+[^INTv4]: IPv4 address family activated on an EBGP session established between IPv6 LLA interfaces and using IPv6 next hop for IPv4 prefixes according to RFC 8950
 
 ## Global BGP Configuration Parameters
 
