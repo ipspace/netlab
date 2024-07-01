@@ -118,6 +118,7 @@ def read_results(top: str, results: Box, path: str = '') -> None:
     if fname.startswith('.') or fname.startswith('_'):
       continue
     if fpath.is_dir():
+      results[path]._children = True
       new_path = path + ("." if path else "") + fname.replace('.','#')
       read_results(str(fpath),results,new_path)
 
@@ -237,10 +238,11 @@ def create_recursive_html(
       create_recursive_html(args,i_data,topology)
 
 def create_html_reports(args: argparse.Namespace, results: Box, coverage: Box, topology: Box) -> None:
+  topology.coverage = coverage
   create_html_page(
     args,
     'index.html.j2',
-    topology + { 'results': results, 'coverage': coverage },
+    topology + { 'results': results },
     'index.html',
     output_dir='.')
   create_recursive_html(args,results,topology)
@@ -255,7 +257,6 @@ def main() -> None:
   results = get_empty_box()
   read_results('.',results)
   coverage = remap_results(results)
-
   if args.yaml:
     print(results.to_yaml())
   elif args.html:
