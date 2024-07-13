@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 1.8.4-post2 (2024-07-13)**
+
+This release contains only [bug fixes](bug-fixes-1.8.4-post2) and [documentation fixes](doc-fixes-1.8.4-post2).
+
 **Release 1.8.4-post1 (2024-07-01)**
 
 This release contains only [bug fixes](bug-fixes-1.8.4-post1) and [documentation fixes](doc-fixes-1.8.4-post1).
