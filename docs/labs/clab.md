@@ -46,7 +46,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * Cumulus VX, FRR, Linux, and Nokia SR Linux images are automatically downloaded from Docker Hub.
-* You must build the BIRD and dnsmasq images with the **netlab clab build** command.
+* Build the BIRD and dnsmasq images with the **netlab clab build** command.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS container image (requires a license); see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
@@ -154,7 +154,7 @@ nodes:
 [_vrnetlab_](https://containerlab.dev/manual/vrnetlab/) is an open-source project that packages network device virtual machines into containers. The resulting containers have a launch process that starts **qemu** (KVM) to spin up a virtual machine. Running *vrnetlab* containers on a VM, therefore, requires nested virtualization.
 
 ```{warning}
-_vrnetlab_ is an independent open-source project. If it fails to produce a working container image, please get in touch with them.
+_vrnetlab_ is an independent open-source project. If it fails to produce a working container image, please contact them.
 ```
 
 ### Image Names
@@ -163,7 +163,7 @@ The build process generates container tags based on the underlying VM image name
 
 ### Internal Container Networking
 
-The packaged container's architecture requires an internal network and the _vrnetlab_ fork supported by _containerlab_ uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
+The packaged container's architecture requires an internal network. The _vrnetlab_ fork supported by _containerlab_ uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
 
 If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
@@ -234,9 +234,15 @@ frr:
       daemons: /etc/frr/daemons
 ```
 
-_netlab_ tries to locate the templates in the current directory, in a subdirectory with the name of the device, and within the system directory ```templates/provider/clab/<device>```. ```.j2``` suffix is always appended to the template name.
+In the above example, the `daemons.j2` Jinja2 template from the configuration file templates search path[^CFSP] is rendered into the `daemons` file within the `clab_files/node-name` subdirectory of the current directory. That file is then mapped into the `/etc/frr/daemons` file within the container.
 
-For example, the ```daemons``` template used in the above example could be ```./daemons.j2```, ```./frr/daemons.j2``` or ```<netsim_moddir>/templates/provider/clab/frr/daemons.j2```; the result gets mapped to ```/etc/frr/daemons``` within the container file system.
+[^CFSP]: See [](dev-config-deploy-paths) for more details.
+
+_netlab_ tries to locate the Jinja2 templates in the device-specific **paths.templates.dir** directories[^CFTD]; the template file name is the dictionary key (for example, `daemons`) with the `.j2` suffix.
+
+[^CFTD]: See [](change-search-paths) for more details.
+
+For example, with the default path settings, the user-specified `daemons.j2` template could be in the `templates/frr` subdirectory of the lab topology directory, the current directory, `~/.netlab` directory or `/etc/netlab` directory.
 
 You can use the ```clab.config_templates``` node attribute to add your own container configuration files[^UG], for example:
 
@@ -253,11 +259,11 @@ nodes:
         some_daemon: /etc/some_daemon.cf
 ```
 
-Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon``` from ```some_daemon.j2``` (the template could be either in current directory or ```linux``` subdirectory) and maps it to ```/etc/some_daemon.cf``` within the container file system.
+Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon``` from ```some_daemon.j2``` (found in the configuration template search path) and maps it to ```/etc/some_daemon.cf``` within the container file system.
 
 ### Jinja2 Filters Available in Custom Configuration Files
 
-The custom configuration files are generated within _netlab_ and can, therefore, use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import the **ipaddr** family of filters, making filters like **ipv4**, **ipv6**, or **ipaddr** available in custom configuration file templates.
+The custom configuration files are generated within _netlab_ and can use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import the **ipaddr** family of filters, making filters like **ipv4**, **ipv6**, or **ipaddr** available in custom configuration file templates.
 
 ```{warning}
 Ansible developers love to restructure stuff and move it into different directories. This functionality works with two implementations of **ipaddr** filters (tested on Ansible 2.10 and Ansible 7.4/ Ansible Core 2.14) but might break in the future -- we're effectively playing whack-a-mole with Ansible developers.
@@ -276,7 +282,9 @@ You can also change these *containerlab* parameters:
 * **clab.ports** to map container ports to host ports
 * **clab.cmd** to execute a command in a container.
 
+```{warning}
 String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
+```
 
 The complete list of supported Containerlab attributes is in the [system defaults](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22) and can be printed with the `netlab show defaults providers.clab.attributes` command.
 
