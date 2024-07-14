@@ -424,15 +424,21 @@ Exceptions:
 """
 
 @type_test(false_value=[],empty_value=[])
-def must_be_list(value: typing.Any) -> dict:
+def must_be_list(value: typing.Any, make_list: bool = False) -> dict:
 
   def transform_to_list(value: typing.Any) -> list:
     return [ value ]
 
+  if isinstance(value,list):                            # A list is what we want to have ;)
+    return { '_valid': True }
+
   if isinstance(value,(str,int,float,bool)):            # Handle scalar-to-list transformations with a callback function
     return { '_valid': True, '_transform': transform_to_list }
 
-  return { '_valid': True } if isinstance(value,list) else { '_type': 'a scalar or a list' }
+  if make_list:                                         # Optional: force any other value to become a list
+    return { '_valid': True, '_transform': transform_to_list }
+
+  return { '_type': 'a scalar or a list' }
 
 @type_test(false_value={},empty_value={})
 def must_be_dict(value: typing.Any) -> dict:
