@@ -26,6 +26,9 @@ def must_be_autobw(
 
 types.register_type('autobw',must_be_autobw)
 
+def init(topology: Box) -> None:
+  data.append_to_list(topology,'_extra_module','routing')   # bgp.policy plugin needs routing policies (route maps)
+
 '''
 append_policy_attribute
 
@@ -46,10 +49,10 @@ def append_policy_attribute(ngb: Box, attr: str, direction: str, attr_value: typ
 
   # Simple case: single direction (in or out)
   #
-  if not ngb.policy[direction]:                         # Create an empty policy list if needed
-    ngb.policy[direction] = [ data.get_empty_box() ]
+  if not ngb._policy[direction]:                        # Create an empty policy list if needed
+    ngb._policy[direction] = [ data.get_empty_box() ]
 
-  for p_entry in ngb.policy[direction]:                 # Add a 'set' entry to every policy element
+  for p_entry in ngb._policy[direction]:                # Add a 'set' entry to every policy element
     p_entry.set[attr] = attr_value                      # ... to cope with route-map limitations
 
 _attr_list: list = []
@@ -141,13 +144,6 @@ def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bo
   return Found
 
 '''
-set_policy_name -- set the neighbor-specific prefix for the policy objects needed for that neighbor
-'''
-def set_policy_name(intf: Box, ngb: Box, policy_idx: int) -> None:
-  vrf_pfx = f'vrf-{intf.vrf}-' if 'vrf' in intf else ''
-  ngb._policy_name = f'{vrf_pfx}{ngb.name}-{policy_idx}'
-
-'''
 fix_bgp_bandwidth: transform the bandwidth-as-int shortcut into bandwidth.in: int
 '''
 
@@ -158,6 +154,34 @@ def fix_bgp_bandwidth(intf: Box) -> None:
   
   if not isinstance(bw,dict):
     intf.bgp.bandwidth = { 'in': bw }
+
+'''
+bgp_policy_name -- get the neighbor-specific route map prefix
+'''
+def bgp_policy_name(intf: Box, ngb: Box, policy_idx: int) -> str:
+  vrf_pfx = f'vrf-{intf.vrf}-' if 'vrf' in intf else ''
+  return f'{vrf_pfx}{ngb.name}-{policy_idx}'
+
+'''
+create_routing_policy: create route maps needed for BGP neighbor policies
+'''
+def create_routing_policy(ndata: Box, ngb: Box, p_name: str) -> None:
+  for direction in ['in','out']:                            # Check in- and out- route maps
+    if f'_policy.{direction}' not in ngb:                   # Do we have bgp.policy-generated route map?
+      continue
+    if f'policy.{direction}' in ngb:                        # Do we also have configured bgp.policy?
+      log.error(                                            # OOPS, can't have both
+        'Cannot mix in/out routing policies with individual bgp.policy attributes -- node {ndata.name} neighbor {ngb.name}',
+        category=log.IncorrectValue,
+        module='bgp.policy')
+      continue
+
+    data.append_to_list(ndata,'module','routing')
+    rm_name = f'bp-{p_name}-{direction}'                    # Get the route-map name
+    ndata.routing.policy[rm_name] = ngb._policy[direction]  # Copy neighbor routing policy to node routing policies
+    ngb.policy[direction] = rm_name                         # And add a pointer to bgp.policy dictionary
+
+  ngb.pop('_policy',None)                                   # Finally, clean up the temporary data structure
 
 '''
 post_transform hook
@@ -202,4 +226,5 @@ def post_transform(topology: Box) -> None:
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
-        set_policy_name(intf,ngb,policy_idx)                # ... set the per-neighbor policy name
+        p_name = bgp_policy_name(intf,ngb,policy_idx)       # Get the routing policy name
+        create_routing_policy(ndata,ngb,p_name)             # and try to create the route map

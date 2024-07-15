@@ -1,0 +1,58 @@
+{#
+
+This Jinja2 template defines macros that can be used to configure devices
+that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
+
+#}
+{% macro prepend_set(s_param,asn) -%}
+{%   if s_param.path|default('') %}
+  set as-path prepend {{ s_param.path }}
+{%   elif s_param.count|default(0) %}
+  set as-path prepend {{ (asn + " ") * s_param.count }}
+{%   endif %}
+{%- endmacro %}
+{#
+   Include OS-specific route map macros
+#}
+!
+{#
+   This macro generates the elements of route-map entries common across all "industry standard CLI" devices
+#}
+{% macro common_route_map_entry(p_entry) -%}
+{%   if 'set' in p_entry %}
+{%     if 'locpref' in p_entry.set %}
+  set local-preference {{ p_entry.set.locpref }}
+{%     endif %}
+{%     if 'med' in p_entry.set %}
+  set metric {{ p_entry.set.med }}
+{%     endif %}
+{%     if 'prepend' in p_entry.set %}
+{{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
+{%     endif %}
+{%   endif %}
+{%- endmacro %}
+{#
+   This macro builds a single route map and uses the callback to define a route map entry.
+#}
+{% macro build_route_map(rp_name,rp_list) -%}
+{%   for p_entry in rp_list %}
+!
+route-map {{ rp_name }} {{ p_entry.action|default('permit') }} {{ p_entry.sequence|default(loop.index * 10) }}
+{{       caller(p_entry) }}
+{%   endfor %}
+{%- endmacro %}
+!
+{#
+   This macro creates route maps from the routing.policy dictionary
+
+   The callback defines a route map entry.
+#}
+{% macro create_route_maps(rp_dict) -%}
+{%   set cb = caller %}
+{%   for rp_name,rp_list in rp_dict.items() %}
+{%    call(p_entry) build_route_map(rp_name,rp_list) -%}
+{{       cb(p_entry) }}
+{%-    endcall %}
+{%   endfor %}
+{%- endmacro %}
+!
