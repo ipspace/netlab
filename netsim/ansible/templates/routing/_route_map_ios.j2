@@ -26,6 +26,9 @@ that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
 {%     if 'med' in p_entry.set %}
   set metric {{ p_entry.set.med }}
 {%     endif %}
+{%     if 'weight' in p_entry.set %}
+  set weight {{ p_entry.set.weight }}
+{%     endif %}
 {%     if 'prepend' in p_entry.set %}
 {{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
 {%     endif %}
@@ -35,9 +38,10 @@ that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
    This macro builds a single route map and uses the callback to define a route map entry.
 #}
 {% macro build_route_map(rp_name,rp_list) -%}
+{% set seq = 'seq ' if netlab_device_type == 'arubacx' else '' %}
 {%   for p_entry in rp_list %}
 !
-route-map {{ rp_name }} {{ p_entry.action|default('permit') }} {{ p_entry.sequence|default(loop.index * 10) }}
+route-map {{ rp_name }} {{ p_entry.action|default('permit') }} {{ seq }}{{ p_entry.sequence|default(loop.index * 10) }}
 {{       caller(p_entry) }}
 {%   endfor %}
 {%- endmacro %}
