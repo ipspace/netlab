@@ -52,8 +52,10 @@ def append_policy_attribute(ngb: Box, attr: str, direction: str, attr_value: typ
   if not ngb._policy[direction]:                        # Create an empty policy list if needed
     ngb._policy[direction] = [ data.get_empty_box() ]
 
-  for p_entry in ngb._policy[direction]:                # Add a 'set' entry to every policy element
-    p_entry.set[attr] = attr_value                      # ... to cope with route-map limitations
+  p_entry = ngb._policy[direction][0]                   # Modify first route map entry
+  p_entry.set[attr] = attr_value                        # Set attribute
+  p_entry.sequence = 10                                 # Make sure we have a sequence number
+  p_entry.action = 'permit'                             # ... and an action
 
 _attr_list: list = []
 _direct: list = []
