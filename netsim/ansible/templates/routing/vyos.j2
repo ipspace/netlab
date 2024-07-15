@@ -1,0 +1,19 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+
+configure
+
+{% if routing.policy|default({}) %}
+{%   import '_route_policy_vyos.j2' as routemap with context %}
+{{   routemap.create_route_maps(routing.policy) }}
+{% endif %}
+
+commit
+save
+exit
