@@ -181,9 +181,10 @@ def create_routing_policy(ndata: Box, ngb: Box, p_name: str) -> None:
       continue
     if f'policy.{direction}' in ngb:                        # Do we also have configured bgp.policy?
       log.error(                                            # OOPS, can't have both
-        'Cannot mix in/out routing policies with individual bgp.policy attributes -- node {ndata.name} neighbor {ngb.name}',
+        f'Cannot mix in/out routing policies with individual bgp.policy attributes -- node {ndata.name} neighbor {ngb.name}',
         category=log.IncorrectValue,
         module='bgp.policy')
+      print(ngb)
       continue
 
     data.append_to_list(ndata,'module','routing')
