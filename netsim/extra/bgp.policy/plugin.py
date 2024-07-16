@@ -116,6 +116,16 @@ def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, at
       module=_config_name)
 
 '''
+apply_config: add a plugin configuration template, collect BGP sessions that have to be cleared
+'''
+def apply_config(node: Box, ngb: Box) -> None:
+  global _config_name
+  api.node_config(node,_config_name)                    # Remember that we have to do extra configuration
+  for af in ('ipv4','ipv6'):                            # ... and add sessions that have to be cleared
+    if af in ngb:
+      data.append_to_list(node.bgp,'_session_clear',ngb[af])
+
+'''
 Apply attributes supported by bgp.policy plugin to a single neighbor
 Returns True if at least some relevant attributes were found
 '''
@@ -139,10 +149,7 @@ def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bo
       check_attribute_direction(node,ngb,topology,attr,attr_value)
       append_policy_attribute(ngb,attr,_compound[attr],attr_value)
 
-    api.node_config(node,_config_name)                  # Remember that we have to do extra configuration
-    for af in ('ipv4','ipv6'):                          # ... and add sessions that have to be cleared
-      if af in ngb:
-        data.append_to_list(node.bgp,'_session_clear',ngb[af])
+    apply_config(node,ngb)                              # Remember that we have to do extra configuration
 
   return Found
 
@@ -207,7 +214,7 @@ def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> Non
         continue                                            # ... and skip it if it's not
 
     ngb.policy[direction] = intf.bgp.policy[direction]      # Copy interface BGP routing policy into a neighbor
-    api.node_config(ndata,_config_name)                     # Remember that we have to do extra configuration
+    apply_config(ndata,ngb)                                 # Remember that we have to do extra configuration
 
 '''
 post_transform hook
