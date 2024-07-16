@@ -3,6 +3,7 @@ from box import Box
 from netsim.utils import bgp as _bgp, log
 from netsim import api,data
 from netsim.data import types
+from netsim.modules.routing import import_routing_policy,check_routing_policy
 
 _config_name = 'bgp.policy'
 
@@ -186,6 +187,29 @@ def create_routing_policy(ndata: Box, ngb: Box, p_name: str) -> None:
   ngb.pop('_policy',None)                                   # Finally, clean up the temporary data structure
 
 '''
+apply_bgp_routing_policy: import and check the routing policies required by the bgp.policy attributes
+'''
+def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> None:
+  for direction in ['in','out']:                            # Check in- and outbound policies
+    if f'bgp.policy.{direction}' not in intf:               # No policies applied in this direction, move on
+      continue
+
+    if 'routing' not in ndata.module:
+      log.error(
+        f"You cannot use 'bgp.policy' interface attribute on a node that does not use 'routing' module",
+        category=log.IncorrectType,
+        module='bgp.policy')
+      return
+
+    pname = intf.bgp.policy[direction]                      # Get the routing policy name
+    if import_routing_policy(pname,ndata,topology):         # If we imported a routing policy
+      if not check_routing_policy(pname,ndata,topology):    # Check whether it's valid
+        continue                                            # ... and skip it if it's not
+
+    ngb.policy[direction] = intf.bgp.policy[direction]      # Copy interface BGP routing policy into a neighbor
+    api.node_config(ndata,_config_name)                     # Remember that we have to do extra configuration
+
+'''
 post_transform hook
 
 As we're applying interface attributes to BGP sessions, we have to copy
@@ -227,6 +251,8 @@ def post_transform(topology: Box) -> None:
             communities.append('extended')
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
+      if intf.get('bgp.policy',{}):
+        apply_bgp_routing_policy(ndata,ngb,intf,topology)
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
         p_name = bgp_policy_name(intf,ngb,policy_idx)       # Get the routing policy name
         create_routing_policy(ndata,ngb,p_name)             # and try to create the route map
