@@ -234,7 +234,7 @@ def post_transform(topology: Box) -> None:
     if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
       continue
 
-    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list)
+    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + [ 'policy' ])
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
