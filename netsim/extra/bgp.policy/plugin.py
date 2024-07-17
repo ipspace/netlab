@@ -179,12 +179,23 @@ def create_routing_policy(ndata: Box, ngb: Box, p_name: str) -> None:
   for direction in ['in','out']:                            # Check in- and out- route maps
     if f'_policy.{direction}' not in ngb:                   # Do we have bgp.policy-generated route map?
       continue
-    if f'policy.{direction}' in ngb:                        # Do we also have configured bgp.policy?
-      log.error(                                            # OOPS, can't have both
-        f'Cannot mix in/out routing policies with individual bgp.policy attributes -- node {ndata.name} neighbor {ngb.name}',
+    if f'policy.{direction}' in ngb:                        # Do we also have configured bgp.policy? Time for an error
+      attr_policy = ngb._policy[direction][0]               # First collect the attribute-generated policy
+      p_attr = ','.join(attr_policy.set.keys())             # ... and gather attributes from it
+
+      # Special case: the error might be caused by node-wide locpref copied to interfaces
+      #
+      if p_attr == 'locpref' and ndata.get('bgp.locpref',None) == attr_policy.set.locpref:
+        p_attr += ' (possibly node-wide)'
+
+      # Now we know what's wrong and can provide more data together with the error message
+      #
+      more_data = [ f'Policy({direction}): {ngb.policy[direction]}, attributes: {p_attr}' ]
+      log.error(
+        f'Cannot mix bgp.policy with individual BGP policy attributes -- node {ndata.name} neighbor {ngb.name}',
         category=log.IncorrectValue,
+        more_data = more_data,
         module='bgp.policy')
-      print(ngb)
       continue
 
     data.append_to_list(ndata,'module','routing')
