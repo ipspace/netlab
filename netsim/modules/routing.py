@@ -57,6 +57,9 @@ def normalize_routing_policies(pdata: typing.Optional[Box], topo_policy: bool = 
   if pdata is None:                                         # Nothing to do, I'm OK with that ;)
     return
 
+  if not isinstance(pdata,Box):                             # Routing policies are not a Box, let validation deal with that
+    return
+
   for pname in list(pdata.keys()):                          # Iterate over the routing.policy dictionary
     if pdata[pname] is None:                                # if the policy value is None, it could be a placeholder
       if topo_policy:
@@ -157,7 +160,7 @@ Import or merge global routing policies into node routing policies
 """
 def import_routing_policies(node: Box,topology: Box) -> None:
   node_pdata = node.get('routing.policy',None)
-  if node_pdata is None:
+  if not isinstance(node_pdata,dict):
     return
 
   for p_name in list(node_pdata.keys()):
