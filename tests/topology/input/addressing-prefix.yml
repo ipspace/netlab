@@ -1,0 +1,59 @@
+#
+# Test named prefixes
+#
+addressing:
+  lan:                              # Make LAN pool dual-stacked
+    ipv6: 2001:db8:1::/48
+  v6only:                           # Plus an IPv6-only pool
+    ipv6: 2001:db8:2::/48
+
+defaults.device: none
+module: [ vlan ]
+
+vlans:
+  v1:
+    prefix: s2
+
+# Create a few nodes with non-default IDs just for fun
+nodes:
+  r1:
+    id: 42
+
+# And now the real work starts
+prefix:
+  p1:                               # The first four prefixes are allocated from pools
+    pool: lan
+  p2:
+    pool: lan
+    allocation: sequential
+  p3:
+    pool: p2p
+  p4:
+    pool: v6only
+  s1:                               # Static prefix, allocation specified
+    ipv4: 192.168.42.0/24
+    allocation: p2p
+  s2:
+    ipv6: 2001:db8:cafe:1::/64      # Static IPv4-only prefix, no allocation
+
+# Now use prefixes on different links
+#
+links:
+- r1:
+  prefix: p1
+  name: Prefix allocated from LAN pool
+- r1:
+  prefix: p2
+  name: Sequential prefix allocation from LAN pool
+- r1:
+  prefix: p3
+  name: Prefix from P2P pool
+- r1:
+  prefix: p4
+  name: Prefix from custom IPv6-only pool
+- r1:                               # Static prefix
+  prefix: s1
+  name: Static prefix, P2P allocation
+- r1:                               # And another one used on a VLAN
+  vlan.access: v1
+  name: VLAN prefix, static IPv6-only

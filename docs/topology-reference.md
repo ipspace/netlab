@@ -16,6 +16,7 @@ Other topology elements include:
 * **groups** -- optional [groups of nodes](groups.md)
 * **module** -- default list of [modules](modules.md) used by this network topology. You can use device-level **module** attribute to override this setting for individual nodes.
 * **plugin** -- list of [plugins](plugins.md) used by this topology.
+* **prefix** -- [named IP prefixes](prefix.md) that can be used to address links and VLANs or in prefix lists or validation expressions.
 * **tools** -- dictionary of [external network management tools](extools.md) deployed after the lab has been started and configured.
 * **validate** -- lab [validation tests](topology/validate.md)
 
@@ -53,6 +54,7 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    custom-config-templates.md
    extools.md
    plugins.md
+   prefix.md
    providers.md
    components.md
    defaults.md

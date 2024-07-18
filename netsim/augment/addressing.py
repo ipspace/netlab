@@ -56,7 +56,7 @@ import netaddr
 from box import Box
 
 # Related modules
-from ..data import get_empty_box,get_box,null_to_string
+from ..data import get_empty_box,get_box,null_to_string,global_vars
 from ..data.validate import validate_attributes
 from ..utils import log,strings
 
@@ -88,7 +88,7 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
 
 def rebuild_prefix(pfx: typing.Union[dict,Box]) -> Box:
   out_pfx = get_empty_box()
-  for af in ('ipv4','ipv6'):
+  for af in ('ipv4','ipv6','allocation','_name'):
     if af in pfx:
       out_pfx[af] = str(pfx[af]) if not isinstance(pfx[af],bool) else pfx[af]
   return out_pfx
@@ -307,8 +307,43 @@ def setup(topology: Box) -> None:
     strings.print_structured_dict(topology.pools,'.. ')
 
   log.exit_on_error()
+  if 'prefix' in topology:
+    setup_prefixes(topology)
 
-def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
+'''
+Get an addressing prefix from the name of a named prefix
+'''
+def evaluate_named_prefix(topology: Box, pname: str) -> Box:
+  if pname not in topology.prefix:                    # pragma: no cover
+    return get_empty_box()                            # Should be tested by the caller
+  topology.prefix[pname]._name = pname                # Insert a prefix name to make it visible in links/VLANs
+  if 'pool' not in topology.prefix[pname]:            # A static prefix, return it
+    return topology.prefix[pname]
+  
+  pool_name = topology.prefix[pname].pool
+  if pool_name not in topology.pools:
+    log.error(
+      f'Named prefix {pname} references an unknown pool {pool_name}',
+      category=log.IncorrectValue,
+      module='addressing')
+    return get_empty_box()
+
+  pool_pfx = get_pool_prefix(topology.pools,pool_name)
+  if log.debug_active('addr'):                     # pragma: no cover (debugging printout)
+    print(f'named prefix {pname} pool allocation {pool_pfx}')
+  topology.prefix[pname] = topology.prefix[pname] + pool_pfx
+  topology.prefix[pname].pop('pool')
+  return topology.prefix[pname]
+
+'''
+Assign static prefixes to all pool-based named prefixes
+'''
+def setup_prefixes(topology: Box) -> None:
+  for p_name,p_value in topology.prefix:
+    if 'pool' in p_value:
+      evaluate_named_prefix(topology,p_name)
+
+def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
   if log.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f"parse prefix: {prefix} type={type(prefix)}")
 
@@ -318,13 +353,26 @@ def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
 
   supported_af = ['ipv4','ipv6']
   prefix_list = get_empty_box()
-  if not isinstance(prefix,Box):
-    return get_box({ 'ipv4' : netaddr.IPNetwork(prefix) })
+  if isinstance(prefix,str):
+    topology = global_vars.get_topology()
+    if topology is None:                              # pragma: no cover
+      return empty_box                                # Topology should be initialized by now, this keeps mypy happy
+    if prefix in topology.get('prefix',{}):
+      evaluate_named_prefix(topology,prefix)
+      return topology.prefix[prefix]
+    try:
+      return get_box({ 'ipv4' : netaddr.IPNetwork(prefix) })
+    except Exception as ex:
+      log.error(f'Cannot parse {prefix} used in {path} as an IPv4 prefix',log.IncorrectValue,'addressing')
+      return empty_box
+
+  if not isinstance(prefix,Box):                      # pragma: no cover
+    log.fatal(f'Found prefix {prefix} in {path} that should have been rejected by the data structure validation')
 
   if 'ip' in prefix:                                  # Deal with legacy 'ip' address family -- rename it to ipv4
     if 'ipv4' in prefix:
       log.error( \
-        f'Cannot have IP and IPv4 address families in prefix {prefix}',
+        f'Cannot have IP and IPv4 address families in prefix {prefix} used in {path}',
         category=log.IncorrectValue,
         module='addressing')
       return empty_box
@@ -344,10 +392,17 @@ def parse_prefix(prefix: typing.Union[str,Box]) -> Box:
     try:
       prefix_list[af] = netaddr.IPNetwork(pfx)
     except Exception as ex:
-      log.error(f'Cannot parse {af} prefix: {prefix}\n... {ex}',log.IncorrectValue,'addressing')
+      log.error(
+        f'Cannot parse {af} prefix: {prefix} used in {path}',
+        more_data= [ str(ex) ],
+        category=log.IncorrectValue,
+        module='addressing')
       return empty_box
     if str(prefix_list[af]) != str(prefix_list[af].cidr):
-      log.error(f'{af} prefix contains host bits: {prefix}',log.IncorrectValue,'addressing')    
+      log.error(
+        f'{af} prefix used in {path} contains host bits: {prefix}',
+        category=log.IncorrectValue,
+        module='addressing')    
 
   return prefix_list
 

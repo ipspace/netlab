@@ -1,0 +1,252 @@
+input:
+- topology/input/addressing-prefix.yml
+- package:topology-defaults.yml
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.42/24
+    ipv6: 2001:db8:1::2a/64
+    node: r1
+  linkindex: 1
+  name: Prefix allocated from LAN pool
+  node_count: 1
+  prefix:
+    _name: p1
+    ipv4: 172.16.0.0/24
+    ipv6: 2001:db8:1::/64
+  type: stub
+- bridge: input_2
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.1.1/24
+    ipv6: 2001:db8:1:1::1/64
+    node: r1
+  linkindex: 2
+  name: Sequential prefix allocation from LAN pool
+  node_count: 1
+  prefix:
+    _name: p2
+    allocation: sequential
+    ipv4: 172.16.1.0/24
+    ipv6: 2001:db8:1:1::/64
+  type: stub
+- bridge: input_3
+  interfaces:
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.1/30
+    node: r1
+  linkindex: 3
+  name: Prefix from P2P pool
+  node_count: 1
+  prefix:
+    _name: p3
+    ipv4: 10.1.0.0/30
+  type: stub
+- bridge: input_4
+  interfaces:
+  - ifindex: 4
+    ifname: eth4
+    ipv6: 2001:db8:2::2a/64
+    node: r1
+  linkindex: 4
+  name: Prefix from custom IPv6-only pool
+  node_count: 1
+  prefix:
+    _name: p4
+    ipv6: 2001:db8:2::/64
+  type: stub
+- bridge: input_5
+  interfaces:
+  - ifindex: 5
+    ifname: eth5
+    ipv4: 192.168.42.1/24
+    node: r1
+  linkindex: 5
+  name: Static prefix, P2P allocation
+  node_count: 1
+  prefix:
+    _name: s1
+    allocation: p2p
+    ipv4: 192.168.42.0/24
+  type: stub
+- bridge: input_6
+  interfaces:
+  - _vlan_mode: irb
+    ifindex: 6
+    ifname: eth6
+    ipv6: 2001:db8:cafe:1::2a/64
+    node: r1
+    vlan:
+      access: v1
+  linkindex: 6
+  name: VLAN prefix, static IPv6-only
+  node_count: 1
+  prefix:
+    _name: s2
+    allocation: id_based
+    ipv6: 2001:db8:cafe:1::/64
+  type: lan
+  vlan:
+    access: v1
+module:
+- vlan
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      ipv6: true
+    box: none
+    device: none
+    id: 42
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.42/24
+      ipv6: 2001:db8:1::2a/64
+      linkindex: 1
+      name: Prefix allocated from LAN pool
+      neighbors: []
+      type: stub
+    - bridge: input_2
+      ifindex: 2
+      ifname: eth2
+      ipv4: 172.16.1.1/24
+      ipv6: 2001:db8:1:1::1/64
+      linkindex: 2
+      name: Sequential prefix allocation from LAN pool
+      neighbors: []
+      type: stub
+    - bridge: input_3
+      ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.1/30
+      linkindex: 3
+      name: Prefix from P2P pool
+      neighbors: []
+      type: stub
+    - bridge: input_4
+      ifindex: 4
+      ifname: eth4
+      ipv6: 2001:db8:2::2a/64
+      linkindex: 4
+      name: Prefix from custom IPv6-only pool
+      neighbors: []
+      type: stub
+    - bridge: input_5
+      ifindex: 5
+      ifname: eth5
+      ipv4: 192.168.42.1/24
+      linkindex: 5
+      name: Static prefix, P2P allocation
+      neighbors: []
+      type: stub
+    - bridge: input_6
+      ifindex: 6
+      ifname: eth6
+      linkindex: 6
+      type: lan
+      vlan:
+        access: v1
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 7
+      ifname: Vlan1000
+      ipv6: 2001:db8:cafe:1::2a/64
+      name: VLAN v1 (1000)
+      neighbors: []
+      role: stub
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.42/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.142
+      mac: 08:4f:a9:00:00:2a
+    module:
+    - vlan
+    name: r1
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          _name: s2
+          allocation: id_based
+          ipv6: 2001:db8:cafe:1::/64
+prefix:
+  p1:
+    _name: p1
+    ipv4: !!python/object/new:netaddr.ip.IPNetwork
+      state: !!python/tuple
+      - 2886729728
+      - 24
+      - 4
+    ipv6: !!python/object/new:netaddr.ip.IPNetwork
+      state: !!python/tuple
+      - 42540766411283801782723599580828532736
+      - 64
+      - 6
+  p2:
+    _name: p2
+    allocation: sequential
+    ipv4: !!python/object/new:netaddr.ip.IPNetwork
+      state: !!python/tuple
+      - 2886729984
+      - 24
+      - 4
+    ipv6: !!python/object/new:netaddr.ip.IPNetwork
+      state: !!python/tuple
+      - 42540766411283801801170343654538084352
+      - 64
+      - 6
+  p3:
+    _name: p3
+    ipv4: !!python/object/new:netaddr.ip.IPNetwork
+      state: !!python/tuple
+      - 167837696
+      - 30
+      - 4
+  p4:
+    _name: p4
+    ipv6: !!python/object/new:netaddr.ip.IPNetwork
+      state: !!python/tuple
+      - 42540766411285010708543214210003238912
+      - 64
+      - 6
+  s1:
+    _name: s1
+    allocation: p2p
+    ipv4: 192.168.42.0/24
+  s2:
+    _name: s2
+    ipv6: 2001:db8:cafe:1::/64
+provider: libvirt
+vlans:
+  v1:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: Vlan1000
+      ipv6: 2001:db8:cafe:1::2a/64
+      node: r1
+    prefix:
+      _name: s2
+      allocation: id_based
+      ipv6: 2001:db8:cafe:1::/64
