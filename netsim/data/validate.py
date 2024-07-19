@@ -591,7 +591,19 @@ def validate_attributes(
     if any(k.startswith(i) for i in ignored):           # Skip internal attributes
       continue
 
-    if k in valid:
+    if k in valid:                                      # Is this a valid attribute?
+      #
+      # First check if this attribute cannot be used with some other attributes
+      if isinstance(valid[k],Box) and '_valid_with' in valid[k]:
+        not_valid_list = [ x for x in data.keys() if x != k and x not in valid[k]._valid_with ]
+        if not_valid_list:
+          log.error(
+            f"Attribute {k} cannot be used with attributes {','.join(not_valid_list)} in {data_path}",
+            log.IncorrectAttr,
+            module)
+        continue
+
+      # Now validate the value of the attribute
       validate_item(
         parent=data,
         key=k,
@@ -606,6 +618,7 @@ def validate_attributes(
         attributes=attributes)
       continue
 
+    # The attribute is not valid for the base data type, but maybe...
     # Do we have to perform recursive check for module attributes?
     if modules and k in modules and '(R)' not in module_source:
       if data[k] is False and validate_module_can_be_false(attributes,attr_list):
