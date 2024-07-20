@@ -220,10 +220,12 @@ def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> Non
         module='bgp.policy')
       return
 
-    pname = intf.bgp.policy[direction]                      # Get the routing policy name
-    if import_routing_policy(pname,ndata,topology):         # If we imported a routing policy
-      if not check_routing_policy(pname,ndata,topology):    # Check whether it's valid
-        continue                                            # ... and skip it if it's not
+    # Get the routing policy name, try to import it, and check it if the import was successful
+    #
+    pname = intf.bgp.policy[direction]
+    if import_routing_policy(pname,'policy',ndata,topology):
+      if not check_routing_policy(pname,'policy',ndata,topology):
+        continue                                            # Skip the rest if the policy validation failed
 
     ngb.policy[direction] = intf.bgp.policy[direction]      # Copy interface BGP routing policy into a neighbor
     apply_config(ndata,ngb)                                 # Remember that we have to do extra configuration
