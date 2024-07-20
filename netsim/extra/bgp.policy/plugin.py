@@ -3,6 +3,7 @@ from box import Box
 from netsim.utils import bgp as _bgp, log
 from netsim import api,data
 from netsim.data import types
+from netsim.modules.routing import import_routing_policy,check_routing_policy
 
 _config_name = 'bgp.policy'
 
@@ -26,6 +27,9 @@ def must_be_autobw(
 
 types.register_type('autobw',must_be_autobw)
 
+def init(topology: Box) -> None:
+  data.append_to_list(topology,'_extra_module','routing')   # bgp.policy plugin needs routing policies (route maps)
+
 '''
 append_policy_attribute
 
@@ -46,11 +50,13 @@ def append_policy_attribute(ngb: Box, attr: str, direction: str, attr_value: typ
 
   # Simple case: single direction (in or out)
   #
-  if not ngb.policy[direction]:                         # Create an empty policy list if needed
-    ngb.policy[direction] = [ data.get_empty_box() ]
+  if not ngb._policy[direction]:                        # Create an empty policy list if needed
+    ngb._policy[direction] = [ data.get_empty_box() ]
 
-  for p_entry in ngb.policy[direction]:                 # Add a 'set' entry to every policy element
-    p_entry.set[attr] = attr_value                      # ... to cope with route-map limitations
+  p_entry = ngb._policy[direction][0]                   # Modify first route map entry
+  p_entry.set[attr] = attr_value                        # Set attribute
+  p_entry.sequence = 10                                 # Make sure we have a sequence number
+  p_entry.action = 'permit'                             # ... and an action
 
 _attr_list: list = []
 _direct: list = []
@@ -110,6 +116,16 @@ def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, at
       module=_config_name)
 
 '''
+apply_config: add a plugin configuration template, collect BGP sessions that have to be cleared
+'''
+def apply_config(node: Box, ngb: Box) -> None:
+  global _config_name
+  api.node_config(node,_config_name)                    # Remember that we have to do extra configuration
+  for af in ('ipv4','ipv6'):                            # ... and add sessions that have to be cleared
+    if af in ngb:
+      data.append_to_list(node.bgp,'_session_clear',ngb[af])
+
+'''
 Apply attributes supported by bgp.policy plugin to a single neighbor
 Returns True if at least some relevant attributes were found
 '''
@@ -133,19 +149,9 @@ def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bo
       check_attribute_direction(node,ngb,topology,attr,attr_value)
       append_policy_attribute(ngb,attr,_compound[attr],attr_value)
 
-    api.node_config(node,_config_name)                  # Remember that we have to do extra configuration
-    for af in ('ipv4','ipv6'):                          # ... and add sessions that have to be cleared
-      if af in ngb:
-        data.append_to_list(node.bgp,'_session_clear',ngb[af])
+    apply_config(node,ngb)                              # Remember that we have to do extra configuration
 
   return Found
-
-'''
-set_policy_name -- set the neighbor-specific prefix for the policy objects needed for that neighbor
-'''
-def set_policy_name(intf: Box, ngb: Box, policy_idx: int) -> None:
-  vrf_pfx = f'vrf-{intf.vrf}-' if 'vrf' in intf else ''
-  ngb._policy_name = f'{vrf_pfx}{ngb.name}-{policy_idx}'
 
 '''
 fix_bgp_bandwidth: transform the bandwidth-as-int shortcut into bandwidth.in: int
@@ -158,6 +164,69 @@ def fix_bgp_bandwidth(intf: Box) -> None:
   
   if not isinstance(bw,dict):
     intf.bgp.bandwidth = { 'in': bw }
+
+'''
+bgp_policy_name -- get the neighbor-specific route map prefix
+'''
+def bgp_policy_name(intf: Box, ngb: Box, policy_idx: int) -> str:
+  vrf_pfx = f'vrf-{intf.vrf}-' if 'vrf' in intf else ''
+  return f'{vrf_pfx}{ngb.name}-{policy_idx}'
+
+'''
+create_routing_policy: create route maps needed for BGP neighbor policies
+'''
+def create_routing_policy(ndata: Box, ngb: Box, p_name: str) -> None:
+  for direction in ['in','out']:                            # Check in- and out- route maps
+    if f'_policy.{direction}' not in ngb:                   # Do we have bgp.policy-generated route map?
+      continue
+    if f'policy.{direction}' in ngb:                        # Do we also have configured bgp.policy? Time for an error
+      attr_policy = ngb._policy[direction][0]               # First collect the attribute-generated policy
+      p_attr = ','.join(attr_policy.set.keys())             # ... and gather attributes from it
+
+      # Special case: the error might be caused by node-wide locpref copied to interfaces
+      #
+      if p_attr == 'locpref' and ndata.get('bgp.locpref',None) == attr_policy.set.locpref:
+        p_attr += ' (possibly node-wide)'
+
+      # Now we know what's wrong and can provide more data together with the error message
+      #
+      more_data = [ f'Policy({direction}): {ngb.policy[direction]}, attributes: {p_attr}' ]
+      log.error(
+        f'Cannot mix bgp.policy with individual BGP policy attributes -- node {ndata.name} neighbor {ngb.name}',
+        category=log.IncorrectValue,
+        more_data = more_data,
+        module='bgp.policy')
+      continue
+
+    data.append_to_list(ndata,'module','routing')
+    rm_name = f'bp-{p_name}-{direction}'                    # Get the route-map name
+    ndata.routing.policy[rm_name] = ngb._policy[direction]  # Copy neighbor routing policy to node routing policies
+    ngb.policy[direction] = rm_name                         # And add a pointer to bgp.policy dictionary
+
+  ngb.pop('_policy',None)                                   # Finally, clean up the temporary data structure
+
+'''
+apply_bgp_routing_policy: import and check the routing policies required by the bgp.policy attributes
+'''
+def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> None:
+  for direction in ['in','out']:                            # Check in- and outbound policies
+    if f'bgp.policy.{direction}' not in intf:               # No policies applied in this direction, move on
+      continue
+
+    if 'routing' not in ndata.module:
+      log.error(
+        f"You cannot use 'bgp.policy' interface attribute on a node that does not use 'routing' module",
+        category=log.IncorrectType,
+        module='bgp.policy')
+      return
+
+    pname = intf.bgp.policy[direction]                      # Get the routing policy name
+    if import_routing_policy(pname,ndata,topology):         # If we imported a routing policy
+      if not check_routing_policy(pname,ndata,topology):    # Check whether it's valid
+        continue                                            # ... and skip it if it's not
+
+    ngb.policy[direction] = intf.bgp.policy[direction]      # Copy interface BGP routing policy into a neighbor
+    apply_config(ndata,ngb)                                 # Remember that we have to do extra configuration
 
 '''
 post_transform hook
@@ -176,7 +245,7 @@ def post_transform(topology: Box) -> None:
     if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
       continue
 
-    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list)
+    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + [ 'policy' ])
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
@@ -201,5 +270,8 @@ def post_transform(topology: Box) -> None:
             communities.append('extended')
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
+      if intf.get('bgp.policy',{}):
+        apply_bgp_routing_policy(ndata,ngb,intf,topology)
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
-        set_policy_name(intf,ngb,policy_idx)                # ... set the per-neighbor policy name
+        p_name = bgp_policy_name(intf,ngb,policy_idx)       # Get the routing policy name
+        create_routing_policy(ndata,ngb,p_name)             # and try to create the route map
