@@ -348,8 +348,11 @@ _config_after_/_transform_after_ dependencies preserving the original order as m
 """
 
 def reorder_node_modules(topology: Box, secondary_sort: str = "config_after") -> None:
-  if 'module' in topology:
-    topology.module = sort_module_list(topology.module,topology.defaults, secondary_sort)
+  mod_list = topology.get('module',[])
+  x_mod = topology.get('_extra_module',[])
+  mod_list += [ m for m in x_mod if m not in mod_list ]
+  if mod_list:
+    topology.module = sort_module_list(mod_list,topology.defaults, secondary_sort)
     topology.defaults.module = topology.module
 
   for name,n in topology.nodes.items():
@@ -442,7 +445,7 @@ def module_transform(method: str, topology: Box) -> None:
   if log.debug_active('modules'):
     print(f'Processing module_{method} hooks')
 
-  for m in topology.get('module',[]):
+  for m in topology.get('module',[]) + topology.get('_extra_module',[]):
     if not mod_load.get(m):
       mod_load[m] = _Module.load(m,topology.get(m))
     if log.debug_active('modules'):

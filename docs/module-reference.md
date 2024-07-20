@@ -12,13 +12,14 @@ The following configuration modules are included in the **netlab** distribution:
    module/eigrp.md
    module/evpn.md
    module/gateway.md
+   module/routing.md
    module/isis.md
    MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
    module/ospf.md
    module/ripv2.md
    module/sr-mpls.md
-   module/vlan.md
    module/vrf.md
+   module/vlan.md
    module/vxlan.md
 ```
 
@@ -34,7 +35,7 @@ The following configuration modules are included in the **netlab** distribution:
 .. toctree::
    :maxdepth: 1
 
-   module/routing.md
+   module/routing_protocols.md
 ```
 
 ## Experimental Modules
