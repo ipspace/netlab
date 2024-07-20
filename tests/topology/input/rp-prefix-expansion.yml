@@ -1,0 +1,37 @@
+# Test the "normalize and merge" routing policy processing
+#
+
+addressing.loopback.ipv6: 2001:db8:cafe::/48
+
+module: [ routing ]
+defaults.device: none
+
+prefix:
+  pf1.ipv4: 192.168.42.0/24
+  pf2:
+    ipv4: 192.168.43.0/24
+    ipv6: 2001:db8:dead:beef::/64
+
+routing.prefix:
+  p1:
+  - pool: lan
+  - prefix: pf2
+  p2:
+  - action: deny
+    ipv4: 192.168.44.32/28
+  - ipv4: 192.168.44.0/24
+  p3:
+  - ipv4: 192.168.16.0/22
+  - pool: loopback
+  - prefix: pf1
+
+nodes:
+  r1:
+    routing.prefix:
+      p1:                   # Copy from global
+      p2:
+  r2:
+    routing.prefix:
+      p1:
+      - pool: loopback
+      p3:

@@ -214,6 +214,9 @@ objects required by the routing policy (for example, the prefix lists)
 def import_routing_policy(pname: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
   return import_routing_object(pname,o_name,node,topology)
 
+"""
+Dispatch table for global-to-node object import
+"""
 import_dispatch: typing.Dict[str,dict] = {
   'policy': {
     'import': import_routing_policy,
@@ -226,20 +229,22 @@ import_dispatch: typing.Dict[str,dict] = {
 """
 Import or merge global routing policies into node routing policies
 """
-def import_routing_data(node: Box,o_type: str, topology: Box) -> None:
-  global import_dispatch
-
-  if o_type not in import_dispatch:                         # pragma: no cover
-    log.fatal(f'Invalid routing object {o_type} passed to import_routing_data')
+def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict) -> None:
+  if o_type not in dispatch:                         # pragma: no cover
+    log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')
 
   node_pdata = node.get(f'routing.{o_type}',None)
   if not isinstance(node_pdata,dict):
     return
 
   for p_name in list(node_pdata.keys()):
-    if import_dispatch[o_type]['import'](p_name,o_type,node,topology) is not None:
-      import_dispatch[o_type]['check'](p_name,o_type,node,topology)
+    if dispatch[o_type]['import'](p_name,o_type,node,topology) is not None:
+      if 'check' in dispatch[o_type]:
+        dispatch[o_type]['check'](p_name,o_type,node,topology)
 
+"""
+Dispatch table for data normalization
+"""
 normalize_dispatch: typing.List[dict] = [
   { 'namespace': 'routing.policy',
     'object'   : 'policy',
@@ -261,6 +266,62 @@ def normalize_routing_data(r_object: Box, topo_object: bool = False) -> None:
       normalize_callback=dp['callback'],
       topo_object=topo_object)
 
+"""
+expand_prefix_entry: Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
+"""
+def expand_prefix_entry(p_entry: Box, topology: Box) -> Box:
+  extra_data = None
+  if 'pool' in p_entry:
+    extra_data = topology.addressing[p_entry.pool]
+    p_entry.pop('pool',None)
+
+  if 'prefix' in p_entry:
+    extra_data = topology.prefix[p_entry.prefix]
+    p_entry.pop('prefix',None)
+
+  if extra_data:
+    for af in ('ipv4','ipv6'):
+      if af in extra_data:
+        p_entry[af] = extra_data[af]
+
+  return p_entry
+
+"""
+expand_prefix_list:
+
+* Transform all entries in the prefix list
+* Build IPv4 and IPv6 prefix lists
+"""
+def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  for (p_idx,p_entry) in enumerate(node.routing[o_name][p_name]):
+    node.routing[o_name][p_name][p_idx] = expand_prefix_entry(node.routing[o_name][p_name][p_idx],topology)
+
+  af_prefix: dict = {}                                      # Prepare dictionary of per-AF prefix lists
+  for af in ('ipv4','ipv6'):                                # Iterate over address families (sorry, no CLNS or IPX)
+    af_prefix[af] = []                                      # Start with an emtpy per-AF list
+    for p_entry in node.routing[o_name][p_name]:            # Iterate over prefix list entries
+      if af in p_entry:                                     # Is the current AF in the prefix list entry?
+        af_p_entry = Box(p_entry)                           # Create a copy of the current p_entry
+        for af_x in ('ipv4','ipv6'):                        # ... remove all other address families
+          if af_x in p_entry and af_x != af:
+            af_p_entry.pop(af_x,None)
+        af_prefix[af].append(af_p_entry)                    # ... and append the entry to per-AF list
+
+    if af_prefix[af]:                                       # Do we have a non-empty per-AF prefix list?
+      node.routing['_'+o_name][af][p_name] = af_prefix[af]  # ... yes, save it
+
+  return None                                               # No need to do additional checks
+
+"""
+Dispatch table for post-transform processing. Currently used only to
+expand the prefixes/pools in prefix list.
+"""
+transform_dispatch: typing.Dict[str,dict] = {
+  'prefix': {
+    'import': expand_prefix_list
+  }
+}
+
 class Routing(_Module):
 
   def module_pre_default(self, topology: Box) -> None:
@@ -273,5 +334,10 @@ class Routing(_Module):
     global import_dispatch
 
     for o_name in import_dispatch.keys():
-      import_routing_data(node,o_name,topology)
+      process_routing_data(node,o_name,topology,import_dispatch)
 
+  def node_post_transform(self, node: Box, topology: Box) -> None:
+    global transform_dispatch
+
+    for o_name in transform_dispatch.keys():
+      process_routing_data(node,o_name,topology,transform_dispatch)
