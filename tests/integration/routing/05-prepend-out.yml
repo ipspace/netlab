@@ -1,0 +1,61 @@
+---
+message: |
+  Use this topology to test the AS path prepending. The DUT has prepend its AS
+  once on updates sent to X1 and prepend AS 64999 to updates sent to X2.
+
+plugin: [ bgp.policy ]
+module: [ bgp, routing ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+routing.policy:
+  p_count:
+    prepend.count: 1
+  p_path:
+    prepend.path: "64999"
+
+nodes:
+  dut:
+    bgp.as: 65000
+    id: 1
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+
+links:
+- dut:
+    bgp.policy.out: p_count
+  x1:
+- dut:
+    bgp.policy.out: p_path
+  x2:
+
+validate:
+  session:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  prefix:
+    description: Check for DUT prefix on X1 and X2
+    wait: 30
+    nodes: [ x1, x2 ]
+    plugin: bgp_prefix('10.0.0.1/32')
+
+  pfx_x1:
+    description: Check the DUT prefix AS path on X1
+    wait: 5
+    nodes: [ x1 ]
+    plugin: bgp_prefix('10.0.0.1/32',aspath='65000 65000')
+
+  pfx_x2:
+    description: Check the DUT prefix AS path on X2
+    wait: 5
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.0.0.1/32',as_elements=[ 64999, 65000 ])
