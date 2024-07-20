@@ -8,7 +8,7 @@ If you want to tighten control over IP address allocation, use the **prefix** at
 However, there are scenarios in which you have to use the same prefix in multiple places, for example:
 
 * Using a link prefix in the lab validation code
-* Using a link prefix in a [prefix list](module-routing)
+* Using a link prefix in a [prefix list](generic-routing-prefixes)
 * Using the same prefix on multiple links, for example, to implement a stretched subnet using a technology not supported by _netlab_.
 
 You can use *named IP prefixes* in all three scenarios. The named prefixes are defined in the top-level **prefix** dictionary. The dictionary keys are prefix names, the values are dictionaries defining individual prefixes. The prefix values can include **ipv4**, **ipv6**, **pool** and **[allocation](addr-allocation-sequential)** attributes.

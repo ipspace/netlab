@@ -4,7 +4,7 @@
 This configuration module implements generic routing features:
 
 * [Routing policies (route maps)](generic-routing-policies)
-* Prefix filters (TBD)
+* [Prefix filters (prefix-lists)](generic-routing-prefixes)
 * AS-path filters (TBD)
 * BGP community filters (TBD)
 * Static routes (TBD)
@@ -23,12 +23,12 @@ The following table describes high-level per-platform support of generic routing
 
 | Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes|
 | ------------------ | :-: | :-: | :-: |:-: | :-: |
-| Arista EOS          |  ✅  |
+| Arista EOS          |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |
-| Cisco IOSv          |  ✅  |
-| Cisco IOS-XE[^18v]  |  ✅  |
-| Cumulus Linux       |  ✅  |
-| FRR                 |  ✅  |
+| Cisco IOSv          |  ✅  |  ✅  |
+| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |
+| Cumulus Linux       |  ✅  |  ✅  |
+| FRR                 |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |
 | Nokia SR OS         |  ✅  |
 | VyOS                |  ✅  |
@@ -116,6 +116,7 @@ routing.policy:
     locpref: 100
 ```
 
+(routing-policy-import)=
 ### Using Global Routing Policies
 
 A routing policy will not be configured as a route map on a network device if it's not defined within the node **routing.policy** dictionary.
@@ -134,6 +135,7 @@ nodes:
 
 The above lab topology will copy the contents of the P1 global routing policy into the R1 **routing.policy** dictionary, resulting in the corresponding route map configured on R1.
 
+(routing-policy-merge)=
 ### Merging Routing Policies
 
 When a routing policy is defined globally as well as within a node, _netlab_ tries to merge the two definitions based on the sequence numbers attached to the routing policy entries:
@@ -191,3 +193,42 @@ p1:
 - sequence: 20
   set.med: 200
 ```
+
+(generic-routing-prefixes)=
+## Prefix Filters (prefix-lists)
+
+Prefix filters are lists of conditions (usually known as *prefix-lists*) that permit or deny IPv4 or IPv6 prefixes. You can use prefix filters in the **match** statements of routing policies to match IPv4/IPv6 routes or next hops. Each prefix filter entry can have these attributes:
+
+* **action**: A prefix filter entry can **permit** or **deny** matched prefixes (default: **permit**)
+* **sequence**: Statement sequence number. When not specified, *netlab* sets a prefix filter entry's **sequence** number to ten times its list position.
+* **ipv4**: IPv4 prefix to match
+* **ipv6**: IPv6 prefix to match
+* **pool**: Name of the addressing pool to match
+* **prefix**: [A named prefix](named-prefixes) to match
+* **min**: Minimum prefix length. It could be specified as an integer or as a dictionary with **ipv4** and **ipv6** keys.
+* **max**: Maximum prefix length in the same format as the **min** parameters.
+
+Prefix filters are specified in the global- or node-level **routing.prefix** dictionary. The dictionary keys are filter names (prefix-list names), and the dictionary values are prefix filters (lists of prefix filter entries).
+
+The following example specifies a prefix filter that matches the loopback pool, a named prefix, and an IPv6 subnet:
+
+```
+module: [ routing ]
+
+prefix:
+  lb_c1: 192.168.42.0/24
+
+routing.prefix:
+  loopbacks:
+  - pool: loopback
+  - prefix: lb_c1
+  - ipv6: 2001:db8:cafe:2::/64
+```
+
+### Using Global Prefix Filters
+
+A prefix filter will not be configured as a `prefix-list` on a network device if it's not defined within the node **routing.prefix** dictionary.
+
+That's usually not a problem as the users of prefix filters (for example, routing policies) copy global prefix filters into node data whenever the routing policy references a global prefix filter. However, you might need a placeholder prefix filter that is later used in a custom template. To force a global prefix filter policy to be copied and configured on a node, mention its name (without a value) in the node **routing.prefix** dictionary (see [](routing-policy-import) for related examples).
+
+When a prefix filter is defined within the node *and* globally, the two prefix filters are merged. See [](routing-policy-merge) for more details.
