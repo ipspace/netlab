@@ -702,6 +702,14 @@ def must_be_prefix_str(value: typing.Any) -> dict:
   return { '_valid': True, '_transform': transform_to_ipv6 }
 
 @type_test()
+def must_be_named_pfx(value: typing.Any) -> dict:
+  topology = global_vars.get_topology()
+  if isinstance(value,str) and topology is not None and value in topology.get('prefix',{}):
+    return { '_valid': True }
+  
+  return { '_type': 'named prefix' }
+
+@type_test()
 def must_be_mac(value: typing.Any) -> dict:
   if not isinstance(value,str):
     return {'_type': 'MAC address' }

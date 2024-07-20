@@ -1,9 +1,10 @@
+(address-pools)=
 # Topology Address Pools
 
-Lab topology transformation code assigns IPv4 and IPv6 subnets (prefixes) to individual links and loopback interfaces from *address pools*. Node addresses are then assigned from the prefixes assigned to individual links.
+Lab topology transformation code assigns IPv4 and IPv6 subnets (prefixes) to individual links and loopback interfaces from *address pools*. Node addresses are then assigned from the prefixes assigned to individual links. Instead of address pools, you can define individual *named* prefixes in the **prefix** topology dictionary, and use the prefix names to number links and VLANs
 
 ```{tip}
-You can assign a static prefix to a link with **prefix** link attribute and static IP address to an interface with an **ipv4** or **ipv6** attribute of node-on-link data. For more details, see [static link addressing](links.md#static-link-addressing).
+You can assign a static prefix to a link with a **prefix** link attribute and a static IP address to an interface with an **ipv4** or **ipv6** attribute of node-on-link data. For more details, see [static link addressing](links.md#static-link-addressing).
 ```
 
 *netlab* use multiple predefined address pools:
