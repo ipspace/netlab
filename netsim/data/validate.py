@@ -492,7 +492,7 @@ def validate_item(
     return subtype_validation[dt_name](
               data=data,
               data_type=data_type,
-              parent_path=f"{parent_path}.{key}",
+              parent_path=parent_path if parent is None else f"{parent_path}.{key}",
               data_name=data_name,
               module=module,
               module_source=module_source,
