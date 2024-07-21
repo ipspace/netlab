@@ -390,7 +390,7 @@ expand the prefixes/pools in prefix list.
 transform_dispatch: typing.Dict[str,dict] = {
   'prefix': {
     'import': expand_prefix_list
-  }
+  },
 }
 
 class Routing(_Module):
