@@ -592,10 +592,14 @@ def must_be_asn(value: typing.Any) -> dict:
 # Testing for IPv4 and IPv6 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
 #
 @type_test()
-def must_be_ipv4(value: typing.Any, use: str) -> dict:
+def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
 
   def transform_to_ipaddr(value: int) -> str:
     return str(netaddr.IPAddress(value))
+
+  def prefix_to_ipv4(value: str) -> str:
+    topology = global_vars.get_topology()
+    return '' if topology is None else topology.get('prefix',{})[value].ipv4
 
   if isinstance(value,bool):                                          # bool values are valid only on interfaces
     if use not in ('interface','prefix'):
@@ -614,6 +618,13 @@ def must_be_ipv4(value: typing.Any, use: str) -> dict:
 
   if not isinstance(value,str):
     return { '_type': 'IPv4 prefix' if use == 'prefix' else 'IPv4 address' }
+
+  if named:                                                           # Check whether we can use a named prefix
+    topology = global_vars.get_topology()
+    if topology is not None:
+      pfxs = topology.get('prefix',{})
+      if value in pfxs and 'ipv4' in pfxs[value]:
+        return { '_valid': True, '_transform': prefix_to_ipv4 }
 
   if '/' in value:
     if use == 'id':                                                   # IDs should not have a prefix

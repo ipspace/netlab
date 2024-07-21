@@ -467,6 +467,16 @@ def bgp_set_originate_af(node: Box, topology: Box) -> None:
 
   if node.get('bgp.originate',[]):                          # bgp.originate attribute implies IPv4 is active
     node.bgp.ipv4 = True
+    pfxs = topology.get('prefix',{})
+    for o_idx,o_value in enumerate(node.bgp.originate):     # Also, replace named prefixes with IPv4 values
+      if o_value in pfxs:
+        if 'ipv4' not in pfxs[o_value]:
+          log.error(
+            f'Named prefix {o_value} used in bgp.originate in node {node.name} must have IPv4 component',
+            category=log.MissingValue,
+            module='bgp')
+          continue
+        node.bgp.originate[o_idx] = pfxs[o_value].ipv4
 
   for af in ['ipv4','ipv6']:
     if node.get(f'bgp.{af}',False):                         # No need for further checks if the AF flag is already set

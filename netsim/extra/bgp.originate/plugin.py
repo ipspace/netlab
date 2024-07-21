@@ -6,6 +6,14 @@ from netsim.augment import links
 
 _requires    = [ 'bgp' ]
 
+"""
+Have to complete the fix of bgp.originate attribute (can't do everything through the settings)
+"""
+def init(topology: Box) -> None:
+  o_dict = topology.defaults.bgp.attributes.node.originate
+  for kw in ('use','named','type'):
+    o_dict._subtype.pop(kw,None)
+
 def post_node_transform(topology: Box) -> None:
   for n, ndata in topology.nodes.items():
     if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
