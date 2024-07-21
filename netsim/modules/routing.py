@@ -287,6 +287,51 @@ def expand_prefix_entry(p_entry: Box, topology: Box) -> Box:
   return p_entry
 
 """
+adjust_pfx_min_max: Adjust prefix list entry min/max keywords
+"""
+def adjust_pfx_min_max(p_entry: Box, m_kw: str, af: str, p_name: str, node: Box) -> None:
+  if m_kw not in p_entry:
+    return
+
+  if isinstance(p_entry[m_kw],dict):
+    if af not in p_entry[m_kw]:
+      return
+    m_value = p_entry[m_kw][af]
+  else:
+    m_value = p_entry[m_kw]
+
+  if m_value < 0:
+    log.error(
+      f'Prefix filter {m_kw} value should be >= 0 (policy {p_name}#{p_entry.sequence} on node {node.name})',
+      category=log.IncorrectValue,
+      module='routing')
+    return
+
+  m_max = 32 if af == 'ipv4' else 128
+  if m_value > m_max:
+    log.error(
+      f'Prefix filter {af}.{m_kw} value should be <= {m_max} (policy {p_name}#{p_entry.sequence} on node {node.name})',
+      category=log.IncorrectValue,
+      module='routing')
+    return
+
+  p_entry[m_kw] = m_value
+
+"""
+create_af_entry: create AF-specific prefix-list entry
+"""
+def create_pfx_af_entry(p_entry: Box, af: str, p_name: str, node: Box) -> Box:
+  af_p_entry = Box(p_entry)                                 # Create a copy of the current p_entry
+  for af_x in ('ipv4','ipv6'):                              # ... remove all other address families
+    if af_x in p_entry and af_x != af:
+      af_p_entry.pop(af_x,None)
+
+  for m_kw in ('min','max'):
+    adjust_pfx_min_max(af_p_entry,m_kw,af,p_name,node)
+
+  return af_p_entry
+
+"""
 expand_prefix_list:
 
 * Transform all entries in the prefix list
@@ -301,11 +346,8 @@ def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typin
     af_prefix[af] = []                                      # Start with an emtpy per-AF list
     for p_entry in node.routing[o_name][p_name]:            # Iterate over prefix list entries
       if af in p_entry:                                     # Is the current AF in the prefix list entry?
-        af_p_entry = Box(p_entry)                           # Create a copy of the current p_entry
-        for af_x in ('ipv4','ipv6'):                        # ... remove all other address families
-          if af_x in p_entry and af_x != af:
-            af_p_entry.pop(af_x,None)
-        af_prefix[af].append(af_p_entry)                    # ... and append the entry to per-AF list
+        af_p_entry = create_pfx_af_entry(p_entry,af,p_name,node)
+        af_prefix[af].append(af_p_entry)                    # create af-specific entry and append it to per-AF list
 
     if af_prefix[af]:                                       # Do we have a non-empty per-AF prefix list?
       node.routing['_'+o_name][af][p_name] = af_prefix[af]  # ... yes, save it
@@ -325,6 +367,7 @@ transform_dispatch: typing.Dict[str,dict] = {
 class Routing(_Module):
 
   def module_pre_default(self, topology: Box) -> None:
+    topology.prefix = topology.defaults.prefix + topology.prefix
     normalize_routing_data(topology,topo_object=True)
 
   def node_pre_default(self, node: Box, topology: Box) -> None:

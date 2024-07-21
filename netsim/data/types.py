@@ -719,7 +719,7 @@ def must_be_named_pfx(value: typing.Any) -> dict:
     if topology is not None and value in topology.get('prefix',{}):
       return { '_valid': True }
 
-    return { '_value': 'a name of a (named) prefix (found {value})' }
+    return { '_value': f'a name of a (named) prefix (found {value})' }
 
   return { '_type': 'named prefix' }
 
