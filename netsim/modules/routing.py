@@ -64,7 +64,11 @@ def normalize_policy_entry(p_entry: Box, p_idx: int) -> Box:
   if match_kw:
     policy_shortcut(p_entry,'match',match_kw)
 
-  normalize_routing_entry(p_entry,p_idx)                    # Finally, do generic normalization
+  prepend = p_entry.get('set.prepend',None)       # Normalize AS path prepending SET entry
+  if prepend is not None and isinstance(prepend,(int,str)):
+    p_entry.set.prepend = { 'path': str(prepend) }
+
+  normalize_routing_entry(p_entry,p_idx)          # Finally, do generic normalization
 
   return p_entry
 
