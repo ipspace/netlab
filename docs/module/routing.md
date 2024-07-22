@@ -31,7 +31,7 @@ The following table describes high-level per-platform support of generic routing
 | FRR                 |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |
 | Nokia SR OS         |  ✅  |
-| VyOS                |  ✅  |
+| VyOS                |  ✅  |  ✅  |
 
 ```{tip}
 See [Routing Integration Tests Results](https://release.netlab.tools/_html/coverage.routing) for more details.
