@@ -280,7 +280,7 @@ import_dispatch: typing.Dict[str,dict] = {
 """
 Import or merge global routing policies into node routing policies
 """
-def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict) -> None:
+def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict, always_check: bool = True) -> None:
   if o_type not in dispatch:                         # pragma: no cover
     log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')
 
@@ -289,7 +289,8 @@ def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict) -
     return
 
   for p_name in list(node_pdata.keys()):
-    if dispatch[o_type]['import'](p_name,o_type,node,topology) is not None:
+    o_import = dispatch[o_type]['import'](p_name,o_type,node,topology)
+    if o_import is not None or always_check:
       if 'check' in dispatch[o_type]:
         dispatch[o_type]['check'](p_name,o_type,node,topology)
     if 'related' in dispatch[o_type]:
@@ -457,7 +458,7 @@ class Routing(_Module):
     global import_dispatch
 
     for o_name in import_dispatch.keys():
-      process_routing_data(node,o_name,topology,import_dispatch)
+      process_routing_data(node,o_name,topology,import_dispatch,always_check=True)
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     global transform_dispatch
