@@ -339,7 +339,7 @@ def evaluate_named_prefix(topology: Box, pname: str) -> Box:
 Assign static prefixes to all pool-based named prefixes
 '''
 def setup_prefixes(topology: Box) -> None:
-  for p_name,p_value in topology.prefix:
+  for p_name,p_value in topology.prefix.items():
     if 'pool' in p_value:
       evaluate_named_prefix(topology,p_name)
 

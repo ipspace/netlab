@@ -715,10 +715,25 @@ def must_be_prefix_str(value: typing.Any) -> dict:
 @type_test()
 def must_be_named_pfx(value: typing.Any) -> dict:
   topology = global_vars.get_topology()
-  if isinstance(value,str) and topology is not None and value in topology.get('prefix',{}):
-    return { '_valid': True }
-  
+  if isinstance(value,str):
+    if topology is not None and value in topology.get('prefix',{}):
+      return { '_valid': True }
+
+    return { '_value': f'a name of a (named) prefix (found {value})' }
+
   return { '_type': 'named prefix' }
+
+@type_test()
+def must_be_addr_pool(value: typing.Any) -> dict:
+  topology = global_vars.get_topology()
+  if isinstance(value,str):
+    if topology is not None:
+      if value in topology.get('addressing',{}) or value in topology.defaults.addressing:
+        return { '_valid': True }
+
+    return { '_value': f'a name of an addressing pool (found {value})' }
+
+  return { '_type': 'addressing pool' }
 
 @type_test()
 def must_be_mac(value: typing.Any) -> dict:

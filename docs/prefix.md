@@ -1,17 +1,17 @@
 (named-prefixes)=
 # Named IP Prefixes
 
-In most lab topologies, you probably don't care about the exact IP addresses and subnets. Defining IPv4 and IPv6 prefixes in [addressing pools](address pools) is good enough.
+You probably don't care about the exact IP addresses and subnets in most lab topologies. Defining IPv4 and IPv6 prefixes in [addressing pools](address pools) is good enough.
 
-If you want to tighten control over IP address allocation, use the **prefix** attribute on links or VLANS or the **ipv4**/**ipv6** attributes on node interfaces.
+However, to tighten control over IP address allocation, you can use the **prefix** attribute on links or VLANS or the **ipv4**/**ipv6** attributes on node interfaces.
 
 However, there are scenarios in which you have to use the same prefix in multiple places, for example:
 
 * Using a link prefix in the lab validation code
-* Using a link prefix in a [prefix list](module-routing)
+* Using a link prefix in a [prefix list](generic-routing-prefixes)
 * Using the same prefix on multiple links, for example, to implement a stretched subnet using a technology not supported by _netlab_.
 
-You can use *named IP prefixes* in all three scenarios. The named prefixes are defined in the top-level **prefix** dictionary. The dictionary keys are prefix names, the values are dictionaries defining individual prefixes. The prefix values can include **ipv4**, **ipv6**, **pool** and **[allocation](addr-allocation-sequential)** attributes.
+You can use *named IP prefixes* in all three scenarios. The named prefixes are defined in the top-level **prefix** dictionary. The dictionary keys are prefix names; the values are dictionaries defining individual prefixes. The prefix values can include **ipv4**, **ipv6**, **pool** and **[allocation](addr-allocation-sequential)** attributes.
 
 The **pool** attribute in a prefix can be used when you want a well-defined prefix but don't want to specify IPv4 and IPv6 subnets. The prefix will be allocated from the specified pool on first use.
 
@@ -19,7 +19,7 @@ You can use the names of the *named prefixes* anywhere you would use an IPv4 or 
 
 ## Example
 
-The following lab topology defines two prefixes. One of them has a static IPv4 and a static IPv6 subnet and uses the sequential IP address allocation method. The second prefix uses the **lan** pool:
+The following lab topology defines two prefixes. One has a static IPv4 and a static IPv6 subnet and uses the sequential IP address allocation method. The second prefix uses the **lan** pool:
 
 ```yaml
 prefix:
@@ -77,4 +77,14 @@ _netlab_ generates the following link data from the above lab topology (the prin
   prefix:
     ipv4: 10.1.0.0/30
   type: p2p
+```
+
+## Default Prefixes
+
+The [](generic-routing) (when enabled in lab topology) adds default prefixes that can be used in routing filters. You can inspect the default prefixes with the `netlab show defaults prefix` command; the following printout displays the currently defined ones:
+
+```
+any:
+  ipv4: 0.0.0.0/0
+  ipv6: ::/0
 ```

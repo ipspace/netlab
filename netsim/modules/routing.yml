@@ -10,9 +10,20 @@ attributes:
         type: list
         make_list: True
         _subtype: rp_entry
+    prefix:
+      type: dict
+      _keytype: id
+      _subtype:
+        type: list
+        make_list: True
+        _subtype: pfx_entry
 
   node:
     policy:
+      merge: global
+      _subtype:
+        _alt_types: [ NoneType ]
+    prefix:
       merge: global
       _subtype:
         _alt_types: [ NoneType ]
@@ -22,8 +33,14 @@ attributes:
 
 no_propagate:
   policy:
+  prefix:
 
 _top:                               # Modification of global defaults
+  prefix:
+    any:
+      ipv4: 0.0.0.0/0
+      ipv6: ::/0
+
   attributes:
     rp_entry:                       # Define routing policy entry
       _description: Routing policy entry
@@ -58,6 +75,31 @@ _top:                               # Modification of global defaults
           extended: list
           large: list
           append: bool
+
+    pfx_entry:                      # Define prefix list entry
+      action:
+        type: str
+        valid_values: [ permit, deny ]
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 32767
+      pool:
+        type: addr_pool
+        _valid_with: [ action, sequence, min, max ]
+      prefix:
+        type: named_pfx
+        _valid_with: [ action, sequence, min, max ]
+      min:
+        ipv4: { type: int, min_value: 0, max_value: 32 }
+        ipv6: { type: int, min_value: 0, max_value: 128 }
+        _alt_types: [ int ]
+      max:
+        ipv4: { type: int, min_value: 0, max_value: 32 }
+        ipv6: { type: int, min_value: 0, max_value: 128 }
+        _alt_types: [ int ]
+      ipv4: { type: ipv4, use: prefix }
+      ipv6: { type: ipv6, use: prefix }
 
 features:
   policy:
