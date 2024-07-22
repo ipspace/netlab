@@ -289,6 +289,7 @@ def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typi
 
 def setup(topology: Box) -> None:
   defaults = topology.defaults
+  prior_errors = log.get_error_count()
   null_to_string(topology.addressing)
   addrs = setup_pools(defaults.addressing + topology.addressing,defaults)
 
@@ -297,7 +298,7 @@ def setup(topology: Box) -> None:
     strings.print_structured_dict(addrs,'.. ')
 
   validate_pools(addrs,topology)
-  log.exit_on_error()
+  log.exit_on_error(prior_errors)
 
   topology.pools = create_pool_generators(addrs,defaults.attributes.pool_no_copy)
   topology.addressing = addrs
@@ -306,7 +307,7 @@ def setup(topology: Box) -> None:
     print("pools:")
     strings.print_structured_dict(topology.pools,'.. ')
 
-  log.exit_on_error()
+  log.exit_on_error(prior_errors)
   if 'prefix' in topology:
     setup_prefixes(topology)
 
@@ -329,6 +330,9 @@ def evaluate_named_prefix(topology: Box, pname: str) -> Box:
     return get_empty_box()
 
   pool_pfx = get_pool_prefix(topology.pools,pool_name)
+  for af in ('ipv4','ipv6'):
+    if af in pool_pfx:
+      pool_pfx[af] = str(pool_pfx[af])
   if log.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f'named prefix {pname} pool allocation {pool_pfx}')
   topology.prefix[pname] = topology.prefix[pname] + pool_pfx

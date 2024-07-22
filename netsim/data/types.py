@@ -622,9 +622,12 @@ def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
   if named:                                                           # Check whether we can use a named prefix
     topology = global_vars.get_topology()
     if topology is not None:
+      from ..augment import addressing
       pfxs = topology.get('prefix',{})
-      if value in pfxs and 'ipv4' in pfxs[value]:
-        return { '_valid': True, '_transform': prefix_to_ipv4 }
+      if value in pfxs:
+        addressing.evaluate_named_prefix(topology,value)
+        if 'ipv4' in pfxs[value]:
+          return { '_valid': True, '_transform': prefix_to_ipv4 }
 
   if '/' in value:
     if use == 'id':                                                   # IDs should not have a prefix

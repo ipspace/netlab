@@ -55,11 +55,11 @@ def transform_setup(topology: Box) -> None:
   augment.topology.check_global_elements(topology)
   augment.plugin.check_plugin_dependencies(topology)                    # Check plugin dependencies on other plugins and modules
   augment.tools.process_tools(topology)
+  addressing.setup(topology)
   augment.nodes.validate(topology)
   log.exit_on_error()
 
 def transform_data(topology: Box) -> None:
-  addressing.setup(topology)
   log.exit_on_error()
   augment.plugin.execute('pre_transform',topology)
   modules.pre_transform(topology)
