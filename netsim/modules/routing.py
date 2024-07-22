@@ -12,7 +12,7 @@ from box import Box
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from ..utils import log
 from .. import data
-from ..data import global_vars
+from ..data import global_vars,get_box
 from ..data.types import must_be_list
 from ..augment import devices,groups,links,addressing
 
@@ -73,6 +73,16 @@ def normalize_policy_entry(p_entry: Box, p_idx: int) -> Box:
   return p_entry
 
 """
+normalize_aspath_entry: turn non-dictionary entries into dictionaries with 'path' attribute
+"""
+def normalize_aspath_entry(p_entry: typing.Any, p_idx: int) -> Box:
+  if not isinstance(p_entry,Box):
+    p_entry = get_box({ 'path': p_entry })
+
+  normalize_routing_entry(p_entry,p_idx)
+  return p_entry
+
+"""
 normalize_routing_object: Normalize global- or node routing object data
 
 Please note that this function is called before the data has been validated, so we have to extra-careful
@@ -105,11 +115,8 @@ def normalize_routing_objects(
           module='routing')
       continue
 
-    if isinstance(o_dict[o_name],Box):                      # Transform single-entry shortcut into a single-element list
+    if not isinstance(o_dict[o_name],list):                 # Object not a list? Let's make it one ;)
       o_dict[o_name] = [ o_dict[o_name] ]
-
-    if not isinstance(o_dict[o_name],list):                 # Still not a list? Let validation deal with that ;)
-      continue
 
     normalize_routing_object(o_dict[o_name],normalize_callback)
 
@@ -208,7 +215,8 @@ needed by the just-imported routing policy
 """
 match_object_map: dict = {
   'prefix': 'prefix',                                       # Prefix match requires a 'prefix' object
-  'nexthop': 'prefix'                                       # Next-hop match requires a 'prefix' object
+  'nexthop': 'prefix',                                      # Next-hop match requires a 'prefix' object
+  'aspath': 'aspath'                                        # AS path match requires an 'aspath' object
 }
 
 def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
@@ -251,6 +259,9 @@ import_dispatch: typing.Dict[str,dict] = {
     'related': import_policy_filters },
   'prefix': {
     'import' : import_routing_object,
+    'check'  : check_routing_object },
+  'aspath': {
+    'import' : import_routing_object,
     'check'  : check_routing_object }
 }
 
@@ -283,7 +294,12 @@ normalize_dispatch: typing.Dict[str,dict] = {
   'prefix':
     { 'namespace': 'routing.prefix',
       'object'   : 'prefix filter',
-      'callback' : normalize_routing_entry }
+      'callback' : normalize_routing_entry },
+  'aspath':
+    { 'namespace': 'routing.aspath',
+      'object'   : 'AS path filter',
+      'callback' : normalize_aspath_entry }
+
 }
 
 """
@@ -397,6 +413,12 @@ def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typin
 
   return None                                               # No need to do additional checks
 
+def number_aspath_acl(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  numacl = node.routing._numobj[o_name]
+  if p_name not in numacl:
+    maxacl = max([ 0 ] + [ acl for acl in numacl.value() ])
+    numacl[p_name] = maxacl + 1
+
 """
 Dispatch table for post-transform processing. Currently used only to
 expand the prefixes/pools in prefix list.
@@ -404,6 +426,9 @@ expand the prefixes/pools in prefix list.
 transform_dispatch: typing.Dict[str,dict] = {
   'prefix': {
     'import': expand_prefix_list
+  },
+  'aspath': {
+    'import': number_aspath_acl
   },
 }
 
