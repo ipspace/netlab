@@ -274,9 +274,13 @@ def info(
   if more_data is not None:                                         # Caller supplied data, print it with DATA label
     print_more_hints(more_data,'DATA','bright_black',h_warning=True,indent=indent)
 
-def exit_on_error() -> None:
+def get_error_count() -> int:
   global _ERROR_LOG
-  if _ERROR_LOG:
+  return len(_ERROR_LOG)
+
+def exit_on_error(max_err: int = 0) -> None:
+  global _ERROR_LOG
+  if len(_ERROR_LOG) > max_err:
     fatal('Cannot proceed beyond this point due to errors, exiting')
 
 def pending_errors() -> bool:
