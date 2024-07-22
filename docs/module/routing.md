@@ -5,7 +5,7 @@ This configuration module implements generic routing features:
 
 * [Routing policies (route maps)](generic-routing-policies)
 * [Prefix filters (prefix-lists)](generic-routing-prefixes)
-* AS-path filters (TBD)
+* [AS-path filters](generic-routing-aspath)
 * BGP community filters (TBD)
 * Static routes (TBD)
 
@@ -23,12 +23,12 @@ The following table describes high-level per-platform support of generic routing
 
 | Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes|
 | ------------------ | :-: | :-: | :-: |:-: | :-: |
-| Arista EOS          |  ✅  |  ✅  |
+| Arista EOS          |  ✅  |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |
-| Cisco IOSv          |  ✅  |  ✅  |
-| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |
-| Cumulus Linux       |  ✅  |  ✅  |
-| FRR                 |  ✅  |  ✅  |
+| Cisco IOSv          |  ✅  |  ✅  |  ✅  |
+| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |
+| FRR                 |  ✅  |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |
 | Nokia SR OS         |  ✅  |
 | VyOS                |  ✅  |  ✅  |
@@ -91,6 +91,18 @@ You can use these routing policy **set** parameters on devices supported by the 
 | Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  |
 | Nokia SR OS         | ❌  | ✅ | ✅ | ❌  |
 | VyOS                | ✅ | ✅ | ✅ | ❌  |
+
+You can use these routing policy **match** parameters on devices supported by the **routing** module:
+
+| Operating system    | IPv4/IPv6<br>prefix | IPv4/IPv6<br>next hop | BGP<br>AS-path | BGP<br>Community |
+|---------------------|:--:|:--:|:--:|:--:|
+| Arista EOS          | ✅ | ❌  | ✅ | ❌  |
+| Aruba AOS-CX        | ✅ | ❌  | ❌  | ❌  |
+| Cisco IOSv          | ✅ | ❌  | ✅ | ❌  |
+| Cisco IOS-XE[^18v]  | ✅ | ❌  | ✅ | ❌  |
+| Cumulus Linux       | ✅ | ❌  | ✅ | ❌  |
+| FRR                 | ✅ | ❌  | ✅ | ❌  |
+| VyOS                | ✅ | ❌  | ❌  | ❌  |
 
 ### Shortcut Routing Policy Definitions
 
@@ -219,7 +231,7 @@ For example:
 (generic-routing-prefixes)=
 ## Prefix Filters (prefix-lists)
 
-Prefix filters are lists of conditions (usually known as *lists*) that permit or deny IPv4 or IPv6 prefixes. You can use prefix filters in the **match** statements of routing policies to match IPv4/IPv6 routes or next hops. Each prefix filter entry can have these attributes:
+Prefix filters are lists of conditions (usually known as *lists*) that permit or deny IPv4 or IPv6 prefixes. You can use prefix filters in the **match.prefix** and **match.nexthop** parameters of routing policies to match IPv4/IPv6 routes or next hops. Each prefix filter entry can have these attributes:
 
 * **action**: A prefix filter entry can **permit** or **deny** matched prefixes (default: **permit**)
 * **sequence**: Statement sequence number. When not specified, *netlab* sets a prefix filter entry's **sequence** number to ten times its list position.
@@ -251,11 +263,11 @@ routing.prefix:
 
 A prefix filter will not be configured as a `prefix-list` on a network device if it's not defined within the node **routing.prefix** dictionary.
 
-That's usually not a problem as the users of prefix filters (for example, routing policies) copy global prefix filters into node data whenever the routing policy references a global prefix filter. However, you might need a placeholder prefix filter that is later used in a custom template. To force a global prefix filter policy to be copied and configured on a node, mention its name (without a value) in the node **routing.prefix** dictionary (see [](routing-policy-import) for related examples).
+That's usually not a problem as the users of prefix filters (for example, routing policies) copy global prefix filters into node data whenever the routing policy references a global prefix filter. However, you might need a placeholder prefix filter that is later used in a custom template. To force a global prefix filter to be copied and configured on a node, mention its name (without a value) in the node **routing.prefix** dictionary (see [](routing-policy-import) for related examples).
 
 The two prefix filters are merged when a prefix filter is defined within the node *and* globally. See [](routing-policy-merge) for more details.
 
-(routing-policy-ds)=
+(routing-prefix-ds)=
 ### Dual-Stack Prefix Lists
 
 Address pools, named prefixes, and prefix filter entries can contain IPv4 and IPv6 prefixes. Meanwhile, most network operating systems use different configuration objects to match IPv4 and IPv6 prefixes.
@@ -293,4 +305,78 @@ ip prefix-list p2-ipv4 seq 10 permit 172.16.0.0/16
 ipv6 prefix-list p1-ipv6 seq 20 permit 2001:db8:0:1::/64
 !
 ipv6 prefix-list p2-ipv6 seq 10 deny ::/0
+```
+
+(generic-routing-aspath)=
+## BGP AS-Path Filters
+
+AS-path filters are lists of conditions (usually known as *as-path access lists*) that permit or deny BGP AS paths (and consequently the routes carrying them). They match a list of AS numbers or a regular expression. You can use them in the **match.aspath** parameters of routing policies to match BGP routes. Each AS-path filter entry can have these attributes:
+
+* **action**: A prefix filter entry can **permit** or **deny** matched prefixes (default: **permit**)
+* **sequence**: Statement sequence number. When not specified, *netlab* sets a prefix filter entry's **sequence** number to ten times its list position.
+* **path**: A list of autonomous systems to match or a regular expression to match
+
+AS-path filters are specified in the global- or node-level **routing.aspath** dictionary. The dictionary keys are filter names (prefix-list names), and the dictionary values are AS-path filters (lists of AS-path filter entries).
+
+The following example specifies an AS-path access list that drops BGP prefixes originated in AS 65000 and permits everything else:
+
+```
+module: [ routing ]
+
+routing.aspath:
+  not_65000:
+  - action: deny
+    path: _65000$
+  - action: permit
+```
+
+### Using Global BGP AS-Path Filters
+
+An AS-path filter will not be configured as an `ip as-path access-list` on a network device if it's not defined within the node **routing.aspath** dictionary.
+
+That's usually not a problem as the users of AS-path filters (for example, routing policies) copy global definitions into node data whenever the routing policy references them. However, you might need a placeholder prefix filter that is later used in a custom template. To force a filter to be copied and configured on a node, mention its name (without a value) in the node **routing.aspath** dictionary (see [](routing-policy-import) for related examples).
+
+The filters are merged when a BGP AS-path filter is defined within a node *and* globally. See [](routing-policy-merge) for more details.
+
+### Shortcut BGP AS-Path Definitions
+
+Filters encoded in YAML tend to be verbose, and we tried to do as much as we could to reduce BGP AS-path filter verbosity:
+
+* You can skip the **action** and **sequence** attributes.
+* Each entry in a BGP AS-path filter could be a simple string or a list of AS numbers. Such entries are converted into dictionaries with the **path** element set to the entry's value.
+* A list of AS numbers in the **path** element is converted into a string of AS numbers separated by a blank
+* A BGP AS-path filter could be a single string. That string is first converted into a list and subsequently into a list containing a single dictionary.
+
+The following example lists various shortened definitions of BGP AS-path filters:
+
+```
+routing:
+  aspath:
+    ap1: 65000                      # AS-path ACL as int => single-entry ACL
+    ap2: [ 65000 ]                  # Single-entry AS-path ACL
+    ap3:                            # AS-path ACL
+    - action: deny
+      path: [ 65000, 65001 ]        # The first entry is a list of ASNs
+    - '6510.'                       # The second entry is a regexp
+```
+
+_netlab_ normalizes these AS-path filters into the following data structure:
+
+```
+aspath:
+  ap1:
+  - action: permit
+    path: 65000
+    sequence: 10
+  ap2:
+  - action: permit
+    path: 65000
+    sequence: 10
+  ap3:
+  - action: deny
+    path: 65000 65001
+    sequence: 10
+  - action: permit
+    path: '6510.'
+    sequence: 20
 ```

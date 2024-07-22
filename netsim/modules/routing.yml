@@ -17,6 +17,13 @@ attributes:
         type: list
         make_list: True
         _subtype: pfx_entry
+    aspath:
+      type: dict
+      _keytype: id
+      _subtype:
+        type: list
+        make_list: True
+        _subtype: aspath_entry
 
   node:
     policy:
@@ -27,14 +34,19 @@ attributes:
       merge: global
       _subtype:
         _alt_types: [ NoneType ]
+    aspath:
+      merge: global
+      _subtype:
+        _alt_types: [ NoneType ]
 
   route_map:
     set: [ locpref, med, weight, prepend ]
-    match: [ prefix, nexthop ]
+    match: [ prefix, nexthop, aspath ]
 
 no_propagate:
   policy:
   prefix:
+  aspath:
 
 _top:                               # Modification of global defaults
   prefix:
@@ -79,7 +91,7 @@ _top:                               # Modification of global defaults
       match:
         prefix: str
         nexthop: str
-        af: { type: str, valid_values: [ ipv4, ipv6 ] }
+        aspath: str
 
     pfx_entry:                      # Define prefix list entry
       action:
@@ -105,6 +117,19 @@ _top:                               # Modification of global defaults
         _alt_types: [ int ]
       ipv4: { type: ipv4, use: prefix }
       ipv6: { type: ipv6, use: prefix }
+
+    aspath_entry:                   # Define AS-path access list entry
+      action:
+        type: str
+        valid_values: [ permit, deny ]
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 32767
+      path:
+        type: list
+        _subtype: asn
+        _alt_types: [ str, asn ]
 
 features:
   policy:

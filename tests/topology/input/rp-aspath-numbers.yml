@@ -1,0 +1,41 @@
+# Test the "import and number aspaths"
+#
+
+addressing.loopback.ipv6: 2001:db8:cafe::/48
+defaults.device: none
+
+module: [ bgp, routing ]
+plugin: [ bgp.policy ]
+
+routing:
+  aspath:
+    ap1: 65000                                # AS-path ACL as int => single-entry ACL
+    ap2: [ 65000 ]                            # Single-entry AS-path ACL
+    ap3:                                      # AS-path ACL
+    - action: deny
+      path: [ 65000, 65001 ]                  # first entry is a list of ASNs
+    - '6510.'                                 # the second entry is a regexp
+  policy:
+    rp1:
+      match.aspath: ap3
+
+nodes:
+  r1:
+    bgp.as: 65000
+  r2:
+    bgp.as: 65001
+    routing:
+      aspath:
+        ap4: '65000 .*'
+      policy:
+        px:
+        - match.aspath: ap1
+          set.locpref: 100
+        - match.aspath: ap4
+          set.locpref: 200
+
+links:
+- r1:
+    bgp.policy.in: rp1
+  r2:
+    bgp.policy.in: px
