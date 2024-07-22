@@ -1,0 +1,21 @@
+{% for pf_af in af if pf_af in routing._prefix|default({}) %}
+{%   for p_name,p_value in routing._prefix[pf_af].items() %}
+{%     for p_entry in p_value %}
+
+edit policy prefix-list{{ '6' if pf_af == 'ipv6' }} {{ p_name }}-{{ pf_af }} rule {{ p_entry.sequence }}
+
+set action {{ p_entry.action }}
+set prefix {{ p_entry[pf_af] }}
+
+{%       if 'min' in p_entry %}
+set ge {{ p_entry.min }}
+{%       endif %}
+{%       if 'max' in p_entry %}
+set le {{ p_entry.max }}
+{%       endif %}
+
+top
+
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
