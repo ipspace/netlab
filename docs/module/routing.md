@@ -106,14 +106,16 @@ routing.policy:
     set.locpref: 100
 ```
 
-* Unambiguous keywords like **med** and **locpref** do not need to be within the **set** dictionary. *netlab* automatically moves them into the routing-policy-entry **set** dictionary. For example, the following two routing policies are equivalent:
+* Unambiguous keywords like **med** and **locpref** do not need to be within the **set** or **match** dictionary. *netlab* automatically moves them into the routing-policy-entry **set** dictionary. For example, the following two routing policies are equivalent:
 
 ```
 routing.policy:
   p1:
   - set.locpref: 100
+    match.prefix: pfx-list
   p2:
     locpref: 100
+    prefix: pfx-list
 ```
 
 (routing-policy-import)=
@@ -143,21 +145,25 @@ When a routing policy is defined globally as well as within a node, _netlab_ tri
 * Global routing policy entries with sequence numbers that do not exist in the node-level routing policy are added to that routing policy.
 * The resulting list is sorted based on the sequence numbers.
 
-For example, consider the following routing policy definitions[^MGMNS]:
-
-[^MGMNS]: The example has no real-life significance as the first entry in a route map matches all routes, and the subsequent entries are never evaluated. We'll fix it once we get the **match** conditions implemented ;)
+For example, consider the following routing policy definitions:
 
 ```
+routing.prefix:
+  loopbacks:
+  - pool: loopback
+
 routing.policy:
   p1:
-  - set.locpref: 100
+  - match.prefix: loopbacks
+    set.locpref: 100
   - set.med: 200
   
 nodes:
   r1:
     routing.policy:
       p1:
-      - set.locpref: 200
+      - match.prefix: loopbacks
+        set.locpref: 200
       - sequence: 15
         set.prepend.path: 65000
 ```
@@ -168,6 +174,7 @@ The entries in routing policies without sequence numbers get their sequence numb
 routing.policy:
   p1:
   - sequence: 10
+    match.prefix: loopbacks
     set.locpref: 100
   - sequence: 20
     set.med: 200
@@ -177,6 +184,7 @@ nodes:
     routing.policy:
       p1:
       - sequence: 10
+        match.prefix: loopbacks
         set.locpref: 200
       - sequence: 15
         set.prepend.path: 65000
@@ -187,6 +195,7 @@ The results of the merging process should now be self-explanatory. The sequence 
 ```
 p1:
 - sequence: 10
+  match.prefix: loopbacks
   set.locpref: 200
 - sequence: 15
   set.prepend.path: 65000
@@ -194,10 +203,23 @@ p1:
   set.med: 200
 ```
 
+(routing-policy-ds)=
+### Dual-Stack Routing Policies
+
+Most network operating systems cannot use **match ip** and **match ipv6** commands in the same route map entry and behave differently when testing an IPv6 route with a route map entry that contains only **match ip**.
+
+To avoid inconsistencies, _netlab_ usually generates a separate per-address-family *route map* for each routing policy configured on a network device. The address-family-specific route maps are then used in device configuration.
+
+For example:
+
+* If you create a routing policy **X**, and a node runs IPv4 and IPv6, _netlab_ configures two route maps: **X-ipv4** and **X-ipv6**.
+* When the same routing policy is used on a node that runs only IPv4, _netlab_ configures only **X-ipv4**.
+* When the routing policy **X** is used in **bgp.policy** attribute, _netlab_ uses route map **X-ipv4** for IPv4 EBGP sessions and **X-ipv6** for IPv6 EBGP sessions.
+
 (generic-routing-prefixes)=
 ## Prefix Filters (prefix-lists)
 
-Prefix filters are lists of conditions (usually known as *prefix-lists*) that permit or deny IPv4 or IPv6 prefixes. You can use prefix filters in the **match** statements of routing policies to match IPv4/IPv6 routes or next hops. Each prefix filter entry can have these attributes:
+Prefix filters are lists of conditions (usually known as *lists*) that permit or deny IPv4 or IPv6 prefixes. You can use prefix filters in the **match** statements of routing policies to match IPv4/IPv6 routes or next hops. Each prefix filter entry can have these attributes:
 
 * **action**: A prefix filter entry can **permit** or **deny** matched prefixes (default: **permit**)
 * **sequence**: Statement sequence number. When not specified, *netlab* sets a prefix filter entry's **sequence** number to ten times its list position.
@@ -205,12 +227,12 @@ Prefix filters are lists of conditions (usually known as *prefix-lists*) that pe
 * **ipv6**: IPv6 prefix to match
 * **pool**: Name of the addressing pool to match
 * **prefix**: [A named prefix](named-prefixes) to match
-* **min**: Minimum prefix length. It could be specified as an integer or as a dictionary with **ipv4** and **ipv6** keys.
+* **min**: Minimum prefix length. It could be specified as an integer or a dictionary with **ipv4** and **ipv6** keys.
 * **max**: Maximum prefix length in the same format as the **min** parameters.
 
 Prefix filters are specified in the global- or node-level **routing.prefix** dictionary. The dictionary keys are filter names (prefix-list names), and the dictionary values are prefix filters (lists of prefix filter entries).
 
-The following example specifies a prefix filter that matches the loopback pool, a named prefix, and an IPv6 subnet:
+The following example specifies a prefix filter that matches the loopback pool, a named prefix, and an IPv6 prefix:
 
 ```
 module: [ routing ]
@@ -231,4 +253,42 @@ A prefix filter will not be configured as a `prefix-list` on a network device if
 
 That's usually not a problem as the users of prefix filters (for example, routing policies) copy global prefix filters into node data whenever the routing policy references a global prefix filter. However, you might need a placeholder prefix filter that is later used in a custom template. To force a global prefix filter policy to be copied and configured on a node, mention its name (without a value) in the node **routing.prefix** dictionary (see [](routing-policy-import) for related examples).
 
-When a prefix filter is defined within the node *and* globally, the two prefix filters are merged. See [](routing-policy-merge) for more details.
+The two prefix filters are merged when a prefix filter is defined within the node *and* globally. See [](routing-policy-merge) for more details.
+
+(routing-policy-ds)=
+### Dual-Stack Prefix Lists
+
+Address pools, named prefixes, and prefix filter entries can contain IPv4 and IPv6 prefixes. Meanwhile, most network operating systems use different configuration objects to match IPv4 and IPv6 prefixes.
+
+_netlab_ generates separate per-address-family *prefix lists* for every prefix filter configured on a network device. To avoid route map inconsistencies, a prefix list that contains no usable entries (for example, an IPv6 prefix list generated from a prefix filter that matches only IPv4 prefixes) has a single *deny everything* condition.
+
+Let's assume we're using the following prefix filters:
+
+```
+routing.prefix:
+  p1:
+    - ipv4: 192.168.24.0/24
+    - ipv6: 2001:db8:0:1::/64
+  p2:
+    - ipv4: 172.16.0.0/16
+```
+
+_netlab_ generates these prefix lists on an IPv4-only device (IPv6 prefix list is not generated, and entry #20 is missing from P1):
+
+```
+ip prefix-list p1 seq 10 permit 192.168.24.0/24
+!
+ip prefix-list p2 seq 10 permit 172.16.0.0/16
+```
+
+Meanwhile, the following prefix lists are generated on a dual-stack device (including a meaningless IPv6 prefix list P2)
+
+```
+ip prefix-list p1 seq 10 permit 192.168.24.0/24
+!
+ip prefix-list p2 seq 10 permit 172.16.0.0/16
+!
+ipv6 prefix-list p1 seq 20 permit 2001:db8:0:1::/64
+!
+ipv6 prefix-list p2 seq 10 deny ::/0
+```

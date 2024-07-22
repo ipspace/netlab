@@ -361,6 +361,14 @@ def create_pfx_af_entry(p_entry: Box, af: str, p_name: str, node: Box) -> Box:
   return af_p_entry
 
 """
+create_empty_prefix_list: Create an empty per-AF prefix list
+"""
+def create_empty_prefix_list(af: str) -> list:
+  p_entry = { 'sequence': 10, 'action': 'deny' }
+  p_entry[af] = '0.0.0.0/0' if af == 'ipv4' else '::/0'
+  return [ p_entry ]
+
+"""
 expand_prefix_list:
 
 * Transform all entries in the prefix list
@@ -380,6 +388,8 @@ def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typin
 
     if af_prefix[af]:                                       # Do we have a non-empty per-AF prefix list?
       node.routing['_'+o_name][af][p_name] = af_prefix[af]  # ... yes, save it
+    else:
+      node.routing['_'+o_name][af][p_name] = create_empty_prefix_list(af)      
 
   return None                                               # No need to do additional checks
 

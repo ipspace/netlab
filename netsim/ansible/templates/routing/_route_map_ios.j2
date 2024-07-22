@@ -18,7 +18,7 @@ that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
 {#
    This macro generates the elements of route-map entries common across all "industry standard CLI" devices
 #}
-{% macro common_route_map_entry(p_entry,af_list) -%}
+{% macro common_route_map_entry(p_entry,match_af) -%}
 {%   if 'set' in p_entry %}
 {%     if 'locpref' in p_entry.set %}
   set local-preference {{ p_entry.set.locpref }}
@@ -34,13 +34,11 @@ that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
 {%     endif %}
 {%   endif %}
 {%   if 'match' in p_entry %}
+{%     set ipkwd = 'ip' if match_af == 'ipv4' else 'ipv6' %}
 {%     if 'prefix' in p_entry.match %}
-{%       for pf_af in af_list %}
-{%         set ipkwd = 'ip' if pf_af == 'ipv4' else 'ipv6' %}
   match {{ ipkwd }} address prefix-list {{ p_entry.match.prefix }}
-{%       endfor %}
 {%     endif %}
-{%     if 'nexthop' in p_entry.match and 'af' in p_entry.match %}
+{%     if 'nexthop' in p_entry.match %}
   match {{ ipkwd }} next-hop prefix-list {{ p_entry.match.nexthop }}
 {%     endif %}
 {%   endif %}
@@ -48,12 +46,12 @@ that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
 {#
    This macro builds a single route map and uses the callback to define a route map entry.
 #}
-{% macro build_route_map(rp_name,rp_list,af_list) -%}
+{% macro build_route_map(rp_name,rp_list,match_af) -%}
 {% set seq = 'seq ' if netlab_device_type == 'arubacx' else '' %}
 {%   for p_entry in rp_list %}
 !
 route-map {{ rp_name }} {{ p_entry.action|default('permit') }} {{ seq }}{{ p_entry.sequence|default(loop.index * 10) }}
-{{       caller(p_entry,af_list) }}
+{{       caller(p_entry,match_af) }}
 {%-  endfor %}
 {%- endmacro %}
 !
@@ -62,20 +60,14 @@ route-map {{ rp_name }} {{ p_entry.action|default('permit') }} {{ seq }}{{ p_ent
 
    The callback defines a route map entry.
 #}
-{% macro create_route_maps(rp_dict,rm_per_af) -%}
+{% macro create_route_maps(rp_dict) -%}
 {%   set cb = caller %}
 {%   for rp_name,rp_list in rp_dict.items() %}
-{%     if rm_per_af %}
-{%       for rm_af in ('ipv4','ipv6') %}
-{%         call(p_entry,af_list) build_route_map('%s-%s'|format(rp_name,rm_af),rp_list,[ rm_af ]) -%}
-{{           cb(p_entry,af_list) }}
-{%-        endcall %}
-{%-      endfor %}
-{%     else %}
-{%       call(p_entry,af_list) build_route_map(rp_name,rp_list,[ 'ipv4','ipv6' ]) -%}
-{{         cb(p_entry,af_list) }}
+{%     for rm_af in af %}
+{%       call(p_entry,match_af) build_route_map('%s-%s'|format(rp_name,rm_af),rp_list,rm_af) -%}
+{{         cb(p_entry,match_af) }}
 {%-      endcall %}
-{%-    endif %}
+{%-    endfor %}
 {%   endfor %}
 {%- endmacro %}
 !
