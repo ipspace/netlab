@@ -260,7 +260,9 @@ The two prefix filters are merged when a prefix filter is defined within the nod
 
 Address pools, named prefixes, and prefix filter entries can contain IPv4 and IPv6 prefixes. Meanwhile, most network operating systems use different configuration objects to match IPv4 and IPv6 prefixes.
 
-_netlab_ generates separate per-address-family *prefix lists* for every prefix filter configured on a network device. To avoid route map inconsistencies, a prefix list that contains no usable entries (for example, an IPv6 prefix list generated from a prefix filter that matches only IPv4 prefixes) has a single *deny everything* condition.
+_netlab_ generates separate per-address-family *prefix lists* for every prefix filter configured on a network device. The address family is appended to the prefix list name to deal with devices that cannot use the same names for IPv4 and IPv6 prefix lists.
+
+To avoid route map inconsistencies, a prefix list that contains no usable entries (for example, an IPv6 prefix list generated from a prefix filter that matches only IPv4 prefixes) has a single *deny everything* condition.
 
 Let's assume we're using the following prefix filters:
 
@@ -276,19 +278,19 @@ routing.prefix:
 _netlab_ generates these prefix lists on an IPv4-only device (IPv6 prefix list is not generated, and entry #20 is missing from P1):
 
 ```
-ip prefix-list p1 seq 10 permit 192.168.24.0/24
+ip prefix-list p1-ipv4 seq 10 permit 192.168.24.0/24
 !
-ip prefix-list p2 seq 10 permit 172.16.0.0/16
+ip prefix-list p2-ipv4 seq 10 permit 172.16.0.0/16
 ```
 
 Meanwhile, the following prefix lists are generated on a dual-stack device (including a meaningless IPv6 prefix list P2)
 
 ```
-ip prefix-list p1 seq 10 permit 192.168.24.0/24
+ip prefix-list p1-ipv4 seq 10 permit 192.168.24.0/24
 !
-ip prefix-list p2 seq 10 permit 172.16.0.0/16
+ip prefix-list p2-ipv4 seq 10 permit 172.16.0.0/16
 !
-ipv6 prefix-list p1 seq 20 permit 2001:db8:0:1::/64
+ipv6 prefix-list p1-ipv6 seq 20 permit 2001:db8:0:1::/64
 !
-ipv6 prefix-list p2 seq 10 deny ::/0
+ipv6 prefix-list p2-ipv6 seq 10 deny ::/0
 ```
