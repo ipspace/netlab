@@ -88,6 +88,10 @@ def normalize_aspath_entry(p_entry: typing.Any, p_idx: int) -> Box:
   if 'path' not in p_entry:
     p_entry.path = '.*'
 
+  if isinstance(p_entry.path,list):
+    p_list = [ str(p) for p in p_entry.path ]
+    p_entry.path = ' '.join(p_list)
+
   normalize_routing_entry(p_entry,p_idx)
   return p_entry
 

@@ -1,11 +1,9 @@
 ---
 message: |
-  Use this topology to test route maps with prefix lists for IPv4 and IPv6
+  Use this topology to test route maps with as-path access lists
 
 plugin: [ bgp.policy ]
 module: [ bgp, routing ]
-
-defaults.sources.extra: [ defaults-ds.yml ]
 
 prefix:
   b_orig_1:
@@ -31,10 +29,15 @@ nodes:
         - action: deny
           path: ^65100$
         - action: permit
+        out_x2: 65203$
 
       policy:
-        in_x1: []
-        out_x2: []
+        in_x1:
+        - match.aspath: in_x1
+        out_x2:
+        - match.aspath: out_x2
+          action: deny
+        - action: permit
 
   x1:
     bgp.as: 65100
@@ -52,6 +55,7 @@ nodes:
           prepend: 65203
         - match.prefix: bp3
           prepend: 65100
+        - action: permit
   x2:
     bgp.as: 65101
   x3:
@@ -82,31 +86,25 @@ validate:
     plugin: bgp_prefix(prefix.b_orig_2.ipv4)
 
   pfx_o3_v6:
-    description: Check for b_orig_3 IPv6 prefix on X3
+    description: Check for b_orig_3 IPv4 prefix on X3
     wait: 10
     nodes: [ x3 ]
-    plugin: bgp_prefix(prefix.b_orig_3.ipv6,af='ipv6')
+    plugin: bgp_prefix(prefix.b_orig_3.ipv4)
 
-  pfx_o1_miss:
-    description: Check for missing b_orig_1 IPv4 prefix on X3
-    wait: 2
+  pfx_lb_miss:
+    description: Check for missing X1 loopback IPv4 prefix on X3
+    wait: 10
     nodes: [ x3 ]
-    plugin: bgp_prefix(prefix.b_orig_1.ipv4,state='missing')
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,state='missing')
 
-  x2_pfx_o3_miss:
-    description: Check for missing b_orig_3 IPv6 prefix on X2
+  x2_pfx_o1:
+    description: Check for b_orig_1 IPv4 prefix on X2
+    wait: 10
+    nodes: [ x2 ]
+    plugin: bgp_prefix(prefix.b_orig_1.ipv4)
+
+  x2_pfx_o2_miss:
+    description: Check for missing b_orig_2 IPv4 prefix on X2
     wait: 2
     nodes: [ x2 ]
-    plugin: bgp_prefix(prefix.b_orig_3.ipv6,state='missing',af='ipv6')
-
-  x2_lb_v4:
-    description: Check for X1 loopback IPv4 prefix on X2
-    wait: 10
-    nodes: [ x2 ]
-    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
-
-  x2_lb_v6:
-    description: Check for X1 loopback IPv6 prefix on X2
-    wait: 10
-    nodes: [ x2 ]
-    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6')
+    plugin: bgp_prefix(prefix.b_orig_2.ipv4,state='missing')
