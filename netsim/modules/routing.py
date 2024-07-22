@@ -22,11 +22,14 @@ match_kw: typing.Optional[Box] = None
 """
 normalize_routing_entry: generic normalization of any list used by the routing module
 """
-def normalize_routing_entry(p_entry: Box, p_idx: int) -> Box:
-  if 'action' not in p_entry:                               # Set the default action to 'permit' if missing
+def normalize_routing_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
+  if not isinstance(p_entry,Box):                 # Skip anything that is not a box, validation will bark
+    return p_entry
+
+  if 'action' not in p_entry:                     # Set the default action to 'permit' if missing
     p_entry.action = 'permit'
 
-  if 'sequence' not in p_entry:                             # ... and the default sequence # to 10-times RP entry position
+  if 'sequence' not in p_entry:                   # ... and the default sequence # to 10-times RP entry position
     p_entry.sequence = (p_idx + 1) * 10
 
   return p_entry
@@ -48,20 +51,23 @@ normalize_policy_entry:
 * Eliminate shortcuts in routing policy entries
 * Add default values of 'sequence' and 'action' parameters
 """
-def normalize_policy_entry(p_entry: Box, p_idx: int) -> Box:
+def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
   global set_kw,match_kw
 
-  if set_kw is None:                                        # Premature optimization: cache the SET keywords
+  if not isinstance(p_entry,Box):                 # Skip anything that is not a box, validation will bark
+    return p_entry
+
+  if set_kw is None:                              # Premature optimization: cache the SET keywords
     topology = global_vars.get_topology()
     if topology is None:
       return p_entry
     set_kw = topology.defaults.routing.attributes.route_map.set
     match_kw = topology.defaults.routing.attributes.route_map.match
 
-  if set_kw:
+  if set_kw:                                      # Normalize set keywords
     policy_shortcut(p_entry,'set',set_kw)
 
-  if match_kw:
+  if match_kw:                                    # Normalize match keywords
     policy_shortcut(p_entry,'match',match_kw)
 
   prepend = p_entry.get('set.prepend',None)       # Normalize AS path prepending SET entry
@@ -89,9 +95,6 @@ Please note that this function is called before the data has been validated, so 
 """
 def normalize_routing_object(o_list: list, callback: typing.Callable) -> None:
   for p_idx,p_entry in enumerate(o_list):         # Iterate over routing object entries and normalize them
-    if not isinstance(o_list[p_idx],dict):        # Skip anything that is not a dictionary, validation will bark
-      continue
-      
     o_list[p_idx] = callback(o_list[p_idx],p_idx)
 
 def normalize_routing_objects(
@@ -220,7 +223,7 @@ match_object_map: dict = {
 }
 
 def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
-  global match_object_map, normalize_dispatch, transform_dispatch
+  global match_object_map, normalize_dispatch, transform_dispatch, import_dispatch
 
   for p_entry in node.routing.policy[pname]:                # Iterate over routing policy entries
     if not 'match' in p_entry:                              # No match condition, nothing to check
@@ -232,6 +235,8 @@ def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> 
         if f_import:                                        # If we imported any new data...
           if r_object in normalize_dispatch:                # ... normalize the filter entries
             normalize_routing_object(f_import,normalize_dispatch[r_object]['callback'])
+          if r_object in import_dispatch and 'check' in import_dispatch[r_object]:
+            import_dispatch[r_object]['check'](p_entry.match[kw],r_object,node,topology)
           if r_object in transform_dispatch:                # ... and transform the filter into its final form
             transform_dispatch[r_object]['import'](p_entry.match[kw],r_object,node,topology)
 
@@ -413,10 +418,10 @@ def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typin
 
   return None                                               # No need to do additional checks
 
-def number_aspath_acl(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+def number_aspath_acl(p_name: str,o_name: str,node: Box,topology: Box) -> None:
   numacl = node.routing._numobj[o_name]
   if p_name not in numacl:
-    maxacl = max([ 0 ] + [ acl for acl in numacl.value() ])
+    maxacl = max([ 0 ] + [ acl for acl in numacl.values() ])
     numacl[p_name] = maxacl + 1
 
 """

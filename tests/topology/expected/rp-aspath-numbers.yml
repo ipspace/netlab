@@ -1,0 +1,270 @@
+_extra_module:
+- routing
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+  as65001:
+    members:
+    - r2
+input:
+- topology/input/rp-aspath-numbers.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - bgp:
+      policy:
+        in: rp1
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - bgp:
+      policy:
+        in: px
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+module:
+- bgp
+- routing
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      _session_clear:
+      - 10.1.0.2
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        ibgp_localas:
+        - standard
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: r2
+        policy:
+          in: rp1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: none
+    config:
+    - bgp.policy
+    device: none
+    id: 1
+    interfaces:
+    - bgp:
+        policy:
+          in: rp1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - bgp:
+          policy:
+            in: px
+        ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      role: external
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:cafe:1::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - bgp
+    - routing
+    name: r1
+    routing:
+      _numobj:
+        aspath:
+          ap3: 1
+      aspath:
+        ap3:
+        - action: deny
+          path:
+          - 65000
+          - 65001
+          sequence: 10
+        - action: permit
+          path: '6510.'
+          sequence: 20
+      policy:
+        rp1:
+        - action: permit
+          match:
+            aspath: ap3
+          sequence: 10
+  r2:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      _session_clear:
+      - 10.1.0.1
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        ibgp_localas:
+        - standard
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        policy:
+          in: px
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: none
+    config:
+    - bgp.policy
+    device: none
+    id: 2
+    interfaces:
+    - bgp:
+        policy:
+          in: px
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - bgp:
+          policy:
+            in: rp1
+        ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:cafe:2::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - bgp
+    - routing
+    name: r2
+    routing:
+      _numobj:
+        aspath:
+          ap1: 1
+          ap4: 2
+      aspath:
+        ap1:
+        - action: permit
+          path: 65000
+          sequence: 10
+        ap4:
+        - action: permit
+          path: 65000 .*
+          sequence: 10
+      policy:
+        px:
+        - action: permit
+          match:
+            aspath: ap1
+          sequence: 10
+          set:
+            locpref: 100
+        - action: permit
+          match:
+            aspath: ap4
+          sequence: 20
+          set:
+            locpref: 200
+plugin:
+- bgp.policy
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+provider: libvirt
+routing:
+  aspath:
+    ap1:
+    - action: permit
+      path: 65000
+      sequence: 10
+    ap2:
+    - action: permit
+      path: 65000
+      sequence: 10
+    ap3:
+    - action: deny
+      path:
+      - 65000
+      - 65001
+      sequence: 10
+    - action: permit
+      path: '6510.'
+      sequence: 20
+  policy:
+    rp1:
+    - action: permit
+      match:
+        aspath: ap3
+      sequence: 10
