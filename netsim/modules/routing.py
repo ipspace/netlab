@@ -17,6 +17,7 @@ from ..data.types import must_be_list
 from ..augment import devices,groups,links,addressing
 
 set_kw: typing.Optional[Box] = None
+match_kw: typing.Optional[Box] = None
 
 """
 normalize_routing_entry: generic normalization of any list used by the routing module
@@ -31,49 +32,37 @@ def normalize_routing_entry(p_entry: Box, p_idx: int) -> Box:
   return p_entry
 
 """
+policy_shortcut: convert shortcut attributes (ex: locpref) into normalized ones (ex: set.locpref)
+"""
+def policy_shortcut(p_entry: Box, p_kw: str, kw_set: Box) -> None:
+  for k in kw_set:                                          # Iterate over shortcut keywords
+    if k not in p_entry:                                    # ... not in this RP entry, move on
+      continue
+
+    p_entry[p_kw][k] = p_entry[k]                           # Move the keyword into target dictionary
+    p_entry.pop(k,None)                                     # ... and remove it from RP entry or the validation will fail
+
+"""
 normalize_policy_entry:
 
 * Eliminate shortcuts in routing policy entries
 * Add default values of 'sequence' and 'action' parameters
 """
 def normalize_policy_entry(p_entry: Box, p_idx: int) -> Box:
-  global set_kw
+  global set_kw,match_kw
 
   if set_kw is None:                                        # Premature optimization: cache the SET keywords
     topology = global_vars.get_topology()
     if topology is None:
       return p_entry
     set_kw = topology.defaults.routing.attributes.route_map.set
+    match_kw = topology.defaults.routing.attributes.route_map.match
 
-  for k in set_kw:                                          # Now iterate over SET keywords that have shortcuts
-    if k not in p_entry:                                    # ... not in this RP entry, move on
-      continue
+  if set_kw:
+    policy_shortcut(p_entry,'set',set_kw)
 
-    p_entry.set[k] = p_entry[k]                             # Move the keyword into SET dictionary
-    p_entry.pop(k,None)                                     # ... and remove it from RP entry or the validation will fail
-
-  normalize_routing_entry(p_entry,p_idx)                    # Finally, do generic normalization
-
-  return p_entry
-
-"""
-normalize_prefix_entry: expand 'pool' and 'prefix' arguments into IPv4/IPv6 prefixes
-"""
-def normalize_prefix_entry(p_entry: Box, p_idx: int) -> Box:
-  global set_kw
-
-  if set_kw is None:                                        # Premature optimization: cache the SET keywords
-    topology = global_vars.get_topology()
-    if topology is None:
-      return p_entry
-    set_kw = topology.defaults.routing.attributes.route_map.set
-
-  for k in set_kw:                                          # Now iterate over SET keywords that have shortcuts
-    if k not in p_entry:                                    # ... not in this RP entry, move on
-      continue
-
-    p_entry.set[k] = p_entry[k]                             # Move the keyword into SET dictionary
-    p_entry.pop(k,None)                                     # ... and remove it from RP entry or the validation will fail
+  if match_kw:
+    policy_shortcut(p_entry,'match',match_kw)
 
   normalize_routing_entry(p_entry,p_idx)                    # Finally, do generic normalization
 
@@ -84,6 +73,13 @@ normalize_routing_object: Normalize global- or node routing object data
 
 Please note that this function is called before the data has been validated, so we have to extra-careful
 """
+def normalize_routing_object(o_list: list, callback: typing.Callable) -> None:
+  for p_idx,p_entry in enumerate(o_list):         # Iterate over routing object entries and normalize them
+    if not isinstance(o_list[p_idx],dict):        # Skip anything that is not a dictionary, validation will bark
+      continue
+      
+    o_list[p_idx] = callback(o_list[p_idx],p_idx)
+
 def normalize_routing_objects(
       o_dict: typing.Optional[Box],
       o_type: str,
@@ -111,10 +107,7 @@ def normalize_routing_objects(
     if not isinstance(o_dict[o_name],list):                 # Still not a list? Let validation deal with that ;)
       continue
 
-    for p_idx,p_entry in enumerate(o_dict[o_name]):         # Now iterate over routing object entries and normalize them
-      if not isinstance(o_dict[o_name][p_idx],dict):        # Skip anything that is not a dictionary, validation will bark
-        continue
-      o_dict[o_name][p_idx] = normalize_callback(o_dict[o_name][p_idx],p_idx)
+    normalize_routing_object(o_dict[o_name],normalize_callback)
 
 """
 check_routing_object: validate that a device supports the requested routing object
@@ -206,24 +199,55 @@ def import_routing_object(pname: str,o_name: str,node: Box,topology: Box) -> typ
   return np_data
 
 """
+import_policy_filters: Import all routing filters (prefix lists, community lists, as-path lists...)
+needed by the just-imported routing policy
+"""
+match_object_map: dict = {
+  'prefix': 'prefix',                                       # Prefix match requires a 'prefix' object
+  'nexthop': 'prefix'                                       # Next-hop match requires a 'prefix' object
+}
+
+def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
+  global match_object_map, normalize_dispatch, transform_dispatch
+
+  for p_entry in node.routing.policy[pname]:                # Iterate over routing policy entries
+    if not 'match' in p_entry:                              # No match condition, nothing to check
+      continue
+    for kw in match_object_map.keys():                      # Iterate over match keywords
+      if kw in p_entry.match:                               # A filter is used in the route-map ==> import it
+        r_object = match_object_map[kw]
+        f_import = import_routing_object(p_entry.match[kw],r_object,node,topology)
+        if f_import:                                        # If we imported any new data...
+          if r_object in normalize_dispatch:                # ... normalize the filter entries
+            normalize_routing_object(f_import,normalize_dispatch[r_object]['callback'])
+          if r_object in transform_dispatch:                # ... and transform the filter into its final form
+            transform_dispatch[r_object]['import'](p_entry.match[kw],r_object,node,topology)
+
+"""
 Import/merge a single global routing policy into node routing policy table
 
 This function calls the generic import function and then tries to import all the global
 objects required by the routing policy (for example, the prefix lists)
 """
 def import_routing_policy(pname: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
-  return import_routing_object(pname,o_name,node,topology)
+  p_import = import_routing_object(pname,o_name,node,topology)
+  if p_import is None:
+    return p_import
+  
+  import_policy_filters(pname,o_name,node,topology)
+  return p_import
 
 """
 Dispatch table for global-to-node object import
 """
 import_dispatch: typing.Dict[str,dict] = {
   'policy': {
-    'import': import_routing_policy,
-    'check' : check_routing_policy },
+    'import' : import_routing_policy,
+    'check'  : check_routing_policy,
+    'related': import_policy_filters },
   'prefix': {
-    'import': import_routing_object,
-    'check' : check_routing_object }
+    'import' : import_routing_object,
+    'check'  : check_routing_object }
 }
 
 """
@@ -241,17 +265,22 @@ def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict) -
     if dispatch[o_type]['import'](p_name,o_type,node,topology) is not None:
       if 'check' in dispatch[o_type]:
         dispatch[o_type]['check'](p_name,o_type,node,topology)
+    if 'related' in dispatch[o_type]:
+      dispatch[o_type]['related'](p_name,o_type,node,topology)
 
 """
 Dispatch table for data normalization
 """
-normalize_dispatch: typing.List[dict] = [
-  { 'namespace': 'routing.policy',
-    'object'   : 'policy',
-    'callback' : normalize_policy_entry },
-  { 'namespace': 'routing.prefix',
-    'object'   : 'prefix filter',
-    'callback' : normalize_routing_entry } ]
+normalize_dispatch: typing.Dict[str,dict] = {
+  'policy':
+    { 'namespace': 'routing.policy',
+      'object'   : 'policy',
+      'callback' : normalize_policy_entry },
+  'prefix':
+    { 'namespace': 'routing.prefix',
+      'object'   : 'prefix filter',
+      'callback' : normalize_routing_entry }
+}
 
 """
 normalize_routing_data: execute the normalization functions for all routing objects
@@ -259,7 +288,7 @@ normalize_routing_data: execute the normalization functions for all routing obje
 def normalize_routing_data(r_object: Box, topo_object: bool = False) -> None:
   global normalize_dispatch
 
-  for dp in normalize_dispatch:
+  for dp in normalize_dispatch.values():
     normalize_routing_objects(
       o_dict=r_object.get(dp['namespace'],None),
       o_type=dp['object'],
@@ -332,6 +361,14 @@ def create_pfx_af_entry(p_entry: Box, af: str, p_name: str, node: Box) -> Box:
   return af_p_entry
 
 """
+create_empty_prefix_list: Create an empty per-AF prefix list
+"""
+def create_empty_prefix_list(af: str) -> list:
+  p_entry = { 'sequence': 10, 'action': 'deny' }
+  p_entry[af] = '0.0.0.0/0' if af == 'ipv4' else '::/0'
+  return [ p_entry ]
+
+"""
 expand_prefix_list:
 
 * Transform all entries in the prefix list
@@ -351,6 +388,8 @@ def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typin
 
     if af_prefix[af]:                                       # Do we have a non-empty per-AF prefix list?
       node.routing['_'+o_name][af][p_name] = af_prefix[af]  # ... yes, save it
+    else:
+      node.routing['_'+o_name][af][p_name] = create_empty_prefix_list(af)      
 
   return None                                               # No need to do additional checks
 
@@ -361,7 +400,7 @@ expand the prefixes/pools in prefix list.
 transform_dispatch: typing.Dict[str,dict] = {
   'prefix': {
     'import': expand_prefix_list
-  }
+  },
 }
 
 class Routing(_Module):
