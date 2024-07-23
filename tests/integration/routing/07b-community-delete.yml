@@ -1,0 +1,61 @@
+---
+message: |
+  Use this topology to test 'set.community.append' route-map option.
+
+plugin: [ bgp.policy ]
+module: [ bgp, routing ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ probe, x1 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+    routing.policy.set_comm:
+      set.community:
+        standard: '65101:42'
+        delete: True
+    id: 1
+  probe:
+    bgp.as: 65100
+  x1:
+    bgp.as: 65101
+    routing.policy.set_comm:
+      set.community:
+        standard: '65101:17 65101:42'
+
+links:
+- dut:
+    bgp.policy.out: set_comm
+  probe:
+- dut:
+  x1:
+    bgp.policy.out: set_comm
+
+validate:
+  ebgp:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ probe, x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx_lb:
+    description: Check for X1 loopback prefix on Probe
+    wait: 10
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  comm_present:
+    description: Check for AS65101 communities attached to X1 loopback prefix
+    nodes: [ probe ]
+    plugin: >
+      bgp_prefix(nodes.x1.loopback.ipv4,community={'community': '65101:17'})
+
+  comm_missing:
+    description: Check for AS65101 communities removed from X1 loopback prefix
+    nodes: [ probe ]
+    plugin: >
+      bgp_prefix(nodes.x1.loopback.ipv4,community={'community': '65101:42'})

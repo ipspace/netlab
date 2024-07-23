@@ -55,6 +55,15 @@ You can set these route parameters in a _netlab_ routing policy:
 * **med**: Route metric (for example, BGP MED)
 * **prepend**: BGP AS-path prepending ([more details](plugin-bgp-policy-attributes))
 * **weight**: BGP weight
+* **community**: A dictionary that can be used to set, add, or remove standard, large, or extended communities.
+
+The **set.community** dictionary has these parameters:
+
+* **standard**: Standard BGP communities to set
+* **large**: Large BGP communities to set
+* **extended**: Extended BGP communities to set. The value is passed to the network device as-is (the same value might not work on all devices).
+* **append**: Add communities to existing BGP communities
+* **delete**: Remove specified communities from the BGP route
 
 Routing policies are specified in the global- or node-level **routing.policy** dictionary. The dictionary keys are policy names (route map names), and the dictionary values are routing policies (lists of routing policy entries).
 
@@ -80,17 +89,27 @@ nodes:
 
 You can use these routing policy **set** parameters on devices supported by the **routing** module:
 
-| Operating system    | AS-path<br>prepend | Local<br>preference | MED | Weight |
-|---------------------|:--:|:--:|:--:|:--:|
-| Arista EOS          | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOSv          | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOS-XE[^18v]  | ✅ | ✅ | ✅ | ✅ |
-| Cumulus Linux       | ✅ | ✅ | ✅ | ✅ |
-| FRR                 | ✅ | ✅ | ✅ | ✅ |
-| Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  |
-| Nokia SR OS         | ❌  | ✅ | ✅ | ❌  |
-| VyOS                | ✅ | ✅ | ✅ | ❌  |
+| Operating system    | AS-path<br>prepend | Local<br>preference | MED | Weight | Community |
+|---------------------|:--:|:--:|:--:|:--:| :--:|
+| Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ | ❌  |
+| Cisco IOSv          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS-XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ✅ |
+| FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  | ❌  |
+| Nokia SR OS         | ❌  | ✅ | ✅ | ❌  | ❌  |
+| VyOS                | ✅ | ✅ | ✅ | ❌  | ❌  |
+
+The **set.community** attribute can be used to set these BGP communities on supported devices:
+
+| Operating system    | Standard<br>community | Large<br>community | Extended<br>community | Append | Delete |
+|---------------------|:--:|:--:|:--:|:--:|:--:|
+| Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOSv          | ✅ | ❌  | ❌  | ✅ | ❌  |
+| Cisco IOS-XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
+| Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
+| FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |
 
 You can use these routing policy **match** parameters on devices supported by the **routing** module:
 
