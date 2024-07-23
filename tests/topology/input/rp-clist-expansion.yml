@@ -1,0 +1,27 @@
+# Test the "import and number aspaths"
+#
+
+defaults.device: none
+
+module: [ routing ]
+
+nodes:
+  r1:
+    routing:
+      community:
+        cl1: 65000:100                            # Single-entry ACL
+        cl2: [ 65000:100, 65000:101 ]             # Single-entry multivalue ACL
+        cl3: _65000:10[1-2]_                      # Regular expression
+        cl4:                                      # More complex standard ACL
+        - action: permit                          # Used to implement or-of-ands condition
+          path: [ 65000:100, 65001:100 ]
+        - action: permit
+          path: [ 65000:103, 65001:103 ]
+        cl5:                                      # A mix standard and extended conditions ==> extended
+        - action: deny
+          path: [ 65000:100, 65001:100 ]          # first entry is a list of communities
+        - '_6510.:307_'                           # the second entry is a regexp
+        cl6:                                      # Permit any at the end forces an extended clist
+        - action: deny
+          path: [ 65000:100, 65001:100 ]
+        - action: permit

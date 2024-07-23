@@ -226,7 +226,8 @@ needed by the just-imported routing policy
 match_object_map: dict = {
   'prefix': 'prefix',                                       # Prefix match requires a 'prefix' object
   'nexthop': 'prefix',                                      # Next-hop match requires a 'prefix' object
-  'aspath': 'aspath'                                        # AS path match requires an 'aspath' object
+  'aspath': 'aspath',                                       # AS path match requires an 'aspath' object
+  'community': 'community'                                  # Community match requires a 'community' object
 }
 
 def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
@@ -274,7 +275,11 @@ import_dispatch: typing.Dict[str,dict] = {
     'check'  : check_routing_object },
   'aspath': {
     'import' : import_routing_object,
+    'check'  : check_routing_object },
+  'community': {
+    'import' : import_routing_object,
     'check'  : check_routing_object }
+
 }
 
 """
@@ -311,8 +316,11 @@ normalize_dispatch: typing.Dict[str,dict] = {
   'aspath':
     { 'namespace': 'routing.aspath',
       'object'   : 'AS path filter',
+      'callback' : normalize_aspath_entry },
+  'community':
+    { 'namespace': 'routing.community',
+      'object'   : 'BGP community filter',
       'callback' : normalize_aspath_entry }
-
 }
 
 """
@@ -433,6 +441,52 @@ def number_aspath_acl(p_name: str,o_name: str,node: Box,topology: Box) -> None:
     numacl[p_name] = maxacl + 1
 
 """
+fix_clist_entry: Fix an entry in the BGP community list.
+
+When done, the entry will have:
+
+* _value  -- set to whatever value user specified in regexp, list, or (internal) path attribute
+* _regexp -- set if the value is a regular expression
+"""
+def fix_clist_entry(e_clist: Box, topology: Box) -> None:
+  if 'regexp' in e_clist:                                   # Do we know we have a regexp?
+    e_clist._value = e_clist.regexp                         # Copy regular expression into a common variable
+    return
+
+  value = e_clist.get('list','') or e_clist.get('path','')  # Get community value(s)
+  if isinstance(value,list):                                # Convert list to a string of
+    value = ' '.join([str(v) for v in value])               # ... space-separated values
+  e_clist._value = value
+  if not value:                                             # None specified? We have to do a wildcard match
+    e_clist._value = '.*'
+    e_clist.regexp = e_clist._value
+  else:
+    if not re.match('^[0-9: ]+$',value):                    # Is the value a simple community list expression?
+      e_clist.regexp = e_clist._value
+
+  for kw in ('path','list'):                                # Finally, clean up the now-unnecessary attributes
+    e_clist.pop(kw,None)
+
+"""
+expand_community_list: transform BGP community lists into a dictionary that indicates
+whether they use regular expressions or not
+"""
+def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  node.routing[o_name][p_name] = {
+    'value': node.routing[o_name][p_name]
+  }
+  p_clist = node.routing[o_name][p_name]                    # Shortcut pointer to current community list
+  regexp = False                                            # Figure out whether we need expanded clist
+  for (p_idx,p_entry) in enumerate(p_clist.value):
+    fix_clist_entry(p_clist.value[p_idx],topology)
+    regexp = regexp or bool(p_clist.value[p_idx].get('regexp',False))
+
+  p_clist.type = 'expanded' if regexp else 'standard'       # Set clist type for devices that use standard/expanded
+  p_clist.regexp = 'regexp' if regexp else ''               # And regexp flag for devices that use something else
+
+  return None                                               # Message to caller: no need to do additional checks
+
+"""
 Dispatch table for post-transform processing. Currently used only to
 expand the prefixes/pools in prefix list.
 """
@@ -443,6 +497,9 @@ transform_dispatch: typing.Dict[str,dict] = {
   'aspath': {
     'import': number_aspath_acl
   },
+  'community': {
+    'import': expand_community_list
+  }
 }
 
 class Routing(_Module):
