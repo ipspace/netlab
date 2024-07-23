@@ -465,12 +465,19 @@ When done, the entry will have:
 * _value  -- set to whatever value user specified in regexp, list, or (internal) path attribute
 * _regexp -- set if the value is a regular expression
 """
+class MissingQuotes(Exception):
+  pass
+
 def fix_clist_entry(e_clist: Box, topology: Box) -> None:
   if 'regexp' in e_clist:                                   # Do we know we have a regexp?
     e_clist._value = e_clist.regexp                         # Copy regular expression into a common variable
     return
 
   value = e_clist.get('list','') or e_clist.get('path','')  # Get community value(s)
+  int_list = [ v for v in value if isinstance(v,int) ]
+  if int_list:
+    raise MissingQuotes()
+
   if isinstance(value,list):                                # Convert list to a string of
     value = ' '.join([str(v) for v in value])               # ... space-separated values
   e_clist._value = value
@@ -495,7 +502,14 @@ def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> ty
   p_clist = node.routing[o_name][p_name]                    # Shortcut pointer to current community list
   regexp = False                                            # Figure out whether we need expanded clist
   for (p_idx,p_entry) in enumerate(p_clist.value):
-    fix_clist_entry(p_clist.value[p_idx],topology)
+    try:
+      fix_clist_entry(p_clist.value[p_idx],topology)
+    except MissingQuotes:
+      log.error(
+        f'BGP community list {p_name} line {p_idx+1} contains an integer',
+        more_hints='You probably forgot to put an A:B value within quotes and YAML parser got confused',
+        category=log.IncorrectValue,
+        module='routing')
     regexp = regexp or bool(p_clist.value[p_idx].get('regexp',False))
 
   p_clist.type = 'expanded' if regexp else 'standard'       # Set clist type for devices that use standard/expanded
