@@ -13,6 +13,15 @@ configure
 {%   include '_prefix_list_vyos.j2' %}
 {% endif %}
 
+{% if routing.aspath|default({}) %}
+{%   for asp_name,asp_list in routing.aspath.items() %}
+{%     for asp_line in asp_list %}
+set policy as-path-list {{ asp_name }} rule {{ asp_line.sequence }} action {{ asp_line.action }}
+set policy as-path-list {{ asp_name }} rule {{ asp_line.sequence }} regex "{{ asp_line.path }}"
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+
 {% if routing.policy|default({}) %}
 {%   import '_route_policy_vyos.j2' as routemap with context %}
 {{   routemap.create_route_maps(routing.policy) }}
