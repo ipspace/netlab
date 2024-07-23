@@ -176,6 +176,23 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
             f"used in {p_name} entry #{p_entry.sequence}",
             category=log.IncorrectType,
             module='routing')
+          continue
+        if not isinstance(d_features[p_param],Box):         # No further work needed
+          continue
+        kw_data = d_features[p_param][kw]                   # Get keyword-specific data
+        if not isinstance(kw_data,Box):                     # Keyword-specific data is not a dictionary
+          continue                                          # ... no further checks are necessary
+        if not isinstance(p_entry[p_param][kw],Box):        # The value is not a dictionary
+          continue                                          # ... let validation deal with that
+        for kw_opt in p_entry[p_param][kw].keys():          # Now iterate over the suboptions
+          if kw_opt in kw_data:                             # ... and if they're in the device features
+            continue                                        # ... we're good to go
+          log.error(                                        # Otherwise report an error
+            f"Device {node.device} (node {node.name}) does not support routing policy '{p_param}'"+\
+            f" keyword '{kw}.{kw_opt}' used in {p_name} entry #{p_entry.sequence}",
+            category=log.IncorrectType,
+            module='routing')
+          OK = False
 
   return OK                                                 # Return cumulative error status
 

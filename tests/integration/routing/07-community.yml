@@ -1,0 +1,45 @@
+---
+message: |
+  Use this topology to test 'set.community.standard' route-map option.
+
+plugin: [ bgp.policy ]
+module: [ bgp, routing ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ probe ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+    routing.policy.set_comm:
+      set.community.standard: '65000:101'
+    id: 1
+  probe:
+    bgp.as: 65100
+
+links:
+- dut:
+    bgp.policy.out: set_comm
+  probe:
+
+validate:
+  ebgp:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ probe ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx_lb:
+    description: Check for DUT loopback prefix on Probe
+    wait: 10
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.dut.loopback.ipv4)
+
+  comm_lb:
+    description: Check for communities attached to DUT loopback prefix
+    nodes: [ probe ]
+    plugin: >
+      bgp_prefix(nodes.dut.loopback.ipv4,community={'community': '65000:1'})
