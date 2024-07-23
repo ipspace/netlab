@@ -1,0 +1,67 @@
+{% macro prepend_set(s_param,asn) -%}
+{%   if s_param.path|default('') %}
+set set as-path prepend {{ s_param.path }}
+{%   elif s_param.count|default(0) %}
+set set as-path prepend {{ (asn + " ") * s_param.count }}
+{%   endif %}
+{%- endmacro %}
+
+{#
+   This macro generates the elements of route-map entries
+#}
+{% macro common_route_map_entry(p_entry,match_af) -%}
+{# - SET entries #}
+{%   if 'set' in p_entry %}
+{%     if 'locpref' in p_entry.set %}
+set set local-preference {{ p_entry.set.locpref }}
+{%     endif %}
+{%     if 'med' in p_entry.set %}
+set set metric {{ p_entry.set.med }}
+{%     endif %}
+{%     if 'prepend' in p_entry.set %}
+{{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
+{%     endif %}
+{%   endif %}
+{# - MATCH entries #}
+{%   if 'match' in p_entry %}
+{%     set ipkwd = 'ip' if match_af == 'ipv4' else 'ipv6' %}
+{%     if 'prefix' in p_entry.match %}
+set match {{ ipkwd }} address prefix-list {{ p_entry.match.prefix }}-{{ match_af }}
+{%     endif %}
+{%     if 'nexthop' in p_entry.match %}
+set match {{ ipkwd }} nexthop prefix-list {{ p_entry.match.nexthop }}
+{%     endif %}
+{%     if 'aspath' in p_entry.match %}
+set match as-path {{ p_entry.match.aspath }}
+{%     endif %}
+{%   endif %}
+{%- endmacro %}
+
+{#
+   This macro builds a single route map and uses the callback to define a route map entry.
+#}
+{% macro build_route_map(rp_name,rp_list,match_af) -%}
+{%   for p_entry in rp_list %}
+{%     set seq = p_entry.sequence|default(loop.index * 10) %}
+set policy route-map {{ rp_name }} rule {{ seq }} action {{ p_entry.action|default('permit') }}
+
+edit policy route-map {{ rp_name }} rule {{ seq }}
+{{     common_route_map_entry(p_entry,match_af) }}
+top
+
+{%   endfor %}
+{%- endmacro %}
+
+{#
+   This macro creates route maps from the routing.policy dictionary
+
+   The callback defines a route map entry.
+#}
+{% macro create_route_maps(rp_dict) -%}
+{%   for rp_name,rp_list in rp_dict.items() %}
+{%     for rm_af in af %}
+{{       build_route_map('%s-%s'|format(rp_name,rm_af),rp_list,rm_af) }}
+{%     endfor %}
+{%   endfor %}
+{%- endmacro %}
+!

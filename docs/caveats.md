@@ -68,13 +68,21 @@ The following features do not work on Arista cEOS Ethernet interfaces:
 
 * Some ASAv versions use older SSH protocols. For more details, see the [Cisco IOSv SSH caveats](cisco-iosv-ssh).
 
+(caveats-cat8000v)=
+## Cisco Catalyst 8000v
+
+* Apart from the VLAN configuration, Catalyst 8000v implementation uses the same configuration templates as CSR 1000v.
+* Catalyst 8000v accepts CSR 1000v-based VXLAN configuration, but the validation tests fail. You cannot configure VXLAN on Catalyst 8000v with the current _netlab_ release.
+
+See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
+
 (caveats-csr)=
 ## Cisco CSR 1000v
 
 * Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
 * VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 
-See also Cisco IOSv SSH, OSPF, RIPng, and BGP caveats.
+See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 
 (caveats-iosv)=
 ## Cisco IOSv
@@ -205,15 +213,6 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 ## Common Junos caveats
 
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
-
-(caveats-vmx)=
-## Juniper vMX in Containerlab
-
-Juniper vMX runs as a container in _containerlab_. You have to use _vrnetlab_ to build the container from a vMX disk image. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vmx/) for further details.
-
-The Juniper vMX image in *vrnetlab* uses the network `10.0.0.0/24` for its own internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
-
-See also [](caveats-junos).
 
 (caveats-vptx)=
 ## Juniper vPTX

@@ -1,0 +1,92 @@
+---
+message: |
+  Use this topology to test BGP weights on IPv4 and IPv6 prefixes. DUT has to
+  prefer prefixes advertised by X2 (identified by longer AS path).
+
+plugin: [ bgp.policy ]
+module: [ bgp, ospf ]
+
+defaults.sources.extra: [ defaults-ds.yml ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, probe ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+    id: 1
+    bgp.locpref: 17
+  probe:
+    bgp.as: 65000
+  x1:
+    bgp.as: 65100
+    module: [ bgp ]
+  x2:
+    bgp.as: 65101
+    module: [ bgp ]
+
+links:
+- x1:
+  x2:
+  prefix.ipv4: 172.42.42.0/24
+  prefix.ipv6: 2001:db8:cafe:42::/64
+  bgp.advertise: True
+- dut:
+  x1:
+- dut:
+    bgp.weight: 100
+  x2:
+    bgp.prepend.count: 2
+- dut-probe
+
+validate:
+  ebgp:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  ibgp:
+    description: Check IBGP sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    nodes: [ probe ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx_x1_v4:
+    description: Check for IPv4 X1 prefix on Probe
+    wait: 10
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  pfx_x1_v6:
+    description: Check for IPv6 X1 prefix on Probe
+    wait: 10
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6')
+
+  pfx_x2_v4:
+    description: Check for IPv4 X2 prefix on Probe
+    wait: 10
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv4)
+
+  pfx_x2_v6:
+    description: Check for IPv6 X2 prefix on Probe
+    wait: 10
+    nodes: [ probe ]
+    plugin: bgp_prefix(nodes.x2.loopback.ipv6,af='ipv6')
+
+  weight_v4:
+    description: Check for AS path in beacon IPv4 prefix
+    nodes: [ probe ]
+    wait: 10
+    plugin: bgp_prefix(links[0].prefix.ipv4,aspath='65101 65101 65101')
+
+  weight_v6:
+    description: Check for AS path in beacon IPv6 prefix
+    nodes: [ probe ]
+    wait: 10
+    plugin: bgp_prefix(links[0].prefix.ipv6,af='ipv6',aspath='65101 65101 65101')

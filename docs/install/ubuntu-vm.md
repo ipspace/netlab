@@ -1,8 +1,8 @@
 # Ubuntu VM Installation
 
-Suppose you'd like to use *netlab* with *libvirt*[^1] or run network devices as containers on a Windows- or MacOS-based computer. In that case, you'll have to run the whole toolchain needed to create networking labs (netlab ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine.
+Suppose you'd like to use *netlab* with *libvirt*[^1] or run network devices as containers on a Windows- or MacOS-based computer. You'll have to run the whole toolchain needed to create networking labs (netlab ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine.
 
-The easiest way to do that is to create a Ubuntu virtual machine and use the **netlab install** command within that virtual machine to install the required software packages[^2]. You could also run _netlab_ on a [Ubuntu instance in a public cloud](cloud.md).
+The easiest way to set up your lab environment is to create a Ubuntu virtual machine and use the **netlab install** command within that virtual machine to install the required software packages[^2]. You could also run _netlab_ on a [Ubuntu instance in a public cloud](cloud.md).
 
 ![Running Ubuntu VM on a desktop OS](ubuntu-on-desktop-os.png)
 
@@ -35,13 +35,11 @@ Installation steps:
 * Install [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or VMware Fusion/Workstation
 * Install [Vagrant](https://www.vagrantup.com/docs/installation)
 * Install [Vagrant VMware provider](https://www.vagrantup.com/docs/providers/vmware) if you're using VMware Workstation/Fusion.
-* Create an empty directory. Create **Vagrantfile** with the following content in that directory. Change the **memory**/**memsize** or **cpus**/**numvcpus** settings to fit your hardware.
-* Change the Vagrant box from `generic/ubuntu2004` to `bento/ubuntu-20.04` if the generic Ubuntu box is unavailable for your Vagrant provider.
+* Create an empty directory. In that directory, create a **Vagrantfile** with the following content. Change the **memory**/**memsize** or **cpus**/**numvcpus** settings to fit your hardware.
 
 ```
 Vagrant.configure("2") do |config|
-  config.vm.box = "generic/ubuntu2004"
-#  config.vm.box = "bento/ubuntu-20.04"
+  config.vm.box = "generic/ubuntu2204"
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = "8192"
@@ -75,13 +73,13 @@ end
 The above Vagrantfile installs Python packages as root. That differs from the recommended best practice and is used primarily because we're setting up a single-purpose VM.
 ```
 
-* Execute **vagrant up** and wait for the installation to complete. If you're using VMware Workstation or Fusion, you MUST specify the **--provider** argument in the **vagrant up** command when creating the VM (but not on subsequent starts).
+* Execute **vagrant up** and wait for the installation to complete. If you're using VMware Workstation or Fusion, specify the **--provider** argument in the **vagrant up** command when creating the VM (but not on subsequent starts).
 * Log into the virtual machine with **vagrant ssh** and test the installation with **netlab test**
 
 (ubuntu-vm-manual)=
 ## Manual Virtual Machine Provisioning
 
-* Create a Ubuntu 20.04 virtual machine within your virtualization environment (you'll find plenty of online tutorials). If needed, enable nested virtualization.
+* Create an Ubuntu 22.04 or Ubuntu 24.04 virtual machine within your virtualization environment (you'll find plenty of online tutorials). If needed, enable nested virtualization.
 * Log into the virtual machine
 * Execute these commands to download Python3 and install *netlab*, Ansible, vagrant, libvirt, KVM, containerlab, and Docker.
 
@@ -94,10 +92,11 @@ netlab install -y ubuntu ansible libvirt containerlab
 ```
 
 ```{tip}
-Installing Python packages as root is not the recommended best practice and is used primarily because we're setting up a single-purpose VM.
+* Installing Python packages as root is not the recommended best practice. We're using this approach because we're setting up a single-purpose VM.
+* Ubuntu 22.04 wants you to install Python packages in a virtual environment. To stop the complaints, add the `--break-system-packages` option to the **pip3 install** command.
 ```
 
-* After completing the software installation, you might have to use **usermod** to add your user to *libvirt* and *docker* groups.
+* After completing the software installation, log out from the VM, log back in, and test your installation with the **[netlab test](netlab-test)** command. If those tests fail, you might have to use **usermod** to add your user to the *libvirt* and *docker* groups.
 
 ```eval_rst
 .. toctree::

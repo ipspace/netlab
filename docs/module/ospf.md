@@ -18,14 +18,14 @@ Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../n
 
 Supported OSPF features:
 
-* OSPFv2 and/or OSPFv3 (see platform support table and [address families](routing.md#address-families))
+* OSPFv2 and/or OSPFv3 (see platform support table and [address families](routing_af))
 * Multi-area deployment
 * Per-link cost and asymmetric costs
 * OSPF network type
 * Reference bandwidth
 * Unnumbered point-to-point interfaces
-* [Passive interfaces](routing.md#passive-interfaces)
-* [Static router ID](routing.md#router-id)
+* [Passive interfaces](routing_passive)
+* [Static router ID](routing_router_id)
 * BFD (optionally with RFC9355 strict mode)
 * VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
 
@@ -51,7 +51,7 @@ The following table describes per-platform support of individual router-level OS
 | Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
-| Cisco IOS XE             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Cisco IOS XE[^18v]       |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌          |
@@ -66,6 +66,8 @@ The following table describes per-platform support of individual router-level OS
 | Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ✅  |       ✅          |
 | VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
 **Notes:**
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
@@ -127,11 +129,11 @@ OSPF routing daemons support these interface-level features:
 ## Node Parameters
 
 * **ospf.process** -- process ID (default: 1)
-* **ospf.af** -- [OSPF address families](routing.md#address-families), usually set by the data transformation code. Configures OSPFv2 when **ospf.af.ipv4** is set to `True` and OSPFv3 (on devices that support OSPFv3) when **ospf.af.ipv6** is set to `True`. 
+* **ospf.af** -- [OSPF address families](routing_af), usually set by the data transformation code. Configures OSPFv2 when **ospf.af.ipv4** is set to `True` and OSPFv3 (on devices that support OSPFv3) when **ospf.af.ipv6** is set to `True`. 
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area and the loopback interface.
 * **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
-* **ospf.router_id** -- set [static router ID](routing.md#router-id).
+* **ospf.router_id** -- set [static router ID](routing_router_id).
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 

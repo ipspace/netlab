@@ -16,9 +16,7 @@
 
 ## Supported Versions
 
-Recent _netlab_ releases were tested with _containerlab_ version 0.44.3. That's also the version the **netlab install containerlab** command installs.
-
-The minimum supported _containerlab_ version is 0.37.1 (2023-2-27) -- that version introduced some changes to the location of generated certificate files.
+Recent _netlab_ releases were tested with _containerlab_ version 0.55.0. That's also the version the **netlab install containerlab** command installs.
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
@@ -30,7 +28,10 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 |------------------------|------------------------------|
 | Arista cEOS            | ceos: 4.31.2F                 |
 | BIRD                   | netlab/bird:latest           |
+| Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
+| Cisco CSR 1000v        | vrnetlab/vr-csr:17.03.04     |
 | Cisco IOS XRd          | ios-xr/xrd-control-plane:7.11.1 |
+| Cisco Nexus OS         | vrnetlab/vr-n9kv:9.3.8       |
 | Cumulus VX             | networkop/cx:4.4.0           |
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |
 | Dell OS10              | vrnetlab/vr-ftosv            |
@@ -45,7 +46,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * Cumulus VX, FRR, Linux, and Nokia SR Linux images are automatically downloaded from Docker Hub.
-* You must build the BIRD and dnsmasq images with the **netlab clab build** command.
+* Build the BIRD and dnsmasq images with the **netlab clab build** command.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS container image (requires a license); see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
@@ -53,7 +54,8 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Nexus 9300v, and IOS XR, OpenWRT, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
 
 ```{warning}
-You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
+* You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
+* The _vrnetlab_ process generates container tags based on the underlying VM image name. You will probably have to [change the container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
 ```
 
 ## Containerlab Networking
@@ -147,9 +149,21 @@ nodes:
 * SSH port on management interface of R2 to host port 2042 (R2 has static ID 42)
 
 (clab-vrnetlab)=
-### Using vrnetlab Containers
+## Using vrnetlab Containers
 
-_vrnetlab_ is an open-source project that packages network device virtual machines into containers. The packaged container's architecture requires an internal network, and it seems that _vrnetlab_ (or the fork used by _containerlab_) uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
+[_vrnetlab_](https://containerlab.dev/manual/vrnetlab/) is an open-source project that packages network device virtual machines into containers. The resulting containers have a launch process that starts **qemu** (KVM) to spin up a virtual machine. Running *vrnetlab* containers on a VM, therefore, requires nested virtualization.
+
+```{warning}
+_vrnetlab_ is an independent open-source project. If it fails to produce a working container image, please contact them.
+```
+
+### Image Names
+
+The build process generates container tags based on the underlying VM image name. You will probably have to [change the default _netlab_ container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
+
+### Internal Container Networking
+
+The packaged container's architecture requires an internal network. The _vrnetlab_ fork supported by _containerlab_ uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
 
 If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
@@ -160,6 +174,16 @@ addressing:
   router_id:
     ipv4: 10.255.0.0/24
 ```
+
+Alternatively, add the same settings to the user defaults file.
+
+### Waiting for the VM
+
+During the **netlab up** process, *containerlab* starts the containers and reports success. The virtual machines in those containers might need minutes to start, which means that _netlab_ cannot continue with the initial configuration process.
+
+_vrnetlab_-based supported platforms go through an extra "_is the device ready_" check during the initial configuration process: _netlab_ tries to establish an SSH session with the device and execute a command. The SSH session is retried up to 20 times, and as each retry usually takes 30 seconds (due to TCP timeouts), **netlab initial** waits up to 10 minutes for a VM to become ready.
+
+If your virtual machines take even longer to boot, increase the number of retries. You can set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](defaults) and [](defaults-user-file))
 
 ## Advanced Topics
 
@@ -210,9 +234,15 @@ frr:
       daemons: /etc/frr/daemons
 ```
 
-_netlab_ tries to locate the templates in the current directory, in a subdirectory with the name of the device, and within the system directory ```templates/provider/clab/<device>```. ```.j2``` suffix is always appended to the template name.
+In the above example, the `daemons.j2` Jinja2 template from the configuration file templates search path[^CFSP] is rendered into the `daemons` file within the `clab_files/node-name` subdirectory of the current directory. That file is then mapped into the `/etc/frr/daemons` file within the container.
 
-For example, the ```daemons``` template used in the above example could be ```./daemons.j2```, ```./frr/daemons.j2``` or ```<netsim_moddir>/templates/provider/clab/frr/daemons.j2```; the result gets mapped to ```/etc/frr/daemons``` within the container file system.
+[^CFSP]: See [](dev-config-deploy-paths) for more details.
+
+_netlab_ tries to locate the Jinja2 templates in the device-specific **paths.templates.dir** directories[^CFTD]; the template file name is the dictionary key (for example, `daemons`) with the `.j2` suffix.
+
+[^CFTD]: See [](change-search-paths) for more details.
+
+For example, with the default path settings, the user-specified `daemons.j2` template could be in the `templates/frr` subdirectory of the lab topology directory, the current directory, `~/.netlab` directory or `/etc/netlab` directory.
 
 You can use the ```clab.config_templates``` node attribute to add your own container configuration files[^UG], for example:
 
@@ -229,11 +259,11 @@ nodes:
         some_daemon: /etc/some_daemon.cf
 ```
 
-Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon``` from ```some_daemon.j2``` (the template could be either in current directory or ```linux``` subdirectory) and maps it to ```/etc/some_daemon.cf``` within the container file system.
+Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon``` from ```some_daemon.j2``` (found in the configuration template search path) and maps it to ```/etc/some_daemon.cf``` within the container file system.
 
 ### Jinja2 Filters Available in Custom Configuration Files
 
-The custom configuration files are generated within _netlab_ and can, therefore, use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import the **ipaddr** family of filters, making filters like **ipv4**, **ipv6**, or **ipaddr** available in custom configuration file templates.
+The custom configuration files are generated within _netlab_ and can use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import the **ipaddr** family of filters, making filters like **ipv4**, **ipv6**, or **ipaddr** available in custom configuration file templates.
 
 ```{warning}
 Ansible developers love to restructure stuff and move it into different directories. This functionality works with two implementations of **ipaddr** filters (tested on Ansible 2.10 and Ansible 7.4/ Ansible Core 2.14) but might break in the future -- we're effectively playing whack-a-mole with Ansible developers.
@@ -252,7 +282,9 @@ You can also change these *containerlab* parameters:
 * **clab.ports** to map container ports to host ports
 * **clab.cmd** to execute a command in a container.
 
-String values (for example, command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
+```{warning}
+String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
+```
 
 The complete list of supported Containerlab attributes is in the [system defaults](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22) and can be printed with the `netlab show defaults providers.clab.attributes` command.
 

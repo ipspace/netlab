@@ -1,6 +1,31 @@
 Release Notes
 =============
 
+**Release 1.8.4-post2 (2024-07-13)**
+
+This release contains only [bug fixes](bug-fixes-1.8.4-post2) and [documentation fixes](doc-fixes-1.8.4-post2).
+
+**Release 1.8.4-post1 (2024-07-01)**
+
+This release contains only [bug fixes](bug-fixes-1.8.4-post1) and [documentation fixes](doc-fixes-1.8.4-post1).
+
+**[Release 1.8.4](release-1.8.4) (2024-06-22)**
+
+* Support for [Cisco Catalyst 8000v](platform-devices)
+* Unified support of [vrnetlab containers](clab-vrnetlab) (including ArubaCX, Cisco Catalyst 8000v, Cisco CSR 1000v, Dell OS10, Cisco Nexus 9000v, Mikrotik RouterOS, Juniper vMX, vPTX and vSRX)
+* Automated build of [GitHub Codespaces devcontainer](https://github.com/users/ipspace/packages/container/package/netlab%2Fdevcontainer)
+* Handle keyboard interrupts in long-running netlab commands, including **[netlab up](netlab-up)**, **[netlab initial](netlab-initial)** and **[netlab validate](netlab-validate)**.
+* Add `--ready` action to **[netlab initial](netlab-initial)** command to wait for lab devices to become ready without configuring them.
+
+**[Release 1.8.3](release-1.8.3) (2024-06-16)**
+
+* [RIPv2/RIPng configuration module](module-ripv2)
+* BGP Link Bandwidth community in [bgp.policy](plugin-bgp-policy) plugin
+* BGP route server/client in [bgp.session](plugin-bgp-session) plugin.
+* Installation scripts work with Ubuntu 24.04. They were also tested on Ubuntu 22.04, Ubuntu 20.04, and Debian Bookworm.
+
+[More features...](release-1.8.3)
+
 **[Release 1.8.2](release-1.8.2) (2024-05-13)**
 
 * [Create reports](netlab-report) from a subset of nodes
@@ -8,7 +33,6 @@ Release Notes
 * Check for the presence of Vagrant boxes or Docker containers before [starting the lab](netlab-up) and display pointers to build recipes.
 * Check installed Ansible collections before starting **[netlab up](netlab-up)** or **[netlab initial](netlab-initial)**
 * Support for [Sonic VM](platform-devices) based on Azure sonic-vs images.
-
 * [Numerous improvements](release-1.8.2-vagrant) in the Vagrant box-building process
 
 [More features...](release-1.8.2)

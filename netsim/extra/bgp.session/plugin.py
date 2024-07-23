@@ -1,7 +1,7 @@
 import typing
 from box import Box
 from netsim.utils import log,bgp as _bgp
-from netsim import api
+from netsim import api,data
 from netsim.augment import devices
 
 _config_name = 'bgp.session'
@@ -32,12 +32,9 @@ def mark_plugin_config(node: Box, ngb: Box) -> None:
   global _config_name
 
   api.node_config(node,_config_name)                  # Remember that we have to do extra configuration
-  if not node.bgp._session_clear:                     # Create a list of sessions to clear if needed
-    node.bgp._session_clear = []
-
-  for af in ('ipv4','ipv6'):                          # Add sessions that have to be cleared
-    if af in ngb and ngb[af] not in node.bgp._session_clear:
-      node.bgp._session_clear.append(ngb[af])
+  for af in ('ipv4','ipv6'):                          # ... and add sessions that have to be cleared
+    if af in ngb:
+      data.append_to_list(node.bgp,'_session_clear',ngb[af])
 
 '''
 Apply attributes supported by bgp.session plugin to a single neighbor

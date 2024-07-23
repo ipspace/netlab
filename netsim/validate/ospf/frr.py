@@ -4,18 +4,24 @@ FRR OSPFv2 validation routines
 
 from box import Box
 import typing
-from netsim.data import global_vars
 import netaddr
+from netsim.data import global_vars
+from netsim.utils import log
+from .. import _common
+from . import OSPF_PREFIX_NAMES
 
 def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
   try:
     netaddr.IPAddress(id)
   except:
     raise Exception(f'OSPF router ID {id} is not a valid IP address')
-  return f'ip ospf vrf {vrf} neighbor {id} json'
+  return f'ip ospf ' + (f'vrf {vrf} ' if vrf != 'default' else '') + f'neighbor {id} json'
 
 def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> bool:
   _result = global_vars.get_result_dict('_result')
+
+  if vrf in _result:
+    _result = _result[vrf]
 
   if not id in _result:
     if not present:
@@ -26,10 +32,11 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> 
   if not present:
     raise Exception(f'Unexpected neighbor {id} in state {n_state.nbrState}')
 
-  if n_state.converged != 'Full':
-    raise Exception(f'Neighbor {id} is in state {n_state.nbrState}')
-
-  return True
+  exit_msg = f'Neighbor {id} is in state {n_state.nbrState}'
+  if not n_state.nbrState.startswith('Full'):
+    raise Exception(exit_msg)
+  else:
+    raise log.Result(exit_msg)
 
 def show_ospf6_neighbor(id: str, present: bool = True) -> str:
   return f'ipv6 ospf6 neighbor {id} json'
@@ -60,72 +67,60 @@ def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
 def show_ospf_prefix(pfx: str, **kwargs: typing.Any) -> str:
   return f'ip ospf route json'
 
+def get_ospf_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
+  return data.get(pfx,None)
+
+def check_ospf_cost(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
+  return [ p for p in data if p.cost == value ]
+
+def check_ospf_rt(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
+  return [ p for p in data if p.routeType == value ]
+
 def valid_ospf_prefix(
       pfx: str,
-      rt: typing.Optional[str] = None,
-      cost: typing.Optional[int] = None,
-      state: typing.Optional[str] = None) -> str:
-  _result = global_vars.get_result_dict('_result')
-  if not isinstance(pfx,str):
-    raise Exception(f'Prefix {pfx} is not a string')
+      state: str = 'present',
+      **kwargs: typing.Any) -> str:
 
-  if not pfx in _result:
-    result_text = f'The prefix {pfx} is not in the OSPF topology'
-    if state == 'missing':
-      return result_text
-    else:
-      raise Exception(result_text)
-  
-
-  pfx_data = _result[pfx]
-  result_text = f'Found OSPF prefix {pfx} (rt {pfx_data.routeType} cost {pfx_data.cost})'
-  if state == 'missing':
-    raise Exception(result_text)
-
-  if rt is not None and rt != pfx_data.routeType:
-    raise Exception(f'Invalid OSPF route type for prefix {pfx}: expected {rt} actual {pfx_data.routeType}')
-
-  if cost is not None and cost != pfx_data.cost:
-    raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.cost}')
-
-  return result_text
+  return _common.run_prefix_checks(
+            pfx = pfx,
+            state = state,
+            data = global_vars.get_result_dict('_result'),
+            kwargs = kwargs,
+            table = 'OSPF topology',
+            lookup = get_ospf_prefix,
+            checks = {
+              'cost': check_ospf_cost,
+              'rt':   check_ospf_rt },
+            names = OSPF_PREFIX_NAMES)
 
 def show_ospf6_prefix(pfx: str, **kwargs: typing.Any) -> str:
   return f'ipv6 ospf6 route detail json'
 
+def get_ospf6_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
+  return data.get('routes').get(pfx,None)
+
+def check_ospf6_cost(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
+  return [ p for p in data if p.metricCost == value ]
+
+def check_ospf6_rt(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
+  return [ p for p in data if p.pathType == value ]
+
 def valid_ospf6_prefix(
       pfx: str,
-      rt: typing.Optional[str] = None,
-      cost: typing.Optional[int] = None,
-      state: typing.Optional[str] = None) -> str:
-  _result = global_vars.get_result_dict('_result')
-  if not isinstance(pfx,str):
-    raise Exception(f'Prefix {pfx} is not a string')
+      state: str = 'present',
+      **kwargs: typing.Any) -> str:
 
-  if 'routes' not in _result:
-    raise Exception(f'The OSPFv3 topology has no routes')
-  
-  _result = _result.routes
-
-  if not pfx in _result:
-    result_text = f'The prefix {pfx} is not in the OSPFv3 topology'
-    if state == 'missing':
-      return result_text
-    else:
-      raise Exception(result_text)
-  
-  pfx_data = _result[pfx]
-  result_text = f'Found OSPFv3 prefix {pfx} (rt {pfx_data.pathType} cost {pfx_data.metricCost})'
-  if state == 'missing':
-    raise Exception(result_text)
-
-  if rt is not None and rt != pfx_data.pathType:
-    raise Exception(f'Invalid OSPFv3 route type for prefix {pfx}: expected {rt} actual {pfx_data.pathType}')
-
-  if cost is not None and cost != pfx_data.metricCost:
-    raise Exception(f'Invalid OSPFv3 end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metricCost}')
-
-  return result_text
+  return _common.run_prefix_checks(
+            pfx = pfx,
+            state = state,
+            data = global_vars.get_result_dict('_result'),
+            kwargs = kwargs,
+            table = 'OSPFv3 topology',
+            lookup = get_ospf6_prefix,
+            checks = {
+              'cost': check_ospf6_cost,
+              'rt':   check_ospf6_rt },
+            names = OSPF_PREFIX_NAMES)
 
 def show_ipv6_route(pfx: str, proto: str = '', cost: int = 0) -> str:
   return f'ipv6 route {proto} json'

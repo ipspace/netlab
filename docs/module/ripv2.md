@@ -21,13 +21,16 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 | ------------------ | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ❌  |  ❌  |
 | Cisco IOS          | ✅  | ✅  | ✅ [❗](caveats-iosv) |
-| Cisco IOS XE       | ✅  | ✅  | ✅ [❗](caveats-iosv) |
+| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) |
 | Cumulus Linux      | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  |
+| VyOS               | ✅  | ✅  | ✅  |
 
 ```{tip}
 See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.ripv2) for more details.
 ```
+
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
 ## Lab Topology Parameters
 

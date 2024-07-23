@@ -293,7 +293,7 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
 """
 Main "lab start" process
 """
-def run(cli_args: typing.List[str]) -> None:
+def run_up(cli_args: typing.List[str]) -> None:
   up_args_parser = up_parse_args(False)                       # Try to parse the up-specific arguments
   (args,rest) = up_args_parser.parse_known_args(cli_args)
   if args.reload and args.no_config:
@@ -338,10 +338,14 @@ def run(cli_args: typing.List[str]) -> None:
     recreate_secondary_config(topology,p_provider,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 
-  if args.reload:
-    reload_saved_config(args,topology)
-  else:
-    deploy_initial_config(args,topology)
+  try:
+    if args.reload:
+      reload_saved_config(args,topology)
+    else:
+      deploy_initial_config(args,topology)
+  except KeyboardInterrupt:                           # netlab initial already displayed the error message
+    sys.exit(1)
+
   start_external_tools(args,topology)
   lab_status_change(topology,'started')
   if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done
@@ -353,4 +357,13 @@ def run(cli_args: typing.List[str]) -> None:
     if args.no_config:
       log.error('Lab is not configured, skipping the validation phase',Warning,'')
     else:
-      external_commands.run_command('netlab validate')
+      try:
+        external_commands.run_command('netlab validate')
+      except KeyboardInterrupt:                       # netlab validate displays its own error message
+        sys.exit(1)
+
+def run(cli_args: typing.List[str]) -> None:
+  try:
+    run_up(cli_args)
+  except KeyboardInterrupt:
+    external_commands.interrupted('netlab up')

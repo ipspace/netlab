@@ -1,3 +1,4 @@
+(netlab-test)=
 # Test Virtual Lab Installation
 
 **netlab test** libvirt- or VirtualBox-based virtual lab installation. It creates a simple virtual lab using Cumulus VX, starts the lab, deploys initial configurations, destroys the lab, and cleans up.

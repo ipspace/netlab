@@ -19,9 +19,11 @@ DHCP clients are supported on these platforms:
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅ [❗](caveats-eos) |  ❌  | ✅  |  ❌ [❗](caveats-eos) |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
 | Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |  ❌  |
+
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
 DHCP servers are supported on these platforms: 
 
@@ -29,7 +31,7 @@ DHCP servers are supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  |  ❌  |
 | Cisco IOSv            | ✅  | ✅  |  ❌  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | dnsmasq               | ✅  | ✅  |  ❌  |
 | Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |
 
@@ -39,7 +41,7 @@ DHCP relays are supported on these platforms:
 | --------------------- | :-: | :-: | :-: 
 | Arista EOS            | ✅  | ✅  | ✅ [❗](caveats-eos) |
 | Cisco IOSv            | ✅  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅ [❗](linux-dhcp-relay) |  ❌  |  ❌  |
 | Linux (Ubuntu VM only)| ✅ [❗](linux-dhcp-relay)  |  ❌  |  ❌  |
 

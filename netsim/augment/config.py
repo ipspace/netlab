@@ -54,23 +54,23 @@ def adjust_attributes(
       copy_list=node_copy)
 
 '''
-copy_attributes: Copy attribute definitions between various attribute namespaces
+copy_merge_attributes: Copy or merge attribute definitions between various attribute namespaces
 
 An attribute definition is copied/merged if:
 
 * The attribute contains 'copy' keyword
 * The attribute exists in the target namespace
 '''
-def copy_attributes(attr: Box) -> None:
+def copy_merge_attributes(attr: Box) -> None:
   for ns in attr.keys():                                              # Iterate over attribute namespaces
     if not isinstance(attr[ns],Box):                                  # This is clearly not an attribute namespace
       continue
     for attr_name in attr[ns].keys():                                 # Now iterate over attribute names
       if not isinstance(attr[ns][attr_name],Box):                     # Clearly not something that could request a copy
         continue
-      if 'copy' not in attr[ns][attr_name]:                           # Do we have a copy request?
+      source_ns = attr[ns][attr_name].get('copy',None) or attr[ns][attr_name].get('merge',None)
+      if not source_ns:                                               # Do we have a copy/merge request?
         continue
-      source_ns = attr[ns][attr_name]['copy']                         # Source namespace
       if not source_ns in attr:                                       # Unknown source namespace? Ignore the request
         log.error(
           'Incorrect source attribute namespace {source_ns} specified for {ns} attribute {attr_name}',
@@ -81,7 +81,11 @@ def copy_attributes(attr: Box) -> None:
           'Source attribute namespace {source_ns} specified for {ns} attribute {attr_name} is not a dictionary',
           log.IncorrectValue,'attributes')
         continue
-      attr[ns][attr_name] = attr[source_ns][attr_name]                # Seems legit, copy attribute
+      if 'copy' in attr[ns][attr_name]:                               # Request seems legit, now either...
+        attr[ns][attr_name] = attr[source_ns][attr_name]              # ... copy the attribute
+      elif 'merge' in attr[ns][attr_name]:                            # ... or merge the values
+        attr[ns][attr_name] = attr[source_ns][attr_name] + attr[ns][attr_name]
+        attr[ns][attr_name].pop('merge',None)                         # ... and remove the merge request
 
 '''
 process_copy_requests: process 'copy attribute' requests from a late defaults data structure
@@ -92,14 +96,15 @@ def process_copy_requests(defaults: Box) -> None:
       continue
     if not 'attributes' in def_data:                                  # No attributes in this value => skip it
       continue
-    copy_attributes(def_data.attributes)                              # Seems OK, process copy attribute requests
+    copy_merge_attributes(def_data.attributes)                        # Seems OK, process copy/merge attribute requests
 
 def attributes(topology: Box) -> None:
   defaults=topology.defaults
-
+  copy_merge_attributes(defaults.attributes)
   for modname,moddata in defaults.items():                            # Iterate over top-level defaults
     if not isinstance(moddata,Box) or not 'attributes' in moddata:    # Skip everything that does not have attributes
       continue
+    copy_merge_attributes(moddata.attributes)
     adjust_attributes(
       attr=moddata.attributes,
       global_no_propagate=moddata.get('no_propagate',[]),

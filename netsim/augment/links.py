@@ -371,7 +371,10 @@ def assign_link_prefix(
       nodes: Box,
       link_path: str = 'links') -> Box:
   if 'prefix' in link:                                    # User specified a static link prefix
-    pfx_list = addressing.parse_prefix(link.prefix)
+    pfx_list = addressing.parse_prefix(link.prefix,path=link_path)
+    if log.debug_active('addr'):                          # pragma: no cover (debugging printout)
+      print(f'link {link_path} got prefix {pfx_list} from {link.prefix}')
+    
     if isinstance(link.prefix,str):
       link.prefix = addressing.rebuild_prefix(pfx_list)   # convert str to prefix dictionary
 

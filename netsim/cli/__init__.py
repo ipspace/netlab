@@ -234,8 +234,20 @@ def lab_status_update(
       # This is to avoid excessive log entries when the status is updated multiple times
       # in a row (e.g. when a lab is being created)
       #
-      if not status[lab_id].log or not f': {update["log_line"]}' in status[lab_id].log[-1]:
-        timestamp = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()
+      # However, we want to add duplicate entries if there's some significant time between them
+      # (currently 15 seconds)
+      #
+      time_now  = datetime.datetime.now(datetime.timezone.utc)
+      update_log = not isinstance(status[lab_id].timestamp,datetime.datetime)
+      if not update_log:
+        try:
+          update_log = (time_now - status[lab_id].timestamp).seconds > 15
+        except:
+          pass
+
+      if not status[lab_id].log or not f': {update["log_line"]}' in status[lab_id].log[-1] or update_log:
+        timestamp = time_now.astimezone().isoformat()
+        status[lab_id].timestamp = time_now
         status[lab_id].log.append(f'{timestamp}: {update["log_line"]}')
 
   if cb is not None:                                        # If needed, perform status-specific callback        

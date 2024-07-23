@@ -1,0 +1,110 @@
+---
+message: |
+  Use this topology to test route maps with as-path access lists
+
+plugin: [ bgp.policy ]
+module: [ bgp, routing ]
+
+prefix:
+  b_orig_1:
+    pool: lan
+  b_orig_2:
+    pool: lan
+  b_orig_3:
+    pool: lan
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, x3 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+    id: 1
+    routing:
+      aspath:
+        in_x1:
+        - action: deny
+          path: ^65100$
+        - action: permit
+        out_x2: 65203$
+
+      policy:
+        in_x1:
+        - match.aspath: in_x1
+        out_x2:
+        - match.aspath: out_x2
+          action: deny
+        - action: permit
+
+  x1:
+    bgp.as: 65100
+    bgp.originate: [ b_orig_1, b_orig_2, b_orig_3 ]
+    routing:
+      prefix:
+        bp1: { prefix: b_orig_1 }
+        bp2: { prefix: b_orig_2 }
+        bp3: { prefix: b_orig_3 }
+      policy:
+        lab_prepend:
+        - match.prefix: bp1
+          prepend: 65201 65202
+        - match.prefix: bp2
+          prepend: 65203
+        - match.prefix: bp3
+          prepend: 65100
+        - action: permit
+  x2:
+    bgp.as: 65101
+  x3:
+    bgp.as: 65102
+
+links:
+- dut:
+    bgp.policy.in: in_x1
+  x1:
+    bgp.policy.out: lab_prepend
+- dut:
+    bgp.policy.out: out_x2
+  x2:
+- dut:
+  x3:
+
+validate:
+  ebgp:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: 10
+    nodes: [ x1, x2, x3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx_o2_v4:
+    description: Check for b_orig_2 IPv4 prefix on X3
+    wait: 10
+    nodes: [ x3 ]
+    plugin: bgp_prefix(prefix.b_orig_2.ipv4)
+
+  pfx_o3_v6:
+    description: Check for b_orig_3 IPv4 prefix on X3
+    wait: 10
+    nodes: [ x3 ]
+    plugin: bgp_prefix(prefix.b_orig_3.ipv4)
+
+  pfx_lb_miss:
+    description: Check for missing X1 loopback IPv4 prefix on X3
+    wait: 10
+    nodes: [ x3 ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,state='missing')
+
+  x2_pfx_o1:
+    description: Check for b_orig_1 IPv4 prefix on X2
+    wait: 10
+    nodes: [ x2 ]
+    plugin: bgp_prefix(prefix.b_orig_1.ipv4)
+
+  x2_pfx_o2_miss:
+    description: Check for missing b_orig_2 IPv4 prefix on X2
+    wait: 2
+    nodes: [ x2 ]
+    plugin: bgp_prefix(prefix.b_orig_2.ipv4,state='missing')

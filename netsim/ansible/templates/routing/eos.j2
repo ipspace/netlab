@@ -1,0 +1,47 @@
+{% import '_route_map_ios.j2' as routemap with context %}
+{% import '_prefix_list_ios.j2' as prefix_list with context %}
+!
+{% if routing.policy|default({}) %}
+{%   call(p_entry,af_list) routemap.create_route_maps(routing.policy) -%}
+{%     if 'bandwidth' in p_entry.set|default({}) %}
+  set extcommunity lbw {{ p_entry.set.bandwidth }}M
+{%     endif %}
+{{     routemap.common_route_map_entry(p_entry,af_list) }}
+{%-   endcall %}
+{% endif %}
+{% if 'ipv4' in af and routing._prefix.ipv4|default(False) %}
+!
+! IPv4 prefix lists
+!
+{%   for p_name,p_value in routing._prefix.ipv4.items() %}
+!
+{%     for p_entry in p_value %}
+ip prefix-list {{ p_name }}-ipv4 seq {{ p_entry.sequence
+  }} {{ p_entry.action }} {{ p_entry.ipv4 }}{{ prefix_list.min_max(p_entry) }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+{% if 'ipv6' in af and routing._prefix.ipv6|default(False) %}
+!
+! IPv6 prefix lists
+!
+{%   for p_name,p_value in routing._prefix.ipv6.items() %}
+!
+ipv6 prefix-list {{ p_name }}-ipv6
+{%     for p_entry in p_value %}
+  seq {{ p_entry.sequence }} {{ p_entry.action }} {{ p_entry.ipv6 }}{{ prefix_list.min_max(p_entry) }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+!
+! AS-path access lists
+!
+{% if routing.aspath|default({}) %}
+ip as-path regex-mode string
+{%   for asp_name,asp_list in routing.aspath.items() %}
+!
+{%     for asp_line in asp_list %}
+ip as-path access-list {{ asp_name }} {{ asp_line.action }} {{ asp_line.path }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}

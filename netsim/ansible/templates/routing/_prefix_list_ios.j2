@@ -1,0 +1,14 @@
+{%- macro min_max(p_entry) -%}
+{%-  if 'min' in p_entry %} ge {{ p_entry.min }}{% endif -%}
+{%-  if 'max' in p_entry %} le {{ p_entry.max }}{% endif -%}
+{%- endmacro -%}
+{% for pf_af in af if pf_af in routing._prefix|default({}) %}
+{%   for p_name,p_value in routing._prefix[pf_af].items() %}
+!
+{%     for p_entry in p_value %}
+{{ 'ip' if pf_af == 'ipv4' else pf_af }} prefix-list {{ p_name
+  }}-{{ pf_af }} seq {{ p_entry.sequence }} {{ p_entry.action
+  }} {{ p_entry[pf_af] }}{{ min_max(p_entry) }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

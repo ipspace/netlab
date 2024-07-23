@@ -19,7 +19,7 @@ VRFs are supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |
@@ -33,6 +33,8 @@ VRFs are supported on these platforms:
 | SR Linux              | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |
 
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:
 
@@ -41,7 +43,7 @@ These platforms support routing protocols in VRFs:
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  |  ❌  | ✅  |
 | Cisco IOS             | ✅ [❗](caveats-iosv) | ✅  | ✅  |
-| Cisco IOS XE          | ✅ [❗](caveats-csr) | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  |

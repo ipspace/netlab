@@ -1,0 +1,68 @@
+---
+message: |
+  Use this topology to test the BGP path attributes check in the 'bgp_prefix'
+  function.
+
+module: [ bgp ]
+plugin: [ bgp.policy ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+  x1:
+    bgp.as: 65100
+    config: [ frr-bgp-attributes ]
+    bgp.community.ebgp: [ standard, large, extended ]
+
+links:
+- dut:
+  x1:
+
+validate:
+  ebgp:
+    description: Check EBGP sessions
+    wait_msg: Wait for BGP sessions to be established
+    wait: 10
+    nodes: [ dut ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1')
+
+  pfx_x1:
+    description: Check for X1 IPv4 prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  com_1:
+    description: Check for standard/large BGP communities on X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: >-
+      bgp_prefix(
+        nodes.x1.loopback.ipv4,
+        community={
+          'community': '65000:1',
+          'largeCommunity': '65000:0:1' })
+
+  com_2:
+    description: Check for extended BGP communities on X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: >-
+      bgp_prefix(
+        nodes.x1.loopback.ipv4,
+        community={
+          'extendedCommunity': 'LB:65100:12500000' })
+
+  com_3:
+    description: Check for incorrect BGP communities on X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: >-
+      bgp_prefix(
+        nodes.x1.loopback.ipv4,
+        community={ 'community': '65000:21' },
+        state='missing')

@@ -9,12 +9,6 @@ fi
 
 configure
 
-{% import '_route_map_vyos.j2' as routemap with context %}
-
-{% call(p_entry) routemap.create_route_maps(bgp,vrfs|default({})) -%}
-{{   routemap.common_route_map_entry(p_entry) }}
-{%- endcall %} 
-
 {% set directions_map = { 'in':'import', 'out':'export' } %}
 
 # Catch all config stuff on the same loop (and avoid multiple loopings)
@@ -26,7 +20,7 @@ configure
 
 {%   if 'policy' in n %}
 {%     for direction in [ 'in','out' ] if direction in n.policy %}
-set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-map {{ directions_map[direction] }} bp-{{ n._policy_name }}-{{ direction }}
+set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-map {{ directions_map[direction] }} {{ n.policy[direction] }}-{{ af }}
 {%     endfor %}
 {%   endif %}
 
@@ -41,7 +35,7 @@ set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-map 
 
 {%   if 'policy' in n %}
 {%     for direction in [ 'in','out' ] if direction in n.policy %}
-set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-map {{ directions_map[direction] }} bp-{{ n._policy_name }}-{{ direction }}
+set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast route-map {{ directions_map[direction] }} {{ n.policy[direction] }}-{{ af }}
 {%     endfor %}
 {%   endif %}
 

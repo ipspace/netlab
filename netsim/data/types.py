@@ -424,15 +424,21 @@ Exceptions:
 """
 
 @type_test(false_value=[],empty_value=[])
-def must_be_list(value: typing.Any) -> dict:
+def must_be_list(value: typing.Any, make_list: bool = False) -> dict:
 
   def transform_to_list(value: typing.Any) -> list:
     return [ value ]
 
+  if isinstance(value,list):                            # A list is what we want to have ;)
+    return { '_valid': True }
+
   if isinstance(value,(str,int,float,bool)):            # Handle scalar-to-list transformations with a callback function
     return { '_valid': True, '_transform': transform_to_list }
 
-  return { '_valid': True } if isinstance(value,list) else { '_type': 'a scalar or a list' }
+  if make_list:                                         # Optional: force any other value to become a list
+    return { '_valid': True, '_transform': transform_to_list }
+
+  return { '_type': 'a scalar or a list' }
 
 @type_test(false_value={},empty_value={})
 def must_be_dict(value: typing.Any) -> dict:
@@ -586,7 +592,15 @@ def must_be_asn(value: typing.Any) -> dict:
 # Testing for IPv4 and IPv6 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
 #
 @type_test()
-def must_be_ipv4(value: typing.Any, use: str) -> dict:
+def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
+
+  def transform_to_ipaddr(value: int) -> str:
+    return str(netaddr.IPAddress(value))
+
+  def prefix_to_ipv4(value: str) -> str:
+    topology = global_vars.get_topology()
+    return '' if topology is None else topology.get('prefix',{})[value].ipv4
+
   if isinstance(value,bool):                                          # bool values are valid only on interfaces
     if use not in ('interface','prefix'):
       return { '_value' : 'an IPv4 address (boolean value is valid only on an interface)' }
@@ -598,10 +612,22 @@ def must_be_ipv4(value: typing.Any, use: str) -> dict:
       return { '_value': 'an IPv4 prefix (integer value is only valid as a 32-bit ID)' }
     if value < 0 or value > 2**32-1:
       return { '_value': 'an IPv4 address or an integer between 0 and 2**32' }
+    if use == 'id':
+      return { '_valid': True, '_transform': transform_to_ipaddr }
     return { '_valid': True }
 
   if not isinstance(value,str):
     return { '_type': 'IPv4 prefix' if use == 'prefix' else 'IPv4 address' }
+
+  if named:                                                           # Check whether we can use a named prefix
+    topology = global_vars.get_topology()
+    if topology is not None:
+      from ..augment import addressing
+      pfxs = topology.get('prefix',{})
+      if value in pfxs:
+        addressing.evaluate_named_prefix(topology,value)
+        if 'ipv4' in pfxs[value]:
+          return { '_valid': True, '_transform': prefix_to_ipv4 }
 
   if '/' in value:
     if use == 'id':                                                   # IDs should not have a prefix
@@ -688,6 +714,29 @@ def must_be_prefix_str(value: typing.Any) -> dict:
     pass
 
   return { '_valid': True, '_transform': transform_to_ipv6 }
+
+@type_test()
+def must_be_named_pfx(value: typing.Any) -> dict:
+  topology = global_vars.get_topology()
+  if isinstance(value,str):
+    if topology is not None and value in topology.get('prefix',{}):
+      return { '_valid': True }
+
+    return { '_value': f'a name of a (named) prefix (found {value})' }
+
+  return { '_type': 'named prefix' }
+
+@type_test()
+def must_be_addr_pool(value: typing.Any) -> dict:
+  topology = global_vars.get_topology()
+  if isinstance(value,str):
+    if topology is not None:
+      if value in topology.get('addressing',{}) or value in topology.defaults.addressing:
+        return { '_valid': True }
+
+    return { '_value': f'a name of an addressing pool (found {value})' }
+
+  return { '_type': 'addressing pool' }
 
 @type_test()
 def must_be_mac(value: typing.Any) -> dict:

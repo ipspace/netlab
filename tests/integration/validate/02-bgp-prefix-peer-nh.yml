@@ -1,0 +1,95 @@
+---
+message: |
+  Use this topology to test the 'bgp_prefix' function and
+  peer/nh checks.
+
+module: [ bgp ]
+
+defaults.sources.extra: [ defaults-ds.yml ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+  x1:
+    bgp.as: 65100
+
+links:
+- dut-x1
+
+validate:
+  session:
+    description: Check EBGP sessions
+    wait_msg: Wait for BGP sessions to be established
+    wait: 10
+    nodes: [ dut ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1')
+
+  pfx_v4:
+    description: Check for X1 IPv4 prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  pfx_v6:
+    description: Check for X1 IPv6 prefix
+    wait_msg: Wait for BGP convergence
+    wait: 5
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6')
+
+  pfx_miss_v4:
+    description: Check for a missing IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix('10.1.2.3/32',state='missing')
+
+  pfx_miss_v6:
+    description: Check for a missing IPv6 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix('2001:db8:cafe:1::/64',af='ipv6',state='missing')
+
+  nh_v4:
+    description: Check for NH of X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,nh=nodes.x1.interfaces[0].ipv4)
+
+  nh_v6:
+    description: Check for NH of X1 IPv6 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6',nh=nodes.x1.interfaces[0].ipv6)
+
+  nh_miss_v4:
+    description: Check for NH of X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,nh=nodes.dut.interfaces[0].ipv4,state='missing')
+
+  nh_miss_v6:
+    description: Check for NH of X1 IPv6 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6',nh=nodes.dut.interfaces[0].ipv6,state='missing')
+
+  peer_v4:
+    description: Check for BGP peer of X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,peer=nodes.x1.bgp.router_id)
+
+  peer_v6:
+    description: Check for BGP peer of X1 IPv6 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6',peer=nodes.x1.bgp.router_id)
+
+  peer_miss_v4:
+    description: Check for BGP peer of X1 IPv4 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4,peer=nodes.dut.bgp.router_id,state='missing')
+
+  peer_miss_v6:
+    description: Check for BGP peer of X1 IPv6 prefix
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6',peer=nodes.dut.bgp.router_id,state='missing')

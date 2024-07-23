@@ -5,7 +5,7 @@ FRR routing table validation routines
 from box import Box
 import typing
 from netsim.data import global_vars
-from ..bgp._common import get_pure_prefix
+from .._common import get_pure_prefix
 
 def show_rt_prefix(pfx: str, af: str = 'ipv4', proto: str = '', **kwargs: typing.Any) -> str:
   if af == 'ipv4':

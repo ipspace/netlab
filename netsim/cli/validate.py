@@ -203,10 +203,11 @@ def extend_first_wait_time(args: argparse.Namespace, topology: Box) -> None:
 
     v_entry.wait = v_entry.wait + max_delay
     if not args.error_only:
+      indent = (topology._v_len + 3) if topology else 10
       log.error(
         f'Initial wait time extended by {max_delay} seconds required by {d_device}',
         category=Warning,
-        module='')
+        module='',indent=indent)
     return
 
 '''
@@ -233,7 +234,12 @@ def load_plugin(device: str) -> typing.Any:
 
   err_key = f'plugin_{device}'
   if err_key not in PLUGIN_ERROR:
-    log.error('Cannot find validation plugin for device {device}',category=log.MissingDependency,module='validate')
+    indent = (topology._v_len + 3) if topology else 10
+    log.error(
+      'Cannot find validation plugin for device {device}',
+      category=log.MissingDependency,
+      module='validate',
+      indent=indent)
     PLUGIN_ERROR[err_key] = True
 
   return None
@@ -280,10 +286,13 @@ def find_plugin_action(v_entry: Box, node: Box) -> typing.Optional[str]:
   err_key = 'action_{node.device}_{func_name}'
 
   if err_key not in PLUGIN_ERROR:
+    topology = global_vars.get_topology()
+    indent = (topology._v_len + 3) if topology else 10
     log.error(
       f"Validation plugin for device {node.device} has no action for test '{func_name}'",
       category=log.MissingDependency,
-      module='validate')
+      module='validate',
+      indent=indent)
   return None
 
 class PluginEvalError(Exception):     # Exception class used to raise plugin evaluation exceptions
@@ -313,6 +322,8 @@ Please note that custom exception raised in the plugin functions get re-raised a
 PluginEvalError exceptions, resulting in custom error messages.
 '''
 def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Optional[Box] = None) -> typing.Any:
+  global test_skip_count
+
   p_name = f'validate_{node.device}'
   exec = f'{p_name}.{action}_{v_entry.plugin}'
   exec_data = data.get_box(global_vars.get_topology() or {}) + v_entry.vars
@@ -327,6 +338,17 @@ def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Op
 
   try:
     return eval(exec,{},exec_data)
+  except log.Result as wn:
+    return str(wn)
+  except log.Skipped as wn:                       # The requested test is not implemented in the validation function
+    topology = global_vars.get_topology()
+    if topology is not None:
+      log_info(
+        msg=str(wn),
+        f_status='SKIPPED',
+        topology=topology)
+    test_skip_count += 1
+    return None
   except AttributeError as ex:
     if p_name in str(ex):
       return None
@@ -355,11 +377,13 @@ def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typi
     try:
       value = exec_plugin_function(action,v_entry,node)
     except PluginEvalError as ex:
+      indent = (topology._v_len + 3) if topology else 10
       log.error(
         text=str(ex),
         category=log.IncorrectValue,
         module='validate',
-        more_hints=[ f'device: {node.device}, action: {action}', f'plugin expression: {action}_{v_entry.plugin}'])
+        more_hints=[ f'device: {node.device}, action: {action}', f'plugin expression: {action}_{v_entry.plugin}'],
+        indent=indent)
       return None
 
   if not isinstance(value,str):
@@ -433,10 +457,12 @@ def get_parsed_result(v_entry: Box, n_name: str, topology: Box, verbosity: int) 
   err_value = data.get_box({'_error': True})                # Assume an error
 
   if not v_cmd:                                             # We should not get here, but we could...
+    indent = (topology._v_len + 3) if topology else 10
     log.error(
       f'Test {v_entry.name}: have no idea what show command to execute on node {n_name} / device {node.device}',
       category=log.MissingValue,
-      module='validation')
+      module='validation',
+      indent=indent)
     return err_value
 
   if verbosity >= 3:                                        # Extra-verbose: print command to execute
@@ -483,10 +509,12 @@ def get_result_string(
   node = topology.nodes[n_name]                             # Get the node data
   v_cmd = get_exec_list(v_entry,'exec',node,topology)       # ... and the 'exec' action for the current node
   if not v_cmd:                                             # We should not get here, but we could...
+    indent = (topology._v_len + 3) if topology else 10
     log.error(
       f'Test {v_entry.name}: have no idea what command to execute on node {n_name} / device {node.device}',
       category=log.MissingValue,
-      module='validation')
+      module='validation',
+      indent=indent)
     return False
 
   # Set up arguments for the 'netlab connect' command and execute it
@@ -681,7 +709,7 @@ def execute_validation_plugin(
       log_progress(msg,topology)
       test_pass_count += 1
 
-  return bool(OK)
+  return OK if OK is None else bool(OK)
 
 '''
 Execute node validation
@@ -745,6 +773,7 @@ def execute_node_validation(
         if 'result' in result and isinstance(result.result,Box):
           result.pop('result',None)
       print(f'Returned result\n{"=" * 80}\n{result.to_yaml()}')
+
   return (True, OK)                             # ... otherwise return (processed, validation result)
 
 '''
@@ -785,7 +814,6 @@ def execute_validation_test(
   while n_remaining:                              # Keep retrying 
     for n_name in n_remaining:                    # Iterate over remaining nodes
       (proc,OK) = execute_node_validation(v_entry,topology,n_name,time.time() >= stop_time,args)
-
       if proc:                                    # Have we processed this node? Remove node from remaining list
         n_remaining = [ x for x in n_remaining if x != n_name ]
 
@@ -891,7 +919,6 @@ def run(cli_args: typing.List[str]) -> None:
 
   filter_by_tests(args,topology)
   filter_by_nodes(args,topology)
-  extend_first_wait_time(args,topology)
   log.exit_on_error()
 
   templates.load_ansible_filters()
@@ -904,6 +931,8 @@ def run(cli_args: typing.List[str]) -> None:
   test_pass_count = 0
   topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
   start_time = _status.lock_timestamp() or time.time()
+  log.init_log_system(header=False)
+  extend_first_wait_time(args,topology)
 
   for v_entry in topology.validate:
     if cnt and not ERROR_ONLY:

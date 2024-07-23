@@ -39,9 +39,10 @@ You have to use the following box names when installing or building the Vagrant 
 | Arista vEOS            | arista/veos                 |
 | Aruba CX               | aruba/cx                    |
 | Cisco ASAv             | cisco/asav                  |
+| Cisco Catalyst 8000v   | cisco/cat8000v              |
+| Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco IOSv             | cisco/iosv                  |
 | Cisco IOS XR           | cisco/iosxr                 |
-| Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Dell OS10              | dell/os10                   |
 | Fortinet FortiOS       | fortinet/fortios            |
@@ -75,8 +76,9 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [Arista vEOS](eos.md)
 * [Aruba CX](arubacx.md)
 * [Cisco ASAv](asav.md)
+* [Cisco Catalyst 8000v](cat8000v.md)
+* [Cisco CSR 1000v](csr.md)
 * [Cisco IOSv](iosv.md)
-* [Cisco CSR](csr.md)
 * [Cisco IOS XR](iosxr.md)
 * [Cisco Nexus OS](nxos.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
@@ -281,6 +283,7 @@ providers.libvirt.probe: []
    eos.md
    arubacx.md
    asav.md
+   cat8000v.md
    csr.md
    iosv.md
    iosxr.md

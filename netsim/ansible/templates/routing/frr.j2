@@ -1,0 +1,23 @@
+{% import '_route_map_ios.j2' as routemap with context %}
+!
+{% if routing.policy|default({}) %}
+{%   call(p_entry,af_list) routemap.create_route_maps(routing.policy) -%}
+{%     if 'set' in p_entry %}
+{%       if 'bandwidth' in p_entry.set %}
+  set extcommunity bandwidth {{ p_entry.set.bandwidth }}
+{%       endif %}
+{%     endif %}
+{{     routemap.common_route_map_entry(p_entry,af_list) }}
+{%-   endcall %}
+{% endif %}
+{% if routing.prefix|default({}) %}
+{%   include '_prefix_list_ios.j2' %}
+{% endif %}
+{% if routing.aspath|default({}) %}
+{%   for asp_name,asp_list in routing.aspath.items() %}
+!
+{%     for asp_line in asp_list %}
+bgp as-path access-list {{ asp_name }} {{ asp_line.action }} {{ asp_line.path }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
