@@ -6,6 +6,14 @@ set set as-path prepend {{ (asn + " ") * s_param.count }}
 {%   endif %}
 {%- endmacro %}
 
+{% macro community_set(cwt,comm,c_append,c_delete) -%}
+{% if c_append %}
+set set {{ cwt }} add {{ comm }}
+{% else %}
+set set {{ cwt }} replace {{ comm }}
+{% endif %}
+{%- endmacro %}
+
 {#
    This macro generates the elements of route-map entries
 #}
@@ -17,6 +25,19 @@ set set local-preference {{ p_entry.set.locpref }}
 {%     endif %}
 {%     if 'med' in p_entry.set %}
 set set metric {{ p_entry.set.med }}
+{%     endif %}
+{%     if 'community' in p_entry.set %}
+{%       set cset = p_entry.set.community %}
+{%       set ckw = { 'standard': 'community', 'extended': 'extcommunity', 'large': 'large-community' } %}
+{%         for kw in ('standard','extended','large') if kw in cset %}
+{%           if cset[kw] is not string %}
+{%             for cur_com in cset[kw] %}
+{{               community_set(ckw[kw], cur_com, cset.append|default(False), cset.delete|default(False)) }}
+{%             endfor %}
+{%           else %}
+{{             community_set(ckw[kw], cur_com, cset.append|default(False), cset.delete|default(False)) }}
+{%           endif %}
+{%         endfor %}
 {%     endif %}
 {%     if 'prepend' in p_entry.set %}
 {{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
@@ -33,6 +54,9 @@ set match {{ ipkwd }} nexthop prefix-list {{ p_entry.match.nexthop }}
 {%     endif %}
 {%     if 'aspath' in p_entry.match %}
 set match as-path {{ p_entry.match.aspath }}
+{%     endif %}
+{%     if 'community' in p_entry.match %}
+set match community community-list {{ p_entry.match.community }}
 {%     endif %}
 {%   endif %}
 {%- endmacro %}

@@ -23,15 +23,15 @@ The following table describes high-level per-platform support of generic routing
 
 | Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes|
 | ------------------ | :-: | :-: | :-: |:-: | :-: |
-| Arista EOS          |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |
-| FRR                 |  ✅  |  ✅  |  ✅  |
+| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
+| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
+| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |
 | Nokia SR OS         |  ✅  |
-| VyOS                |  ✅  |  ✅  |  ✅  |
+| VyOS                |  ✅  |  ✅  |  ✅  |  ✅  |
 
 ```{tip}
 See [Routing Integration Tests Results](https://release.netlab.tools/_html/coverage.routing) for more details.
@@ -112,24 +112,26 @@ You can use these routing policy **set** parameters on devices supported by the 
 | Operating system    | AS-path<br>prepend | Local<br>preference | MED | Weight | Community |
 |---------------------|:--:|:--:|:--:|:--:| :--:|
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ | ❌  |
+| Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOSv          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS-XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  | ❌  |
 | Nokia SR OS         | ❌  | ✅ | ✅ | ❌  | ❌  |
-| VyOS                | ✅ | ✅ | ✅ | ❌  | ❌  |
+| VyOS                | ✅ | ✅ | ✅ | ❌  | ✅ |
 
 The **set.community** attribute can be used to set these BGP communities on supported devices:
 
 | Operating system    | Standard<br>community | Large<br>community | Extended<br>community | Append | Delete |
 |---------------------|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ | ❌  | ❌  | ✅ | ✅ |
 | Cisco IOSv          | ✅ | ❌  | ❌  | ✅ | ❌  |
 | Cisco IOS-XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |
+| VyOS                | ✅ | ✅ | ✅ | ✅ | ❌  |
 
 ### Shortcut Routing Policy Definitions
 

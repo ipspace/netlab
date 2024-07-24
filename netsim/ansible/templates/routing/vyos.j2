@@ -22,6 +22,15 @@ set policy as-path-list {{ asp_name }} rule {{ asp_line.sequence }} regex "{{ as
 {%   endfor %}
 {% endif %}
 
+{% if routing.community|default({}) %}
+{%   for c_name,c_value in routing.community.items() %}
+{%     for c_line in c_value.value %}
+set policy community-list {{ c_name }} rule {{ c_line.sequence }} action {{ c_line.action }}
+set policy community-list {{ c_name }} rule {{ c_line.sequence }} regex "{{ c_line._value }}"
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+
 {% if routing.policy|default({}) %}
 {%   import '_route_policy_vyos.j2' as routemap with context %}
 {{   routemap.create_route_maps(routing.policy) }}
