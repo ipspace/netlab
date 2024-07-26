@@ -147,6 +147,8 @@ _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux
 * *ifupdown2* enslaves physical ports to the bridge, and subsequently cannot configure IP addresses on physical ports. The _netlab_-generated Cumulus Linux VLAN configuration, therefore, cannot use routed native VLAN.
 * FRRouting version bundled with Cumulus Linux 4.4 cannot run OSPFv3 in VRFs, and fails to advertise local IPv6 prefixes in other areas.
 
+See also [other FRRouting caveats](caveats-frr).
+
 ### Running Cumulus Linux in Containerlab
 
 * *containerlab* could run Cumulus Linux as a [container or as a micro-VM with *firecracker*](https://containerlab.dev/manual/kinds/cvx/). The default used by *netlab* is to run Cumulus Linux as a container. To change that, add **clab.runtime** parameter to node data.
@@ -207,12 +209,14 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 * FRR containers need host kernel modules for MPLS forwarding. If your Ubuntu distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
 * FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with the `sudo apt install linux-generic` and reboot the server.
-* FRR release 9.0 and later creates malformed IS-IS LSPs ([details](https://github.com/FRRouting/frr/issues/14514)). Most other devices do not care; Arista EOS refuses to accept them. It's thus impossible to build an IS-IS network using Arista EOS and a recent FRR release.
+* FRR 9.0 and later creates malformed IS-IS LSPs; the bug has been fixed in release 10.0.1 ([details](https://github.com/FRRouting/frr/issues/14514)). You cannot build an IS-IS network using Arista EOS and FRR if you're running an affected version of FRR.
+* FRR configures BFD as part of OSPFv2/OSPFv3 configuration.
 
 (caveats-junos)=
 ## Common Junos caveats
 
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
+* Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 
 (caveats-vptx)=
 ## Juniper vPTX
@@ -335,4 +339,5 @@ It looks like the official VyOS container is not updated as part of the daily bu
 
 Other VyOS caveats:
 
+* VyOS configuration template configures BFD timers only at the global level
 * Multi-topology IS-IS (assumed by the [IS-IS configuration module](module-isis)) cannot be configured with VyOS IS-IS CLI ([bug report](https://vyos.dev/T6332)).

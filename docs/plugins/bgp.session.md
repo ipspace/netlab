@@ -58,15 +58,19 @@ The plugin implements generic BGP session features for the following platforms:
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |
 | Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
-| Juniper vMX/vPTX/vSRX | ❌  |  ✅  |  ✅  |  ✅  |
+| Junos[^Junos]       |   ❌  |  ✅  |  ✅  |  ✅  |
 | Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |
-| Nokia SR Linux      |  ✅  |   ✅  |   ✅  |   ✅  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |  ✅  |
 | Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |
 | VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |
+
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+
+[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 
 **Notes:**
 * Arista EOS supports TCP-AO only when running as a virtual machine
@@ -80,14 +84,14 @@ BGP session security features are available on these platforms:
 | Arista EOS          |    ✅    | ✅  | ✅  |
 | Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
 | Cisco IOSv          |    ✅    | ✅  |  ❌  |
-| Cisco IOS-XE        |    ✅    |  ✅ |  ✅ |
+| Cisco IOS-XE[^18v]  |    ✅    |  ✅ |  ✅ |
 | Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
 | Cumulus Linux       |    ✅    | ✅  |  ❌  |
 | FRR                 |    ✅    | ✅  |  ❌  |
-| Juniper vMX/vPTX/vSRX |    ✅  |  ❌  |  ❌  |
-| Mikrotik RouterOS 7 |      ✅  |  ❌  |  ❌  |
-| Nokia SR Linux      |     ✅   |  ❌  |  ❌  |
-| Nokia SR OS         |     ✅   |  ❌  | ✅  |
+| Junos[^Junos]       |    ✅    |  ❌  |  ❌  |
+| Mikrotik RouterOS 7 |    ✅    |  ❌  |  ❌  |
+| Nokia SR Linux      |    ✅    |  ❌  |  ❌  |
+| Nokia SR OS         |    ✅    |  ❌  | ✅  |
 
 BGP session security features are also available on these daemons:
 
@@ -104,11 +108,11 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Aruba AOS-CX        |  ✅  |  ❌   |  ✅  |   ❌  |   ❌  |
 | Bird                |   ❌  |   ❌  |   ❌  |  ✅  |  ✅  |
 | Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE        |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Juniper vMX/vPTX/vSRX | ❌  |  ✅  |   ❌  |   ❌  |   ❌  |
+| Junos[^Junos]       |   ❌  |  ✅  |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | Nokia SR OS         |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |

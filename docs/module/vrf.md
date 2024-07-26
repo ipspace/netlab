@@ -25,15 +25,15 @@ VRFs are supported on these platforms:
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |
 | Dell OS10             | ✅  | ✅  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| Juniper vMX           | ✅  | ✅  | ✅  |
-| Juniper vPTX          | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  |
 | SR Linux              | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+
+[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:
@@ -48,9 +48,7 @@ These platforms support routing protocols in VRFs:
 | Cumulus Linux         | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| Juniper vMX           | ✅  | ✅  | ✅  |
-| Juniper vPTX          | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |
 | SR Linux              | ✅  |  ❌  | ✅  |
