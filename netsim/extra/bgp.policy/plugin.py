@@ -27,8 +27,23 @@ def must_be_autobw(
 
 types.register_type('autobw',must_be_autobw)
 
+"""
+copy_routing_attributes: copy select routing policy SET attributes into BGP node/link/interface attributes
+to minimize data duplication
+"""
+def copy_routing_attributes(topology: Box) -> None:
+  src_attr = topology.defaults.attributes.rp_entry.set      # Global routing policy entry definition
+  dst_attr = topology.defaults.bgp.attributes               # Destination: BGP attributes
+  ctrl_set = topology.defaults.bgp.attributes.p_attr        # Get the copy lists
+
+  for ns in ('node','link','interface'):                    # Iterate over interesting namespaces
+    for kw in ctrl_set.get(ns,[]):                          # ... and copy select routing policy attributes
+      if kw in src_attr:                                    # ... assuming they exist
+        dst_attr[ns][kw] = src_attr[kw]                     # ... into the target namespace of BGP attributes
+
 def init(topology: Box) -> None:
   data.append_to_list(topology,'_extra_module','routing')   # bgp.policy plugin needs routing policies (route maps)
+  copy_routing_attributes(topology)
 
 '''
 append_policy_attribute
