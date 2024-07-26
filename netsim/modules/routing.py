@@ -7,7 +7,7 @@
 #
 import typing, re
 import netaddr
-from box import Box
+from box import Box,BoxList
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from ..utils import log
@@ -145,6 +145,23 @@ def check_routing_object(p_name: str,o_type: str, node: Box,topology: Box) -> bo
   return True
 
 """
+is_kw_supported: Check whether a keyword is supported according to device features
+
+It should be an easy test; what complicates it is our flexibility:
+
+* The features could be specified as a list or a dict
+* The dict values could be set to False (meaning DOES NOT WORK)
+"""
+def is_kw_supported(kw: str, kw_data: typing.Union[Box,BoxList]) -> bool:
+  if kw not in kw_data:
+    return False
+  
+  if isinstance(kw_data,Box) and not kw_data.get(kw,False):
+    return False
+  
+  return True
+
+"""
 check_routing_policy: validate that all the device you want to use a route-map on
 supports all the SET and MATCH keywords
 
@@ -169,7 +186,7 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
       if p_param not in p_entry:                            # No parameters of this type, move on
         continue
       for kw in p_entry[p_param].keys():                    # Iterate over all SET/MATCH settings
-        if kw not in d_features[p_param]:                   # if a setting is not supported by the device...
+        if not is_kw_supported(kw,d_features[p_param]):     # if a setting is not supported by the device...
           OK = False                                        # ... remember we found an error
           log.error(                                        # ... and report it
             f"Device {node.device} (node {node.name}) does not support routing policy '{p_param}' keyword '{kw}' "+\
@@ -185,7 +202,7 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
         if not isinstance(p_entry[p_param][kw],Box):        # The value is not a dictionary
           continue                                          # ... let validation deal with that
         for kw_opt in p_entry[p_param][kw].keys():          # Now iterate over the suboptions
-          if kw_opt in kw_data:                             # ... and if they're in the device features
+          if kw_data.get(kw_opt,False):                     # ... and if they're in the device features
             continue                                        # ... we're good to go
           log.error(                                        # Otherwise report an error
             f"Device {node.device} (node {node.name}) does not support routing policy '{p_param}'"+\
