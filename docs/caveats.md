@@ -242,6 +242,15 @@ vSRX container built with *vrnetlab* uses **flow based forwarding**. You have tw
 
 See also [](caveats-junos).
 
+(caveats-vjunos-switch)=
+## vJunos-Switch in Containerlab
+
+You can run Juniper vJunos-switch as a container packaged by *vrnetlab*. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
+
+The *vrnetlab* containers use the IP subnet `10.0.0.0/24` for the internal network, which conflicts with the default network used by **netlab** for the loopback addressing. See [](clab-vrnetlab) for details.
+
+See also [](caveats-junos).
+
 (caveats-routeros6)=
 ## Mikrotik RouterOS 6
 

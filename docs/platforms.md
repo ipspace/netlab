@@ -30,6 +30,7 @@
 | Juniper vMX [❗](caveats-junos)             | vmx                |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
 | Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
+| vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch |
 | Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           |
 | Nokia SR Linux [❗](caveats-srlinux)      | srlinux |
@@ -84,6 +85,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Juniper vMX        |  ❌  |  ❌  | ✅[❗](clab-vrnetlab)   |
 | Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅[❗](clab-vrnetlab)  |
 | Juniper vSRX 3.0   | [✅](build-vsrx)  | ✅  | ✅[❗](caveats-vsrx)  |
+| vJunos-switch       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
 | Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |

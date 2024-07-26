@@ -39,6 +39,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | FRR                    | frrouting/frr:v8.4.0         |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
 | Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
+| vJunos-switch          | vrnetlab/vr-vjunosswitch:23.2R1.14 |
 | Linux[❗](clab-linux)  | python:3.9-alpine            |
 | Mikrotik RouterOS 7    | vrnetlab/vr-routeros:7.6     |
 | Nokia SR Linux         | ghcr.io/nokia/srlinux:latest |
