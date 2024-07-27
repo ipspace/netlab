@@ -1,12 +1,36 @@
 nv overlay evpn
 !
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) and n.type == 'ebgp' %}
+{%   if loop.first %}
+!
+! Create a 'next-hop-unchanged' route map for EBGP EVPN sessions
+!
+route-map evpn_nh_unchanged permit 10
+  set ip next-hop unchanged
+{%   endif %}
+{% endfor %}
+!
 router bgp {{ bgp.as }}
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) and n.type == 'ebgp' %}
+{%   if loop.first %}
+!
+! We have at least one EBGP EVPN session
+!
+  address-family l2vpn evpn                                    
+    nexthop route-map evpn_nh_unchanged
+    retain route-target all
+{%   endif %}
+{% endfor %}
 {% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
   neighbor {{ n.ipv4 }}
     address-family l2vpn evpn
       send-community both
-{%   if bgp.rr|default('') and not n.rr|default('') %}
+{%   if n.type == 'ebgp' %}
+      route-map evpn_nh_unchanged out
+{%   else %}
+{%     if bgp.rr|default('') and not n.rr|default('') %}
       route-reflector-client
+{%     endif %}
 {%   endif %}
 !
 {% endfor %}
