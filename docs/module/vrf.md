@@ -307,6 +307,6 @@ You'll find VRF-related examples in the [Defining and Using VRFs](../example/vrf
 
 -   [Creating VRF Lite Labs With netlab](https://blog.ipspace.net/2022/04/netsim-vrf-lite.html)
 -   [Creating MPLS/VPN Labs With netlab](https://blog.ipspace.net/2022/04/netsim-mpls-vpn.html)
--   [Combining VLANs with VRFs](https://blog.ipspace.net/2022/06/netsim-vlan-vrf.html){style="-webkit-font-smoothing: antialiased; color: rgb(210, 100, 0); text-decoration: none; transition: color 0.3s ease-in-out 0s;"}
+-   [Combining VLANs with VRFs](https://blog.ipspace.net/2022/06/netsim-vlan-vrf.html)
 -   [VRF Lite Topology with VLAN Trunks](https://blog.ipspace.net/2022/09/netlab-vrf-lite.html)
 -   [Using VLAN and VRF Links](https://blog.ipspace.net/2023/04/netlab-vrf-vlan-links.html)
