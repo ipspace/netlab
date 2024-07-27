@@ -1,0 +1,48 @@
+---
+message: |
+  The device under test is a VLAN-to-VXLAN layer-3 switch between an access
+  interface and an EVPN transit VNI.
+
+  Hosts should be able to ping each other.
+
+  Please note it might take a while for the lab to work due to STP learning
+  phase.
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, vrf, ospf, bgp, evpn ]
+  x_switches:
+    members: [ s2 ]
+    device: frr
+    provider: clab
+
+bgp.as: 65000
+
+vrfs:
+  customer:
+    evpn.transit_vni: 5042
+
+links:
+- s1:
+  h1:
+  vrf: customer
+- s2:
+  h2:
+  vrf: customer
+- s1:
+  s2:
+  mtu: 1600
+
+validate:
+  ping_vlan:
+    description: Intra-VRF ping-based reachability test
+    wait_msg: Waiting for OSFP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')

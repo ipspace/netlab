@@ -1,13 +1,11 @@
 message: |
-  The devices under test are VLAN-to-VXLAN routers using asymmetric IRB
-  with EVPN control plane and running OSPF within the VRF to exchange
-  information about non-EVPN subnets. Run this test case after the 
-  'vxlan-asymmetric-irb' test case.
+  The devices under test are VLAN-to-VXLAN routers using asymmetric IRB with
+  EVPN control plane and running OSPF within the VRF (across VXLAN segments) to
+  exchange information about non-EVPN subnets.
 
   All hosts should be able to ping each other
 
-
-module: [ vlan,vxlan,ospf,bgp,evpn,vrf ]
+module: [ vlan, vxlan, ospf, bgp, evpn, vrf ]
 bgp.as: 65000
 
 vrfs:
@@ -16,12 +14,16 @@ vrfs:
 vlans:
   red:
     vrf: tenant
+    links: [ s1-h1 ]
   blue:
     vrf: tenant
+    links: [ s2-h2 ]
   green:
     vrf: tenant
+    links: [ s1-h3 ]
   purple:
     vrf: tenant
+    links: [ s2-h4 ]
 
 vxlan.vlans: [ red, blue ]
 evpn.vlans: [ red, blue ]
@@ -33,7 +35,7 @@ groups:
     module: []
     device: linux
   switches:
-    members: [ s1,s2 ]
+    members: [ s1, s2 ]
     vlans:
       red:
       blue:
@@ -41,44 +43,32 @@ groups:
 nodes: [ s1, s2, h1, h2, h3, h4 ]
 
 links:
-- h1:
-  s1:
-    vlan.access: red
-- h2:
-  s2:
-    vlan.access: blue
-- h3:
-  s1:
-    vlan.access: green
-- h4:
-  s2:
-    vlan.access: purple
-
 - s1:
   s2:
+  mtu: 1600
 
 validate:
   ping-h4:
     description: Host reachability
-    wait_msg: Waiting for STP to enable the ports
-    wait: 45
-    nodes: [ h1,h2,h3 ]
+    wait_msg: Waiting for STP to enable the ports and VRF OSPF to start
+    wait: 60
+    nodes: [ h1, h2, h3 ]
     plugin: ping('h4')
   ping-h3:
     description: Host reachability
     wait_msg: Waiting for STP to enable the ports
     wait: 5
-    nodes: [ h1,h2,h4 ]
+    nodes: [ h1, h2, h4 ]
     plugin: ping('h3')
   ping-h2:
     description: Host reachability
     wait_msg: Waiting for STP to enable the ports
     wait: 5
-    nodes: [ h1,h3,h4 ]
+    nodes: [ h1, h3, h4 ]
     plugin: ping('h2')
   ping-h1:
     description: Host reachability
     wait_msg: Waiting for STP to enable the ports
     wait: 5
-    nodes: [ h2,h3,h4 ]
+    nodes: [ h2, h3, h4 ]
     plugin: ping('h1')
