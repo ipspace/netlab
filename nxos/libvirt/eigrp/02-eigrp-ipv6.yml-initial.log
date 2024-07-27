@@ -1,0 +1,306 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [r1]
+
+TASK [Find device readiness script] ********************************************
+ok: [h1]
+ok: [h2]
+ok: [r1]
+ok: [r2]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for r1, r2
+
+TASK [Wait for Eth1/1 to appear] ***********************************************
+ok: [r1]
+ok: [r2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r1, r2
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h1]
+ok: [h2]
+ok: [r1]
+ok: [r2]
+
+TASK [Find configuration template for initial] *********************************
+ok: [h1]
+ok: [h2]
+ok: [r1]
+ok: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1::1/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1::1/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1:1::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1:1::2/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    hostname r2
+    !
+    no ip domain-lookup
+    !
+    feature lldp
+    !
+    username vagrant password vagrant
+    !
+    !
+    !
+    interface mgmt0
+     no lldp transmit
+     no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ipv6 address 2001:db8:0:4::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/1
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0401
+     description r2 -> r1
+     ipv6 address use-link-local-only
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/2
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0402
+     description r2 -> h2 [stub]
+     ipv6 address 2001:db8:1:1::4/64
+     ipv6 nd ra-interval 5 min 3
+    !
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    hostname r1
+    !
+    no ip domain-lookup
+    !
+    feature lldp
+    !
+    username vagrant password vagrant
+    !
+    !
+    !
+    interface mgmt0
+     no lldp transmit
+     no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ipv6 address 2001:db8:0:3::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/1
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0301
+     description r1 -> h1 [stub]
+     ipv6 address 2001:db8:1::3/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/2
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0302
+     description r1 -> r2
+     ipv6 address use-link-local-only
+     ipv6 nd ra-interval 5 min 3
+    !
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [r1]
+ok: [r2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for r1, r2
+
+TASK [set_fact] ****************************************************************
+ok: [h1]
+ok: [h2]
+
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-dwGvQmjW-h1.sh] **********
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [nxos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [r1]
+changed: [r2]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r1]
+ok: [r2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2 => (item=eigrp)
+
+TASK [Figure out whether to deploy the module eigrp on current device] *********
+ok: [r1]
+ok: [r2]
+
+TASK [Find configuration template for eigrp] ***********************************
+ok: [r1]
+ok: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r1] => 
+  msg: |-
+    eigrp configuration for r1
+    =========================================
+    feature eigrp
+    !
+    router eigrp 2
+     router-id 10.0.0.3
+     address-family ipv6 unicast
+    !
+    interface loopback0
+     ipv6 router eigrp 2
+    !
+    interface Ethernet1/1
+     ipv6 router eigrp 2
+     ipv6 passive-interface eigrp 2
+    !
+    interface Ethernet1/2
+     ipv6 router eigrp 2
+    !
+ok: [r2] => 
+  msg: |-
+    eigrp configuration for r2
+    =========================================
+    feature eigrp
+    !
+    router eigrp 2
+     router-id 10.0.0.4
+     address-family ipv6 unicast
+    !
+    interface loopback0
+     ipv6 router eigrp 2
+    !
+    interface Ethernet1/1
+     ipv6 router eigrp 2
+    !
+    interface Ethernet1/2
+     ipv6 router eigrp 2
+     ipv6 passive-interface eigrp 2
+    !
+
+TASK [Find configuration deployment deploy_script for eigrp] *******************
+ok: [r1]
+ok: [r2]
+
+TASK [Deploy eigrp configuration] **********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for r1, r2
+
+TASK [nxos_config: deploying eigrp from /home/pipi/net101/tools/netsim/ansible/templates/eigrp/nxos.j2] ***
+changed: [r1]
+changed: [r2]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r1                         : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+r2                         : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
