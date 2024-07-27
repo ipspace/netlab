@@ -1,0 +1,87 @@
+---
+message: |
+  The devices under test are a layer-2 leaf and a spine performing centralized
+  routing.
+
+  All hosts should be able to ping each other and all switch loopback IPs
+
+  Please note it might take a while for the lab to work due to STP learning
+  phase.
+
+module: [ vlan, vxlan, vrf, ospf, bgp, evpn ]
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ l1, l2, spine ]
+    bgp.as: 65000
+    vrfs:
+      customer:
+    vlans:
+      red:
+        vrf: customer
+        mode: bridge
+      blue:
+        vrf: customer
+        mode: bridge
+  core:
+    members: [ spine ]
+    vlans:
+      red:
+        mode: irb
+      blue:
+        mode: irb
+    bgp.rr: True
+  x_switches:
+    members: [ l2 ]
+    device: frr
+    provider: clab
+
+vlans:
+  red:
+    role: external
+    links: [ l1-h1, l2-h2 ]
+  blue:
+    role: external
+    links: [ l1-h3, l2-h4 ]
+
+links:
+- l1:
+  spine:
+  mtu: 1600
+- l2:
+  spine:
+  mtu: 1600
+
+validate:
+  ping_red:
+    description: Intra-VLAN ping-based reachability test (red)
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')
+
+  ping_blue:
+    description: Intra-VLAN ping-based reachability test (blue)
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 20
+    nodes: [ h3 ]
+    plugin: ping('h4')
+
+  ping_h3:
+    description: Inter-VLAN ping-based reachability test (red-to-blue)
+    wait_msg: Waiting for EVPN convergence
+    wait: 3
+    nodes: [ h1, h2 ]
+    plugin: ping('h3')
+
+  ping_h1:
+    description: Inter-VLAN ping-based reachability test (blue-to-red)
+    wait_msg: Waiting for EVPN convergence
+    wait: 3
+    nodes: [ h3, h4 ]
+    plugin: ping('h1')
