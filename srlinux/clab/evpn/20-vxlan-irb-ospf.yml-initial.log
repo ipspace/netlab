@@ -1,0 +1,1700 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Find device readiness script] ********************************************
+ok: [s1]
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [s1]
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Find configuration template for initial] *********************************
+ok: [s1]
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.2/32"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "s2 ~ s1"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "s2 ~ s1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.2/30"
+          primary: [null]
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+  
+  
+  
+    # TODO: vdata.rd, vdata.import/export, vdata.af
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.1
+    #
+    # Print the final routing table
+    ip route
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.1/32"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "s1 ~ s2"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "s1 ~ s2"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.1/30"
+          primary: [null]
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+  
+  
+  
+    # TODO: vdata.rd, vdata.import/export, vdata.af
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.5/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.2.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.2.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.2.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.2.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.2.1
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.6/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.3.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.3.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.3.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.3.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.3.2
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.2
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [s1]
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [s2]
+ok: [s1]
+
+TASK [tempfile] ****************************************************************
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [s1]
+changed: [s2]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [set_fact] ****************************************************************
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-gAVNWiTI-h1.sh] **********
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=evpn)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+  
+    updates:
+    - path: interface[name=ethernet-1/2]
+      val:
+       subinterface:
+       - index: 1000
+         type: bridged
+  
+  
+    - path: network-instance[name=vlan1000]
+      val:
+       type: mac-vrf
+       interface:
+       - name: ethernet-1/2.1000
+  
+  
+    - path: interface[name=ethernet-1/3]
+      val:
+       subinterface:
+       - index: 1002
+         type: bridged
+  
+  
+    - path: network-instance[name=vlan1002]
+      val:
+       type: mac-vrf
+       interface:
+       - name: ethernet-1/3.1002
+  
+  
+    - path: interface[name=irb0]
+      val:
+       subinterface:
+       - index: 1000
+  
+    - path: interface[name=irb0]/subinterface[index=1000]
+      val:
+       description: "VLAN red (1000) ~ h1,s2"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.0.1/24"
+          primary: [null]
+  
+  
+    - path: network-instance[name=vlan1000]
+      val:
+       type: mac-vrf
+       description: "VLAN red (1000) ~ h1,s2"
+       interface:
+       - name: irb0.1000
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+       interface:
+       - name: irb0.1000
+  
+    - path: interface[name=irb0]
+      val:
+       subinterface:
+       - index: 1002
+  
+    - path: interface[name=irb0]/subinterface[index=1002]
+      val:
+       description: "VLAN green (1002) ~ h3"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.2.1/24"
+          primary: [null]
+  
+  
+    - path: network-instance[name=vlan1002]
+      val:
+       type: mac-vrf
+       description: "VLAN green (1002) ~ h3"
+       interface:
+       - name: irb0.1002
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+       interface:
+       - name: irb0.1002
+  
+    - path: interface[name=irb0]
+      val:
+       subinterface:
+       - index: 1001
+  
+    - path: interface[name=irb0]/subinterface[index=1001]
+      val:
+       description: "VLAN blue (1001) ~ h2,s2"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.1.1/24"
+          primary: [null]
+  
+  
+    - path: network-instance[name=vlan1001]
+      val:
+       type: mac-vrf
+       description: "VLAN blue (1001) ~ h2,s2"
+       interface:
+       - name: irb0.1001
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+       interface:
+       - name: irb0.1001
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+  
+    updates:
+    - path: interface[name=ethernet-1/2]
+      val:
+       subinterface:
+       - index: 1001
+         type: bridged
+  
+  
+    - path: network-instance[name=vlan1001]
+      val:
+       type: mac-vrf
+       interface:
+       - name: ethernet-1/2.1001
+  
+  
+    - path: interface[name=ethernet-1/3]
+      val:
+       subinterface:
+       - index: 1003
+         type: bridged
+  
+  
+    - path: network-instance[name=vlan1003]
+      val:
+       type: mac-vrf
+       interface:
+       - name: ethernet-1/3.1003
+  
+  
+    - path: interface[name=irb0]
+      val:
+       subinterface:
+       - index: 1001
+  
+    - path: interface[name=irb0]/subinterface[index=1001]
+      val:
+       description: "VLAN blue (1001) ~ s1,h2"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.1.2/24"
+          primary: [null]
+  
+  
+    - path: network-instance[name=vlan1001]
+      val:
+       type: mac-vrf
+       description: "VLAN blue (1001) ~ s1,h2"
+       interface:
+       - name: irb0.1001
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+       interface:
+       - name: irb0.1001
+  
+    - path: interface[name=irb0]
+      val:
+       subinterface:
+       - index: 1003
+  
+    - path: interface[name=irb0]/subinterface[index=1003]
+      val:
+       description: "VLAN purple (1003) ~ h4"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.3.2/24"
+          primary: [null]
+  
+  
+    - path: network-instance[name=vlan1003]
+      val:
+       type: mac-vrf
+       description: "VLAN purple (1003) ~ h4"
+       interface:
+       - name: irb0.1003
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+       interface:
+       - name: irb0.1003
+  
+    - path: interface[name=irb0]
+      val:
+       subinterface:
+       - index: 1000
+  
+    - path: interface[name=irb0]/subinterface[index=1000]
+      val:
+       description: "VLAN red (1000) ~ h1,s1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.0.2/24"
+          primary: [null]
+  
+  
+    - path: network-instance[name=vlan1000]
+      val:
+       type: mac-vrf
+       description: "VLAN red (1000) ~ h1,s1"
+       interface:
+       - name: irb0.1000
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+       interface:
+       - name: irb0.1000
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Update SRL vlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [s2]
+changed: [s1]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    bgp configuration for s1
+    =========================================
+    updates:
+  
+    - path: routing-policy/policy[name=accept_all]
+      val:
+       default-action:
+        policy-result: "accept"
+  
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "10.0.0.1"
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.1
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
+  
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: routing-policy/policy[name=default_export]
+      val:
+       default-action:
+        policy-result: reject
+       statement:
+       - name: prefixes
+         match:
+          prefix-set: default_export
+         action:
+          policy-result: accept
+       - name: bgp
+         match:
+          protocol: bgp
+         action:
+          policy-result: accept
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.1/32
+         mask-length-range: exact
+  
+  
+  
+  
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+       - afi-safi-name: evpn
+         admin-state: enable # Must have at least 1 address family enabled
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: next_hop_self_ebgp_ipv4
+       peer-as: 65000
+       transport:
+        local-address: 10.0.0.1
+       next-hop-self: True
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.0.0.2"
+         description: s2
+         peer-group: ibgp-ipv4
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+         - afi-safi-name: evpn
+           admin-state: enable # Must have at least 1 address family enabled
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    updates:
+  
+    - path: routing-policy/policy[name=accept_all]
+      val:
+       default-action:
+        policy-result: "accept"
+  
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "10.0.0.2"
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.2
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
+  
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: routing-policy/policy[name=default_export]
+      val:
+       default-action:
+        policy-result: reject
+       statement:
+       - name: prefixes
+         match:
+          prefix-set: default_export
+         action:
+          policy-result: accept
+       - name: bgp
+         match:
+          protocol: bgp
+         action:
+          policy-result: accept
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.2/32
+         mask-length-range: exact
+  
+  
+  
+  
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+       - afi-safi-name: evpn
+         admin-state: enable # Must have at least 1 address family enabled
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: next_hop_self_ebgp_ipv4
+       peer-as: 65000
+       transport:
+        local-address: 10.0.0.2
+       next-hop-self: True
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.0.0.1"
+         description: s1
+         peer-group: ibgp-ipv4
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+         - afi-safi-name: evpn
+           admin-state: enable # Must have at least 1 address family enabled
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [s1]
+changed: [s2]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    updates:
+    - path: network-instance[name=default]
+      val:
+       router-id: 10.0.0.2
+       protocols:
+        ospf:
+         instance:
+         - name: "0"
+           version: ospf-v2
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: system0.0
+               passive: True
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/1.0
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+           # OSPF not configured on external interface ethernet-1/2
+           # OSPF not configured on external interface ethernet-1/3
+           # OSPF not configured on external interface irb0
+           # OSPF not configured on external interface irb0
+           # OSPF not configured on external interface irb0
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    updates:
+    - path: network-instance[name=default]
+      val:
+       router-id: 10.0.0.1
+       protocols:
+        ospf:
+         instance:
+         - name: "0"
+           version: ospf-v2
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: system0.0
+               passive: True
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/1.0
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+           # OSPF not configured on external interface ethernet-1/2
+           # OSPF not configured on external interface ethernet-1/3
+           # OSPF not configured on external interface irb0
+           # OSPF not configured on external interface irb0
+           # OSPF not configured on external interface irb0
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [s1]
+changed: [s2]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s2] => 
+  msg: |-
+    vrf configuration for s2
+    =========================================
+  
+    updates:
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+  
+    - path: network-instance[name=tenant]
+      val:
+       router-id: 10.0.0.2
+       protocols:
+        ospf:
+         instance:
+         - name: "0"
+           version: ospf-v2
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: irb0.1001
+               failure-detection:
+                enable-bfd: False
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: irb0.1003
+               passive: True
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: irb0.1000
+               failure-detection:
+                enable-bfd: False
+  
+  
+  
+    - path: routing-policy/community-set[name=C65000_1]
+      val:
+       member:
+       - "target:65000:1" # Single member, else matching is AND
+  
+    - path: routing-policy/community-set[name=tenant_export]
+      val:
+       member:
+       - "target:65000:1"
+  
+  
+    - path: network-instance[name=tenant]/protocols/bgp-vpn
+      val:
+       bgp-instance:
+       - id: 1
+         route-distinguisher:
+          rd: "65000:1"
+  
+    - path: network-instance[name=tenant]/inter-instance-policies
+      val:
+       apply-policy:
+        export-policy: "tenant_vpn_export"
+        import-policy: "tenant_vpn_import"
+  
+    - path: routing-policy/policy[name=tenant_vpn_export]
+      val:
+       default-action:
+        policy-result: "accept"
+        bgp:
+         communities:
+          add: "tenant_export"
+  
+    - path: routing-policy/policy[name=tenant_vpn_import]
+      val:
+       default-action:
+        policy-result: "reject"
+       statement:
+       - name: 11
+         match:
+          bgp:
+           community-set: "C65000_1"
+         action:
+          policy-result: "accept"
+ok: [s1] => 
+  msg: |-
+    vrf configuration for s1
+    =========================================
+  
+    updates:
+  
+    - path: network-instance[name=tenant]
+      val:
+       type: ip-vrf
+  
+    - path: network-instance[name=tenant]
+      val:
+       router-id: 10.0.0.1
+       protocols:
+        ospf:
+         instance:
+         - name: "0"
+           version: ospf-v2
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: irb0.1000
+               failure-detection:
+                enable-bfd: False
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: irb0.1002
+               passive: True
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: irb0.1001
+               failure-detection:
+                enable-bfd: False
+  
+  
+  
+    - path: routing-policy/community-set[name=C65000_1]
+      val:
+       member:
+       - "target:65000:1" # Single member, else matching is AND
+  
+    - path: routing-policy/community-set[name=tenant_export]
+      val:
+       member:
+       - "target:65000:1"
+  
+  
+    - path: network-instance[name=tenant]/protocols/bgp-vpn
+      val:
+       bgp-instance:
+       - id: 1
+         route-distinguisher:
+          rd: "65000:1"
+  
+    - path: network-instance[name=tenant]/inter-instance-policies
+      val:
+       apply-policy:
+        export-policy: "tenant_vpn_export"
+        import-policy: "tenant_vpn_import"
+  
+    - path: routing-policy/policy[name=tenant_vpn_export]
+      val:
+       default-action:
+        policy-result: "accept"
+        bgp:
+         communities:
+          add: "tenant_export"
+  
+    - path: routing-policy/policy[name=tenant_vpn_import]
+      val:
+       default-action:
+        policy-result: "reject"
+       statement:
+       - name: 11
+         match:
+          bgp:
+           community-set: "C65000_1"
+         action:
+          policy-result: "accept"
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Update SRL vrf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [s1]
+changed: [s2]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vxlan] ***********************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s2] => 
+  msg: |-
+    vxlan configuration for s2
+    =========================================
+  
+    updates:
+    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1000]
+      val:
+       type: bridged
+       ingress:
+        vni: 101000
+       egress:
+        source-ip: use-system-ipv4-address
+  
+    - path: network-instance[name=vlan1000]
+      val:
+       type: mac-vrf
+       vxlan-interface:
+       - name: vxlan0.1000
+       protocols:
+        bgp-vpn:
+         bgp-instance:
+         - id: 1
+           # route-distinguisher:
+           # rd: "10.0.0.2:1000"
+           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.2:1000'"
+           route-target:
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1000 with VNI 101000"
+            import-rt: "target:65000:1000"
+            export-rt: "target:65000:1000"
+        bgp-evpn:
+         bgp-instance:
+         - id: 1
+           evi: 1000
+           ecmp: 8
+           vxlan-interface: vxlan0.1000
+  
+    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1001]
+      val:
+       type: bridged
+       ingress:
+        vni: 101001
+       egress:
+        source-ip: use-system-ipv4-address
+  
+    - path: network-instance[name=vlan1001]
+      val:
+       type: mac-vrf
+       vxlan-interface:
+       - name: vxlan0.1001
+       protocols:
+        bgp-vpn:
+         bgp-instance:
+         - id: 1
+           # route-distinguisher:
+           # rd: "10.0.0.2:1001"
+           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.2:1001'"
+           route-target:
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1001 with VNI 101001"
+            import-rt: "target:65000:1001"
+            export-rt: "target:65000:1001"
+        bgp-evpn:
+         bgp-instance:
+         - id: 1
+           evi: 1001
+           ecmp: 8
+           vxlan-interface: vxlan0.1001
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+  
+    updates:
+    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1000]
+      val:
+       type: bridged
+       ingress:
+        vni: 101000
+       egress:
+        source-ip: use-system-ipv4-address
+  
+    - path: network-instance[name=vlan1000]
+      val:
+       type: mac-vrf
+       vxlan-interface:
+       - name: vxlan0.1000
+       protocols:
+        bgp-vpn:
+         bgp-instance:
+         - id: 1
+           # route-distinguisher:
+           # rd: "10.0.0.1:1000"
+           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.1:1000'"
+           route-target:
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1000 with VNI 101000"
+            import-rt: "target:65000:1000"
+            export-rt: "target:65000:1000"
+        bgp-evpn:
+         bgp-instance:
+         - id: 1
+           evi: 1000
+           ecmp: 8
+           vxlan-interface: vxlan0.1000
+  
+    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1001]
+      val:
+       type: bridged
+       ingress:
+        vni: 101001
+       egress:
+        source-ip: use-system-ipv4-address
+  
+    - path: network-instance[name=vlan1001]
+      val:
+       type: mac-vrf
+       vxlan-interface:
+       - name: vxlan0.1001
+       protocols:
+        bgp-vpn:
+         bgp-instance:
+         - id: 1
+           # route-distinguisher:
+           # rd: "10.0.0.1:1001"
+           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.1:1001'"
+           route-target:
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1001 with VNI 101001"
+            import-rt: "target:65000:1001"
+            export-rt: "target:65000:1001"
+        bgp-evpn:
+         bgp-instance:
+         - id: 1
+           evi: 1001
+           ecmp: 8
+           vxlan-interface: vxlan0.1001
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy vxlan configuration] **********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Update SRL vxlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [s2]
+changed: [s1]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Figure out whether to deploy the module evpn on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for evpn] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    evpn configuration for s1
+    =========================================
+  
+    updates:
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       group:
+       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+         afi-safi:
+         - afi-safi-name: evpn
+           admin-state: enable
+       route-advertisement:
+        rapid-withdrawal: True
+       afi-safi:
+       - afi-safi-name: evpn
+         evpn:
+          rapid-update: True
+  
+    - path: /interface[name=irb0]/subinterface[index=1000]
+      val:
+       ipv4:
+         arp:
+           learn-unsolicited: True
+           evpn:
+            advertise: # Type of ARP/ND entries to be advertised
+            - route-type: dynamic
+              _annotate: "Advertise dynamically learned IPs"
+            - route-type: static
+              _annotate: "Advertise local irb interface IPs"
+  
+  
+    - path: /interface[name=irb0]/subinterface[index=1002]
+      val:
+       ipv4:
+         arp:
+           learn-unsolicited: True
+           evpn:
+            advertise: # Type of ARP/ND entries to be advertised
+            - route-type: dynamic
+              _annotate: "Advertise dynamically learned IPs"
+            - route-type: static
+              _annotate: "Advertise local irb interface IPs"
+  
+  
+    - path: /interface[name=irb0]/subinterface[index=1001]
+      val:
+       ipv4:
+         arp:
+           learn-unsolicited: True
+           evpn:
+            advertise: # Type of ARP/ND entries to be advertised
+            - route-type: dynamic
+              _annotate: "Advertise dynamically learned IPs"
+            - route-type: static
+              _annotate: "Advertise local irb interface IPs"
+ok: [s2] => 
+  msg: |-
+    evpn configuration for s2
+    =========================================
+  
+    updates:
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       group:
+       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+         afi-safi:
+         - afi-safi-name: evpn
+           admin-state: enable
+       route-advertisement:
+        rapid-withdrawal: True
+       afi-safi:
+       - afi-safi-name: evpn
+         evpn:
+          rapid-update: True
+  
+    - path: /interface[name=irb0]/subinterface[index=1001]
+      val:
+       ipv4:
+         arp:
+           learn-unsolicited: True
+           evpn:
+            advertise: # Type of ARP/ND entries to be advertised
+            - route-type: dynamic
+              _annotate: "Advertise dynamically learned IPs"
+            - route-type: static
+              _annotate: "Advertise local irb interface IPs"
+  
+  
+    - path: /interface[name=irb0]/subinterface[index=1003]
+      val:
+       ipv4:
+         arp:
+           learn-unsolicited: True
+           evpn:
+            advertise: # Type of ARP/ND entries to be advertised
+            - route-type: dynamic
+              _annotate: "Advertise dynamically learned IPs"
+            - route-type: static
+              _annotate: "Advertise local irb interface IPs"
+  
+  
+    - path: /interface[name=irb0]/subinterface[index=1000]
+      val:
+       ipv4:
+         arp:
+           learn-unsolicited: True
+           evpn:
+            advertise: # Type of ARP/ND entries to be advertised
+            - route-type: dynamic
+              _annotate: "Advertise dynamically learned IPs"
+            - route-type: static
+              _annotate: "Advertise local irb interface IPs"
+
+TASK [Find configuration deployment deploy_script for evpn] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy evpn configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Update SRL evpn node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [s1]
+changed: [s2]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+s1                         : ok=74   changed=28   unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
+s2                         : ok=74   changed=28   unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
+
+
+
+The devices under test are VLAN-to-VXLAN routers using asymmetric IRB with
+EVPN control plane and running OSPF within the VRF (across VXLAN segments) to
+exchange information about non-EVPN subnets.
+
+All hosts should be able to ping each other
+

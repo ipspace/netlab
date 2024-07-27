@@ -1,0 +1,956 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h3]
+ok: [h1]
+ok: [h2]
+ok: [h4]
+ok: [s2]
+ok: [s1]
+
+TASK [Find device readiness script] ********************************************
+ok: [h1]
+ok: [h2]
+ok: [h4]
+ok: [h3]
+ok: [s1]
+ok: [s2]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for s1, s2
+
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [s2]
+ok: [s1]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h1]
+ok: [h3]
+ok: [h2]
+ok: [h4]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for initial] *********************************
+ok: [h1]
+ok: [h3]
+ok: [h2]
+ok: [s1]
+ok: [h4]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.1
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.6/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.3.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.3.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.3.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.3.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.3.2
+    #
+    # Print the final routing table
+    ip route
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    hostname s2
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    vrf instance tenant
+     rd 65000:1
+    !
+    ip routing vrf tenant
+    !
+    !
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    ip host h3 172.16.2.5
+    ip host h4 172.16.3.6
+    ip host s1 10.0.0.1 10.1.0.1
+    ip host s1-tenant 172.16.0.1 172.16.2.1 172.16.1.1
+    ip host s2-tenant 172.16.1.2 172.16.3.2 172.16.0.2
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     mtu 1600
+     description s2 -> s1
+     ip address 10.1.0.2/30
+    !
+     mac-address 52dc.cafe.0201
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0202
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0203
+    !
+    interface Vlan1001
+     no shutdown
+     vrf tenant
+     description VLAN blue (1001) -> [s1,h2]
+     ip address 172.16.1.2/24
+    !
+    interface Vlan1003
+     no shutdown
+     vrf tenant
+     description VLAN purple (1003) -> [h4] [stub]
+     ip address 172.16.3.2/24
+    !
+    interface Vlan1000
+     no shutdown
+     vrf tenant
+     description VLAN red (1000) -> [h1,s1]
+     ip address 172.16.0.2/24
+    !
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    vrf instance tenant
+     rd 65000:1
+    !
+    ip routing vrf tenant
+    !
+    !
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    ip host h3 172.16.2.5
+    ip host h4 172.16.3.6
+    ip host s1-tenant 172.16.0.1 172.16.2.1 172.16.1.1
+    ip host s2 10.0.0.2 10.1.0.2
+    ip host s2-tenant 172.16.1.2 172.16.3.2 172.16.0.2
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     mtu 1600
+     description s1 -> s2
+     ip address 10.1.0.1/30
+    !
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0102
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0103
+    !
+    interface Vlan1000
+     no shutdown
+     vrf tenant
+     description VLAN red (1000) -> [h1,s2]
+     ip address 172.16.0.1/24
+    !
+    interface Vlan1002
+     no shutdown
+     vrf tenant
+     description VLAN green (1002) -> [h3] [stub]
+     ip address 172.16.2.1/24
+    !
+    interface Vlan1001
+     no shutdown
+     vrf tenant
+     description VLAN blue (1001) -> [h2,s2]
+     ip address 172.16.1.1/24
+    !
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.2
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.5/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.2.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.2.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.2.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.2.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.2.1
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [s1]
+ok: [s2]
+ok: [h4]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s1]
+changed: [s2]
+
+TASK [set_fact] ****************************************************************
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-uzjUDsRh-h1.sh] **********
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=evpn)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    vlan 1001
+     name blue
+    !
+    vlan 1002
+     name green
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet2
+     switchport
+     switchport access vlan 1000
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1002
+    !
+    interface Vlan1000
+    !
+    interface Vlan1002
+    !
+    interface Vlan1001
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    vlan 1001
+     name blue
+    !
+    vlan 1003
+     name purple
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet2
+     switchport
+     switchport access vlan 1001
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1003
+    !
+    interface Vlan1001
+    !
+    interface Vlan1003
+    !
+    interface Vlan1000
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s2]
+ok: [s1]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
+
+TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
+changed: [s2]
+changed: [s1]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    bgp configuration for s1
+    =========================================
+    !
+    route-map next-hop-self-ipv4 permit 10
+       match route-type external
+       set ip next-hop peer-address
+    !
+    route-map next-hop-self-ipv4 permit 20
+    !
+    !
+    router bgp 65000
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.1
+    !
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description s2
+      neighbor 10.0.0.2 update-source Loopback0
+      neighbor 10.0.0.2 send-community standard extended large
+    !
+    !
+     address-family ipv4
+    !
+      network 10.0.0.1/32
+    !
+    !
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 route-map next-hop-self-ipv4 out
+    !
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    !
+    route-map next-hop-self-ipv4 permit 10
+       match route-type external
+       set ip next-hop peer-address
+    !
+    route-map next-hop-self-ipv4 permit 20
+    !
+    !
+    router bgp 65000
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.2
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description s1
+      neighbor 10.0.0.1 update-source Loopback0
+      neighbor 10.0.0.1 send-community standard extended large
+    !
+    !
+     address-family ipv4
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 route-map next-hop-self-ipv4 out
+    !
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
+
+TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
+changed: [s1]
+changed: [s2]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.2
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.1
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! s1 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
+
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [s1]
+changed: [s2]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    vrf configuration for s1
+    =========================================
+    !
+    mpls ip
+    !
+    router bgp 65000
+    !
+     vrf tenant
+      redistribute connected
+      router-id 10.0.0.1
+      rd 65000:1
+      redistribute ospf
+      redistribute ospfv3
+      route-target import vpn-ipv4 65000:1
+      route-target export vpn-ipv4 65000:1
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 100 vrf tenant
+     router-id 10.0.0.1
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+     redistribute bgp include leaked
+     redistribute connected
+     passive-interface Vlan1002
+    !
+    interface Vlan1000
+    ! VLAN red (1000) -> [h1,s2]
+     ip ospf area 0.0.0.0
+    !
+    interface Vlan1002
+    ! VLAN green (1002) -> [h3]
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface Vlan1001
+    ! VLAN blue (1001) -> [h2,s2]
+     ip ospf area 0.0.0.0
+    !
+ok: [s2] => 
+  msg: |-
+    vrf configuration for s2
+    =========================================
+    !
+    mpls ip
+    !
+    router bgp 65000
+    !
+     vrf tenant
+      redistribute connected
+      router-id 10.0.0.2
+      rd 65000:1
+      redistribute ospf
+      redistribute ospfv3
+      route-target import vpn-ipv4 65000:1
+      route-target export vpn-ipv4 65000:1
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 100 vrf tenant
+     router-id 10.0.0.2
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+     redistribute bgp include leaked
+     redistribute connected
+     passive-interface Vlan1003
+    !
+    interface Vlan1001
+    ! VLAN blue (1001) -> [s1,h2]
+     ip ospf area 0.0.0.0
+    !
+    interface Vlan1003
+    ! VLAN purple (1003) -> [h4]
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface Vlan1000
+    ! VLAN red (1000) -> [h1,s1]
+     ip ospf area 0.0.0.0
+    !
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
+
+TASK [eos_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/eos.j2] ***
+changed: [s2]
+changed: [s1]
+
+TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vxlan] ***********************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s2] => 
+  msg: |-
+    vxlan configuration for s2
+    =========================================
+    interface vxlan 1
+      vxlan source-interface Loopback0
+      vxlan vlan 1000 vni 101000
+      vxlan vlan 1001 vni 101001
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+    interface vxlan 1
+      vxlan source-interface Loopback0
+      vxlan vlan 1000 vni 101000
+      vxlan vlan 1001 vni 101001
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy vxlan configuration] **********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
+
+TASK [eos_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/eos.j2] ***
+changed: [s1]
+changed: [s2]
+
+TASK [Figure out whether to deploy the module evpn on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for evpn] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    evpn configuration for s1
+    =========================================
+    !
+    router bgp 65000
+     address-family evpn
+    !
+      neighbor 10.0.0.2 activate
+    !
+     vlan 1001
+      rd 10.0.0.1:1001
+      route-target import 65000:1001
+      route-target export 65000:1001
+      redistribute learned
+    !
+     vlan 1000
+      rd 10.0.0.1:1000
+      route-target import 65000:1000
+      route-target export 65000:1000
+      redistribute learned
+    !
+     vrf tenant
+      rd 65000:1
+      route-target import evpn 65000:1
+      route-target export evpn 65000:1
+      redistribute connected
+ok: [s2] => 
+  msg: |-
+    evpn configuration for s2
+    =========================================
+    !
+    router bgp 65000
+     address-family evpn
+    !
+      neighbor 10.0.0.1 activate
+    !
+     vlan 1001
+      rd 10.0.0.2:1001
+      route-target import 65000:1001
+      route-target export 65000:1001
+      redistribute learned
+    !
+     vlan 1000
+      rd 10.0.0.2:1000
+      route-target import 65000:1000
+      route-target export 65000:1000
+      redistribute learned
+    !
+     vrf tenant
+      rd 65000:1
+      route-target import evpn 65000:1
+      route-target export evpn 65000:1
+      redistribute connected
+
+TASK [Find configuration deployment deploy_script for evpn] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy evpn configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
+
+TASK [eos_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/eos.j2] ***
+changed: [s1]
+changed: [s2]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+s1                         : ok=54   changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s2                         : ok=54   changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+
+
+The devices under test are VLAN-to-VXLAN routers using asymmetric IRB with
+EVPN control plane and running OSPF within the VRF (across VXLAN segments) to
+exchange information about non-EVPN subnets.
+
+All hosts should be able to ping each other
+
