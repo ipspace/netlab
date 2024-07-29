@@ -264,25 +264,30 @@ The BGP transformation module builds a list of BGP neighbors for every node. Tha
 
 (bgp-ibgp-sessions)=
 **IBGP sessions**
-* If there are no route reflectors within an autonomous system (no device within the autonomous system has **bgp.rr** set to *true*), you'll get a full mesh of IBGP sessions.
+* If there are no route reflectors within an autonomous system (no device within the autonomous system has **bgp.rr** set to *true*), you'll get a full mesh of IBGP sessions[^IB_D].
 * Router reflectors have IBGP sessions to all other nodes in the same AS. When the remote node is not a router reflector, *route-reflector-client* is configured on the IBGP session.
 * Route reflector clients have IBGP sessions with route reflectors (nodes within the same AS with **bgp.rr** set).
 * IBGP sessions are established between loopback interfaces. You should combine IBGP deployment with an IGP configuration module like [OSPF](ospf.md). The only exception to this rule is the routing daemons running on Linux hosts/containers that have no loopback interfaces -- their IBGP sessions originate from the IP address of the first physical interface.
 * Parallel IBGP sessions are established for all IP address families configured on loopback interfaces[^BSESS]. See also [IPv6 support](#ipv6-support).
 
-[^BSESS]: If allowed by the **bgp.sessions** parameter
+[^IB_D]: Unless you disabled IBGP sessions with the **bgp.session** parameter ([more details](bgp-advanced-node))
+
+[^BSESS]: If allowed by the **[bgp.sessions](bgp-advanced-node)** parameter. Furthermore, you could disable the corresponding address family on the IBGP session with the **[bgp.activate](bgp-advanced-node)** parameter.
 
 See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 
 ```{tip}
-_netlab_ generates a warning for routers that have IBGP sessions without an underlying IGP. To turn off that warning (for example, when using IBGP-over-EBGP EVPN design), set **defaults.bgp.warnings.missing_igp** to _False_.
+_netlab_ generates a warning for routers that have IBGP sessions without an underlying IGP. To turn off that warning (for example, when using IBGP-over-EBGP EVPN design), set **defaults.bgp.warnings.missing_igp** to _False_. To disable IBGP sessions in scenarios that reuse the same BGP AS number on multiple sites, change the **‌[bgp.session](bgp-advanced-node)** parameter.
 ```
 
 (bgp-ebgp-sessions)=
 **EBGP sessions**
-* Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them.
+* Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them[^E_BD].
 * Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS or IBGP sessions between nodes belonging to different AS.
 * Parallel EBGP sessions are established for all IP address families configured on the link[^BSESS]. See also [IPv6 support](#ipv6-support).
+
+[^EB_D]: Unless you disabled EBGP sessions with the **bgp.session** parameter ([more details](bgp-advanced-node))
+
 
 See the [Simple BGP](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) examples for more details.
 
