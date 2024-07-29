@@ -155,7 +155,7 @@ nodes:
 [_vrnetlab_](https://containerlab.dev/manual/vrnetlab/) is an open-source project that packages network device virtual machines into containers. The resulting containers have a launch process that starts **qemu** (KVM) to spin up a virtual machine. Running *vrnetlab* containers on a VM, therefore, requires nested virtualization.
 
 ```{warning}
-_vrnetlab_ is an independent open-source project. If it fails to produce a working container image, please contact them.
+_vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/hellt/vrnetlab/issues/231)), please contact them.
 ```
 
 ### Image Names
