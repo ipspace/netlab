@@ -321,7 +321,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
 | Juniper vPTX          | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
 | Juniper vSRX 3.0      | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
-| vJunos-switch         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
+| vJunos-switch         | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Mikrotik RouterOS 6   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Mikrotik RouterOS 7   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Nokia SR Linux        | ✅ | ❌  |  ❌ |  ❌ | ✅ |  ❌ |

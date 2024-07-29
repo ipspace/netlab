@@ -1,0 +1,45 @@
+
+{# for any vlan != route, define it #}
+vlans {
+{% for vlan,vdata in vlans.items() if vdata.mode != 'route' %}
+  {{ vlan }} {
+    vlan-id {{ vdata.id }};
+
+{%   if vdata.mode == 'irb' %}
+    l3-interface irb.{{ vdata.id }};
+{%   endif %}
+
+  }
+{% endfor %}
+}
+
+{# for any interface in switched mode, set family eth switching & appropriate params #}
+interfaces {
+
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata._vlan_master is defined %}
+
+  {{ ifdata.ifname }} {
+    family ethernet-switching {
+
+{%   if ifdata.vlan.trunk_id is defined %}
+      interface-mode trunk;
+      vlan {
+        members [ {{ ifdata.vlan.trunk.keys()|sort|join(" ") }} ];
+      }
+{%   elif ifdata.vlan.access_id is defined and ifdata.type != 'vlan_member' %}
+      vlan {
+        members {{ ifdata.vlan.access }};
+      }
+{%   endif %}
+
+    }
+  }
+
+{%   if ifdata.vlan.trunk_id is defined and ifdata.vlan.native is defined %}
+  {{ ifdata.junos_interface }} {
+    native-vlan-id {{ ifdata.vlan.access_id }};
+  }
+{%   endif %}
+
+{% endfor %}
+}
