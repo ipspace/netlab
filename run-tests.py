@@ -133,6 +133,7 @@ def run_single_test(device: str, provider: str, test: str, limit: typing.Optiona
 
   os.environ['NETLAB_DEVICE'] = device
   os.environ['NETLAB_PROVIDER'] = provider
+  os.environ[f'NETLAB_DEVICES_{device}_PROVIDER'] = provider          # Force device-specific provider
   os.environ['NETLAB_GROUPS_ALL_VARS_NETLAB__SHOW__CONFIG'] = 'True'  # Enable configuration display
   for nl_param in setup.netlab.keys():
     ev = 'NETLAB_' + nl_param.upper()
