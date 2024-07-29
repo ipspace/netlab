@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 1.9.0-dev1 (2024-07-29)**
+
+[More details...](release-1.9.0)
+
 **Release 1.8.4-post2 (2024-07-13)**
 
 This release contains only [bug fixes](bug-fixes-1.8.4-post2) and [documentation fixes](doc-fixes-1.8.4-post2).
@@ -16,6 +20,8 @@ This release contains only [bug fixes](bug-fixes-1.8.4-post1) and [documentation
 * Automated build of [GitHub Codespaces devcontainer](https://github.com/users/ipspace/packages/container/package/netlab%2Fdevcontainer)
 * Handle keyboard interrupts in long-running netlab commands, including **[netlab up](netlab-up)**, **[netlab initial](netlab-initial)** and **[netlab validate](netlab-validate)**.
 * Add `--ready` action to **[netlab initial](netlab-initial)** command to wait for lab devices to become ready without configuring them.
+
+[More details...](release-1.8.4)
 
 **[Release 1.8.3](release-1.8.3) (2024-06-16)**
 
@@ -223,6 +229,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.9.md
    release/1.8.md
    release/1.7.md
    release/1.6.md
