@@ -4,35 +4,35 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s2]
-ok: [h1]
-ok: [h2]
+ok: [ce1]
+ok: [ce2]
 ok: [s1]
 
 TASK [Find device readiness script] ********************************************
+ok: [ce1]
 ok: [s2]
-ok: [h1]
-ok: [h2]
+ok: [ce2]
 ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
 skipping: [s2]
-skipping: [h1]
-skipping: [h2]
+skipping: [ce1]
+skipping: [ce2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s2]
-ok: [h1]
-ok: [h2]
+ok: [ce1]
+ok: [ce2]
 ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s2]
-ok: [h1]
-ok: [h2]
+ok: [ce1]
+ok: [ce2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -45,7 +45,7 @@ ok: [s1] =>
     lldp
     !
   
-    vrf customer
+    vrf tenant
         rd 65000:1
     !
   
@@ -55,7 +55,17 @@ ok: [s1] =>
         exit-address-family
   
   
+    !
+    vlan 1001
+     name blue
+    !
+    vlan 1000
+     name red
+    !
   
+    !
+  
+    !
     interface loopback 0
         ip address 10.0.0.3/32
     !
@@ -68,19 +78,29 @@ ok: [s1] =>
     interface 1/1/1
         shutdown
         mtu 9198
-        vrf attach customer
-        description s1 -> h1 [stub]
-        ip address 172.16.0.3/24
+        ip mtu 1600
+        description s1 -> s2
+        ip address 172.16.2.3/24
         no shutdown
     !
   
     interface 1/1/2
         shutdown
         mtu 9198
-        ip mtu 1600
-        description s1 -> s2
-        ip address 172.16.2.3/24
+        vrf attach tenant
+        description s1 -> ce1
+        ip address 172.16.3.3/24
         no shutdown
+    !
+  
+    interface vlan1000
+        description VLAN red (1000) -> [s2]
+        ip address 172.16.0.3/24
+    !
+  
+    interface vlan1001
+        description VLAN blue (1001) -> [s2]
+        ip address 172.16.1.3/24
     !
     !
 ok: [s2] => 
@@ -105,12 +125,12 @@ ok: [s2] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.1.2 h2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 s1" >>/tmp/hosts
-    echo "172.16.0.3 s1-customer" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 s2" >>/tmp/hosts
-    echo "172.16.1.4 s2-customer" >>/tmp/hosts
+    echo "10.0.0.1 172.16.3.1 ce1" >>/tmp/hosts
+    echo "10.0.0.2 172.16.4.2 ce2" >>/tmp/hosts
+    echo "10.0.0.3 172.16.2.3 172.16.0.3 172.16.1.3 s1" >>/tmp/hosts
+    echo "172.16.3.3 s1-tenant" >>/tmp/hosts
+    echo "10.0.0.4 172.16.2.4 172.16.0.4 172.16.1.4 s2" >>/tmp/hosts
+    echo "172.16.4.4 s2-tenant" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
     #
@@ -156,8 +176,8 @@ ok: [s2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1600
+    ip link set eth1 mtu 1600
+    ip link set eth2 mtu 1500
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -175,145 +195,232 @@ ok: [s2] =>
     !
     interface eth1
      no shutdown
-     description s2 -> h2 [stub]
-     ip address 172.16.1.4/24
+     description s2 -> s1
+     ip address 172.16.2.4/24
     !
     interface eth2
      no shutdown
-     description s2 -> s1
-     ip address 172.16.2.4/24
+     description s2 -> ce2
+     ip address 172.16.4.4/24
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN red (1000) -> [s1]
+     ip address 172.16.0.4/24
+    !
+    interface vlan1001
+     no shutdown
+     description VLAN blue (1001) -> [s1]
+     ip address 172.16.1.4/24
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
+ok: [ce1] => 
   msg: |-
-    initial configuration for h1
+    initial configuration for ce1
     =========================================
     #!/bin/bash
     #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
     set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
+    set -x
     #
-    # Disable IPv4 and IPv6 forwarding
+    # Create bash profile script
     #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
     #
-    # Interface addressing
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
     #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 172.16.3.1 ce1" >>/tmp/hosts
+    echo "10.0.0.2 172.16.4.2 ce2" >>/tmp/hosts
+    echo "10.0.0.3 172.16.2.3 172.16.0.3 172.16.1.3 s1" >>/tmp/hosts
+    echo "172.16.3.3 s1-tenant" >>/tmp/hosts
+    echo "10.0.0.4 172.16.2.4 172.16.0.4 172.16.1.4 s2" >>/tmp/hosts
+    echo "172.16.4.4 s2-tenant" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Rest of initial configuration done through VTYSH
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
-    #
-    # Print the final routing table
-    ip route
-ok: [h2] => 
+    cat >/tmp/config <<CONFIG
+    hostname ce1
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface eth1
+     no shutdown
+     description ce1 -> s1
+     ip address 172.16.3.1/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [ce2] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for ce2
     =========================================
     #!/bin/bash
     #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
     set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
+    set -x
     #
-    # Disable IPv4 and IPv6 forwarding
+    # Create bash profile script
     #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
     #
-    # Interface addressing
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
     #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.2/24 dev eth1
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 172.16.3.1 ce1" >>/tmp/hosts
+    echo "10.0.0.2 172.16.4.2 ce2" >>/tmp/hosts
+    echo "10.0.0.3 172.16.2.3 172.16.0.3 172.16.1.3 s1" >>/tmp/hosts
+    echo "172.16.3.3 s1-tenant" >>/tmp/hosts
+    echo "10.0.0.4 172.16.2.4 172.16.0.4 172.16.1.4 s2" >>/tmp/hosts
+    echo "172.16.4.4 s2-tenant" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Rest of initial configuration done through VTYSH
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.4
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.4
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.4
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.4
-    #
-    # Print the final routing table
-    ip route
+    cat >/tmp/config <<CONFIG
+    hostname ce2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description ce2 -> s2
+     ip address 172.16.4.2/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s2]
-ok: [h1]
-ok: [h2]
+ok: [ce1]
+ok: [ce2]
 ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2, ce1, ce2
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
@@ -331,65 +438,69 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [ce1 -> localhost]
 changed: [s2 -> localhost]
+changed: [ce2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
+changed: [ce2]
 changed: [s2]
+changed: [ce1]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
+ok: [ce1]
+ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [ce2]
 changed: [s2]
+changed: [ce1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
-
-TASK [set_fact] ****************************************************************
-ok: [h1]
-ok: [h2]
-
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Initial container configuration via /tmp/config-FftnyuHC-h1.sh] **********
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [file] ********************************************************************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+skipping: [ce1]
+skipping: [ce2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=evpn)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for vlan] ************************************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
@@ -398,6 +509,18 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      brctl addbr vlan1000
+      ip link set dev vlan1000 up
+      ip addr flush dev vlan1000
+      ip addr add 172.16.0.4/24 dev vlan1000
+    fi
+    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
+      brctl addbr vlan1001
+      ip link set dev vlan1001 up
+      ip addr flush dev vlan1001
+      ip addr add 172.16.1.4/24 dev vlan1001
+    fi
   
     exit 0
 ok: [s1] => 
@@ -405,12 +528,20 @@ ok: [s1] =>
     vlan configuration for s1
     =========================================
     !
+    !
+    interface vlan1000
+    !
+    interface vlan1001
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Deploy vlan configuration] ***********************************************
+skipping: [ce1]
+skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
@@ -424,7 +555,7 @@ TASK [aoscx_config: set session auto-confirm for vlan] *************************
 changed: [s1]
 
 TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
-ok: [s1]
+changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [s1 -> localhost]
@@ -442,14 +573,20 @@ TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansibl
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for bgp] *************************************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -514,10 +651,14 @@ ok: [s1] =>
     !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Deploy bgp configuration] ************************************************
+skipping: [ce1]
+skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
@@ -549,14 +690,70 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [s2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for ospf] ************************************
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ce1] => 
+  msg: |-
+    ospf configuration for ce1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.1
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! ce1 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [ce2] => 
+  msg: |-
+    ospf configuration for ce2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! ce2 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -575,8 +772,18 @@ ok: [s2] =>
     !
      ip ospf area 0.0.0.0
     !
-    interface eth2
+    interface eth1
     ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface vlan1000
+    ! VLAN red (1000) -> [s1]
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface vlan1001
+    ! VLAN blue (1001) -> [s1]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -593,24 +800,58 @@ ok: [s1] =>
   
         area 0.0.0.0
         area 0.0.0.0
+        area 0.0.0.0
+        area 0.0.0.0
   
     !
     interface loopback 0
         ip ospf 1 area 0.0.0.0
     !
-    interface 1/1/2
+    interface 1/1/1
     ! s1 -> s2
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+    !
+    interface vlan1000
+    ! VLAN red (1000) -> [s2]
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+    !
+    interface vlan1001
+    ! VLAN blue (1001) -> [s2]
         ip ospf 1 area 0.0.0.0
         ip ospf network point-to-point
     !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
+
+TASK [template] ****************************************************************
+changed: [ce1]
+changed: [s2]
+changed: [ce2]
+
+TASK [set_fact] ****************************************************************
+ok: [ce1]
+ok: [ce2]
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [ce2]
+changed: [ce1]
+changed: [s2]
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
@@ -627,27 +868,21 @@ changed: [s1]
 TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
-TASK [template] ****************************************************************
-changed: [s2]
-
-TASK [set_fact] ****************************************************************
-ok: [s2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [s2]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
-
 TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for vrf] *************************************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s1] => 
   msg: |-
     vrf configuration for s1
@@ -655,7 +890,7 @@ ok: [s1] =>
   
     !
     router bgp 65000
-      vrf customer
+      vrf tenant
       bgp router-id 10.0.0.3
   
   
@@ -674,23 +909,23 @@ ok: [s2] =>
     #
   
     # Create VRF tables
-    if [ ! -e /sys/devices/virtual/net/customer ]; then
-    ip link add customer type vrf table 100
+    if [ ! -e /sys/devices/virtual/net/tenant ]; then
+    ip link add tenant type vrf table 100
     fi
-    ip link set customer up
+    ip link set tenant up
   
     # Move interfaces and loopbacks to vrfs
-    sysctl -qw net.ipv6.conf.eth1.keep_addr_on_down=1
-    ip link set eth1 master customer
+    sysctl -qw net.ipv6.conf.eth2.keep_addr_on_down=1
+    ip link set eth2 master tenant
   
     cat >/tmp/vrf_config <<CONFIG
-    vrf customer
+    vrf tenant
      exit-vrf
     !
     router bgp 65000
     !
     !
-    router bgp 65000 vrf customer
+    router bgp 65000 vrf tenant
      no bgp ebgp-requires-policy
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
@@ -712,10 +947,14 @@ ok: [s2] =>
     exit $?
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Deploy vrf configuration] ************************************************
+skipping: [ce1]
+skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
@@ -747,14 +986,20 @@ TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for vxlan] ***********************************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2] => 
   msg: |-
     vxlan configuration for s2
@@ -786,8 +1031,46 @@ ok: [s2] =>
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
     bridge link set dev vxlan5042 learning off
     ip link set up dev vxlan5042
-    ip link set tvni-100 master customer
+    ip link set tvni-100 master tenant
   
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan21000 type vxlan \
+      id 21000 \
+      dstport 4789 \
+      local 10.0.0.4 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    brctl addbr vlan1000
+    ip link set up dev vlan1000
+    fi
+    brctl addif vlan1000 vxlan21000
+    brctl stp vlan1000 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan21000
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan21000 learning off
+    ip link set up dev vxlan21000
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan21001 type vxlan \
+      id 21001 \
+      dstport 4789 \
+      local 10.0.0.4 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
+    brctl addbr vlan1001
+    ip link set up dev vlan1001
+    fi
+    brctl addif vlan1001 vxlan21001
+    brctl stp vlan1001 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan21001
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan21001 learning off
+    ip link set up dev vxlan21001
   
   
     exit $?
@@ -799,12 +1082,20 @@ ok: [s1] =>
     interface vxlan 1
       source ip 10.0.0.3
       no shutdown
+      vni 21000
+        vlan 1000
+      vni 21001
+        vlan 1001
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Deploy vxlan configuration] **********************************************
+skipping: [ce1]
+skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
@@ -836,14 +1127,20 @@ TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansib
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for evpn] ************************************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2] => 
   msg: |-
     evpn configuration for s2
@@ -855,6 +1152,16 @@ ok: [s2] =>
       advertise ipv4 unicast
   
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+      vni 21001
+       rd 10.0.0.4:1001
+       route-target export 65000:1001
+       route-target import 65000:1001
+      exit-vni
+      vni 21000
+       rd 10.0.0.4:1000
+       route-target export 65000:1000
+       route-target import 65000:1000
+      exit-vni
   
       neighbor 10.0.0.3 activate
       neighbor 10.0.0.3 soft-reconfiguration inbound
@@ -865,11 +1172,11 @@ ok: [s2] =>
     exit
   
     ! L3 VRF EVPN handling
-    vrf customer
+    vrf tenant
      vni 5042
      exit-vrf
   
-    router bgp 65000 vrf customer
+    router bgp 65000 vrf tenant
      address-family l2vpn evpn
       ! This sets the L3 VNI RD/RT for this VRF
       rd 65000:1
@@ -894,20 +1201,40 @@ ok: [s1] =>
       neighbor 10.0.0.4 send-community extended
     !
   
+    evpn
+     arp-suppression
+     redistribute local-mac
+     redistribute local-svi
+     vlan 1001
+      rd 10.0.0.3:1001
+      route-target import 65000:1001
+      route-target export 65000:1001
+      route-target both 65000:1001
   
-    vrf customer
+     vlan 1000
+      rd 10.0.0.3:1000
+      route-target import 65000:1000
+      route-target export 65000:1000
+      route-target both 65000:1000
+  
+  
+    vrf tenant
       route-target import 65000:1 evpn
       route-target export 65000:1 evpn
     interface vxlan 1
       vni 5042
-        vrf customer
+        vrf tenant
         routing
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
+skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
 TASK [Deploy evpn configuration] ***********************************************
+skipping: [ce1]
+skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
@@ -942,18 +1269,15 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=80   changed=34   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+ce1                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+ce2                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+s1                         : ok=80   changed=35   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 
 
-The device under test is a VLAN-to-VXLAN layer-3 switch between an access
-interface and an EVPN transit VNI.
+The devices under test are layer-3 EVPN/VXLAN routers
+running BGP with external devices.
 
-Hosts should be able to ping each other.
-
-Please note it might take a while for the lab to work due to STP learning
-phase.
+External devices should be able to ping each other
 

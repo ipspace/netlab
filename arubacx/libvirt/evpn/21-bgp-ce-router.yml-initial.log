@@ -11,8 +11,8 @@ ok: [s1]
 TASK [Find device readiness script] ********************************************
 ok: [s2]
 ok: [ce1]
-ok: [s1]
 ok: [ce2]
+ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -415,8 +415,8 @@ ok: [ce2] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s2]
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
@@ -438,9 +438,9 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [ce2 -> localhost]
-changed: [ce1 -> localhost]
 changed: [s2 -> localhost]
+changed: [ce1 -> localhost]
+changed: [ce2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -451,8 +451,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 changed: [ce1]
 
 TASK [set_fact] ****************************************************************
@@ -461,9 +461,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce2]
 changed: [ce1]
 changed: [s2]
+changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -651,6 +651,32 @@ ok: [ce2] =>
     !
     !
     do write
+ok: [s1] => 
+  msg: |-
+    bgp configuration for s1
+    =========================================
+    !
+    !
+    router bgp 65000
+      bgp log-neighbor-changes
+      timers bgp connect-retry 10
+      bgp router-id 10.0.0.3
+      neighbor 10.0.0.4 remote-as 65000
+      neighbor 10.0.0.4 description s2
+      neighbor 10.0.0.4 update-source loopback 0
+  
+    !
+      address-family ipv4 unicast
+    !
+        network 10.0.0.3/32
+    !
+    !
+        neighbor 10.0.0.4 activate
+        neighbor 10.0.0.4 advertisement-interval 1
+        neighbor 10.0.0.4 send-community both
+        neighbor 10.0.0.4 next-hop-self
+  
+    !
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -687,32 +713,6 @@ ok: [s2] =>
     !
     !
     do write
-ok: [s1] => 
-  msg: |-
-    bgp configuration for s1
-    =========================================
-    !
-    !
-    router bgp 65000
-      bgp log-neighbor-changes
-      timers bgp connect-retry 10
-      bgp router-id 10.0.0.3
-      neighbor 10.0.0.4 remote-as 65000
-      neighbor 10.0.0.4 description s2
-      neighbor 10.0.0.4 update-source loopback 0
-  
-    !
-      address-family ipv4 unicast
-    !
-        network 10.0.0.3/32
-    !
-    !
-        neighbor 10.0.0.4 activate
-        neighbor 10.0.0.4 advertisement-interval 1
-        neighbor 10.0.0.4 send-community both
-        neighbor 10.0.0.4 next-hop-self
-  
-    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
@@ -726,8 +726,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml
 
 TASK [template] ****************************************************************
 changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -897,6 +897,28 @@ ok: [s1]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    vrf configuration for s1
+    =========================================
+  
+    !
+    router bgp 65000
+      vrf tenant
+      bgp router-id 10.0.0.3
+  
+      neighbor 172.16.3.1 remote-as 65100
+      neighbor 172.16.3.1 description ce1
+  
+  
+     address-family ipv4 unicast
+      redistribute connected
+      redistribute local loopback
+    !
+    !
+        neighbor 172.16.3.1 activate
+        neighbor 172.16.3.1 advertisement-interval 1
+        neighbor 172.16.3.1 send-community standard
 ok: [s2] => 
   msg: |-
     vrf configuration for s2
@@ -948,28 +970,6 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/vrf_config
     exit $?
-ok: [s1] => 
-  msg: |-
-    vrf configuration for s1
-    =========================================
-  
-    !
-    router bgp 65000
-      vrf tenant
-      bgp router-id 10.0.0.3
-  
-      neighbor 172.16.3.1 remote-as 65100
-      neighbor 172.16.3.1 description ce1
-  
-  
-     address-family ipv4 unicast
-      redistribute connected
-      redistribute local loopback
-    !
-    !
-        neighbor 172.16.3.1 activate
-        neighbor 172.16.3.1 advertisement-interval 1
-        neighbor 172.16.3.1 send-community standard
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [ce1]
@@ -1060,8 +1060,8 @@ ok: [s2] =>
   
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
+    ip link add vxlan21000 type vxlan \
+      id 21000 \
       dstport 4789 \
       local 10.0.0.4 nolearning
     #
@@ -1070,17 +1070,17 @@ ok: [s2] =>
     brctl addbr vlan1000
     ip link set up dev vlan1000
     fi
-    brctl addif vlan1000 vxlan101000
+    brctl addif vlan1000 vxlan21000
     brctl stp vlan1000 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101000
+    ip link set mtu 1600 addrgenmode none dev vxlan21000
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101000 learning off
-    ip link set up dev vxlan101000
+    bridge link set dev vxlan21000 learning off
+    ip link set up dev vxlan21000
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
+    ip link add vxlan21001 type vxlan \
+      id 21001 \
       dstport 4789 \
       local 10.0.0.4 nolearning
     #
@@ -1089,13 +1089,13 @@ ok: [s2] =>
     brctl addbr vlan1001
     ip link set up dev vlan1001
     fi
-    brctl addif vlan1001 vxlan101001
+    brctl addif vlan1001 vxlan21001
     brctl stp vlan1001 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101001
+    ip link set mtu 1600 addrgenmode none dev vxlan21001
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101001 learning off
-    ip link set up dev vxlan101001
+    bridge link set dev vxlan21001 learning off
+    ip link set up dev vxlan21001
   
   
     exit $?
@@ -1107,9 +1107,9 @@ ok: [s1] =>
     interface vxlan 1
       source ip 10.0.0.3
       no shutdown
-      vni 101000
+      vni 21000
         vlan 1000
-      vni 101001
+      vni 21001
         vlan 1001
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
@@ -1177,12 +1177,12 @@ ok: [s2] =>
       advertise ipv4 unicast
   
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 101001
+      vni 21001
        rd 10.0.0.4:1001
        route-target export 65000:1001
        route-target import 65000:1001
       exit-vni
-      vni 101000
+      vni 21000
        rd 10.0.0.4:1000
        route-target export 65000:1000
        route-target import 65000:1000
