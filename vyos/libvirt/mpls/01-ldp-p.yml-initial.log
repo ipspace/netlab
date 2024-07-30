@@ -7,16 +7,16 @@ ok: [pe1]
 ok: [pe2]
 ok: [p2]
 ok: [h1]
-ok: [h2]
 ok: [dut]
+ok: [h2]
 
 TASK [Find device readiness script] ********************************************
 ok: [pe1]
 ok: [pe2]
 ok: [p2]
 ok: [h1]
-ok: [h2]
 ok: [dut]
+ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [pe1]
@@ -358,64 +358,56 @@ ok: [p2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for dut
     =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.4.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.4.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.4.4
-    # loopback prefix: 172.31.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 172.31.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.31.0.0/16 via 172.16.4.4
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.4.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.4.4
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.4.4
-    #
-    # Print the final routing table
-    ip route
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 172.31.0.5/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> pe1'
+  
+  
+    set interfaces ethernet eth1 address 172.16.1.5/24
+  
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> p2'
+  
+  
+    set interfaces ethernet eth2 address 172.16.2.5/24
+  
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -474,56 +466,64 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [dut] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for dut
+    initial configuration for h2
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-  
-    set interfaces dummy dum0 address 172.31.0.5/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> pe1'
-  
-  
-    set interfaces ethernet eth1 address 172.16.1.5/24
-  
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> p2'
-  
-  
-    set interfaces ethernet eth2 address 172.16.2.5/24
-  
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.4.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.4.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.4.4
+    # loopback prefix: 172.31.0.0/16 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 172.31.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.31.0.0/16 via 172.16.4.4
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.4.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.4.4
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.4.4
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [pe1]
@@ -540,8 +540,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml fo
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [pe2 -> localhost]
-changed: [p2 -> localhost]
 changed: [pe1 -> localhost]
+changed: [p2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe1]
@@ -562,9 +562,9 @@ ok: [pe2]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p2]
 changed: [pe1]
 changed: [pe2]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe1]
@@ -579,9 +579,9 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-TPbfXoAo-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-FBPGZszR-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -655,7 +655,6 @@ ok: [pe1] =>
     !
      address-family ipv4 unicast
     !
-      network 172.31.0.3/32
     !
       network 172.16.0.0/24
     !
@@ -692,7 +691,6 @@ ok: [pe2] =>
     !
      address-family ipv4 unicast
     !
-      network 172.31.0.4/32
     !
       network 172.16.4.0/24
     !
@@ -832,12 +830,6 @@ ok: [pe1] =>
     !
      ip ospf area 0.0.0.0
     !
-    interface eth1
-    ! pe1 -> h1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf passive
-    !
     interface eth2
     ! pe1 -> dut
      ip ospf area 0.0.0.0
@@ -868,12 +860,6 @@ ok: [pe2] =>
     ! pe2 -> p2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
-    !
-    interface eth2
-    ! pe2 -> h2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf passive
     !
   
     !
@@ -908,8 +894,8 @@ TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [pe1]
 changed: [pe2]
+changed: [pe1]
 changed: [p2]
 
 TASK [set_fact] ****************************************************************
@@ -923,9 +909,9 @@ skipping: [pe1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [pe2]
 changed: [pe1]
 changed: [p2]
-changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
 ok: [dut]
@@ -940,6 +926,37 @@ ok: [pe1]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    mpls configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+    # MPLS: {}
+    set protocols mpls ldp discovery transport-ipv4-address 172.31.0.5
+  
+    set protocols mpls ldp router-id 172.31.0.5
+  
+  
+    set protocols mpls interface eth1
+    set protocols mpls ldp interface eth1
+    set protocols mpls interface eth2
+    set protocols mpls ldp interface eth2
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [p2] => 
   msg: |-
     mpls configuration for p2
@@ -973,37 +990,6 @@ ok: [p2] =>
     vtysh -f /tmp/config
   
     exit 0
-ok: [dut] => 
-  msg: |-
-    mpls configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-    configure
-  
-    # MPLS: {}
-    set protocols mpls ldp discovery transport-ipv4-address 172.31.0.5
-  
-    set protocols mpls ldp router-id 172.31.0.5
-  
-  
-    set protocols mpls interface eth1
-    set protocols mpls ldp interface eth1
-    set protocols mpls interface eth2
-    set protocols mpls ldp interface eth2
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 ok: [pe1] => 
   msg: |-
     mpls configuration for pe1
@@ -1101,8 +1087,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [p2]
-changed: [pe1]
 changed: [pe2]
+changed: [pe1]
 
 TASK [set_fact] ****************************************************************
 ok: [p2]
@@ -1110,8 +1096,8 @@ ok: [pe1]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [pe1]
 changed: [p2]
+changed: [pe1]
 changed: [pe2]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
