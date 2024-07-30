@@ -1,0 +1,91 @@
+message:
+  The tested device (DUT) is a PE-router running MPLS/VPN with two IPv6-only
+  VRFs. The Linux hosts are attached directly to the PE-router.
+
+  The PE-router has to run OSPF and LDP with a P-router and exchange VPNv6
+  routes with another PE-router. The connected IPv6 subnets must be
+  redistributed into VPNv6 AF for the end-to-end connectivity test to work.
+
+provider: libvirt                         # Force libvirt provider
+
+addressing:
+  ce_link:
+    ipv6: 2001:db8:42::/48                # IPv6-only PE-CE links
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  pe:
+    members: [ dut, pe2 ]
+    module: [ ospf, bgp, mpls, vrf ]
+    mpls.ldp: True
+    mpls.vpn: True
+    bgp.as: 65001
+  p:
+    members: [ p1, p2 ]
+    module: [ ospf, mpls ]
+    mpls.ldp: True
+  x_p:
+    members: [ p1, p2 ]
+    device: frr
+    provider: clab
+  x_pe:
+    members: [ pe2 ]
+    device: eos
+
+vrfs:
+  t1:
+    links:
+    - h1:
+      dut:
+      pool: ce_link
+    - h2:
+      pe2:
+      pool: ce_link
+  t2:
+    links:
+    - h3:
+      dut:
+      pool: ce_link
+    - h4:
+      pe2:
+      pool: ce_link
+
+links: [ dut-p1, p1-p2, p2-pe2 ]
+
+validate:
+  pe_ospf:
+    description: Check OSPF sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency
+    nodes: [ p1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: true
+  pe_ibgp:
+    description: Check IBGP session between PE-routers
+    wait: 40
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+    stop_on_error: true
+  ping_red:
+    description: Ping-based end-to-end reachability test (VRF red)
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1 ]
+    plugin: ping('h2',af='ipv6')
+  ping_blue:
+    description: Ping-based end-to-end reachability test (VRF blue)
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h3 ]
+    plugin: ping('h4',af='ipv6')
+  ping_inter:
+    description: Inter-VRF ping-based reachability
+    wait_msg: We might have to wait a bit longer
+    wait: 3
+    nodes: [ h1 ]
+    plugin: ping('h4',af='ipv6',expect='fail')
