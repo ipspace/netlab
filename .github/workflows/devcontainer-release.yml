@@ -13,15 +13,29 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       IMAGE_TAG: ${{ steps.release_tag.outputs.IMAGE_TAG }}
+      PIP_OPTIONS: ${{ steps.release_tag.outputs.PIP_OPTIONS }}
     steps:
     - name: Find release tag
       id: release_tag
-      run: echo "IMAGE_TAG=${GITHUB_REF_NAME#release_}" >> $GITHUB_OUTPUT
+      shell: bash
+      run: |
+        TAG=${GITHUB_REF_NAME#release_}
+        XTAG=latest
+        PIP_OPTIONS=
+        if [[ $TAG == *"dev"* ]]; then
+          XTAG=dev
+          PIP_OPTIONS=--pre
+        fi
+        echo "IMAGE TAG: $TAG,$XTAG"
+        echo "IMAGE_TAG=$TAG,$XTAG" >> $GITHUB_OUTPUT
+        echo "PIP OPTIONS: $PIP_OPTIONS"
+        echo "PIP_OPTIONS=$PIP_OPTIONS" >> $GITHUB_OUTPUT
 
   build:
     needs: [ setup ]
     uses: ./.github/workflows/devcontainer-build.yml
     with:
-      docker-tags: ${{ needs.setup.outputs.IMAGE_TAG }},latest
+      docker-tags: ${{ needs.setup.outputs.IMAGE_TAG }}
+      pip-options: ${{ needs.setup.outputs.PIP_OPTIONS }}
     secrets:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}

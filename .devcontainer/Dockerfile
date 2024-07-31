@@ -1,5 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/python:3.11-bookworm
 
+ARG PIP_OPTIONS
+ENV PIP_OPTIONS=${PIP_OPTIONS}
 ENV NETLAB_DEVICES_FRR_CLAB_GROUP__VARS_NETLAB__MGMT__VRF=False
 ENV ANSIBLE_CONFIG=./ansible.cfg
 LABEL org.opencontainers.image.source https://github.com/ipspace/netlab
@@ -16,7 +18,7 @@ RUN sudo mkdir -p -m 755 /etc/apt/keyrings \
 # install containerlab and tools
 RUN apt update && \
     apt install -y python3-pip && \
-    python3 -m pip install --break-system-packages networklab && \
+    python3 -m pip install --break-system-packages $PIP_OPTIONS networklab && \
     apt install -y --no-install-recommends containerlab \
     btop \
     gh \
