@@ -100,12 +100,12 @@ You can use these routing policy **match** parameters on devices supported by th
 | Operating system    | IPv4/IPv6<br>prefix | IPv4/IPv6<br>next hop | BGP<br>AS-path | BGP<br>Community |
 |---------------------|:--:|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ❌  | ✅ | ✅ |
-| Aruba AOS-CX        | ✅ | ❌  | ✅ | ❌  |
+| Aruba AOS-CX        | ✅ | ❌  | ✅ | ✅ |
 | Cisco IOSv          | ✅ | ❌  | ✅ | ✅ |
 | Cisco IOS-XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
 | FRR                 | ✅ | ❌  | ✅ | ✅ |
-| VyOS                | ✅ | ❌  | ✅ | ❌  |
+| VyOS                | ✅ | ❌  | ✅ | ✅ |
 
 You can use these routing policy **set** parameters on devices supported by the **routing** module:
 
