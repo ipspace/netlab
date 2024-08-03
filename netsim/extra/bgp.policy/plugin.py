@@ -41,9 +41,28 @@ def copy_routing_attributes(topology: Box) -> None:
       if kw in src_attr:                                    # ... assuming they exist
         dst_attr[ns][kw] = src_attr[kw]                     # ... into the target namespace of BGP attributes
 
+"""
+copy_device_features: copy device routing policy SET features to BGP features to the plugin to check
+whether a BGP policy attribute can be applied directly to the BGP neighbor
+"""
+def copy_device_features(topology: Box) -> None:
+  ctrl_set = topology.defaults.bgp.attributes.p_attr        # Get the copy lists
+  for ddata in topology.defaults.devices.values():
+    d_feat = ddata.features                                 # Get device features
+    d_set  = d_feat.get('routing.policy.set',{})            # Get the POLICY SET capabilities for the routing module
+    if not d_set:                                           # The device does not support the generic routing module, skip it
+      continue
+    for attr in ctrl_set.interface:                         # Iterate over interface-level bgp.policy attributes
+      if attr in d_set:                                     # Is the attribute supported by device POLICY SET capabilities?
+        if isinstance(d_set,Box):                           # If the POLICY SET is a dictionary...
+          d_feat.bgp[attr] = d_set[attr]                    # ... copy value into device BGP features
+        else:
+          d_feat.bgp[attr] = True                           # ... otherwise just set it to TRUE
+
 def init(topology: Box) -> None:
   data.append_to_list(topology,'_extra_module','routing')   # bgp.policy plugin needs routing policies (route maps)
   copy_routing_attributes(topology)
+  copy_device_features(topology)
 
 '''
 append_policy_attribute
