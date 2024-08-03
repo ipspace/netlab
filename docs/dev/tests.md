@@ -1,11 +1,15 @@
 # Automated CI/CD Tests
 
-*netlab* uses GitHub Workflows CI/CD pipeline, see `.github/workflows/tests.yml` for details. The automated tests executed on every push, pull request or merge include:
+*netlab* uses GitHub Workflows CI/CD pipeline; see `.github/workflows/tests.yml` for details. The automated tests executed on every push, pull request, or merge include:
 
 * **mypy** static type checking of all Python code in `netsim/` directory
 * Transformation tests ran with **pytest** in `tests/` directory
 
 You can run the same tests with the `run-tests.sh` script in *tests* directory. It's highly recommended you run them before creating a pull request that modifies Python code, or we'll have to have a discussion before your PR is merged.
+
+```{tip}
+The CI/CD tests require additional Python modules. Install them with `pip3 install -r requirements-dev.txt`
+```
 
 ## Automated Tests
 
@@ -22,7 +26,7 @@ The regular transformation tests:
 * Take a topology file from *tests/topology/input* directory
 * Run the transformation code
 * Render the resulting data structure (without address pools or system defaults) in YAML format
-* Compare the results with corresponding file from *tests/topology/expected* drectory
+* Compare the results with corresponding file from *tests/topology/expected* directory
 
 Whenever you're creating a new test case or modifying an existing one, you **HAVE TO** create a corresponding *expected results* file. Please don't try to create the expected results by hand -- the results are compared as strings, not data structures, and it's just not worth the effort to fix them manually.
 
@@ -32,10 +36,10 @@ To create *expected results* files run `create-transformation-tests.sh` script i
 
 The transformation error tests:
 
-* Take a `.yml` topology file from *tests/errors* directory
+* Take a `.yml` topology file from the *tests/errors* directory
 * Run the transformation code that should result in a 'fatal error' exit
 * Collect the error messages generated during the data transformation
-* Compare the collected error messages with corresponding `.log` file from *tests/errors* drectory
+* Compare the collected error messages with the corresponding `.log` file from *tests/errors* directory
 
 Whenever you're creating a new error test case or modifying an existing one, you **HAVE TO** create a corresponding *expected error messages* log file.
 
@@ -43,18 +47,22 @@ To create the *expected error messages* files run `create-error-tests.sh` script
 
 ## Before Submitting a PR
 
-If you PR includes modifications to Python code, make sure you follow these steps before submitting it:
+If your PR includes modifications to Python code, make sure you follow these steps before submitting it:
 
 * Run `create-transformation-tests.sh` script
 * Check the differences (again)
 * Add modified test results to your commit
-* Run `run-tests.sh` script in the `tests` directory.
+* Run the `run-tests.sh` script in the `tests` directory.
 * Submit a PR
 
 ```{tip}
-Automated CI/CD tests will check your expected test results and we'll have a discussion if you submit "suboptimal" content ;)
+Automated CI/CD tests will check your expected test results, and we'll have a discussion if you submit "suboptimal" content ;)
 ```
 
 ## Integration Tests
 
-Integration tests are ran by hand -- it's too much hassle to set up an automated test environment with vendor boxes/containers/license files. The test topologies are stored in *tests/integration* directory.
+Integration tests are run by hand; it's too much hassle to set up an automated test environment with vendor boxes/containers/license files. The latest results are available at [https://tests.netlab.tools/](https://tests.netlab.tools/).
+
+The test topologies are stored in the `tests/integration` directory. If you're adding new device features or changing device configuration templates, please run the relevant tests before submitting a PR.
+
+Most integration tests include automated validation. The easiest way to use it is to run the `netlab up _test_scenario_ --validate` command.
