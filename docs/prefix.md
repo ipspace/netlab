@@ -11,7 +11,7 @@ However, there are scenarios in which you have to use the same prefix in multipl
 * Using a link prefix in a [prefix list](generic-routing-prefixes)
 * Using the same prefix on multiple links, for example, to implement a stretched subnet using a technology not supported by _netlab_.
 
-You can use *named IP prefixes* in all three scenarios. The named prefixes are defined in the top-level **prefix** dictionary. The dictionary keys are prefix names; the values are dictionaries defining individual prefixes. The prefix values can include **ipv4**, **ipv6**, **pool** and **[allocation](addr-allocation-sequential)** attributes.
+You can use *named IP prefixes* in all three scenarios. The named prefixes are defined in the top-level **prefix** dictionary. The dictionary keys are prefix names; the values are dictionaries defining individual prefixes. The prefix values can include **ipv4**, **ipv6**, **pool** and **[allocation](addr-allocation)** attributes.
 
 The **pool** attribute in a prefix can be used when you want a well-defined prefix but don't want to specify IPv4 and IPv6 subnets. The prefix will be allocated from the specified pool on first use.
 

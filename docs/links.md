@@ -57,7 +57,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
 * **name** -- link name (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
-* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
+* **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **role** -- link role selects specific configuration module behavior. Typical link roles include *stub*, *passive*, and *external*. Please read [](module/routing.md) for more details.
 * **type** -- [link type](#link-types) (lan, p2p, stub, loopback, tunnel)
 
@@ -215,11 +215,12 @@ links:
   members: [ s1-s2, s2-s3, s1-s3 ]
 ```
 
+(links-static-addressing)=
 ## Static Link Addressing
 
 You can use the **prefix** attribute to specify the IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
 
-The **prefix** attribute could be an IPv4 CIDR prefix or a dictionary with **ipv4** and/or **ipv6** elements.
+The **prefix** attribute could be an IPv4 CIDR prefix or a dictionary with **ipv4**, **ipv6**, and **[allocation](addr-allocation)** elements.
 
 You can use the shorthand (string) syntax if you're building an IPv4-only network, for example:
 
