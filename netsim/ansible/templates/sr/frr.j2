@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+set -e
+sysctl -w net.mpls.platform_labels=1048575
+#
+# Enable MPLS data plane on transit interfaces
+#
+{% for l in interfaces %}
+{%   for igp in ['ospf','isis'] if igp in l and not l[igp].passive %}
+sysctl -w net.mpls.conf.{{ l.ifname }}.input=1
+{%   endfor %}
+{% endfor %}
+cat >/tmp/config <<CONFIG
+!
+router isis Gandalf
+  segment-routing on
+{% if isis.router_id is defined %}
+  mpls-te router-address {{ isis.router_id }}
+{% endif %}
+{% for af in ('ipv4','ipv6') if af in loopback %}
+  segment-routing prefix {{ loopback[af] }} index {{ id+100 if af == 'ipv6' else id }}
+{% endfor %}
+do write
+CONFIG
+vtysh -f /tmp/config
+exit 0
