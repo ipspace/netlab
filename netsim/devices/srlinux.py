@@ -39,7 +39,7 @@ class SRLINUX(_Quirks):
               Warning,
               'quirks')
            
-    if 'mpls' in mods:
+    if 'mpls' in mods or 'sr' in mods:
       dt = node.clab.type
       if dt not in ['ixr6','ixr10','ixr6e','ixr10e']:
         log.error(
