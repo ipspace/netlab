@@ -1,0 +1,712 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h2]
+ok: [h1]
+ok: [dut]
+ok: [p1]
+ok: [pe2]
+ok: [p2]
+
+TASK [Find device readiness script] ********************************************
+ok: [h1]
+ok: [dut]
+ok: [h2]
+ok: [pe2]
+ok: [p2]
+ok: [p1]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [pe2]
+skipping: [p1]
+skipping: [p2]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, p1, p2, h1, h2
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h1]
+ok: [dut]
+ok: [h2]
+ok: [pe2]
+ok: [p1]
+ok: [p2]
+
+TASK [Find configuration template for initial] *********************************
+ok: [h2]
+ok: [h1]
+ok: [dut]
+ok: [pe2]
+ok: [p1]
+ok: [p2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.4
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.4
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.4
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.4
+    #
+    # Print the final routing table
+    ip route
+ok: [pe2] => 
+  msg: |-
+    initial configuration for pe2
+    =========================================
+    hostname pe2
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.3 172.16.0.3 10.1.0.1
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     description pe2 -> p2
+     ip address 10.1.0.10/30
+    !
+     mac-address 52dc.cafe.0401
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     description pe2 -> h2 [stub]
+     ip address 172.16.1.4/24
+    !
+     mac-address 52dc.cafe.0402
+    !
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
+    ip host pe2 10.0.0.4 10.1.0.10 172.16.1.4
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.3 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     no shutdown
+     description dut -> h1 [stub]
+     ip address 172.16.0.3 255.255.255.0
+    !
+    interface GigabitEthernet3
+     no shutdown
+     description dut -> p1
+     ip address 10.1.0.1 255.255.255.252
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.3
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.3
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.3
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.3
+    #
+    # Print the final routing table
+    ip route
+ok: [p1] => 
+  msg: |-
+    initial configuration for p1
+    =========================================
+    hostname p1
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.3 172.16.0.3 10.1.0.1
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
+    ip host pe2 10.0.0.4 10.1.0.10 172.16.1.4
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.5/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     description p1 -> dut
+     ip address 10.1.0.2/30
+    !
+     mac-address 52dc.cafe.0501
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     description p1 -> p2
+     ip address 10.1.0.5/30
+    !
+     mac-address 52dc.cafe.0502
+    !
+ok: [p2] => 
+  msg: |-
+    initial configuration for p2
+    =========================================
+    hostname p2
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.3 172.16.0.3 10.1.0.1
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
+    ip host pe2 10.0.0.4 10.1.0.10 172.16.1.4
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     description p2 -> p1
+     ip address 10.1.0.6/30
+    !
+     mac-address 52dc.cafe.0601
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     description p2 -> pe2
+     ip address 10.1.0.9/30
+    !
+     mac-address 52dc.cafe.0602
+    !
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [dut]
+ok: [pe2]
+ok: [h2]
+ok: [p1]
+ok: [p2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [p2]
+changed: [p1]
+changed: [pe2]
+
+TASK [set_fact] ****************************************************************
+ok: [h2]
+ok: [h1]
+
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-QVsHemtN-h1.sh] **********
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [p1]
+ok: [p2]
+ok: [pe2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p1, p2, pe2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p1, p2, pe2 => (item=isis)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p1, p2, pe2 => (item=sr)
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+ok: [p1]
+ok: [p2]
+ok: [pe2]
+
+TASK [Find configuration template for bgp] *************************************
+skipping: [p1]
+skipping: [p2]
+ok: [dut]
+ok: [pe2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [p1]
+skipping: [p2]
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65001
+      no bgp default ipv4-unicast
+      bgp update-delay 5
+      bgp nopeerup-delay cold-boot 1
+      bgp nopeerup-delay user-initiated 1
+      bgp router-id 10.0.0.3
+      neighbor 10.0.0.4 remote-as 65001
+      neighbor 10.0.0.4 description pe2
+      neighbor 10.0.0.4 update-source Loopback0
+  
+    !
+     address-family ipv4
+      bgp scan-time 5
+    !
+    !
+      network 172.16.0.0 mask 255.255.255.0
+  
+    !
+      neighbor 10.0.0.4 activate
+      neighbor 10.0.0.4 advertisement-interval 0
+      neighbor 10.0.0.4 next-hop-self
+      neighbor 10.0.0.4 send-community standard
+      neighbor 10.0.0.4 send-community extended
+  
+    !
+ok: [pe2] => 
+  msg: |-
+    bgp configuration for pe2
+    =========================================
+    !
+    route-map next-hop-self-ipv4 permit 10
+       match route-type external
+       set ip next-hop peer-address
+    !
+    route-map next-hop-self-ipv4 permit 20
+    !
+    !
+    router bgp 65001
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.4
+    !
+      neighbor 10.0.0.3 remote-as 65001
+      neighbor 10.0.0.3 description dut
+      neighbor 10.0.0.3 update-source Loopback0
+      neighbor 10.0.0.3 send-community standard extended large
+    !
+    !
+     address-family ipv4
+    !
+    !
+      network 172.16.1.0/24
+    !
+    !
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 route-map next-hop-self-ipv4 out
+    !
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [p1]
+skipping: [p2]
+ok: [dut]
+ok: [pe2]
+
+TASK [Deploy bgp configuration] ************************************************
+skipping: [p1]
+skipping: [p2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+
+TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+changed: [dut]
+
+TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
+changed: [pe2]
+
+TASK [Figure out whether to deploy the module isis on current device] **********
+ok: [dut]
+ok: [p2]
+ok: [pe2]
+ok: [p1]
+
+TASK [Find configuration template for isis] ************************************
+ok: [dut]
+ok: [p1]
+ok: [pe2]
+ok: [p2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    isis configuration for dut
+    =========================================
+    !
+    interface Loopback0
+      ip router isis Gandalf
+    !
+    interface GigabitEthernet3
+    ! dut -> p1
+      ip router isis Gandalf
+      isis network point-to-point
+    !
+    !
+    router isis Gandalf
+      log-adjacency-changes
+      hostname dynamic
+      is-type level-2
+      metric-style wide
+      net 49.0001.0000.0000.0003.00
+ok: [p1] => 
+  msg: |-
+    isis configuration for p1
+    =========================================
+    !
+    router isis Gandalf
+      log-adjacency-changes
+      is-hostname p1
+      is-type level-2
+      net 49.0001.0000.0000.0005.00
+      address-family ipv4 unicast
+    !
+    interface Loopback0
+      isis enable Gandalf
+    !
+    interface Ethernet1
+    ! p1 -> dut
+      isis enable Gandalf
+      isis network point-to-point
+    !
+    interface Ethernet2
+    ! p1 -> p2
+      isis enable Gandalf
+      isis network point-to-point
+    !
+ok: [p2] => 
+  msg: |-
+    isis configuration for p2
+    =========================================
+    !
+    router isis Gandalf
+      log-adjacency-changes
+      is-hostname p2
+      is-type level-2
+      net 49.0001.0000.0000.0006.00
+      address-family ipv4 unicast
+    !
+    interface Loopback0
+      isis enable Gandalf
+    !
+    interface Ethernet1
+    ! p2 -> p1
+      isis enable Gandalf
+      isis network point-to-point
+    !
+    interface Ethernet2
+    ! p2 -> pe2
+      isis enable Gandalf
+      isis network point-to-point
+    !
+ok: [pe2] => 
+  msg: |-
+    isis configuration for pe2
+    =========================================
+    !
+    router isis Gandalf
+      log-adjacency-changes
+      is-hostname pe2
+      is-type level-2
+      net 49.0001.0000.0000.0004.00
+      address-family ipv4 unicast
+    !
+    interface Loopback0
+      isis enable Gandalf
+    !
+    interface Ethernet1
+    ! pe2 -> p2
+      isis enable Gandalf
+      isis network point-to-point
+    !
+
+TASK [Find configuration deployment deploy_script for isis] ********************
+ok: [dut]
+ok: [p2]
+ok: [p1]
+ok: [pe2]
+
+TASK [Deploy isis configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1, p2, pe2
+
+TASK [ios_config: deploying isis from /home/pipi/net101/tools/netsim/ansible/templates/isis/ios.j2] ***
+changed: [dut]
+
+TASK [eos_config: deploying isis from /home/pipi/net101/tools/netsim/ansible/templates/isis/eos.j2] ***
+changed: [p1]
+changed: [p2]
+changed: [pe2]
+
+TASK [Figure out whether to deploy the module sr on current device] ************
+ok: [p1]
+ok: [p2]
+ok: [dut]
+ok: [pe2]
+
+TASK [Find configuration template for sr] **************************************
+ok: [dut]
+ok: [p1]
+ok: [p2]
+ok: [pe2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    sr configuration for dut
+    =========================================
+    mpls ip
+    !
+    segment-routing mpls
+     !
+     set-attributes
+      address-family ipv4
+       explicit-null
+     !
+     connected-prefix-sid-map
+      address-family ipv4
+       10.0.0.3/32 index 3 range 1
+    !
+    router isis Gandalf
+     segment-routing mpls
+ok: [pe2] => 
+  msg: |-
+    sr configuration for pe2
+    =========================================
+    mpls ip
+    !
+    router isis Gandalf
+      router-id ipv4 10.0.0.3
+      segment-routing mpls
+        no shutdown
+    !
+    interface Loopback0
+      node-segment ipv4 index 4
+ok: [p2] => 
+  msg: |-
+    sr configuration for p2
+    =========================================
+    mpls ip
+    !
+    router isis Gandalf
+      router-id ipv4 10.0.0.3
+      segment-routing mpls
+        no shutdown
+    !
+    interface Loopback0
+      node-segment ipv4 index 6
+ok: [p1] => 
+  msg: |-
+    sr configuration for p1
+    =========================================
+    mpls ip
+    !
+    router isis Gandalf
+      router-id ipv4 10.0.0.3
+      segment-routing mpls
+        no shutdown
+    !
+    interface Loopback0
+      node-segment ipv4 index 5
+
+TASK [Find configuration deployment deploy_script for sr] **********************
+ok: [dut]
+ok: [p1]
+ok: [p2]
+ok: [pe2]
+
+TASK [Deploy sr configuration] *************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1, p2, pe2
+
+TASK [ios_config: deploying sr from /home/pipi/net101/tools/netsim/ansible/templates/sr/ios.j2] ***
+changed: [dut]
+
+TASK [eos_config: deploying sr from /home/pipi/net101/tools/netsim/ansible/templates/sr/eos.j2] ***
+changed: [p2]
+changed: [p1]
+changed: [pe2]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=31   changed=4    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+p1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+p2                         : ok=26   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+pe2                        : ok=31   changed=4    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+
+
+The tested device (DUT) is a PE-router. It runs IS-IS and SR-MPLS and has an
+IBGP session with another PE-router. It has to perform IP-to-MPLS
+encapsulation to get the traffic across the BGP-free MPLS core.
+
+The validation test checks end-to-end connectivity across a BGP-free MPLS core
+between a set of linux hosts attached to the PE-routers.
+
