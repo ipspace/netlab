@@ -588,6 +588,20 @@ def must_be_asn(value: typing.Any) -> dict:
 
   return { '_valid': True }
 
+def transform_named_prefix(value: str) -> str:
+    topology = global_vars.get_topology()
+    return '' if topology is None else topology.get('prefix',{})[value]
+
+def check_named_prefix(value: str) -> typing.Optional[dict]:
+  topology = global_vars.get_topology()
+  if topology is not None:
+    from ..augment import addressing
+    pfxs = topology.get('prefix',{})
+    if value in pfxs:
+      addressing.evaluate_named_prefix(topology,value)
+      return { '_valid': True, '_transform': transform_named_prefix }
+  return None
+
 #
 # Testing for IPv4 and IPv6 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
 #
@@ -695,13 +709,13 @@ def must_be_prefix_str(value: typing.Any) -> dict:
   def transform_to_ipv6(value: typing.Any) -> dict:
     return { 'ipv6': value }
 
-  if not isinstance(value,str) or not '/' in value:
+  if not isinstance(value,str):
     return { '_type': 'IPv4 or IPv6 prefix' }
 
   try:
     parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
   except Exception as ex:
-    return { '_value': "IPv4 or IPv6 prefix" }
+    return check_named_prefix(value) or { '_value': "IPv4, IPv6, or named prefix" }
 
   if parse.network != parse.ip:
     return { '_value': "IPv4 or IPv6 prefix without the host bits" }
