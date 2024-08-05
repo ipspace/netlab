@@ -4,11 +4,15 @@
 Links between virtual lab devices are specified in the **links** element of the topology file -- a list of links in one of these formats:
 
 * A dictionary of node names and other link attributes. Use this format when you want to have tight control over interface attributes like IP addresses or when you have to specify additional link attributes like OSPF cost.
-* A list of node names. Use this format for multi-access interface when you're OK with default IP addressing and don't need to specify additional link attributes.
-* A string in *node*-*node* format. Use this format for a point-to-point link.
+* A list of node names. Use this format for a multi-access link when you're OK with default IP addressing and don't need to specify additional link attributes.
+* A string in *node*-*node* format. Use this format for a point-to-point link that does not need any additional link attributes.
 * A dictionary of link attributes and a list of node interfaces.
 
-You can use all four link formats in the same topology file; they are always converted into a dictionary+list of interfaces format and augmented with addressing details during the [topology transformation process](dev/transform.md).
+You can use all four link formats in the same topology file; each link definition is always converted into a dictionary+list of interfaces format and augmented with addressing details during the [topology transformation process](dev/transform.md).
+
+```{tip}
+You can make the list of links more structured by formatting it as a dictionary with subsets of links as dictionary values.
+```
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -21,7 +25,7 @@ You can use all four link formats in the same topology file; they are always con
 
 The following simple topology file contains typical link format variants. For more details, read the extensive [link definition examples](example/link-definition.md)
 
-```
+```yaml
 ---
 defaults:
   device: iosv
@@ -41,6 +45,20 @@ links:
 ```{tip}
 When you want to specify additional link parameters, you must use the dictionary format of the link definition.
 ```
+
+If you want to have more descriptive link names (or an easier-to-read lab topology), structure the **links** as a dictionary, for example:
+
+```yaml
+links:
+  core:
+  - r1-r2
+  - [ r2, r3 ]
+  edge:
+  - r2
+  - r3
+```
+
+The *links-as-dictionary* format has no other impact than a different (more structured) presentation format and more detailed link names displayed in error messages.
 
 (link-attributes)=
 ## Link Attributes
