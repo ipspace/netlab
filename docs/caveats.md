@@ -200,13 +200,13 @@ Sadly, it's also **NOT** possible to use *VRRP* on a *Virtual Network* interface
 * Fortinet configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
 
 (caveats-frr)=
-## FRR
+## FRRouting
 
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
 * VM version of FRR is an Ubuntu VM. The FRR package is downloaded and installed during the initial configuration process.
 * You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
-* FRR containers need host kernel modules for MPLS forwarding. If your Ubuntu distribution does not include the MPLS drivers, do `sudo apt install linux-generic`.
+* FRR containers need host kernel modules for VRFs, MPLS, and VXLAN forwarding. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`. You cannot load kernel modules in GitHub containers; VRF, MPLS, and VXLAN modules are thus not working in that environment.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
 * FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with the `sudo apt install linux-generic` and reboot the server.
 * FRR 9.0 and later creates malformed IS-IS LSPs; the bug has been fixed in release 10.0.1 ([details](https://github.com/FRRouting/frr/issues/14514)). You cannot build an IS-IS network using Arista EOS and FRR if you're running an affected version of FRR.
@@ -341,3 +341,4 @@ Other VyOS caveats:
 
 * VyOS configuration template configures BFD timers only at the global level
 * Multi-topology IS-IS (assumed by the [IS-IS configuration module](module-isis)) cannot be configured with VyOS IS-IS CLI ([bug report](https://vyos.dev/T6332)).
+* VyOS containers need host kernel modules for VRFs, MPLS, and VXLAN forwarding. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`. You cannot load kernel modules in GitHub containers; VRF, MPLS, and VXLAN modules are thus not working in that environment.
