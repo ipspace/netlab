@@ -26,7 +26,8 @@ RUN apt update && \
     tcpdump \
     iproute2 \
     dnsutils \
-    telnet && \
+    telnet \
+    linux-headers-generic && \
     netlab install --yes ubuntu ansible
 
 # add empty docker config files to avoid clab warnings for root user
