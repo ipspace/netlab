@@ -2,7 +2,8 @@
 # Create YAML or JSON output
 #
 import typing
-import pathlib
+from rich.markdown import Markdown
+from rich.console import Console
 
 from box import Box
 import jinja2
@@ -71,10 +72,23 @@ class REPORT(_TopologyOutput):
 
     r_collect = ""
     for fmt in self.format:
+      ascii = fmt.endswith('.ascii')
+      if ascii:
+        fmt = fmt.replace('.ascii','.md')
+        console = Console() if outfile != '-' else strings.rich_console
+
       r_text = render(fmt,self.settings,topo)
       if '.html' in fmt:
         self.settings.html = r_text
         r_text = render('page.html',self.settings,self.settings)
+      if ascii:
+        r_text = r_text.replace('<br />','').replace('<br/>','').replace('<br>','')
+        md_text = Markdown(r_text)
+        with console.capture() as capture:
+          console.print(md_text)
+
+        r_text = capture.get()
+
       r_collect += r_text
 
     if r_collect:
