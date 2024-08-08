@@ -282,6 +282,7 @@ You can also change these *containerlab* parameters:
 * **clab.env** to set container environment (used to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations))
 * **clab.ports** to map container ports to host ports
 * **clab.cmd** to execute a command in a container.
+* **clab.startup-delay** to make certain node(s) to boot/start later than others (amount in seconds)
 
 ```{warning}
 String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
