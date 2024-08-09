@@ -26,6 +26,9 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
           module='validation')
     return False
 
+  if isinstance(v_entry.get('suzieq',{}),str):          # Make sure suzieq entry (if exists) is a dictionary
+    v_entry.suzieq = { 'show': v_entry.suzieq }
+
   x_kw = [ kw for kw in ('show','exec','plugin','suzieq') if kw in v_entry ]
   if len(x_kw) > 1:
     log.error(
