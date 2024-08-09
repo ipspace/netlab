@@ -1,6 +1,6 @@
 # Getting Started
 
-In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netlab* and all the other software needed to run your labs](install.md).
+In this tutorial we'll build a simple 2-node network running OSPF. We're assuming you already [installed *netlab* and all the other software needed to run your labs](install.md)[^NEED_ANS].
 
 ```{tip}
 If you plan to run your lab on MacOS or Windows, use [Vagrant with VirtualBox](labs/virtualbox.md). If you plan to run your lab on a Linux server or VM, use [containerlab](labs/clab.md).

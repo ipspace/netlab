@@ -12,14 +12,14 @@ import time
 import math
 import traceback
 
-from box import Box
+from box import Box,BoxList
 
-from . import load_snapshot,parser_add_debug,parser_add_verbose
-from ..utils import log,templates,strings,status as _status, files as _files
+from . import load_snapshot, parser_add_debug, parser_add_verbose
+from ..utils import log, templates, strings, status as _status, files as _files
 from ..data import global_vars
 from ..augment import devices
 from .. import data
-from .connect import connect_to_node,LogLevel
+from .connect import connect_to_node, connect_to_tool, LogLevel
 
 #
 # CLI parser for 'netlab validate' command
@@ -159,9 +159,9 @@ def log_info(msg: str, topology: Box, f_status: str = 'INFO') -> None:
 
 # Print "test failed on node"
 #
-def p_test_fail(n_name: str, v_entry: Box, topology: Box) -> None:
-  err = v_entry.get('fail','')
-  err = f'Node {n_name}: '+err if err else f'Test failed for node {n_name}'
+def p_test_fail(n_name: str, v_entry: Box, topology: Box, fail_msg: str = '') -> None:
+  err = v_entry.get('fail',fail_msg or f'Test failed for node {n_name}')
+  err = f'Node {n_name}: '+err
   log_failure(err,topology)
 
 # Print "test passed"
@@ -530,6 +530,50 @@ def get_result_string(
   return result
 
 '''
+get_suzieq_result: Execute a command on SuzieQ container, return parsed results
+'''
+def get_suzieq_result(v_entry: Box, n_name: typing.Optional[str], topology: Box, verbosity: int) -> Box:
+  if not 'suzieq' in topology.tools:
+    log.fatal('SuzieQ tools is not used in this topology, cannot continue the validation process')
+
+  v_cmd = v_entry.suzieq.show                               # Command to execute
+  if n_name:
+    v_cmd += f' --hostname {n_name}'
+  v_cmd += ' --format json'
+  err_value = data.get_box({'_error': True})                # Assume an error
+
+  if verbosity >= 3:                                        # Extra-verbose: print command to execute
+    print(f'Preparing to execute {v_cmd} on suzieq')
+
+  # Set up arguments for the 'netlab connect' command and execute it
+  #
+  result = connect_to_tool('suzieq',v_cmd,topology,LogLevel.NONE,need_output=True)
+
+  if verbosity >= 3:                                        # Extra-verbose: print the results we got
+    print(f'Executed {v_cmd} got {result}')
+
+  # If the result we got back is not a string, the 'netlab connect' command
+  # failed in one way or another
+  #
+  if not isinstance(result,str):
+    log_failure(
+      f'Failed to execute suzieq command "{v_cmd}"',
+      topology=topology)
+    return err_value
+
+  # Try to parse the results we got back as JSON data
+  #
+  j_result = parse_JSON(result)
+  if isinstance(j_result,Exception):
+    log_failure(
+      f'Failed to parse result output of suzieq command "{v_cmd}"',
+      more_data = str(j_result),
+      topology=topology)
+    return err_value
+
+  return j_result
+
+'''
 find_test_action -- find something that can be executed on current node
 
 * Try 'show' and 'exec' actions
@@ -542,10 +586,10 @@ find_test_action -- find something that can be executed on current node
 * If everything fails, return None (nothing usable for the current node)
 '''
 def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
-  for kw in ('show','exec'):
+  for kw in ('show','exec','suzieq'):
     if kw not in v_entry:
       continue
-    if isinstance(v_entry[kw],(str,int)):
+    if kw in ['suzieq'] or isinstance(v_entry[kw],(str,int)):
       return kw
     if node.device in v_entry[kw]:
       return kw
@@ -619,7 +663,8 @@ def execute_validation_expression(
       topology: Box,
       result: Box,
       verbosity: int,
-      report_error: bool) -> typing.Optional[bool]:
+      report_error: bool,
+      report_success: bool = True) -> typing.Optional[bool]:
 
   global test_skip_count,test_result_count,test_pass_count
   global BUILTINS
@@ -659,12 +704,58 @@ def execute_validation_expression(
       test_result_count += 1
     return bool(OK)
   elif OK:                                    # ... or we might have a positive result
-    log_progress(f'Validation succeeded on {node.name}',topology)
-    test_result_count += 1
-    test_pass_count += 1
-    return bool(OK)
+    if report_success:
+      log_progress(f'Validation succeeded on {node.name}',topology)
+      test_result_count += 1
+      test_pass_count += 1
 
+    return bool(OK)
   return OK
+
+'''
+Execute validation of SuzieQ results. The only difference with the 'regular' validation is that
+this one has to iterate over the list of records returned by SuzieQ
+'''
+def execute_suzieq_validation(
+      v_entry: Box,
+      node: Box,
+      topology: Box,
+      result: typing.Union[Box,BoxList],
+      verbosity: int,
+      report_error: bool) -> typing.Optional[bool]:
+
+  global test_skip_count,test_result_count,test_pass_count
+
+  C_OK = None
+  if isinstance(result,Box):
+    return execute_validation_expression(v_entry,node,topology,result,verbosity,report_error)
+  
+  for record in result:
+    for kw in ['assert']:
+      if kw in record:
+        record[f'_{kw}'] = record[kw]
+  
+    R_OK = execute_validation_expression(v_entry,node,topology,record,verbosity,report_error,report_success=False)
+    if C_OK is None:
+      C_OK = bool(R_OK)
+    elif R_OK is not None:
+      if v_entry.suzieq.get('valid','any') == 'any':
+        C_OK = C_OK or bool(R_OK)
+      else:
+        C_OK = C_OK and bool(R_OK)
+
+  if C_OK is None:
+    return C_OK
+  if not C_OK:
+    if report_error:
+      p_test_fail(node.name,v_entry,topology)
+      test_result_count += 1
+    return C_OK
+
+  log_progress(f'Validation succeeded on {node.name}',topology)
+  test_result_count += 1
+  test_pass_count += 1
+  return True
 
 """
 execute_validation_plugin:
@@ -742,6 +833,7 @@ def execute_node_validation(
     cmd = get_entry_value(v_entry,action,node,topology)
     print(f'{action} on {node.name}/{node.device}: {cmd}')
 
+  OK = None
   if action == 'show':                          # We got a 'show' action, try to get parsed results
     result = get_parsed_result(v_entry,n_name,topology,args.verbose)
     if '_error' in result:                      # OOPS, we failed (unrecoverable)
@@ -753,13 +845,20 @@ def execute_node_validation(
       if report_error:
         test_result_count += 1
         return (True, False)                    # Return (processed, failed)
+  elif action == 'suzieq':
+    result = get_suzieq_result(v_entry,n_name,topology,args.verbose)
+    OK = bool(result) != (v_entry.suzieq.get('expect','data') == 'empty')
+    if not OK and report_error:
+      p_test_fail(n_name,v_entry,topology,'suzieq did not return the expected data')
 
-  OK = None
-  if 'valid' in v_entry:                        # Do we have a validation expression in the test entry?
-    OK = execute_validation_expression(v_entry,node,topology,result,args.verbose,report_error)
+  if OK != False and 'valid' in v_entry:        # Do we have a validation expression in the test entry?
+    if action == 'suzieq':
+      OK = execute_suzieq_validation(v_entry,node,topology,result,args.verbose,report_error)
+    else:
+      OK = execute_validation_expression(v_entry,node,topology,result,args.verbose,report_error)
   elif 'plugin' in v_entry:                     # If not, try to call the plugin function
     OK = execute_validation_plugin(v_entry,node,topology,result,args.verbose,report_error)
-  elif 'pass' in v_entry:
+  elif OK != False and 'pass' in v_entry:
     log_progress(f"{node.name}: {v_entry['pass']}",topology)
 
   if OK is False:                               # Validation failed...
@@ -943,6 +1042,8 @@ def run(cli_args: typing.List[str]) -> None:
     except KeyboardInterrupt:
       print("")
       log.fatal('Validation test interrupted')
+    except SystemExit:
+      sys.exit(1)
     except:
       traceback.print_exc()
       log.fatal('Unhandled exception')
