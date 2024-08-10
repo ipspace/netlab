@@ -74,6 +74,7 @@ def pre_link_transform(topology: Box) -> None:
           intf[af] = node.loopback[af]
       intf.bgp.multihop = 255
       intf._bgp_session = True
+      intf.ifname = f'_ebgp_multihop_{s.linkindex}'
 
   topology.links.extend(sessions)
 
