@@ -16,9 +16,10 @@
 
 The following features do not work on Arista cEOS Ethernet interfaces:
 
-* MPLS encapsulation
 * Anycast gateways
 * DHCP and DHCPv6 clients
+
+cEOS MPLS data plane was introduced in release 4.32.1F.
 
 (caveats-aruba)=
 ## Aruba AOS-CX
