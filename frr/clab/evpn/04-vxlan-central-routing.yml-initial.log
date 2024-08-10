@@ -7,8 +7,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
@@ -16,8 +16,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
@@ -47,8 +47,8 @@ ok: [l2]
 ok: [spine]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -409,9 +409,9 @@ ok: [spine] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h4] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h3
     =========================================
     #!/bin/bash
     #
@@ -433,9 +433,9 @@ ok: [h4] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.4/24 dev eth1
+    ip addr add 172.16.1.3/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -525,64 +525,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.3/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.7
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.7
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.7
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.7
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -641,14 +583,72 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.7
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.7
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.7
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.7
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
@@ -656,9 +656,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
 changed: [l2 -> localhost]
+changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [l1]
@@ -669,9 +669,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
+changed: [l1]
 changed: [l2]
 changed: [spine]
-changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -680,8 +680,8 @@ ok: [spine]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [l1]
-changed: [l2]
 changed: [spine]
+changed: [l2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [l1]
@@ -696,21 +696,21 @@ ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-ZmpsZzXE-h1.sh] **********
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-gqDBYNyd-h1.sh] **********
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -814,9 +814,9 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
 changed: [spine]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -824,9 +824,9 @@ ok: [l2]
 ok: [spine]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+changed: [l2]
 changed: [l1]
 changed: [spine]
-changed: [l2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l1]
@@ -976,8 +976,8 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 changed: [spine]
 
 TASK [set_fact] ****************************************************************
@@ -992,8 +992,8 @@ skipping: [spine]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [spine]
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [l1]
@@ -1099,9 +1099,9 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
-changed: [spine]
 changed: [l2]
 changed: [l1]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1114,9 +1114,9 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [l2]
-changed: [l1]
 changed: [spine]
+changed: [l1]
+changed: [l2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [l1]
@@ -1275,9 +1275,9 @@ ok: [l2]
 ok: [spine]
 
 TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
-changed: [l2]
 changed: [l1]
 changed: [spine]
+changed: [l2]
 
 TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [l1]
@@ -1311,8 +1311,8 @@ ok: [l1] =>
     # Create L3 VNIs with bridges and add to correct vrf table
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
       dstport 4789 \
       local 10.0.0.5 nolearning
     #
@@ -1321,17 +1321,17 @@ ok: [l1] =>
     brctl addbr vlan1000
     ip link set up dev vlan1000
     fi
-    brctl addif vlan1000 vxlan101000
+    brctl addif vlan1000 vxlan1000
     brctl stp vlan1000 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101000
+    ip link set mtu 1600 addrgenmode none dev vxlan1000
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101000 learning off
-    ip link set up dev vxlan101000
+    bridge link set dev vxlan1000 learning off
+    ip link set up dev vxlan1000
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
+    ip link add vxlan1001 type vxlan \
+      id 1001 \
       dstport 4789 \
       local 10.0.0.5 nolearning
     #
@@ -1340,13 +1340,13 @@ ok: [l1] =>
     brctl addbr vlan1001
     ip link set up dev vlan1001
     fi
-    brctl addif vlan1001 vxlan101001
+    brctl addif vlan1001 vxlan1001
     brctl stp vlan1001 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101001
+    ip link set mtu 1600 addrgenmode none dev vxlan1001
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101001 learning off
-    ip link set up dev vxlan101001
+    bridge link set dev vxlan1001 learning off
+    ip link set up dev vxlan1001
   
   
     exit $?
@@ -1366,8 +1366,8 @@ ok: [l2] =>
     # Create L3 VNIs with bridges and add to correct vrf table
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
       dstport 4789 \
       local 10.0.0.6 nolearning
     #
@@ -1376,17 +1376,17 @@ ok: [l2] =>
     brctl addbr vlan1000
     ip link set up dev vlan1000
     fi
-    brctl addif vlan1000 vxlan101000
+    brctl addif vlan1000 vxlan1000
     brctl stp vlan1000 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101000
+    ip link set mtu 1600 addrgenmode none dev vxlan1000
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101000 learning off
-    ip link set up dev vxlan101000
+    bridge link set dev vxlan1000 learning off
+    ip link set up dev vxlan1000
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
+    ip link add vxlan1001 type vxlan \
+      id 1001 \
       dstport 4789 \
       local 10.0.0.6 nolearning
     #
@@ -1395,13 +1395,13 @@ ok: [l2] =>
     brctl addbr vlan1001
     ip link set up dev vlan1001
     fi
-    brctl addif vlan1001 vxlan101001
+    brctl addif vlan1001 vxlan1001
     brctl stp vlan1001 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101001
+    ip link set mtu 1600 addrgenmode none dev vxlan1001
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101001 learning off
-    ip link set up dev vxlan101001
+    bridge link set dev vxlan1001 learning off
+    ip link set up dev vxlan1001
   
   
     exit $?
@@ -1421,8 +1421,8 @@ ok: [spine] =>
     # Create L3 VNIs with bridges and add to correct vrf table
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
       dstport 4789 \
       local 10.0.0.7 nolearning
     #
@@ -1431,17 +1431,17 @@ ok: [spine] =>
     brctl addbr vlan1000
     ip link set up dev vlan1000
     fi
-    brctl addif vlan1000 vxlan101000
+    brctl addif vlan1000 vxlan1000
     brctl stp vlan1000 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101000
+    ip link set mtu 1600 addrgenmode none dev vxlan1000
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101000 learning off
-    ip link set up dev vxlan101000
+    bridge link set dev vxlan1000 learning off
+    ip link set up dev vxlan1000
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
+    ip link add vxlan1001 type vxlan \
+      id 1001 \
       dstport 4789 \
       local 10.0.0.7 nolearning
     #
@@ -1450,13 +1450,13 @@ ok: [spine] =>
     brctl addbr vlan1001
     ip link set up dev vlan1001
     fi
-    brctl addif vlan1001 vxlan101001
+    brctl addif vlan1001 vxlan1001
     brctl stp vlan1001 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101001
+    ip link set mtu 1600 addrgenmode none dev vxlan1001
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101001 learning off
-    ip link set up dev vxlan101001
+    bridge link set dev vxlan1001 learning off
+    ip link set up dev vxlan1001
   
   
     exit $?
@@ -1511,12 +1511,12 @@ ok: [l1] =>
       advertise ipv4 unicast
   
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 101001
+      vni 1001
        rd 10.0.0.5:1001
        route-target export 65000:1001
        route-target import 65000:1001
       exit-vni
-      vni 101000
+      vni 1000
        rd 10.0.0.5:1000
        route-target export 65000:1000
        route-target import 65000:1000
@@ -1544,12 +1544,12 @@ ok: [l2] =>
       advertise ipv4 unicast
   
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 101001
+      vni 1001
        rd 10.0.0.6:1001
        route-target export 65000:1001
        route-target import 65000:1001
       exit-vni
-      vni 101000
+      vni 1000
        rd 10.0.0.6:1000
        route-target export 65000:1000
        route-target import 65000:1000
@@ -1577,12 +1577,12 @@ ok: [spine] =>
       advertise ipv4 unicast
   
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 101001
+      vni 1001
        rd 10.0.0.7:1001
        route-target export 65000:1001
        route-target import 65000:1001
       exit-vni
-      vni 101000
+      vni 1000
        rd 10.0.0.7:1000
        route-target export 65000:1000
        route-target import 65000:1000
@@ -1628,9 +1628,9 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
+changed: [l1]
 changed: [l2]
 changed: [spine]
-changed: [l1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
