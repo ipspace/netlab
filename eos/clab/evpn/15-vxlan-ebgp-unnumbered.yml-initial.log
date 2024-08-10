@@ -3,8 +3,8 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
 ok: [l2]
+ok: [h1]
 ok: [h2]
 ok: [spine]
 ok: [l1]
@@ -23,8 +23,8 @@ skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for spine, l1
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -37,8 +37,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [Find configuration template for initial] *********************************
-ok: [l2]
 ok: [h1]
+ok: [l2]
 ok: [h2]
 ok: [spine]
 ok: [l1]
@@ -71,6 +71,42 @@ ok: [h1] =>
     ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -126,6 +162,52 @@ ok: [spine] =>
      ipv6 enable
     !
      mac-address 52dc.cafe.0102
+    !
+ok: [l1] => 
+  msg: |-
+    initial configuration for l1
+    =========================================
+    hostname l1
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host h1 172.31.1.4
+    ip host h2 172.31.1.5
+    ip host l2 10.0.0.3
+    ip host spine 10.0.0.1
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     mtu 1600
+     description l1 -> spine [external]
+     ip address unnumbered Loopback0
+     ipv6 nd ra interval 5
+     ipv6 enable
+    !
+     mac-address 52dc.cafe.0201
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0202
+    !
+    interface Vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,h2,l2]
     !
 ok: [l2] => 
   msg: |-
@@ -239,94 +321,12 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [l1] => 
-  msg: |-
-    initial configuration for l1
-    =========================================
-    hostname l1
-    !
-    logging monitor debugging
-    !
-    lldp run
-    ip routing
-    !
-    !
-    ip host h1 172.31.1.4
-    ip host h2 172.31.1.5
-    ip host l2 10.0.0.3
-    ip host spine 10.0.0.1
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface Ethernet1
-     no shutdown
-     no switchport
-     mtu 1600
-     description l1 -> spine [external]
-     ip address unnumbered Loopback0
-     ipv6 nd ra interval 5
-     ipv6 enable
-    !
-     mac-address 52dc.cafe.0201
-    !
-    interface Ethernet2
-     no shutdown
-     no switchport
-    !
-     mac-address 52dc.cafe.0202
-    !
-    interface Vlan1000
-     no shutdown
-     description VLAN red (1000) -> [h1,h2,l2]
-    !
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l2]
+ok: [h2]
 ok: [h1]
 ok: [spine]
-ok: [h2]
 ok: [l1]
 
 TASK [Deploy initial configuration] ********************************************
@@ -370,7 +370,7 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-rbNPbxwU-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-FBlxbhlM-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -504,6 +504,41 @@ ok: [l2] =>
     !
     !
     do write
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    !
+    ipv6 unicast-routing
+    ip routing ipv6 interfaces
+    !
+    interface Ethernet1
+      ipv6 enable
+    !
+    !
+    router bgp 65201
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.2
+    !
+      neighbor ebgp_intf_Ethernet1 peer group
+      neighbor interface Ethernet1 peer-group ebgp_intf_Ethernet1
+      neighbor ebgp_intf_Ethernet1 remote-as 65100
+      neighbor ebgp_intf_Ethernet1 description spine
+      neighbor ebgp_intf_Ethernet1 send-community standard extended large
+    !
+    !
+     address-family ipv4
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor ebgp_intf_Ethernet1 activate
+      neighbor ebgp_intf_Ethernet1 next-hop address-family ipv6 originate
+    !
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -549,41 +584,6 @@ ok: [spine] =>
       neighbor ebgp_intf_Ethernet1 next-hop address-family ipv6 originate
       neighbor ebgp_intf_Ethernet2 activate
       neighbor ebgp_intf_Ethernet2 next-hop address-family ipv6 originate
-    !
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    !
-    ipv6 unicast-routing
-    ip routing ipv6 interfaces
-    !
-    interface Ethernet1
-      ipv6 enable
-    !
-    !
-    router bgp 65201
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.2
-    !
-      neighbor ebgp_intf_Ethernet1 peer group
-      neighbor interface Ethernet1 peer-group ebgp_intf_Ethernet1
-      neighbor ebgp_intf_Ethernet1 remote-as 65100
-      neighbor ebgp_intf_Ethernet1 description spine
-      neighbor ebgp_intf_Ethernet1 send-community standard extended large
-    !
-    !
-     address-family ipv4
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor ebgp_intf_Ethernet1 activate
-      neighbor ebgp_intf_Ethernet1 next-hop address-family ipv6 originate
     !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
@@ -739,7 +739,7 @@ ok: [l1] =>
     router bgp 65201
      address-family evpn
     !
-      neighbor True activate
+      neighbor ebgp_intf_Ethernet1 activate
     !
      vlan 1000
       rd 10.0.0.2:1000
@@ -754,8 +754,8 @@ ok: [spine] =>
     router bgp 65100
      address-family evpn
     !
-      neighbor True activate
-      neighbor True activate
+      neighbor ebgp_intf_Ethernet1 activate
+      neighbor ebgp_intf_Ethernet2 activate
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 ok: [l2]
