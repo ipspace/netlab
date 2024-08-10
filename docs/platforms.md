@@ -23,7 +23,7 @@
 | Cisco Nexus 9300v [❗](caveats-nxos)      | nxos               |
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus            |
 | Cumulus Linux 5.0 (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue           |
-| Dell OS10 [❗](caveats-os10).             | dellos10           |
+| Dell OS10 [❗](caveats-os10)              | dellos10           |
 | Fortinet FortiOS [❗](caveats-fortios)    | fortios            |
 | FRRouting (FRR) [❗](caveats-frr)         | frr                |
 | [Generic Linux host](labs/linux.md)       | linux              |

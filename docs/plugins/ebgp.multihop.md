@@ -1,3 +1,4 @@
+(plugin-ebgp-multihop)=
 # Multihop EBGP
 
 The **ebgp.multihop** plugin adds support for multihop EBGP sessions established between loopback interfaces of routers in different autonomous systems.
