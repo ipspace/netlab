@@ -4,17 +4,17 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l2]
-ok: [h2]
 ok: [h1]
-ok: [l1]
+ok: [h2]
 ok: [spine]
+ok: [l1]
 
 TASK [Find device readiness script] ********************************************
 ok: [l2]
-ok: [h2]
-ok: [l1]
 ok: [h1]
+ok: [l1]
 ok: [spine]
+ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [l1]
@@ -37,56 +37,10 @@ TASK [Find configuration template for initial] *********************************
 ok: [l2]
 ok: [h1]
 ok: [l1]
-ok: [spine]
 ok: [h2]
+ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => 
-  msg: |-
-    initial configuration for l1
-    =========================================
-    hostname l1
-    !
-    lldp
-    !
-  
-  
-    !
-    vlan 1000
-     name red
-    !
-  
-    !
-  
-    !
-    interface loopback 0
-        ip address 10.0.0.2/32
-    !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        ip mtu 1600
-        description l1 -> spine [external]
-        ip address 10.1.0.1/30
-        no shutdown
-    !
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        no shutdown
-    !
-  
-    interface vlan1000
-        description VLAN red (1000) -> [h1,h2,l2]
-    !
-    !
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -125,6 +79,42 @@ ok: [spine] =>
         no shutdown
     !
     !
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -232,42 +222,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -304,6 +258,52 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [l1] => 
+  msg: |-
+    initial configuration for l1
+    =========================================
+    hostname l1
+    !
+    lldp
+    !
+  
+  
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+  
+    !
+    interface loopback 0
+        ip address 10.0.0.2/32
+    !
+    interface mgmt
+        no lldp transmit
+        no lldp receive
+    !
+  
+  
+    interface 1/1/1
+        shutdown
+        mtu 9198
+        ip mtu 1600
+        description l1 -> spine [external]
+        ip address 10.1.0.1/30
+        no shutdown
+    !
+  
+    interface 1/1/2
+        shutdown
+        mtu 9198
+        no shutdown
+    !
+  
+    interface vlan1000
+        description VLAN red (1000) -> [h1,h2,l2]
+    !
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l2]
@@ -363,16 +363,16 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-twCyLgUY-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-xHlGbXSS-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -591,8 +591,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for bgp] **************************
 changed: [l1]
@@ -603,8 +603,8 @@ changed: [l1]
 changed: [spine]
 
 TASK [file] ********************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -802,8 +802,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for evpn] *************************
 changed: [spine]
@@ -877,8 +877,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for ebgp.multihop] ****************
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [aoscx_config: deploying ebgp.multihop from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/arubacx.j2] ***
 changed: [l1]
