@@ -1,13 +1,14 @@
 # Ethernet Virtual Private Network (evpn) Configuration Module
 
-This configuration module configures the BGP EVPN address family on Nokia SR OS, Nokia SR Linux, Arista EOS, and FRR. The module depends on the BGP module.
+This configuration module configures the BGP EVPN address family to implement L2VPN or L3VPN. It supports:
 
-The current implementation of the EVPN module supports:
-
-* VXLAN-based transport over IPv4, IPv6, and MPLS-based transport
+* VXLAN-based transport over IPv4 and IPv6
+* MPLS-based transport
 * VLAN-Based Service (bridging of a single VLAN within an EVPN Instance)
 * VLAN-Aware Bundle Service (bridging of multiple related VLANs inside a single EVPN Instance)
 * Symmetric and asymmetric IRB
+* Layer-3-only VPN (L3VPN) with symmetric IRB
+* Most EVPN design scenarios, including the convoluted ones like IBGP-over-EBGP or EBGP-over-EBGP.
 
 ```eval_rst
 .. contents:: Table of Contents
