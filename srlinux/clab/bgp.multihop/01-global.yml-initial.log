@@ -3,14 +3,14 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
 ok: [pe2]
 ok: [c1]
-ok: [dut]
 
 TASK [Find device readiness script] ********************************************
+ok: [dut]
 ok: [pe2]
 ok: [c1]
-ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -21,61 +21,108 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, c1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
 ok: [pe2]
 ok: [c1]
-ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
+ok: [dut]
 ok: [pe2]
 ok: [c1]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
     initial configuration for dut
     =========================================
-    hostname dut
-    !
-    lldp
-    !
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.1/32"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:1:1::1/64"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+       subinterface:
+        index: 0
+        description: "dut ~ c1"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "dut ~ c1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.2/30"
+          primary: [null]
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:3::2/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+    - path: interface[name=ethernet-1/2]
+      val:
+       subinterface:
+        index: 0
+        description: "dut ~ stub"
+  
+    - path: interface[name=ethernet-1/2]/subinterface[index=0]
+      val:
+       description: "dut ~ stub"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "192.168.42.1/24"
+          primary: [null]
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:42::1/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
   
   
   
-    interface loopback 0
-        ip address 10.0.0.1/32
-        ipv6 address 2001:db8:1:1::1/64
-    !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
   
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        description dut -> c1
-        ip address 172.16.0.1/24
-        ipv6 address 2001:db8:2::1/64
-        no ipv6 nd suppress-ra
-        ipv6 nd ra min-interval 3
-        ipv6 nd ra max-interval 4
-        no shutdown
-    !
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        description dut -> stub
-        ip address 192.168.42.1/24
-        ipv6 address 2001:db8:42::1/64
-        no ipv6 nd suppress-ra
-        ipv6 nd ra min-interval 3
-        ipv6 nd ra max-interval 4
-        no shutdown
-    !
-    !
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/2.0
 ok: [pe2] => 
   msg: |-
     initial configuration for pe2
@@ -98,9 +145,9 @@ ok: [pe2] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:2:1::2 c1" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 192.168.42.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:42::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 pe2" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.1 10.1.0.5 2001:db8:1:2::1 2001:db8:3::1 2001:db8:3:1::1 c1" >>/tmp/hosts
+    echo "10.0.0.1 10.1.0.2 192.168.42.1 2001:db8:1:1::1 2001:db8:3::2 2001:db8:42::1 dut" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2 pe2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
     #
@@ -169,8 +216,8 @@ ok: [pe2] =>
     interface eth1
      no shutdown
      description pe2 -> c1
-     ip address 172.16.1.3/24
-     ipv6 address 2001:db8:2:1::3/64
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -200,9 +247,9 @@ ok: [c1] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:2:1::2 c1" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 192.168.42.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:42::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 pe2" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.1 10.1.0.5 2001:db8:1:2::1 2001:db8:3::1 2001:db8:3:1::1 c1" >>/tmp/hosts
+    echo "10.0.0.1 10.1.0.2 192.168.42.1 2001:db8:1:1::1 2001:db8:3::2 2001:db8:42::1 dut" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2 pe2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
     #
@@ -276,16 +323,16 @@ ok: [c1] =>
     interface eth1
      no shutdown
      description c1 -> dut
-     ip address 172.16.0.2/24
-     ipv6 address 2001:db8:2::2/64
+     ip address 10.1.0.1/30
+     ipv6 address 2001:db8:3::1/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     interface eth2
      no shutdown
      description c1 -> pe2
-     ip address 172.16.1.2/24
-     ipv6 address 2001:db8:2:1::2/64
+     ip address 10.1.0.5/30
+     ipv6 address 2001:db8:3:1::1/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -295,13 +342,16 @@ ok: [c1] =>
     exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
 ok: [pe2]
 ok: [c1]
-ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for pe2, c1
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [dut]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -309,18 +359,21 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for initial] **********************
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+skipping: [dut]
+
+TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
 changed: [dut]
 
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
-changed: [dut]
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [c1 -> localhost]
 changed: [pe2 -> localhost]
+changed: [c1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe2]
@@ -349,8 +402,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [c1]
-ok: [pe2]
 ok: [dut]
+ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=bgp)
@@ -358,13 +411,13 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1,
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [c1]
-ok: [pe2]
 ok: [dut]
+ok: [pe2]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [c1]
-ok: [pe2]
 ok: [dut]
+ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [c1]
@@ -419,50 +472,205 @@ ok: [dut] =>
   msg: |-
     bgp configuration for dut
     =========================================
-    !
-    !
-    router bgp 65000
-      bgp log-neighbor-changes
-      timers bgp connect-retry 10
-      bgp router-id 10.0.0.1
-      neighbor 10.0.0.3 remote-as 65101
-      neighbor 10.0.0.3 description pe2
+    updates:
   
-      neighbor 2001:db8:1:3::1 remote-as 65101
-      neighbor 2001:db8:1:3::1 description pe2
+    - path: routing-policy/policy[name=accept_all]
+      val:
+       default-action:
+        policy-result: "accept"
   
-    !
-      address-family ipv4 unicast
-    !
-        network 10.0.0.1/32
-    !
-        network 192.168.42.0/24
-    !
-        neighbor 10.0.0.3 activate
-        neighbor 10.0.0.3 advertisement-interval 1
-        neighbor 10.0.0.3 send-community standard
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "10.0.0.1"
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv6]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "2001:db8:1:1::1"
   
-      address-family ipv6 unicast
-    !
-        network 2001:db8:1:1::/64
-    !
-        network 2001:db8:42::/64
-    !
-        neighbor 2001:db8:1:3::1 activate
-        neighbor 2001:db8:1:3::1 advertisement-interval 1
-        neighbor 2001:db8:1:3::1 send-community standard
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.1
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
   
-    !
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+       afi-safi:
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: routing-policy/policy[name=default_export]
+      val:
+       default-action:
+        policy-result: reject
+       statement:
+       - name: prefixes
+         match:
+          prefix-set: default_export
+         action:
+          policy-result: accept
+       - name: bgp
+         match:
+          protocol: bgp
+         action:
+          policy-result: accept
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.1/32
+         mask-length-range: exact
+  
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 192.168.42.0/24
+         mask-length-range: exact
+  
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 2001:db8:1:1::1/128
+         mask-length-range: exact
+  
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 2001:db8:42::/64
+         mask-length-range: exact
+  
+  
+  
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.0.0.3"
+         description: pe2
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: enable
+  
+         peer-as: 65101
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "2001:db8:1:3::1"
+         description: pe2
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: enable
+  
+         peer-as: 65101
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [c1]
-ok: [pe2]
 ok: [dut]
+ok: [pe2]
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [c1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [dut]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -470,11 +678,14 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for bgp] **************************
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+skipping: [dut]
+
+TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
 changed: [dut]
 
-TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
-changed: [dut]
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [file] ********************************************************************
 changed: [dut -> localhost]
@@ -492,14 +703,14 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
 ok: [c1]
 ok: [pe2]
-ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [c1]
-ok: [pe2]
 ok: [dut]
+ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [c1] => 
@@ -606,58 +817,72 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
+    updates:
+    - path: network-instance[name=default]
+      val:
+       router-id: 10.0.0.1
+       protocols:
+        ospf:
+         instance:
+         - name: "0"
+           version: ospf-v2
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: system0.0
+               passive: True
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/1.0
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: lo0.2
+               passive: True
+               failure-detection:
+                enable-bfd: False
   
-    router ospf 1
-        router-id 10.0.0.1
-  
-        area 0.0.0.0
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut -> c1
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-    !
-    interface 1/1/2
-    ! dut -> stub
-        ip ospf 1 area 0.0.0.0
-        ip ospf passive
-    !
-    router ospfv3 1
-        router-id 10.0.0.1
-  
-        area 0.0.0.0
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-     ipv6 ospfv3 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut -> c1
-        ipv6 ospfv3 1 area 0.0.0.0
-        ipv6 ospfv3 network point-to-point
-    !
-    interface 1/1/2
-    ! dut -> stub
-        ipv6 ospfv3 1 area 0.0.0.0
-        ipv6 ospfv3 passive
-    !
+    - path: network-instance[name=default]
+      val:
+       router-id: 10.0.0.1
+       protocols:
+        ospf:
+         instance:
+         - name: "1"
+           version: ospf-v3
+           address-family: ipv6-unicast
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: system0.0
+               passive: True
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/1.0
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: lo0.2
+               passive: True
+               failure-detection:
+                enable-bfd: False
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [c1]
-ok: [pe2]
 ok: [dut]
+ok: [pe2]
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for c1, pe2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [template] ****************************************************************
 changed: [c1]
@@ -672,8 +897,11 @@ skipping: [c1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [pe2]
 changed: [c1]
+changed: [pe2]
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [dut]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -681,76 +909,31 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for ospf] *************************
-changed: [dut]
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
+skipping: [dut]
 
-TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
+TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+FAILED - RETRYING: [dut]: Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem) (2 retries left).
+FAILED - RETRYING: [dut]: Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem) (1 retries left).
+fatal: [dut]: FAILED! => changed=false 
+  attempts: 2
+  code: -32603
+  msg: |-
+    <_InactiveRpcError of RPC that terminated with:
+            status = StatusCode.FAILED_PRECONDITION
+            details = "Error in path: .network-instance{.name=="default"}.protocols.ospf.instance{.name=="0"}.area{.area-id=="0.0.0.0"}.interface{.interface-name=="lo0.2"}.interface-name
+        [FailedPrecondition] none of the network-instances ['default'] specified via ../../../../../../name contain the subinterface reference 'lo0.2'
+    Error in path: .network-instance{.name=="default"}.protocols.ospf.instance{.name=="1"}.area{.area-id=="0.0.0.0"}.interface{.interface-name=="lo0.2"}.interface-name
+        [FailedPrecondition] none of the network-instances ['default'] specified via ../../../../../../name contain the subinterface reference 'lo0.2'
+    "
+            debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Error in path: .network-instance{.name==\"default\"}.protocols.ospf.instance{.name==\"0\"}.area{.area-id==\"0.0.0.0\"}.interface{.interface-name==\"lo0.2\"}.interface-name\n    [FailedPrecondition] none of the network-instances [\'default\'] specified via ../../../../../../name contain the subinterface reference \'lo0.2\'\nError in path: .network-instance{.name==\"default\"}.protocols.ospf.instance{.name==\"1\"}.area{.area-id==\"0.0.0.0\"}.interface{.interface-name==\"lo0.2\"}.interface-name\n    [FailedPrecondition] none of the network-instances [\'default\'] specified via ../../../../../../name contain the subinterface reference \'lo0.2\'\n", grpc_status:9, created_time:"2024-08-11T09:19:11.51873733+00:00"}"
+    >
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-skipping: [dut] => (item=bgp.session) 
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, pe2 => (item=ebgp.multihop)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for pe2 => (item=bgp.session)
-
-TASK [Find configuration template] *********************************************
-ok: [pe2]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [pe2]
-
-TASK [Check is the configuration template is a file] ***************************
-ok: [pe2 -> localhost]
-ok: [dut -> localhost]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [pe2]
-
-TASK [Process template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/arubacx.j2 for dut] ***
-skipping: [pe2]
-skipping: [dut]
-
-TASK [Find custom configuration deployment script] *****************************
-ok: [pe2]
-ok: [dut]
-
-TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for ebgp.multihop] ****************
-changed: [dut]
-
-TASK [aoscx_config: deploying ebgp.multihop from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [pe2]
-
-TASK [set_fact] ****************************************************************
-ok: [pe2]
-
-TASK [run /tmp/config.sh to deploy ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
-skipping: [pe2]
-
-TASK [run vtysh to import ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
-changed: [pe2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for pe2 => (item=ebgp.multihop)
 
 TASK [Find configuration template] *********************************************
 ok: [pe2]
@@ -785,12 +968,44 @@ changed: [pe2]
 TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 skipping: [pe2]
 
+TASK [Find configuration template] *********************************************
+ok: [pe2]
+
+TASK [fail] ********************************************************************
+skipping: [pe2]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [pe2 -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [pe2]
+
+TASK [Process template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2 for pe2] ***
+skipping: [pe2]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [pe2]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+
+TASK [template] ****************************************************************
+changed: [pe2]
+
+TASK [set_fact] ****************************************************************
+ok: [pe2]
+
+TASK [run /tmp/config.sh to deploy ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
+skipping: [pe2]
+
+TASK [run vtysh to import ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
+changed: [pe2]
+
 PLAY RECAP *********************************************************************
 c1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-dut                        : ok=46   changed=20   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=32   changed=10   unreachable=0    failed=1    skipped=8    rescued=0    ignored=0   
 pe2                        : ok=48   changed=11   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
-
-
-Use this topology to test the (global) EBGP multihop implementation
-
+Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
