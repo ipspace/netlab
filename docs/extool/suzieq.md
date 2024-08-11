@@ -1,6 +1,7 @@
+(extool-suzieq)=
 # SuzieQ
 
-SuzieQ is the first open source, multi-vendor network observability platform application.
+SuzieQ is the first open-source, multi-vendor network observability platform.
 
 * Add the following lines to the lab topology file to use SuzieQ with _netlab_:
 
@@ -9,8 +10,8 @@ tools:
   suzieq:
 ```
 
-* Use **netlab connect suzieq** command to start the SuzieQ CLI.
-* SuzieQ tool has no configurable parameters
+* Use the **netlab connect suzieq** command to start the interactive SuzieQ CLI or **netlab connect suzieq _command_** to execute a single command with the SuzieQ CLI.
+* The SuzieQ tool has no configurable parameters
 
 **Notes:**
 
