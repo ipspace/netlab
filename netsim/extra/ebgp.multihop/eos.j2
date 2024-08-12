@@ -1,7 +1,9 @@
 {% macro ebgp_session(n,af) -%}
 {%   if n.multihop is defined %}
   neighbor {{ n[af] }} ebgp-multihop {{ n.multihop if n.multihop < 255 else '' }}
-  neighbor {{ n[af] }} update-source Loopback0
+{%   endif %}
+{%   if n._source_ifname is defined %}
+  neighbor {{ n[af] }} update-source {{ n._source_ifname }}
 {%   endif %}
 {%- endmacro %}
 !
@@ -17,7 +19,7 @@ router bgp {{ bgp.as }}
 !
  vrf {{ vname }}
 {%     for af in ['ipv4','ipv6'] %}
-{%       for n in bgp.neighbors if n[af] is defined %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {{         ebgp_session(n,af) -}}
 {%       endfor %}
 {%     endfor %}

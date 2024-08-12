@@ -360,6 +360,20 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
   return
 
 """
+get_vrf_loopback: Given a node and a VRF name, get a loopback interface from that VRF
+"""
+def get_vrf_loopback(node: Box, vrf: str) -> typing.Optional[Box]:
+  for intf in node.interfaces:                    # Loop over all interfaces
+    if intf.type != 'loopback':                   # Not a loopback interface? Move on...
+      continue
+    if intf.get('vrf',None) != vrf:               # Not in the correct VRF? Move on
+      continue
+
+    return intf                                   # Found the VRF loopback, return it.
+  
+  return None                                     # Otherwise, return "not found"
+
+"""
 create_vrf_links -- create VRF links based on VRF 'links' attribute
 
 * Iterate over global VRFs

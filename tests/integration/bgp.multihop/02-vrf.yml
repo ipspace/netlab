@@ -9,6 +9,8 @@ addressing:
     ipv6: 2001:db8:2::/48
   p2p:
     ipv6: 2001:db8:3::/48
+  vrf_loopback:
+    ipv6: 2001:db8:4::/48
 
 prefix:
   beacon:
@@ -25,6 +27,11 @@ plugin: [ ebgp.multihop, bgp.session ]
 
 vrfs:
   tenant:
+    links:
+    - dut-c1
+    - c1-pe2
+    - dut:
+      prefix: beacon
 
 bgp.multihop.sessions:
 - dut:
@@ -43,25 +50,19 @@ nodes:
     bgp.as: 65101
     module: [ bgp, ospf ]
 
-links:
-- dut-c1
-- c1-pe2
-- dut:
-  prefix: beacon
-
 validate:
   ospf:
     description: Check OSPFv2 adjacency with DUT
     wait_msg: Waiting for OSPF adjacency process to complete
     wait: 50
     nodes: [ c1 ]
-    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    plugin: ospf_neighbor(nodes.dut.vrfs.tenant.ospf.router_id)
   ospf6:
     description: Check OSPFv3 adjacency with DUT
     wait_msg: Waiting for OSPF adjacency process to complete
     wait: 20
     nodes: [ c1 ]
-    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+    plugin: ospf6_neighbor(nodes.dut.vrfs.tenant.ospf.router_id)
   bgp:
     description: Check IPv4 EBGP sessions with DUT
     wait_msg: Wait for BGP sessions to be established
