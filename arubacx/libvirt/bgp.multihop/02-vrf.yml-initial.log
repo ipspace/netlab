@@ -40,6 +40,19 @@ ok: [dut] =>
     lldp
     !
   
+    vrf tenant
+        rd 65000:1
+    !
+  
+        address-family ipv4 unicast
+            route-target import 65000:1
+            route-target export 65000:1
+        exit-address-family
+        address-family ipv6 unicast
+            route-target import 65000:1
+            route-target export 65000:1
+        exit-address-family
+  
   
   
     interface loopback 0
@@ -55,6 +68,7 @@ ok: [dut] =>
     interface 1/1/1
         shutdown
         mtu 9198
+        vrf attach tenant
         description dut -> c1
         ip address 172.16.0.1/24
         ipv6 address 2001:db8:2::1/64
@@ -67,6 +81,7 @@ ok: [dut] =>
     interface 1/1/2
         shutdown
         mtu 9198
+        vrf attach tenant
         description dut -> stub
         ip address 192.168.42.1/24
         ipv6 address 2001:db8:42::1/64
@@ -74,6 +89,16 @@ ok: [dut] =>
         ipv6 nd ra min-interval 3
         ipv6 nd ra max-interval 4
         no shutdown
+    !
+  
+    interface loopback 1
+        vrf attach tenant
+        description VRF Loopback tenant
+        ip address 10.2.0.1/32
+        ipv6 address 2001:db8:4::1/64
+        no ipv6 nd suppress-ra
+        ipv6 nd ra min-interval 3
+        ipv6 nd ra max-interval 4
     !
     !
 ok: [pe2] => 
@@ -99,7 +124,8 @@ ok: [pe2] =>
     #
     echo "# Created by netlab initial" >>/tmp/hosts
     echo "10.0.0.2 172.16.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:2:1::2 c1" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 192.168.42.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:42::1 dut" >>/tmp/hosts
+    echo "10.0.0.1 2001:db8:1:1::1 dut" >>/tmp/hosts
+    echo "172.16.0.1 192.168.42.1 10.2.0.1 2001:db8:2::1 2001:db8:42::1 2001:db8:4::1 dut-tenant" >>/tmp/hosts
     echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 pe2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
@@ -201,7 +227,8 @@ ok: [c1] =>
     #
     echo "# Created by netlab initial" >>/tmp/hosts
     echo "10.0.0.2 172.16.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:2:1::2 c1" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 192.168.42.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:42::1 dut" >>/tmp/hosts
+    echo "10.0.0.1 2001:db8:1:1::1 dut" >>/tmp/hosts
+    echo "172.16.0.1 192.168.42.1 10.2.0.1 2001:db8:2::1 2001:db8:42::1 2001:db8:4::1 dut-tenant" >>/tmp/hosts
     echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 pe2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
@@ -355,6 +382,7 @@ ok: [dut]
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [c1]
@@ -384,13 +412,13 @@ ok: [pe2] =>
   
       bgp router-id 10.0.0.3
     !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
+      neighbor 10.2.0.1 remote-as 65000
+      neighbor 10.2.0.1 description dut
+      neighbor 10.2.0.1 update-source lo
     !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
+      neighbor 2001:db8:4::1 remote-as 65000
+      neighbor 2001:db8:4::1 description dut
+      neighbor 2001:db8:4::1 update-source lo
     !
      address-family ipv4 unicast
     !
@@ -398,10 +426,10 @@ ok: [pe2] =>
     !
     !
     !
-      neighbor 10.0.0.1 activate
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
+      neighbor 10.2.0.1 activate
+      no neighbor 10.2.0.1 send-community all
+      neighbor 10.2.0.1 send-community standard
+      neighbor 10.2.0.1 send-community large
     !
      address-family ipv6 unicast
     !
@@ -409,10 +437,10 @@ ok: [pe2] =>
     !
     !
     !
-      neighbor 2001:db8:1:1::1 activate
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
+      neighbor 2001:db8:4::1 activate
+      no neighbor 2001:db8:4::1 send-community all
+      neighbor 2001:db8:4::1 send-community standard
+      neighbor 2001:db8:4::1 send-community large
     !
     !
     !
@@ -427,35 +455,17 @@ ok: [dut] =>
       bgp log-neighbor-changes
       timers bgp connect-retry 10
       bgp router-id 10.0.0.1
-      neighbor 10.0.0.3 remote-as 65101
-      neighbor 10.0.0.3 description pe2
-      neighbor 10.0.0.3 update-source loopback 0
-  
-      neighbor 2001:db8:1:3::1 remote-as 65101
-      neighbor 2001:db8:1:3::1 description pe2
-      neighbor 2001:db8:1:3::1 update-source loopback 0
-  
     !
       address-family ipv4 unicast
     !
         network 10.0.0.1/32
     !
-        network 192.168.42.0/24
     !
-        neighbor 10.0.0.3 activate
-        neighbor 10.0.0.3 advertisement-interval 1
-        neighbor 10.0.0.3 send-community standard
-  
       address-family ipv6 unicast
     !
         network 2001:db8:1:1::/64
     !
-        network 2001:db8:42::/64
     !
-        neighbor 2001:db8:1:3::1 activate
-        neighbor 2001:db8:1:3::1 advertisement-interval 1
-        neighbor 2001:db8:1:3::1 send-community standard
-  
     !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
@@ -506,6 +516,10 @@ ok: [pe2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
 ok: [c1] => 
   msg: |-
     ospf configuration for c1
@@ -606,53 +620,6 @@ ok: [pe2] =>
   
     !
     do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-  
-    router ospf 1
-        router-id 10.0.0.1
-  
-        area 0.0.0.0
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut -> c1
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-    !
-    interface 1/1/2
-    ! dut -> stub
-        ip ospf 1 area 0.0.0.0
-        ip ospf passive
-    !
-    router ospfv3 1
-        router-id 10.0.0.1
-  
-        area 0.0.0.0
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-     ipv6 ospfv3 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut -> c1
-        ipv6 ospfv3 1 area 0.0.0.0
-        ipv6 ospfv3 network point-to-point
-    !
-    interface 1/1/2
-    ! dut -> stub
-        ipv6 ospfv3 1 area 0.0.0.0
-        ipv6 ospfv3 passive
-    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [c1]
@@ -664,8 +631,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [c1]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [c1]
@@ -689,6 +656,141 @@ TASK [aoscx_config: set session auto-confirm for ospf] *************************
 changed: [dut]
 
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
+ok: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [c1]
+ok: [pe2]
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [c1]
+skipping: [pe2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [c1]
+skipping: [pe2]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+  
+    !
+    router ospf 2 vrf tenant
+        router-id 10.0.0.1
+  
+        redistribute bgp
+        redistribute connected
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface 1/1/1
+    ! dut -> c1
+        ip ospf 2 area 0.0.0.0
+        ip ospf network point-to-point
+    !
+    interface 1/1/2
+    ! dut -> stub
+        ip ospf 2 area 0.0.0.0
+        ip ospf passive
+    !
+    interface loopback 1
+    ! VRF Loopback tenant
+        ip ospf 2 area 0.0.0.0
+    !
+  
+    !
+    router ospfv3 2 vrf tenant
+        router-id 10.0.0.1
+  
+        redistribute bgp
+        redistribute connected
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface 1/1/1
+    ! dut -> c1
+        ipv6 ospfv3 2 area 0.0.0.0
+        ipv6 ospfv3 network point-to-point
+    !
+    interface 1/1/2
+    ! dut -> stub
+        ipv6 ospfv3 2 area 0.0.0.0
+        ipv6 ospfv3 passive
+    !
+    interface loopback 1
+    ! VRF Loopback tenant
+        ipv6 ospfv3 2 area 0.0.0.0
+    !
+  
+  
+    !
+    router bgp 65000
+      vrf tenant
+      bgp router-id 10.0.0.1
+  
+      neighbor 10.0.0.3 remote-as 65101
+      neighbor 10.0.0.3 description pe2
+      neighbor 10.0.0.3 update-source loopback 1
+  
+      neighbor 2001:db8:1:3::1 remote-as 65101
+      neighbor 2001:db8:1:3::1 description pe2
+      neighbor 2001:db8:1:3::1 update-source loopback 1
+  
+  
+     address-family ipv4 unicast
+      redistribute connected
+      redistribute local loopback
+      redistribute ospf 2
+    !
+        network 10.2.0.1/32
+    !
+        neighbor 10.0.0.3 activate
+        neighbor 10.0.0.3 advertisement-interval 1
+        neighbor 10.0.0.3 send-community standard
+  
+     address-family ipv6 unicast
+      redistribute connected
+      redistribute local loopback
+    !
+        network 2001:db8:4::/64
+    !
+        neighbor 2001:db8:1:3::1 activate
+        neighbor 2001:db8:1:3::1 advertisement-interval 1
+        neighbor 2001:db8:1:3::1 send-community standard
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [c1]
+skipping: [pe2]
+ok: [dut]
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [c1]
+skipping: [pe2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [aoscx_config: set session auto-confirm for vrf] **************************
+changed: [dut]
+
+TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [dut]
 
 TASK [file] ********************************************************************
@@ -790,11 +892,11 @@ TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim
 skipping: [pe2]
 
 PLAY RECAP *********************************************************************
-c1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-dut                        : ok=46   changed=20   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-pe2                        : ok=48   changed=11   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+c1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=57   changed=24   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+pe2                        : ok=50   changed=11   unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
 
 
 
-Use this topology to test the (global) EBGP multihop implementation
+Use this topology to test the VRF EBGP multihop implementation
 
