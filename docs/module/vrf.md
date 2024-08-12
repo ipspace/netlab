@@ -41,7 +41,7 @@ These platforms support routing protocols in VRFs:
 | Operating system      | VRF-aware<br />OSPF | VRF-aware<br />OSPFv3 | VRF-aware<br />EBGP |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  |  ❌  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅ [❗](caveats-iosv) | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
