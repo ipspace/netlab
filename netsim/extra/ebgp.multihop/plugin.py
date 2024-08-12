@@ -1,4 +1,6 @@
 from box import Box
+import netaddr
+
 from netsim.utils import log,bgp as _bgp
 from netsim.modules import vrf
 from netsim import api,data
@@ -120,7 +122,7 @@ def augment_af_activation(ndata: Box, topology: Box) -> None:
     return
 
   check_af_activation_support(ndata,topology)
-  for ngb in ndata.get('bgp.neighbors',[]):
+  for ngb in _bgp.neighbors(ndata,vrf=True,select=['ebgp']):
     if not 'multihop' in ngb:                                     # Skip regular neighbors
       continue
     for af in ['ipv4','ipv6']:                                    # A neighbor could be an IPv4 or IPv6 neighbor
@@ -136,11 +138,23 @@ def augment_af_activation(ndata: Box, topology: Box) -> None:
 '''
 remove_fake_interfaces: remove all fake interfaces created to build BGP neighbor adjacencies
 '''
-def remove_fake_interfaces(ndata: Box, topology: Box) -> None:
+def remove_fake_interfaces(ndata: Box, topology: Box) -> bool:
   intf_count = len(ndata.interfaces)
   ndata.interfaces = [ intf for intf in ndata.interfaces if not intf.get('_bgp_session',None) ]
 
-  if len(ndata.interfaces) != intf_count:           # Did the interface count change?
+  return len(ndata.interfaces) != intf_count
+
+'''
+cleanup_interfaces: remove fake interfaces from global interface list and VRF OSPF interface list
+'''
+def cleanup_interfaces(ndata: Box, topology: Box) -> None:
+  changed = remove_fake_interfaces(ndata,topology)  # Cleanup global interface list
+  for vname,vdata in ndata.get('vrfs',{}).items():  # Iterate over VRFs
+    if 'ospf' in vdata:                             # .. and cleanup OSPF interface list if needed
+      v_chg   = remove_fake_interfaces(vdata.ospf,topology)
+      changed = changed or v_chg
+
+  if changed:                                       # Did the interface count change?
     check_multihop_support(ndata,topology)
     api.node_config(ndata,_config_name)             # We must have some multihop sessions, add extra config
     augment_af_activation(ndata,topology)
@@ -163,7 +177,7 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
       for af in ('ipv4','ipv6'):                                # Now copy remote VRF loopback IPv4/IPv6 address
         ngb.pop(af)                                             # ... into neighbor data
         if af in lb:                                            # ... removing whatever might have come from the
-          ngb[af] = lb[af]                                      # ... global loopback
+          ngb[af] = str(netaddr.IPNetwork(lb[af]).ip)           # ... global loopback
 
     if '_src_vrf' in ngb:                                       # Is out endpoint in a VRF?
       if not isinstance(features.bgp.multihop,Box) or features.bgp.multihop.vrf is not True:
@@ -181,8 +195,11 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
           category=log.MissingValue,
           module='ebgp.multihop')
         continue
-      
+
       ngb._source_ifname = lb.ifname
+
+    else:
+      ngb._source_ifname = ndata.loopback.ifname
 
 '''
 post_transform processing:
@@ -195,6 +212,6 @@ def post_transform(topology: Box) -> None:
   global _config_name
   for ndata in topology.nodes.values():
     fix_vrf_loopbacks(ndata,topology)
-    remove_fake_interfaces(ndata,topology)
+    cleanup_interfaces(ndata,topology)
 
   topology.links = [ link for link in topology.links if not link.get('_bgp_session',None) ]
