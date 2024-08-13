@@ -20,6 +20,7 @@ Recent _netlab_ releases were tested with _containerlab_ version 0.55.0. That's 
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
+(clab-images)=
 ## Container Images
 
 Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab create](../netlab/create.md)** command uses these container images (use **netlab show images** to display the actual system settings):
@@ -56,7 +57,7 @@ You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in
 
 ```{warning}
 * You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
-* The _vrnetlab_ process generates container tags based on the underlying VM image name. You will probably have to [change the container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
+* The _vrnetlab_ process generates container tags based on the underlying VM image name. You will probably have to [change the container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter ([more details](tutorial-release)).
 ```
 
 ## Containerlab Networking

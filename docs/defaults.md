@@ -20,6 +20,7 @@
 
 The system defaults are specified in the global **topology-defaults.yml** file (shipped with the *netlab* package). These defaults are imported into the lab topology under the **defaults** top-level attribute. They could be overwritten with the **defaults** element within the lab topology or from user- or system defaults files.
 
+(defaults-topology)=
 ### Changing Defaults in Lab Topology
 
 To change a default setting for a single lab topology, set **defaults.$something** attribute to the desired value in the lab topology file.
@@ -82,7 +83,7 @@ defaults:
 When augmenting default settings, *netlab* uses a [deep dictionary merge](defaults-deep-merging), allowing you to overwrite a single setting deep in the defaults hierarchy without affecting other related settings. 
 
 (default-device-image)=
-For example, it's possible to replace the default Vagrant box name for a network device type without changing any other device parameter[^DD]:
+For example, it's possible to replace the default Vagrant box name for a network device type without changing any other device parameter[^DD] ([more details](tutorial-release)):
 
 [^DD]: See [](topology/hierarchy.md) for an in-depth explanation of why attributes with hierarchical names work in *netlab*
 

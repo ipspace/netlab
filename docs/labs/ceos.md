@@ -13,13 +13,13 @@ cEOS tar archive does not contain the container image name (repository and tag);
 
 * Install the Docker image with `docker image import <tar-filename> <tag>`, for example `docker image import cEOS64-lab-4.31.2F.tar ceos:4.31.2F`.
 
-If you used a custom container tag, specify it in the topology file, for example:
+If you used a container tag that differs from _netlab_ defaults, specify it in the topology file ([more details](tutorial-release)). For example, to use cEOS 4.31.2F when _netlab_ expects a different container name, add the following line to the lab topology file:
 
 ```
 defaults.devices.eos.clab.image: "ceos:4.31.2F"
 ```
 
-Alternatively, if you want to use the same cEOS image in all your labs, add the following line to `~/.netlab.yml` file (replacing `ceos:4.31.2F` with your image tag).
+Alternatively, if you want to use the same cEOS image in all your labs, add the following line to `~/.netlab.yml` [user defaults file](defaults-user-file) (replacing `ceos:4.31.2F` with your image tag).
 
 ```
 devices.eos.clab.image: "ceos:4.31.2F"
