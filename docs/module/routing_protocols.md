@@ -7,6 +7,7 @@ Most routing protocol modules support the following parameters:
 * [](routing_passive)
 * [](routing_external)
 * [](routing_disable)
+* [](routing_import)
 
 (routing_router_id)=
 ## Router ID
@@ -195,4 +196,48 @@ links:
 - r1:
   r2:
   vrf: o_2            # No OSPF instance in o_2
+```
+
+(routing_import)=
+## Importing Routes into a Routing Protocol
+
+Some routing protocols support route import (redistribution) that can be specified with the **_protocol_.import** parameter. That parameter can be:
+
+* A list of protocols to import
+* A dictionary of protocols to import
+* A dictionary with protocol-specific parameters. The only recognized parameter is **policy**, which specifies the import [routing policy](generic-routing-policies).
+
+**Notes:**
+* The source protocol must be active on the node doing route import. For example, to import BGP routes into OSPF, both **bgp** and **ospf** configuration modules must be specified on the node.
+* The **connected** keyword is used to specify connected routes.
+* The **routing** configuration module must be active on the node if you want to use **policy** parameter.
+* The routing policy specified in the **policy** parameter must be specified in the global- or node **routing.policy** dictionary.
+
+**Examples:**
+
+Import BGP routes into OSPF:
+
+```
+nodes:
+  r1:
+    ospf.import: [ bgp ]
+```
+
+Import BGP and connected routes into OSPF (specified as a dictionary):
+
+```
+nodes:
+  r1:
+    ospf:
+      import:
+        bgp:
+        connected:
+```
+
+Import BGP routes into OSPF using **i_bgp** routing policy:
+
+```
+nodes:
+  r1:
+    ospf.import.bgp.policy: i_bgp
 ```
