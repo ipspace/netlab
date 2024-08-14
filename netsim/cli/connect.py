@@ -184,7 +184,13 @@ def connect_to_node(
   else:
     log.fatal(f'Unknown connection method {connection} for host {node}',module='connect')
 
-def connect_to_tool(tool: str, rest: list, topology: Box, log_level: LogLevel = LogLevel.INFO) -> None:
+def connect_to_tool(
+      tool: str,
+      rest: typing.Union[str,list],
+      topology: Box,
+      log_level: LogLevel = LogLevel.INFO,
+      need_output: bool = False) -> typing.Optional[typing.Union[bool,str]]:
+
   cmds = external_commands.get_tool_command(tool,'connect',topology,verbose=False)
   topology.sys.ipaddr = external_commands.get_local_addr()
   if cmds is None:
@@ -193,11 +199,14 @@ def connect_to_tool(tool: str, rest: list, topology: Box, log_level: LogLevel = 
       log.fatal(f'Cannot connect to {tool}: the tool has no "connect" command',module='connect')
     else:
       print(msg)
-    return
+    return None
 
   for cmd in cmds:
     cmd = strings.eval_format(cmd,topology)
-    exec_arg = [ 'bash', '-c', cmd ]
+    rest_cmd = ' '.join(rest) if isinstance(rest,list) else rest
+    if rest_cmd:
+      rest_cmd = ' '+rest_cmd
+    exec_arg = [ 'bash', '-c', cmd+rest_cmd ]
     if log_level == LogLevel.DRY_RUN:
       print(f"DRY RUN: {cmd}")
       continue
@@ -205,7 +214,8 @@ def connect_to_tool(tool: str, rest: list, topology: Box, log_level: LogLevel = 
       print(f"Executing: {exec_arg}")
     elif log_level == LogLevel.INFO:
       print(f"Connecting to {tool}...")
-    subprocess.run(exec_arg)
+
+  return run_command(exec_arg,check_result=need_output,return_stdout=need_output,ignore_errors=True)
 
 def get_log_level(args: argparse.Namespace) -> LogLevel:
   if args.dry_run:

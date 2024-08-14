@@ -17,14 +17,31 @@ validate_test_entry: Check if the test makes sense
 '''
 
 def validate_test_entry(v_entry: Box, topology: Box) -> bool:
-  action_OK = False
-  for kw in ('show','exec','wait','plugin'):
-    action_OK = action_OK or kw in v_entry
-
-  if not action_OK:                                     # Test should have at least one of show/exec/wait
+  kw_set = set(v_entry.keys())
+  action_set = set(['show','exec','wait','plugin','suzieq'])
+  if not kw_set & action_set:                           # Test should have at least one of show/exec/wait
     log.error(
-          f'Test {v_entry.name} should have wait, show, or exec option',
+          f'Test {v_entry.name} should have wait, show, exec, plugin, or suzieq option',
           category=log.MissingValue,
+          module='validation')
+    return False
+
+  if isinstance(v_entry.get('suzieq',{}),str):          # Make sure suzieq entry (if exists) is a dictionary
+    v_entry.suzieq = { 'show': v_entry.suzieq }
+
+  x_kw = [ kw for kw in ('show','exec','plugin','suzieq') if kw in v_entry ]
+  if len(x_kw) > 1:
+    log.error(
+          f'You cannot use {",".join(x_kw)} in test {v_entry.name}. Use only one action per test',
+          category=log.IncorrectValue,
+          module='validation')
+    return False
+
+  if not kw_set & set(['suzieq','wait']) and not 'nodes' in v_entry:
+    log.error(
+          f'Test {v_entry.name} must specify the nodes to execute the test on',
+          hint='nodes',
+          category=log.IncorrectValue,
           module='validation')
     return False
 
@@ -32,21 +49,22 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
     log.error(
           f'Test {v_entry.name} has a "show" option but no "valid" option',
           category=log.MissingValue,
+          hint='show',
           module='validation')
     return False
 
   if 'valid' not in v_entry:                            # A test does not have 'valid' option, no further validation needed
     return True
 
-  for kw in ('show','exec','plugin'):                   # If we know how to get results to validate, we're OK
-    if kw in v_entry:
-      return True
+  if not kw_set & set(['show','exec','suzieq']):        # If we know how to get results to validate, we're OK
+    log.error(
+          f'Test {v_entry.name} has a "valid" option but no action that would generate data to check',
+          hint='valid',
+          category=log.MissingValue,
+          module='validation')                          # OOPS, we have no action that would produce a result to validate
+    return False
 
-  log.error(
-        f'Test {v_entry.name} has a "valid" option but no "show" or "exec" option',
-        category=log.MissingValue,
-        module='validation')                            # OOPS, we have no action that would produce a result to validate
-  return False
+  return True
 
 '''
 calculate_device_support: Figure out which devices are supported by the current validation test

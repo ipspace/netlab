@@ -1,0 +1,71 @@
+---
+message: |
+  The device under test is a VLAN-to-VXLAN layer-3 switch between two access
+  VLANs and two VXLAN VNIs. Both EVPN PE-devices perform inter-VLAN routing
+  using transit VNI (symmetrical IRB) when needed.
+
+  All hosts should be able to ping each other.
+
+  Please note it might take a while for the lab to work due to STP learning
+  phase.
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, vrf, ospf, bgp, evpn ]
+  x_switches:
+    members: [ s2 ]
+    device: frr
+    provider: clab
+
+bgp.as: 65000
+
+vrfs:
+  customer:
+    evpn.transit_vni: 5042
+
+vlans:
+  red:
+    role: external
+    links: [ s1-h1, s2-h2 ]
+    vrf: customer
+  blue:
+    role: external
+    links: [ s1-h3 ]
+    vrf: customer
+  green:
+    role: external
+    links: [ s2-h4 ]
+    vrf: customer
+
+links:
+- s1:
+  s2:
+  mtu: 1600
+
+validate:
+  ping_vlan:
+    description: Intra-VLAN ping-based reachability test
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')
+
+  ping_irb_h3:
+    description: IRB ping-based reachability test (VLAN Blue)
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 20
+    nodes: [ h1, h2, h4 ]
+    plugin: ping('h3')
+
+  ping_irb_h4:
+    description: IRB ping-based reachability test (VLAN Green)
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 10
+    nodes: [ h1, h2, h3 ]
+    plugin: ping('h4')

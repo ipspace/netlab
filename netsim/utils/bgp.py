@@ -20,9 +20,10 @@ def neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) -> ty
   if not vrf:
     return
 
-  for vdata in node.get('vrfs',{}).values():
+  for vname,vdata in node.get('vrfs',{}).items():
     for ngb in vdata.get('bgp.neighbors',[]):
       if ngb.type in select:
+        ngb._src_vrf = vname
         yield ngb
 
 # Return all BGP neighbors associated with interfaces (usually EBGP neighbors)

@@ -1,0 +1,60 @@
+message: |
+  The tested device (DUT) is a PE-router. It runs IS-IS and SR-MPLS and has an
+  IBGP session with another PE-router. It has to perform IP-to-MPLS
+  encapsulation to get the traffic across the BGP-free MPLS core.
+
+  The validation test checks end-to-end connectivity across a BGP-free MPLS core
+  between a set of linux hosts attached to the PE-routers.
+
+bgp.advertise_loopback: false
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  pe:
+    members: [ dut, pe2 ]
+    module: [ isis, bgp, sr ]
+    bgp.as: 65001
+  p:
+    members: [ p1, p2 ]
+    module: [ isis, sr ]
+  x_switches:
+    members: [ p1, p2, pe2 ]
+    device: frr
+    provider: clab
+
+links:
+- h1:
+  dut:
+  isis: false
+- dut-p1
+- p1-p2
+- p2-pe2
+- pe2:
+  h2:
+  isis: false
+
+validate:
+  isis:
+    description: Check ISIS sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    wait_msg: Waiting for ISIS adjacency
+    nodes: [ p1 ]
+    plugin: isis_neighbor('dut',level='L2',area='49.0001')
+    stop_on_error: true
+  ibgp:
+    description: Check IBGP session
+    wait: 60
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+    stop_on_error: true
+  ping:
+    description: Ping-based end-to-end reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1 ]
+    plugin: ping('h2')

@@ -32,6 +32,15 @@ that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
 {%     if 'prepend' in p_entry.set %}
 {{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
 {%     endif %}
+{%     if 'community' in p_entry.set %}
+{%       set cset = p_entry.set.community %}
+{%       set ckw = { 'standard': 'community', 'extended': 'extcommunity', 'large': 'large-community' } %}
+{%         for kw in ('standard','extended','large') if kw in cset %}
+  set {{ ckw[kw] }} {{ cset[kw]|join(' ') if cset[kw] is not string else cset[kw] }}{{ 
+    ' additive' if cset.append|default(False) }}{{
+    ' delete' if cset.delete|default(False) }}
+{%         endfor %}
+{%     endif %}
 {%   endif %}
 {%   if 'match' in p_entry %}
 {%     set ipkwd = 'ip' if match_af == 'ipv4' else 'ipv6' %}
@@ -50,6 +59,9 @@ that use "industry standard" CLI (IOS, IOS-XE, FRR, Cumulus, Arista)
 {%     endif %}
 {%     if 'nexthop' in p_entry.match %}
   match {{ ipkwd }} next-hop prefix-list {{ p_entry.match.nexthop }}
+{%     endif %}
+{%     if 'community' in p_entry.match %}
+  match community {{ p_entry.match.community }}
 {%     endif %}
 {%   endif %}
 {%- endmacro %}

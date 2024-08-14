@@ -1,3 +1,4 @@
+(netlab-down)=
 # Stop a Virtual Lab
 
 **netlab down** destroys a virtual lab created with **[netlab up](up.md)** command.

@@ -24,10 +24,17 @@ def check_mlps_vlan_bundle(node: Box) -> None:
 
 def check_mpls_clab(node: Box, topology: Box) -> None:
   if devices.get_provider(node,topology) == 'clab':
-    log.error(
-      f'Arista cEOS ({node.name}) does not support MPLS. Use vEOS VM with libvirt provider',
-      log.IncorrectType,
-      'quirks')
+    try:
+      ceos_version = node.box.split(':')[1]
+    except:
+      ceos_version = ''
+
+    if ceos_version < '4.32.1F':
+      log.error(
+        f'Arista cEOS ({node.name}) versions earlier than 4.32.1F do not support MPLS data plane',
+        more_hints = 'To use MPLS with older EOS versions, use vEOS VM with libvirt provider',
+        category=Warning,
+        module='quirks')
 
 def check_shared_mac(node: Box, topology: Box) -> None:
   if devices.get_provider(node,topology) != 'clab':

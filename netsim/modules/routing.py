@@ -7,7 +7,7 @@
 #
 import typing, re
 import netaddr
-from box import Box
+from box import Box,BoxList
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
 from ..utils import log
@@ -145,6 +145,23 @@ def check_routing_object(p_name: str,o_type: str, node: Box,topology: Box) -> bo
   return True
 
 """
+is_kw_supported: Check whether a keyword is supported according to device features
+
+It should be an easy test; what complicates it is our flexibility:
+
+* The features could be specified as a list or a dict
+* The dict values could be set to False (meaning DOES NOT WORK)
+"""
+def is_kw_supported(kw: str, kw_data: typing.Union[Box,BoxList]) -> bool:
+  if kw not in kw_data:
+    return False
+  
+  if isinstance(kw_data,Box) and not kw_data.get(kw,False):
+    return False
+  
+  return True
+
+"""
 check_routing_policy: validate that all the device you want to use a route-map on
 supports all the SET and MATCH keywords
 
@@ -169,13 +186,30 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
       if p_param not in p_entry:                            # No parameters of this type, move on
         continue
       for kw in p_entry[p_param].keys():                    # Iterate over all SET/MATCH settings
-        if kw not in d_features[p_param]:                   # if a setting is not supported by the device...
+        if not is_kw_supported(kw,d_features[p_param]):     # if a setting is not supported by the device...
           OK = False                                        # ... remember we found an error
           log.error(                                        # ... and report it
             f"Device {node.device} (node {node.name}) does not support routing policy '{p_param}' keyword '{kw}' "+\
             f"used in {p_name} entry #{p_entry.sequence}",
             category=log.IncorrectType,
             module='routing')
+          continue
+        if not isinstance(d_features[p_param],Box):         # No further work needed
+          continue
+        kw_data = d_features[p_param][kw]                   # Get keyword-specific data
+        if not isinstance(kw_data,Box):                     # Keyword-specific data is not a dictionary
+          continue                                          # ... no further checks are necessary
+        if not isinstance(p_entry[p_param][kw],Box):        # The value is not a dictionary
+          continue                                          # ... let validation deal with that
+        for kw_opt in p_entry[p_param][kw].keys():          # Now iterate over the suboptions
+          if kw_data.get(kw_opt,False):                     # ... and if they're in the device features
+            continue                                        # ... we're good to go
+          log.error(                                        # Otherwise report an error
+            f"Device {node.device} (node {node.name}) does not support routing policy '{p_param}'"+\
+            f" keyword '{kw}.{kw_opt}' used in {p_name} entry #{p_entry.sequence}",
+            category=log.IncorrectType,
+            module='routing')
+          OK = False
 
   return OK                                                 # Return cumulative error status
 
@@ -226,7 +260,8 @@ needed by the just-imported routing policy
 match_object_map: dict = {
   'prefix': 'prefix',                                       # Prefix match requires a 'prefix' object
   'nexthop': 'prefix',                                      # Next-hop match requires a 'prefix' object
-  'aspath': 'aspath'                                        # AS path match requires an 'aspath' object
+  'aspath': 'aspath',                                       # AS path match requires an 'aspath' object
+  'community': 'community'                                  # Community match requires a 'community' object
 }
 
 def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
@@ -274,7 +309,11 @@ import_dispatch: typing.Dict[str,dict] = {
     'check'  : check_routing_object },
   'aspath': {
     'import' : import_routing_object,
+    'check'  : check_routing_object },
+  'community': {
+    'import' : import_routing_object,
     'check'  : check_routing_object }
+
 }
 
 """
@@ -311,8 +350,11 @@ normalize_dispatch: typing.Dict[str,dict] = {
   'aspath':
     { 'namespace': 'routing.aspath',
       'object'   : 'AS path filter',
+      'callback' : normalize_aspath_entry },
+  'community':
+    { 'namespace': 'routing.community',
+      'object'   : 'BGP community filter',
       'callback' : normalize_aspath_entry }
-
 }
 
 """
@@ -433,6 +475,66 @@ def number_aspath_acl(p_name: str,o_name: str,node: Box,topology: Box) -> None:
     numacl[p_name] = maxacl + 1
 
 """
+fix_clist_entry: Fix an entry in the BGP community list.
+
+When done, the entry will have:
+
+* _value  -- set to whatever value user specified in regexp, list, or (internal) path attribute
+* _regexp -- set if the value is a regular expression
+"""
+class MissingQuotes(Exception):
+  pass
+
+def fix_clist_entry(e_clist: Box, topology: Box) -> None:
+  if 'regexp' in e_clist:                                   # Do we know we have a regexp?
+    e_clist._value = e_clist.regexp                         # Copy regular expression into a common variable
+    return
+
+  value = e_clist.get('list','') or e_clist.get('path','')  # Get community value(s)
+  int_list = [ v for v in value if isinstance(v,int) ]
+  if int_list:
+    raise MissingQuotes()
+
+  if isinstance(value,list):                                # Convert list to a string of
+    value = ' '.join([str(v) for v in value])               # ... space-separated values
+  e_clist._value = value
+  if not value:                                             # None specified? We have to do a wildcard match
+    e_clist._value = '.*'
+    e_clist.regexp = e_clist._value
+  else:
+    if not re.match('^[0-9: ]+$',value):                    # Is the value a simple community list expression?
+      e_clist.regexp = e_clist._value
+
+  for kw in ('path','list'):                                # Finally, clean up the now-unnecessary attributes
+    e_clist.pop(kw,None)
+
+"""
+expand_community_list: transform BGP community lists into a dictionary that indicates
+whether they use regular expressions or not
+"""
+def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  node.routing[o_name][p_name] = {
+    'value': node.routing[o_name][p_name]
+  }
+  p_clist = node.routing[o_name][p_name]                    # Shortcut pointer to current community list
+  regexp = False                                            # Figure out whether we need expanded clist
+  for (p_idx,p_entry) in enumerate(p_clist.value):
+    try:
+      fix_clist_entry(p_clist.value[p_idx],topology)
+    except MissingQuotes:
+      log.error(
+        f'BGP community list {p_name} line {p_idx+1} contains an integer',
+        more_hints='You probably forgot to put an A:B value within quotes and YAML parser got confused',
+        category=log.IncorrectValue,
+        module='routing')
+    regexp = regexp or bool(p_clist.value[p_idx].get('regexp',False))
+
+  p_clist.type = 'expanded' if regexp else 'standard'       # Set clist type for devices that use standard/expanded
+  p_clist.regexp = 'regexp' if regexp else ''               # And regexp flag for devices that use something else
+
+  return None                                               # Message to caller: no need to do additional checks
+
+"""
 Dispatch table for post-transform processing. Currently used only to
 expand the prefixes/pools in prefix list.
 """
@@ -443,6 +545,9 @@ transform_dispatch: typing.Dict[str,dict] = {
   'aspath': {
     'import': number_aspath_acl
   },
+  'community': {
+    'import': expand_community_list
+  }
 }
 
 class Routing(_Module):

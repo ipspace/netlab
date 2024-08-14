@@ -58,9 +58,7 @@ The following table describes per-platform support of individual router-level OS
 | Dell OS10 ([❗](caveats-os10)) |   ✅  |       ✅          |   ✅   |  ✅  |       ❌          |
 | Fortinet FortiOS         |   [❗](caveats-fortios)  | ✅   |   ❌   |  ❌  |       ❌          |
 | FRR                      |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
-| Juniper vMX              |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Juniper vPTX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Juniper vSRX 3.0         |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Junos[^Junos]            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Mikrotik RouterOS 6      |   ✅  |            ❌           |   ❌   |  ✅  |       ❌          |
 | Mikrotik RouterOS 7      |   ✅  |            ❌           |   ✅   |  ❌  |       ❌          |
 | Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
@@ -68,6 +66,8 @@ The following table describes per-platform support of individual router-level OS
 | VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+
+[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 
 **Notes:**
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
@@ -99,9 +99,7 @@ The following table documents the interface-level OSPF features:
 | Dell OS10                | ✅ | ✅ | ❌  | ✅ |
 | Fortinet FortiOS         | ✅ | [❗](caveats-fortios) | ❌ | ✅ |
 | FRR                      | ✅ | ✅ | ✅ | ✅ |
-| Juniper vMX              | ✅ | ✅ | ✅ | ✅ |
-| Juniper vPTX             | ✅ | ✅ | ✅ | ✅ |
-| Juniper vSRX 3.0         | ✅ | ✅ | ✅ | ✅ |
+| Junos[^Junos]            | ✅ | ✅ | ✅ | ✅ |
 | Mikrotik RouterOS 6      | ✅ | ✅ | ❌  | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ❌  | ✅ |
 | Nokia SR Linux           | ✅ | ✅ | ✅ | ✅ |

@@ -1,3 +1,4 @@
+(tools-graphite)=
 # Graphite
 
 Graphite is a network visualizer for emulated topologies. Use this tool as _netlab_ GUI.

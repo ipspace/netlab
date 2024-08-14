@@ -1,0 +1,70 @@
+message: |
+  The devices under test are layer-3 EVPN/VXLAN routers
+  running BGP with external devices.
+
+  External devices should be able to ping each other
+
+module: [ vlan, vxlan, ospf, bgp, evpn, vrf ]
+bgp.as: 65000
+
+vrfs:
+  tenant:
+    evpn.transit_vni: 5042
+    links: [ ce1-s1, ce2-s2 ]
+
+evpn.vrfs: [ tenant ]
+
+groups:
+  _auto_create: True
+  ce:
+    members: [ ce1, ce2 ]
+    module: [ bgp ]
+  switches:
+    members: [ s1, s2 ]
+    vlans:
+      red:
+      blue:
+  x_devices:
+    members: [ s2, ce1, ce2 ]
+    device: frr
+    provider: clab
+
+nodes:
+  ce1:
+    bgp.as: 65100
+  ce2:
+    bgp.as: 65101
+
+links:
+- s1:
+  s2:
+  mtu: 1600
+
+validate:
+  session:
+    description: Check EBGP sessions with S1 (wait up to 10 seconds)
+    wait: 10
+    wait_msg: Waiting for BGP sessions to start
+    nodes: [ ce1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'s1')
+    stop_on_error: true
+  pfx_ce2:
+    description: Check CE2 loopback on CE1
+    wait: 15
+    wait_msg: Waiting for BGP convergence
+    nodes: [ ce1 ]
+    plugin: bgp_prefix(nodes.ce2.loopback.ipv4)
+  pfx_ce1:
+    description: Check CE1 loopback on CE2
+    wait: 15
+    wait_msg: Waiting for BGP convergence
+    nodes: [ ce2 ]
+    plugin: bgp_prefix(nodes.ce1.loopback.ipv4)
+  ping_ce2:
+    description: Ping-based CE-to-CE reachability test (CE2)
+    nodes: [ ce1 ]
+    plugin: ping('ce2')
+  ping_ce1:
+    description: Ping-based CE-to-CE reachability test (CE1)
+    nodes: [ ce2 ]
+    plugin: ping('ce1')

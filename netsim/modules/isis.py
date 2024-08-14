@@ -50,6 +50,9 @@ class ISIS(_Module):
     if not isis_unnumbered(node,features):
       return
 
+    if 'sr' in node.module:
+      _routing.router_id(node,'isis',topology.pools)
+
     bfd.multiprotocol_bfd_link_state(node,'isis')
     for l in node.get('interfaces',[]):
       if _routing.external(l,'isis') or not (l.get('ipv4',False) or l.get('ipv6',False)):

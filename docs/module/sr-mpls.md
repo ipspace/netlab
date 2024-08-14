@@ -18,7 +18,7 @@ Supported Segment Routing features:
 * IPv4 Node SID: set to node ID
 * IPv6 Node SID: set to node ID + 100
 
-The module depends on IS-IS module and will trigger a configuration error if the **isis** module is not enabled in the network topology.
+The module depends on the IS-IS module and will trigger a configuration error if the **isis** module is not enabled in the network topology.
 
 (sr-mpls-platforms)=
 ## Supported Platforms
@@ -29,6 +29,7 @@ SR-MPLS is implemented on the following platforms:
 | ----------------------| :---: | :--: | :---: | :--: |
 | Arista EOS            |   ✅  |  ✅  |  ✅   |  ❌   |
 | Cisco IOS XE          |   ✅  |  ❌   |  ✅   |  ❌   |
+| FRRouting             |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vMX           |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vPTX          |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vSRX          |   ✅  |  ✅  |  ✅   |  ❌   |
@@ -47,7 +48,7 @@ We want to create a four-router multi-vendor SR-MPLS network.
 
 All devices run IS-IS and SR-MPLS:
 ```
-module: [ sr,isis ]
+module: [ sr, isis ]
 ```
 
 We want to use unnumbered P2P interfaces and dual-stack deployment with IPv6 configured on loopback addresses:
@@ -60,7 +61,7 @@ addressing:
     ipv6: 2001:db8:cafe::/48
 ```
 
-Two of the devices in our topology run Cisco IOS XE, the other two run Arista EOS:
+Two of the devices in our topology run Cisco IOS XE, and the other two run Arista EOS:
 
 ```
 nodes:
@@ -74,7 +75,7 @@ nodes:
     device: eos
 ```
 
-The devices are connected into a square topology with two of them having stub links:
+The devices are connected into a square topology, with two of them having stub links:
 
 ```
 links:

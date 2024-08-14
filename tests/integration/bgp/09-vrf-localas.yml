@@ -1,0 +1,48 @@
+---
+message: |
+  Use this topology to test the 'local AS' functionality on VRF EBGP sessions.
+  The device under test uses a different AS on DUT-X1 session and shall still
+  propagate routes between X1 and X2
+
+module: [ bgp, vrf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+    module: [ bgp ]
+
+vrfs:
+  tenant:
+    links:
+    - dut:
+        bgp.local_as: 65002
+      x1:
+    - dut-x2
+
+nodes:
+  dut:
+    bgp.as: 65000
+  x1:
+    bgp.as: 65100
+    bgp.originate: 172.42.42.0/24
+  x2:
+    bgp.as: 65101
+
+links:
+
+validate:
+  session:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait_msg: Wait for BGP sessions to be established
+    wait: 10
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  prefix:
+    description: Check whether DUT propagates the beacon prefix
+    wait: 20
+    wait_msg: Wait for BGP prefix origination and BGP convergence
+    nodes: [ x2 ]
+    plugin: bgp_prefix('172.42.42.0/24')

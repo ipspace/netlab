@@ -1,0 +1,63 @@
+---
+message: |
+  The devices under test are an EVPN PE-device and an EVPN route reflector. The
+  PE-device should originate EVPN routes with correct next-hop and the RR should
+  propagate EVPN AF routes between PE-devices, resulting in VXLAN-based VLAN
+  extension. However, the core routing protocol is not OSPF but EBGP faked with
+  BGP local-as settings. The overall design is thus EVPN IBGP between loopbacks
+  running over IPv4 EBGP.
+
+  * h1 and h2 should be able to ping each other
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ l1, l2 ]
+    module: [ vlan, vxlan, bgp, evpn ]
+  core:
+    members: [ spine ]
+    module: [ bgp, evpn ]
+    bgp.rr: True
+  x_switches:
+    members: [ l2 ]
+    device: frr
+    provider: clab
+
+vlans:
+  red:
+    mode: bridge
+    vni: 1000
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ l1-h1, l2-h2 ]
+
+bgp.as: 65000
+bgp.activate.ipv4: [ ebgp ]
+defaults.bgp.warnings.missing_igp: False
+
+links:
+- l1:
+    bgp.local_as: 65201
+  spine:
+    bgp.local_as: 65100
+  mtu: 1600
+- l2:
+    bgp.local_as: 65202
+  spine:
+    bgp.local_as: 65100
+  mtu: 1600
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for STP to wake up
+    wait: 30
+    nodes: [ h1 ]
+    plugin: ping('h2')

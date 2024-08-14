@@ -1,0 +1,68 @@
+---
+message: |
+  The device under test is an EVPN PE-device bridging two VLANs over VXLAN. The
+  other EVPN PE-device is an FRR container.
+
+  Both VLANs are using the same IP prefix to identify potential inter-VLAN
+  leaking.
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3 or h4
+
+  Please note it might take a while for the lab to work due to STP learning
+  phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, ospf, bgp, evpn ]
+  x_switches:
+    members: [ s2 ]
+    device: frr
+    provider: clab
+
+bgp.as: 65000
+
+vlans:
+  red:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h1, s2-h2 ]
+    vni: 1000
+  blue:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h3, s2-h4 ]
+    vni: 1001
+
+links:
+- s1:
+  s2:
+  mtu: 1600
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h3 ]
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    devices: [ linux ]
+    plugin: ping('h4',expect='fail')

@@ -4,12 +4,14 @@
 import typing
 import json
 from box import Box
+import pathlib
 
 from . import _Provider,get_forwarded_ports
-from ..utils import log
-from ..data import filemaps, get_empty_box
+from ..utils import log, strings
+from ..data import filemaps, get_empty_box, append_to_list
 from ..cli import is_dry_run,external_commands
 from ..augment import devices
+from ..cli import external_commands
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
   return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 and not 'external_bridge' in l.clab }
@@ -99,6 +101,63 @@ def add_daemon_filemaps(node: Box, topology: Box) -> None:
 
   node.clab.config_templates = node.clab.config_templates + node._daemon_config
 
+'''
+get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
+'''
+def get_loaded_kernel_modules() -> list:
+  mod_list = pathlib.Path('/proc/modules').read_text().split('\n')
+  return [ line.split(' ')[0] for line in mod_list ]
+
+'''
+load_kmods: Load kernel modules before starting containers
+
+The kernel modules needed for individual netlab modules are defined in provider- or device 'kmods'
+dictionary. If the device 'kmods' value is 'None' then the device uses the standard setup, otherwise
+you could specify which kernel modules you want to load.
+'''
+def load_kmods(topology: Box) -> None:
+  defs = topology.defaults
+  clab_kmods = defs.providers.clab.kmods
+  kmod_list  = get_empty_box()
+
+  for ndata in topology.nodes.values():                     # Iterate over all nodes
+    if ndata.get('provider') != 'clab':                     # The node is not using clab provider, move on
+      continue
+    ddata = devices.get_provider_data(ndata,defs)           # Get device data for the current node
+    if 'kmods' not in ddata:                                # Kmods attribute is not there, the device is not using kernel modules
+      continue
+    kdata = ndata.kmods or clab_kmods                       # Get device-specific or system-wide kernel module definition
+    if isinstance(kdata,list):                              # ... some devices specify just the netlab modules that need kmods
+      kdata = { k:clab_kmods[k] for k in kdata}             # ... in which case build the dictionary from system-wide values
+
+    # At this point, we have device-specific dictionary mapping netlab modules into kernel modules
+    #
+    for m in ndata.module:                                  # Now iterate over all the netlab modules the node uses
+      if m not in kdata:                                    # ... and if the netlab modules does not need kernel modules
+        continue                                            # ... move on
+      for kmod in kdata[m]:                                 # Next, add individual kernel modules in the kdata entry
+        append_to_list(kmod_list,m,kmod)                    # ... to the module-specific list of kernel mdules
+
+  # Now we have lists of kernel modules that have to be loaded based on netlab modules used in lab topology
+  # Next step: for every netlab module, load the missing kernel modules
+  #
+  for m in kmod_list.keys():
+    loaded_kmods = get_loaded_kernel_modules()
+    needed_kmods = [ kmod for kmod in kmod_list[m] if kmod not in loaded_kmods ]
+    if not needed_kmods:
+      continue
+    strings.print_colored_text('[LOADING] ','bright_cyan',None)
+    print(f'Loading Linux kernel modules {",".join(needed_kmods)} required by containers using {m} module')
+    for kmod in needed_kmods:
+      status = external_commands.run_command(
+        ['sudo','modprobe',kmod ],
+        check_result=True,
+        return_stdout=True)
+      if status is False:
+        log.error(f'Cannot load Linux kernel module {kmod}',log.IncorrectValue,'clab')
+
+  log.exit_on_error()
+
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
@@ -125,6 +184,7 @@ class Containerlab(_Provider):
         create_ovs_bridge(brname)
       else:
         create_linux_bridge(brname)
+    load_kmods(topology)
 
   def post_stop_lab(self, topology: Box) -> None:
     log.print_verbose('post-stop hook for Containerlab, cleaning up any bridges')

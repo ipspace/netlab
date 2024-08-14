@@ -1,0 +1,54 @@
+---
+message: |
+  The device under test is an EVPN route reflector. It should propagate
+  EVPN AF routes between PE-devices, resulting in VXLAN-based VLAN
+  extension.
+
+  * h1 and h2 should be able to ping each other
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, ospf, bgp, evpn ]
+  core:
+    members: [ rr ]
+    module: [ ospf, bgp, evpn ]
+    bgp.rr: True
+  x_switches:
+    members: [ s1, s2 ]
+    device: frr
+    provider: clab
+
+bgp.as: 65000
+
+vlans:
+  red:
+    mode: bridge
+    vni: 1000
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h1, s2-h2 ]
+
+links:
+- s1:
+  rr:
+  mtu: 1600
+- rr:
+  s2:
+  mtu: 1600
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for OSFP and STP to wake up
+    wait: 50
+    nodes: [ h1 ]
+    plugin: ping('h2')

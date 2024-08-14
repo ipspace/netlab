@@ -117,21 +117,38 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
     'links')
   return None
 
-def adjust_link_list(links: list, nodes: Box, linkname_format: str = 'links[{link_cnt}]') -> list:
+def adjust_link_list(
+      links: typing.Any, 
+      nodes: Box,
+      linkname_format: str = 'links[{link_cnt}]') -> list:
   link_list: list = []
 
   if not(links):
     return link_list
 
   link_cnt = 0
-  for l in links:
-    link_cnt = link_cnt + 1
-    linkname = linkname_format.format(link_cnt=link_cnt)
-    link_data = adjust_link_object(l,linkname,nodes)
-    if not link_data is None:
-      if link_data.get('disable',False) is True:
-        continue
-      link_list.append(link_data)
+  linkname_path = linkname_format.split("[")[0]
+  if isinstance(links,Box):
+    for lgn,lgdata in links.items():
+      ln_comps = linkname_format.split('[')
+      ln_group = f'{ln_comps[0]}.{lgn}[{ln_comps[1]}'
+      link_list.extend(adjust_link_list(lgdata,nodes,ln_group))
+  elif isinstance(links,list):
+    for l in links:
+      link_cnt = link_cnt + 1
+      linkname = linkname_format.format(link_cnt=link_cnt)
+      link_data = adjust_link_object(l,linkname,nodes)
+      if not link_data is None:
+        if link_data.get('disable',False) is True:
+          continue
+        link_list.append(link_data)
+  elif isinstance(links,str):
+    link_list.append(adjust_link_object(links,linkname_path,nodes))
+  else:
+    log.error(
+      f'{linkname_path} must be a list or dictionary',
+      log.IncorrectType,
+      'links')
 
   if log.debug_active('links'):
     print("Adjusted link list")

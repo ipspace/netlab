@@ -12,22 +12,17 @@ BFD is supported on these platforms:
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE          | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅❗| ✅  |  ❌  |
-| FRR                   | ✅❗| ✅  |  ❌  |
+| Cumulus Linux         | ✅[❗](caveats-frr) | ✅  |  ❌  |
+| FRR                   | ✅[❗](caveats-frr) | ✅  |  ❌  |
 | Dell OS10             |  ❌  | ✅  |  ❌  |
-| Juniper vMX           | ✅❗| ✅  | ✅  |
-| Juniper vPTX          | ✅❗| ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅❗| ✅  | ✅  |
+| Junos[^Junos]         | ✅[❗](caveats-junos) | ✅  | ✅  |
 | Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |
 | Mikrotik RouterOS 7   |  ❌  |  ❌  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
-| VyOS                  | ✅❗| ✅  | ✅  |
+| VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  |
 
-**Notes:**
-* Cumulus Linux and FRR configure BFD as part of OSPFv2/OSPFv3 configuration.
-* Junos configuration template configures BFD timers within routing protocol configuration, not in individual interfaces
-* VyOS configuration template configures BFD timers only at global level
+[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 
 ## Parameters
 

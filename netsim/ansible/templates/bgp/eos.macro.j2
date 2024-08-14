@@ -10,22 +10,23 @@
 {%   set peer = 'ebgp_intf_' + n.local_if if n.local_if is defined else n[af] %}
   neighbor {{ peer }} remote-as {{ n.as }}
   neighbor {{ peer }} description {{ n.name }}
-{%     if n.local_as is defined %}
+{%   if n.local_as is defined %}
   neighbor {{ peer }} local-as {{ n.local_as }} no-prepend replace-as
-{%     endif %}
-{%     if n.type == 'ibgp' %}
-  neighbor {{ peer }} update-source Loopback0
-{%     endif %}
-{%     if n.type == 'localas_ibgp' %}
+{%   endif %}
+{%   if n._source_ifname is defined %}
+  neighbor {{ peer }} update-source {{ n._source_ifname }}
+{%   endif %}
+{%   if n.type == 'localas_ibgp' %}
   neighbor {{ peer }} next-hop-peer
-{%     endif %}
-{%     if 'ibgp' in n.type %}
-{%       if bgp.rr|default('') and not n.rr|default('') %}
+{%   endif %}
+{%   if 'ibgp' in n.type %}
+{%     if bgp.rr|default('') and not n.rr|default('') %}
   neighbor {{ peer }} route-reflector-client
-{%       endif %}
 {%     endif %}
-{%     if n.type in bgp.community|default({}) %}
+{%   endif %}
+{%   if n.type in bgp.community|default({}) %}
   neighbor {{ peer }} send-community {% 
-    for ckw in bgp._cprop_order if ckw in bgp.community[n.type] %}{{ ckw }} {% endfor %}
-{%     endif %}{% if bgp._bandwidth|default(False) and n.type == 'ibgp' %}link-bandwidth aggregate{% endif %}
+       for ckw in bgp._cprop_order if ckw in bgp.community[n.type] %}{{ ckw }} {% endfor %}{% 
+       if bgp._bandwidth|default(False) and n.type == 'ibgp' %}link-bandwidth aggregate{% endif %}
+{%   endif %}
 {%- endmacro %}

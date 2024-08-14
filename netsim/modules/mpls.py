@@ -179,6 +179,28 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
         if af in node.mpls.vpn:
           n['vpn'+af.replace('ip','')] = n.ipv4
 
+'''
+check_node_features: Check if a node supports the requested MPLS features
+'''
+def check_node_features(node: Box, topology: Box, features: Box) -> None:
+  for fn in FEATURE_NAME.keys():
+    if not fn in node.mpls:
+      continue
+    if not features.mpls[fn]:
+      log.error(
+        f'Device {node.device} used by {node.name} does not support {FEATURE_NAME[fn]}',
+        log.IncorrectValue,
+        'mpls')
+      continue
+
+    if isinstance(node.mpls[fn],Box) and isinstance(features.mpls[fn],Box):
+      for af in ('ipv4','ipv6'):
+        if af in node.mpls[fn] and not features.mpls[fn][af]:
+          log.error(
+            f'Device {node.device} used by {node.name} does not support {FEATURE_NAME[fn]} for {af}',
+            log.IncorrectValue,
+            'mpls')
+
 class MPLS(_Module):
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
@@ -213,13 +235,6 @@ class MPLS(_Module):
 
     features = devices.get_device_features(node,topology.defaults)
 
-    for fn in FEATURE_NAME.keys():
-      if fn in node.mpls and not features.mpls[fn]:
-        log.error(
-          f'Device {node.device} used by {node.name} does not support {FEATURE_NAME[fn]}',
-          log.IncorrectValue,
-          'mpls')
-
     if 'ldp' in node.mpls:
       node_adjust_ldp(node,topology,features)
 
@@ -231,3 +246,5 @@ class MPLS(_Module):
 
     if '6pe' in node.mpls:
       node_adjust_6pe(node,topology,features)
+
+    check_node_features(node,topology,features)

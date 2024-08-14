@@ -61,9 +61,9 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
     vlan_data = toponode.vlans[vname]
     vpath = f'{obj_path}.vlans.{vname}'
     if vname in topology.get('vlans',{}) and toponode != topology:
-      if 'vni' in topology.vlans[vname] and 'vni' in vlan_data:
+      if 'vni' in vlan_data and vlan_data.vni != topology.vlans[vname].get('vni',None):
         log.error(
-          f'Cannot define VXLAN VNI for a global VLAN {vname} within node {toponode.name} VLAN data',
+          f'Cannot redefine VXLAN VNI for a global VLAN {vname} within node {toponode.name} VLAN data',
           log.IncorrectType,
           'vxlan')
       continue

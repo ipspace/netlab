@@ -1,3 +1,4 @@
+(plugin-ebgp-multihop)=
 # Multihop EBGP
 
 The **ebgp.multihop** plugin adds support for multihop EBGP sessions established between loopback interfaces of routers in different autonomous systems.
@@ -10,13 +11,15 @@ The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | Global<br>sessions | VRF<br>sessions |
 | ------------------- | :--: | :--: |
-| Aruba AOS-CX        |  ✅  |  ❌   |
-| Arista EOS          |  ✅  |  ❌   |
-| Cisco IOSv / IOS-XE |  ✅  |  ❌   |
-| Cumulus Linux       |  ✅  |  ❌   |
-| FRR                 |  ✅  |  ❌   |
-| Nokia SR Linux      |  ✅  |  ✅   |
-| Nokia SR OS         |  ✅  |  ✅   |
+| Aruba AOS-CX        |  ✅  |  ✅  |
+| Arista EOS          |  ✅  |  ✅  |
+| Cisco IOSv/IOS-XE[^18v] | ✅ | ✅ |
+| Cumulus Linux       |  ✅  |  ✅  |
+| FRR                 |  ✅  |  ✅  |
+| Nokia SR Linux      |  ✅  |  ❌   |
+| Nokia SR OS         |  ✅  |  ❌   |
+
+[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
 ## Specifying Multihop EBGP Sessions
 
@@ -42,9 +45,9 @@ bgp.multihop.sessions:
   r2:
 ```
 
-## Integration with bgp.session plugin
+## Integration with Other BGP Plugins
 
-EBGP multihop plugin works together with [](bgp.session.md), but has to be listed after it in the list of plugins:
+EBGP multihop plugin works together with **[bgp.session](bgp.session.md)** and **[bgp.policy](bgp.policy.md)** plugins, but has to be listed after them in the list of plugins:
 
 ```
 plugins: [ bgp.session, ebgp.multihop ]
@@ -55,7 +58,7 @@ bgp.multihop.sessions:
   r2:
 ```
 
-You can specify any attribute supported by **bgp.session** plugin on an EBGP multihop session (assuming you included both plugins in your topology).
+You can specify any attribute supported by the other BGP plugins on an EBGP multihop session (assuming you included both plugins in your topology).
 
 ```
 plugins: [ bgp.session, ebgp.multihop ]
@@ -69,7 +72,7 @@ bgp.multihop.sessions:
 
 ## Activation of Individual Address Families
 
-You can use global **bgp.multihop.activate** dictionary to enable selective activation of BGP address families on EBGP multihop sessions. The address families active on EBGP multihop sessions can be specified for **ipv4** and **ipv6** neighbors.
+You can use the global **bgp.multihop.activate** dictionary to enable selective activation of BGP address families on EBGP multihop sessions. The address families active on EBGP multihop sessions can be specified for **ipv4** and **ipv6** neighbors.
 
 For example, to implement the (infamous) EBGP-over-EBGP EVPN design, use the following configuration. The **bgp.multihop.activate.ipv4** setting will disable IPv4 address family on EBGP multihop sessions and enable EVPN on them.
 

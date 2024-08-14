@@ -25,9 +25,7 @@ VRFs are supported on these platforms:
 | Cumulus NVUE          | ✅  |  ❌  |  ❌  |
 | Dell OS10             | ✅  | ✅  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| Juniper vMX           | ✅  | ✅  | ✅  |
-| Juniper vPTX          | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  |
 | SR Linux              | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
@@ -35,22 +33,22 @@ VRFs are supported on these platforms:
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
+[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
+
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:
 
 | Operating system      | VRF-aware<br />OSPF | VRF-aware<br />OSPFv3 | VRF-aware<br />EBGP |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  |  ❌  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅ [❗](caveats-iosv) | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| Juniper vMX           | ✅  | ✅  | ✅  |
-| Juniper vPTX          | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |
 | SR Linux              | ✅  |  ❌  | ✅  |
@@ -309,6 +307,6 @@ You'll find VRF-related examples in the [Defining and Using VRFs](../example/vrf
 
 -   [Creating VRF Lite Labs With netlab](https://blog.ipspace.net/2022/04/netsim-vrf-lite.html)
 -   [Creating MPLS/VPN Labs With netlab](https://blog.ipspace.net/2022/04/netsim-mpls-vpn.html)
--   [Combining VLANs with VRFs](https://blog.ipspace.net/2022/06/netsim-vlan-vrf.html){style="-webkit-font-smoothing: antialiased; color: rgb(210, 100, 0); text-decoration: none; transition: color 0.3s ease-in-out 0s;"}
+-   [Combining VLANs with VRFs](https://blog.ipspace.net/2022/06/netsim-vlan-vrf.html)
 -   [VRF Lite Topology with VLAN Trunks](https://blog.ipspace.net/2022/09/netlab-vrf-lite.html)
 -   [Using VLAN and VRF Links](https://blog.ipspace.net/2023/04/netlab-vrf-vlan-links.html)

@@ -25,6 +25,7 @@ You can run the following IPv4-only tests:
 * `06-unnumbered.yml` -- Tests IPv4-only interface EBGP sessions (EBGP sessions over unnumbered IPv4 interfaces)
 * `07-ebgp-localas.yml` -- Tests **local-as** functionality on EBGP sessions
 * `08-ibgp-localas.yml` -- Tests **local-as** functionality that changes an EBGP session into an IBGP session.
+* `09-vrf-localas.yml` -- Tests **local-as** functionality in VRFs
 
 You can run the following IPv6-only tests:
 
@@ -41,9 +42,8 @@ These tests can be used to validate the advanced dual-stack features:
 
 All the above tests include a validation suite that can be run with the `netlab validate` command.
 
-
 You can also run these tests:
 
-* The integration tests for the **bgp.session** plugin are in the `session` directory.
-* `bgp.domain.yml` -- Tests **bgp.domain** plugin (no validation)
-* `ebgp.multihop.yml` -- Tests **bgp.multihop** plugin (no validation)
+* The integration tests for the **bgp.session** plugin are in the `../bgp.session` directory.
+* The integration tests for the **bgp.policy** plugin are in the `../bgp.policy` directory.
+* The integration tests for the **ebgp.multihop** plugin are in the `../bgp.multihop` directory.

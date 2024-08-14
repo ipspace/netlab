@@ -1,0 +1,64 @@
+---
+message: |
+  The device under test is an EVPN spine device using EVPN-over-EBGP. It should
+  propagate EVPN AF routes between PE-devices, resulting in VXLAN-based VLAN
+  extension. The test checks whether the spine device changes the BGP next hop
+  on EBGP EVPN AF (it should not).
+
+  * h1 and h2 should be able to ping each other
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ l1, l2 ]
+    module: [ vlan, vxlan, bgp, evpn ]
+  core:
+    members: [ spine ]
+    module: [ bgp, evpn ]
+  x_switches:
+    members: [ l1, l2 ]
+    device: frr
+    provider: clab
+
+vlans:
+  red:
+    mode: bridge
+    vni: 1000
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ l1-h1, l2-h2 ]
+
+evpn.as: 65000
+evpn.session: [ ibgp, ebgp ]
+bgp.community.ebgp: [ standard, extended ]
+
+nodes:
+  spine:
+    bgp.as: 65100
+  l1:
+    bgp.as: 65201
+  l2:
+    bgp.as: 65202
+
+links:
+- l1:
+  spine:
+  mtu: 1600
+- l2:
+  spine:
+  mtu: 1600
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for STP to wake up
+    wait: 30
+    nodes: [ h1 ]
+    plugin: ping('h2')

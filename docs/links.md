@@ -4,11 +4,15 @@
 Links between virtual lab devices are specified in the **links** element of the topology file -- a list of links in one of these formats:
 
 * A dictionary of node names and other link attributes. Use this format when you want to have tight control over interface attributes like IP addresses or when you have to specify additional link attributes like OSPF cost.
-* A list of node names. Use this format for multi-access interface when you're OK with default IP addressing and don't need to specify additional link attributes.
-* A string in *node*-*node* format. Use this format for a point-to-point link.
+* A list of node names. Use this format for a multi-access link when you're OK with default IP addressing and don't need to specify additional link attributes.
+* A string in *node*-*node* format. Use this format for a point-to-point link that does not need any additional link attributes.
 * A dictionary of link attributes and a list of node interfaces.
 
-You can use all four link formats in the same topology file; they are always converted into a dictionary+list of interfaces format and augmented with addressing details during the [topology transformation process](dev/transform.md).
+You can use all four link formats in the same topology file; each link definition is always converted into a dictionary+list of interfaces format and augmented with addressing details during the [topology transformation process](dev/transform.md).
+
+```{tip}
+You can make the list of links more structured by formatting it as a dictionary with subsets of links as dictionary values.
+```
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -21,7 +25,7 @@ You can use all four link formats in the same topology file; they are always con
 
 The following simple topology file contains typical link format variants. For more details, read the extensive [link definition examples](example/link-definition.md)
 
-```
+```yaml
 ---
 defaults:
   device: iosv
@@ -42,6 +46,20 @@ links:
 When you want to specify additional link parameters, you must use the dictionary format of the link definition.
 ```
 
+If you want to have more descriptive link names (or an easier-to-read lab topology), structure the **links** as a dictionary, for example:
+
+```yaml
+links:
+  core:
+  - r1-r2
+  - [ r2, r3 ]
+  edge:
+  - r2
+  - r3
+```
+
+The *links-as-dictionary* format has no other impact than a different (more structured) presentation format and more detailed link names displayed in error messages.
+
 (link-attributes)=
 ## Link Attributes
 
@@ -57,7 +75,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
 * **name** -- link name (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
-* **prefix** -- [prefix (or a set of prefixes)](#static-link-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
+* **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **role** -- link role selects specific configuration module behavior. Typical link roles include *stub*, *passive*, and *external*. Please read [](module/routing.md) for more details.
 * **type** -- [link type](#link-types) (lan, p2p, stub, loopback, tunnel)
 
@@ -215,11 +233,12 @@ links:
   members: [ s1-s2, s2-s3, s1-s3 ]
 ```
 
+(links-static-addressing)=
 ## Static Link Addressing
 
 You can use the **prefix** attribute to specify the IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
 
-The **prefix** attribute could be an IPv4 CIDR prefix or a dictionary with **ipv4** and/or **ipv6** elements.
+The **prefix** attribute could be an IPv4 CIDR prefix or a dictionary with **ipv4**, **ipv6**, and **[allocation](addr-allocation)** elements.
 
 You can use the shorthand (string) syntax if you're building an IPv4-only network, for example:
 

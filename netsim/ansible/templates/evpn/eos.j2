@@ -6,15 +6,20 @@ router bgp {{ bgp.as }}
 {% endif %}
 !
 {% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
-  neighbor {{ n.ipv4 }} activate
+{%   set peer = 'ebgp_intf_' + n.local_if if n.local_if is defined else n[af] %}
+  neighbor {{ peer }} activate
 {% endfor %}
 {% if vlans is defined %}
 {%   for v in vlans.values() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
 !
  vlan {{ v.id }}
   rd {{ v.evpn.rd }}
-  route-target import {{ v.evpn.import|join(' ') }}
-  route-target export {{ v.evpn.export|join(' ') }}
+{%     for irt in v.evpn.import|default([]) %}
+  route-target import {{ irt }}
+{%     endfor %}
+{%     for ert in v.evpn.export|default([]) %}
+  route-target export {{ ert }}
+{%     endfor %}
   redistribute learned
 {%   endfor %}
 {% endif %}
@@ -34,8 +39,12 @@ router bgp {{ bgp.as }}
 !
  vrf {{ n }}
   rd {{ v.rd }}
-  route-target import evpn {{ v.import|join(' ') }}
-  route-target export evpn {{ v.export|join(' ') }}
+{%     for irt in v.import|default([]) %}
+  route-target import evpn {{ irt }}
+{%     endfor %}
+{%     for ert in v.export|default([]) %}
+  route-target export evpn {{ ert }}
+{%     endfor %}
   redistribute connected
 {%   endfor %}
 {% endif %}

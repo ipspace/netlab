@@ -1,0 +1,72 @@
+---
+message: |
+  The devices under test are EVPN switches (leaf and spine) using
+  EVPN-over-multihop-EBGP. The leaf switch should generate and accept EVPN AF
+  routes, and the spine switch should propagate them without changing the BGP
+  next hop.
+
+  * h1 and h2 should be able to ping each other
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+plugin: [ ebgp.multihop ]                       # Use EBGP multihop plugin to get loopback EBGP sessions
+evpn.as: 65000                                  # Shared AS used for RD/RT
+evpn.session: [ ]                               # Do not activate EVPN AF on any BGP session
+bgp.multihop.activate.ipv4: [ evpn ]            # ... apart from the multihop sessions
+
+bgp.community.ebgp: [ standard, extended ]      # Propagate extended community over EBGP
+bgp.sessions.ipv4: [ ebgp ]                     # ... and activate IPv4 AF only on EBGP sessions
+
+bgp.multihop.sessions:                          # Add loopback-to-loopback EBGP multihop sessions
+- l1-spine
+- l2-spine
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ l1, l2 ]
+    module: [ vlan, vxlan, bgp, evpn ]
+  core:
+    members: [ spine ]
+    module: [ bgp, evpn ]
+  x_switches:
+    members: [ l2 ]
+    device: frr
+    provider: clab
+
+vlans:
+  red:
+    mode: bridge
+    vni: 1000
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ l1-h1, l2-h2 ]
+
+nodes:
+  spine:
+    bgp.as: 65100
+  l1:
+    bgp.as: 65200
+  l2:
+    bgp.as: 65201
+
+links:
+- l1:
+  spine:
+  mtu: 1600
+- l2:
+  spine:
+  mtu: 1600
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for STP to wake up
+    wait: 30
+    nodes: [ h1 ]
+    plugin: ping('h2')

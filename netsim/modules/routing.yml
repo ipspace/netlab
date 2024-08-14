@@ -1,6 +1,12 @@
 # Generic routing attributes
 #
 ---
+no_propagate:
+  policy:
+  prefix:
+  aspath:
+  community:
+
 attributes:
   global:
     policy:
@@ -24,7 +30,13 @@ attributes:
         type: list
         make_list: True
         _subtype: aspath_entry
-
+    community:
+      type: dict
+      _keytype: id
+      _subtype:
+        type: list
+        make_list: True
+        _subtype: community_entry
   node:
     policy:
       merge: global
@@ -38,15 +50,14 @@ attributes:
       merge: global
       _subtype:
         _alt_types: [ NoneType ]
+    community:
+      merge: global
+      _subtype:
+        _alt_types: [ NoneType ]
 
   route_map:
     set: [ locpref, med, weight, prepend ]
     match: [ prefix, nexthop, aspath ]
-
-no_propagate:
-  policy:
-  prefix:
-  aspath:
 
 _top:                               # Modification of global defaults
   prefix:
@@ -88,10 +99,12 @@ _top:                               # Modification of global defaults
           extended: list
           large: list
           append: bool
+          delete: bool
       match:
         prefix: str
         nexthop: str
         aspath: str
+        community: str
 
     pfx_entry:                      # Define prefix list entry
       action:
@@ -130,6 +143,24 @@ _top:                               # Modification of global defaults
         type: list
         _subtype: asn
         _alt_types: [ str, asn ]
+
+    community_entry:                # Define BGP community entry
+      action:
+        type: str
+        valid_values: [ permit, deny ]
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 32767
+      path:
+        type: list                  # We're using AS-path transformation code, so we might get 'path' attribute
+        _valid_with: [ action, sequence ]
+      list:
+        type: list                  # List is equivalent to path but they can't be used together
+        _valid_with: [ action, sequence ]
+      regexp:
+        type: str                   # Whereas regexp indicates we have to use extended ACL
+        _valid_with: [ action, sequence ]
 
 features:
   policy:

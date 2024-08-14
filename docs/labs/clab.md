@@ -20,6 +20,7 @@ Recent _netlab_ releases were tested with _containerlab_ version 0.55.0. That's 
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
+(clab-images)=
 ## Container Images
 
 Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab create](../netlab/create.md)** command uses these container images (use **netlab show images** to display the actual system settings):
@@ -39,6 +40,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | FRR                    | frrouting/frr:v8.4.0         |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
 | Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
+| vJunos-switch          | vrnetlab/vr-vjunosswitch:23.2R1.14 |
 | Linux[❗](clab-linux)  | python:3.9-alpine            |
 | Mikrotik RouterOS 7    | vrnetlab/vr-routeros:7.6     |
 | Nokia SR Linux         | ghcr.io/nokia/srlinux:latest |
@@ -55,7 +57,7 @@ You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in
 
 ```{warning}
 * You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
-* The _vrnetlab_ process generates container tags based on the underlying VM image name. You will probably have to [change the container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
+* The _vrnetlab_ process generates container tags based on the underlying VM image name. You will probably have to [change the container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter ([more details](tutorial-release)).
 ```
 
 ## Containerlab Networking
@@ -154,7 +156,7 @@ nodes:
 [_vrnetlab_](https://containerlab.dev/manual/vrnetlab/) is an open-source project that packages network device virtual machines into containers. The resulting containers have a launch process that starts **qemu** (KVM) to spin up a virtual machine. Running *vrnetlab* containers on a VM, therefore, requires nested virtualization.
 
 ```{warning}
-_vrnetlab_ is an independent open-source project. If it fails to produce a working container image, please contact them.
+_vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/hellt/vrnetlab/issues/231)), please contact them.
 ```
 
 ### Image Names
@@ -281,6 +283,7 @@ You can also change these *containerlab* parameters:
 * **clab.env** to set container environment (used to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations))
 * **clab.ports** to map container ports to host ports
 * **clab.cmd** to execute a command in a container.
+* **clab.startup-delay** to make certain node(s) to boot/start later than others (amount in seconds)
 
 ```{warning}
 String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.

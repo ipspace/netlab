@@ -23,13 +23,14 @@
 | Cisco Nexus 9300v [❗](caveats-nxos)      | nxos               |
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus            |
 | Cumulus Linux 5.0 (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue           |
-| Dell OS10 [❗](caveats-os10).             | dellos10           |
+| Dell OS10 [❗](caveats-os10)              | dellos10           |
 | Fortinet FortiOS [❗](caveats-fortios)    | fortios            |
 | FRRouting (FRR) [❗](caveats-frr)         | frr                |
 | [Generic Linux host](labs/linux.md)       | linux              |
 | Juniper vMX [❗](caveats-junos)             | vmx                |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
 | Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
+| vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch |
 | Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           |
 | Nokia SR Linux [❗](caveats-srlinux)      | srlinux |
@@ -84,6 +85,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Juniper vMX        |  ❌  |  ❌  | ✅[❗](clab-vrnetlab)   |
 | Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅[❗](clab-vrnetlab)  |
 | Juniper vSRX 3.0   | [✅](build-vsrx)  | ✅  | ✅[❗](caveats-vsrx)  |
+| vJunos-switch       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
 | Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
@@ -142,9 +144,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Fortinet FortiOS      |          ✅           |           ✅           |
 | FRR                   |  ✅[❗](caveats-frr)  | ✅[❗](caveats-frr) |
 | Generic Linux         |          ✅           |           ❌           |
-| Juniper vMX           |          ✅           |           ✅           |
-| Juniper vSRX 3.0      |          ✅           |           ✅           |
-| Juniper vPTX          |          ✅           |           ✅           |
+| Junos[^Junos]         |          ✅           |           ✅           |
 | Mikrotik RouterOS 6   |          ✅           |           ✅           |
 | Mikrotik RouterOS 7   |          ✅           |           ✅           |
 | Nokia SR Linux        |          ✅           |           ✅           |
@@ -153,6 +153,8 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | VyOS                  |          ✅           |           ✅           |
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+
+[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 
 ## Initial Device Configurations
 
@@ -173,9 +175,7 @@ The following system-wide features are configured on supported network operating
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | FRR                      | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | Generic Linux            | ✅  | ✅  |  ✅[❗](linux-lldp) | ✅  | ✅  |
-| Juniper vMX              | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| Juniper vPTX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0         | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  | 
 | Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
 | Nokia SR Linux           | ✅  | ✅  | ✅  | ✅  | ✅  |
@@ -200,9 +200,7 @@ The following interface parameters are configured on supported network operating
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         |  ❌  |  ❌  | ✅  |  ❌  |
-| Juniper vMX           | ✅  | ✅  | ✅  | ✅  |
-| Juniper vPTX          | ✅  | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ✅  | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  |  ❌  | ✅  | ✅  |
@@ -228,9 +226,7 @@ The following interface addresses are supported on various platforms:
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  |
 | Generic Linux         | ✅  | ✅  |  ❌  |
-| Juniper vMX           | ✅  | ✅  | ✅  |
-| Juniper vPTX          | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  |  ❌  |
@@ -263,9 +259,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  |  ❌  |
 | Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
 | FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
-| Juniper vMX           | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
-| Juniper vPTX          | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
-| Juniper vSRX 3.0      | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+| Junos[^Junos]         | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Nokia SR Linux        | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
@@ -295,6 +289,7 @@ These devices support additional control-plane protocols or BGP address families
 | Juniper vMX           | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vPTX          | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vSRX 3.0      | ✅  |  ❌  |  ❌  |  ❌  |
+| vJunos-switch         | ✅  |  ❌  |  ❌  |  ❌  |
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  |  ❌  | ✅  |
@@ -312,25 +307,26 @@ See [integration test results](https://release.netlab.tools/) for more details.
 The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
 
 | Operating system      | [VLAN](module/vlan.md) | [VRF](module/vrf.md) | [VXLAN](module/vxlan.md) | [MPLS](module/mpls.md) | [SR-MPLS](module/sr-mpls.md) | [SRv6](module/srv6.md) |
-| --------------------- | :--: | :-: | :---: | :--: | :-----: | :--: |
-| Arista EOS            |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
-| Aruba AOS-CX          |  ✅  | ✅  |  ✅[❗](caveats-aruba)   | [❗](caveats-aruba)   |    ❌    |  ❌   |
-| Cisco Catalyst 8000v  |  ✅  | ✅  |  ❌   |  ❌   |    ❌    |  ❌   |
-| Cisco CSR 1000v       |  ✅  | ✅  | ✅   | ✅   |    ✅   |  ❌   |
-| Cisco IOSv            |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
-| Cisco Nexus OS        |  ✅  |  ✅ | ✅   |  ❌   |    ❌    |  ❌   |
-| Cumulus Linux         |  ✅  | ✅  | ✅   |  ❌   |    ❌    |  ❌   |
-| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module-vrf-platform-support)|  ❌   | ❌  |   ❌    |  ❌   |
-| Dell OS10             |  ✅  | ✅  |  ✅   |   ❌  |    ❌    |  ❌   |
-| FRR                   |  ✅  | ✅  |  ✅   |   ✅  |    ❌   |  ❌   |
-| Juniper vMX           |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |
-| Juniper vPTX          |   ✅  |  ✅  |  ❌   |  ✅   |    ✅   |  ❌   |
-| Juniper vSRX 3.0      |   ❌  |  ✅  |  ❌   |  ❌   |    ✅   |  ❌   |
-| Mikrotik RouterOS 6   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
-| Mikrotik RouterOS 7   |  ✅  | ✅  |  ❌   | ✅   |    ❌    |  ❌   |
-| Nokia SR Linux        |  ✅  |  ❌  |  ❌   |  ❌   |    ✅   |  ❌   |
-| Nokia SR OS           |   ❌  |  ❌  |  ❌   |  ❌   |    ✅   |  ✅  |
-| VyOS                  |  ✅  | ✅  |  ✅   | ✅   |    ❌    |  ❌   |
+| --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
+| Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
+| Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
+| Cisco Catalyst 8000v  | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
+| Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
+| Cisco IOSv            | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
+| Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
+| Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
+| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
+| Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
+| FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ | 
+| Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
+| Juniper vPTX          | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
+| Juniper vSRX 3.0      | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
+| vJunos-switch         | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
+| Mikrotik RouterOS 6   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
+| Mikrotik RouterOS 7   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
+| Nokia SR Linux        | ✅ | ❌  |  ❌ |  ❌ | ✅ |  ❌ |
+| Nokia SR OS           | ❌  | ❌  |  ❌ |  ❌ | ✅ | ✅ |
+| VyOS                  | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 
 (platform-services-support)=
 Network services [configuration modules](module-reference.md) are supported on these devices[^NSM]
@@ -366,9 +362,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | FRR                   |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Generic Linux         |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
-| Juniper vMX           |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
-| Juniper vPTX          |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
-| Juniper vSRX 3.0      |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Junos[^Junos]         |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Mikrotik RouterOS 6   |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Mikrotik RouterOS 7   |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Nokia SR Linux        |          ✅          |   ❌    |    ❌     |         ❌          |        ✅         |    ✅    |
