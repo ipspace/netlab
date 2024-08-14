@@ -438,7 +438,14 @@ check_import_request: Check whether a route import request is valid
 * Is the source protocol active on the device?
 * If the import uses a routing policy, is it valid, and does the node use routing module?
 """
-def check_import_request(proto: str, node: Box, rdata: Box, topology: Box, features: Box) -> None:
+def check_import_request(
+      proto: str,
+      node: Box,
+      rdata: Box,
+      topology: Box,
+      features: Box) -> None:
+
+  f_import = features.get(f'{proto}.import',[])
   if not features.get(f'{proto}.import',False):             # Does the device support imports into this protocol?
     log.error(
       f'Device {node.device} (node {node.name}) does not support route import into {proto}',
@@ -448,6 +455,12 @@ def check_import_request(proto: str, node: Box, rdata: Box, topology: Box, featu
 
   i_dict = rdata['import']                                  # Use a temporary variable to shorten the code
   for s_proto in list(i_dict.keys()):                       # Iterate over the source protocol(s)
+    if isinstance(f_import,list) and s_proto not in f_import:
+      log.error(
+        f'Device {node.device} (node {node.name}) cannot import {s_proto} routes into {proto}',
+        category=log.IncorrectValue,
+        module=proto)
+      continue
     i_data = i_dict[s_proto]
     if i_data is False:                                     # Remove requests to disable route import 
       i_dict.pop(s_proto,None)                              # ... needed to disable group-wide import
