@@ -1,0 +1,40 @@
+---
+message: |
+  This lab tests the simple import of BGP routes into OSPF.
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ r2, x1 ]
+
+nodes:
+  dut:
+    module: [ ospf, isis ]
+    ospf.import: [ isis ]
+  r2:
+    module: [ ospf ]
+  x1:
+    module: [ isis ]
+
+links: [ dut-x1, dut-r2 ]
+
+validate:
+  adj_ospf:
+    description: Check OSPF adjacency
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 50
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  adj_isis:
+    description: Check IS-IS sessions with DUT
+    wait_msg: Wait for IS-IS sessions to be established
+    wait: 30
+    nodes: [ x1 ]
+    plugin: isis_neighbor('dut',level='L2',area='49.0001')
+  redist:
+    description: Check for redistributed X1 loopback on R2
+    wait: 20
+    wait_msg: Waiting for routing protocols to do their magic
+    nodes: [ r2 ]
+    plugin: ospf_prefix(nodes.x1.loopback.ipv4)

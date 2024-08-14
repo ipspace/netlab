@@ -656,3 +656,4 @@ class BGP(_Module):
     _routing.remove_vrf_routing_blocks(node,'bgp')
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
+    _routing.process_imports(node,'bgp',topology,['ospf','connected'])

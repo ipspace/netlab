@@ -851,7 +851,9 @@ def must_be_r_proto(value: typing.Any) -> dict:
   if not isinstance(value,str):
     return { '_type': 'routing protocol (a string)' }
 
-  rp_list = ['bgp','connected','eigrp','isis','ospf','ripv2']
+  # This type is used in route import. Initial implementation is limited to BGP, OSPF and RIPv2
+  #
+  rp_list = ['bgp','connected','ospf','ripv2'] ### 'eigrp','isis']
   if value not in rp_list:
     return {
       '_type': "routing protocol",
