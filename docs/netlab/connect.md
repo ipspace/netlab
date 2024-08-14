@@ -1,3 +1,4 @@
+(netlab-connect)=
 # Connecting to Lab Devices
 
 **netlab connect** command uses information stored in the _netlab_ snapshot file and reported with the **[`netlab inspect --node`](inspect.md)** command to connect to a lab device or tool using SSH or **docker exec**.

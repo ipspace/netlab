@@ -1,3 +1,4 @@
+(netlab-create)=
 # Create Lab Configuration Files
 
 The **netlab create** command reads network topology description in YAML format, performs data transformation from high-level data model to devices-and-links data model, and creates virtualization- and automation configuration files needed to set up your lab.

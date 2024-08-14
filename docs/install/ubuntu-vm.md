@@ -1,3 +1,4 @@
+(install-ubuntu-vm)=
 # Ubuntu VM Installation
 
 Suppose you'd like to use *netlab* with *libvirt*[^1] or run network devices as containers on a Windows- or MacOS-based computer. You'll have to run the whole toolchain needed to create networking labs (netlab ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine.
