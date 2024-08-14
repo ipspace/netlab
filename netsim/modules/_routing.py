@@ -494,6 +494,9 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
     if 'import' not in vdata[proto]:                                  # If the user did not configure VRF import...
       if features.get(f'{proto}.import',False):                       # ... and the device supports imports
         for s_proto in vrf_list:                                      # ... create a default import dictionary
-          vdata[proto]['import'][s_proto] = {}
+          if s_proto in vdata or \
+             s_proto == 'connected' or \
+             s_proto == 'bgp' and node.get('bgp.as',None):            # ... from VRF protocols, BGP if defined, 
+            vdata[proto]['import'][s_proto] = {}                      # ... or connected interfaces
     else:                                                             # Import into VRF instance is configured
       check_import_request(proto,node,vdata[proto],topology,features) # ... check it!
