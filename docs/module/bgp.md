@@ -38,6 +38,7 @@ _netlab_ BGP configuration module supports these features:
 * Configurable activation of default address families
 * Configurable link prefix advertisement
 * Additional (dummy) IPv4 prefix advertisement
+* [Route import](routing_import) (redistribution)
 * Changing local autonomous system for individual BGP sessions (*local-as*)
 * Static **router-id** and **cluster-id**
 * Interaction with OSPF or IS-IS (IGP is disabled on external links)
@@ -57,21 +58,35 @@ _netlab_ supports most BGP features on [all platforms supporting BGP configurati
 
 The following features are only supported on a subset of platforms:
 
-| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered IPv4<br />EBGP sessions[^INTv4] | EBGP<br>local AS | IBGP<br>local AS | Configurable<br>default AF |
-| --------------------- | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS            |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
-| Aruba AOS-CX          |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
-| BIRD                  |  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
-| Cisco IOS/IOS XE[^18v]|  ❌  |  ❌  |  ✅ |  ✅ |  ✅ |
-| Cisco IOS XRv         |  ❌  |  ❌  |  ❌  |  ❌  |  ✅ |
-| Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ❌  |  ✅ |
-| Dell OS10             |  ✅ |  ✅ |  ✅ |  ❌  |  ✅  |
-| FRR                   |  ✅ |  ✅ |  ✅ |  ✅  |  ✅ |
-| Nokia SR Linux        |  ✅ |  ❌  |  ✅ |  ✅  |  ✅  |
-| Nokia SR OS           |  ❌  |  ❌  |  ✅ |  ✅  |  ✅  |
-| Sonic                 |  ✅ |  ✅ |  ✅ |  ✅ |  ✅ |
-| VyOS                  |  ✅ |  ✅ |  ✅ |  ❌  |  ✅  |
+| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered IPv4<br />EBGP sessions[^INTv4] | Configurable<br>default AF |
+| --------------------- | :-: | :-: | :-: |
+| Arista EOS            |  ✅ |  ✅ |  ✅ |
+| Aruba AOS-CX          |  ❌  |  ❌  |  ✅ |
+| BIRD                  |  ❌  |  ❌  |  ✅ |
+| Cisco IOS/IOS XE[^18v]|  ❌  |  ❌  |  ✅ |
+| Cisco IOS XRv         |  ❌  |  ❌  |  ✅ |
+| Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |
+| Cumulus Linux 5.x     |  ✅ |  ✅ |  ✅ |
+| Dell OS10             |  ✅ |  ✅ |  ✅ |
+| FRR                   |  ✅ |  ✅ |  ✅ |
+| Nokia SR Linux        |  ✅ |  ❌  |  ✅ |
+| Nokia SR OS           |  ❌  |  ❌  |  ✅ |
+| Sonic                 |  ✅ |  ✅ |  ✅ |
+| VyOS                  |  ✅ |  ✅ |  ✅ |
+
+| Operating system      | EBGP<br>local AS | IBGP<br>local AS | Route<br>import | VRF route<br>import |
+| --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            |  ✅ |  ✅ |  ✅ |  ❌  |
+| Aruba AOS-CX          |  ✅ |  ✅ |  ❌  |  ❌  |
+| BIRD                  |  ✅ |  ✅ |  ❌  |  ❌  |
+| Cisco IOS/IOS XE[^18v]|  ✅ |  ✅ |  ✅ |  ❌  |
+| Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ❌  |
+| Dell OS10             |  ✅ |  ❌  |  ❌  |  ❌  |
+| FRR                   |  ✅ |  ✅ |  ✅ |  ❌  |
+| Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
+| Nokia SR OS           |  ✅ |  ✅ |  ❌  |  ❌  |
+| Sonic                 |  ✅ |  ✅ |  ❌  |  ❌  |
+| VyOS                  |  ✅ |  ❌  |  ❌  |  ❌  |
 
 ```{tip}
 See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
@@ -145,6 +160,7 @@ Additional per-node BGP configuration parameters include:
 
 * **bgp.advertise_loopback** -- when set to `False`, the IP prefixes configured on loopback interfaces are not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[](bgp-community-propagation)* for more details.
+* **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance. Turned off by default.
 * **bgp.local_as** -- the autonomous system used on all EBGP sessions.
 * **bgp.next_hop_self** -- use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
