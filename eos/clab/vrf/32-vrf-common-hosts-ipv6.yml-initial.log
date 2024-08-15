@@ -3,15 +3,15 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [srv]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
-ok: [srv]
 ok: [h2]
+ok: [srv]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -34,15 +34,195 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
-ok: [h2]
 ok: [srv]
+ok: [h2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [h1]
-skipping: [h2]
-skipping: [srv]
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2::1/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2::1/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:1::2/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [srv] => 
+  msg: |-
+    initial configuration for srv
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:2::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:2::3/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ipv6 unicast-routing
+    !
+    vrf instance blue
+     rd 65000:2
+    !
+    ipv6 unicast-routing vrf blue
+    !
+    vrf instance common
+     rd 65000:3
+    !
+    ipv6 unicast-routing vrf common
+    !
+    vrf instance red
+     rd 65000:1
+    !
+    ipv6 unicast-routing vrf red
+    !
+    !
+    ipv6 host dut-blue 2001:db8:2:1::4
+    ipv6 host dut-common 2001:db8:2:2::4
+    ipv6 host dut-red 2001:db8:2::4
+    ipv6 host h1 2001:db8:2::1
+    ipv6 host h2 2001:db8:2:1::2
+    ipv6 host srv 2001:db8:2:2::3
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:4::1/64
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     vrf red
+     description dut -> h1 [stub]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:2::4/64
+    !
+     mac-address 52dc.cafe.0401
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     vrf blue
+     description dut -> h2 [stub]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:2:1::4/64
+    !
+     mac-address 52dc.cafe.0402
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+     vrf common
+     description dut -> srv [stub]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:2:2::4/64
+    !
+     mac-address 52dc.cafe.0403
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -67,18 +247,18 @@ ok: [srv]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
-changed: [srv -> localhost]
 changed: [h1 -> localhost]
+changed: [srv -> localhost]
 
-TASK [Initial container configuration via /tmp/config-lBzWOFGs-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-lJBrOHAh-h1.sh] **********
+changed: [srv -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [srv -> localhost]
 
 TASK [file] ********************************************************************
-changed: [srv -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [srv -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -95,7 +275,48 @@ TASK [Find configuration template for vrf] *************************************
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    !
+    mpls ip
+    !
+    router bgp 65000
+    !
+     vrf blue
+      router-id 10.0.0.4
+      rd 65000:2
+      route-target import vpn-ipv6 65000:2
+      route-target import vpn-ipv6 65000:3
+      route-target export vpn-ipv6 65000:2
+    !
+      address-family ipv6
+        redistribute connected
+        redistribute ospfv3
+    !
+     vrf common
+      router-id 10.0.0.4
+      rd 65000:3
+      route-target import vpn-ipv6 65000:1
+      route-target import vpn-ipv6 65000:2
+      route-target import vpn-ipv6 65000:3
+      route-target export vpn-ipv6 65000:3
+    !
+      address-family ipv6
+        redistribute connected
+        redistribute ospfv3
+    !
+     vrf red
+      router-id 10.0.0.4
+      rd 65000:1
+      route-target import vpn-ipv6 65000:1
+      route-target import vpn-ipv6 65000:3
+      route-target export vpn-ipv6 65000:1
+    !
+      address-family ipv6
+        redistribute connected
+        redistribute ospfv3
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 ok: [dut]
@@ -110,10 +331,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-srv                        : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+dut                        : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+srv                        : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 
 
 
