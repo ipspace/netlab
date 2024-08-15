@@ -432,6 +432,18 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
         module=proto)
 
 """
+is_vrf_protocol: Check if a protocol runs in the current VRF
+"""
+def is_vrf_protocol(node: Box, vdata: Box, s_proto: str) -> bool:
+  if s_proto in ['connected','static']:                     # Pseudo-protocols are always OK
+    return True
+  if s_proto in vdata:                                      # VRF has protocol-specific data
+    return True
+  if s_proto == 'bgp' and node.get('bgp.as',None):          # BGP is special; VRF import/export depends on it
+    return True
+  return False                                              # Found no good reason to import from this protocol
+
+"""
 check_import_request: Check whether a route import request is valid
 
 * Does the target protocol support route import?
@@ -500,16 +512,26 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
   if node.get(f'{proto}.import',{}):                                  # Do we have global import request?
     check_import_request(proto,node,node[proto],topology,features)    # ... check it!
   
-  for vname,vdata in node.get('vrfs',{}).items():                     # Now check all VRFs
+  i_feature = features.get(f'{proto}.import',[])                      # Is the protocol route import VRF-aware?
+  vrf_aware = i_feature is True or isinstance(i_feature,list) \
+              and 'vrf' in i_feature
+
+  for vname,vdata in node.get('vrfs',{}).items():                     # OK, have to check all VRFs
     if proto not in vdata:                                            # VRF is not using the protocol, move on
       continue
 
     if 'import' not in vdata[proto]:                                  # If the user did not configure VRF import...
+      if not vrf_aware:                                               # This device/protocol combination is not
+        continue                                                      # ... VRF-aware, move on
       if features.get(f'{proto}.import',False):                       # ... and the device supports imports
         for s_proto in vrf_list:                                      # ... create a default import dictionary
-          if s_proto in vdata or \
-             s_proto == 'connected' or \
-             s_proto == 'bgp' and node.get('bgp.as',None):            # ... from VRF protocols, BGP if defined, 
-            vdata[proto]['import'][s_proto] = {}                      # ... or connected interfaces
-    else:                                                             # Import into VRF instance is configured
-      check_import_request(proto,node,vdata[proto],topology,features) # ... check it!
+          if is_vrf_protocol(node,vdata,s_proto):                     # Is the source protocol present in this VRF?
+            vdata[proto]['import'][s_proto] = {}                      # ... Yes, import into VRF instance
+    else:                                                             # Explicit import configuration
+      if vrf_aware:                                                   # ... if the protocol is VRF-aware check it
+        check_import_request(proto,node,vdata[proto],topology,features)
+      else:
+        log.error(
+          f'Route import from {s_proto} to {proto} on node {node.name} (device {node.device}) is not VRF-aware',
+          category=log.IncorrectValue,
+          module=proto)
