@@ -574,3 +574,41 @@ def remove_vrf_imports(node: Box, vname: str, vdata: Box, proto: str) -> None:
         f'Cannot import {proto} routes into {rp} in VRF {vname} on node {node.name}: {proto} is not active in that VRF',
         category=log.IncorrectValue,
         module=rp)
+
+
+
+"""
+igp_post_transform: Perform common IGP transformation/cleanup tasks
+
+* Remove IGP data from interfaces with no usable IP addresses
+* Move IGP-enabled VRF interfaces into VRF dictionary
+* Calculate address families for global instance and VRFs
+* Propagate node attributes (IGP specific, callback)
+* Remove IGP module if there are no IGP-enabled global or VRF interfaces
+* Process imports into IGP
+"""
+
+def igp_post_transform(
+      node: Box,
+      topology: Box,
+      proto: str,
+      vrf_aware: bool = False,
+      propagate: typing.Optional[typing.Callable] = None) -> None:
+
+  features = devices.get_device_features(node,topology.defaults)
+
+  remove_unaddressed_intf(node,proto)
+  if vrf_aware:
+    build_vrf_interface_list(node,proto,topology)
+  else:
+    remove_vrf_interfaces(node,proto)
+
+  routing_af(node,proto,features)
+  if vrf_aware:
+    remove_vrf_routing_blocks(node,proto)
+  
+  if propagate is not None:
+    propagate(node,topology)
+  
+  remove_unused_igp(node,proto,topology.defaults.get(f'{proto}.warnings.inactive',False))
+  process_imports(node,proto,topology,['bgp','connected'])

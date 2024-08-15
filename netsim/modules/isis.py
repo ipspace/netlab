@@ -65,15 +65,4 @@ class ISIS(_Module):
       validate.must_be_string(
         l,'isis.type',f'nodes.{node.name}.interfaces.{l.ifname}',module='isis',valid_values=isis_type)
 
-    #
-    # Final steps:
-    #
-    # * remove IS-IS from VRF interfaces
-    # * Calculate address families
-    # * Enable BFD
-    # * Remove ISIS module if there are no IS-IS enabled global interfaces
-    #
-    _routing.remove_unaddressed_intf(node,'isis')
-    _routing.remove_vrf_interfaces(node,'isis')
-    _routing.routing_af(node,'isis')
-    _routing.remove_unused_igp(node,'isis',topology.defaults.get('isis.warnings.inactive',False))
+    _routing.igp_post_transform(node,topology,proto='isis',vrf_aware=False)

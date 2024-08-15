@@ -13,7 +13,4 @@ class EIGRP(_Module):
       if not _routing.external(intf,'eigrp'):
         _routing.passive(intf,'eigrp',topology)
 
-    _routing.remove_unaddressed_intf(node,'eigrp')
-    _routing.remove_vrf_interfaces(node,'eigrp')
-    _routing.routing_af(node,'eigrp')
-    _routing.remove_unused_igp(node,'eigrp',topology.defaults.get('eigrp.warnings.inactive',False))
+    _routing.igp_post_transform(node,topology,proto='eigrp',vrf_aware=False)
