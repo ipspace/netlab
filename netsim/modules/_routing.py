@@ -262,12 +262,13 @@ def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
         if proto in n_data.get('module',[]):                                # ... and check if at least one of them uses the IGP
           node.vrfs[l.vrf][proto].active = True
                                                                             # Cleanup IGP data
-  for vdata in node.get('vrfs',{}).values():                                # ... iterate over the list of VRFs
+  for vname,vdata in node.get('vrfs',{}).items():                           # ... iterate over the list of VRFs
     try:
       proto_active = vdata.get(f'{proto}.active',False)                     # Get the IGP data for the VRF
     except:                                                                 # ... assume 'not active' if get fails
       proto_active = False
     if not proto_active:                                                    # If there's no record of active IGP neighbors
+      remove_vrf_imports(node,vname,vdata,proto)                            # Remove all mentions of the IGP imports
       vdata.pop(proto,None)                                                 # ... remove the VRF IGP instance
 
 #
@@ -517,16 +518,23 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
               and 'vrf' in i_feature
 
   for vname,vdata in node.get('vrfs',{}).items():                     # OK, have to check all VRFs
-    if proto not in vdata:                                            # VRF is not using the protocol, move on
-      continue
+    if not is_vrf_protocol(node,vdata,proto):                         # Is VRF using this protocol?
+      continue                                                        # ...no, move on
 
     if 'import' not in vdata[proto]:                                  # If the user did not configure VRF import...
       if not vrf_aware:                                               # This device/protocol combination is not
         continue                                                      # ... VRF-aware, move on
-      if features.get(f'{proto}.import',False):                       # ... and the device supports imports
+      if features.get(f'{proto}.import',False):                       # Does the device supports imports?
         for s_proto in vrf_list:                                      # ... create a default import dictionary
-          if is_vrf_protocol(node,vdata,s_proto):                     # Is the source protocol present in this VRF?
-            vdata[proto]['import'][s_proto] = {}                      # ... Yes, import into VRF instance
+          #
+          # Import suggested source protocol record if the source protocol is in VRF
+          # or if the destination protocol is BGP and the source protocol is present
+          # on the device (in which case the IGP module will remove the VRF import)
+          #
+          do_import = is_vrf_protocol(node,vdata,s_proto) or \
+                      (proto == 'bgp' and s_proto in node)
+          if do_import:
+            vdata[proto]['import'][s_proto] = { 'auto': True }        # ... mark import as auto-generated
     else:                                                             # Explicit import configuration
       if vrf_aware:                                                   # ... if the protocol is VRF-aware check it
         check_import_request(proto,node,vdata[proto],topology,features)
@@ -535,3 +543,34 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
           f'Route import from {s_proto} to {proto} on node {node.name} (device {node.device}) is not VRF-aware',
           category=log.IncorrectValue,
           module=proto)
+
+"""
+remove_vrf_imports: remove incorrect VRF imports
+
+When creating VRF route imports for BGP, the IGP data could still be present in the VRF
+even if the VRF does not use that IGP. The IGP data is removed in the node_post_transform
+IGP code, but that's too late for BGP (BGP has to run before VRF which has to run before IGP).
+
+The only way to handle that circular dependency (without introducing another pass through the
+data) is to call a cleanup routine whenever an IGP is removed from the VRF. The cleanup routine
+has to go through all VRF data, detect imports, remove them, and raise an error if needed.
+"""
+def remove_vrf_imports(node: Box, vname: str, vdata: Box, proto: str) -> None:
+  for rp in ['bgp','ospf','isis','ripv2','eigrp']:                    # Iterate over all routing protocols
+    if not rp in vdata:                                               # RP is (no longer?) used in the VRF
+      continue
+    if not isinstance(vdata[rp],Box):                                 # Not a full-blown RP data structure
+      continue
+    if not 'import' in vdata[rp]:                                     # RP is present in VRF but has no imports
+      continue
+
+    rp_import = vdata[rp]['import']                                   # Get a pointer to import dictionary
+    if proto not in rp_import:                                        # Our protocol did not make it into imports
+      continue
+    if rp_import[proto].get('auto',False):                            # Was it an auto-import?
+      rp_import.pop(proto,None)                                       # Yes, we can just remove it
+    else:
+      log.error(
+        f'Cannot import {proto} routes into {rp} in VRF {vname} on node {node.name}: {proto} is not active in that VRF',
+        category=log.IncorrectValue,
+        module=rp)
