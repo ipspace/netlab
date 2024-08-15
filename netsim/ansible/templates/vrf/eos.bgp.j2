@@ -6,13 +6,8 @@ router bgp {{ bgp.as }}
 {% for vname,vdata in vrfs.items() %}
 !
  vrf {{ vname }}
-  redistribute connected
   router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
   rd {{ vdata.rd }}
-{%   if 'ospf' in vdata %}
-  redistribute ospf
-  redistribute ospfv3
-{%   endif %}
 {%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 {%     for rt in vdata.import %}
   route-target import vpn-{{ af }} {{ rt }}
@@ -26,21 +21,24 @@ router bgp {{ bgp.as }}
 {{       bgpcfg.neighbor(n,af,bgp) }}
 {%     endfor %}
 {%   endfor %}
-{%   for af in ['ipv4','ipv6'] %}
-{%     for n in vdata.networks|default([]) if af in n %}
-{%       if loop.index == 1 %}
+{%   for af in ['ipv4','ipv6'] if af in vdata.af %}
+!
   address-family {{ af }}
-{%       endif %}
-   network {{ n[af]|ipaddr('0') }}
+{%     if vdata.bgp.import is defined %}
+{%       for s_proto,s_data in vdata.bgp.import.items() %}
+    redistribute {{ s_proto }}{%
+    if s_proto == 'ospf' and af == 'ipv6' %}v3{% endif %}{%
+    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
+{%       endfor %}
+{%     endif %}
+{%     for n in vdata.networks|default([]) if af in n %}
+    network {{ n[af]|ipaddr('0') }}
 {%     endfor %}
 {%     for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
-{%       if loop.index == 1 %}
-  address-family {{ af }}
-{%       endif %}
 {%       set peer = 'ebgp_intf_' + n.local_if if n.local_if is defined else n[af] %}
-   neighbor {{ peer }} activate
+    neighbor {{ peer }} activate
 {%       if n.local_if is defined and af == 'ipv4' %}
-  neighbor {{ peer }} next-hop address-family ipv6 originate
+    neighbor {{ peer }} next-hop address-family ipv6 originate
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
