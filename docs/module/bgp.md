@@ -76,13 +76,13 @@ The following features are only supported on a subset of platforms:
 
 | Operating system      | EBGP<br>local AS | IBGP<br>local AS | Route<br>import | VRF route<br>import |
 | --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            |  ✅ |  ✅ |  ✅ |  ❌  |
+| Arista EOS            |  ✅ |  ✅ |  ✅ |  ✅ |
 | Aruba AOS-CX          |  ✅ |  ✅ |  ❌  |  ❌  |
 | BIRD                  |  ✅ |  ✅ |  ❌  |  ❌  |
-| Cisco IOS/IOS XE[^18v]|  ✅ |  ✅ |  ✅ |  ❌  |
-| Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ❌  |
+| Cisco IOS/IOS XE[^18v]|  ✅ |  ✅ |  ✅ |  ✅ |
+| Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |
 | Dell OS10             |  ✅ |  ❌  |  ❌  |  ❌  |
-| FRR                   |  ✅ |  ✅ |  ✅ |  ❌  |
+| FRR                   |  ✅ |  ✅ |  ✅ |  ✅ |
 | Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
 | Nokia SR OS           |  ✅ |  ✅ |  ❌  |  ❌  |
 | Sonic                 |  ✅ |  ✅ |  ❌  |  ❌  |
@@ -182,11 +182,9 @@ Finally, the BGP configuration module supports these advanced node parameters th
 
 ## VRF Parameters
 
-You can set a VRF-specific BGP router ID with **bgp.router_id** VRF parameter. Use this setting when building topologies with back-to-back links between VRFs on the same device.
-
-BGP is always enabled for all VRF address families. The connected interfaces (and OSPF routes if you're running OSPF in the VRF) are always redistributed into the BGP routing process. 
-
-To stop the creation of VRF EBGP sessions, set the **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
+* BGP is always enabled for all VRF address families. By default, _netlab_ redistributes connected interfaces and IGP routes into BGP VRF address families. You can change that on devices supporting configurable route import with the **[bgp.import](routing_import)** VRF parameter.
+* You can set a VRF-specific BGP router ID with **bgp.router_id** VRF parameter. Use this setting when building topologies with back-to-back links between VRFs on the same device.
+* To stop the creation of VRF EBGP sessions, set the **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
 
 ## Link-Level Parameters
 
