@@ -34,11 +34,12 @@ ipv6 router ospf {{ ospf_pid }}
 {% if ospf_data.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
 {% endif %}
-{% if ospf_vrf %}
-{%   if bgp.as is defined %}
- redistribute bgp include leaked
-{%   endif %}
- redistribute connected
+{% if ospf_data.import is defined %}
+{%   for s_proto,s_data in ospf_data.import.items() %}
+ redistribute {{ s_proto }}{%
+    if s_proto == 'bgp' and ospf_vrf %} include leaked{% endif %}{%
+    if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv6{% endif +%}
+{%   endfor %}
 {% endif %}
 {% for l in intf_data if l.ospf.passive|default(False) %}
  passive-interface {{ l.ifname }}

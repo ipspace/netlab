@@ -14,6 +14,7 @@ import netaddr
 
 from ..utils import log
 from ..augment import addressing,devices
+from .routing import import_routing_policy,check_routing_policy
 from .. import data
 
 # Build routing protocol address families
@@ -429,3 +430,108 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
         f'Cannot change router ID for VRF {vname} on node {node.name}',
         category=Warning,
         module=proto)
+
+"""
+is_vrf_protocol: Check if a protocol runs in the current VRF
+"""
+def is_vrf_protocol(node: Box, vdata: Box, s_proto: str) -> bool:
+  if s_proto in ['connected','static']:                     # Pseudo-protocols are always OK
+    return True
+  if s_proto in vdata:                                      # VRF has protocol-specific data
+    return True
+  if s_proto == 'bgp' and node.get('bgp.as',None):          # BGP is special; VRF import/export depends on it
+    return True
+  return False                                              # Found no good reason to import from this protocol
+
+"""
+check_import_request: Check whether a route import request is valid
+
+* Does the target protocol support route import?
+* Is the source protocol active on the device?
+* If the import uses a routing policy, is it valid, and does the node use routing module?
+"""
+def check_import_request(
+      proto: str,
+      node: Box,
+      rdata: Box,
+      topology: Box,
+      features: Box) -> None:
+
+  f_import = features.get(f'{proto}.import',[])
+  if not features.get(f'{proto}.import',False):             # Does the device support imports into this protocol?
+    log.error(
+      f'Device {node.device} (node {node.name}) does not support route import into {proto}',
+      category=log.IncorrectValue,
+      module=proto)
+    return
+
+  i_dict = rdata['import']                                  # Use a temporary variable to shorten the code
+  for s_proto in list(i_dict.keys()):                       # Iterate over the source protocol(s)
+    if isinstance(f_import,list) and s_proto not in f_import:
+      log.error(
+        f'Device {node.device} (node {node.name}) cannot import {s_proto} routes into {proto}',
+        category=log.IncorrectValue,
+        module=proto)
+      continue
+    i_data = i_dict[s_proto]
+    if i_data is False:                                     # Remove requests to disable route import 
+      i_dict.pop(s_proto,None)                              # ... needed to disable group-wide import
+      continue
+    if i_data is True:                                      # Change 'true' into an empty dictionary
+      rdata['import'][s_proto] = {}
+
+    if not s_proto in node.module and s_proto not in ['connected']:
+      log.error(                                            # Source protocol not active on the node ==> yell
+        f'Node {node.name}: cannot import routes from {s_proto} which is not running on the box',
+        category=log.IncorrectValue,
+        module=proto)
+      continue
+
+    if s_proto == proto:                                    # Cannot redistribute a protocol into itself
+      log.error(
+        f'Node {node.name}: cannot {s_proto} routes into {proto}',
+        more_hints=['Route import works between different protocols or from connected subnets'],
+        category=log.IncorrectValue,
+        module=proto)
+      continue
+
+    r_policy = i_dict.get(f'{s_proto}.policy')              # Do we have an import policy?
+    if r_policy and isinstance(r_policy,str):               # Looks like we do, import and check it
+      if import_routing_policy(r_policy,'policy',node,topology):
+        check_routing_policy(r_policy,'policy',node,topology)
+
+  if 'ripv2' in i_dict:                                     # Finally, replace RIPv2 with RIP
+    i_dict.rip = i_dict.ripv2
+    i_dict.pop('ripv2',None)
+
+"""
+process_imports: Process route redistribution requests in global routing table and VRFs
+"""
+def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> None:
+  features = devices.get_device_features(node,topology.defaults)      # We'll need device features for sanity checks
+  if node.get(f'{proto}.import',{}):                                  # Do we have global import request?
+    check_import_request(proto,node,node[proto],topology,features)    # ... check it!
+  
+  i_feature = features.get(f'{proto}.import',[])                      # Is the protocol route import VRF-aware?
+  vrf_aware = i_feature is True or isinstance(i_feature,list) \
+              and 'vrf' in i_feature
+
+  for vname,vdata in node.get('vrfs',{}).items():                     # OK, have to check all VRFs
+    if proto not in vdata:                                            # VRF is not using the protocol, move on
+      continue
+
+    if 'import' not in vdata[proto]:                                  # If the user did not configure VRF import...
+      if not vrf_aware:                                               # This device/protocol combination is not
+        continue                                                      # ... VRF-aware, move on
+      if features.get(f'{proto}.import',False):                       # ... and the device supports imports
+        for s_proto in vrf_list:                                      # ... create a default import dictionary
+          if is_vrf_protocol(node,vdata,s_proto):                     # Is the source protocol present in this VRF?
+            vdata[proto]['import'][s_proto] = {}                      # ... Yes, import into VRF instance
+    else:                                                             # Explicit import configuration
+      if vrf_aware:                                                   # ... if the protocol is VRF-aware check it
+        check_import_request(proto,node,vdata[proto],topology,features)
+      else:
+        log.error(
+          f'Route import from {s_proto} to {proto} on node {node.name} (device {node.device}) is not VRF-aware',
+          category=log.IncorrectValue,
+          module=proto)

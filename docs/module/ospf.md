@@ -26,6 +26,7 @@ Supported OSPF features:
 * Unnumbered point-to-point interfaces
 * [Passive interfaces](routing_passive)
 * [Static router ID](routing_router_id)
+* [Route import](routing_import) (redistribution)
 * BFD (optionally with RFC9355 strict mode)
 * VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
 
@@ -45,33 +46,52 @@ Need one of those? Create a plugin and contribute it.
 
 The following table describes per-platform support of individual router-level OSPF features:
 
-| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  | BFD<br/>Strict-Mode |
+| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | Route<br>import | Default<br>route |
 | ------------------------ | :---: | :---------------------: | :----: | :--: | :-------------: |
 | Arista EOS               |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
 | Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
+| Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
 | Cisco IOS XE[^18v]       |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
 | Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌          |
-| Dell OS10 ([❗](caveats-os10)) |   ✅  |       ✅          |   ✅   |  ✅  |       ❌          |
+| Dell OS10 ([❗](caveats-os10)) |   ✅  |       ✅          |   ✅   |  ❌   |       ❌          |
 | Fortinet FortiOS         |   [❗](caveats-fortios)  | ✅   |   ❌   |  ❌  |       ❌          |
-| FRR                      |   ✅  |            ✅           |   ✅   |  ❌  |       ❌          |
-| Junos[^Junos]            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Mikrotik RouterOS 6      |   ✅  |            ❌           |   ❌   |  ✅  |       ❌          |
+| FRR                      |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Junos[^Junos]            |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
+| Mikrotik RouterOS 6      |   ✅  |            ❌           |   ❌   |  ❌   |       ❌          |
 | Mikrotik RouterOS 7      |   ✅  |            ❌           |   ✅   |  ❌  |       ❌          |
-| Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ✅  |       ✅          |
-| VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
+| Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
+| VyOS                     |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
+
+**Notes:**
+* Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
 [^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 
+The following devices support BFD with OSPF:
+
+| Operating system         | BFD  | BFD<br/>Strict-Mode |
+| ------------------------ | :--: | :--: |
+| Arista EOS               |  ✅  |  ❌   |
+| Aruba AOS-CX             |  ✅  |  ❌   |
+| Cisco IOS                |  ✅  |  ❌   |
+| Cisco IOS XE[^18v]       |  ✅  |  ❌   |
+| Cisco Nexus OS           |  ✅  |  ❌   |
+| Cumulus Linux            |  ✅  |  ❌   |
+| Dell OS10                |  ✅  |  ❌   |
+| Junos[^Junos]            |  ✅  |  ❌   |
+| Mikrotik RouterOS 6      |  ✅  |  ❌   |
+| Nokia SR Linux           |  ✅  |  ❌   |
+| Nokia SR OS              |  ✅  |  ✅  |
+| VyOS                     |  ✅  |  ❌   |
+
 **Notes:**
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
-* Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
 
 ```{tip}
 See [OSPFv2](https://release.netlab.tools/_html/coverage.ospf.ospfv2) and [OSPFv3](https://release.netlab.tools/_html/coverage.ospf.ospfv3) Integration Tests Results for more details.
@@ -131,6 +151,7 @@ OSPF routing daemons support these interface-level features:
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area and the loopback interface.
 * **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
+* **ospf.import** -- [import (redistribute) routes](routing_import) into global OSPF instance. Turned off by default.
 * **ospf.router_id** -- set [static router ID](routing_router_id).
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
@@ -138,7 +159,8 @@ You can specify most node parameters as global values (top-level topology elemen
 ## VRF Parameters
 
 * You can specify the default area for a VRF OSPF instance with VRF-level **ospf.area** parameter
-* You can change the router ID of a VRF OSPF instance with **ospf.router_id** parameter. Use this parameter when building back-to-back links between VRFs on the same node.
+* By default, _netlab_ redistributes BGP- and connected routes into VRF OSPF instances on all network devices. You can change that on devices supporting configurable route import with the **[ospf.import](routing_import)** VRF parameter.
+* You can change the [router ID](routing_router_id) of a VRF OSPF instance with **ospf.router_id** parameter. Use this parameter when building back-to-back links between VRFs on the same node.
 * Set **ospf.active** to *True* to force a VRF to use OSPF even when no routers are attached to the VRF interfaces.
 * To disable OSPF in a VRF set **ospf** to *False* (see also [](routing_disable_vrf)).
 

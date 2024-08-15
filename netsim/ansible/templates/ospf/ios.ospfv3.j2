@@ -12,11 +12,12 @@ router ospfv3 {{ ospf_pid }}
 {% for l in intf_data if l.ospf.passive|default(False) %}
   passive-interface {{ l.ifname }}
 {% endfor %}
-{% if ospf_vrf %}
-  redistribute connected
-{%   if bgp.as is defined %}
-  redistribute bgp {{ bgp.as }}
-{%   endif %}
+{% if ospf_data.import is defined %}
+{%   for s_proto,s_data in ospf_data.import.items() %}
+ redistribute {{ s_proto }}{%
+    if s_proto == 'bgp' %} {{ bgp.as }}{% endif %}{% 
+    if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv6{% endif +%}
+{%   endfor %}
 {% endif %}
 !
 {% for l in intf_data if 'ospf' in l and ('ipv6' in l or 'ipv6' in l.dhcp.client|default({})) %}

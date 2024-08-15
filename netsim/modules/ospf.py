@@ -131,3 +131,4 @@ class OSPF(_Module):
     _routing.remove_unused_igp(node,'ospf',topology.defaults.get('ospf.warnings.inactive',False))
     _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
     _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)
+    _routing.process_imports(node,'ospf',topology,['bgp','connected'])
