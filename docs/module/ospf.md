@@ -49,7 +49,7 @@ The following table describes per-platform support of individual router-level OS
 | Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | Route<br>import | Default<br>route |
 | ------------------------ | :---: | :---------------------: | :----: | :--: | :-------------: |
 | Arista EOS               |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
+| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 | Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
 | Cisco IOS XE[^18v]       |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
@@ -64,7 +64,7 @@ The following table describes per-platform support of individual router-level OS
 | Mikrotik RouterOS 7      |   ✅  |            ❌           |   ✅   |  ❌  |       ❌          |
 | Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
 | Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
-| VyOS                     |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
+| VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
 
 **Notes:**
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
