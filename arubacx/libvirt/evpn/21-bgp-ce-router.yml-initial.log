@@ -11,8 +11,8 @@ ok: [s1]
 TASK [Find device readiness script] ********************************************
 ok: [s2]
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -32,8 +32,8 @@ ok: [s1]
 TASK [Find configuration template for initial] *********************************
 ok: [s2]
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -415,8 +415,8 @@ ok: [ce2] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s2]
 ok: [ce1]
-ok: [s1]
 ok: [ce2]
+ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
@@ -438,9 +438,9 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [ce2 -> localhost]
 changed: [s2 -> localhost]
 changed: [ce1 -> localhost]
-changed: [ce2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -452,8 +452,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [s2]
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -461,9 +461,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [ce2]
 changed: [ce1]
 changed: [s2]
-changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -651,32 +651,6 @@ ok: [ce2] =>
     !
     !
     do write
-ok: [s1] => 
-  msg: |-
-    bgp configuration for s1
-    =========================================
-    !
-    !
-    router bgp 65000
-      bgp log-neighbor-changes
-      timers bgp connect-retry 10
-      bgp router-id 10.0.0.3
-      neighbor 10.0.0.4 remote-as 65000
-      neighbor 10.0.0.4 description s2
-      neighbor 10.0.0.4 update-source loopback 0
-  
-    !
-      address-family ipv4 unicast
-    !
-        network 10.0.0.3/32
-    !
-    !
-        neighbor 10.0.0.4 activate
-        neighbor 10.0.0.4 advertisement-interval 1
-        neighbor 10.0.0.4 send-community both
-        neighbor 10.0.0.4 next-hop-self
-  
-    !
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -713,6 +687,33 @@ ok: [s2] =>
     !
     !
     do write
+ok: [s1] => 
+  msg: |-
+    bgp configuration for s1
+    =========================================
+    !
+    !
+    router bgp 65000
+      bgp log-neighbor-changes
+      timers bgp connect-retry 10
+      bgp router-id 10.0.0.3
+      neighbor 10.0.0.4 remote-as 65000
+      neighbor 10.0.0.4 description s2
+      neighbor 10.0.0.4 update-source loopback 0
+  
+    !
+      address-family ipv4 unicast
+    !
+  
+        network 10.0.0.3/32
+    !
+    !
+        neighbor 10.0.0.4 activate
+        neighbor 10.0.0.4 advertisement-interval 1
+        neighbor 10.0.0.4 send-community both
+        neighbor 10.0.0.4 next-hop-self
+  
+    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
@@ -725,8 +726,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -740,8 +741,8 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [tempfile] ****************************************************************
@@ -814,9 +815,10 @@ ok: [s1] =>
   msg: |-
     ospf configuration for s1
     =========================================
-  
     router ospf 1
         router-id 10.0.0.3
+  
+  
   
         area 0.0.0.0
         area 0.0.0.0
@@ -912,8 +914,8 @@ ok: [s1] =>
   
   
      address-family ipv4 unicast
-      redistribute connected
       redistribute local loopback
+      redistribute connected
     !
     !
         neighbor 172.16.3.1 activate
@@ -952,6 +954,7 @@ ok: [s2] =>
      neighbor 172.16.4.2 remote-as 65101
      neighbor 172.16.4.2 description ce2
      address-family ipv4 unicast
+    !
       redistribute connected
       label vpn export auto
       export vpn
@@ -1243,6 +1246,7 @@ ok: [s1] =>
       route-target both 65000:1000
   
   
+    evpn
     vrf tenant
       route-target import 65000:1 evpn
       route-target export 65000:1 evpn

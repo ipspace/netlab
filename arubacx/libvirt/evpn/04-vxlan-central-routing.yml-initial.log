@@ -5,16 +5,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l2]
 ok: [h1]
-ok: [l1]
 ok: [h3]
-ok: [spine]
+ok: [l1]
 ok: [h2]
+ok: [spine]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
 ok: [l2]
-ok: [l1]
 ok: [h1]
+ok: [l1]
 ok: [spine]
 ok: [h2]
 ok: [h3]
@@ -36,16 +36,16 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [l2]
 ok: [h1]
 ok: [l1]
-ok: [h3]
 ok: [spine]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [l2]
 ok: [l1]
-ok: [spine]
 ok: [h1]
+ok: [spine]
 ok: [h2]
 ok: [h4]
 ok: [h3]
@@ -307,6 +307,64 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.7
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.7
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.7
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.7
+    #
+    # Print the final routing table
+    ip route
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -334,6 +392,64 @@ ok: [h4] =>
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.7
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.7
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.7
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.7
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.3/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -423,130 +539,14 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.7
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.7
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.7
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.7
-    #
-    # Print the final routing table
-    ip route
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.3/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.7
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.7
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.7
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.7
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l2]
 ok: [l1]
-ok: [h1]
 ok: [spine]
-ok: [h4]
+ok: [h1]
 ok: [h2]
+ok: [h4]
 ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
@@ -563,16 +563,16 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [l1]
 changed: [spine]
 
 TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -604,10 +604,10 @@ ok: [h4]
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-yWVYkeFx-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-WUlOwPGT-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -708,8 +708,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for vlan] *************************
 changed: [l1]
@@ -799,6 +799,7 @@ ok: [l1] =>
     !
       address-family ipv4 unicast
     !
+  
         network 10.0.0.5/32
     !
     !
@@ -830,6 +831,7 @@ ok: [spine] =>
     !
       address-family ipv4 unicast
     !
+  
         network 10.0.0.7/32
     !
     !
@@ -865,8 +867,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for bgp] **************************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [l1]
@@ -929,9 +931,10 @@ ok: [l1] =>
   msg: |-
     ospf configuration for l1
     =========================================
-  
     router ospf 1
         router-id 10.0.0.5
+  
+  
   
         area 0.0.0.0
         area 0.0.0.0
@@ -949,9 +952,10 @@ ok: [spine] =>
   msg: |-
     ospf configuration for spine
     =========================================
-  
     router ospf 1
         router-id 10.0.0.7
+  
+  
   
         area 0.0.0.0
         area 0.0.0.0
@@ -982,12 +986,12 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for ospf] *************************
 changed: [spine]
@@ -998,8 +1002,8 @@ changed: [l1]
 changed: [spine]
 
 TASK [file] ********************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1033,22 +1037,6 @@ ok: [l1] =>
     router bgp 65000
       vrf customer
       bgp router-id 10.0.0.5
-ok: [spine] => 
-  msg: |-
-    vrf configuration for spine
-    =========================================
-  
-    !
-    router bgp 65000
-      vrf customer
-      bgp router-id 10.0.0.7
-  
-  
-     address-family ipv4 unicast
-      redistribute connected
-      redistribute local loopback
-    !
-    !
 ok: [l2] => 
   msg: |-
     vrf configuration for l2
@@ -1088,6 +1076,22 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/vrf_config
     exit $?
+ok: [spine] => 
+  msg: |-
+    vrf configuration for spine
+    =========================================
+  
+    !
+    router bgp 65000
+      vrf customer
+      bgp router-id 10.0.0.7
+  
+  
+     address-family ipv4 unicast
+      redistribute local loopback
+      redistribute connected
+    !
+    !
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 ok: [l2]
@@ -1107,8 +1111,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for vrf] **************************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [l1]
@@ -1235,16 +1239,16 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for vxlan] ************************
 changed: [spine]
 changed: [l1]
 
 TASK [aoscx_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/arubacx.j2] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [file] ********************************************************************
 changed: [l1 -> localhost]
@@ -1335,6 +1339,7 @@ ok: [l1] =>
       route-target both 65000:1000
   
   
+    evpn
     interface vxlan 1
 ok: [spine] => 
   msg: |-
@@ -1369,6 +1374,7 @@ ok: [spine] =>
       route-target both 65000:1000
   
   
+    evpn
     vrf customer
       route-target import 65000:1 evpn
       route-target export 65000:1 evpn
@@ -1388,12 +1394,12 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for evpn] *************************
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [aoscx_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/arubacx.j2] ***
 changed: [l1]
