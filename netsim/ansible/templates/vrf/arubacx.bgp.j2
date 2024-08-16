@@ -13,11 +13,14 @@ router bgp {{ bgp.as }}
 
 {%   for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
  address-family {{ af }} unicast
-  redistribute connected
   redistribute local loopback
-{%     if 'ospf' in vdata %}
-  redistribute ospf{{ '' if af == 'ipv4' else 'v3' }} {{ vdata.ospfidx }}
-{%     endif %}
+{% if vdata.bgp.import is defined %}
+{%   for s_proto,s_data in vdata.bgp.import.items() %}
+  redistribute {{ s_proto }}{%
+    if s_proto == 'ospf' and af == 'ipv6' %}v3{% endif %}{%
+    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
+{%   endfor %}
+{% endif %}
 !
 {%     for n in vdata.networks|default([]) if af in n %}
 {{       bgpcfg.bgp_network(af,n[af]) }}
