@@ -1,0 +1,110 @@
+---
+message: |
+  This lab tests the OSPF default route origination. The devices under test
+  should originate the default route, one always, the other one based one
+  BGP default route.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ probe, xf ]
+
+nodes:
+  dut_a:
+    id: 1
+    ospf.default:
+      always: True
+      type: e2
+      cost: 40
+  dut_c:
+    id: 2
+    module: [ ospf, bgp ]
+    bgp.as: 65000
+    ospf.default:
+      type: e1
+      cost: 20
+  probe:
+  xf:
+    module: [ bgp ]
+    bgp.as: 65100
+
+links:
+- probe:
+  dut_a:
+- probe:
+  dut_c:
+  ospf.cost: 10
+- dut_c:
+  xf:
+
+validate:
+  adj_a:
+    description: Check OSPF adjacencies with DUT_A
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ probe ]
+    plugin: ospf_neighbor(nodes.dut_a.ospf.router_id)
+  adj_c:
+    description: Check OSPF adjacencies with DUT_C
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ probe ]
+    plugin: ospf_neighbor(nodes.dut_c.ospf.router_id)
+  adj_x:
+    description: Check EBGP sessions with DUT_C
+    wait_msg: Wait for BGP sessions to be established
+    wait: 30
+    nodes: [ xf ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_c')
+  df:
+    description: Do we have at least some default route?
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ probe ]
+    plugin: ospf_prefix('0.0.0.0/0')
+  df_a:
+    description: Check for the always-present default route
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ probe ]
+    plugin: ospf_prefix('0.0.0.0/0',cost=40,rt='N E2')
+  #
+  # We have to shut down the link to DUT_A because Arista in its infinite wisdom
+  # treats EBGP routes like IBGP routes (OSPFv2 is better) and so the BGP default route
+  # never gets into the IP routing table as long as DUT_A is advertising a default.
+  #
+  p_eth1_down:
+    description: Shut down the link to DUT_A
+    nodes: [ probe ]
+    devices: [ frr ]
+    exec: ip link set {{ interfaces[0].ifname }} down
+  bgp_dr:
+    description: Enable BGP default route
+    config: bgp_default
+    pass: BGP default route is sent to BGP neighbors
+    nodes: [ xf ]
+  df_c:
+    description: Check for the conditional default route
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ probe ]
+    plugin: ospf_prefix('0.0.0.0/0',cost=30)
+  #
+  # Making sure the test is idempotent, disable the BGP default route and reenable
+  # the link with DUT_A
+  #
+  bgp_ndr:
+    description: Disable BGP default route
+    config:
+      template: bgp_default
+      variable.df_state: 'off'
+    nodes: [ xf ]
+    pass: BGP default route is no longer sent to BGP neighbors
+  p_eth1_up:
+    description: Enable the link to DUT_A
+    nodes: [ probe ]
+    devices: [ frr ]
+    exec: ip link set {{ interfaces[0].ifname }} down

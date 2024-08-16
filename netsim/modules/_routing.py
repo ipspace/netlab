@@ -286,16 +286,16 @@ def remove_unaddressed_intf(node: Box, proto: str) -> None:
 #
 # remove_unused_igp -- remove IGP module if it's not configured on any interface
 #
-def remove_unused_igp(node: Box, proto: str, warning: bool = False) -> None:
+def remove_unused_igp(node: Box, proto: str, warning: bool = False) -> bool:
   if not any(proto in ifdata for ifdata in node.interfaces):                # Is protocol configured on any non-loopback interface?
     node.pop(proto,None)                                                    # ... no, remove protocol data from node
 
   if proto in node and 'af' in node[proto] and node[proto].af:              # Is at least one global AF active for the protocol?
-    return                                                                  # ... OK, we're good
+    return False                                                            # ... OK, we're good
 
   for vdata in node.get('vrfs',{}).values():                                # Is protocol active in at least one VRF?
     if proto in vdata:
-      return                                                                # ... OK, we're good
+      return False                                                          # ... OK, we're good
 
   node.module = [ m for m in node.module if m != proto ]                    # Makes no sense to keep it, remove the config module
   if warning:
@@ -304,6 +304,9 @@ def remove_unused_igp(node: Box, proto: str, warning: bool = False) -> None:
       more_hints=f'It has been removed from the list of modules active on {node.name}',
       category=Warning,
       module=proto)
+    
+  return True
+
 #
 # remove_vrf_routing_blocks -- remove 'proto: False' VRF settings
 #
@@ -445,6 +448,16 @@ def is_vrf_protocol(node: Box, vdata: Box, s_proto: str) -> bool:
   return False                                              # Found no good reason to import from this protocol
 
 """
+node_add_routing_policy: Add a routing policy to a node (includes import from global and sanity checks)
+"""
+def node_add_routing_policy(r_policy: typing.Any, node: Box, topology: Box) -> None:
+  if not r_policy or not isinstance(r_policy,str):
+    return
+
+  if import_routing_policy(r_policy,'policy',node,topology):          # Did we import the requested policy?
+    check_routing_policy(r_policy,'policy',node,topology)             # ... if so, it's time for a sanity check
+
+"""
 check_import_request: Check whether a route import request is valid
 
 * Does the target protocol support route import?
@@ -496,10 +509,8 @@ def check_import_request(
         module=proto)
       continue
 
-    r_policy = i_dict.get(f'{s_proto}.policy')              # Do we have an import policy?
-    if r_policy and isinstance(r_policy,str):               # Looks like we do, import and check it
-      if import_routing_policy(r_policy,'policy',node,topology):
-        check_routing_policy(r_policy,'policy',node,topology)
+    # Add an import routing policy if needed
+    node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
 
   if 'ripv2' in i_dict:                                     # Finally, replace RIPv2 with RIP
     i_dict.rip = i_dict.ripv2
@@ -575,7 +586,67 @@ def remove_vrf_imports(node: Box, vname: str, vdata: Box, proto: str) -> None:
         category=log.IncorrectValue,
         module=rp)
 
+"""
+process_default_route: Perform default route processing
 
+* Turn bool into dict
+* Check feature support
+"""
+def default_route_adjust(
+      node: Box,
+      vdata: Box,
+      proto: str,
+      topology: Box,
+      features: Box,
+      vname: str) -> None:
+  if proto not in vdata:                          # Protocol not active in current VRF
+    return
+  if 'default' not in vdata[proto]:               # No default route spec for current protocol
+    return
+
+  if vdata[proto].default is False:               # A request to disable default route?
+    vdata[proto].pop('default',None)
+    return
+
+  if vdata[proto].default is True:                # For consistency and template simplicity...
+    vdata[proto].default = { 'enabled': True }    # ... turn 'default: True' into a dictionary
+
+  f_default = features.get(f'{proto}.default',None)
+  if not f_default:
+    log.error(
+      f'Device {node.device} (node {node.name}) cannot originate {proto} default route in {vname}',
+      category=log.IncorrectValue,
+      module=proto)
+    return
+  
+  if 'policy' in vdata[proto].default:            # Add default route origination routing policy if needed
+    if isinstance(f_default,Box) and f_default.policy:
+      node_add_routing_policy(vdata[proto].default.policy,node,topology)
+    else:                                         # ... but only if the device supports taht
+      log.error(
+        f'Device {node.device} (node {node.name}) cannot use a route-map when originating {proto} default route in {vname}',
+        category=log.IncorrectValue,
+        module=proto)
+
+
+def process_default_route(node: Box, proto: str, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  default_route_adjust(
+    node=node,
+    vdata=node,
+    proto=proto,
+    topology=topology,
+    features=features,
+    vname='global routing table')
+  
+  for vname,vdata in node.get('vrfs',{}).items():
+    default_route_adjust(
+      node=node,
+      vdata=vdata,
+      proto=proto,
+      topology=topology,
+      features=features,
+      vname=f'VRF {vname}')
 
 """
 igp_post_transform: Perform common IGP transformation/cleanup tasks
@@ -610,5 +681,8 @@ def igp_post_transform(
   if propagate is not None:
     propagate(node,topology)
   
-  remove_unused_igp(node,proto,topology.defaults.get(f'{proto}.warnings.inactive',False))
+  if remove_unused_igp(node,proto,topology.defaults.get(f'{proto}.warnings.inactive',False)):
+    return
+
   process_imports(node,proto,topology,['bgp','connected'])
+  process_default_route(node,proto,topology)
