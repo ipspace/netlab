@@ -18,10 +18,10 @@ validate_test_entry: Check if the test makes sense
 
 def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   kw_set = set(v_entry.keys())
-  action_set = set(['show','exec','wait','plugin','suzieq'])
+  action_set = set(['show','exec','config','wait','plugin','suzieq'])
   if not kw_set & action_set:                           # Test should have at least one of show/exec/wait
     log.error(
-          f'Test {v_entry.name} should have wait, show, exec, plugin, or suzieq option',
+          f'Test {v_entry.name} should have wait, show, exec, config, plugin, or suzieq option',
           category=log.MissingValue,
           module='validation')
     return False
@@ -29,7 +29,10 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   if isinstance(v_entry.get('suzieq',{}),str):          # Make sure suzieq entry (if exists) is a dictionary
     v_entry.suzieq = { 'show': v_entry.suzieq }
 
-  x_kw = [ kw for kw in ('show','exec','plugin','suzieq') if kw in v_entry ]
+  if isinstance(v_entry.get('config',{}),str):          # Make sure config entry (if exists) is a dictionary
+    v_entry.config = { 'template': v_entry.config }
+
+  x_kw = [ kw for kw in ('show','exec','config','plugin','suzieq') if kw in v_entry ]
   if len(x_kw) > 1:
     log.error(
           f'You cannot use {",".join(x_kw)} in test {v_entry.name}. Use only one action per test',

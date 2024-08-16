@@ -14,7 +14,7 @@ import traceback
 
 from box import Box,BoxList
 
-from . import load_snapshot, parser_add_debug, parser_add_verbose
+from . import load_snapshot, parser_add_debug, parser_add_verbose, external_commands
 from ..utils import log, templates, strings, status as _status, files as _files
 from ..data import global_vars
 from ..augment import devices
@@ -586,10 +586,10 @@ find_test_action -- find something that can be executed on current node
 * If everything fails, return None (nothing usable for the current node)
 '''
 def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
-  for kw in ('show','exec','suzieq'):
+  for kw in ('show','exec','config','suzieq'):
     if kw not in v_entry:
       continue
-    if kw in ['suzieq'] or isinstance(v_entry[kw],(str,int)):
+    if kw in ['suzieq','config'] or isinstance(v_entry[kw],(str,int)):
       return kw
     if node.device in v_entry[kw]:
       return kw
@@ -876,6 +876,36 @@ def execute_node_validation(
   return (True, OK)                             # ... otherwise return (processed, validation result)
 
 '''
+Execute device configuration requests via 'netlab config'
+
+The validation entry has:
+
+* 'config' attribute that is passed to 'netlab config'
+* 'nodes' list that is used to build the '--limit' argument 
+'''
+def execute_netlab_config(v_entry: Box, topology: Box) -> bool:
+  global test_skip_count,test_result_count,test_pass_count
+
+  node_str = ",".join(v_entry.nodes)
+  cmd = f'netlab config {v_entry.config.template} --limit {node_str}'
+  for k,v in v_entry.config.variable.items():
+    cmd += f' -e {k}={v}'
+  if log.VERBOSE:
+    print(f'Executing {cmd}')
+  log_info(f'Executing configuration snippet {v_entry.config.template}',topology)
+  if external_commands.run_command(cmd,check_result=True,ignore_errors=True,return_stdout=True):
+    test_pass_count += 1
+    msg = v_entry.get('pass','Devices configured')
+    log_progress(msg,topology)
+    return True
+  
+  log_failure(
+    f'"{cmd}" failed',
+    topology,
+    more_data='Execute the command manually to figure out what went wrong')
+  return False
+
+'''
 Execute a single validation test on all specified nodes
 '''
 def execute_validation_test(
@@ -901,6 +931,10 @@ def execute_validation_test(
       topology=topology)
     test_skip_count += 1
     return None
+
+  if 'config' in v_entry:
+    test_result_count = test_result_count + 1
+    return execute_netlab_config(v_entry,topology)
 
   wait_time = 0 if args.nowait else v_entry.get('wait',0)
   start_time= time.time()
