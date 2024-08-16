@@ -5,6 +5,9 @@ router bgp {{ bgp.as }}
 {% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
   neighbor {{ n.ipv4 }} activate
   neighbor {{ n.ipv4 }} send-community extended
+{%   if n.type == 'ebgp' %}
+  neighbor {{ n.ipv4 }} next-hop-unchanged
+{%   endif %}
 {%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
   neighbor {{ n.ipv4 }} route-reflector-client
 {%   endif %}
@@ -38,6 +41,8 @@ evpn
 
 {# L3VNI is defined on vxlan interface, even if it's only an EVPN stuff #}
 {% if vrfs is defined %}
+{# in case L2VNI are not defined, force exit from bgp stanza and entering evpn one #}
+evpn
 {# define evpn rt #}
 {%   for n,v in vrfs.items() if v.af is defined %}
 vrf {{ n }}
