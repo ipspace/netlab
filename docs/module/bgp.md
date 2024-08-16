@@ -77,7 +77,7 @@ The following features are only supported on a subset of platforms:
 | Operating system      | EBGP<br>local AS | IBGP<br>local AS | Route<br>import | VRF route<br>import |
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            |  ✅ |  ✅ |  ✅ |  ✅ |
-| Aruba AOS-CX          |  ✅ |  ✅ |  ❌  |  ❌  |
+| Aruba AOS-CX          |  ✅ |  ✅ |  ✅ |  ✅ |
 | BIRD                  |  ✅ |  ✅ |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]|  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |
@@ -86,7 +86,7 @@ The following features are only supported on a subset of platforms:
 | Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
 | Nokia SR OS           |  ✅ |  ✅ |  ❌  |  ❌  |
 | Sonic                 |  ✅ |  ✅ |  ❌  |  ❌  |
-| VyOS                  |  ✅ |  ❌  |  ❌  |  ❌  |
+| VyOS                  |  ✅ |  ❌  |  ✅ |  ✅ |
 
 ```{tip}
 See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
