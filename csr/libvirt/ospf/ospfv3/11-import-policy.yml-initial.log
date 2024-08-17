@@ -301,8 +301,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [x1 -> localhost]
+changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -312,8 +312,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [x1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -335,9 +335,51 @@ ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [r2]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [x1]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    !
+    !
+    route-map i_beacon-ipv6 permit 10
+      set metric 50
+      match ipv6 address prefix-list p_beacon-ipv6
+  
+    !
+    ipv6 prefix-list p_beacon-ipv6 seq 10 permit 2001:db8:cafe:42::/64
+    !
+    ! AS-path access lists
+    !
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [r2]
+skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/ios.j2] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r2]
@@ -473,6 +515,7 @@ ok: [r2] =>
      ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
     exit
   
     !
@@ -484,6 +527,7 @@ ok: [dut] =>
     router ospfv3 1
      router-id 10.0.0.1
      address-family ipv6 unicast
+  
      redistribute bgp 65000 route-map i_beacon-ipv6
     !
     interface Loopback0
@@ -520,48 +564,6 @@ skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r2]
-
-TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [r2]
-ok: [x1]
-ok: [dut]
-
-TASK [Find configuration template for routing] *********************************
-skipping: [r2]
-skipping: [x1]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r2]
-skipping: [x1]
-ok: [dut] => 
-  msg: |-
-    routing configuration for dut
-    =========================================
-    !
-    !
-    route-map i_beacon-ipv6 permit 10
-      set metric 50
-      match ipv6 address prefix-list p_beacon-ipv6
-  
-    !
-    ipv6 prefix-list p_beacon-ipv6 seq 10 permit 2001:db8:cafe:42::/64
-    !
-    ! AS-path access lists
-    !
-
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [r2]
-skipping: [x1]
-ok: [dut]
-
-TASK [Deploy routing configuration] ********************************************
-skipping: [r2]
-skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-
-TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/ios.j2] ***
-changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

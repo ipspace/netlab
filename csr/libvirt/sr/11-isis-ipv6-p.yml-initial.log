@@ -5,17 +5,17 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [pe1]
 ok: [pe2]
-ok: [h1]
 ok: [p2]
 ok: [h2]
+ok: [h1]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [pe1]
 ok: [pe2]
 ok: [p2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -32,8 +32,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for pe1
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [pe1]
 ok: [pe2]
-ok: [p2]
 ok: [h1]
+ok: [p2]
 ok: [h2]
 ok: [dut]
 
@@ -41,8 +41,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [pe1]
 ok: [pe2]
 ok: [p2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -282,43 +282,6 @@ ok: [pe2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:2:4::2/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:2:4::2/64 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [p2] => 
   msg: |-
     initial configuration for p2
@@ -474,6 +437,43 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:4::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:4::2/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -519,8 +519,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [pe1]
 ok: [pe2]
 ok: [p2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -529,8 +529,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p2 -> localhost]
 changed: [pe2 -> localhost]
+changed: [p2 -> localhost]
 changed: [pe1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -543,8 +543,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [pe2]
-changed: [pe1]
 changed: [p2]
+changed: [pe1]
 
 TASK [set_fact] ****************************************************************
 ok: [pe1]
@@ -572,12 +572,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-RIxbTXxc-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-hNPRgStu-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -639,7 +639,6 @@ ok: [pe1] =>
     !
     !
     !
-    !
       neighbor 10.0.0.4 activate
       neighbor 10.0.0.4 next-hop-self
       no neighbor 10.0.0.4 send-community all
@@ -648,7 +647,6 @@ ok: [pe1] =>
       neighbor 10.0.0.4 send-community extended
     !
      address-family ipv6 unicast
-    !
     !
       network 2001:db8:2::/64
     !
@@ -691,7 +689,6 @@ ok: [pe2] =>
     !
     !
     !
-    !
       neighbor 10.0.0.3 activate
       neighbor 10.0.0.3 next-hop-self
       no neighbor 10.0.0.3 send-community all
@@ -700,7 +697,6 @@ ok: [pe2] =>
       neighbor 10.0.0.3 send-community extended
     !
      address-family ipv6 unicast
-    !
     !
       network 2001:db8:2:4::/64
     !
@@ -740,8 +736,8 @@ skipping: [pe1]
 skipping: [pe2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [pe2]
 changed: [pe1]
+changed: [pe2]
 
 TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [p2]
@@ -883,8 +879,8 @@ TASK [ios_config: deploying isis from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [pe1]
 changed: [p2]
+changed: [pe1]
 changed: [pe2]
 
 TASK [set_fact] ****************************************************************
@@ -910,8 +906,8 @@ ok: [dut]
 
 TASK [Find configuration template for sr] **************************************
 ok: [p2]
-ok: [pe1]
 ok: [pe2]
+ok: [pe1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -935,6 +931,29 @@ ok: [p2] =>
       mpls-te router-address 10.0.0.6
       segment-routing prefix 10.0.0.6/32 index 6
       segment-routing prefix 2001:db8:1::6/128 index 106
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [pe2] => 
+  msg: |-
+    sr configuration for pe2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    sysctl -w net.mpls.platform_labels=1048575
+    #
+    # Enable MPLS data plane on transit interfaces
+    #
+    sysctl -w net.mpls.conf.eth1.input=1
+    cat >/tmp/config <<CONFIG
+    !
+    router isis Gandalf
+      segment-routing on
+      mpls-te router-address 10.0.0.4
+      segment-routing prefix 10.0.0.4/32 index 4
+      segment-routing prefix 2001:db8:1::4/128 index 104
     do write
     CONFIG
     vtysh -f /tmp/config
@@ -980,34 +999,11 @@ ok: [dut] =>
     !
     router isis Gandalf
      segment-routing mpls
-ok: [pe2] => 
-  msg: |-
-    sr configuration for pe2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    sysctl -w net.mpls.platform_labels=1048575
-    #
-    # Enable MPLS data plane on transit interfaces
-    #
-    sysctl -w net.mpls.conf.eth1.input=1
-    cat >/tmp/config <<CONFIG
-    !
-    router isis Gandalf
-      segment-routing on
-      mpls-te router-address 10.0.0.4
-      segment-routing prefix 10.0.0.4/32 index 4
-      segment-routing prefix 2001:db8:1::4/128 index 104
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 
 TASK [Find configuration deployment deploy_script for sr] **********************
 ok: [p2]
-ok: [pe1]
 ok: [pe2]
+ok: [pe1]
 ok: [dut]
 
 TASK [Deploy sr configuration] *************************************************
@@ -1019,8 +1015,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [p2]
-changed: [pe2]
 changed: [pe1]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [p2]
@@ -1028,9 +1024,9 @@ ok: [pe1]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy sr config from /home/pipi/net101/tools/netsim/ansible/templates/sr/frr.j2] ***
-changed: [p2]
-changed: [pe2]
 changed: [pe1]
+changed: [pe2]
+changed: [p2]
 
 TASK [run vtysh to import sr config from /home/pipi/net101/tools/netsim/ansible/templates/sr/frr.j2] ***
 skipping: [p2]
