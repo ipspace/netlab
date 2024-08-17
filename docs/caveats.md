@@ -352,3 +352,4 @@ Other VyOS caveats:
 * VRF and VXLAN kernel modules are usually bundled with a Linux distribution. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`.
 * You cannot load kernel modules in GitHub Codespaces and thus cannot use _vrf_, _mpls_, or _vxlan_ modules on VyOS nodes in that environment.
 * While VyOS itself supports IPv6 transport for VXLAN, using static flooding with the **vxlan** module, this seems not to work with EVPN, where an IPv4 VTEP is always announced by **frr**.
+* VyOS does not have a simple way to handle a management VRF on containerlab, so it will always have a default IPv4 route (`0.0.0.0/0`) on the default routing table. This can cause some problems if you want to originate a default only if received by other routers.

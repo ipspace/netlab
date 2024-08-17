@@ -1,12 +1,16 @@
+{% import "vyos.default.j2" as ospf_default %}
 
 {% if vdata.ospf.router_id|ipv4 or ospf.router_id|ipv4 %}
 set protocols ospf parameters router-id {{ vdata.ospf.router_id|default(ospf.router_id) }}
 {% endif %}
 
-set protocols ospf redistribute connected
-{% if bgp.as is defined %}
-set protocols ospf redistribute bgp
+{% if vdata.ospf.import is defined %}
+{%   for s_proto,s_data in vdata.ospf.import.items() %}
+set protocols ospf redistribute {{ s_proto }}{% if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv4{% endif +%}
+{%   endfor %}
 {% endif %}
+
+{{ ospf_default.config(vdata.ospf,'ipv4') }}
 
 {% if ospf.reference_bandwidth is defined %}
 set protocols ospf auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
