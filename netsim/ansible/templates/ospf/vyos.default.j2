@@ -1,0 +1,24 @@
+{% macro config(ospf_data,af='ipv4') %}
+{% if ospf_data.default is defined %}
+{%   set dfd = ospf_data.default %}
+
+set protocols ospf{% if af == 'ipv6' %}v3{% endif %} default-information originate
+
+{%   if dfd.always|default(False) %}
+set protocols ospf{% if af == 'ipv6' %}v3{% endif %} default-information originate always
+{%   endif %}
+
+{%   if dfd.type|default('') %}
+set protocols ospf{% if af == 'ipv6' %}v3{% endif %} default-information originate metric-type {{ dfd.type.replace('e','') }}
+{%   endif %}
+
+{%   if dfd.cost|default(0) %}
+set protocols ospf{% if af == 'ipv6' %}v3{% endif %} default-information originate metric {{ dfd.cost }}
+{%   endif %}
+
+{%   if dfd.policy|default(False) %}
+set protocols ospf{% if af == 'ipv6' %}v3{% endif %} default-information originate route-map {{ dfd.policy }}-{{ af }}
+{%   endif %}
+
+{% endif %}
+{% endmacro -%}

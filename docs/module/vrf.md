@@ -52,7 +52,7 @@ These platforms support routing protocols in VRFs:
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |
 | SR Linux              | ✅  |  ❌  | ✅  |
-| VyOS                  | ✅  |  ❌  | ✅  |
+| VyOS                  | ✅  | ✅  | ✅  |
 
 ```{note}
 * IS-IS and EIGRP cannot be run within a VRF, but both configuration modules are VRF-aware -- they will not try to configure IS-IS or EIGRP routing on VRF interfaces
