@@ -27,6 +27,7 @@ Supported OSPF features:
 * [Passive interfaces](routing_passive)
 * [Static router ID](routing_router_id)
 * [Route import](routing_import) (redistribution)
+* Default route origination
 * BFD (optionally with RFC9355 strict mode)
 * VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
 
@@ -47,24 +48,24 @@ Need one of those? Create a plugin and contribute it.
 The following table describes per-platform support of individual router-level OSPF features:
 
 | Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | Route<br>import | Default<br>route |
-| ------------------------ | :---: | :---------------------: | :----: | :--: | :-------------: |
-| Arista EOS               |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Aruba AOS-CX             |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cisco IOS                |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cisco IOS XRv            |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
-| Cisco IOS XE[^18v]       |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cisco Nexus OS           |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
-| Cumulus Linux            |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Cumulus Linux 5.0 (NVUE) |   ✅  |            ✅           |   ❌   |  ❌  |       ❌          |
-| Dell OS10 ([❗](caveats-os10)) |   ✅  |       ✅          |   ✅   |  ❌   |       ❌          |
-| Fortinet FortiOS         |   [❗](caveats-fortios)  | ✅   |   ❌   |  ❌  |       ❌          |
-| FRR                      |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
-| Junos[^Junos]            |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
-| Mikrotik RouterOS 6      |   ✅  |            ❌           |   ❌   |  ❌   |       ❌          |
-| Mikrotik RouterOS 7      |   ✅  |            ❌           |   ✅   |  ❌  |       ❌          |
-| Nokia SR Linux           |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
-| Nokia SR OS              |   ✅  |            ✅           |   ✅   |  ❌   |       ❌          |
-| VyOS                     |   ✅  |            ✅           |   ✅   |  ✅  |       ❌          |
+| ------------------------ |:-:|:-:|:-:|:-:|:-:|
+| Arista EOS               | ✅| ✅| ✅| ✅| ✅|
+| Aruba AOS-CX             | ✅| ✅| ✅| ✅| ❌ |
+| Cisco IOS                | ✅| ✅| ✅| ✅| ✅|
+| Cisco IOS XRv            | ✅| ✅| ✅| ❌ | ❌ |
+| Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
+| Cisco Nexus OS           | ✅| ✅| ✅| ❌ | ❌ |
+| Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
+| Cumulus Linux 5.0 (NVUE) | ✅| ✅| ❌ | ❌ | ❌ |
+| Dell OS10 ([❗](caveats-os10)) | | ✅| ✅| ✅| ❌ | ❌ |
+| Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ❌ | ❌ | ❌ |
+| FRR                      | ✅| ✅| ✅| ✅| ✅|
+| Junos[^Junos]            | ✅| ✅| ✅| ❌ | ❌ |
+| Mikrotik RouterOS 6      | ✅| ❌ | ❌ | ❌ | ❌ |
+| Mikrotik RouterOS 7      | ✅| ❌ | ✅| ❌ | ❌ |
+| Nokia SR Linux           | ✅| ✅| ✅| ❌ | ❌ |
+| Nokia SR OS              | ✅| ✅| ✅| ❌ | ❌ |
+| VyOS                     | ✅| ✅| ✅| ✅| ❌ |
 
 **Notes:**
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
@@ -149,9 +150,10 @@ OSPF routing daemons support these interface-level features:
 * **ospf.process** -- process ID (default: 1)
 * **ospf.af** -- [OSPF address families](routing_af), usually set by the data transformation code. Configures OSPFv2 when **ospf.af.ipv4** is set to `True` and OSPFv3 (on devices that support OSPFv3) when **ospf.af.ipv6** is set to `True`. 
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area and the loopback interface.
+* **ospf.default** -- External default route origination ([more details](ospf-default))
 * **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
-* **ospf.import** -- [import (redistribute) routes](routing_import) into global OSPF instance. Turned off by default.
+* **ospf.import** -- [import (redistribute) routes](routing_import) into global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
 * **ospf.router_id** -- set [static router ID](routing_router_id).
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
@@ -163,6 +165,7 @@ You can specify most node parameters as global values (top-level topology elemen
 * You can change the [router ID](routing_router_id) of a VRF OSPF instance with **ospf.router_id** parameter. Use this parameter when building back-to-back links between VRFs on the same node.
 * Set **ospf.active** to *True* to force a VRF to use OSPF even when no routers are attached to the VRF interfaces.
 * To disable OSPF in a VRF set **ospf** to *False* (see also [](routing_disable_vrf)).
+* To originate a default route in a VRF OSPF instance, set the **ospf.default** VRF parameter ([more details](ospf-default))
 
 ## Link Parameters
 
@@ -198,6 +201,15 @@ When the **ospf.passive** attribute is not specified on a link or an interface, 
 
 * The BGP module could set the link role. Links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the OSPF process.
 * Management interfaces are never added to the OSPF process. They are not in the set of device links and, thus, not considered in the OSPF configuration template.
+
+(ospf-default)=
+## Specifying External Default Route
+
+The **ospf.default** parameter specifies that the device should originate an external (E1 or E2) default route into an OSPF domain. It can be set to **true** or **false**; you can also be more specific and use the following settings:
+
+* **ospf.default.always**: set to *True* when you want the device to originate an OSPF default route, even when it does not have a default route itself.
+* **ospf.default.cost**: set the cost of the originated default route
+* **ospf.default.type**: the OSPF type of the external default route (`e1` or `e2`).
 
 ## Example
 
