@@ -27,7 +27,7 @@ Supported OSPF features:
 * [Passive interfaces](routing_passive)
 * [Static router ID](routing_router_id)
 * [Route import](routing_import) (redistribution)
-* Default route origination
+* [Default route origination](ospf-default)
 * BFD (optionally with RFC9355 strict mode)
 * VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
 
