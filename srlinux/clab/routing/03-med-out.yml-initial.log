@@ -26,8 +26,167 @@ ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [probe]
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.1/32"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:1:1::1/64"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+       subinterface:
+        index: 0
+        description: "dut ~ probe"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "dut ~ probe"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.1/30"
+          primary: [null]
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:3::1/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+ok: [probe] => 
+  msg: |-
+    initial configuration for probe
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 10.1.0.1 2001:db8:1:1::1 2001:db8:3::1 dut" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.2 2001:db8:1:2::1 2001:db8:3::2 probe" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set eth1 down
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname probe
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+     ipv6 address 2001:db8:1:2::1/64
+    !
+    interface eth1
+     no shutdown
+     description probe -> dut [external]
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
@@ -86,61 +245,8 @@ ok: [dut]
 ok: [probe]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=routing)
-
-TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [dut]
-ok: [probe]
-
-TASK [Find configuration template for bgp] *************************************
-ok: [dut]
-ok: [probe]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [probe]
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [dut]
-ok: [probe]
-
-TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
-
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [dut]
-
-TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [probe]
-
-TASK [set_fact] ****************************************************************
-ok: [probe]
-
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-skipping: [probe]
-
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [probe]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
@@ -151,8 +257,25 @@ ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [probe]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    updates:
+    - path: routing-policy/policy[name=med_42]
+      val:
+       statement:
+       - name: rpe_10
+         action:
+          policy-result: accept
+          bgp:
+           med:
+            set: 42
+ok: [probe] => 
+  msg: |-
+    routing configuration for probe
+    =========================================
+    !
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [dut]
@@ -193,6 +316,282 @@ TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/n
 skipping: [probe]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+changed: [probe]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+ok: [probe]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+ok: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [probe] => 
+  msg: |-
+    bgp configuration for probe
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    updates:
+  
+    - path: routing-policy/policy[name=accept_all]
+      val:
+       default-action:
+        policy-result: "accept"
+  
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "10.0.0.1"
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv6]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "2001:db8:1:1::1"
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.1
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
+  
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+       afi-safi:
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: routing-policy/policy[name=default_export]
+      val:
+       default-action:
+        policy-result: reject
+       statement:
+       - name: prefixes
+         match:
+          prefix-set: default_export
+         action:
+          policy-result: accept
+       - name: bgp
+         match:
+          protocol: bgp
+         action:
+          policy-result: accept
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.1/32
+         mask-length-range: exact
+  
+  
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 2001:db8:1:1::1/128
+         mask-length-range: exact
+  
+  
+  
+  
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.1.0.2"
+         description: probe
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: enable
+  
+         peer-as: 65100
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "2001:db8:3::2"
+         description: probe
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: enable
+  
+         peer-as: 65100
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+ok: [probe]
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [dut]
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+skipping: [dut]
+
+TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [probe]
+
+TASK [set_fact] ****************************************************************
+ok: [probe]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [probe]
+
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -243,8 +642,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=40   changed=16   unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
-probe                      : ok=29   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=43   changed=16   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+probe                      : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
 
 

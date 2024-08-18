@@ -41,64 +41,6 @@ ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => 
-  msg: |-
-    initial configuration for l1
-    =========================================
-  
-    updates:
-  
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.2/32"
-  
-  
-    - path: interface[name=ethernet-1/1]
-      val:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-       mtu: 1614
-       subinterface:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-        ip-mtu: 1600
-        index: 0
-        description: "l1 ~ spine"
-  
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
-       description: "l1 ~ spine"
-       ipv4:
-        admin-state: enable
-        unnumbered:
-          admin-state: enable
-          interface: "system0.0"
-       ipv6:
-        admin-state: enable
-        neighbor-discovery:
-         learn-unsolicited: link-local
-        router-advertisement:
-         router-role:
-          admin-state: enable             # no ipv6 nd suppress-ra
-          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
-          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
-          max-advertisement-interval: 5
-  
-  
-  
-    - path: network-instance[name=default]
-      val:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: network-instance[name=default]
-      val:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -191,42 +133,64 @@ ok: [spine] =>
        type: default
        interface:
        - name: ethernet-1/2.0
-ok: [h1] => 
+ok: [l1] => 
   msg: |-
-    initial configuration for h1
+    initial configuration for l1
     =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.2/32"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "l1 ~ spine"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "l1 ~ spine"
+       ipv4:
+        admin-state: enable
+        unnumbered:
+          admin-state: enable
+          interface: "system0.0"
+       ipv6:
+        admin-state: enable
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -375,13 +339,49 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for spine, l1
@@ -393,8 +393,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [tempfile] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [spine -> localhost]
@@ -438,16 +438,16 @@ TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ans
 skipping: [l2]
 
 TASK [set_fact] ****************************************************************
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-tFhfzxHt-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-dxdNsDSn-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]

@@ -31,9 +31,353 @@ ok: [x2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-skipping: [x2]
-skipping: [dut]
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:1:1::1/64"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1514
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1500
+        index: 0
+        description: "dut ~ x1"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "dut ~ x1"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:3::1/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+    - path: interface[name=ethernet-1/2]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1514
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1500
+        index: 0
+        description: "dut ~ x2"
+  
+    - path: interface[name=ethernet-1/2]/subinterface[index=0]
+      val:
+       description: "dut ~ x2"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:cafe:1::1/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+    - path: interface[name=ethernet-1/3]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1514
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1500
+        index: 0
+        description: "dut ~ stub"
+  
+    - path: interface[name=ethernet-1/3]/subinterface[index=0]
+      val:
+       description: "dut ~ stub"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:cafe:2::1/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/2.0
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/3.0
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:cafe:1::1 2001:db8:cafe:2::1 dut" >>/tmp/hosts
+    echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:3:1::1 x1" >>/tmp/hosts
+    echo "2001:db8:1:3::1 2001:db8:cafe:1::2 2001:db8:3:1::2 x2" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set eth1 down
+    ip link set eth1 up
+    sysctl -qw net.ipv6.conf.eth2.autoconf=0
+    sysctl -qw net.ipv6.conf.eth2.accept_ra=0
+    ip link set eth2 down
+    ip link set eth2 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x1
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ! no ip address
+     ipv6 address 2001:db8:1:2::1/64
+    !
+    interface eth1
+     no shutdown
+     description x1 -> dut
+     ! no ip address
+     ipv6 address 2001:db8:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth2
+     no shutdown
+     description x1 -> x2
+     ! no ip address
+     ipv6 address 2001:db8:3:1::1/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:cafe:1::1 2001:db8:cafe:2::1 dut" >>/tmp/hosts
+    echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:3:1::1 x1" >>/tmp/hosts
+    echo "2001:db8:1:3::1 2001:db8:cafe:1::2 2001:db8:3:1::2 x2" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set eth1 down
+    ip link set eth1 up
+    sysctl -qw net.ipv6.conf.eth2.autoconf=0
+    sysctl -qw net.ipv6.conf.eth2.accept_ra=0
+    ip link set eth2 down
+    ip link set eth2 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ! no ip address
+     ipv6 address 2001:db8:1:3::1/64
+    !
+    interface eth1
+     no shutdown
+     description x2 -> dut
+     ! no ip address
+     ipv6 address 2001:db8:cafe:1::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth2
+     no shutdown
+     description x2 -> x1
+     ! no ip address
+     ipv6 address 2001:db8:3:1::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
@@ -41,12 +385,23 @@ ok: [x2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [x1 -> localhost]
+changed: [x2 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [x1]
+skipping: [x2]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -102,9 +457,115 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    updates:
+    - path: network-instance[name=default]
+      val:
+       router-id: 10.0.0.1
+       protocols:
+        ospf:
+         instance:
+         - name: "1"
+           version: ospf-v3
+           address-family: ipv6-unicast
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: system0.0
+               passive: True
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/1.0
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+               metric: 10
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/2.0
+               passive: True
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
+               metric: 15
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: lo0.3
+               passive: True
+               failure-detection:
+                enable-bfd: False
+               metric: 25
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+     ipv6 ospf6 cost 10
+    !
+    interface eth2
+    ! x1 -> x2
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+     ipv6 ospf6 cost 100
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+    exit
+  
+    !
+    do write
+ok: [x2] => 
+  msg: |-
+    ospf configuration for x2
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x2 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+     ipv6 ospf6 cost 100
+    !
+    interface eth2
+    ! x2 -> x1
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+     ipv6 ospf6 cost 100
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+    exit
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [dut]
@@ -130,34 +591,17 @@ skipping: [dut]
 TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
 FAILED - RETRYING: [dut]: Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem) (2 retries left).
 FAILED - RETRYING: [dut]: Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem) (1 retries left).
-fatal: [dut]: FAILED! => 
+fatal: [dut]: FAILED! => changed=false 
+  attempts: 2
+  code: -32603
   msg: |-
-    Traceback (most recent call last):
-      File "/home/pipi/.local/lib/python3.10/site-packages/ansible/module_utils/connection.py", line 207, in send
-        sf.connect(self.socket_path)
-    ConnectionRefusedError: [Errno 111] Connection refused
-  
-    During handling of the above exception, another exception occurred:
-  
-    Traceback (most recent call last):
-      File "/home/pipi/.local/lib/python3.10/site-packages/ansible/cli/scripts/ansible_connection_cli_stub.py", line 315, in main
-        conn.set_options(direct=options)
-      File "/home/pipi/.local/lib/python3.10/site-packages/ansible/module_utils/connection.py", line 194, in __rpc__
-        response = self._exec_jsonrpc(name, *args, **kwargs)
-      File "/home/pipi/.local/lib/python3.10/site-packages/ansible/module_utils/connection.py", line 155, in _exec_jsonrpc
-        out = self.send(data)
-      File "/home/pipi/.local/lib/python3.10/site-packages/ansible/module_utils/connection.py", line 214, in send
-        raise ConnectionError(
-    ansible.module_utils.connection.ConnectionError: unable to connect to socket /home/pipi/.ansible/pc/e81e0538a3. See the socket path issue category in Network Debug and Troubleshooting Guide
-  
-    During handling of the above exception, another exception occurred:
-  
-    Traceback (most recent call last):
-      File "/home/pipi/.local/bin/ansible-connection", line 8, in <module>
-        sys.exit(main())
-      File "/home/pipi/.local/lib/python3.10/site-packages/ansible/cli/scripts/ansible_connection_cli_stub.py", line 318, in main
-        raise ConnectionError('Unable to decode JSON from response set_options. See the debug log for more information.')
-    ansible.module_utils.connection.ConnectionError: Unable to decode JSON from response set_options. See the debug log for more information.
+    <_InactiveRpcError of RPC that terminated with:
+            status = StatusCode.FAILED_PRECONDITION
+            details = "Error in path: .network-instance{.name=="default"}.protocols.ospf.instance{.name=="1"}.area{.area-id=="0.0.0.0"}.interface{.interface-name=="lo0.3"}.interface-name
+        [FailedPrecondition] none of the network-instances ['default'] specified via ../../../../../../name contain the subinterface reference 'lo0.3'
+    "
+            debug_error_string = "UNKNOWN:Error received from peer  {created_time:"2024-08-18T14:36:02.186025917+00:00", grpc_status:9, grpc_message:"Error in path: .network-instance{.name==\"default\"}.protocols.ospf.instance{.name==\"1\"}.area{.area-id==\"0.0.0.0\"}.interface{.interface-name==\"lo0.3\"}.interface-name\n    [FailedPrecondition] none of the network-instances [\'default\'] specified via ../../../../../../name contain the subinterface reference \'lo0.3\'\n"}"
+    >
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -179,9 +623,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=20   changed=6    unreachable=0    failed=1    skipped=7    rescued=0    ignored=0   
-x1                         : ok=19   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x2                         : ok=19   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=22   changed=6    unreachable=0    failed=1    skipped=5    rescued=0    ignored=0   
+x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
 Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:

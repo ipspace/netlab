@@ -13,8 +13,8 @@ TASK [Find device readiness script] ********************************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [l1]
@@ -37,15 +37,309 @@ TASK [Find configuration template for initial] *********************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [l2]
-skipping: [spine]
-skipping: [h1]
-skipping: [h2]
+ok: [l1] => 
+  msg: |-
+    initial configuration for l1
+    =========================================
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.3/32"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "l1 ~ spine"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "l1 ~ spine"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.1/30"
+          primary: [null]
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+ok: [spine] => 
+  msg: |-
+    initial configuration for spine
+    =========================================
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.5/32"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "spine ~ l1"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "spine ~ l1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.2/30"
+          primary: [null]
+  
+    - path: interface[name=ethernet-1/2]
+      val:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "spine ~ l2"
+  
+    - path: interface[name=ethernet-1/2]/subinterface[index=0]
+      val:
+       description: "spine ~ l2"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.6/30"
+          primary: [null]
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/2.0
+ok: [l2] => 
+  msg: |-
+    initial configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "172.31.1.1 h1" >>/tmp/hosts
+    echo "172.31.1.2 h2" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.1 l1" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.5 l2" >>/tmp/hosts
+    echo "10.0.0.5 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1600
+    ip link set eth2 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname l2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description l2 -> spine
+     ip address 10.1.0.5/30
+    !
+    interface eth2
+     no shutdown
+     ! no ip address
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,l1,h2]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l1]
@@ -116,9 +410,9 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-yrlOWNgR-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-dvRjHwMW-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -128,8 +422,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
@@ -148,9 +442,47 @@ ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [l2]
 skipping: [spine]
+ok: [l2] => 
+  msg: |-
+    vlan configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      brctl addbr vlan1000
+      ip link set dev vlan1000 up
+      ip addr flush dev vlan1000
+    fi
+  
+    brctl addif vlan1000 eth2
+    exit 0
+ok: [l1] => 
+  msg: |-
+    vlan configuration for l1
+    =========================================
+  
+    updates:
+    - path: interface[name=ethernet-1/2]
+      val:
+       subinterface:
+       - index: 1000
+         type: bridged
+  
+  
+    - path: network-instance[name=vlan1000]
+      val:
+       type: mac-vrf
+       interface:
+       - name: ethernet-1/2.1000
+  
+  
+    - path: interface[name=irb0]
+      val:
+       subinterface:
+       - index: 1000
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [spine]
@@ -197,23 +529,468 @@ skipping: [l2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [l2]
-skipping: [spine]
+ok: [l2] => 
+  msg: |-
+    bgp configuration for l2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.0.0.5 remote-as 65000
+      neighbor 10.0.0.5 description spine
+      neighbor 10.0.0.5 update-source lo
+    !
+      neighbor 10.1.0.6 remote-as 65100
+      neighbor 10.1.0.6 description spine
+      neighbor 10.1.0.6 local-as 65202 no-prepend replace-as
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.1.0.6 activate
+      no neighbor 10.1.0.6 send-community all
+      neighbor 10.1.0.6 send-community standard
+      neighbor 10.1.0.6 send-community large
+    !
+    !
+    !
+    do write
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    updates:
+  
+    - path: routing-policy/policy[name=accept_all]
+      val:
+       default-action:
+        policy-result: "accept"
+  
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "10.0.0.3"
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.3
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
+  
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: routing-policy/policy[name=default_export]
+      val:
+       default-action:
+        policy-result: reject
+       statement:
+       - name: prefixes
+         match:
+          prefix-set: default_export
+         action:
+          policy-result: accept
+       - name: bgp
+         match:
+          protocol: bgp
+         action:
+          policy-result: accept
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.3/32
+         mask-length-range: exact
+  
+  
+  
+  
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: disable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+       - afi-safi-name: evpn
+         admin-state: enable # Must have at least 1 address family enabled
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: next_hop_self_ebgp_ipv4
+       peer-as: 65000
+       transport:
+        local-address: 10.0.0.3
+       next-hop-self: True
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.0.0.5"
+         description: spine
+         peer-group: ibgp-ipv4
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: disable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+         - afi-safi-name: evpn
+           admin-state: enable # Must have at least 1 address family enabled
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.1.0.2"
+         description: spine
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+  
+         peer-as: 65100
+         local-as:
+          as-number: 65201
+          prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
+ok: [spine] => 
+  msg: |-
+    bgp configuration for spine
+    =========================================
+    updates:
+  
+    - path: routing-policy/policy[name=accept_all]
+      val:
+       default-action:
+        policy-result: "accept"
+  
+    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      val:
+       default-action:
+        policy-result: "accept"
+       statement:
+       - name: set-nh-on-ebgp-routes
+         match:
+          protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
+         action:
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "10.0.0.5"
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.5
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
+  
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: routing-policy/policy[name=default_export]
+      val:
+       default-action:
+        policy-result: reject
+       statement:
+       - name: prefixes
+         match:
+          prefix-set: default_export
+         action:
+          policy-result: accept
+       - name: bgp
+         match:
+          protocol: bgp
+         action:
+          policy-result: accept
+  
+    - path: routing-policy/prefix-set[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.5/32
+         mask-length-range: exact
+  
+  
+  
+  
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: disable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+       - afi-safi-name: evpn
+         admin-state: enable # Must have at least 1 address family enabled
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: next_hop_self_ebgp_ipv4
+       peer-as: 65000
+       transport:
+        local-address: 10.0.0.5
+        passive-mode: True
+        _annotate_passive-mode: "Improve robustness during startup"
+       route-reflector:
+        cluster-id: 10.0.0.5
+        client: True
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.0.0.3"
+         description: l1
+         peer-group: ibgp-ipv4
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: disable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+         - afi-safi-name: evpn
+           admin-state: enable # Must have at least 1 address family enabled
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: disable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+       - afi-safi-name: evpn
+         admin-state: enable # Must have at least 1 address family enabled
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: next_hop_self_ebgp_ipv4
+       peer-as: 65000
+       transport:
+        local-address: 10.0.0.5
+        passive-mode: True
+        _annotate_passive-mode: "Improve robustness during startup"
+       route-reflector:
+        cluster-id: 10.0.0.5
+        client: True
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.0.0.4"
+         description: l2
+         peer-group: ibgp-ipv4
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: disable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+         - afi-safi-name: evpn
+           admin-state: enable # Must have at least 1 address family enabled
+  
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+       route-reflector:
+        cluster-id: 10.0.0.5
+        client: True
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.1.0.1"
+         description: l1
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+  
+         peer-as: 65201
+         local-as:
+          as-number: 65100
+          prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
+  
+  
+    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: disable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+       route-reflector:
+        cluster-id: 10.0.0.5
+        client: True
+  
+  
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       neighbor:
+       - peer-address: "10.1.0.5"
+         description: l2
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: disable
+  
+         peer-as: 65202
+         local-as:
+          as-number: 65100
+          prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
@@ -261,8 +1038,8 @@ changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [spine]
@@ -270,9 +1047,79 @@ ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [l2]
 skipping: [spine]
+ok: [l1] => 
+  msg: |-
+    vxlan configuration for l1
+    =========================================
+  
+    updates:
+    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1000]
+      val:
+       type: bridged
+       ingress:
+        vni: 1000
+       egress:
+        source-ip: use-system-ipv4-address
+  
+    - path: network-instance[name=vlan1000]
+      val:
+       type: mac-vrf
+       vxlan-interface:
+       - name: vxlan0.1000
+       protocols:
+        bgp-vpn:
+         bgp-instance:
+         - id: 1
+           # route-distinguisher:
+           # rd: "10.0.0.3:1000"
+           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.3:1000'"
+           route-target:
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1000 with VNI 1000"
+            import-rt: "target:65000:1000"
+            export-rt: "target:65000:1000"
+        bgp-evpn:
+         bgp-instance:
+         - id: 1
+           evi: 1000
+           ecmp: 8
+           vxlan-interface: vxlan0.1000
+ok: [l2] => 
+  msg: |-
+    vxlan configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+  
+  
+    # Determine max MTU used on interfaces, to configure VXLAN interface
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
+      dstport 4789 \
+      local 10.0.0.4 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    brctl addbr vlan1000
+    ip link set up dev vlan1000
+    fi
+    brctl addif vlan1000 vxlan1000
+    brctl stp vlan1000 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan1000
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan1000 learning off
+    ip link set up dev vxlan1000
+  
+  
+    exit $?
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [spine]
@@ -328,9 +1175,73 @@ ok: [l2]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [l2]
-skipping: [spine]
+ok: [l1] => 
+  msg: |-
+    evpn configuration for l1
+    =========================================
+  
+    updates:
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       group:
+       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+         afi-safi:
+         - afi-safi-name: evpn
+           admin-state: enable
+       route-advertisement:
+        rapid-withdrawal: True
+       afi-safi:
+       - afi-safi-name: evpn
+         evpn:
+          rapid-update: True
+ok: [spine] => 
+  msg: |-
+    evpn configuration for spine
+    =========================================
+  
+    updates:
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       group:
+       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+         afi-safi:
+         - afi-safi-name: evpn
+           admin-state: enable
+         next-hop-self: False
+       route-advertisement:
+        rapid-withdrawal: True
+       afi-safi:
+       - afi-safi-name: evpn
+         evpn:
+          rapid-update: True
+ok: [l2] => 
+  msg: |-
+    evpn configuration for l2
+    =========================================
+    router bgp 65000
+     address-family l2vpn evpn
+      advertise-all-vni
+      advertise-svi-ip
+      advertise ipv4 unicast
+  
+    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+      vni 1000
+       rd 10.0.0.4:1000
+       route-target export 65000:1000
+       route-target import 65000:1000
+      exit-vni
+  
+      neighbor 10.0.0.5 activate
+      neighbor 10.0.0.5 soft-reconfiguration inbound
+  
+     exit-address-family
+    !
+  
+    exit
+  
+    ! L3 VRF EVPN handling
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 ok: [l1]
@@ -358,8 +1269,8 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL evpn node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -385,11 +1296,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-l1                         : ok=49   changed=20   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-l2                         : ok=45   changed=11   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-spine                      : ok=35   changed=12   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+l1                         : ok=54   changed=20   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+l2                         : ok=50   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+spine                      : ok=38   changed=12   unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
 
 
 

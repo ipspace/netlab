@@ -387,10 +387,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-JUMnykPd-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-iparlkRZ-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -692,32 +692,6 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth2
-    ! s2 -> s1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [s1] => 
   msg: |-
     ospf configuration for s1
@@ -745,6 +719,33 @@ ok: [s1] =>
                interface-type: "point-to-point"
                failure-detection:
                 enable-bfd: False
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth2
+    ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [s1]
@@ -827,6 +828,7 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
+    !
       redistribute connected
       label vpn export auto
       export vpn
@@ -842,91 +844,24 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/vrf_config
     exit $?
-ok: [s1] => 
+fatal: [s1]: FAILED! => 
   msg: |-
-    vrf configuration for s1
-    =========================================
+    The task includes an option with an undefined variable. The error was: 'dict object' has no attribute 'neighbors'. 'dict object' has no attribute 'neighbors'. 'dict object' has no attribute 'neighbors'. 'dict object' has no attribute 'neighbors'
   
-    updates:
+    The error appears to be in '/home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml': line 36, column 5, but may
+    be elsewhere in the file depending on the exact syntax problem.
   
-    - path: network-instance[name=customer]
-      val:
-       type: ip-vrf
+    The offending line appears to be:
   
   
-  
-    - path: routing-policy/community-set[name=C65000_1]
-      val:
-       member:
-       - "target:65000:1" # Single member, else matching is AND
-  
-    - path: routing-policy/community-set[name=customer_export]
-      val:
-       member:
-       - "target:65000:1"
-  
-  
-    - path: network-instance[name=customer]/protocols/bgp-vpn
-      val:
-       bgp-instance:
-       - id: 1
-         route-distinguisher:
-          rd: "65000:1"
-  
-    - path: network-instance[name=customer]/inter-instance-policies
-      val:
-       apply-policy:
-        export-policy: "customer_vpn_export"
-        import-policy: "customer_vpn_import"
-  
-    - path: routing-policy/policy[name=customer_vpn_export]
-      val:
-       default-action:
-        policy-result: "accept"
-        bgp:
-         communities:
-          add: "customer_export"
-  
-    - path: routing-policy/policy[name=customer_vpn_import]
-      val:
-       default-action:
-        policy-result: "reject"
-       statement:
-       - name: 11
-         match:
-          bgp:
-           community-set: "C65000_1"
-         action:
-          policy-result: "accept"
+      - name: "Print deployed configuration when running in verbose mode"
+        ^ here
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
-ok: [s1]
 ok: [s2]
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
-
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [s1]
-
-TASK [tempfile] ****************************************************************
-changed: [s1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [s1 -> localhost]
-
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2] ***
-skipping: [s1]
-
-TASK [Update SRL vrf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [s1]
-
-TASK [debug] *******************************************************************
-skipping: [s1]
-
-TASK [file] ********************************************************************
-changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s2]
@@ -941,51 +876,12 @@ TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
-ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for vxlan] ***********************************
-ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s1] => 
-  msg: |-
-    vxlan configuration for s1
-    =========================================
-  
-    updates:
-  
-    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=100]
-      val:
-       type: routed
-       ingress:
-        vni: 5042
-       egress:
-        source-ip: use-system-ipv4-address
-  
-    - path: network-instance[name=customer]
-      val:
-       type: ip-vrf
-       vxlan-interface:
-       - name: vxlan0.100
-       protocols:
-        bgp-vpn:
-         bgp-instance:
-         - id: 1
-           # route-distinguisher:
-           # rd: "65000:1"
-           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '65000:1'"
-           route-target:
-            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 100 with VNI 5042"
-            import-rt: "target:65000:1"
-            export-rt: "target:65000:1"
-        bgp-evpn:
-         bgp-instance:
-         - id: 1
-           evi: 100
-           ecmp: 8
-           vxlan-interface: vxlan0.100
 ok: [s2] => 
   msg: |-
     vxlan configuration for s2
@@ -1024,33 +920,10 @@ ok: [s2] =>
     exit $?
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
-ok: [s1]
 ok: [s2]
 
 TASK [Deploy vxlan configuration] **********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
-
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [s1]
-
-TASK [tempfile] ****************************************************************
-changed: [s1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [s1 -> localhost]
-
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
-skipping: [s1]
-
-TASK [Update SRL vxlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [s1]
-
-TASK [debug] *******************************************************************
-skipping: [s1]
-
-TASK [file] ********************************************************************
-changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s2]
@@ -1065,11 +938,9 @@ TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansib
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for evpn] ************************************
-ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1111,54 +982,12 @@ ok: [s2] =>
     !
     !
     do write
-ok: [s1] => 
-  msg: |-
-    evpn configuration for s1
-    =========================================
-  
-    updates:
-    - path: network-instance[name=default]/protocols/bgp
-      val:
-       group:
-       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
-         afi-safi:
-         - afi-safi-name: evpn
-           admin-state: enable
-       route-advertisement:
-        rapid-withdrawal: True
-       afi-safi:
-       - afi-safi-name: evpn
-         evpn:
-          rapid-update: True
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
-ok: [s1]
 ok: [s2]
 
 TASK [Deploy evpn configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
-
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [s1]
-
-TASK [tempfile] ****************************************************************
-changed: [s1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [s1 -> localhost]
-
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
-skipping: [s1]
-
-TASK [Update SRL evpn node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [s1]
-
-TASK [debug] *******************************************************************
-skipping: [s1]
-
-TASK [file] ********************************************************************
-changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s2]
@@ -1178,16 +1007,9 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=73   changed=27   unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+s1                         : ok=48   changed=15   unreachable=0    failed=1    skipped=13   rescued=0    ignored=0   
 s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-
-
-The device under test is a VLAN-to-VXLAN layer-3 switch between an access
-interface and an EVPN transit VNI.
-
-Hosts should be able to ping each other.
-
-Please note it might take a while for the lab to work due to STP learning
-phase.
-
+Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.

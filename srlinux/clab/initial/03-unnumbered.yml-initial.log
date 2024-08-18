@@ -21,7 +21,64 @@ TASK [Find configuration template for initial] *********************************
 ok: [r]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r]
+ok: [r] => 
+  msg: |-
+    initial configuration for r
+    =========================================
+  
+    updates:
+  
+    - path: interface[name=system0]/subinterface[index=0]
+      val:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.1/32"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:0:1::1/64"
+  
+  
+    - path: interface[name=ethernet-1/1]
+      val:
+       subinterface:
+        index: 0
+        description: "r ~ stub"
+  
+    - path: interface[name=ethernet-1/1]/subinterface[index=0]
+      val:
+       description: "r ~ stub"
+       ipv4:
+        admin-state: enable
+        unnumbered:
+          admin-state: enable
+          interface: "system0.0"
+       ipv6:
+        admin-state: enable
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+  
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: network-instance[name=default]
+      val:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r]
@@ -57,7 +114,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r                          : ok=12   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+r                          : ok=13   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 
 
 

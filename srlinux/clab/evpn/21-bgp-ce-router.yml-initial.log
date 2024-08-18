@@ -449,8 +449,8 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [ce1 -> localhost]
 changed: [ce2 -> localhost]
+changed: [ce1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -463,8 +463,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [ce1]
-changed: [s2]
 changed: [ce2]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -472,9 +472,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s2]
 changed: [ce1]
 changed: [ce2]
+changed: [s2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -885,8 +885,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -940,42 +940,6 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! s2 -> s1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface vlan1000
-    ! VLAN red (1000) -> [s1]
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface vlan1001
-    ! VLAN blue (1001) -> [s1]
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [s1] => 
   msg: |-
     ospf configuration for s1
@@ -1015,6 +979,43 @@ ok: [s1] =>
                interface-type: "point-to-point"
                failure-detection:
                 enable-bfd: False
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface vlan1000
+    ! VLAN red (1000) -> [s1]
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface vlan1001
+    ! VLAN blue (1001) -> [s1]
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [ce1]
@@ -1109,6 +1110,7 @@ ok: [s2] =>
      neighbor 10.1.0.9 remote-as 65101
      neighbor 10.1.0.9 description ce2
      address-family ipv4 unicast
+    !
       redistribute connected
       label vpn export auto
       export vpn
@@ -1324,80 +1326,6 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
-ok: [s2] => 
-  msg: |-
-    vxlan configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-  
-  
-    # Determine max MTU used on interfaces, to configure VXLAN interface
-  
-    # Create L3 VNIs with bridges and add to correct vrf table
-    ip link add vxlan5042 type vxlan \
-      id 5042 \
-      dstport 4789 \
-      local 10.0.0.4 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/tvni-100 ]; then
-    brctl addbr tvni-100
-    ip link set up dev tvni-100
-    fi
-    brctl addif tvni-100 vxlan5042
-    brctl stp tvni-100 off
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan5042
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan5042 learning off
-    ip link set up dev vxlan5042
-    ip link set tvni-100 master tenant
-  
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
-      dstport 4789 \
-      local 10.0.0.4 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    brctl addbr vlan1000
-    ip link set up dev vlan1000
-    fi
-    brctl addif vlan1000 vxlan101000
-    brctl stp vlan1000 off
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101000
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101000 learning off
-    ip link set up dev vxlan101000
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
-      dstport 4789 \
-      local 10.0.0.4 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-    brctl addbr vlan1001
-    ip link set up dev vlan1001
-    fi
-    brctl addif vlan1001 vxlan101001
-    brctl stp vlan1001 off
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101001
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101001 learning off
-    ip link set up dev vxlan101001
-  
-  
-    exit $?
 ok: [s1] => 
   msg: |-
     vxlan configuration for s1
@@ -1408,7 +1336,7 @@ ok: [s1] =>
       val:
        type: bridged
        ingress:
-        vni: 101000
+        vni: 21000
        egress:
         source-ip: use-system-ipv4-address
   
@@ -1425,7 +1353,7 @@ ok: [s1] =>
            # rd: "10.0.0.3:1000"
            _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.3:1000'"
            route-target:
-            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1000 with VNI 101000"
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1000 with VNI 21000"
             import-rt: "target:65000:1000"
             export-rt: "target:65000:1000"
         bgp-evpn:
@@ -1439,7 +1367,7 @@ ok: [s1] =>
       val:
        type: bridged
        ingress:
-        vni: 101001
+        vni: 21001
        egress:
         source-ip: use-system-ipv4-address
   
@@ -1456,7 +1384,7 @@ ok: [s1] =>
            # rd: "10.0.0.3:1001"
            _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.3:1001'"
            route-target:
-            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1001 with VNI 101001"
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1001 with VNI 21001"
             import-rt: "target:65000:1001"
             export-rt: "target:65000:1001"
         bgp-evpn:
@@ -1497,6 +1425,80 @@ ok: [s1] =>
            evi: 100
            ecmp: 8
            vxlan-interface: vxlan0.100
+ok: [s2] => 
+  msg: |-
+    vxlan configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+  
+  
+    # Determine max MTU used on interfaces, to configure VXLAN interface
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+    ip link add vxlan5042 type vxlan \
+      id 5042 \
+      dstport 4789 \
+      local 10.0.0.4 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/tvni-100 ]; then
+    brctl addbr tvni-100
+    ip link set up dev tvni-100
+    fi
+    brctl addif tvni-100 vxlan5042
+    brctl stp tvni-100 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan5042
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan5042 learning off
+    ip link set up dev vxlan5042
+    ip link set tvni-100 master tenant
+  
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan21000 type vxlan \
+      id 21000 \
+      dstport 4789 \
+      local 10.0.0.4 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    brctl addbr vlan1000
+    ip link set up dev vlan1000
+    fi
+    brctl addif vlan1000 vxlan21000
+    brctl stp vlan1000 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan21000
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan21000 learning off
+    ip link set up dev vxlan21000
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan21001 type vxlan \
+      id 21001 \
+      dstport 4789 \
+      local 10.0.0.4 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
+    brctl addbr vlan1001
+    ip link set up dev vlan1001
+    fi
+    brctl addif vlan1001 vxlan21001
+    brctl stp vlan1001 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan21001
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan21001 learning off
+    ip link set up dev vxlan21001
+  
+  
+    exit $?
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [ce1]
@@ -1558,6 +1560,25 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    evpn configuration for s1
+    =========================================
+  
+    updates:
+    - path: network-instance[name=default]/protocols/bgp
+      val:
+       group:
+       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+         afi-safi:
+         - afi-safi-name: evpn
+           admin-state: enable
+       route-advertisement:
+        rapid-withdrawal: True
+       afi-safi:
+       - afi-safi-name: evpn
+         evpn:
+          rapid-update: True
 ok: [s2] => 
   msg: |-
     evpn configuration for s2
@@ -1569,12 +1590,12 @@ ok: [s2] =>
       advertise ipv4 unicast
   
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 101001
+      vni 21001
        rd 10.0.0.4:1001
        route-target export 65000:1001
        route-target import 65000:1001
       exit-vni
-      vni 101000
+      vni 21000
        rd 10.0.0.4:1000
        route-target export 65000:1000
        route-target import 65000:1000
@@ -1606,25 +1627,6 @@ ok: [s2] =>
     !
     !
     do write
-ok: [s1] => 
-  msg: |-
-    evpn configuration for s1
-    =========================================
-  
-    updates:
-    - path: network-instance[name=default]/protocols/bgp
-      val:
-       group:
-       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
-         afi-safi:
-         - afi-safi-name: evpn
-           admin-state: enable
-       route-advertisement:
-        rapid-withdrawal: True
-       afi-safi:
-       - afi-safi-name: evpn
-         evpn:
-          rapid-update: True
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [ce1]
