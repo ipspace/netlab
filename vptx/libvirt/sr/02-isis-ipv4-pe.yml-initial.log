@@ -5,14 +5,14 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [pe2]
 ok: [p1]
+ok: [h1]
 ok: [p2]
 ok: [dut]
-ok: [h1]
 ok: [h2]
 
 TASK [Find device readiness script] ********************************************
-ok: [pe2]
 ok: [p1]
+ok: [pe2]
 ok: [p2]
 ok: [h1]
 ok: [dut]
@@ -35,8 +35,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [pe2]
 ok: [p1]
-ok: [p2]
 ok: [dut]
+ok: [p2]
 ok: [h1]
 ok: [h2]
 
@@ -44,9 +44,9 @@ TASK [Find configuration template for initial] *********************************
 ok: [pe2]
 ok: [p1]
 ok: [dut]
+ok: [h1]
 ok: [p2]
 ok: [h2]
-ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [pe2] => 
@@ -257,172 +257,6 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut
-        static-host-mapping {
-            pe2 inet 10.0.0.4;
-            p1 inet 10.0.0.5;
-            p2 inet 10.0.0.6;
-            h1 inet 172.16.0.1;
-            h2 inet 172.16.4.2;
-        }
-    }
-  
-  
-    interfaces {
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.3/32;
-          }
-  
-      }
-      et-0/0/0.0 {
-        description "dut -> h1 [stub]";
-  
-          family inet {
-            address 172.16.0.3/24;
-          }
-  
-      }
-      et-0/0/1.0 {
-        description "dut -> p1";
-  
-          family inet {
-            address 172.16.1.3/24;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface re0:mgmt-0 {
-          disable;
-        }
-        interface all;
-      }
-    }
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.4.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.4.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.4.4
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.4.4
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.4.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.4.4
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.4.4
-    #
-    # Print the final routing table
-    ip route
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
-    #
-    # Print the final routing table
-    ip route
 ok: [p2] => 
   msg: |-
     initial configuration for p2
@@ -527,12 +361,178 @@ ok: [p2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut
+        static-host-mapping {
+            pe2 inet 10.0.0.4;
+            p1 inet 10.0.0.5;
+            p2 inet 10.0.0.6;
+            h1 inet 172.16.0.1;
+            h2 inet 172.16.4.2;
+        }
+    }
+  
+  
+    interfaces {
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.3/32;
+          }
+  
+      }
+      et-0/0/0.0 {
+        description "dut -> h1 [stub]";
+  
+          family inet {
+            address 172.16.0.3/24;
+          }
+  
+      }
+      et-0/0/1.0 {
+        description "dut -> p1";
+  
+          family inet {
+            address 172.16.1.3/24;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface re0:mgmt-0 {
+          disable;
+        }
+        interface all;
+      }
+    }
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.3
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.3
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.3
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.3
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.4.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.4.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.4.4
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.4.4
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.4.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.4.4
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.4.4
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [pe2]
 ok: [p1]
-ok: [p2]
 ok: [dut]
+ok: [p2]
 ok: [h1]
 ok: [h2]
 
@@ -545,9 +545,9 @@ TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansibl
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [p2 -> localhost]
 changed: [pe2 -> localhost]
 changed: [p1 -> localhost]
-changed: [p2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe2]
@@ -558,9 +558,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe2, p1, p2
 
 TASK [template] ****************************************************************
+changed: [p1]
 changed: [p2]
 changed: [pe2]
-changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [pe2]
@@ -569,8 +569,8 @@ ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [pe2]
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe2]
@@ -582,10 +582,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-FGEGKfPX-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-ZpPplemx-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -702,7 +702,6 @@ ok: [pe2] =>
       neighbor 10.0.0.3 update-source lo
     !
      address-family ipv4 unicast
-    !
     !
       network 172.16.4.0/24
     !
@@ -884,9 +883,9 @@ TASK [junos_config: deploying isis from /home/pipi/net101/tools/netsim/ansible/t
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
 changed: [pe2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -900,8 +899,8 @@ skipping: [pe2]
 
 TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
 changed: [pe2]
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [Figure out whether to deploy the module sr on current device] ************
 ok: [p1]
@@ -1045,9 +1044,9 @@ TASK [junos_config: deploying sr from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [p1]
 changed: [p2]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1055,9 +1054,9 @@ ok: [p2]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy sr config from /home/pipi/net101/tools/netsim/ansible/templates/sr/frr.j2] ***
-changed: [pe2]
-changed: [p1]
 changed: [p2]
+changed: [p1]
+changed: [pe2]
 
 TASK [run vtysh to import sr config from /home/pipi/net101/tools/netsim/ansible/templates/sr/frr.j2] ***
 skipping: [p1]

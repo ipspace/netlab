@@ -12,8 +12,8 @@ ok: [r1]
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [r1]
 
 TASK [Wait for device to become ready] *****************************************
@@ -21,16 +21,10 @@ skipping: [h1]
 skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vptx.yml for s1, s2, r1
 
-TASK [Wait for at least 10 minutes for vPTX inside CLAB...] ********************
-skipping: [s1]
-
-TASK [Execute local ssh command to check vPTX readiness] ***********************
-skipping: [s1]
-skipping: [s2]
-skipping: [r1]
-
-TASK [Wait one more minute for vPTX inside CLAB...] ****************************
-skipping: [s1]
+TASK [Wait for et-0/0/1 to appear] *********************************************
+ok: [s1]
+ok: [r1]
+ok: [s2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, r1
@@ -39,26 +33,346 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [s2]
-ok: [s1]
 ok: [r1]
+ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [r1]
 ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
-skipping: [s2]
-skipping: [r1]
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.5
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.5
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.5
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.5
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.5
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.5
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.5
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.5
+    #
+    # Print the final routing table
+    ip route
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    system {
+      host-name s1
+        static-host-mapping {
+            h1 inet 172.16.0.1;
+            h2 inet 172.16.1.2;
+            s2 inet 10.0.0.4;
+            r1 inet 10.0.0.5;
+        }
+    }
+  
+  
+    interfaces {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    }
+    interfaces {
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.3/32;
+          }
+  
+      }
+      et-0/0/0.0 {
+        description "s1 -> s2";
+  
+  
+      }
+      et-0/0/1.0 {
+  
+  
+      }
+      et-0/0/2.0 {
+  
+  
+      }
+      irb.1000 {
+        description "VLAN red (1000) -> [h1,s2,r1]";
+  
+  
+      }
+      irb.1001 {
+        description "VLAN blue (1001) -> [h2,s2,r1]";
+  
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface re0:mgmt-0 {
+          disable;
+        }
+        interface all;
+      }
+    }
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    system {
+      host-name s2
+        static-host-mapping {
+            h1 inet 172.16.0.1;
+            h2 inet 172.16.1.2;
+            s1 inet 10.0.0.3;
+            r1 inet 10.0.0.5;
+        }
+    }
+  
+  
+    interfaces {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    }
+    interfaces {
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.4/32;
+          }
+  
+      }
+      et-0/0/0.0 {
+        description "s2 -> s1";
+  
+  
+      }
+      et-0/0/1.0 {
+  
+  
+      }
+      et-0/0/2.0 {
+  
+  
+      }
+      irb.1000 {
+        description "VLAN red (1000) -> [h1,s1,r1]";
+  
+  
+      }
+      irb.1001 {
+        description "VLAN blue (1001) -> [h2,s1,r1]";
+  
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface re0:mgmt-0 {
+          disable;
+        }
+        interface all;
+      }
+    }
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    system {
+      host-name r1
+        static-host-mapping {
+            h1 inet 172.16.0.1;
+            h2 inet 172.16.1.2;
+            s1 inet 10.0.0.3;
+            s2 inet 10.0.0.4;
+        }
+    }
+  
+  
+    interfaces {
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.5/32;
+          }
+  
+      }
+      et-0/0/0.0 {
+        description "r1 -> [h1,s1,s2]";
+  
+          family inet {
+            address 172.16.0.5/24;
+          }
+  
+      }
+      et-0/0/1.0 {
+        description "r1 -> [h2,s1,s2]";
+  
+          family inet {
+            address 172.16.1.5/24;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface re0:mgmt-0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [s1]
 ok: [s2]
 ok: [r1]
@@ -72,12 +386,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-rrswWYbw-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-UkIlTReq-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -92,8 +406,8 @@ changed: [s1]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
@@ -107,8 +421,122 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+  
+    vlans {
+      blue {
+        vlan-id 1001;
+  
+  
+      }
+      red {
+        vlan-id 1000;
+  
+  
+      }
+    }
+  
+    interfaces {
+  
+  
+      et-0/0/0.0 {
+        family ethernet-switching {
+  
+          interface-mode trunk;
+          vlan {
+            members [ blue red ];
+          }
+  
+        }
+      }
+  
+  
+  
+      et-0/0/1.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members red;
+          }
+  
+        }
+      }
+  
+  
+  
+      et-0/0/2.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members blue;
+          }
+  
+        }
+      }
+  
+  
+    }
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+  
+    vlans {
+      blue {
+        vlan-id 1001;
+  
+  
+      }
+      red {
+        vlan-id 1000;
+  
+  
+      }
+    }
+  
+    interfaces {
+  
+  
+      et-0/0/0.0 {
+        family ethernet-switching {
+  
+          interface-mode trunk;
+          vlan {
+            members [ blue red ];
+          }
+  
+        }
+      }
+  
+  
+  
+      et-0/0/1.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members red;
+          }
+  
+        }
+      }
+  
+  
+  
+      et-0/0/2.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members blue;
+          }
+  
+        }
+      }
+  
+  
+    }
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -118,18 +546,18 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
 TASK [junos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vptx.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-r1                         : ok=9    changed=1    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-s1                         : ok=16   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-s2                         : ok=16   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r1                         : ok=11   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s1                         : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s2                         : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 
 
