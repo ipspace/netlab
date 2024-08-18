@@ -4,8 +4,8 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
-ok: [s2]
 ok: [h1]
+ok: [s2]
 ok: [h2]
 ok: [rr]
 
@@ -151,42 +151,6 @@ ok: [s1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -294,6 +258,42 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [rr] => 
   msg: |-
     initial configuration for rr
@@ -377,8 +377,8 @@ ok: [h2] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [rr]
 
 TASK [Deploy initial configuration] ********************************************
@@ -393,8 +393,8 @@ device including the indentation
 changed: [rr]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s1]
@@ -412,8 +412,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s1]
@@ -427,13 +427,13 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-CBKINSOM-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-eKwRdiWG-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -504,16 +504,16 @@ skipping: [rr]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -530,42 +530,6 @@ ok: [s2]
 ok: [rr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    bgp configuration for s2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.0.0.5 remote-as 65000
-      neighbor 10.0.0.5 description rr
-      neighbor 10.0.0.5 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.0.0.5 activate
-      neighbor 10.0.0.5 next-hop-self
-      no neighbor 10.0.0.5 send-community all
-      neighbor 10.0.0.5 send-community standard
-      neighbor 10.0.0.5 send-community large
-      neighbor 10.0.0.5 send-community extended
-    !
-    !
-    !
-    do write
 ok: [s1] => 
   msg: |-
     bgp configuration for s1
@@ -589,6 +553,42 @@ ok: [s1] =>
      address-family ipv4 unicast
     !
       network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.0.0.5 activate
+      neighbor 10.0.0.5 next-hop-self
+      no neighbor 10.0.0.5 send-community all
+      neighbor 10.0.0.5 send-community standard
+      neighbor 10.0.0.5 send-community large
+      neighbor 10.0.0.5 send-community extended
+    !
+    !
+    !
+    do write
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.0.0.5 remote-as 65000
+      neighbor 10.0.0.5 description rr
+      neighbor 10.0.0.5 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.4/32
     !
     !
     !
@@ -672,8 +672,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [s1]
@@ -681,8 +681,8 @@ ok: [s2]
 ok: [rr]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [rr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -698,6 +698,7 @@ ok: [s1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -706,6 +707,33 @@ ok: [s1] =>
     !
     interface eth1
     ! s1 -> rr
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! s2 -> rr
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -725,6 +753,7 @@ ok: [rr] =>
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
+  
     !
     interface Loopback0
     !
@@ -740,36 +769,10 @@ ok: [rr] =>
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! s2 -> rr
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [rr]
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -780,12 +783,12 @@ TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [rr]
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [s1]
@@ -882,16 +885,16 @@ ok: [s2] =>
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [rr]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [rr]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -906,8 +909,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [rr]
 
 TASK [Find configuration template for evpn] ************************************
@@ -916,34 +919,6 @@ ok: [s2]
 ok: [rr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    evpn configuration for s2
-    =========================================
-    router bgp 65000
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 1000
-       rd 10.0.0.4:1000
-       route-target export 65000:1000
-       route-target import 65000:1000
-      exit-vni
-  
-      neighbor 10.0.0.5 activate
-      neighbor 10.0.0.5 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    !
-    do write
 ok: [s1] => 
   msg: |-
     evpn configuration for s1
@@ -972,6 +947,34 @@ ok: [s1] =>
     ! L3 VRF EVPN handling
     !
     do write
+ok: [s2] => 
+  msg: |-
+    evpn configuration for s2
+    =========================================
+    router bgp 65000
+     address-family l2vpn evpn
+      advertise-all-vni
+      advertise-svi-ip
+      advertise ipv4 unicast
+  
+    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+      vni 1000
+       rd 10.0.0.4:1000
+       route-target export 65000:1000
+       route-target import 65000:1000
+      exit-vni
+  
+      neighbor 10.0.0.5 activate
+      neighbor 10.0.0.5 soft-reconfiguration inbound
+  
+     exit-address-family
+    !
+  
+    exit
+  
+    ! L3 VRF EVPN handling
+    !
+    do write
 ok: [rr] => 
   msg: |-
     evpn configuration for rr
@@ -984,8 +987,8 @@ ok: [rr] =>
       neighbor 10.0.0.4 activate
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [rr]
 
 TASK [Deploy evpn configuration] ***********************************************

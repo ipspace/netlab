@@ -337,8 +337,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [c1 -> localhost]
 changed: [pe2 -> localhost]
+changed: [c1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe2]
@@ -513,6 +513,7 @@ ok: [c1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -552,6 +553,7 @@ ok: [c1] =>
      ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
     exit
   
     !
@@ -568,6 +570,7 @@ ok: [pe2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -597,6 +600,7 @@ ok: [pe2] =>
      ospf6 router-id 10.0.0.3
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
     exit
   
     !
@@ -657,11 +661,8 @@ ok: [dut] =>
     router bgp 65000
     !
      vrf tenant
-      redistribute connected
       router-id 10.0.0.1
       rd 65000:1
-      redistribute ospf
-      redistribute ospfv3
       route-target import vpn-ipv4 65000:1
       route-target export vpn-ipv4 65000:1
       route-target import vpn-ipv6 65000:1
@@ -676,14 +677,18 @@ ok: [dut] =>
       neighbor 2001:db8:1:3::1 description pe2
       neighbor 2001:db8:1:3::1 update-source Loopback1
       neighbor 2001:db8:1:3::1 send-community standard large
+    !
       address-family ipv4
-       network 10.2.0.1/32
-      address-family ipv4
-       neighbor 10.0.0.3 activate
+        redistribute connected
+        redistribute ospf
+        network 10.2.0.1/32
+        neighbor 10.0.0.3 activate
+    !
       address-family ipv6
-       network 2001:db8:4::/64
-      address-family ipv6
-       neighbor 2001:db8:1:3::1 activate
+        redistribute connected
+        redistribute ospfv3
+        network 2001:db8:4::/64
+        neighbor 2001:db8:1:3::1 activate
     !
     ! OSPFv2 configuration
     !
@@ -693,6 +698,7 @@ ok: [dut] =>
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
+  
      redistribute bgp include leaked
      redistribute connected
      passive-interface Ethernet2
@@ -734,6 +740,7 @@ ok: [dut] =>
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
+  
      redistribute bgp include leaked
      redistribute connected
      passive-interface Ethernet2

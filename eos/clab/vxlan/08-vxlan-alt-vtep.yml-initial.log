@@ -4,23 +4,23 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
+ok: [s1]
 ok: [h5]
 ok: [h4]
-ok: [s1]
-ok: [s3]
 ok: [s2]
+ok: [s3]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
+ok: [s1]
 ok: [h3]
 ok: [h5]
-ok: [h4]
 ok: [s2]
 ok: [s3]
-ok: [s1]
+ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
@@ -31,9 +31,9 @@ skipping: [h5]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for s1, s2, s3
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [s2]
 ok: [s3]
 ok: [s1]
-ok: [s2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, s3, h1, h2, h3, h4, h5
@@ -44,38 +44,408 @@ ok: [h2]
 ok: [s1]
 ok: [h3]
 ok: [h4]
-ok: [h5]
 ok: [s2]
+ok: [h5]
 ok: [s3]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
-ok: [h3]
 ok: [h4]
-ok: [s3]
+ok: [s1]
 ok: [h5]
+ok: [h3]
+ok: [s3]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [s3]
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-skipping: [h5]
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host h1 172.31.1.1
+    ip host h2 172.31.1.2
+    ip host h3 172.31.1.3
+    ip host h4 172.31.1.4
+    ip host h5 172.31.1.5
+    ip host s2 10.0.0.7 10.1.0.2 10.1.0.5 172.16.1.7
+    ip host s3 10.0.0.8 10.1.0.6 10.1.0.10
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     mtu 1600
+     description s1 -> s2
+     ip address 10.1.0.1/30
+    !
+     mac-address 52dc.cafe.0601
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     mtu 1600
+     description s1 -> s3
+     ip address 10.1.0.9/30
+    !
+     mac-address 52dc.cafe.0602
+    !
+    interface Loopback1
+     no shutdown
+     description s1 -> stub
+     ip address 172.16.0.6/24
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0603
+    !
+    interface Ethernet4
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0604
+    !
+    interface Vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,h2,s2,h3,s3]
+    !
+    interface Vlan1001
+     no shutdown
+     description VLAN blue (1001) -> [h4,h5,s2]
+    !
+ok: [h5] => 
+  msg: |-
+    initial configuration for h5
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [s3] => 
+  msg: |-
+    initial configuration for s3
+    =========================================
+    hostname s3
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host h1 172.31.1.1
+    ip host h2 172.31.1.2
+    ip host h3 172.31.1.3
+    ip host h4 172.31.1.4
+    ip host h5 172.31.1.5
+    ip host s1 10.0.0.6 10.1.0.1 10.1.0.9 172.16.0.6
+    ip host s2 10.0.0.7 10.1.0.2 10.1.0.5 172.16.1.7
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.8/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     mtu 1600
+     description s3 -> s2
+     ip address 10.1.0.6/30
+    !
+     mac-address 52dc.cafe.0801
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     mtu 1600
+     description s3 -> s1
+     ip address 10.1.0.10/30
+    !
+     mac-address 52dc.cafe.0802
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0803
+    !
+    interface Vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,s1,h2,s2,h3]
+    !
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    hostname s2
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host h1 172.31.1.1
+    ip host h2 172.31.1.2
+    ip host h3 172.31.1.3
+    ip host h4 172.31.1.4
+    ip host h5 172.31.1.5
+    ip host s1 10.0.0.6 10.1.0.1 10.1.0.9 172.16.0.6
+    ip host s3 10.0.0.8 10.1.0.6 10.1.0.10
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.7/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     mtu 1600
+     description s2 -> s1
+     ip address 10.1.0.2/30
+    !
+     mac-address 52dc.cafe.0701
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     mtu 1600
+     description s2 -> s3
+     ip address 10.1.0.5/30
+    !
+     mac-address 52dc.cafe.0702
+    !
+    interface Loopback1
+     no shutdown
+     description s2 -> stub
+     ip address 172.16.1.7/24
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0703
+    !
+    interface Ethernet4
+     no shutdown
+     no switchport
+    !
+     mac-address 52dc.cafe.0704
+    !
+    interface Vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,s1,h2,h3,s3]
+    !
+    interface Vlan1001
+     no shutdown
+     description VLAN blue (1001) -> [h4,s1,h5]
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
-ok: [h2]
-ok: [s2]
-ok: [s1]
 ok: [h3]
-ok: [h4]
+ok: [h2]
 ok: [h5]
+ok: [h4]
+ok: [s1]
+ok: [s2]
 ok: [s3]
 
 TASK [Deploy initial configuration] ********************************************
@@ -94,29 +464,29 @@ TASK [set_fact] ****************************************************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h5]
 ok: [h4]
+ok: [h5]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h5 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-zrfQYDSh-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-QIMuNVoE-h1.sh] **********
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h5 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h2 -> localhost]
-changed: [h5 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h5 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -137,13 +507,70 @@ ok: [s3]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [s1]
-ok: [s2]
 ok: [s3]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [s3]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    vlan 1001
+     name blue
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1000
+    !
+    interface Ethernet4
+     switchport
+     switchport access vlan 1001
+    !
+    interface Vlan1000
+    !
+    interface Vlan1001
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    vlan 1001
+     name blue
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1000
+    !
+    interface Ethernet4
+     switchport
+     switchport access vlan 1001
+    !
+    interface Vlan1000
+    !
+    interface Vlan1001
+ok: [s3] => 
+  msg: |-
+    vlan configuration for s3
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -169,9 +596,101 @@ ok: [s2]
 ok: [s3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [s3]
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.6
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! s1 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface Ethernet2
+    ! s1 -> s3
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface Loopback1
+    ! s1 -> stub
+     ip ospf area 0.0.0.0
+    !
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.7
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface Ethernet2
+    ! s2 -> s3
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface Loopback1
+    ! s2 -> stub
+     ip ospf area 0.0.0.0
+    !
+ok: [s3] => 
+  msg: |-
+    ospf configuration for s3
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.8
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! s3 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface Ethernet2
+    ! s3 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [s1]
@@ -197,14 +716,39 @@ ok: [s2]
 ok: [s3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [s3]
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+    interface vxlan 1
+      vxlan source-interface Loopback1
+      vxlan vlan 1000 vni 101000
+      vxlan vlan 1000 flood vtep 172.16.1.7 10.0.0.8
+      vxlan vlan 1001 vni 101001
+      vxlan vlan 1001 flood vtep 172.16.1.7
+ok: [s3] => 
+  msg: |-
+    vxlan configuration for s3
+    =========================================
+    interface vxlan 1
+      vxlan source-interface Loopback0
+      vxlan vlan 1000 vni 101000
+      vxlan vlan 1000 flood vtep 172.16.0.6 172.16.1.7
+ok: [s2] => 
+  msg: |-
+    vxlan configuration for s2
+    =========================================
+    interface vxlan 1
+      vxlan source-interface Loopback1
+      vxlan vlan 1000 vni 101000
+      vxlan vlan 1000 flood vtep 172.16.0.6 10.0.0.8
+      vxlan vlan 1001 vni 101001
+      vxlan vlan 1001 flood vtep 172.16.0.6
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 ok: [s1]
-ok: [s3]
 ok: [s2]
+ok: [s3]
 
 TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2, s3
@@ -218,14 +762,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h3                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h4                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h5                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-s1                         : ok=29   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-s2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-s3                         : ok=29   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h5                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+s1                         : ok=33   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s2                         : ok=33   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s3                         : ok=33   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 
 

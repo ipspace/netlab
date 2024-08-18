@@ -34,9 +34,180 @@ ok: [h2]
 ok: [r]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r]
-skipping: [h1]
-skipping: [h2]
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1::2/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.1
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1:1::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1:1::3/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.1
+    #
+    # Print the final routing table
+    ip route
+ok: [r] => 
+  msg: |-
+    initial configuration for r
+    =========================================
+    hostname r
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    !
+    ip host h1 172.16.0.2
+    ip host h2 172.16.1.3
+    ipv6 host h1 2001:db8:1::2
+    ipv6 host h2 2001:db8:1:1::3
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.1/32
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:0:1::1/64
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     description r -> h1 [stub]
+     ip address 172.16.0.1/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1::1/64
+    !
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     description r -> h2 [stub]
+     ip address 172.16.1.1/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:1::1/64
+    !
+     mac-address 52dc.cafe.0102
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -58,10 +229,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-ccGgdArn-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-sCDfnuso-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -76,7 +247,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-r                          : ok=10   changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r                          : ok=11   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
+
+
+This scenario tests basic interface, IPv4, and IPv6 configuration, including generation of IPv6 Router Advertisements
