@@ -8,8 +8,8 @@ ok: [c2]
 ok: [server]
 
 TASK [Find device readiness script] ********************************************
-ok: [c2]
 ok: [c1]
+ok: [c2]
 ok: [server]
 
 TASK [Wait for device to become ready] *****************************************
@@ -26,236 +26,18 @@ ok: [c2]
 ok: [server]
 
 TASK [Find configuration template for initial] *********************************
-ok: [c2]
 ok: [c1]
+ok: [c2]
 ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [c1] => 
-  msg: |-
-    initial configuration for c1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname c1
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 c1" >>/tmp/hosts
-    echo "10.0.0.2 c2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 server" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    sort /tmp/hosts|uniq >>/etc/hosts
-    #
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.1/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1
-      mtu 1500
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['dhcp']
-    #
-    #
-    # Enable FRR daemons
-    #
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description c1 -> [c2,server]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
-ok: [c2] => 
-  msg: |-
-    initial configuration for c2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname c2
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 c2" >>/tmp/hosts
-    echo "10.0.0.1 c1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 server" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    sort /tmp/hosts|uniq >>/etc/hosts
-    #
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.2/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1
-      mtu 1500
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['dhcp']
-    #
-    #
-    # Enable FRR daemons
-    #
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description c2 -> [c1,server]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
-ok: [server] => 
-  msg: |-
-    initial configuration for server
-    =========================================
-    hostname server
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host c1 10.0.0.1
-    ip host c2 10.0.0.2
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.3 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     no shutdown
-     description server -> [c1,c2]
-     ip address 172.16.0.3 255.255.255.0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
+skipping: [server]
+skipping: [c1]
+skipping: [c2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [c2]
 ok: [c1]
+ok: [c2]
 ok: [server]
 
 TASK [Deploy initial configuration] ********************************************
@@ -305,58 +87,9 @@ ok: [c2]
 ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [c1] => 
-  msg: |-
-    dhcp configuration for c1
-    =========================================
-    #!/bin/bash
-    #
-    # Disable IPv6 RA on DHCPv6 client interfaces
-    #
-    #
-    # Configure DHCP clients on interfaces
-    #
-    set -e
-    #
-    echo "DHCP: set IP addresses on interfaces"
-    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
-    iface swp1 inet dhcp
-      mtu 1500
-    CONFIG
-    #
-    echo "DHCP: executing ifup"
-    nohup bash -c 'ifreload -a || ifreload -a' &
-ok: [c2] => 
-  msg: |-
-    dhcp configuration for c2
-    =========================================
-    #!/bin/bash
-    #
-    # Disable IPv6 RA on DHCPv6 client interfaces
-    #
-    #
-    # Configure DHCP clients on interfaces
-    #
-    set -e
-    #
-    echo "DHCP: set IP addresses on interfaces"
-    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
-    iface swp1 inet dhcp
-      mtu 1500
-    CONFIG
-    #
-    echo "DHCP: executing ifup"
-    nohup bash -c 'ifreload -a || ifreload -a' &
-ok: [server] => 
-  msg: |-
-    dhcp configuration for server
-    =========================================
-    ip dhcp excluded-address 172.16.0.3
-    !
-    ip dhcp pool links_1_
-     network 172.16.0.0 255.255.255.0
-     default-router 172.16.0.3
-    !
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
 
 TASK [Find configuration deployment deploy_script for dhcp] ********************
 ok: [c1]
@@ -376,8 +109,8 @@ ok: [c1]
 ok: [c2]
 
 TASK [run /tmp/config.sh to deploy dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
-changed: [c2]
 changed: [c1]
+changed: [c2]
 
 TASK [run vtysh to import dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
 skipping: [c1]
@@ -390,9 +123,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-c1                         : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-c2                         : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-server                     : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+c1                         : ok=19   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+c2                         : ok=19   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+server                     : ok=15   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 
 
 
