@@ -32,13 +32,18 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   if isinstance(v_entry.get('config',{}),str):          # Make sure config entry (if exists) is a dictionary
     v_entry.config = { 'template': v_entry.config }
 
+  # Each validation test should have exactly one action, the only exception is 'exec' and 'show
+  # which can be used together to deal with devices that cannot produce JSON printout
+  #
   x_kw = [ kw for kw in ('show','exec','config','plugin','suzieq') if kw in v_entry ]
-  if len(x_kw) > 1:
-    log.error(
-          f'You cannot use {",".join(x_kw)} in test {v_entry.name}. Use only one action per test',
-          category=log.IncorrectValue,
-          module='validation')
-    return False
+  if len(x_kw) > 1:                                     # We have more than one action. Now take away show/exec
+    r_kw = [ kw for kw in x_kw if kw not in ('show','exec') ]
+    if r_kw:                                            # If there's something left, we have a problem
+      log.error(
+            f'You cannot use {",".join(x_kw)} in test {v_entry.name}. Use only one action per test',
+            category=log.IncorrectValue,
+            module='validation')
+      return False
 
   if not kw_set & set(['suzieq','wait']) and not 'nodes' in v_entry:
     log.error(
