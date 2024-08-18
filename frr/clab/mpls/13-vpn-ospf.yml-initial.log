@@ -258,105 +258,6 @@ ok: [pe2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ce2] => 
-  msg: |-
-    initial configuration for ce2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
-    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname ce2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface eth1
-     no shutdown
-     description ce2 -> pe2
-     ip address 10.1.0.17/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [ce1] => 
   msg: |-
     initial configuration for ce1
@@ -456,9 +357,9 @@ ok: [ce1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [p2] => 
+ok: [ce2] => 
   msg: |-
-    initial configuration for p2
+    initial configuration for ce2
     =========================================
     #!/bin/bash
     #
@@ -524,7 +425,6 @@ ok: [p2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
   
     #
     # Add vtysh.conf file
@@ -532,12 +432,11 @@ ok: [p2] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
     #
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname p2
+    hostname ce2
     !
     vrf mgmt
      exit-vrf
@@ -546,17 +445,12 @@ ok: [p2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.6/32
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description p2 -> p1
-     ip address 10.1.0.6/30
-    !
-    interface eth2
-     no shutdown
-     description p2 -> pe2
-     ip address 10.1.0.9/30
+     description ce2 -> pe2
+     ip address 10.1.0.17/30
     !
     do write
     CONFIG
@@ -668,6 +562,112 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [p2] => 
+  msg: |-
+    initial configuration for p2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
+    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
+    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
+    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
+    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname p2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface eth1
+     no shutdown
+     description p2 -> p1
+     ip address 10.1.0.6/30
+    !
+    interface eth2
+     no shutdown
+     description p2 -> pe2
+     ip address 10.1.0.9/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
@@ -681,12 +681,12 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, pe2, ce1, ce2, p1, p2
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [ce1 -> localhost]
+changed: [ce2 -> localhost]
 changed: [dut -> localhost]
 changed: [pe2 -> localhost]
-changed: [p1 -> localhost]
-changed: [ce2 -> localhost]
 changed: [p2 -> localhost]
-changed: [ce1 -> localhost]
+changed: [p1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
@@ -701,27 +701,27 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [ce2]
-changed: [ce1]
 changed: [p1]
-changed: [p2]
-changed: [pe2]
 changed: [dut]
+changed: [ce1]
+changed: [pe2]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
-ok: [p2]
 ok: [ce2]
 ok: [p1]
+ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [dut]
-changed: [pe2]
-changed: [ce2]
-changed: [ce1]
-changed: [p1]
 changed: [p2]
+changed: [p1]
+changed: [ce2]
+changed: [pe2]
+changed: [ce1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
@@ -751,8 +751,8 @@ TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Find configuration template for bgp] *************************************
@@ -869,8 +869,8 @@ skipping: [dut]
 skipping: [pe2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [dut]
 changed: [pe2]
+changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [ce1]
@@ -884,9 +884,9 @@ TASK [Find configuration template for ospf] ************************************
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
+ok: [p2]
 ok: [p1]
 ok: [pe2]
-ok: [p2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [ce1] => 
@@ -901,6 +901,7 @@ ok: [ce1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -927,6 +928,7 @@ ok: [ce2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -953,6 +955,7 @@ ok: [dut] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -979,6 +982,7 @@ ok: [pe2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -987,37 +991,6 @@ ok: [pe2] =>
     !
     interface eth1
     ! pe2 -> p2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [p1] => 
-  msg: |-
-    ospf configuration for p1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.5
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! p1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! p1 -> p2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -1036,6 +1009,7 @@ ok: [p2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -1055,13 +1029,45 @@ ok: [p2] =>
   
     !
     do write
+ok: [p1] => 
+  msg: |-
+    ospf configuration for p1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.5
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! p1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! p1 -> p2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [pe2]
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -1070,10 +1076,10 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 TASK [template] ****************************************************************
 changed: [ce1]
 changed: [p2]
-changed: [dut]
 changed: [ce2]
-changed: [p1]
 changed: [pe2]
+changed: [dut]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -1092,19 +1098,19 @@ skipping: [p2]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [ce1]
 changed: [p1]
-changed: [p2]
-changed: [pe2]
 changed: [ce2]
 changed: [dut]
-changed: [ce1]
+changed: [p2]
+changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [pe2]
 
 TASK [Find configuration template for mpls] ************************************
@@ -1283,12 +1289,12 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 TASK [template] ****************************************************************
 changed: [p1]
 changed: [p2]
-changed: [pe2]
 changed: [dut]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
-ok: [p1]
 ok: [dut]
+ok: [p1]
 ok: [p2]
 ok: [pe2]
 
@@ -1308,8 +1314,8 @@ TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Find configuration template for vrf] *************************************
@@ -1356,14 +1362,15 @@ ok: [dut] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.3
      address-family ipv4 unicast
+    !
       redistribute connected
+      redistribute ospf
       label vpn export auto
       export vpn
       import vpn
       rd vpn export 65000:1
       rt vpn import 65000:1
       rt vpn export 65000:1
-      redistribute ospf
      exit-address-family
     !
     !
@@ -1375,6 +1382,7 @@ ok: [dut] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
      redistribute bgp
      redistribute connected
     exit
@@ -1422,14 +1430,15 @@ ok: [pe2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
+    !
       redistribute connected
+      redistribute ospf
       label vpn export auto
       export vpn
       import vpn
       rd vpn export 65000:1
       rt vpn import 65000:1
       rt vpn export 65000:1
-      redistribute ospf
      exit-address-family
     !
     !
@@ -1441,6 +1450,7 @@ ok: [pe2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
      redistribute bgp
      redistribute connected
     exit
@@ -1474,8 +1484,8 @@ skipping: [p2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, pe2
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [dut]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -1500,3 +1510,8 @@ p1                         : ok=37   changed=7    unreachable=0    failed=0    s
 p2                         : ok=37   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 pe2                        : ok=51   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
+
+
+The tested device (DUT) is a PE-router running MPLS/VPN with a simple VRF. Two OSPF-speaking CE-routers are attached to the VRF (one per PE-router)
+The PE-router has to run OSPF and LDP with a P-router, exchange IPv4 routes via OSPF with the CE-router, do two-way redistribution of OSPF and VPNv4 routes, and pass VPNv4 routes to another PE-router.
+The validation tests check OSPF prefixes on the CE-routers and perform end-to-end connectivity tests between CE-router loopbacks.

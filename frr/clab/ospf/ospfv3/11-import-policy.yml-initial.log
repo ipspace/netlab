@@ -379,9 +379,9 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, r2
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [r2 -> localhost]
 changed: [dut -> localhost]
 changed: [x1 -> localhost]
-changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
@@ -392,9 +392,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, r2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [x1]
 changed: [r2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -402,8 +402,8 @@ ok: [x1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [dut]
 changed: [r2]
+changed: [dut]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -419,9 +419,56 @@ ok: [r2]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [r2]
+ok: [x1]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [x1]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    !
+    !
+    route-map i_beacon-ipv6 permit 10
+      set metric 50
+      match ipv6 address prefix-list p_beacon-ipv6
+    !
+    ipv6 prefix-list p_beacon-ipv6 seq 10 permit 2001:db8:cafe:42::/64
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [r2]
+skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+skipping: [dut]
+
+TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -561,6 +608,7 @@ ok: [dut] =>
      ospf6 router-id 10.0.0.1
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
      redistribute bgp route-map i_beacon-ipv6
     exit
   
@@ -587,6 +635,7 @@ ok: [r2] =>
      ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
     exit
   
     !
@@ -602,8 +651,8 @@ skipping: [x1]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, r2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [r2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -616,53 +665,6 @@ skipping: [r2]
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [dut]
 changed: [r2]
-
-TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [dut]
-ok: [r2]
-ok: [x1]
-
-TASK [Find configuration template for routing] *********************************
-skipping: [r2]
-skipping: [x1]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r2]
-skipping: [x1]
-ok: [dut] => 
-  msg: |-
-    routing configuration for dut
-    =========================================
-    !
-    !
-    route-map i_beacon-ipv6 permit 10
-      set metric 50
-      match ipv6 address prefix-list p_beacon-ipv6
-    !
-    ipv6 prefix-list p_beacon-ipv6 seq 10 permit 2001:db8:cafe:42::/64
-
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [r2]
-skipping: [x1]
-ok: [dut]
-
-TASK [Deploy routing configuration] ********************************************
-skipping: [r2]
-skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-skipping: [dut]
-
-TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
