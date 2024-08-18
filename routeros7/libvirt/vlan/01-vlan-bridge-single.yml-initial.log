@@ -34,9 +34,113 @@ ok: [h2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+  
+    /system identity set name="s1"
+  
+    /interface bridge add name=loopback protocol-mode=none
+  
+  
+    /ip address add interface=loopback address=10.0.0.3/32
+  
+  
+    /interface/bridge/add name=switch vlan-filtering=yes comment="Global Switch Bridge"
+  
+    /interface/vlan/add name=vlan1000 vlan-id=1000 interface=switch
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    /interface ethernet set comment="VLAN red (1000) -> [h1,h2] [stub]" vlan1000
+  
+  
+  
+  
+    /ip neighbor discovery-settings set discover-interface-list=all
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -55,13 +159,13 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-dHYIAFtz-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-SYPGtjvY-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [load initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/routeros7.j2] ***
 ok: [s1]
@@ -84,7 +188,25 @@ TASK [Find configuration template for vlan] ************************************
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+  
+  
+    /interface/bridge/vlan add bridge=switch vlan-ids=1000 tagged=switch
+  
+  
+    /interface/bridge/port add bridge=switch interface=ether2 pvid=1000
+  
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1000]],"ether2") [find vlan-ids=1000]
+  
+  
+  
+  
+    /interface/bridge/port add bridge=switch interface=ether3 pvid=1000
+  
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1000]],"ether3") [find vlan-ids=1000]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -102,9 +224,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-s1                         : ok=18   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+s1                         : ok=20   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 
 
 

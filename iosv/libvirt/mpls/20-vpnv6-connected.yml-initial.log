@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [p1]
 ok: [p2]
 ok: [h1]
-ok: [h2]
 ok: [dut]
+ok: [h2]
 ok: [h4]
 ok: [pe2]
 ok: [h3]
@@ -19,8 +19,8 @@ ok: [h1]
 ok: [dut]
 ok: [h2]
 ok: [h4]
-ok: [pe2]
 ok: [h3]
+ok: [pe2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -48,12 +48,12 @@ ok: [h4]
 TASK [Find configuration template for initial] *********************************
 ok: [p1]
 ok: [p2]
-ok: [dut]
 ok: [h1]
-ok: [h2]
+ok: [dut]
 ok: [h3]
-ok: [h4]
+ok: [h2]
 ok: [pe2]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [p1] => 
@@ -166,9 +166,9 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h4] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h3
     =========================================
     #!/bin/bash
     #
@@ -191,9 +191,117 @@ ok: [h4] =>
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:42:3::4/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:42:2::3/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:42:3::4/64 dev eth1
+    ip -6 addr add 2001:db8:42:2::3/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [pe2] => 
+  msg: |-
+    initial configuration for pe2
+    =========================================
+    hostname pe2
+    !
+    logging monitor debugging
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    vrf instance t1
+     rd 65000:1
+    !
+    ipv6 unicast-routing vrf t1
+    !
+    vrf instance t2
+     rd 65000:2
+    !
+    ipv6 unicast-routing vrf t2
+    !
+    !
+    ip host dut 10.0.0.5 172.16.0.5
+    ip host p1 10.0.0.7 172.16.0.7 172.16.1.7
+    ip host p2 10.0.0.8 172.16.1.8 172.16.2.8
+    ipv6 host dut-t1 2001:db8:42::5
+    ipv6 host dut-t2 2001:db8:42:2::5
+    ipv6 host h1 2001:db8:42::1
+    ipv6 host h2 2001:db8:42:1::2
+    ipv6 host h3 2001:db8:42:2::3
+    ipv6 host h4 2001:db8:42:3::4
+    ipv6 host pe2-t1 2001:db8:42:1::6
+    ipv6 host pe2-t2 2001:db8:42:3::6
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     description pe2 -> p2
+     ip address 172.16.2.6/24
+    !
+     mac-address 52dc.cafe.0601
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     vrf t1
+     description pe2 -> h2 [stub]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:42:1::6/64
+    !
+     mac-address 52dc.cafe.0602
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+     vrf t2
+     description pe2 -> h4 [stub]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:42:3::6/64
+    !
+     mac-address 52dc.cafe.0603
+    !
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:42:1::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:42:1::2/64 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -273,77 +381,6 @@ ok: [dut] =>
     no banner exec
     no banner login
     no banner incoming
-ok: [pe2] => 
-  msg: |-
-    initial configuration for pe2
-    =========================================
-    hostname pe2
-    !
-    logging monitor debugging
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    vrf instance t1
-     rd 65000:1
-    !
-    ipv6 unicast-routing vrf t1
-    !
-    vrf instance t2
-     rd 65000:2
-    !
-    ipv6 unicast-routing vrf t2
-    !
-    !
-    ip host dut 10.0.0.5 172.16.0.5
-    ip host p1 10.0.0.7 172.16.0.7 172.16.1.7
-    ip host p2 10.0.0.8 172.16.1.8 172.16.2.8
-    ipv6 host dut-t1 2001:db8:42::5
-    ipv6 host dut-t2 2001:db8:42:2::5
-    ipv6 host h1 2001:db8:42::1
-    ipv6 host h2 2001:db8:42:1::2
-    ipv6 host h3 2001:db8:42:2::3
-    ipv6 host h4 2001:db8:42:3::4
-    ipv6 host pe2-t1 2001:db8:42:1::6
-    ipv6 host pe2-t2 2001:db8:42:3::6
-    !
-    interface Management1
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     no shutdown
-     ip address 10.0.0.6/32
-    !
-    interface Ethernet1
-     no shutdown
-     no switchport
-     description pe2 -> p2
-     ip address 172.16.2.6/24
-    !
-     mac-address 52dc.cafe.0601
-    !
-    interface Ethernet2
-     no shutdown
-     no switchport
-     vrf t1
-     description pe2 -> h2 [stub]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:42:1::6/64
-    !
-     mac-address 52dc.cafe.0602
-    !
-    interface Ethernet3
-     no shutdown
-     no switchport
-     vrf t2
-     description pe2 -> h4 [stub]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:42:3::6/64
-    !
-     mac-address 52dc.cafe.0603
-    !
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -372,43 +409,6 @@ ok: [h1] =>
     ip -6 addr del 2001:db8:42::1/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:42::1/64 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:42:2::3/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:42:2::3/64 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -528,9 +528,9 @@ ok: [p2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
+ok: [h4] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for h4
     =========================================
     #!/bin/bash
     #
@@ -553,9 +553,9 @@ ok: [h2] =>
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:42:1::2/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:42:3::4/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:42:1::2/64 dev eth1
+    ip -6 addr add 2001:db8:42:3::4/64 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -570,10 +570,10 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [p1]
 ok: [p2]
 ok: [dut]
-ok: [h1]
-ok: [h3]
 ok: [pe2]
+ok: [h1]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
@@ -592,8 +592,8 @@ TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/
 changed: [pe2]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p2 -> localhost]
 changed: [p1 -> localhost]
+changed: [p2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [p1]
@@ -603,16 +603,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p1, p2
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [p1]
@@ -625,22 +625,22 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-oAVEFxCZ-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-vCaWgSvM-h1.sh] **********
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -781,6 +781,7 @@ ok: [p1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -800,22 +801,6 @@ ok: [p1] =>
   
     !
     do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    router ospf 1
-     router-id 10.0.0.5
-    !
-    interface Loopback0
-    !
-     ip ospf 1 area 0.0.0.0
-    !
-    interface GigabitEthernet0/1
-    ! dut -> p1
-     ip ospf 1 area 0.0.0.0
-     ip ospf network point-to-point
-    !
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -828,6 +813,7 @@ ok: [p2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -847,6 +833,23 @@ ok: [p2] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    router ospf 1
+     router-id 10.0.0.5
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet0/1
+    ! dut -> p1
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
 ok: [pe2] => 
   msg: |-
     ospf configuration for pe2
@@ -860,6 +863,7 @@ ok: [pe2] =>
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
+  
     !
     interface Loopback0
     !
@@ -886,8 +890,8 @@ TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -898,8 +902,8 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
 changed: [pe2]
@@ -935,35 +939,6 @@ ok: [dut] =>
     !
       neighbor 10.0.0.6 activate
       neighbor 10.0.0.6 send-community both
-ok: [pe2] => 
-  msg: |-
-    mpls configuration for pe2
-    =========================================
-    !
-    mpls ip
-    !
-    mpls ldp
-      router-id 10.0.0.6
-      transport-address interface Loopback0
-      interface disabled default
-      no shutdown
-    !
-    interface Loopback0
-      mpls ldp interface
-    !
-    interface Ethernet1
-      mpls ip
-      mpls ldp interface
-    !
-    !
-    router bgp 65001
-  
-     neighbor 10.0.0.5 send-community add extended
-    !
-     address-family vpn-ipv6
-    !
-      neighbor 10.0.0.5 activate
-      exit
 ok: [p2] => 
   msg: |-
     mpls configuration for p2
@@ -1030,6 +1005,35 @@ ok: [p1] =>
     vtysh -f /tmp/config
   
     exit 0
+ok: [pe2] => 
+  msg: |-
+    mpls configuration for pe2
+    =========================================
+    !
+    mpls ip
+    !
+    mpls ldp
+      router-id 10.0.0.6
+      transport-address interface Loopback0
+      interface disabled default
+      no shutdown
+    !
+    interface Loopback0
+      mpls ldp interface
+    !
+    interface Ethernet1
+      mpls ip
+      mpls ldp interface
+    !
+    !
+    router bgp 65001
+  
+     neighbor 10.0.0.5 send-community add extended
+    !
+     address-family vpn-ipv6
+    !
+      neighbor 10.0.0.5 activate
+      exit
 
 TASK [Find configuration deployment deploy_script for mpls] ********************
 ok: [p1]
@@ -1052,16 +1056,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p1, p2
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
 skipping: [p1]
@@ -1093,11 +1097,13 @@ ok: [dut] =>
     router bgp 65001
      address-family ipv6 vrf t1
       bgp router-id 10.0.0.5
+    !
       redistribute connected
     !
     !
      address-family ipv6 vrf t2
       bgp router-id 10.0.0.5
+    !
       redistribute connected
     !
     !
@@ -1111,18 +1117,22 @@ ok: [pe2] =>
     router bgp 65001
     !
      vrf t1
-      redistribute connected
       router-id 10.0.0.6
       rd 65000:1
       route-target import vpn-ipv6 65000:1
       route-target export vpn-ipv6 65000:1
     !
+      address-family ipv6
+        redistribute connected
+    !
      vrf t2
-      redistribute connected
       router-id 10.0.0.6
       rd 65000:2
       route-target import vpn-ipv6 65000:2
       route-target export vpn-ipv6 65000:2
+    !
+      address-family ipv6
+        redistribute connected
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [p1]
@@ -1155,3 +1165,7 @@ p1                         : ok=38   changed=8    unreachable=0    failed=0    s
 p2                         : ok=37   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 pe2                        : ok=38   changed=5    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 
+
+
+The tested device (DUT) is a PE-router running MPLS/VPN with two IPv6-only VRFs. The Linux hosts are attached directly to the PE-router.
+The PE-router has to run OSPF and LDP with a P-router and exchange VPNv6 routes with another PE-router. The connected IPv6 subnets must be redistributed into VPNv6 AF for the end-to-end connectivity test to work.

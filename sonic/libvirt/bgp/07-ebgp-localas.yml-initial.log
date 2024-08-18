@@ -31,9 +31,300 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    cat <<SCRIPT >.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    echo "Use sudo vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+  
+    #
+    # Build hosts file
+    #
+    hostname dut
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 172.16.0.1 172.16.1.1 dut
+    10.0.0.2 172.16.0.2 x1
+    10.0.0.3 172.16.1.3 x2
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    config interface ipv6 disable use-link-local-only Ethernet0
+    config interface ipv6 disable use-link-local-only Ethernet4
+    #
+    # Configure interfaces
+    #
+    config hostname dut
+    if ip link|grep Loopback0; then
+      echo Loopback0 already exists
+    else
+      config loopback add Loopback0
+    fi
+    if show ip interface|grep Loopback0|grep 10.0.0.1/32; then
+      echo 10.0.0.1/32 already configured on Loopback0
+    else
+      config interface ip add Loopback0 10.0.0.1/32
+    fi
+    !
+    if show ip interface|grep Ethernet0|grep 172.16.0.1/24; then
+      echo 172.16.0.1/24 already configured on Ethernet0
+    else
+      config interface ip add Ethernet0 172.16.0.1/24
+    fi
+    config interface mtu Ethernet0 1548
+    !
+    if show ip interface|grep Ethernet4|grep 172.16.1.1/24; then
+      echo 172.16.1.1/24 already configured on Ethernet4
+    else
+      config interface ip add Ethernet4 172.16.1.1/24
+    fi
+    config interface mtu Ethernet4 1548
+    !
+    #
+    # Rest of initial configuration done through VTYSH
+    # Make sure it's ready
+    #
+    if vtysh -c 'show running' >/dev/null; then
+      echo vtysh is ready
+    else
+      echo 'giving vtysh some more time :('
+      sleep 5
+    fi
+    #
+    # And now let's configure the interfaces
+    #
+    cat >/etc/sonic/frr/do_config <<CONFIG
+    hostname dut
+    !
+    !
+    interface Loopback0
+     no shutdown
+    !
+    interface Ethernet0
+     no shutdown
+     description dut -> x1 [external]
+    !
+    interface Ethernet4
+     no shutdown
+     description dut -> x2 [external]
+    !
+    do write
+    CONFIG
+    docker exec bgp vtysh -f /etc/frr/do_config
+    exit 0
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
+    echo "10.0.0.2 172.16.0.2 x1" >>/tmp/hosts
+    echo "10.0.0.3 172.16.1.3 x2" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x1
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description x1 -> dut [external]
+     ip address 172.16.0.2/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
+    echo "10.0.0.2 172.16.0.2 x1" >>/tmp/hosts
+    echo "10.0.0.3 172.16.1.3 x2" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description x2 -> dut [external]
+     ip address 172.16.1.3/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
@@ -42,7 +333,7 @@ ok: [x2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sonic.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -56,17 +347,28 @@ changed: [dut]
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/sonic.j2] ***
 skipping: [dut]
 
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [x1 -> localhost]
+changed: [x2 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [x1]
+skipping: [x2]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -93,14 +395,125 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    no router bgp
+    !
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.1
+    !
+      neighbor 172.16.0.2 remote-as 65100
+      neighbor 172.16.0.2 description x1
+      neighbor 172.16.0.2 local-as 65002 no-prepend replace-as
+    !
+      neighbor 172.16.1.3 remote-as 65101
+      neighbor 172.16.1.3 description x2
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.1/32
+    !
+    !
+      network 172.42.42.0/24
+    !
+      neighbor 172.16.0.2 activate
+      no neighbor 172.16.0.2 send-community all
+      neighbor 172.16.0.2 send-community standard
+      neighbor 172.16.0.2 send-community large
+    !
+      neighbor 172.16.1.3 activate
+      no neighbor 172.16.1.3 send-community all
+      neighbor 172.16.1.3 send-community standard
+      neighbor 172.16.1.3 send-community large
+    !
+    !
+    ip route 172.42.42.0/24 Null0
+    !
+    do writedo write
+    !
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 172.16.0.1 remote-as 65002
+      neighbor 172.16.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 172.16.0.1 activate
+      no neighbor 172.16.0.1 send-community all
+      neighbor 172.16.0.1 send-community standard
+      neighbor 172.16.0.1 send-community large
+    !
+    !
+    !
+    do write
+ok: [x2] => 
+  msg: |-
+    bgp configuration for x2
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 172.16.1.1 remote-as 65000
+      neighbor 172.16.1.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 172.16.1.1 activate
+      no neighbor 172.16.1.1 send-community all
+      neighbor 172.16.1.1 send-community standard
+      neighbor 172.16.1.1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sonic.yml for dut
@@ -116,7 +529,19 @@ TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsi
 skipping: [dut]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/sonic.j2] ***
-changed: [dut]
+fatal: [dut]: FAILED! => changed=true 
+  cmd: |-
+    mv /tmp/config.sh /etc/sonic/frr/do_config
+    docker exec bgp vtysh -f /etc/frr/do_config
+  delta: '0:00:00.109819'
+  end: '2024-08-18 02:22:55.928599'
+  msg: non-zero return code
+  rc: 2
+  start: '2024-08-18 02:22:55.818780'
+  stderr: 'line 43: % Unknown command[4]: do writedo write'
+  stderr_lines: <omitted>
+  stdout: ''
+  stdout_lines: <omitted>
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -138,13 +563,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=19   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x1                         : ok=19   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x2                         : ok=19   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=20   changed=3    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
+x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-
-
-Use this topology to test the 'local AS' functionality on EBGP sessions. The
-device under test uses a different AS on DUT-X1 session and shall still
-propagate routes between X1 and X2
-
+Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.

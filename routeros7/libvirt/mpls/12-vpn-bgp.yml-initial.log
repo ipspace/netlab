@@ -5,10 +5,10 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [pe2]
 ok: [ce1]
-ok: [dut]
 ok: [ce2]
-ok: [p2]
+ok: [dut]
 ok: [p1]
+ok: [p2]
 
 TASK [Find device readiness script] ********************************************
 ok: [pe2]
@@ -45,8 +45,8 @@ ok: [pe2]
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -606,8 +606,8 @@ ok: [pe2]
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
@@ -620,11 +620,11 @@ TASK [Run commands on CHR] *****************************************************
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p2 -> localhost]
-changed: [ce1 -> localhost]
-changed: [p1 -> localhost]
-changed: [pe2 -> localhost]
 changed: [ce2 -> localhost]
+changed: [pe2 -> localhost]
+changed: [p2 -> localhost]
+changed: [p1 -> localhost]
+changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe2]
@@ -638,24 +638,24 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [p1]
-changed: [p2]
 changed: [pe2]
 changed: [ce2]
 changed: [ce1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [pe2]
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
 ok: [p2]
 ok: [p1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce2]
-changed: [pe2]
 changed: [ce1]
-changed: [p2]
+changed: [pe2]
+changed: [ce2]
 changed: [p1]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe2]
@@ -669,8 +669,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [ce1]
 ok: [ce2]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [pe2]
 ok: [dut]
 
@@ -689,10 +689,10 @@ ok: [pe2]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-skipping: [p1]
 ok: [ce1]
-skipping: [p2]
+skipping: [p1]
 ok: [ce2]
+skipping: [p2]
 ok: [pe2]
 ok: [dut]
 
@@ -765,6 +765,32 @@ ok: [ce2] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    /routing/bgp/template add name=main as=65001 output.network=bgp-networks
+  
+    /routing/bgp/template set main router-id=10.0.0.3
+  
+  
+  
+  
+  
+    /routing/bgp/connection add template=main name=10_0_0_4 remote.address=10.0.0.4 remote.as=65001 comment="pe2" address-families=ip local.role=ebgp
+  
+    /routing/bgp/connection set [/routing/bgp/connection find name=10_0_0_4] local.role=ibgp local.address=loopback
+  
+  
+  
+  
+    /routing/bgp/connection set [/routing/bgp/connection find name=10_0_0_4] nexthop-choice=force-self
+  
+  
+  
+    # BGP Network now is controlled by simple ACL
+    /ip/firewall/address-list/ add list=bgp-networks address=10.0.0.3/32
 ok: [pe2] => 
   msg: |-
     bgp configuration for pe2
@@ -801,40 +827,14 @@ ok: [pe2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-  
-    /routing/bgp/template add name=main as=65001 output.network=bgp-networks
-  
-    /routing/bgp/template set main router-id=10.0.0.3
-  
-  
-  
-  
-  
-    /routing/bgp/connection add template=main name=10_0_0_4 remote.address=10.0.0.4 remote.as=65001 comment="pe2" address-families=ip local.role=ebgp
-  
-    /routing/bgp/connection set [/routing/bgp/connection find name=10_0_0_4] local.role=ibgp local.address=loopback
-  
-  
-  
-  
-    /routing/bgp/connection set [/routing/bgp/connection find name=10_0_0_4] nexthop-choice=force-self
-  
-  
-  
-    # BGP Network now is controlled by simple ACL
-    /ip/firewall/address-list/ add list=bgp-networks address=10.0.0.3/32
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [p1]
 skipping: [p2]
 ok: [ce1]
 ok: [ce2]
-ok: [dut]
 ok: [pe2]
+ok: [dut]
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [p1]
@@ -843,9 +843,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
 
 TASK [template] ****************************************************************
-changed: [pe2]
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -899,6 +899,7 @@ ok: [p1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -930,6 +931,7 @@ ok: [p2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -961,6 +963,7 @@ ok: [pe2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -1022,8 +1025,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [p2]
-changed: [p1]
 changed: [pe2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1207,9 +1210,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p1, p2, pe2
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
 changed: [pe2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1217,8 +1220,8 @@ ok: [p2]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [p2]
 changed: [p1]
+changed: [p2]
 changed: [pe2]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
@@ -1229,8 +1232,8 @@ skipping: [pe2]
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ce1]
 ok: [ce2]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [pe2]
 ok: [dut]
 
@@ -1297,6 +1300,7 @@ ok: [pe2] =>
      neighbor 172.16.4.2 remote-as 65101
      neighbor 172.16.4.2 description ce2
      address-family ipv4 unicast
+    !
       redistribute connected
       label vpn export auto
       export vpn
@@ -1361,3 +1365,8 @@ p1                         : ok=38   changed=8    unreachable=0    failed=0    s
 p2                         : ok=37   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 pe2                        : ok=51   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
+
+
+The tested device (DUT) is a PE-router running MPLS/VPN with a simple VRF. Two BGP-speaking CE-routers are attached to the VRF (one per PE-router)
+The PE-router has to run OSPF and LDP with a P-router, exchange IPv4 routes via BGP with the CE-router, convert VRF IPv4 routes into VPNv4 routes, and pass them to another PE-router.
+The validation tests check BGP prefixes on the CE-routers and perform end-to-end connectivity tests between CE-router loopbacks.

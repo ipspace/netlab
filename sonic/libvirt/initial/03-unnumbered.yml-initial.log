@@ -21,7 +21,106 @@ TASK [Find configuration template for initial] *********************************
 ok: [r]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r]
+ok: [r] => 
+  msg: |-
+    initial configuration for r
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    cat <<SCRIPT >.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    echo "Use sudo vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+  
+    #
+    # Build hosts file
+    #
+    hostname r
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 2001:db8:0:1::1 r
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    #
+    # Configure interfaces
+    #
+    config hostname r
+    if ip link|grep Loopback0; then
+      echo Loopback0 already exists
+    else
+      config loopback add Loopback0
+    fi
+    if show ip interface|grep Loopback0|grep 10.0.0.1/32; then
+      echo 10.0.0.1/32 already configured on Loopback0
+    else
+      config interface ip add Loopback0 10.0.0.1/32
+    fi
+    if show ipv6 interface|grep Loopback0|grep 2001:db8:0:1::1/64; then
+      echo 2001:db8:0:1::1/64 already configured on Loopback0
+    else
+      config interface ip add Loopback0 2001:db8:0:1::1/64
+    fi
+    !
+    if show ip interface|grep Ethernet0|grep 10.0.0.1/32; then
+      echo 10.0.0.1/32 already configured on Ethernet0
+    else
+      config interface ip add Ethernet0 10.0.0.1/32
+    fi
+    config interface ipv6 enable use-link-local-only Ethernet0
+    config interface mtu Ethernet0 1548
+    !
+    #
+    # Rest of initial configuration done through VTYSH
+    # Make sure it's ready
+    #
+    if vtysh -c 'show running' >/dev/null; then
+      echo vtysh is ready
+    else
+      echo 'giving vtysh some more time :('
+      sleep 5
+    fi
+    #
+    # And now let's configure the interfaces
+    #
+    cat >/etc/sonic/frr/do_config <<CONFIG
+    hostname r
+    !
+    ipv6 forwarding
+    !
+    interface Loopback0
+     no shutdown
+    !
+    interface Ethernet0
+     no shutdown
+     description r -> stub
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    docker exec bgp vtysh -f /etc/frr/do_config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r]
@@ -48,7 +147,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r                          : ok=10   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+r                          : ok=11   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 
 
 

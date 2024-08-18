@@ -11,14 +11,17 @@ ok: [s1]
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 skipping: [h2]
-skipping: [ros]
-skipping: [s1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for ros, s1
+
+TASK [Wait for Eth1/1 to appear] ***********************************************
+ok: [s1]
+ok: [ros]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, ros, s1
@@ -26,8 +29,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1,
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
@@ -36,10 +39,342 @@ ok: [ros]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [ros]
-skipping: [s1]
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    hostname h1
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    172.16.0.3 h1
+    172.16.1.4 h2
+    10.0.0.2 10.1.0.1 ros
+    172.16.0.2 172.16.1.2 ros-tenant
+    10.0.0.1 10.1.0.2 s1
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname h1
+  
+    NEED_APT_UPDATE=YES
+  
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
+  
+    # Loopback addressing
+  
+    # Interface addressing
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          addresses:
+            - 172.16.0.3/24
+    SCRIPT
+  
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          routes:
+            - to: 172.16.0.0/16
+              via: 172.16.0.2
+            - to: 10.0.0.0/24
+              via: 172.16.0.2
+            - to: 10.1.0.0/16
+              via: 172.16.0.2
+            - to: 10.2.0.0/24
+              via: 172.16.0.2
+    SCRIPT
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    hostname h2
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    172.16.0.3 h1
+    172.16.1.4 h2
+    10.0.0.2 10.1.0.1 ros
+    172.16.0.2 172.16.1.2 ros-tenant
+    10.0.0.1 10.1.0.2 s1
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname h2
+  
+    NEED_APT_UPDATE=YES
+  
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
+  
+    # Loopback addressing
+  
+    # Interface addressing
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          addresses:
+            - 172.16.1.4/24
+    SCRIPT
+  
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          routes:
+            - to: 172.16.0.0/16
+              via: 172.16.1.2
+            - to: 10.0.0.0/24
+              via: 172.16.1.2
+            - to: 10.1.0.0/16
+              via: 172.16.1.2
+            - to: 10.2.0.0/24
+              via: 172.16.1.2
+    SCRIPT
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    no ip domain-lookup
+    !
+    feature lldp
+    !
+    username vagrant password vagrant
+    !
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    ip host ros 10.0.0.2
+    ip host ros-tenant 172.16.0.2
+    !
+    feature interface-vlan
+    !
+    interface mgmt0
+     no lldp transmit
+     no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface Ethernet1/1
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0101
+     description s1 -> ros
+     mtu 1600
+     ip address 10.1.0.2/30
+    !
+    interface Ethernet1/2
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0102
+    !
+    interface Ethernet1/3
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0103
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,ros]
+    !
+    interface vlan1001
+     no shutdown
+     description VLAN blue (1001) -> [h2,ros]
+    !
+ok: [ros] => 
+  msg: |-
+    initial configuration for ros
+    =========================================
+    hostname ros
+    !
+    no ip domain-lookup
+    !
+    feature lldp
+    !
+    username vagrant password vagrant
+    !
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    ip host ros-tenant 172.16.0.2
+    ip host s1 10.0.0.1
+    !
+    feature interface-vlan
+    !
+    feature bgp
+    !
+    vrf context tenant
+      rd 65000:1
+      address-family ipv4 unicast
+        route-target import 65000:1
+        route-target export 65000:1
+      exit
+    !
+    !
+    interface mgmt0
+     no lldp transmit
+     no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface Ethernet1/1
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0201
+     description ros -> s1
+     mtu 1600
+     ip address 10.1.0.1/30
+    !
+    interface vlan1000
+     no shutdown
+      vrf member tenant
+     description VLAN red (1000) -> [h1,s1]
+     ip address 172.16.0.2/24
+    !
+    interface vlan1001
+     no shutdown
+      vrf member tenant
+     description VLAN blue (1001) -> [h2,s1]
+     ip address 172.16.1.2/24
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -49,7 +384,7 @@ ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/nxos/initial.yml for ros, s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for ros, s1
 
 TASK [template] ****************************************************************
 changed: [h2]
@@ -59,11 +394,7 @@ TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/too
 changed: [h1]
 changed: [h2]
 
-TASK [Wait for Eth1/1 to appear] ***********************************************
-ok: [ros]
-ok: [s1]
-
-TASK [nxos_config: deploying initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
+TASK [nxos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -91,8 +422,46 @@ ok: [ros]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [ros]
-skipping: [s1]
+ok: [ros] => 
+  msg: |-
+    vlan configuration for ros
+    =========================================
+    vlan 1001
+     name blue
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface vlan1000
+    !
+    interface vlan1001
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    vlan 1001
+     name blue
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet1/2
+     switchport
+     switchport mode access
+     switchport access vlan 1000
+    !
+    interface Ethernet1/3
+     switchport
+     switchport mode access
+     switchport access vlan 1001
+    !
+    interface vlan1000
+    !
+    interface vlan1001
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [ros]
@@ -114,8 +483,44 @@ ok: [ros]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [ros]
-skipping: [s1]
+ok: [ros] => 
+  msg: |-
+    ospf configuration for ros
+    =========================================
+    feature ospf
+    !
+    router ospf 1
+     router-id 10.0.0.2
+     timers throttle spf 100 200 500
+     timers throttle lsa 0 100 500
+    !
+    interface loopback0
+     ip router ospf 1 area 0.0.0.0
+    !
+    interface Ethernet1/1
+    ! ros -> s1
+     ip router ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    feature ospf
+    !
+    router ospf 1
+     router-id 10.0.0.1
+     timers throttle spf 100 200 500
+     timers throttle lsa 0 100 500
+    !
+    interface loopback0
+     ip router ospf 1 area 0.0.0.0
+    !
+    interface Ethernet1/1
+    ! s1 -> ros
+     ip router ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ros]
@@ -137,8 +542,32 @@ skipping: [s1]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [ros]
 skipping: [s1]
+ok: [ros] => 
+  msg: |-
+    vrf configuration for ros
+    =========================================
+    !
+    route-map all
+    !
+    feature ospf
+    !
+    router ospf 100
+     vrf tenant
+      timers throttle spf 100 200 500
+      timers throttle lsa 0 100 500
+      router-id 10.0.0.2
+    !
+      redistribute direct route-map all
+    !
+    interface vlan1000
+    ! VLAN red (1000) -> [h1,s1]
+     ip router ospf 100 area 0.0.0.0
+    !
+    interface vlan1001
+    ! VLAN blue (1001) -> [h2,s1]
+     ip router ospf 100 area 0.0.0.0
+    !
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [s1]
@@ -160,8 +589,54 @@ ok: [ros]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [ros]
-skipping: [s1]
+ok: [ros] => 
+  msg: |-
+    vxlan configuration for ros
+    =========================================
+    feature nv overlay
+    feature vn-segment-vlan-based
+    !
+    vlan 1001
+     vn-segment 101001
+    !
+    vlan 1000
+     vn-segment 101000
+    !
+  
+    !
+    interface nve 1
+     source-interface loopback0
+     member vni 101000
+      ingress-replication protocol static
+       peer-ip 10.0.0.1
+     member vni 101001
+      ingress-replication protocol static
+       peer-ip 10.0.0.1
+     no shutdown
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+    feature nv overlay
+    feature vn-segment-vlan-based
+    !
+    vlan 1001
+     vn-segment 101001
+    !
+    vlan 1000
+     vn-segment 101000
+    !
+  
+    !
+    interface nve 1
+     source-interface loopback0
+     member vni 101000
+      ingress-replication protocol static
+       peer-ip 10.0.0.2
+     member vni 101001
+      ingress-replication protocol static
+       peer-ip 10.0.0.2
+     no shutdown
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 ok: [ros]
@@ -178,10 +653,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=9    changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=9    changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-ros                        : ok=34   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-s1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+h1                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+ros                        : ok=40   changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s1                         : ok=35   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 
 

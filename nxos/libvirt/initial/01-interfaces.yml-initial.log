@@ -15,7 +15,10 @@ ok: [r]
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 skipping: [h2]
-skipping: [r]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for r
+
+TASK [Wait for Eth1/1 to appear] ***********************************************
+ok: [r]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
@@ -31,9 +34,178 @@ ok: [h2]
 ok: [r]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [r]
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1::2/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.1
+    #
+    # Print the final routing table
+    ip route
+ok: [r] => 
+  msg: |-
+    initial configuration for r
+    =========================================
+    hostname nxos-r
+    !
+    no ip domain-lookup
+    !
+    feature lldp
+    !
+    username vagrant password vagrant
+    !
+    ip host h1 172.16.0.2
+    ip host h2 172.16.1.3
+    !
+    !
+    interface mgmt0
+     no lldp transmit
+     no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.1/32
+     ipv6 address 2001:db8:0:1::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/1
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0101
+     description r -> h1 [stub]
+     bandwidth 1000
+     ip address 172.16.0.1/24
+     ipv6 address 2001:db8:1::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/2
+     no shutdown
+     no switchport
+     mac-address 52dc.cafe.0102
+     description r -> h2 [stub]
+     bandwidth 2000
+     ip address 172.16.1.1/24
+     ipv6 address 2001:db8:1:1::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1:1::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1:1::3/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.1
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -42,28 +214,25 @@ ok: [r]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/nxos/initial.yml for r
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for r
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-yKeWCEXh-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-FYbVrTvI-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Wait for Eth1/1 to appear] ***********************************************
-ok: [r]
-
-TASK [nxos_config: deploying initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
+TASK [nxos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -76,7 +245,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-r                          : ok=9    changed=1    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r                          : ok=11   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
+
+
+This scenario tests basic interface, IPv4, and IPv6 configuration, including generation of IPv6 Router Advertisements

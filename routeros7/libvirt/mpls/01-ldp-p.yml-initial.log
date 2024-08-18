@@ -71,12 +71,12 @@ ok: [pe1] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.0.5 172.16.1.5 172.16.2.5 dut" >>/tmp/hosts
+    echo "10.0.0.5 172.16.1.5 172.16.2.5 dut" >>/tmp/hosts
     echo "172.16.0.1 h1" >>/tmp/hosts
     echo "172.16.4.2 h2" >>/tmp/hosts
-    echo "172.31.0.6 172.16.2.6 172.16.3.6 p2" >>/tmp/hosts
-    echo "172.31.0.3 172.16.0.3 172.16.1.3 pe1" >>/tmp/hosts
-    echo "172.31.0.4 172.16.3.4 172.16.4.4 pe2" >>/tmp/hosts
+    echo "10.0.0.6 172.16.2.6 172.16.3.6 p2" >>/tmp/hosts
+    echo "10.0.0.3 172.16.0.3 172.16.1.3 pe1" >>/tmp/hosts
+    echo "10.0.0.4 172.16.3.4 172.16.4.4 pe2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
     #
@@ -137,7 +137,7 @@ ok: [pe1] =>
     !
     interface lo
      no shutdown
-     ip address 172.31.0.3/32
+     ip address 10.0.0.3/32
     !
     interface eth1
      no shutdown
@@ -175,12 +175,12 @@ ok: [pe2] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.0.5 172.16.1.5 172.16.2.5 dut" >>/tmp/hosts
+    echo "10.0.0.5 172.16.1.5 172.16.2.5 dut" >>/tmp/hosts
     echo "172.16.0.1 h1" >>/tmp/hosts
     echo "172.16.4.2 h2" >>/tmp/hosts
-    echo "172.31.0.6 172.16.2.6 172.16.3.6 p2" >>/tmp/hosts
-    echo "172.31.0.3 172.16.0.3 172.16.1.3 pe1" >>/tmp/hosts
-    echo "172.31.0.4 172.16.3.4 172.16.4.4 pe2" >>/tmp/hosts
+    echo "10.0.0.6 172.16.2.6 172.16.3.6 p2" >>/tmp/hosts
+    echo "10.0.0.3 172.16.0.3 172.16.1.3 pe1" >>/tmp/hosts
+    echo "10.0.0.4 172.16.3.4 172.16.4.4 pe2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
     #
@@ -241,7 +241,7 @@ ok: [pe2] =>
     !
     interface lo
      no shutdown
-     ip address 172.31.0.4/32
+     ip address 10.0.0.4/32
     !
     interface eth1
      no shutdown
@@ -279,12 +279,12 @@ ok: [p2] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.0.5 172.16.1.5 172.16.2.5 dut" >>/tmp/hosts
+    echo "10.0.0.5 172.16.1.5 172.16.2.5 dut" >>/tmp/hosts
     echo "172.16.0.1 h1" >>/tmp/hosts
     echo "172.16.4.2 h2" >>/tmp/hosts
-    echo "172.31.0.6 172.16.2.6 172.16.3.6 p2" >>/tmp/hosts
-    echo "172.31.0.3 172.16.0.3 172.16.1.3 pe1" >>/tmp/hosts
-    echo "172.31.0.4 172.16.3.4 172.16.4.4 pe2" >>/tmp/hosts
+    echo "10.0.0.6 172.16.2.6 172.16.3.6 p2" >>/tmp/hosts
+    echo "10.0.0.3 172.16.0.3 172.16.1.3 pe1" >>/tmp/hosts
+    echo "10.0.0.4 172.16.3.4 172.16.4.4 pe2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
     #
@@ -345,7 +345,7 @@ ok: [p2] =>
     !
     interface lo
      no shutdown
-     ip address 172.31.0.6/32
+     ip address 10.0.0.6/32
     !
     interface eth1
      no shutdown
@@ -361,64 +361,6 @@ ok: [p2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.4.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.4.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.4.4
-    # loopback prefix: 172.31.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 172.31.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.31.0.0/16 via 172.16.4.4
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.4.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.4.4
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.4.4
-    #
-    # Print the final routing table
-    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -429,7 +371,7 @@ ok: [dut] =>
     /interface bridge add name=loopback protocol-mode=none
   
   
-    /ip address add interface=loopback address=172.31.0.5/32
+    /ip address add interface=loopback address=10.0.0.5/32
   
   
   
@@ -487,11 +429,11 @@ ok: [h1] =>
     ip route del 172.16.0.0/16 2>/dev/null
     set -e
     ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 172.31.0.0/16 local subnet: 172.16.0.0/24
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
     set +e
-    ip route del 172.31.0.0/16 2>/dev/null
+    ip route del 10.0.0.0/24 2>/dev/null
     set -e
-    ip route add 172.31.0.0/16 via 172.16.0.3
+    ip route add 10.0.0.0/24 via 172.16.0.3
     # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
     # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
     set +e
@@ -507,13 +449,71 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.4.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.4.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.4.4
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.4.4
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.4.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.4.4
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.4.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.4.4
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [pe1]
 ok: [pe2]
+ok: [h1]
 ok: [p2]
 ok: [h2]
-ok: [h1]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -535,9 +535,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe1, pe2, p2
 
 TASK [template] ****************************************************************
-changed: [p2]
-changed: [pe1]
 changed: [pe2]
+changed: [pe1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [pe1]
@@ -559,12 +559,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-YrvoYiMK-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-OJsVPoPt-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h2 -> localhost]
@@ -618,24 +618,23 @@ ok: [pe1] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 172.31.0.3
+      bgp router-id 10.0.0.3
     !
-      neighbor 172.31.0.4 remote-as 65001
-      neighbor 172.31.0.4 description pe2
-      neighbor 172.31.0.4 update-source lo
+      neighbor 10.0.0.4 remote-as 65001
+      neighbor 10.0.0.4 description pe2
+      neighbor 10.0.0.4 update-source lo
     !
      address-family ipv4 unicast
-    !
     !
       network 172.16.0.0/24
     !
     !
-      neighbor 172.31.0.4 activate
-      neighbor 172.31.0.4 next-hop-self
-      no neighbor 172.31.0.4 send-community all
-      neighbor 172.31.0.4 send-community standard
-      neighbor 172.31.0.4 send-community large
-      neighbor 172.31.0.4 send-community extended
+      neighbor 10.0.0.4 activate
+      neighbor 10.0.0.4 next-hop-self
+      no neighbor 10.0.0.4 send-community all
+      neighbor 10.0.0.4 send-community standard
+      neighbor 10.0.0.4 send-community large
+      neighbor 10.0.0.4 send-community extended
     !
     !
     !
@@ -654,24 +653,23 @@ ok: [pe2] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 172.31.0.4
+      bgp router-id 10.0.0.4
     !
-      neighbor 172.31.0.3 remote-as 65001
-      neighbor 172.31.0.3 description pe1
-      neighbor 172.31.0.3 update-source lo
+      neighbor 10.0.0.3 remote-as 65001
+      neighbor 10.0.0.3 description pe1
+      neighbor 10.0.0.3 update-source lo
     !
      address-family ipv4 unicast
-    !
     !
       network 172.16.4.0/24
     !
     !
-      neighbor 172.31.0.3 activate
-      neighbor 172.31.0.3 next-hop-self
-      no neighbor 172.31.0.3 send-community all
-      neighbor 172.31.0.3 send-community standard
-      neighbor 172.31.0.3 send-community large
-      neighbor 172.31.0.3 send-community extended
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 next-hop-self
+      no neighbor 10.0.0.3 send-community all
+      neighbor 10.0.0.3 send-community standard
+      neighbor 10.0.0.3 send-community large
+      neighbor 10.0.0.3 send-community extended
     !
     !
     !
@@ -701,8 +699,8 @@ skipping: [pe1]
 skipping: [pe2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [pe1]
 changed: [pe2]
+changed: [pe1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [p2]
@@ -725,10 +723,11 @@ ok: [p2] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 172.31.0.6
+     ospf router-id 10.0.0.6
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -756,10 +755,11 @@ ok: [pe1] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 172.31.0.3
+     ospf router-id 10.0.0.3
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -782,10 +782,11 @@ ok: [pe2] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 172.31.0.4
+     ospf router-id 10.0.0.4
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -807,7 +808,7 @@ ok: [dut] =>
   
   
   
-    /routing/ospf/instance add name=default4 version=2 router-id=172.31.0.5 vrf=main
+    /routing/ospf/instance add name=default4 version=2 router-id=10.0.0.5 vrf=main
   
   
   
@@ -854,9 +855,9 @@ TASK [Run commands on CHR] *****************************************************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [pe2]
-changed: [p2]
 changed: [pe1]
+changed: [p2]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [p2]
@@ -901,10 +902,10 @@ ok: [p2] =>
     cat >/tmp/config <<CONFIG
     !
     mpls ldp
-      router-id 172.31.0.6
+      router-id 10.0.0.6
       dual-stack transport-connection prefer ipv4
       address-family ipv4
-        discovery transport-address 172.31.0.6
+        discovery transport-address 10.0.0.6
         interface eth1
         exit
         interface eth2
@@ -933,10 +934,10 @@ ok: [pe1] =>
     cat >/tmp/config <<CONFIG
     !
     mpls ldp
-      router-id 172.31.0.3
+      router-id 10.0.0.3
       dual-stack transport-connection prefer ipv4
       address-family ipv4
-        discovery transport-address 172.31.0.3
+        discovery transport-address 10.0.0.3
         interface eth2
         exit
       exit
@@ -963,10 +964,10 @@ ok: [pe2] =>
     cat >/tmp/config <<CONFIG
     !
     mpls ldp
-      router-id 172.31.0.4
+      router-id 10.0.0.4
       dual-stack transport-connection prefer ipv4
       address-family ipv4
-        discovery transport-address 172.31.0.4
+        discovery transport-address 10.0.0.4
         interface eth1
         exit
       exit
@@ -986,9 +987,9 @@ ok: [dut] =>
     /mpls/interface/add interface=all input=yes
   
   
-    /mpls/ldp add lsr-id=172.31.0.5 afi=ip
+    /mpls/ldp add lsr-id=10.0.0.5 afi=ip
   
-    /mpls/ldp set 0 transport-address=172.31.0.5
+    /mpls/ldp set 0 transport-address=10.0.0.5
   
   
     /mpls/ldp/interface add interface=ether2
@@ -1017,9 +1018,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p2, pe1, pe2
 
 TASK [template] ****************************************************************
-changed: [pe1]
-changed: [p2]
 changed: [pe2]
+changed: [p2]
+changed: [pe1]
 
 TASK [set_fact] ****************************************************************
 ok: [p2]
@@ -1027,9 +1028,9 @@ ok: [pe1]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [pe2]
 changed: [pe1]
 changed: [p2]
+changed: [pe2]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
 skipping: [p2]
@@ -1047,3 +1048,6 @@ p2                         : ok=36   changed=8    unreachable=0    failed=0    s
 pe1                        : ok=42   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 pe2                        : ok=42   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
+
+
+The tested device (DUT) is a P-router. It runs OSPF and LDP with another P-router and a PE-router, and performs label switching. The validation test checks end-to-end connectivity across a BGP-free MPLS core.
