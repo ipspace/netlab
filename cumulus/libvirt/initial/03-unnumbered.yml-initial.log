@@ -1,0 +1,161 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r]
+
+TASK [Find device readiness script] ********************************************
+ok: [r]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [r]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [r]
+
+TASK [Find configuration template for initial] *********************************
+ok: [r]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r] => 
+  msg: |-
+    initial configuration for r
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname r
+    echo "INIT: creating /etc/hosts"
+    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
+    echo "127.0.0.1 r" >>/tmp/hosts
+    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
+    mv /tmp/hosts-start /etc/hosts
+    sort /tmp/hosts|uniq >>/etc/hosts
+    #
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.1/32
+    iface lo inet6 loopback
+      address 2001:db8:0:1::1/64
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      mtu 1500
+      address 10.0.0.1/32
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    #
+    # Enable FRR modules for none
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    ipv6 forwarding
+    !
+    interface swp1
+    ! no shutdown
+     description r -> stub
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [r]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for r
+
+TASK [copy cumulus config to /tmp/config.sh] ***********************************
+changed: [r]
+
+TASK [set_fact deployed_config] ************************************************
+ok: [r]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+changed: [r]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+skipping: [r]
+
+PLAY [Deploy module-specific configurations] ***********************************
+skipping: no hosts matched
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+r                          : ok=11   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+
+
+
+This test checks that the initial configuration doesn't crash when
+dealing with the unnumbered interfaces. Use OSPFv2/OSPFv3 integration
+tests to validate the unnumbered interface functionality.
+
