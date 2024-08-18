@@ -316,6 +316,7 @@ ok: [s1] =>
     set service lldp interface eth0 disable
   
   
+  
     # Commit, save and exit from subshell
   
     commit
@@ -451,9 +452,9 @@ TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/
 changed: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [ce1 -> localhost]
 changed: [s2 -> localhost]
 changed: [ce2 -> localhost]
-changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -474,9 +475,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [ce2]
 changed: [ce1]
 changed: [s2]
-changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -514,6 +515,26 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
@@ -536,26 +557,6 @@ ok: [s2] =>
     fi
   
     exit 0
-ok: [s1] => 
-  msg: |-
-    vlan configuration for s1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-    configure
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [ce1]
@@ -709,6 +710,7 @@ ok: [s1] =>
   
     # Work on Family ipv4
   
+  
     set protocols bgp address-family ipv4-unicast network 10.0.0.3/32
   
   
@@ -776,9 +778,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for s1
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -792,8 +794,8 @@ skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [ce1]
-changed: [s2]
 changed: [ce2]
+changed: [s2]
 
 TASK [wait_for_connection] *****************************************************
 skipping: [s1]
@@ -843,7 +845,10 @@ ok: [s1] =>
   
     configure
   
+  
     set protocols ospf parameters router-id 10.0.0.3
+  
+  
   
   
     set protocols ospf interface dum0 passive
@@ -855,14 +860,17 @@ ok: [s1] =>
     set protocols ospf interface eth1 network point-to-point
   
   
+  
     set protocols ospf interface br0.1000 area 0.0.0.0
   
     set protocols ospf interface br0.1000 network point-to-point
   
   
+  
     set protocols ospf interface br0.1001 area 0.0.0.0
   
     set protocols ospf interface br0.1001 network point-to-point
+  
   
   
     commit
@@ -880,6 +888,7 @@ ok: [s2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -994,6 +1003,7 @@ ok: [s1] =>
     set protocols bgp address-family ipv4-unicast label vpn export auto
   
   
+  
     set protocols bgp address-family ipv4-unicast redistribute connected
   
     # Define networks for VRF Loopback
@@ -1056,6 +1066,7 @@ ok: [s2] =>
      neighbor 172.16.4.2 remote-as 65101
      neighbor 172.16.4.2 description ce2
      address-family ipv4 unicast
+    !
       redistribute connected
       label vpn export auto
       export vpn
@@ -1148,37 +1159,37 @@ ok: [s1] =>
   
   
     # Create VXLAN interface
-    set interfaces vxlan vxlan101000 vni 101000
-    set interfaces vxlan vxlan101000 source-address 10.0.0.3
+    set interfaces vxlan vxlan21000 vni 21000
+    set interfaces vxlan vxlan21000 source-address 10.0.0.3
     # And set UDP port to 4789
-    set interfaces vxlan vxlan101000 port 4789
+    set interfaces vxlan vxlan21000 port 4789
   
     # Add it to the global bridge
     ## NOTE: in the future we may want to switch to one-bridge-per-vni
     ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101000 native-vlan 1000
+    set interfaces bridge br0 member interface vxlan21000 native-vlan 1000
   
     # Add VTEP Flood list
   
     # If flooding is based on EVPN, set 'parameters nolearning'
-    set interfaces vxlan vxlan101000 parameters nolearning
+    set interfaces vxlan vxlan21000 parameters nolearning
   
   
     # Create VXLAN interface
-    set interfaces vxlan vxlan101001 vni 101001
-    set interfaces vxlan vxlan101001 source-address 10.0.0.3
+    set interfaces vxlan vxlan21001 vni 21001
+    set interfaces vxlan vxlan21001 source-address 10.0.0.3
     # And set UDP port to 4789
-    set interfaces vxlan vxlan101001 port 4789
+    set interfaces vxlan vxlan21001 port 4789
   
     # Add it to the global bridge
     ## NOTE: in the future we may want to switch to one-bridge-per-vni
     ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101001 native-vlan 1001
+    set interfaces bridge br0 member interface vxlan21001 native-vlan 1001
   
     # Add VTEP Flood list
   
     # If flooding is based on EVPN, set 'parameters nolearning'
-    set interfaces vxlan vxlan101001 parameters nolearning
+    set interfaces vxlan vxlan21001 parameters nolearning
   
   
     # Commit, save and exit from subshell
@@ -1221,8 +1232,8 @@ ok: [s2] =>
   
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
+    ip link add vxlan21000 type vxlan \
+      id 21000 \
       dstport 4789 \
       local 10.0.0.4 nolearning
     #
@@ -1231,17 +1242,17 @@ ok: [s2] =>
     brctl addbr vlan1000
     ip link set up dev vlan1000
     fi
-    brctl addif vlan1000 vxlan101000
+    brctl addif vlan1000 vxlan21000
     brctl stp vlan1000 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101000
+    ip link set mtu 1600 addrgenmode none dev vxlan21000
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101000 learning off
-    ip link set up dev vxlan101000
+    bridge link set dev vxlan21000 learning off
+    ip link set up dev vxlan21000
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
+    ip link add vxlan21001 type vxlan \
+      id 21001 \
       dstport 4789 \
       local 10.0.0.4 nolearning
     #
@@ -1250,13 +1261,13 @@ ok: [s2] =>
     brctl addbr vlan1001
     ip link set up dev vlan1001
     fi
-    brctl addif vlan1001 vxlan101001
+    brctl addif vlan1001 vxlan21001
     brctl stp vlan1001 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan101001
+    ip link set mtu 1600 addrgenmode none dev vxlan21001
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan101001 learning off
-    ip link set up dev vxlan101001
+    bridge link set dev vxlan21001 learning off
+    ip link set up dev vxlan21001
   
   
     exit $?
@@ -1318,54 +1329,6 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
-ok: [s2] => 
-  msg: |-
-    evpn configuration for s2
-    =========================================
-    router bgp 65000
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 101001
-       rd 10.0.0.4:1001
-       route-target export 65000:1001
-       route-target import 65000:1001
-      exit-vni
-      vni 101000
-       rd 10.0.0.4:1000
-       route-target export 65000:1000
-       route-target import 65000:1000
-      exit-vni
-  
-      neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    vrf tenant
-     vni 5042
-     exit-vrf
-  
-    router bgp 65000 vrf tenant
-     address-family l2vpn evpn
-      ! This sets the L3 VNI RD/RT for this VRF
-      rd 65000:1
-      route-target export 65000:1
-      route-target import 65000:1
-      ! Enable RT5 advertisements
-      advertise ipv4 unicast
-     exit-address-family
-    exit
-    !
-    !
-    do write
 ok: [s1] => 
   msg: |-
     evpn configuration for s1
@@ -1390,12 +1353,12 @@ ok: [s1] =>
   
   
     # Configure VNI params
-    set protocols bgp address-family l2vpn-evpn vni 101001 rd 10.0.0.3:1001
-    set protocols bgp address-family l2vpn-evpn vni 101001 route-target import "65000:1001"
-    set protocols bgp address-family l2vpn-evpn vni 101001 route-target export "65000:1001"
-    set protocols bgp address-family l2vpn-evpn vni 101000 rd 10.0.0.3:1000
-    set protocols bgp address-family l2vpn-evpn vni 101000 route-target import "65000:1000"
-    set protocols bgp address-family l2vpn-evpn vni 101000 route-target export "65000:1000"
+    set protocols bgp address-family l2vpn-evpn vni 21001 rd 10.0.0.3:1001
+    set protocols bgp address-family l2vpn-evpn vni 21001 route-target import "65000:1001"
+    set protocols bgp address-family l2vpn-evpn vni 21001 route-target export "65000:1001"
+    set protocols bgp address-family l2vpn-evpn vni 21000 rd 10.0.0.3:1000
+    set protocols bgp address-family l2vpn-evpn vni 21000 route-target import "65000:1000"
+    set protocols bgp address-family l2vpn-evpn vni 21000 route-target export "65000:1000"
   
     # Work on L3VNI
   
@@ -1429,6 +1392,54 @@ ok: [s1] =>
     commit
     save
     exit
+ok: [s2] => 
+  msg: |-
+    evpn configuration for s2
+    =========================================
+    router bgp 65000
+     address-family l2vpn evpn
+      advertise-all-vni
+      advertise-svi-ip
+      advertise ipv4 unicast
+  
+    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+      vni 21001
+       rd 10.0.0.4:1001
+       route-target export 65000:1001
+       route-target import 65000:1001
+      exit-vni
+      vni 21000
+       rd 10.0.0.4:1000
+       route-target export 65000:1000
+       route-target import 65000:1000
+      exit-vni
+  
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 soft-reconfiguration inbound
+  
+     exit-address-family
+    !
+  
+    exit
+  
+    ! L3 VRF EVPN handling
+    vrf tenant
+     vni 5042
+     exit-vrf
+  
+    router bgp 65000 vrf tenant
+     address-family l2vpn evpn
+      ! This sets the L3 VNI RD/RT for this VRF
+      rd 65000:1
+      route-target export 65000:1
+      route-target import 65000:1
+      ! Enable RT5 advertisements
+      advertise ipv4 unicast
+     exit-address-family
+    exit
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [ce1]

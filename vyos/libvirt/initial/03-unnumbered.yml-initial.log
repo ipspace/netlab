@@ -21,7 +21,52 @@ TASK [Find configuration template for initial] *********************************
 ok: [r]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r]
+ok: [r] => 
+  msg: |-
+    initial configuration for r
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'vyos-r'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+    set interfaces dummy dum0 address 2001:db8:0:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'r -> stub'
+  
+  
+    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
+    set interfaces ethernet eth1 address 10.0.0.1/32
+  
+    set interfaces ethernet eth1 ipv6
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+    set service router-advert interface eth1
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r]
@@ -34,6 +79,9 @@ skipping: [r]
 
 TASK [wait_for] ****************************************************************
 skipping: [r]
+
+TASK [set_fact] ****************************************************************
+ok: [r]
 
 TASK [set_fact] ****************************************************************
 ok: [r]
@@ -51,7 +99,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r                          : ok=10   changed=2    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+r                          : ok=12   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 
 
 

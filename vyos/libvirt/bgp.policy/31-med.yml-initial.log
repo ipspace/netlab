@@ -26,8 +26,152 @@ ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [probe]
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> probe [external]'
+  
+  
+    set interfaces ethernet eth1 address 172.16.0.1/24
+  
+    set interfaces ethernet eth1 address 2001:db8:2::1/64;
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+    set service router-advert interface eth1
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
+ok: [probe] => 
+  msg: |-
+    initial configuration for probe
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
+    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set eth1 down
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname probe
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+     ipv6 address 2001:db8:1:2::1/64
+    !
+    interface eth1
+     no shutdown
+     description probe -> dut [external]
+     ip address 172.16.0.2/24
+     ipv6 address 2001:db8:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
@@ -83,8 +227,100 @@ ok: [dut]
 ok: [probe]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=bgp)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [probe]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [probe]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [probe]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+  
+  
+  
+    set policy route-map bp-probe-1-in-ipv4 rule 10 action permit
+  
+    edit policy route-map bp-probe-1-in-ipv4 rule 10
+    set set local-preference 17
+  
+    top
+  
+  
+    set policy route-map bp-probe-1-in-ipv6 rule 10 action permit
+  
+    edit policy route-map bp-probe-1-in-ipv6 rule 10
+    set set local-preference 17
+  
+    top
+  
+  
+    set policy route-map bp-probe-1-out-ipv4 rule 10 action permit
+  
+    edit policy route-map bp-probe-1-out-ipv4 rule 10
+    set set metric 42
+  
+    top
+  
+  
+    set policy route-map bp-probe-1-out-ipv6 rule 10 action permit
+  
+    edit policy route-map bp-probe-1-out-ipv6 rule 10
+    set set metric 42
+  
+    top
+  
+  
+  
+  
+    commit
+    save
+    exit
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [probe]
+ok: [dut]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [probe]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [wait_for] ****************************************************************
+skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-routing.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/vyos.j2] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -95,8 +331,128 @@ ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [probe]
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+    set protocols bgp system-as 65000
+  
+    set protocols bgp parameters router-id 10.0.0.1
+  
+  
+  
+    set protocols bgp neighbor 172.16.0.2 remote-as 65100
+    set protocols bgp neighbor 172.16.0.2 description 'probe'
+  
+  
+  
+  
+  
+    set protocols bgp neighbor 2001:db8:2::2 remote-as 65100
+    set protocols bgp neighbor 2001:db8:2::2 description 'probe'
+  
+  
+  
+  
+  
+    # Work on Family ipv4
+  
+  
+    set protocols bgp address-family ipv4-unicast network 10.0.0.1/32
+  
+  
+  
+  
+  
+    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast nexthop-self
+  
+    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast disable-send-community extended
+  
+  
+  
+    # Work on Family ipv6
+  
+  
+    set protocols bgp address-family ipv6-unicast network 2001:db8:1:1::/64
+  
+  
+  
+  
+  
+    set protocols bgp neighbor 2001:db8:2::2 address-family ipv6-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor 2001:db8:2::2 address-family ipv6-unicast nexthop-self
+  
+    set protocols bgp neighbor 2001:db8:2::2 address-family ipv6-unicast disable-send-community extended
+  
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [probe] => 
+  msg: |-
+    bgp configuration for probe
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 172.16.0.1 remote-as 65000
+      neighbor 172.16.0.1 description dut
+    !
+      neighbor 2001:db8:2::1 remote-as 65000
+      neighbor 2001:db8:2::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 172.16.0.1 activate
+      no neighbor 172.16.0.1 send-community all
+      neighbor 172.16.0.1 send-community standard
+      neighbor 172.16.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:2::1 activate
+      no neighbor 2001:db8:2::1 send-community all
+      neighbor 2001:db8:2::1 send-community standard
+      neighbor 2001:db8:2::1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -135,44 +491,6 @@ skipping: [probe]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [probe]
-
-TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [dut]
-ok: [probe]
-
-TASK [Find configuration template for routing] *********************************
-skipping: [probe]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [probe]
-
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [probe]
-ok: [dut]
-
-TASK [Deploy routing configuration] ********************************************
-skipping: [probe]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
-
-TASK [wait_for_connection] *****************************************************
-skipping: [dut]
-
-TASK [wait_for] ****************************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [execute config-routing.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/vyos.j2] ***
-changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -219,8 +537,8 @@ TASK [execute config-bgp.policy.sh to deploy bgp.policy config from /home/pipi/n
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=39   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-probe                      : ok=23   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=42   changed=8    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
 
 

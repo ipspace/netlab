@@ -15,8 +15,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -162,6 +162,101 @@ ok: [h1] =>
     netplan generate
     echo -n 'Starting netplan apply ' && date
     nohup netplan apply &
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 's1'
+  
+    set vrf name tenant table 100
+  
+    set interfaces bridge br0 description 'Global Switch Bridge'
+    set interfaces bridge br0 enable-vlan
+  
+    set interfaces bridge br0 vif 1001
+    set interfaces bridge br0 vif 1002
+    set interfaces bridge br0 vif 1000
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 's1 -> s2'
+  
+    set interfaces ethernet eth1 mtu 1600
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,s2]'
+  
+  
+    set interfaces bridge br0 vif 1000 address 172.16.0.1/24
+  
+  
+    set interfaces bridge br0 vif 1000 vrf tenant
+  
+  
+  
+    set interfaces bridge br0 vif 1002 description 'VLAN green (1002) -> [h3] [stub]'
+  
+  
+    set interfaces bridge br0 vif 1002 address 172.16.2.1/24
+  
+  
+    set interfaces bridge br0 vif 1002 vrf tenant
+  
+  
+  
+    set interfaces bridge br0 vif 1001 description 'VLAN blue (1001) -> [h2,s2]'
+  
+  
+    set interfaces bridge br0 vif 1001 address 172.16.1.1/24
+  
+  
+    set interfaces bridge br0 vif 1001 vrf tenant
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -248,6 +343,7 @@ ok: [s2] =>
     set service lldp interface eth0 disable
   
   
+  
     # Commit, save and exit from subshell
   
     commit
@@ -256,122 +352,6 @@ ok: [s2] =>
   
     # Restart FRR to pick up the new hostname
     sudo service frr restart
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)$ "
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    hostname h3
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    172.16.2.5 h3
-    172.16.3.6 h4
-    10.0.0.1 10.1.0.1 s1
-    172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant
-    10.0.0.2 10.1.0.2 s2
-    172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
-    #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h3
-  
-    NEED_APT_UPDATE=YES
-  
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
-    # Loopback addressing
-  
-    # Interface addressing
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          addresses:
-            - 172.16.2.5/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          routes:
-            - to: 172.16.0.0/16
-              via: 172.16.2.1
-            - to: 10.0.0.0/24
-              via: 172.16.2.1
-            - to: 10.1.0.0/16
-              via: 172.16.2.1
-            - to: 10.2.0.0/24
-              via: 172.16.2.1
-    SCRIPT
-  
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -604,107 +584,129 @@ ok: [h2] =>
     netplan generate
     echo -n 'Starting netplan apply ' && date
     nohup netplan apply &
-ok: [s1] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for s1
+    initial configuration for h3
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    hostname h3
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    172.16.0.3 h1
+    172.16.1.4 h2
+    172.16.2.5 h3
+    172.16.3.6 h4
+    10.0.0.1 10.1.0.1 s1
+    172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant
+    10.0.0.2 10.1.0.2 s2
+    172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
   
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
   
-    # Configuration items start here
+    systemctl restart systemd-resolved
   
-    configure
-    set system host-name 's1'
+    # Set persistent hostname
+    hostnamectl set-hostname h3
   
-    set vrf name tenant table 100
+    NEED_APT_UPDATE=YES
   
-    set interfaces bridge br0 description 'Global Switch Bridge'
-    set interfaces bridge br0 enable-vlan
-  
-    set interfaces bridge br0 vif 1001
-    set interfaces bridge br0 vif 1002
-    set interfaces bridge br0 vif 1000
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 's1 -> s2'
-  
-    set interfaces ethernet eth1 mtu 1600
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,s2]'
-  
-  
-    set interfaces bridge br0 vif 1000 address 172.16.0.1/24
-  
-  
-    set interfaces bridge br0 vif 1000 vrf tenant
-  
-  
-  
-    set interfaces bridge br0 vif 1002 description 'VLAN green (1002) -> [h3] [stub]'
-  
-  
-    set interfaces bridge br0 vif 1002 address 172.16.2.1/24
-  
-  
-    set interfaces bridge br0 vif 1002 vrf tenant
-  
-  
-  
-    set interfaces bridge br0 vif 1001 description 'VLAN blue (1001) -> [h2,s2]'
-  
-  
-    set interfaces bridge br0 vif 1001 address 172.16.1.1/24
-  
-  
-    set interfaces bridge br0 vif 1001 vrf tenant
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
   
   
-    set service lldp interface all
-    set service lldp interface eth0 disable
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
   
+    # Loopback addressing
   
-    # Commit, save and exit from subshell
+    # Interface addressing
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          addresses:
+            - 172.16.2.5/24
+    SCRIPT
   
-    commit
-    save
-    exit
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          routes:
+            - to: 172.16.0.0/16
+              via: 172.16.2.1
+            - to: 10.0.0.0/24
+              via: 172.16.2.1
+            - to: 10.1.0.0/16
+              via: 172.16.2.1
+            - to: 10.2.0.0/24
+              via: 172.16.2.1
+    SCRIPT
   
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
@@ -732,20 +734,20 @@ changed: [s1]
 changed: [s2]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [template] ****************************************************************
+changed: [h4]
 changed: [h3]
 changed: [h1]
 changed: [h2]
-changed: [h4]
 
 TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
-changed: [h3]
 changed: [h2]
 changed: [h1]
 changed: [h4]
+changed: [h3]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -843,8 +845,8 @@ changed: [s2]
 changed: [s1]
 
 TASK [execute config-vlan.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vyos.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [s1]
@@ -855,56 +857,6 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    bgp configuration for s2
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-  
-    set protocols bgp system-as 65000
-  
-    set protocols bgp parameters router-id 10.0.0.2
-  
-  
-  
-    set protocols bgp neighbor 10.0.0.1 remote-as 65000
-    set protocols bgp neighbor 10.0.0.1 description 's1'
-  
-    set protocols bgp neighbor 10.0.0.1 update-source dum0
-  
-  
-  
-  
-    # Work on Family ipv4
-  
-    set protocols bgp address-family ipv4-unicast network 10.0.0.2/32
-  
-  
-  
-  
-  
-    set protocols bgp neighbor 10.0.0.1 address-family ipv4-unicast soft-reconfiguration inbound
-  
-    set protocols bgp neighbor 10.0.0.1 address-family ipv4-unicast nexthop-self
-  
-  
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 ok: [s1] => 
   msg: |-
     bgp configuration for s1
@@ -936,6 +888,7 @@ ok: [s1] =>
   
     # Work on Family ipv4
   
+  
     set protocols bgp address-family ipv4-unicast network 10.0.0.1/32
   
   
@@ -945,6 +898,57 @@ ok: [s1] =>
     set protocols bgp neighbor 10.0.0.2 address-family ipv4-unicast soft-reconfiguration inbound
   
     set protocols bgp neighbor 10.0.0.2 address-family ipv4-unicast nexthop-self
+  
+  
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+    set protocols bgp system-as 65000
+  
+    set protocols bgp parameters router-id 10.0.0.2
+  
+  
+  
+    set protocols bgp neighbor 10.0.0.1 remote-as 65000
+    set protocols bgp neighbor 10.0.0.1 description 's1'
+  
+    set protocols bgp neighbor 10.0.0.1 update-source dum0
+  
+  
+  
+  
+    # Work on Family ipv4
+  
+  
+    set protocols bgp address-family ipv4-unicast network 10.0.0.2/32
+  
+  
+  
+  
+  
+    set protocols bgp neighbor 10.0.0.1 address-family ipv4-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor 10.0.0.1 address-family ipv4-unicast nexthop-self
   
   
   
@@ -980,8 +984,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/vyos.j2] ***
 changed: [s2]
@@ -1011,7 +1015,10 @@ ok: [s1] =>
   
     configure
   
+  
     set protocols ospf parameters router-id 10.0.0.1
+  
+  
   
   
     set protocols ospf interface dum0 passive
@@ -1021,6 +1028,7 @@ ok: [s1] =>
     set protocols ospf interface eth1 area 0.0.0.0
   
     set protocols ospf interface eth1 network point-to-point
+  
   
   
     commit
@@ -1041,7 +1049,10 @@ ok: [s2] =>
   
     configure
   
+  
     set protocols ospf parameters router-id 10.0.0.2
+  
+  
   
   
     set protocols ospf interface dum0 passive
@@ -1051,6 +1062,7 @@ ok: [s2] =>
     set protocols ospf interface eth1 area 0.0.0.0
   
     set protocols ospf interface eth1 network point-to-point
+  
   
   
     commit
@@ -1081,8 +1093,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/vyos.j2] ***
 changed: [s1]
@@ -1097,74 +1109,6 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    vrf configuration for s2
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-    configure
-  
-    set protocols bgp system-as 65000
-  
-    # Enter vrf sublevel
-    edit vrf name tenant
-  
-  
-    set protocols bgp system-as 65000
-  
-    set protocols bgp parameters router-id 10.0.0.2
-  
-    set protocols bgp address-family ipv4-unicast rd vpn export 65000:1
-    set protocols bgp address-family ipv4-unicast route-target vpn import "65000:1"
-    set protocols bgp address-family ipv4-unicast route-target vpn export "65000:1"
-    set protocols bgp address-family ipv4-unicast import vpn
-    set protocols bgp address-family ipv4-unicast export vpn
-    set protocols bgp address-family ipv4-unicast label vpn export auto
-  
-  
-    set protocols bgp address-family ipv4-unicast redistribute connected
-    set protocols bgp address-family ipv4-unicast redistribute ospf
-  
-    # Define networks for VRF Loopback
-  
-  
-  
-    set protocols ospf parameters router-id 10.0.0.2
-  
-    set protocols ospf redistribute connected
-    set protocols ospf redistribute bgp
-  
-  
-  
-    set protocols ospf interface br0.1001 area 0.0.0.0
-  
-  
-  
-    set protocols ospf interface br0.1003 area 0.0.0.0
-  
-    set protocols ospf interface br0.1003 passive
-    set protocols ospf interface br0.1003 network point-to-point
-  
-  
-    set protocols ospf interface br0.1000 area 0.0.0.0
-  
-  
-  
-    # Back to root level
-    top
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 ok: [s1] => 
   msg: |-
     vrf configuration for s1
@@ -1197,6 +1141,7 @@ ok: [s1] =>
     set protocols bgp address-family ipv4-unicast label vpn export auto
   
   
+  
     set protocols bgp address-family ipv4-unicast redistribute connected
     set protocols bgp address-family ipv4-unicast redistribute ospf
   
@@ -1206,8 +1151,10 @@ ok: [s1] =>
   
     set protocols ospf parameters router-id 10.0.0.1
   
-    set protocols ospf redistribute connected
     set protocols ospf redistribute bgp
+    set protocols ospf redistribute connected
+  
+  
   
   
   
@@ -1222,6 +1169,77 @@ ok: [s1] =>
   
   
     set protocols ospf interface br0.1001 area 0.0.0.0
+  
+  
+  
+    # Back to root level
+    top
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [s2] => 
+  msg: |-
+    vrf configuration for s2
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+    set protocols bgp system-as 65000
+  
+    # Enter vrf sublevel
+    edit vrf name tenant
+  
+  
+    set protocols bgp system-as 65000
+  
+    set protocols bgp parameters router-id 10.0.0.2
+  
+    set protocols bgp address-family ipv4-unicast rd vpn export 65000:1
+    set protocols bgp address-family ipv4-unicast route-target vpn import "65000:1"
+    set protocols bgp address-family ipv4-unicast route-target vpn export "65000:1"
+    set protocols bgp address-family ipv4-unicast import vpn
+    set protocols bgp address-family ipv4-unicast export vpn
+    set protocols bgp address-family ipv4-unicast label vpn export auto
+  
+  
+  
+    set protocols bgp address-family ipv4-unicast redistribute connected
+    set protocols bgp address-family ipv4-unicast redistribute ospf
+  
+    # Define networks for VRF Loopback
+  
+  
+  
+    set protocols ospf parameters router-id 10.0.0.2
+  
+    set protocols ospf redistribute bgp
+    set protocols ospf redistribute connected
+  
+  
+  
+  
+  
+    set protocols ospf interface br0.1001 area 0.0.0.0
+  
+  
+  
+    set protocols ospf interface br0.1003 area 0.0.0.0
+  
+    set protocols ospf interface br0.1003 passive
+    set protocols ospf interface br0.1003 network point-to-point
+  
+  
+    set protocols ospf interface br0.1000 area 0.0.0.0
   
   
   
@@ -1258,8 +1276,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [execute config-vrf.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/vyos.j2] ***
 changed: [s1]
@@ -1290,37 +1308,37 @@ ok: [s1] =>
   
   
     # Create VXLAN interface
-    set interfaces vxlan vxlan101000 vni 101000
-    set interfaces vxlan vxlan101000 source-address 10.0.0.1
+    set interfaces vxlan vxlan21000 vni 21000
+    set interfaces vxlan vxlan21000 source-address 10.0.0.1
     # And set UDP port to 4789
-    set interfaces vxlan vxlan101000 port 4789
+    set interfaces vxlan vxlan21000 port 4789
   
     # Add it to the global bridge
     ## NOTE: in the future we may want to switch to one-bridge-per-vni
     ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101000 native-vlan 1000
+    set interfaces bridge br0 member interface vxlan21000 native-vlan 1000
   
     # Add VTEP Flood list
   
     # If flooding is based on EVPN, set 'parameters nolearning'
-    set interfaces vxlan vxlan101000 parameters nolearning
+    set interfaces vxlan vxlan21000 parameters nolearning
   
   
     # Create VXLAN interface
-    set interfaces vxlan vxlan101001 vni 101001
-    set interfaces vxlan vxlan101001 source-address 10.0.0.1
+    set interfaces vxlan vxlan21001 vni 21001
+    set interfaces vxlan vxlan21001 source-address 10.0.0.1
     # And set UDP port to 4789
-    set interfaces vxlan vxlan101001 port 4789
+    set interfaces vxlan vxlan21001 port 4789
   
     # Add it to the global bridge
     ## NOTE: in the future we may want to switch to one-bridge-per-vni
     ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101001 native-vlan 1001
+    set interfaces bridge br0 member interface vxlan21001 native-vlan 1001
   
     # Add VTEP Flood list
   
     # If flooding is based on EVPN, set 'parameters nolearning'
-    set interfaces vxlan vxlan101001 parameters nolearning
+    set interfaces vxlan vxlan21001 parameters nolearning
   
   
     # Commit, save and exit from subshell
@@ -1344,37 +1362,37 @@ ok: [s2] =>
   
   
     # Create VXLAN interface
-    set interfaces vxlan vxlan101000 vni 101000
-    set interfaces vxlan vxlan101000 source-address 10.0.0.2
+    set interfaces vxlan vxlan21000 vni 21000
+    set interfaces vxlan vxlan21000 source-address 10.0.0.2
     # And set UDP port to 4789
-    set interfaces vxlan vxlan101000 port 4789
+    set interfaces vxlan vxlan21000 port 4789
   
     # Add it to the global bridge
     ## NOTE: in the future we may want to switch to one-bridge-per-vni
     ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101000 native-vlan 1000
+    set interfaces bridge br0 member interface vxlan21000 native-vlan 1000
   
     # Add VTEP Flood list
   
     # If flooding is based on EVPN, set 'parameters nolearning'
-    set interfaces vxlan vxlan101000 parameters nolearning
+    set interfaces vxlan vxlan21000 parameters nolearning
   
   
     # Create VXLAN interface
-    set interfaces vxlan vxlan101001 vni 101001
-    set interfaces vxlan vxlan101001 source-address 10.0.0.2
+    set interfaces vxlan vxlan21001 vni 21001
+    set interfaces vxlan vxlan21001 source-address 10.0.0.2
     # And set UDP port to 4789
-    set interfaces vxlan vxlan101001 port 4789
+    set interfaces vxlan vxlan21001 port 4789
   
     # Add it to the global bridge
     ## NOTE: in the future we may want to switch to one-bridge-per-vni
     ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101001 native-vlan 1001
+    set interfaces bridge br0 member interface vxlan21001 native-vlan 1001
   
     # Add VTEP Flood list
   
     # If flooding is based on EVPN, set 'parameters nolearning'
-    set interfaces vxlan vxlan101001 parameters nolearning
+    set interfaces vxlan vxlan21001 parameters nolearning
   
   
     # Commit, save and exit from subshell
@@ -1447,12 +1465,12 @@ ok: [s1] =>
   
   
     # Configure VNI params
-    set protocols bgp address-family l2vpn-evpn vni 101001 rd 10.0.0.1:1001
-    set protocols bgp address-family l2vpn-evpn vni 101001 route-target import "65000:1001"
-    set protocols bgp address-family l2vpn-evpn vni 101001 route-target export "65000:1001"
-    set protocols bgp address-family l2vpn-evpn vni 101000 rd 10.0.0.1:1000
-    set protocols bgp address-family l2vpn-evpn vni 101000 route-target import "65000:1000"
-    set protocols bgp address-family l2vpn-evpn vni 101000 route-target export "65000:1000"
+    set protocols bgp address-family l2vpn-evpn vni 21001 rd 10.0.0.1:1001
+    set protocols bgp address-family l2vpn-evpn vni 21001 route-target import "65000:1001"
+    set protocols bgp address-family l2vpn-evpn vni 21001 route-target export "65000:1001"
+    set protocols bgp address-family l2vpn-evpn vni 21000 rd 10.0.0.1:1000
+    set protocols bgp address-family l2vpn-evpn vni 21000 route-target import "65000:1000"
+    set protocols bgp address-family l2vpn-evpn vni 21000 route-target export "65000:1000"
   
     # Work on L3VNI
   
@@ -1489,12 +1507,12 @@ ok: [s2] =>
   
   
     # Configure VNI params
-    set protocols bgp address-family l2vpn-evpn vni 101001 rd 10.0.0.2:1001
-    set protocols bgp address-family l2vpn-evpn vni 101001 route-target import "65000:1001"
-    set protocols bgp address-family l2vpn-evpn vni 101001 route-target export "65000:1001"
-    set protocols bgp address-family l2vpn-evpn vni 101000 rd 10.0.0.2:1000
-    set protocols bgp address-family l2vpn-evpn vni 101000 route-target import "65000:1000"
-    set protocols bgp address-family l2vpn-evpn vni 101000 route-target export "65000:1000"
+    set protocols bgp address-family l2vpn-evpn vni 21001 rd 10.0.0.2:1001
+    set protocols bgp address-family l2vpn-evpn vni 21001 route-target import "65000:1001"
+    set protocols bgp address-family l2vpn-evpn vni 21001 route-target export "65000:1001"
+    set protocols bgp address-family l2vpn-evpn vni 21000 rd 10.0.0.2:1000
+    set protocols bgp address-family l2vpn-evpn vni 21000 route-target import "65000:1000"
+    set protocols bgp address-family l2vpn-evpn vni 21000 route-target export "65000:1000"
   
     # Work on L3VNI
   
@@ -1536,8 +1554,8 @@ changed: [s2]
 changed: [s1]
 
 TASK [execute config-evpn.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/vyos.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

@@ -126,6 +126,60 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+    set vrf name tenant table 100
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> x1 [external]'
+  
+  
+    set interfaces ethernet eth1 address 172.16.0.1/24
+  
+  
+    set interfaces ethernet eth1 vrf tenant
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> x2 [external]'
+  
+  
+    set interfaces ethernet eth2 address 172.16.1.1/24
+  
+  
+    set interfaces ethernet eth2 vrf tenant
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -221,59 +275,6 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-    set vrf name tenant table 100
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> x1 [external]'
-  
-  
-    set interfaces ethernet eth1 address 172.16.0.1/24
-  
-  
-    set interfaces ethernet eth1 vrf tenant
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> x2 [external]'
-  
-  
-    set interfaces ethernet eth2 address 172.16.1.1/24
-  
-  
-    set interfaces ethernet eth2 vrf tenant
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
@@ -351,6 +352,42 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+    set protocols bgp system-as 65000
+  
+    set protocols bgp parameters router-id 10.0.0.1
+  
+  
+  
+    # Work on Family ipv4
+  
+  
+    set protocols bgp address-family ipv4-unicast network 10.0.0.1/32
+  
+  
+  
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -419,41 +456,6 @@ ok: [x2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-  
-    set protocols bgp system-as 65000
-  
-    set protocols bgp parameters router-id 10.0.0.1
-  
-  
-  
-    # Work on Family ipv4
-  
-    set protocols bgp address-family ipv4-unicast network 10.0.0.1/32
-  
-  
-  
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -483,8 +485,8 @@ TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/ne
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -541,6 +543,7 @@ ok: [dut] =>
     set protocols bgp address-family ipv4-unicast import vpn
     set protocols bgp address-family ipv4-unicast export vpn
     set protocols bgp address-family ipv4-unicast label vpn export auto
+  
   
   
     set protocols bgp address-family ipv4-unicast redistribute connected

@@ -81,6 +81,7 @@ ok: [s1] =>
     set service lldp interface eth0 disable
   
   
+  
     # Commit, save and exit from subshell
   
     commit
@@ -193,64 +194,6 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -306,6 +249,64 @@ ok: [h2] =>
     ip route del 10.2.0.0/24 2>/dev/null
     set -e
     ip route add 10.2.0.0/24 via 172.16.1.4
+    #
+    # Print the final routing table
+    ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.3
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.3
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.3
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.3
     #
     # Print the final routing table
     ip route
@@ -368,13 +369,13 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-NqrpratD-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-wQVrCYqe-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -399,16 +400,6 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    vlan configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-    exit 0
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
@@ -429,6 +420,16 @@ ok: [s1] =>
     commit
     save
     exit
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+    exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -477,6 +478,57 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    bgp configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+    set protocols bgp system-as 65000
+  
+    set protocols bgp parameters router-id 10.0.0.3
+  
+  
+  
+    set protocols bgp neighbor 10.0.0.4 remote-as 65000
+    set protocols bgp neighbor 10.0.0.4 description 's2'
+  
+    set protocols bgp neighbor 10.0.0.4 update-source dum0
+  
+  
+  
+  
+    # Work on Family ipv4
+  
+  
+    set protocols bgp address-family ipv4-unicast network 10.0.0.3/32
+  
+  
+  
+  
+  
+    set protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast nexthop-self
+  
+  
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -513,56 +565,6 @@ ok: [s2] =>
     !
     !
     do write
-ok: [s1] => 
-  msg: |-
-    bgp configuration for s1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-  
-    set protocols bgp system-as 65000
-  
-    set protocols bgp parameters router-id 10.0.0.3
-  
-  
-  
-    set protocols bgp neighbor 10.0.0.4 remote-as 65000
-    set protocols bgp neighbor 10.0.0.4 description 's2'
-  
-    set protocols bgp neighbor 10.0.0.4 update-source dum0
-  
-  
-  
-  
-    # Work on Family ipv4
-  
-    set protocols bgp address-family ipv4-unicast network 10.0.0.3/32
-  
-  
-  
-  
-  
-    set protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast soft-reconfiguration inbound
-  
-    set protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast nexthop-self
-  
-  
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [s1]
@@ -626,7 +628,10 @@ ok: [s1] =>
   
     configure
   
+  
     set protocols ospf parameters router-id 10.0.0.3
+  
+  
   
   
     set protocols ospf interface dum0 passive
@@ -636,6 +641,7 @@ ok: [s1] =>
     set protocols ospf interface eth2 area 0.0.0.0
   
     set protocols ospf interface eth2 network point-to-point
+  
   
   
     commit
@@ -653,6 +659,7 @@ ok: [s2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
     exit
     !
     interface lo
@@ -747,6 +754,7 @@ ok: [s1] =>
     set protocols bgp address-family ipv4-unicast label vpn export auto
   
   
+  
     set protocols bgp address-family ipv4-unicast redistribute connected
   
     # Define networks for VRF Loopback
@@ -792,6 +800,7 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
+    !
       redistribute connected
       label vpn export auto
       export vpn
@@ -959,44 +968,6 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    evpn configuration for s2
-    =========================================
-    router bgp 65000
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-  
-      neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    vrf customer
-     vni 5042
-     exit-vrf
-  
-    router bgp 65000 vrf customer
-     address-family l2vpn evpn
-      ! This sets the L3 VNI RD/RT for this VRF
-      rd 65000:1
-      route-target export 65000:1
-      route-target import 65000:1
-      ! Enable RT5 advertisements
-      advertise ipv4 unicast
-     exit-address-family
-    exit
-    !
-    !
-    do write
 ok: [s1] => 
   msg: |-
     evpn configuration for s1
@@ -1054,6 +1025,44 @@ ok: [s1] =>
     commit
     save
     exit
+ok: [s2] => 
+  msg: |-
+    evpn configuration for s2
+    =========================================
+    router bgp 65000
+     address-family l2vpn evpn
+      advertise-all-vni
+      advertise-svi-ip
+      advertise ipv4 unicast
+  
+    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+  
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 soft-reconfiguration inbound
+  
+     exit-address-family
+    !
+  
+    exit
+  
+    ! L3 VRF EVPN handling
+    vrf customer
+     vni 5042
+     exit-vrf
+  
+    router bgp 65000 vrf customer
+     address-family l2vpn evpn
+      ! This sets the L3 VNI RD/RT for this VRF
+      rd 65000:1
+      route-target export 65000:1
+      route-target import 65000:1
+      ! Enable RT5 advertisements
+      advertise ipv4 unicast
+     exit-address-family
+    exit
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 ok: [s1]

@@ -7,8 +7,8 @@ ok: [s3]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [h5]
+ok: [h4]
 ok: [h6]
 ok: [s1]
 ok: [s2]
@@ -19,9 +19,9 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [h5]
-ok: [s1]
 ok: [h6]
+ok: [s1]
+ok: [h5]
 ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -46,30 +46,544 @@ ok: [h3]
 ok: [h4]
 ok: [h5]
 ok: [h6]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s3]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
 ok: [h5]
+ok: [h4]
 ok: [h6]
 ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s3]
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-skipping: [h5]
-skipping: [h6]
-skipping: [s1]
-skipping: [s2]
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [s3] => 
+  msg: |-
+    initial configuration for s3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "172.16.0.2 h1" >>/tmp/hosts
+    echo "172.16.0.3 h2" >>/tmp/hosts
+    echo "172.16.0.4 h3" >>/tmp/hosts
+    echo "172.16.1.5 h4" >>/tmp/hosts
+    echo "172.16.1.6 h5" >>/tmp/hosts
+    echo "172.16.1.7 h6" >>/tmp/hosts
+    echo "10.0.0.8 10.1.0.1 172.16.3.8 s1" >>/tmp/hosts
+    echo "10.0.0.9 10.1.0.2 172.16.2.9 s2" >>/tmp/hosts
+    echo "10.0.0.1 172.16.2.1 172.16.3.1 s3" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth4.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1600
+    ip link set eth2 mtu 1600
+    ip link set eth3 mtu 1500
+    ip link set eth4 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname s3
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface eth1
+     no shutdown
+     description s3 -> s2
+     ip address 172.16.2.1/24
+    !
+    interface eth2
+     no shutdown
+     description s3 -> s1
+     ip address 172.16.3.1/24
+    !
+    interface eth3
+     no shutdown
+     ! no ip address
+    !
+    interface eth4
+     no shutdown
+     ! no ip address
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h3,h1,s1,h2,s2]
+     ! no ip address
+    !
+    interface vlan1001
+     no shutdown
+     description VLAN blue (1001) -> [h6,h4,s1,h5,s2]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.5/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h5] => 
+  msg: |-
+    initial configuration for h5
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.6/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h6] => 
+  msg: |-
+    initial configuration for h6
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.7/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 's2'
+  
+  
+    set interfaces bridge br0 description 'Global Switch Bridge'
+    set interfaces bridge br0 enable-vlan
+  
+    set interfaces bridge br0 vif 1001
+    set interfaces bridge br0 vif 1000
+  
+    set interfaces dummy dum0 address 10.0.0.9/32
+  
+  
+  
+    set interfaces ethernet eth1 description 's2 -> s1'
+  
+    set interfaces ethernet eth1 mtu 1600
+  
+    set interfaces ethernet eth1 address 10.1.0.2/30
+  
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 's2 -> s3'
+  
+    set interfaces ethernet eth2 mtu 1600
+  
+    set interfaces ethernet eth2 address 172.16.2.9/24
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h3,s3,h1,s1,h2]'
+  
+  
+  
+  
+  
+  
+  
+    set interfaces bridge br0 vif 1001 description 'VLAN blue (1001) -> [h6,s3,h4,s1,h5]'
+  
+  
+  
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 's1'
+  
+  
+    set interfaces bridge br0 description 'Global Switch Bridge'
+    set interfaces bridge br0 enable-vlan
+  
+    set interfaces bridge br0 vif 1001
+    set interfaces bridge br0 vif 1000
+  
+    set interfaces dummy dum0 address 10.0.0.8/32
+  
+  
+  
+    set interfaces ethernet eth1 description 's1 -> s2'
+  
+    set interfaces ethernet eth1 mtu 1600
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 's1 -> s3'
+  
+    set interfaces ethernet eth2 mtu 1600
+  
+    set interfaces ethernet eth2 address 172.16.3.8/24
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h3,s3,h1,h2,s2]'
+  
+  
+  
+  
+  
+  
+  
+    set interfaces bridge br0 vif 1001 description 'VLAN blue (1001) -> [h6,s3,h4,h5,s2]'
+  
+  
+  
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s3]
@@ -77,15 +591,24 @@ ok: [h1]
 ok: [h2]
 ok: [h4]
 ok: [h3]
-ok: [h6]
 ok: [s1]
-ok: [h5]
 ok: [s2]
+ok: [h5]
+ok: [h6]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s3
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4, h5, h6
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for s1, s2
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [s3 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [s3]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s3
 
 TASK [template] ****************************************************************
 changed: [s3]
@@ -103,33 +626,33 @@ TASK [set_fact] ****************************************************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [h5]
+ok: [h4]
 ok: [h6]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h5 -> localhost]
-changed: [h4 -> localhost]
 changed: [h6 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-EjniujXd-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-OAOxebIJ-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h6 -> localhost]
 changed: [h5 -> localhost]
+changed: [h6 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h4 -> localhost]
-changed: [h5 -> localhost]
+changed: [h6 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h6 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h5 -> localhost]
 
 TASK [wait_for_connection] *****************************************************
 skipping: [s1]
@@ -143,13 +666,17 @@ TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
+TASK [set_fact] ****************************************************************
+ok: [s1]
+ok: [s2]
+
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -174,9 +701,72 @@ ok: [s2]
 ok: [s3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [s3]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+    set interfaces bridge br0 member interface eth3 native-vlan 1000
+    set interfaces bridge br0 member interface eth4 native-vlan 1001
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+    set interfaces bridge br0 member interface eth3 native-vlan 1000
+    set interfaces bridge br0 member interface eth4 native-vlan 1001
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [s3] => 
+  msg: |-
+    vlan configuration for s3
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      brctl addbr vlan1000
+      ip link set dev vlan1000 up
+      ip addr flush dev vlan1000
+    fi
+    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
+      brctl addbr vlan1001
+      ip link set dev vlan1001 up
+      ip addr flush dev vlan1001
+    fi
+  
+    brctl addif vlan1000 eth3
+    brctl addif vlan1001 eth4
+    exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -194,6 +784,10 @@ skipping: [s2]
 TASK [wait_for] ****************************************************************
 skipping: [s1]
 skipping: [s2]
+
+TASK [set_fact] ****************************************************************
+ok: [s1]
+ok: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -230,9 +824,118 @@ ok: [s2]
 ok: [s3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [s3]
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+  
+    set protocols ospf parameters router-id 10.0.0.8
+  
+  
+  
+  
+    set protocols ospf interface dum0 passive
+    set protocols ospf interface dum0 area 0.0.0.0
+  
+  
+    set protocols ospf interface eth1 area 0.0.0.0
+  
+    set protocols ospf interface eth1 network point-to-point
+  
+  
+  
+    set protocols ospf interface eth2 area 0.0.0.0
+  
+    set protocols ospf interface eth2 network point-to-point
+  
+  
+  
+    commit
+    save
+    exit
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+  
+    set protocols ospf parameters router-id 10.0.0.9
+  
+  
+  
+  
+    set protocols ospf interface dum0 passive
+    set protocols ospf interface dum0 area 0.0.0.0
+  
+  
+    set protocols ospf interface eth1 area 0.0.0.0
+  
+    set protocols ospf interface eth1 network point-to-point
+  
+  
+  
+    set protocols ospf interface eth2 area 0.0.0.0
+  
+    set protocols ospf interface eth2 network point-to-point
+  
+  
+  
+    commit
+    save
+    exit
+ok: [s3] => 
+  msg: |-
+    ospf configuration for s3
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.1
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! s3 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! s3 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [s1]
@@ -255,9 +958,13 @@ TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
+TASK [set_fact] ****************************************************************
+ok: [s1]
+ok: [s2]
+
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/vyos.j2] ***
 changed: [s1]
@@ -286,9 +993,173 @@ ok: [s2]
 ok: [s3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [s3]
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+  
+    # Create VXLAN interface
+    set interfaces vxlan vxlan1000 vni 1000
+    set interfaces vxlan vxlan1000 source-address 10.0.0.8
+    # And set UDP port to 4789
+    set interfaces vxlan vxlan1000 port 4789
+  
+    # Add it to the global bridge
+    ## NOTE: in the future we may want to switch to one-bridge-per-vni
+    ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
+    set interfaces bridge br0 member interface vxlan1000 native-vlan 1000
+  
+    # Add VTEP Flood list
+    set interfaces vxlan vxlan1000 remote 10.0.0.1
+    set interfaces vxlan vxlan1000 remote 10.0.0.9
+  
+    # If flooding is based on EVPN, set 'parameters nolearning'
+  
+  
+    # Create VXLAN interface
+    set interfaces vxlan vxlan1001 vni 1001
+    set interfaces vxlan vxlan1001 source-address 10.0.0.8
+    # And set UDP port to 4789
+    set interfaces vxlan vxlan1001 port 4789
+  
+    # Add it to the global bridge
+    ## NOTE: in the future we may want to switch to one-bridge-per-vni
+    ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
+    set interfaces bridge br0 member interface vxlan1001 native-vlan 1001
+  
+    # Add VTEP Flood list
+    set interfaces vxlan vxlan1001 remote 10.0.0.1
+    set interfaces vxlan vxlan1001 remote 10.0.0.9
+  
+    # If flooding is based on EVPN, set 'parameters nolearning'
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [s2] => 
+  msg: |-
+    vxlan configuration for s2
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+  
+    # Create VXLAN interface
+    set interfaces vxlan vxlan1000 vni 1000
+    set interfaces vxlan vxlan1000 source-address 10.0.0.9
+    # And set UDP port to 4789
+    set interfaces vxlan vxlan1000 port 4789
+  
+    # Add it to the global bridge
+    ## NOTE: in the future we may want to switch to one-bridge-per-vni
+    ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
+    set interfaces bridge br0 member interface vxlan1000 native-vlan 1000
+  
+    # Add VTEP Flood list
+    set interfaces vxlan vxlan1000 remote 10.0.0.1
+    set interfaces vxlan vxlan1000 remote 10.0.0.8
+  
+    # If flooding is based on EVPN, set 'parameters nolearning'
+  
+  
+    # Create VXLAN interface
+    set interfaces vxlan vxlan1001 vni 1001
+    set interfaces vxlan vxlan1001 source-address 10.0.0.9
+    # And set UDP port to 4789
+    set interfaces vxlan vxlan1001 port 4789
+  
+    # Add it to the global bridge
+    ## NOTE: in the future we may want to switch to one-bridge-per-vni
+    ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
+    set interfaces bridge br0 member interface vxlan1001 native-vlan 1001
+  
+    # Add VTEP Flood list
+    set interfaces vxlan vxlan1001 remote 10.0.0.1
+    set interfaces vxlan vxlan1001 remote 10.0.0.8
+  
+    # If flooding is based on EVPN, set 'parameters nolearning'
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [s3] => 
+  msg: |-
+    vxlan configuration for s3
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+  
+  
+    # Determine max MTU used on interfaces, to configure VXLAN interface
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
+      dstport 4789 \
+      local 10.0.0.1
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    brctl addbr vlan1000
+    ip link set up dev vlan1000
+    fi
+    brctl addif vlan1000 vxlan1000
+    brctl stp vlan1000 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan1000
+    ip link set up dev vxlan1000
+  
+    bridge fdb append 00:00:00:00:00:00 dev vxlan1000 dst 10.0.0.8
+    bridge fdb append 00:00:00:00:00:00 dev vxlan1000 dst 10.0.0.9
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan1001 type vxlan \
+      id 1001 \
+      dstport 4789 \
+      local 10.0.0.1
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
+    brctl addbr vlan1001
+    ip link set up dev vlan1001
+    fi
+    brctl addif vlan1001 vxlan1001
+    brctl stp vlan1001 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan1001
+    ip link set up dev vxlan1001
+  
+    bridge fdb append 00:00:00:00:00:00 dev vxlan1001 dst 10.0.0.8
+    bridge fdb append 00:00:00:00:00:00 dev vxlan1001 dst 10.0.0.9
+  
+    exit $?
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 ok: [s1]
@@ -306,6 +1177,10 @@ skipping: [s2]
 TASK [wait_for] ****************************************************************
 skipping: [s1]
 skipping: [s2]
+
+TASK [set_fact] ****************************************************************
+ok: [s1]
+ok: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -335,15 +1210,15 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h2                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h3                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h4                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h5                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-h6                         : ok=11   changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-s1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-s2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-s3                         : ok=35   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h5                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h6                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+s1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+s2                         : ok=43   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+s3                         : ok=41   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 

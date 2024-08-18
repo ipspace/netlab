@@ -41,6 +41,131 @@ ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [spine] => 
+  msg: |-
+    initial configuration for spine
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'spine'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'spine -> l1 [external]'
+  
+    set interfaces ethernet eth1 mtu 1600
+  
+    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
+    set interfaces ethernet eth1 address 10.0.0.1/32
+  
+    set interfaces ethernet eth1 ipv6
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'spine -> l2 [external]'
+  
+    set interfaces ethernet eth2 mtu 1600
+  
+    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
+    set interfaces ethernet eth2 address 10.0.0.1/32
+  
+    set interfaces ethernet eth2 ipv6
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
+ok: [l1] => 
+  msg: |-
+    initial configuration for l1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'l1'
+  
+  
+    set interfaces bridge br0 description 'Global Switch Bridge'
+    set interfaces bridge br0 enable-vlan
+  
+    set interfaces bridge br0 vif 1000
+  
+    set interfaces dummy dum0 address 10.0.0.2/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'l1 -> spine [external]'
+  
+    set interfaces ethernet eth1 mtu 1600
+  
+    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
+    set interfaces ethernet eth1 address 10.0.0.2/32
+  
+    set interfaces ethernet eth1 ipv6
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,h2,l2]'
+  
+  
+  
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+    set service router-advert interface eth1
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -225,136 +350,13 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [l1] => 
-  msg: |-
-    initial configuration for l1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'l1'
-  
-  
-    set interfaces bridge br0 description 'Global Switch Bridge'
-    set interfaces bridge br0 enable-vlan
-  
-    set interfaces bridge br0 vif 1000
-  
-    set interfaces dummy dum0 address 10.0.0.2/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'l1 -> spine [external]'
-  
-    set interfaces ethernet eth1 mtu 1600
-  
-    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
-    set interfaces ethernet eth1 address 10.0.0.2/32
-  
-    set interfaces ethernet eth1 ipv6
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,h2,l2]'
-  
-  
-  
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-    set service router-advert interface eth1
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
-ok: [spine] => 
-  msg: |-
-    initial configuration for spine
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'spine'
-  
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'spine -> l1 [external]'
-  
-    set interfaces ethernet eth1 mtu 1600
-  
-    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
-    set interfaces ethernet eth1 address 10.0.0.1/32
-  
-    set interfaces ethernet eth1 ipv6
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'spine -> l2 [external]'
-  
-    set interfaces ethernet eth2 mtu 1600
-  
-    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
-    set interfaces ethernet eth2 address 10.0.0.1/32
-  
-    set interfaces ethernet eth2 ipv6
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-    set service router-advert interface eth1
-    set service router-advert interface eth2
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for spine, l1
@@ -414,7 +416,7 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-dyYRAPgX-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-tOpuANyU-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -447,22 +449,6 @@ ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
-ok: [l2] => 
-  msg: |-
-    vlan configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 up
-      ip addr flush dev vlan1000
-    fi
-  
-    brctl addif vlan1000 eth2
-    exit 0
 ok: [l1] => 
   msg: |-
     vlan configuration for l1
@@ -484,6 +470,22 @@ ok: [l1] =>
     commit
     save
     exit
+ok: [l2] => 
+  msg: |-
+    vlan configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      brctl addbr vlan1000
+      ip link set dev vlan1000 up
+      ip addr flush dev vlan1000
+    fi
+  
+    brctl addif vlan1000 eth2
+    exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [spine]
@@ -536,6 +538,56 @@ ok: [l2]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+    set protocols bgp system-as 65201
+  
+    set protocols bgp parameters router-id 10.0.0.2
+  
+  
+  
+    set protocols bgp neighbor eth1 interface remote-as 65100
+    set protocols bgp neighbor eth1 description 'spine'
+  
+  
+  
+  
+  
+    # Work on Family ipv4
+  
+  
+    set protocols bgp address-family ipv4-unicast network 10.0.0.2/32
+  
+  
+  
+  
+  
+    set protocols bgp neighbor eth1 address-family ipv4-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor eth1 address-family ipv4-unicast nexthop-self
+  
+  
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [l2] => 
   msg: |-
     bgp configuration for l2
@@ -607,6 +659,7 @@ ok: [spine] =>
   
     # Work on Family ipv4
   
+  
     set protocols bgp address-family ipv4-unicast network 10.0.0.1/32
   
   
@@ -623,55 +676,6 @@ ok: [spine] =>
     set protocols bgp neighbor eth2 address-family ipv4-unicast soft-reconfiguration inbound
   
     set protocols bgp neighbor eth2 address-family ipv4-unicast nexthop-self
-  
-  
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-  
-    set protocols bgp system-as 65201
-  
-    set protocols bgp parameters router-id 10.0.0.2
-  
-  
-  
-    set protocols bgp neighbor eth1 interface remote-as 65100
-    set protocols bgp neighbor eth1 description 'spine'
-  
-  
-  
-  
-  
-    # Work on Family ipv4
-  
-    set protocols bgp address-family ipv4-unicast network 10.0.0.2/32
-  
-  
-  
-  
-  
-    set protocols bgp neighbor eth1 address-family ipv4-unicast soft-reconfiguration inbound
-  
-    set protocols bgp neighbor eth1 address-family ipv4-unicast nexthop-self
   
   
   
@@ -740,42 +744,6 @@ ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
-ok: [l2] => 
-  msg: |-
-    vxlan configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-  
-  
-    # Determine max MTU used on interfaces, to configure VXLAN interface
-  
-    # Create L3 VNIs with bridges and add to correct vrf table
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan1000 type vxlan \
-      id 1000 \
-      dstport 4789 \
-      local 10.0.0.3 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    brctl addbr vlan1000
-    ip link set up dev vlan1000
-    fi
-    brctl addif vlan1000 vxlan1000
-    brctl stp vlan1000 off
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan1000
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan1000 learning off
-    ip link set up dev vxlan1000
-  
-  
-    exit $?
 ok: [l1] => 
   msg: |-
     vxlan configuration for l1
@@ -813,6 +781,42 @@ ok: [l1] =>
     commit
     save
     exit
+ok: [l2] => 
+  msg: |-
+    vxlan configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+  
+  
+    # Determine max MTU used on interfaces, to configure VXLAN interface
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
+      dstport 4789 \
+      local 10.0.0.3 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    brctl addbr vlan1000
+    ip link set up dev vlan1000
+    fi
+    brctl addif vlan1000 vxlan1000
+    brctl stp vlan1000 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1600 addrgenmode none dev vxlan1000
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan1000 learning off
+    ip link set up dev vxlan1000
+  
+  
+    exit $?
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [spine]
@@ -865,6 +869,42 @@ ok: [l2]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => 
+  msg: |-
+    evpn configuration for l1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+    # Configure Generic EVPN Stuff
+    set protocols bgp address-family l2vpn-evpn advertise-svi-ip
+    set protocols bgp address-family l2vpn-evpn advertise-all-vni
+  
+    set protocols bgp neighbor True address-family l2vpn-evpn nexthop-self
+    set protocols bgp neighbor True address-family l2vpn-evpn soft-reconfiguration inbound
+  
+  
+  
+    # Configure VNI params
+    set protocols bgp address-family l2vpn-evpn vni 1000 rd 10.0.0.2:1000
+    set protocols bgp address-family l2vpn-evpn vni 1000 route-target import "65000:1000"
+    set protocols bgp address-family l2vpn-evpn vni 1000 route-target export "65000:1000"
+  
+    # Work on L3VNI
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [l2] => 
   msg: |-
     evpn configuration for l2
@@ -921,42 +961,6 @@ ok: [spine] =>
   
   
     # Configure VNI params
-  
-    # Work on L3VNI
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-ok: [l1] => 
-  msg: |-
-    evpn configuration for l1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-    configure
-  
-    # Configure Generic EVPN Stuff
-    set protocols bgp address-family l2vpn-evpn advertise-svi-ip
-    set protocols bgp address-family l2vpn-evpn advertise-all-vni
-  
-    set protocols bgp neighbor True address-family l2vpn-evpn nexthop-self
-    set protocols bgp neighbor True address-family l2vpn-evpn soft-reconfiguration inbound
-  
-  
-  
-    # Configure VNI params
-    set protocols bgp address-family l2vpn-evpn vni 1000 rd 10.0.0.2:1000
-    set protocols bgp address-family l2vpn-evpn vni 1000 route-target import "65000:1000"
-    set protocols bgp address-family l2vpn-evpn vni 1000 route-target export "65000:1000"
   
     # Work on L3VNI
   
