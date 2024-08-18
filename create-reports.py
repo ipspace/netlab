@@ -97,30 +97,36 @@ def is_supported(data: Box, path: str) -> bool:
   print(f'{path} is unsupported, skipping')
   return False
 
-def add_results(results: Box, top: str, fname: str, path: str) -> None:
+def add_results(results: Box, skip: Box, top: str, fname: str, path: str) -> None:
   data = Box.from_yaml(filename=f'{top}/{fname}',default_box=True,box_dots=True)
   data = skip_single_key(data)
   data._path = path.replace('.','/').replace('#','.')
+  r_path = '.'.join(path.split('.')[2:])                              # Get the test path
+
   if fname == 'results.yaml' and not is_supported(data,path):
     return
   data = results[path] + data
+  if r_path in skip:
+    for k in skip[r_path]:
+      data.pop(k,None)
+
   if 'results' in fname:
     sum_results(data)
     aggregate_results(results,data,path)
   results[path] = data
 
-def read_results(top: str, results: Box, path: str = '') -> None:
+def read_results(top: str, results: Box, skip: Box, path: str = '') -> None:
   for fpath in sorted(Path(top).glob('*')):
     fname = fpath.name
     if fname == 'results.yaml' or fname.startswith('_caveats.'):
-      add_results(results,top,fname,path)
+      add_results(results,skip,top=top,fname=fname,path=path)
       continue
     if fname.startswith('.') or fname.startswith('_'):
       continue
     if fpath.is_dir():
       results[path]._children = True
       new_path = path + ("." if path else "") + fname.replace('.','#')
-      read_results(str(fpath),results,new_path)
+      read_results(str(fpath),results,skip=skip,path=new_path)
 
 SUMMARY_MAP: dict = {
   'supported': 'unsupported',
@@ -254,8 +260,10 @@ def main() -> None:
   if args.release:
     topology._version = __version__
 
+  setup = Box.from_yaml(filename=f'setup.yml',default_box=True,box_dots=True)
+
   results = get_empty_box()
-  read_results('.',results)
+  read_results('.',results,skip=setup.skip)
   coverage = remap_results(results)
   if args.yaml:
     print(results.to_yaml())
