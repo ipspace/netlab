@@ -5,14 +5,14 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [dut2]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [dut2]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -464,8 +464,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sonic.yml f
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [dut2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -491,16 +491,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -526,8 +526,8 @@ ok: [x2]
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [dut2]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -582,8 +582,40 @@ ok: [dut] =>
     !
     ip route 172.42.42.0/24 Null0
     !
-    do writedo write
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
     !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 172.16.0.1 remote-as 65000
+      neighbor 172.16.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 172.16.0.1 activate
+      no neighbor 172.16.0.1 send-community all
+      neighbor 172.16.0.1 send-community standard
+      neighbor 172.16.0.1 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut2] => 
   msg: |-
     bgp configuration for dut2
@@ -616,40 +648,6 @@ ok: [dut2] =>
       no neighbor 172.0.66.1 send-community all
       neighbor 172.0.66.1 send-community standard
       neighbor 172.0.66.1 send-community large
-    !
-    !
-    !
-    do writedo write
-    !
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
     !
     !
     !
@@ -690,53 +688,29 @@ ok: [x2] =>
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
+ok: [dut2]
 ok: [x2]
 ok: [x1]
-ok: [dut2]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sonic.yml for dut, dut2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [dut2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [dut]
 ok: [dut2]
+ok: [dut]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/sonic.j2] ***
 skipping: [dut]
 skipping: [dut2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/sonic.j2] ***
-fatal: [dut]: FAILED! => changed=true 
-  cmd: |-
-    mv /tmp/config.sh /etc/sonic/frr/do_config
-    docker exec bgp vtysh -f /etc/frr/do_config
-  delta: '0:00:00.106611'
-  end: '2024-08-18 02:21:40.947293'
-  msg: non-zero return code
-  rc: 2
-  start: '2024-08-18 02:21:40.840682'
-  stderr: 'line 49: % Unknown command[4]: do writedo write'
-  stderr_lines: <omitted>
-  stdout: ''
-  stdout_lines: <omitted>
-fatal: [dut2]: FAILED! => changed=true 
-  cmd: |-
-    mv /tmp/config.sh /etc/sonic/frr/do_config
-    docker exec bgp vtysh -f /etc/frr/do_config
-  delta: '0:00:00.108151'
-  end: '2024-08-18 02:21:40.457691'
-  msg: non-zero return code
-  rc: 2
-  start: '2024-08-18 02:21:40.349540'
-  stderr: 'line 32: % Unknown command[28]: do writedo write'
-  stderr_lines: <omitted>
-  stdout: ''
-  stdout_lines: <omitted>
+changed: [dut]
+changed: [dut2]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -751,18 +725,20 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=20   changed=3    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
-dut2                       : ok=20   changed=3    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
+dut                        : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+dut2                       : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the origination and propagation
+of IPv4 prefixes.
+

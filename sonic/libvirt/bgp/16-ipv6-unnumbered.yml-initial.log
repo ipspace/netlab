@@ -11,8 +11,8 @@ ok: [x3]
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -152,9 +152,9 @@ ok: [dut] =>
     CONFIG
     docker exec bgp vtysh -f /etc/frr/do_config
     exit 0
-ok: [x1] => 
+ok: [x2] => 
   msg: |-
-    initial configuration for x1
+    initial configuration for x2
     =========================================
     #!/bin/bash
     #
@@ -230,7 +230,7 @@ ok: [x1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x1
+    hostname x2
     !
     vrf mgmt
      exit-vrf
@@ -241,11 +241,11 @@ ok: [x1] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:2::1/64
+     ipv6 address 2001:db8:cafe:1::1/64
     !
     interface eth1
      no shutdown
-     description x1 -> dut [external]
+     description x2 -> dut [external]
      ! no ip address
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -357,9 +357,9 @@ ok: [x3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [x2] => 
+ok: [x1] => 
   msg: |-
-    initial configuration for x2
+    initial configuration for x1
     =========================================
     #!/bin/bash
     #
@@ -435,7 +435,7 @@ ok: [x2] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x2
+    hostname x1
     !
     vrf mgmt
      exit-vrf
@@ -446,11 +446,11 @@ ok: [x2] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:cafe:1::1/64
+     ipv6 address 2001:db8:1:2::1/64
     !
     interface eth1
      no shutdown
-     description x2 -> dut [external]
+     description x1 -> dut [external]
      ! no ip address
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -463,8 +463,8 @@ ok: [x2] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sonic.yml for dut
@@ -496,9 +496,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x3]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -506,9 +506,9 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x3]
 changed: [x2]
 changed: [x1]
-changed: [x3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -529,14 +529,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -590,40 +590,6 @@ ok: [dut] =>
     !
     !
     !
-    do writedo write
-    !
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor eth1 interface remote-as 65000
-      neighbor eth1 description dut
-    !
-     address-family ipv6 unicast
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor eth1 activate
-      no neighbor eth1 send-community all
-      neighbor eth1 send-community standard
-      neighbor eth1 send-community large
-    !
-    !
-    !
     do write
 ok: [x2] => 
   msg: |-
@@ -647,6 +613,39 @@ ok: [x2] =>
      address-family ipv6 unicast
     !
       network 2001:db8:cafe:1::/64
+    !
+    !
+    !
+      neighbor eth1 activate
+      no neighbor eth1 send-community all
+      neighbor eth1 send-community standard
+      neighbor eth1 send-community large
+    !
+    !
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor eth1 interface remote-as 65000
+      neighbor eth1 description dut
+    !
+     address-family ipv6 unicast
+    !
+      network 2001:db8:1:2::/64
     !
     !
     !
@@ -712,24 +711,12 @@ TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsi
 skipping: [dut]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/sonic.j2] ***
-fatal: [dut]: FAILED! => changed=true 
-  cmd: |-
-    mv /tmp/config.sh /etc/sonic/frr/do_config
-    docker exec bgp vtysh -f /etc/frr/do_config
-  delta: '0:00:00.108547'
-  end: '2024-08-18 02:25:30.626318'
-  msg: non-zero return code
-  rc: 2
-  start: '2024-08-18 02:25:30.517771'
-  stderr: 'line 48: % Unknown command[31]: do writedo write'
-  stderr_lines: <omitted>
-  stdout: ''
-  stdout_lines: <omitted>
+changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [x1]
 changed: [x2]
 changed: [x3]
-changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -742,19 +729,21 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 changed: [x3]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=20   changed=3    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
+dut                        : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x3                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the IPv6 LLA EBGP implementation and
+propagation of routes between EBGP speakers.
+
