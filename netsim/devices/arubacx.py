@@ -40,6 +40,13 @@ class ARUBACX(_Quirks):
           del vdata.ospf.default['type']
           log.info(f'OSPF default-information originate (on node {node.name}) does not support metric-type attribute (on vrf {vname})',
                     'quirks')
+    
+    # MPLS can be used only with 'external' provider
+    if 'mpls' in mods and node.get('provider','') != 'external':
+       log.error(
+          f'ArubaCX MPLS data plane works only on physical devices (using the external provider)',
+          log.IncorrectType,
+          'quirks')
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'arubanetworks.aoscx')
