@@ -393,8 +393,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -459,7 +459,27 @@ ok: [dut] =>
       passive-interface swp3
     !
     !
-    do writeCONFIG
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # And retry for a good measure
+    #
+    sleep 2
+    cat >/tmp/config <<CONFIG
+    !
+    router rip
+      version 2
+      network lo
+      network swp1
+      network swp2
+      passive-interface swp2
+      network swp3
+      passive-interface swp3
+    !
+    !
+    do write
+    CONFIG
     vtysh -f /tmp/config
 ok: [x1] => 
   msg: |-
