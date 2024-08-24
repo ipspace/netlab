@@ -38,8 +38,8 @@ ok: [dut] =>
   
     updates:
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -47,8 +47,8 @@ ok: [dut] =>
         - ip-prefix: "10.0.0.1/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1514
        subinterface:
@@ -57,8 +57,8 @@ ok: [dut] =>
         index: 0
         description: "dut ~ x1"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "dut ~ x1"
        ipv4:
         admin-state: enable
@@ -66,8 +66,8 @@ ok: [dut] =>
         - ip-prefix: "10.1.0.1/30"
           primary: [null]
   
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1514
        subinterface:
@@ -76,8 +76,8 @@ ok: [dut] =>
         index: 0
         description: "dut ~ x2"
   
-    - path: interface[name=ethernet-1/2]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
        description: "dut ~ x2"
        ipv4:
         admin-state: enable
@@ -87,19 +87,19 @@ ok: [dut] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/2.0
@@ -302,8 +302,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -321,15 +321,16 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [dut]
+TASK [Check version of nokia.srlinux] ******************************************
+ok: [dut] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -337,10 +338,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -370,6 +371,38 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    updates:
+    - path: /network-instance[name=default]
+      value:
+       router-id: 10.0.0.1
+       protocols:
+        ospf:
+         instance:
+         - name: "0"
+           version: ospf-v2
+           admin-state: enable
+           max-ecmp-paths: 64
+           area:
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: system0.0
+               passive: True
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/1.0
+               interface-type: "broadcast"
+               failure-detection:
+                enable-bfd: False
+           - area-id: 0.0.0.0
+             interface:
+             - interface-name: ethernet-1/2.0
+               interface-type: "point-to-point"
+               failure-detection:
+                enable-bfd: False
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -424,38 +457,6 @@ ok: [x2] =>
   
     !
     do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    updates:
-    - path: network-instance[name=default]
-      val:
-       router-id: 10.0.0.1
-       protocols:
-        ospf:
-         instance:
-         - name: "0"
-           version: ospf-v2
-           admin-state: enable
-           max-ecmp-paths: 64
-           area:
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: system0.0
-               passive: True
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: ethernet-1/1.0
-               interface-type: "broadcast"
-               failure-detection:
-                enable-bfd: False
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: ethernet-1/2.0
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [dut]
@@ -466,7 +467,7 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [dut]
 
 TASK [tempfile] ****************************************************************
@@ -475,10 +476,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -488,8 +489,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -500,8 +501,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

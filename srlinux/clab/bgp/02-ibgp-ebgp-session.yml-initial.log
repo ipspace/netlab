@@ -37,15 +37,15 @@ ok: [dut] =>
     =========================================
   
     updates:
-    - path: system/mtu
-      val:
+    - path: /system/mtu
+      value:
        default-port-mtu: 1514
        default-l2-mtu: 1514
        default-ip-mtu: 1500
        _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -53,14 +53,14 @@ ok: [dut] =>
         - ip-prefix: "10.0.0.1/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
        subinterface:
         index: 0
         description: "dut ~ x1"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "dut ~ x1"
        ipv4:
         admin-state: enable
@@ -68,14 +68,14 @@ ok: [dut] =>
         - ip-prefix: "10.1.0.1/30"
           primary: [null]
   
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
        subinterface:
         index: 0
         description: "dut ~ x2"
   
-    - path: interface[name=ethernet-1/2]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
        description: "dut ~ x2"
        ipv4:
         admin-state: enable
@@ -85,19 +85,19 @@ ok: [dut] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/2.0
@@ -299,8 +299,9 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [dut]
+TASK [Check version of nokia.srlinux] ******************************************
+ok: [dut] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -308,10 +309,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -369,42 +370,6 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-    !
-    !
-    do write
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -444,13 +409,13 @@ ok: [dut] =>
     =========================================
     updates:
   
-    - path: routing-policy/policy[name=accept_all]
-      val:
-       default-action:
-        policy-result: "accept"
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
   
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      val:
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
        default-action:
         policy-result: "accept"
        statement:
@@ -467,8 +432,8 @@ ok: [dut] =>
            next-hop:
             set: "10.0.0.1"
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        admin-state: enable
        autonomous-system: 65000
        router-id: 10.0.0.1
@@ -483,12 +448,12 @@ ok: [dut] =>
           max-paths-level-1: 64
           max-paths-level-2: 64 # indirect nexthops
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix: [] # Make sure it exists
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
   
-    - path: routing-policy/policy[name=default_export]
-      val:
+    - path: /routing-policy/policy[name=default_export]
+      value:
        default-action:
         policy-result: reject
        statement:
@@ -503,11 +468,11 @@ ok: [dut] =>
          action:
           policy-result: accept
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         mask-length-range: exact
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          mask-length-range: exact
   
   
   
@@ -515,8 +480,8 @@ ok: [dut] =>
   
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -540,8 +505,8 @@ ok: [dut] =>
        next-hop-self: True
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.0.0.2"
          description: x1
@@ -554,8 +519,8 @@ ok: [dut] =>
   
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -575,8 +540,8 @@ ok: [dut] =>
        export-policy: default_export
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.1.0.6"
          description: x2
@@ -588,6 +553,42 @@ ok: [dut] =>
            admin-state: disable
   
          peer-as: 65100
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -598,7 +599,7 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [dut]
 
 TASK [tempfile] ****************************************************************
@@ -607,10 +608,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -652,8 +653,8 @@ ok: [dut] =>
     ospf configuration for dut
     =========================================
     updates:
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        router-id: 10.0.0.1
        protocols:
         ospf:
@@ -712,7 +713,7 @@ skipping: [x2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [dut]
 
 TASK [tempfile] ****************************************************************
@@ -721,10 +722,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************

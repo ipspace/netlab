@@ -38,8 +38,8 @@ ok: [dut] =>
   
     updates:
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -51,14 +51,14 @@ ok: [dut] =>
         - ip-prefix: "2001:db8:1:1::1/64"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
        subinterface:
         index: 0
         description: "dut ~ c1"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "dut ~ c1"
        ipv4:
         admin-state: enable
@@ -78,14 +78,14 @@ ok: [dut] =>
           _annotate_min-advertisement-interval: "Reduced from platform default 200s"
           max-advertisement-interval: 5
   
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
        subinterface:
         index: 0
         description: "dut ~ stub"
   
-    - path: interface[name=ethernet-1/2]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
        description: "dut ~ stub"
        ipv4:
         admin-state: enable
@@ -107,19 +107,19 @@ ok: [dut] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/2.0
@@ -350,8 +350,9 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for pe2, c1
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [dut]
+TASK [Check version of nokia.srlinux] ******************************************
+ok: [dut] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -359,10 +360,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -401,8 +402,8 @@ skipping: [c1]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [c1]
 ok: [dut]
+ok: [c1]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -470,35 +471,24 @@ ok: [pe2] =>
     !
     !
     do write
-ok: [dut] => 
+fatal: [dut]: FAILED! => 
   msg: |-
-    bgp configuration for dut
-    =========================================
-    updates:
+    An unhandled exception occurred while running the lookup plugin 'template'. Error was a <class 'ansible.errors.AnsibleError'>, original message: Unexpected templating type error occurred on (updates:
   
-    - path: routing-policy/policy[name=accept_all]
-      val:
+    {#
+      Define default import/export policies for iBGP and eBGP: accept all
+    #}
+    - path: /routing-policy/policy[name=accept_all]
+      value:
        default-action:
         policy-result: "accept"
   
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      val:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.1"
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv6]
+    {% if bgp.next_hop_self|default(False) %}
+    {#
+      Define a policy to set next hop to self (loopback) when exporting received EBGP routes
+    #}
+    {%  for af in ['ipv4','ipv6'] if af in loopback %}
+    - path: routing-policy/policy[name=next_hop_self_ebgp_{{af}}]
       val:
        default-action:
         policy-result: "accept"
@@ -514,183 +504,58 @@ ok: [dut] =>
           policy-result: "accept"
           bgp:
            next-hop:
-            set: "2001:db8:1:1::1"
+            set: "{{ loopback[af] | ipaddr('address') }}"
+    {%  endfor %}
+    {% endif %}
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.1
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+    {% from "srlinux.macro.j2" import bgp_config with context %}
+    {{ bgp_config('default',bgp.as,bgp.router_id,bgp,{ 'af' : af }) }}
+    ): macro 'bgp_peer_group' takes not more than 4 argument(s). macro 'bgp_peer_group' takes not more than 4 argument(s). Unexpected templating type error occurred on (updates:
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-       afi-safi:
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
+    {#
+      Define default import/export policies for iBGP and eBGP: accept all
+    #}
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+       default-action:
+        policy-result: "accept"
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix: [] # Make sure it exists
-  
-    - path: routing-policy/policy[name=default_export]
+    {% if bgp.next_hop_self|default(False) %}
+    {#
+      Define a policy to set next hop to self (loopback) when exporting received EBGP routes
+    #}
+    {%  for af in ['ipv4','ipv6'] if af in loopback %}
+    - path: routing-policy/policy[name=next_hop_self_ebgp_{{af}}]
       val:
        default-action:
-        policy-result: reject
+        policy-result: "accept"
        statement:
-       - name: prefixes
-         match:
-          prefix-set: default_export
-         action:
-          policy-result: accept
-       - name: bgp
+       - name: set-nh-on-ebgp-routes
          match:
           protocol: bgp
+          bgp:
+           as-path-length:
+            value: 1
+            operator: "ge"
          action:
-          policy-result: accept
+          policy-result: "accept"
+          bgp:
+           next-hop:
+            set: "{{ loopback[af] | ipaddr('address') }}"
+    {%  endfor %}
+    {% endif %}
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         mask-length-range: exact
-  
-  
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 192.168.42.0/24
-         mask-length-range: exact
-  
-  
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 2001:db8:1:1::1/128
-         mask-length-range: exact
-  
-  
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 2001:db8:42::/64
-         mask-length-range: exact
-  
-  
-  
-  
-  
-  
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
-  
-  
-    - path: network-instance[name=default]/protocols/bgp
-      val:
-       neighbor:
-       - peer-address: "10.0.0.3"
-         description: pe2
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
-  
-         peer-as: 65101
-  
-  
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
-  
-  
-    - path: network-instance[name=default]/protocols/bgp
-      val:
-       neighbor:
-       - peer-address: "2001:db8:1:3::1"
-         description: pe2
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
-  
-         peer-as: 65101
+    {% from "srlinux.macro.j2" import bgp_config with context %}
+    {{ bgp_config('default',bgp.as,bgp.router_id,bgp,{ 'af' : af }) }}
+    ): macro 'bgp_peer_group' takes not more than 4 argument(s). macro 'bgp_peer_group' takes not more than 4 argument(s)
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [c1]
-ok: [dut]
 ok: [pe2]
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [c1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
-
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [dut]
-
-TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -706,76 +571,13 @@ changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [c1]
-ok: [dut]
 ok: [pe2]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [c1]
-ok: [dut]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    updates:
-    - path: network-instance[name=default]
-      val:
-       router-id: 10.0.0.1
-       protocols:
-        ospf:
-         instance:
-         - name: "0"
-           version: ospf-v2
-           admin-state: enable
-           max-ecmp-paths: 64
-           area:
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: system0.0
-               passive: True
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: ethernet-1/1.0
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: lo0.2
-               passive: True
-               failure-detection:
-                enable-bfd: False
-  
-    - path: network-instance[name=default]
-      val:
-       router-id: 10.0.0.1
-       protocols:
-        ospf:
-         instance:
-         - name: "1"
-           version: ospf-v3
-           address-family: ipv6-unicast
-           admin-state: enable
-           max-ecmp-paths: 64
-           area:
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: system0.0
-               passive: True
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: ethernet-1/1.0
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: lo0.2
-               passive: True
-               failure-detection:
-                enable-bfd: False
 ok: [c1] => 
   msg: |-
     ospf configuration for c1
@@ -883,12 +685,10 @@ ok: [pe2] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [c1]
-ok: [dut]
 ok: [pe2]
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for c1, pe2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [template] ****************************************************************
 changed: [c1]
@@ -903,37 +703,8 @@ skipping: [c1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [c1]
 changed: [pe2]
-
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
-skipping: [dut]
-
-TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-FAILED - RETRYING: [dut]: Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem) (2 retries left).
-FAILED - RETRYING: [dut]: Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem) (1 retries left).
-fatal: [dut]: FAILED! => changed=false 
-  attempts: 2
-  code: -32603
-  msg: |-
-    <_InactiveRpcError of RPC that terminated with:
-            status = StatusCode.FAILED_PRECONDITION
-            details = "Error in path: .network-instance{.name=="default"}.protocols.ospf.instance{.name=="0"}.area{.area-id=="0.0.0.0"}.interface{.interface-name=="lo0.2"}.interface-name
-        [FailedPrecondition] none of the network-instances ['default'] specified via ../../../../../../name contain the subinterface reference 'lo0.2'
-    Error in path: .network-instance{.name=="default"}.protocols.ospf.instance{.name=="1"}.area{.area-id=="0.0.0.0"}.interface{.interface-name=="lo0.2"}.interface-name
-        [FailedPrecondition] none of the network-instances ['default'] specified via ../../../../../../name contain the subinterface reference 'lo0.2'
-    "
-            debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Error in path: .network-instance{.name==\"default\"}.protocols.ospf.instance{.name==\"0\"}.area{.area-id==\"0.0.0.0\"}.interface{.interface-name==\"lo0.2\"}.interface-name\n    [FailedPrecondition] none of the network-instances [\'default\'] specified via ../../../../../../name contain the subinterface reference \'lo0.2\'\nError in path: .network-instance{.name==\"default\"}.protocols.ospf.instance{.name==\"1\"}.area{.area-id==\"0.0.0.0\"}.interface{.interface-name==\"lo0.2\"}.interface-name\n    [FailedPrecondition] none of the network-instances [\'default\'] specified via ../../../../../../name contain the subinterface reference \'lo0.2\'\n", grpc_status:9, created_time:"2024-08-18T14:54:52.433326195+00:00"}"
-    >
+changed: [c1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -1009,7 +780,7 @@ changed: [pe2]
 
 PLAY RECAP *********************************************************************
 c1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-dut                        : ok=32   changed=10   unreachable=0    failed=1    skipped=8    rescued=0    ignored=0   
+dut                        : ok=18   changed=4    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
 pe2                        : ok=48   changed=11   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
 Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed

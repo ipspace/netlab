@@ -6,9 +6,9 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
+ok: [h4]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 
 TASK [Find device readiness script] ********************************************
 ok: [s1]
@@ -33,8 +33,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [Find configuration template for initial] *********************************
@@ -53,8 +53,8 @@ ok: [s1] =>
   
     updates:
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -62,8 +62,8 @@ ok: [s1] =>
         - ip-prefix: "10.0.0.1/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1614
        subinterface:
@@ -72,8 +72,8 @@ ok: [s1] =>
         index: 0
         description: "s1 ~ s2"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "s1 ~ s2"
        ipv4:
         admin-state: enable
@@ -83,14 +83,14 @@ ok: [s1] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
@@ -105,8 +105,8 @@ ok: [s2] =>
   
     updates:
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -114,8 +114,8 @@ ok: [s2] =>
         - ip-prefix: "10.0.0.2/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1614
        subinterface:
@@ -124,8 +124,8 @@ ok: [s2] =>
         index: 0
         description: "s2 ~ s1"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "s2 ~ s1"
        ipv4:
         admin-state: enable
@@ -135,14 +135,14 @@ ok: [s2] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
@@ -208,9 +208,9 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for h3
+    initial configuration for h2
     =========================================
     #!/bin/bash
     #
@@ -232,37 +232,37 @@ ok: [h3] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.2.5/24 dev eth1
+    ip addr add 172.16.1.4/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
     #
     # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.2.0/24
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
     set +e
     ip route del 172.16.0.0/16 2>/dev/null
     set -e
-    ip route add 172.16.0.0/16 via 172.16.2.1
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    ip route add 172.16.0.0/16 via 172.16.1.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
     set +e
     ip route del 10.0.0.0/24 2>/dev/null
     set -e
-    ip route add 10.0.0.0/24 via 172.16.2.1
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.2.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.2.0/24
+    ip route add 10.0.0.0/24 via 172.16.1.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
     set +e
     ip route del 10.1.0.0/16 2>/dev/null
     set -e
-    ip route add 10.1.0.0/16 via 172.16.2.1
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.2.0/24
+    ip route add 10.1.0.0/16 via 172.16.1.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
     set +e
     ip route del 10.2.0.0/24 2>/dev/null
     set -e
-    ip route add 10.2.0.0/24 via 172.16.2.1
+    ip route add 10.2.0.0/24 via 172.16.1.2
     #
     # Print the final routing table
     ip route
@@ -324,9 +324,9 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-ok: [h2] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for h3
     =========================================
     #!/bin/bash
     #
@@ -348,37 +348,37 @@ ok: [h2] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.4/24 dev eth1
+    ip addr add 172.16.2.5/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
     #
     # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.2.0/24
     set +e
     ip route del 172.16.0.0/16 2>/dev/null
     set -e
-    ip route add 172.16.0.0/16 via 172.16.1.2
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    ip route add 172.16.0.0/16 via 172.16.2.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
     set +e
     ip route del 10.0.0.0/24 2>/dev/null
     set -e
-    ip route add 10.0.0.0/24 via 172.16.1.2
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    ip route add 10.0.0.0/24 via 172.16.2.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.2.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.2.0/24
     set +e
     ip route del 10.1.0.0/16 2>/dev/null
     set -e
-    ip route add 10.1.0.0/16 via 172.16.1.2
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    ip route add 10.1.0.0/16 via 172.16.2.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.2.0/24
     set +e
     ip route del 10.2.0.0/24 2>/dev/null
     set -e
-    ip route add 10.2.0.0/24 via 172.16.1.2
+    ip route add 10.2.0.0/24 via 172.16.2.1
     #
     # Print the final routing table
     ip route
@@ -388,32 +388,34 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [s1]
-ok: [s2]
+TASK [Check version of nokia.srlinux] ******************************************
+ok: [s1] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
+ok: [s2] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
 skipping: [s1]
 skipping: [s2]
 
-TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [s1]
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -431,15 +433,15 @@ ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-MMHtkVgH-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-NRSngTvw-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -476,41 +478,41 @@ ok: [s1] =>
     =========================================
   
     updates:
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
        subinterface:
        - index: 1000
          type: bridged
   
   
-    - path: network-instance[name=vlan1000]
-      val:
+    - path: /network-instance[name=vlan1000]
+      value:
        type: mac-vrf
        interface:
        - name: ethernet-1/2.1000
   
   
-    - path: interface[name=ethernet-1/3]
-      val:
+    - path: /interface[name=ethernet-1/3]
+      value:
        subinterface:
        - index: 1002
          type: bridged
   
   
-    - path: network-instance[name=vlan1002]
-      val:
+    - path: /network-instance[name=vlan1002]
+      value:
        type: mac-vrf
        interface:
        - name: ethernet-1/3.1002
   
   
-    - path: interface[name=irb0]
-      val:
+    - path: /interface[name=irb0]
+      value:
        subinterface:
        - index: 1000
   
-    - path: interface[name=irb0]/subinterface[index=1000]
-      val:
+    - path: /interface[name=irb0]/subinterface[index=1000]
+      value:
        description: "VLAN red (1000) ~ h1,s2"
        ipv4:
         admin-state: enable
@@ -519,26 +521,26 @@ ok: [s1] =>
           primary: [null]
   
   
-    - path: network-instance[name=vlan1000]
-      val:
+    - path: /network-instance[name=vlan1000]
+      value:
        type: mac-vrf
        description: "VLAN red (1000) ~ h1,s2"
        interface:
        - name: irb0.1000
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        interface:
        - name: irb0.1000
   
-    - path: interface[name=irb0]
-      val:
+    - path: /interface[name=irb0]
+      value:
        subinterface:
        - index: 1002
   
-    - path: interface[name=irb0]/subinterface[index=1002]
-      val:
+    - path: /interface[name=irb0]/subinterface[index=1002]
+      value:
        description: "VLAN green (1002) ~ h3"
        ipv4:
         admin-state: enable
@@ -547,26 +549,26 @@ ok: [s1] =>
           primary: [null]
   
   
-    - path: network-instance[name=vlan1002]
-      val:
+    - path: /network-instance[name=vlan1002]
+      value:
        type: mac-vrf
        description: "VLAN green (1002) ~ h3"
        interface:
        - name: irb0.1002
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        interface:
        - name: irb0.1002
   
-    - path: interface[name=irb0]
-      val:
+    - path: /interface[name=irb0]
+      value:
        subinterface:
        - index: 1001
   
-    - path: interface[name=irb0]/subinterface[index=1001]
-      val:
+    - path: /interface[name=irb0]/subinterface[index=1001]
+      value:
        description: "VLAN blue (1001) ~ h2,s2"
        ipv4:
         admin-state: enable
@@ -575,15 +577,15 @@ ok: [s1] =>
           primary: [null]
   
   
-    - path: network-instance[name=vlan1001]
-      val:
+    - path: /network-instance[name=vlan1001]
+      value:
        type: mac-vrf
        description: "VLAN blue (1001) ~ h2,s2"
        interface:
        - name: irb0.1001
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        interface:
        - name: irb0.1001
@@ -593,41 +595,41 @@ ok: [s2] =>
     =========================================
   
     updates:
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
        subinterface:
        - index: 1001
          type: bridged
   
   
-    - path: network-instance[name=vlan1001]
-      val:
+    - path: /network-instance[name=vlan1001]
+      value:
        type: mac-vrf
        interface:
        - name: ethernet-1/2.1001
   
   
-    - path: interface[name=ethernet-1/3]
-      val:
+    - path: /interface[name=ethernet-1/3]
+      value:
        subinterface:
        - index: 1003
          type: bridged
   
   
-    - path: network-instance[name=vlan1003]
-      val:
+    - path: /network-instance[name=vlan1003]
+      value:
        type: mac-vrf
        interface:
        - name: ethernet-1/3.1003
   
   
-    - path: interface[name=irb0]
-      val:
+    - path: /interface[name=irb0]
+      value:
        subinterface:
        - index: 1001
   
-    - path: interface[name=irb0]/subinterface[index=1001]
-      val:
+    - path: /interface[name=irb0]/subinterface[index=1001]
+      value:
        description: "VLAN blue (1001) ~ s1,h2"
        ipv4:
         admin-state: enable
@@ -636,26 +638,26 @@ ok: [s2] =>
           primary: [null]
   
   
-    - path: network-instance[name=vlan1001]
-      val:
+    - path: /network-instance[name=vlan1001]
+      value:
        type: mac-vrf
        description: "VLAN blue (1001) ~ s1,h2"
        interface:
        - name: irb0.1001
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        interface:
        - name: irb0.1001
   
-    - path: interface[name=irb0]
-      val:
+    - path: /interface[name=irb0]
+      value:
        subinterface:
        - index: 1003
   
-    - path: interface[name=irb0]/subinterface[index=1003]
-      val:
+    - path: /interface[name=irb0]/subinterface[index=1003]
+      value:
        description: "VLAN purple (1003) ~ h4"
        ipv4:
         admin-state: enable
@@ -664,26 +666,26 @@ ok: [s2] =>
           primary: [null]
   
   
-    - path: network-instance[name=vlan1003]
-      val:
+    - path: /network-instance[name=vlan1003]
+      value:
        type: mac-vrf
        description: "VLAN purple (1003) ~ h4"
        interface:
        - name: irb0.1003
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        interface:
        - name: irb0.1003
   
-    - path: interface[name=irb0]
-      val:
+    - path: /interface[name=irb0]
+      value:
        subinterface:
        - index: 1000
   
-    - path: interface[name=irb0]/subinterface[index=1000]
-      val:
+    - path: /interface[name=irb0]/subinterface[index=1000]
+      value:
        description: "VLAN red (1000) ~ h1,s1"
        ipv4:
         admin-state: enable
@@ -692,15 +694,15 @@ ok: [s2] =>
           primary: [null]
   
   
-    - path: network-instance[name=vlan1000]
-      val:
+    - path: /network-instance[name=vlan1000]
+      value:
        type: mac-vrf
        description: "VLAN red (1000) ~ h1,s1"
        interface:
        - name: irb0.1000
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        interface:
        - name: irb0.1000
@@ -712,7 +714,7 @@ ok: [s2]
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 skipping: [s2]
 
@@ -724,11 +726,11 @@ TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
 skipping: [s1]
 skipping: [s2]
 
-TASK [Update SRL vlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [s1]
 changed: [s2]
 
@@ -755,13 +757,13 @@ ok: [s1] =>
     =========================================
     updates:
   
-    - path: routing-policy/policy[name=accept_all]
-      val:
-       default-action:
-        policy-result: "accept"
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
   
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      val:
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
        default-action:
         policy-result: "accept"
        statement:
@@ -778,8 +780,8 @@ ok: [s1] =>
            next-hop:
             set: "10.0.0.1"
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        admin-state: enable
        autonomous-system: 65000
        router-id: 10.0.0.1
@@ -794,12 +796,12 @@ ok: [s1] =>
           max-paths-level-1: 64
           max-paths-level-2: 64 # indirect nexthops
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix: [] # Make sure it exists
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
   
-    - path: routing-policy/policy[name=default_export]
-      val:
+    - path: /routing-policy/policy[name=default_export]
+      value:
        default-action:
         policy-result: reject
        statement:
@@ -814,11 +816,11 @@ ok: [s1] =>
          action:
           policy-result: accept
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         mask-length-range: exact
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          mask-length-range: exact
   
   
   
@@ -826,8 +828,8 @@ ok: [s1] =>
   
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -853,8 +855,8 @@ ok: [s1] =>
        next-hop-self: True
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.0.0.2"
          description: s2
@@ -872,13 +874,13 @@ ok: [s2] =>
     =========================================
     updates:
   
-    - path: routing-policy/policy[name=accept_all]
-      val:
-       default-action:
-        policy-result: "accept"
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
   
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      val:
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
        default-action:
         policy-result: "accept"
        statement:
@@ -895,8 +897,8 @@ ok: [s2] =>
            next-hop:
             set: "10.0.0.2"
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        admin-state: enable
        autonomous-system: 65000
        router-id: 10.0.0.2
@@ -911,12 +913,12 @@ ok: [s2] =>
           max-paths-level-1: 64
           max-paths-level-2: 64 # indirect nexthops
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix: [] # Make sure it exists
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
   
-    - path: routing-policy/policy[name=default_export]
-      val:
+    - path: /routing-policy/policy[name=default_export]
+      value:
        default-action:
         policy-result: reject
        statement:
@@ -931,11 +933,11 @@ ok: [s2] =>
          action:
           policy-result: accept
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 10.0.0.2/32
-         mask-length-range: exact
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.2/32
+          mask-length-range: exact
   
   
   
@@ -943,8 +945,8 @@ ok: [s2] =>
   
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -970,8 +972,8 @@ ok: [s2] =>
        next-hop-self: True
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.0.0.1"
          description: s1
@@ -991,7 +993,7 @@ ok: [s2]
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 skipping: [s2]
 
@@ -1000,16 +1002,16 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
 skipping: [s1]
 skipping: [s2]
 
-TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [s1]
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1033,8 +1035,8 @@ ok: [s1] =>
     ospf configuration for s1
     =========================================
     updates:
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        router-id: 10.0.0.1
        protocols:
         ospf:
@@ -1064,8 +1066,8 @@ ok: [s2] =>
     ospf configuration for s2
     =========================================
     updates:
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        router-id: 10.0.0.2
        protocols:
         ospf:
@@ -1098,7 +1100,7 @@ ok: [s2]
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 skipping: [s2]
 
@@ -1110,11 +1112,11 @@ TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
 skipping: [s1]
 skipping: [s2]
 
-TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [s1]
 changed: [s2]
 

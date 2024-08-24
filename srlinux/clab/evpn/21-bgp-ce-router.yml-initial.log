@@ -43,8 +43,8 @@ ok: [s1] =>
   
     updates:
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -52,8 +52,8 @@ ok: [s1] =>
         - ip-prefix: "10.0.0.3/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1614
        subinterface:
@@ -62,8 +62,8 @@ ok: [s1] =>
         index: 0
         description: "s1 ~ s2"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "s1 ~ s2"
        ipv4:
         admin-state: enable
@@ -71,14 +71,14 @@ ok: [s1] =>
         - ip-prefix: "10.1.0.1/30"
           primary: [null]
   
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
        subinterface:
         index: 0
         description: "s1 ~ ce1"
   
-    - path: interface[name=ethernet-1/2]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
        description: "s1 ~ ce1"
        ipv4:
         admin-state: enable
@@ -88,14 +88,14 @@ ok: [s1] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
@@ -103,8 +103,8 @@ ok: [s1] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        interface:
        - name: ethernet-1/2.0
@@ -132,9 +132,9 @@ ok: [s2] =>
     echo "# Created by netlab initial" >>/tmp/hosts
     echo "10.0.0.1 10.1.0.5 ce1" >>/tmp/hosts
     echo "10.0.0.2 10.1.0.9 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 172.16.0.3 172.16.1.3 s1" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.1 s1" >>/tmp/hosts
     echo "10.1.0.6 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.2 172.16.0.4 172.16.1.4 s2" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.2 s2" >>/tmp/hosts
     echo "10.1.0.10 s2-tenant" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
@@ -208,16 +208,6 @@ ok: [s2] =>
      description s2 -> ce2 [external]
      ip address 10.1.0.10/30
     !
-    interface vlan1000
-     no shutdown
-     description VLAN red (1000) -> [s1]
-     ip address 172.16.0.4/24
-    !
-    interface vlan1001
-     no shutdown
-     description VLAN blue (1001) -> [s1]
-     ip address 172.16.1.4/24
-    !
     do write
     CONFIG
     vtysh -f /tmp/config
@@ -246,9 +236,9 @@ ok: [ce1] =>
     echo "# Created by netlab initial" >>/tmp/hosts
     echo "10.0.0.1 10.1.0.5 ce1" >>/tmp/hosts
     echo "10.0.0.2 10.1.0.9 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 172.16.0.3 172.16.1.3 s1" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.1 s1" >>/tmp/hosts
     echo "10.1.0.6 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.2 172.16.0.4 172.16.1.4 s2" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.2 s2" >>/tmp/hosts
     echo "10.1.0.10 s2-tenant" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
@@ -343,9 +333,9 @@ ok: [ce2] =>
     echo "# Created by netlab initial" >>/tmp/hosts
     echo "10.0.0.1 10.1.0.5 ce1" >>/tmp/hosts
     echo "10.0.0.2 10.1.0.9 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 172.16.0.3 172.16.1.3 s1" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.1 s1" >>/tmp/hosts
     echo "10.1.0.6 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.2 172.16.0.4 172.16.1.4 s2" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.2 s2" >>/tmp/hosts
     echo "10.1.0.10 s2-tenant" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
   
@@ -427,8 +417,9 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2, ce1, ce2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [s1]
+TASK [Check version of nokia.srlinux] ******************************************
+ok: [s1] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
@@ -436,10 +427,10 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
 skipping: [s1]
 
-TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [s1]
 
 TASK [debug] *******************************************************************
@@ -473,8 +464,8 @@ ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [ce1]
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -520,18 +511,6 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 up
-      ip addr flush dev vlan1000
-      ip addr add 172.16.0.4/24 dev vlan1000
-    fi
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      brctl addbr vlan1001
-      ip link set dev vlan1001 up
-      ip addr flush dev vlan1001
-      ip addr add 172.16.1.4/24 dev vlan1001
-    fi
   
     exit 0
 ok: [s1] => 
@@ -540,61 +519,6 @@ ok: [s1] =>
     =========================================
   
     updates:
-    - path: interface[name=irb0]
-      val:
-       subinterface:
-       - index: 1000
-  
-    - path: interface[name=irb0]/subinterface[index=1000]
-      val:
-       description: "VLAN red (1000) ~ s2"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "172.16.0.3/24"
-          primary: [null]
-  
-  
-    - path: network-instance[name=vlan1000]
-      val:
-       type: mac-vrf
-       description: "VLAN red (1000) ~ s2"
-       interface:
-       - name: irb0.1000
-  
-    - path: network-instance[name=default]
-      val:
-       type: default
-       interface:
-       - name: irb0.1000
-  
-    - path: interface[name=irb0]
-      val:
-       subinterface:
-       - index: 1001
-  
-    - path: interface[name=irb0]/subinterface[index=1001]
-      val:
-       description: "VLAN blue (1001) ~ s2"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "172.16.1.3/24"
-          primary: [null]
-  
-  
-    - path: network-instance[name=vlan1001]
-      val:
-       type: mac-vrf
-       description: "VLAN blue (1001) ~ s2"
-       interface:
-       - name: irb0.1001
-  
-    - path: network-instance[name=default]
-      val:
-       type: default
-       interface:
-       - name: irb0.1001
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [ce1]
@@ -608,7 +532,7 @@ skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 
 TASK [tempfile] ****************************************************************
@@ -617,11 +541,11 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
 skipping: [s1]
 
-TASK [Update SRL vlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [s1]
+TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
+skipping: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -762,13 +686,13 @@ ok: [s1] =>
     =========================================
     updates:
   
-    - path: routing-policy/policy[name=accept_all]
-      val:
-       default-action:
-        policy-result: "accept"
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
   
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      val:
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
        default-action:
         policy-result: "accept"
        statement:
@@ -785,8 +709,8 @@ ok: [s1] =>
            next-hop:
             set: "10.0.0.3"
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        admin-state: enable
        autonomous-system: 65000
        router-id: 10.0.0.3
@@ -801,12 +725,12 @@ ok: [s1] =>
           max-paths-level-1: 64
           max-paths-level-2: 64 # indirect nexthops
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix: [] # Make sure it exists
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
   
-    - path: routing-policy/policy[name=default_export]
-      val:
+    - path: /routing-policy/policy[name=default_export]
+      value:
        default-action:
         policy-result: reject
        statement:
@@ -821,11 +745,11 @@ ok: [s1] =>
          action:
           policy-result: accept
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 10.0.0.3/32
-         mask-length-range: exact
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.3/32
+          mask-length-range: exact
   
   
   
@@ -833,8 +757,8 @@ ok: [s1] =>
   
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -860,8 +784,8 @@ ok: [s1] =>
        next-hop-self: True
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.0.0.4"
          description: s2
@@ -877,16 +801,16 @@ ok: [s1] =>
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
 ok: [ce2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -904,7 +828,7 @@ changed: [ce1]
 changed: [ce2]
 changed: [s2]
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 
 TASK [tempfile] ****************************************************************
@@ -913,10 +837,10 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
 skipping: [s1]
 
-TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [s1]
 
 TASK [debug] *******************************************************************
@@ -945,8 +869,8 @@ ok: [s1] =>
     ospf configuration for s1
     =========================================
     updates:
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        router-id: 10.0.0.3
        protocols:
         ospf:
@@ -967,18 +891,6 @@ ok: [s1] =>
                failure-detection:
                 enable-bfd: False
            # OSPF not configured on external interface ethernet-1/2
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: irb0.1000
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: irb0.1001
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -1003,16 +915,6 @@ ok: [s2] =>
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
-    interface vlan1000
-    ! VLAN red (1000) -> [s1]
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface vlan1001
-    ! VLAN blue (1001) -> [s1]
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
   
     !
     do write
@@ -1029,7 +931,7 @@ skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 
 TASK [tempfile] ****************************************************************
@@ -1038,10 +940,10 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
 skipping: [s1]
 
-TASK [Update SRL ospf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [s1]
 
 TASK [debug] *******************************************************************
@@ -1136,24 +1038,24 @@ ok: [s1] =>
   
     updates:
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
   
   
   
-    - path: routing-policy/community-set[name=C65000_1]
-      val:
+    - path: /routing-policy/community-set[name=C65000_1]
+      value:
        member:
        - "target:65000:1" # Single member, else matching is AND
   
-    - path: routing-policy/community-set[name=tenant_export]
-      val:
+    - path: /routing-policy/community-set[name=tenant_export]
+      value:
        member:
        - "target:65000:1"
   
-    - path: network-instance[name=tenant]/protocols/bgp
-      val:
+    - path: /network-instance[name=tenant]/protocols/bgp
+      value:
        admin-state: enable
        autonomous-system: 65000
        router-id: 10.0.0.3
@@ -1168,12 +1070,12 @@ ok: [s1] =>
           max-paths-level-1: 64
           max-paths-level-2: 64 # indirect nexthops
   
-    - path: routing-policy/prefix-set[name=tenant_export]
-      val:
-       prefix: [] # Make sure it exists
+    - path: /routing-policy/prefix-set[name=tenant_export]
+      value:
+        prefix: [] # Make sure it exists
   
-    - path: routing-policy/policy[name=tenant_export]
-      val:
+    - path: /routing-policy/policy[name=tenant_export]
+      value:
        default-action:
         policy-result: reject
        statement:
@@ -1194,8 +1096,8 @@ ok: [s1] =>
   
   
   
-    - path: network-instance[name=tenant]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=tenant]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -1215,8 +1117,8 @@ ok: [s1] =>
        export-policy: tenant_export
   
   
-    - path: network-instance[name=tenant]/protocols/bgp
-      val:
+    - path: /network-instance[name=tenant]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.1.0.5"
          description: ce1
@@ -1233,29 +1135,29 @@ ok: [s1] =>
   
   
   
-    - path: network-instance[name=tenant]/protocols/bgp-vpn
-      val:
+    - path: /network-instance[name=tenant]/protocols/bgp-vpn
+      value:
        bgp-instance:
        - id: 1
          route-distinguisher:
           rd: "65000:1"
   
-    - path: network-instance[name=tenant]/inter-instance-policies
-      val:
+    - path: /network-instance[name=tenant]/inter-instance-policies
+      value:
        apply-policy:
         export-policy: "tenant_vpn_export"
         import-policy: "tenant_vpn_import"
   
-    - path: routing-policy/policy[name=tenant_vpn_export]
-      val:
+    - path: /routing-policy/policy[name=tenant_vpn_export]
+      value:
        default-action:
         policy-result: "accept"
         bgp:
          communities:
           add: "tenant_export"
   
-    - path: routing-policy/policy[name=tenant_vpn_import]
-      val:
+    - path: /routing-policy/policy[name=tenant_vpn_import]
+      value:
        default-action:
         policy-result: "reject"
        statement:
@@ -1278,7 +1180,7 @@ skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 
 TASK [tempfile] ****************************************************************
@@ -1287,10 +1189,10 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2] ***
 skipping: [s1]
 
-TASK [Update SRL vrf node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL vrf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2)] ***
 changed: [s1]
 
 TASK [debug] *******************************************************************
@@ -1332,79 +1234,17 @@ ok: [s1] =>
     =========================================
   
     updates:
-    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1000]
-      val:
-       type: bridged
-       ingress:
-        vni: 21000
-       egress:
-        source-ip: use-system-ipv4-address
   
-    - path: network-instance[name=vlan1000]
-      val:
-       type: mac-vrf
-       vxlan-interface:
-       - name: vxlan0.1000
-       protocols:
-        bgp-vpn:
-         bgp-instance:
-         - id: 1
-           # route-distinguisher:
-           # rd: "10.0.0.3:1000"
-           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.3:1000'"
-           route-target:
-            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1000 with VNI 21000"
-            import-rt: "target:65000:1000"
-            export-rt: "target:65000:1000"
-        bgp-evpn:
-         bgp-instance:
-         - id: 1
-           evi: 1000
-           ecmp: 8
-           vxlan-interface: vxlan0.1000
-  
-    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1001]
-      val:
-       type: bridged
-       ingress:
-        vni: 21001
-       egress:
-        source-ip: use-system-ipv4-address
-  
-    - path: network-instance[name=vlan1001]
-      val:
-       type: mac-vrf
-       vxlan-interface:
-       - name: vxlan0.1001
-       protocols:
-        bgp-vpn:
-         bgp-instance:
-         - id: 1
-           # route-distinguisher:
-           # rd: "10.0.0.3:1001"
-           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '10.0.0.3:1001'"
-           route-target:
-            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 1001 with VNI 21001"
-            import-rt: "target:65000:1001"
-            export-rt: "target:65000:1001"
-        bgp-evpn:
-         bgp-instance:
-         - id: 1
-           evi: 1001
-           ecmp: 8
-           vxlan-interface: vxlan0.1001
-  
-  
-    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=100]
-      val:
+    - path: /tunnel-interface[name=vxlan0]/vxlan-interface[index=100]
+      value:
        type: routed
        ingress:
         vni: 5042
        egress:
         source-ip: use-system-ipv4-address
   
-    - path: network-instance[name=tenant]
-      val:
+    - path: /network-instance[name=tenant]
+      value:
        type: ip-vrf
        vxlan-interface:
        - name: vxlan0.100
@@ -1459,44 +1299,6 @@ ok: [s2] =>
     ip link set tvni-100 master tenant
   
   
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan21000 type vxlan \
-      id 21000 \
-      dstport 4789 \
-      local 10.0.0.4 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    brctl addbr vlan1000
-    ip link set up dev vlan1000
-    fi
-    brctl addif vlan1000 vxlan21000
-    brctl stp vlan1000 off
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan21000
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan21000 learning off
-    ip link set up dev vxlan21000
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan21001 type vxlan \
-      id 21001 \
-      dstport 4789 \
-      local 10.0.0.4 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-    brctl addbr vlan1001
-    ip link set up dev vlan1001
-    fi
-    brctl addif vlan1001 vxlan21001
-    brctl stp vlan1001 off
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan21001
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan21001 learning off
-    ip link set up dev vxlan21001
-  
   
     exit $?
 
@@ -1512,7 +1314,7 @@ skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 
 TASK [tempfile] ****************************************************************
@@ -1521,10 +1323,10 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
 skipping: [s1]
 
-TASK [Update SRL vxlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
 changed: [s1]
 
 TASK [debug] *******************************************************************
@@ -1566,8 +1368,8 @@ ok: [s1] =>
     =========================================
   
     updates:
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        group:
        - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
          afi-safi:
@@ -1590,16 +1392,6 @@ ok: [s2] =>
       advertise ipv4 unicast
   
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 21001
-       rd 10.0.0.4:1001
-       route-target export 65000:1001
-       route-target import 65000:1001
-      exit-vni
-      vni 21000
-       rd 10.0.0.4:1000
-       route-target export 65000:1000
-       route-target import 65000:1000
-      exit-vni
   
       neighbor 10.0.0.3 activate
       neighbor 10.0.0.3 soft-reconfiguration inbound
@@ -1640,7 +1432,7 @@ skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
 
 TASK [tempfile] ****************************************************************
@@ -1649,10 +1441,10 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
 skipping: [s1]
 
-TASK [Update SRL evpn node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [s1]
 
 TASK [debug] *******************************************************************
@@ -1679,7 +1471,7 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 ce1                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 ce2                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-s1                         : ok=74   changed=28   unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
+s1                         : ok=73   changed=27   unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
 s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 

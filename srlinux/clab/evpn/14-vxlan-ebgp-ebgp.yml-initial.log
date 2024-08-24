@@ -6,15 +6,15 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Find device readiness script] ********************************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [spine]
@@ -29,8 +29,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spi
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [spine]
 ok: [l1]
-ok: [h1]
 ok: [l2]
+ok: [h1]
 ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
@@ -48,8 +48,8 @@ ok: [spine] =>
   
     updates:
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -57,8 +57,8 @@ ok: [spine] =>
         - ip-prefix: "10.0.0.1/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1614
        subinterface:
@@ -67,8 +67,8 @@ ok: [spine] =>
         index: 0
         description: "spine ~ l1"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "spine ~ l1"
        ipv4:
         admin-state: enable
@@ -76,8 +76,8 @@ ok: [spine] =>
         - ip-prefix: "10.1.0.2/30"
           primary: [null]
   
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1614
        subinterface:
@@ -86,8 +86,8 @@ ok: [spine] =>
         index: 0
         description: "spine ~ l2"
   
-    - path: interface[name=ethernet-1/2]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
        description: "spine ~ l2"
        ipv4:
         admin-state: enable
@@ -97,19 +97,19 @@ ok: [spine] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/2.0
@@ -120,8 +120,8 @@ ok: [l1] =>
   
     updates:
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -129,8 +129,8 @@ ok: [l1] =>
         - ip-prefix: "10.0.0.2/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
      # min 1500; max 9412 for 7220, 9500 for 7250 platforms
        mtu: 1614
        subinterface:
@@ -139,8 +139,8 @@ ok: [l1] =>
         index: 0
         description: "l1 ~ spine"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "l1 ~ spine"
        ipv4:
         admin-state: enable
@@ -150,17 +150,53 @@ ok: [l1] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -268,42 +304,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -353,33 +353,35 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [spine]
-ok: [l1]
+TASK [Check version of nokia.srlinux] ******************************************
+ok: [spine] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
+ok: [l1] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
 skipping: [spine]
 skipping: [l1]
 
-TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
-changed: [l1]
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [spine]
 skipping: [l1]
 
 TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -407,10 +409,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-NdIaxPoJ-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-AJiPqbDK-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -465,22 +467,22 @@ ok: [l1] =>
     =========================================
   
     updates:
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
        subinterface:
        - index: 1000
          type: bridged
   
   
-    - path: network-instance[name=vlan1000]
-      val:
+    - path: /network-instance[name=vlan1000]
+      value:
        type: mac-vrf
        interface:
        - name: ethernet-1/2.1000
   
   
-    - path: interface[name=irb0]
-      val:
+    - path: /interface[name=irb0]
+      value:
        subinterface:
        - index: 1000
 
@@ -494,7 +496,7 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [l1]
 
 TASK [tempfile] ****************************************************************
@@ -503,10 +505,10 @@ changed: [l1 -> localhost]
 TASK [template] ****************************************************************
 changed: [l1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
 skipping: [l1]
 
-TASK [Update SRL vlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
@@ -534,8 +536,8 @@ ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l2] => 
@@ -582,13 +584,13 @@ ok: [l1] =>
     =========================================
     updates:
   
-    - path: routing-policy/policy[name=accept_all]
-      val:
-       default-action:
-        policy-result: "accept"
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
   
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      val:
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
        default-action:
         policy-result: "accept"
        statement:
@@ -605,8 +607,8 @@ ok: [l1] =>
            next-hop:
             set: "10.0.0.2"
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        admin-state: enable
        autonomous-system: 65200
        router-id: 10.0.0.2
@@ -621,12 +623,12 @@ ok: [l1] =>
           max-paths-level-1: 64
           max-paths-level-2: 64 # indirect nexthops
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix: [] # Make sure it exists
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
   
-    - path: routing-policy/policy[name=default_export]
-      val:
+    - path: /routing-policy/policy[name=default_export]
+      value:
        default-action:
         policy-result: reject
        statement:
@@ -641,11 +643,11 @@ ok: [l1] =>
          action:
           policy-result: accept
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 10.0.0.2/32
-         mask-length-range: exact
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.2/32
+          mask-length-range: exact
   
   
   
@@ -653,8 +655,8 @@ ok: [l1] =>
   
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -674,8 +676,8 @@ ok: [l1] =>
        export-policy: default_export
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.1.0.2"
          description: spine
@@ -689,8 +691,8 @@ ok: [l1] =>
          peer-as: 65100
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -712,8 +714,8 @@ ok: [l1] =>
        export-policy: default_export
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.0.0.1"
          description: spine
@@ -733,13 +735,13 @@ ok: [spine] =>
     =========================================
     updates:
   
-    - path: routing-policy/policy[name=accept_all]
-      val:
-       default-action:
-        policy-result: "accept"
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
   
-    - path: routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      val:
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
        default-action:
         policy-result: "accept"
        statement:
@@ -756,8 +758,8 @@ ok: [spine] =>
            next-hop:
             set: "10.0.0.1"
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        admin-state: enable
        autonomous-system: 65100
        router-id: 10.0.0.1
@@ -772,12 +774,12 @@ ok: [spine] =>
           max-paths-level-1: 64
           max-paths-level-2: 64 # indirect nexthops
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix: [] # Make sure it exists
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
   
-    - path: routing-policy/policy[name=default_export]
-      val:
+    - path: /routing-policy/policy[name=default_export]
+      value:
        default-action:
         policy-result: reject
        statement:
@@ -792,11 +794,11 @@ ok: [spine] =>
          action:
           policy-result: accept
   
-    - path: routing-policy/prefix-set[name=default_export]
-      val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         mask-length-range: exact
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          mask-length-range: exact
   
   
   
@@ -804,8 +806,8 @@ ok: [spine] =>
   
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -825,8 +827,8 @@ ok: [spine] =>
        export-policy: default_export
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.1.0.1"
          description: l1
@@ -840,8 +842,8 @@ ok: [spine] =>
          peer-as: 65200
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -861,8 +863,8 @@ ok: [spine] =>
        export-policy: default_export
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.1.0.5"
          description: l2
@@ -876,8 +878,8 @@ ok: [spine] =>
          peer-as: 65201
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -899,8 +901,8 @@ ok: [spine] =>
        export-policy: default_export
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.0.0.2"
          description: l1
@@ -916,8 +918,8 @@ ok: [spine] =>
          peer-as: 65200
   
   
-    - path: network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      val:
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
        admin-state: enable
        afi-safi:
        - afi-safi-name: ipv4-unicast
@@ -939,8 +941,8 @@ ok: [spine] =>
        export-policy: default_export
   
   
-    - path: network-instance[name=default]/protocols/bgp
-      val:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
        neighbor:
        - peer-address: "10.0.0.3"
          description: l2
@@ -957,14 +959,14 @@ ok: [spine] =>
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [l1]
 skipping: [spine]
 
@@ -976,11 +978,11 @@ TASK [template] ****************************************************************
 changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
 skipping: [l1]
 skipping: [spine]
 
-TASK [Update SRL bgp node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [l1]
 changed: [spine]
 
@@ -1022,16 +1024,16 @@ ok: [l1] =>
     =========================================
   
     updates:
-    - path: tunnel-interface[name=vxlan0]/vxlan-interface[index=1000]
-      val:
+    - path: /tunnel-interface[name=vxlan0]/vxlan-interface[index=1000]
+      value:
        type: bridged
        ingress:
         vni: 1000
        egress:
         source-ip: use-system-ipv4-address
   
-    - path: network-instance[name=vlan1000]
-      val:
+    - path: /network-instance[name=vlan1000]
+      value:
        type: mac-vrf
        vxlan-interface:
        - name: vxlan0.1000
@@ -1099,7 +1101,7 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [l1]
 
 TASK [tempfile] ****************************************************************
@@ -1108,10 +1110,10 @@ changed: [l1 -> localhost]
 TASK [template] ****************************************************************
 changed: [l1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
 skipping: [l1]
 
-TASK [Update SRL vxlan node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
@@ -1193,7 +1195,7 @@ TASK [Deploy evpn configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [l1]
 skipping: [spine]
 
@@ -1202,14 +1204,14 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
 skipping: [l1]
 skipping: [spine]
 
-TASK [Update SRL evpn node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
 skipping: [l1]
 skipping: [spine]
 
@@ -1272,7 +1274,7 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [l1]
 skipping: [spine]
 
@@ -1281,14 +1283,14 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/extra/ebgp.multihop/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/extra/ebgp.multihop/srlinux.j2] ***
 skipping: [l1]
 skipping: [spine]
 
-TASK [Update SRL ebgp.multihop node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/extra/ebgp.multihop/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL ebgp.multihop node configuration (template=/home/pipi/net101/tools/netsim/extra/ebgp.multihop/srlinux.j2)] ***
 skipping: [l1]
 skipping: [spine]
 

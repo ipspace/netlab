@@ -37,15 +37,15 @@ ok: [dut] =>
     =========================================
   
     updates:
-    - path: system/mtu
-      val:
+    - path: /system/mtu
+      value:
        default-port-mtu: 1514
        default-l2-mtu: 1514
        default-ip-mtu: 1500
        _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
   
-    - path: interface[name=system0]/subinterface[index=0]
-      val:
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
        description: "No description"
        ipv4:
         admin-state: enable
@@ -53,14 +53,14 @@ ok: [dut] =>
         - ip-prefix: "10.0.0.1/32"
   
   
-    - path: interface[name=ethernet-1/1]
-      val:
+    - path: /interface[name=ethernet-1/1]
+      value:
        subinterface:
         index: 0
         description: "dut ~ x1"
   
-    - path: interface[name=ethernet-1/1]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
        description: "dut ~ x1"
        ipv4:
         admin-state: enable
@@ -68,14 +68,14 @@ ok: [dut] =>
         - ip-prefix: "10.1.0.1/30"
           primary: [null]
   
-    - path: interface[name=ethernet-1/2]
-      val:
+    - path: /interface[name=ethernet-1/2]
+      value:
        subinterface:
         index: 0
         description: "dut ~ x2"
   
-    - path: interface[name=ethernet-1/2]/subinterface[index=0]
-      val:
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
        description: "dut ~ x2"
        ipv4:
         admin-state: enable
@@ -85,19 +85,19 @@ ok: [dut] =>
   
   
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: system0.0
   
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/1.0
-    - path: network-instance[name=default]
-      val:
+    - path: /network-instance[name=default]
+      value:
        type: default
        interface:
        - name: ethernet-1/2.0
@@ -300,8 +300,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -311,23 +311,24 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [dut]
+TASK [Check version of nokia.srlinux] ******************************************
+ok: [dut] => changed=false 
+  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -335,10 +336,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL initial node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -368,13 +369,36 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    isis configuration for x1
+    =========================================
+    !
+    router isis Gandalf
+      log-adjacency-changes
+      hostname dynamic
+      is-type level-1
+      metric-style wide
+      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+      net 49.0042.0000.0000.0002.00
+    !
+    interface lo
+      ip router isis Gandalf
+    !
+    interface eth1
+    ! x1 -> dut
+      ip router isis Gandalf
+      isis network point-to-point
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     isis configuration for dut
     =========================================
     updates:
-    - path: network-instance[name=default]/protocols/isis
-      val:
+    - path: /network-instance[name=default]/protocols/isis
+      value:
        instance:
        - name: Gandalf
          admin-state: enable
@@ -400,29 +424,6 @@ ok: [dut] =>
            ipv4-unicast:
             admin-state: enable
             enable-bfd: False
-ok: [x1] => 
-  msg: |-
-    isis configuration for x1
-    =========================================
-    !
-    router isis Gandalf
-      log-adjacency-changes
-      hostname dynamic
-      is-type level-1
-      metric-style wide
-      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-      net 49.0042.0000.0000.0002.00
-    !
-    interface lo
-      ip router isis Gandalf
-    !
-    interface eth1
-    ! x1 -> dut
-      ip router isis Gandalf
-      isis network point-to-point
-    !
-    !
-    do write
 ok: [x2] => 
   msg: |-
     isis configuration for x2
@@ -449,14 +450,14 @@ ok: [x2] =>
 
 TASK [Find configuration deployment deploy_script for isis] ********************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Deploy isis configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Check version of nokia.srlinux] ******************************************
 skipping: [dut]
 
 TASK [tempfile] ****************************************************************
@@ -465,10 +466,10 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [Generated gNMI config based on /home/pipi/net101/tools/netsim/ansible/templates/isis/srlinux.j2] ***
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/isis/srlinux.j2] ***
 skipping: [dut]
 
-TASK [Update SRL isis node configuration (gNMI SET template=/home/pipi/net101/tools/netsim/ansible/templates/isis/srlinux.j2,CA=/work/netlab_cicd/clab-ml_17/.tls/ca/ca.pem)] ***
+TASK [Update SRL isis node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/isis/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -490,8 +491,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
