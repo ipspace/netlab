@@ -441,8 +441,8 @@ changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s2 -> localhost]
-changed: [ce2 -> localhost]
 changed: [ce1 -> localhost]
+changed: [ce2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -453,9 +453,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce2]
 changed: [s2]
 changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -463,9 +463,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce1]
 changed: [s2]
 changed: [ce2]
+changed: [ce1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -927,9 +927,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [ce1]
 changed: [ce2]
 changed: [s2]
+changed: [ce1]
 
 TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
@@ -1035,28 +1035,189 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/vrf_config
     exit $?
-fatal: [s1]: FAILED! => 
+ok: [s1] => 
   msg: |-
-    The task includes an option with an undefined variable. The error was: 'dict object' has no attribute 'neighbors'. 'dict object' has no attribute 'neighbors'. 'dict object' has no attribute 'neighbors'. 'dict object' has no attribute 'neighbors'
+    vrf configuration for s1
+    =========================================
   
-    The error appears to be in '/home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml': line 36, column 5, but may
-    be elsewhere in the file depending on the exact syntax problem.
+    updates:
   
-    The offending line appears to be:
+    - path: /network-instance[name=tenant]
+      value:
+       type: ip-vrf
+  
+    - path: /routing-policy/policy[name=tenant_export_ospf]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+        - name: local
+          match:
+            protocol: local
+          action:
+            policy-result: accept
+  
+    - path: /network-instance[name=tenant]
+      value:
+        router-id: 10.0.0.3
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              asbr: {}
+              export-policy: "tenant_export_ospf"
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/2.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
   
   
-      - name: "Print deployed configuration when running in verbose mode"
-        ^ here
+  
+    - path: /routing-policy/community-set[name=C65000_1]
+      value:
+       member:
+       - "target:65000:1" # Single member, else matching is AND
+  
+    - path: /routing-policy/community-set[name=tenant_export]
+      value:
+       member:
+       - "target:65000:1"
+  
+    - path: /network-instance[name=tenant]/protocols/bgp
+      value:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.3
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
+  
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: /routing-policy/prefix-set[name=tenant_export]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=tenant_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: tenant_export
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+        - name: local
+          match:
+            protocol: local
+          action:
+            policy-result: accept
+        - name: ospfv2
+          match:
+            protocol: ospfv2
+          action:
+            policy-result: accept
+        - name: ospfv3
+          match:
+            protocol: ospfv3
+          action:
+            policy-result: accept
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    - path: /network-instance[name=tenant]/protocols/bgp-vpn
+      value:
+       bgp-instance:
+       - id: 1
+         route-distinguisher:
+          rd: "65000:1"
+  
+    - path: /network-instance[name=tenant]/inter-instance-policies
+      value:
+       apply-policy:
+        export-policy: "tenant_vpn_export"
+        import-policy: "tenant_vpn_import"
+  
+    - path: /routing-policy/policy[name=tenant_vpn_export]
+      value:
+       default-action:
+        policy-result: "accept"
+        bgp:
+         communities:
+          add: "tenant_export"
+  
+    - path: /routing-policy/policy[name=tenant_vpn_import]
+      value:
+       default-action:
+        policy-result: "reject"
+       statement:
+       - name: 11
+         match:
+          bgp:
+           community-set: "C65000_1"
+         action:
+          policy-result: "accept"
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [ce1]
 skipping: [ce2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
+
+TASK [Check version of nokia.srlinux] ******************************************
+skipping: [s1]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2] ***
+skipping: [s1]
+
+TASK [Update SRL vrf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2)] ***
+changed: [s1]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s2]
@@ -1073,16 +1234,55 @@ skipping: [s2]
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [ce1]
 ok: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+  
+    updates:
+  
+    - path: /tunnel-interface[name=vxlan0]/vxlan-interface[index=100]
+      value:
+       type: routed
+       ingress:
+        vni: 5042
+       egress:
+        source-ip: use-system-ipv4-address
+  
+    - path: /network-instance[name=tenant]
+      value:
+       type: ip-vrf
+       vxlan-interface:
+       - name: vxlan0.100
+       protocols:
+        bgp-vpn:
+         bgp-instance:
+         - id: 1
+           # route-distinguisher:
+           # rd: "65000:1"
+           _annotate: "RD left as <auto> for EVPN services and ECMP to work as expected, not '65000:1'"
+           route-target:
+            _annotate: "For compatibility with frr, override auto-derived RT based on EVI 100 with VNI 5042"
+            import-rt: "target:65000:1"
+            export-rt: "target:65000:1"
+        bgp-evpn:
+         bgp-instance:
+         - id: 1
+           evi: 100
+           ecmp: 8
+           vxlan-interface: vxlan0.100
 ok: [s2] => 
   msg: |-
     vxlan configuration for s2
@@ -1123,12 +1323,35 @@ ok: [s2] =>
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [ce1]
 skipping: [ce2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
+
+TASK [Check version of nokia.srlinux] ******************************************
+skipping: [s1]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
+skipping: [s1]
+
+TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
+changed: [s1]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s2]
@@ -1145,16 +1368,37 @@ skipping: [s2]
 TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [ce1]
 ok: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for evpn] ************************************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    evpn configuration for s1
+    =========================================
+  
+    updates:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+       group:
+       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+         afi-safi:
+         - afi-safi-name: evpn
+           admin-state: enable
+       route-advertisement:
+        rapid-withdrawal: True
+       afi-safi:
+       - afi-safi-name: evpn
+         evpn:
+          rapid-update: True
 ok: [s2] => 
   msg: |-
     evpn configuration for s2
@@ -1197,12 +1441,35 @@ ok: [s2] =>
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
+
+TASK [Check version of nokia.srlinux] ******************************************
+skipping: [s1]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+
+TASK [template] ****************************************************************
+changed: [s1 -> localhost]
+
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
+skipping: [s1]
+
+TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
+changed: [s1]
+
+TASK [debug] *******************************************************************
+skipping: [s1]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s2]
@@ -1222,9 +1489,13 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 ce1                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 ce2                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-s1                         : ok=48   changed=15   unreachable=0    failed=1    skipped=13   rescued=0    ignored=0   
+s1                         : ok=73   changed=27   unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
 s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The devices under test are layer-3 EVPN/VXLAN routers
+running BGP with external devices.
+
+External devices should be able to ping each other
+
