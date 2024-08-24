@@ -48,4 +48,4 @@ class SRLINUX(_Quirks):
           'quirks')
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
-    need_ansible_collection(node,'nokia.grpc')
+    need_ansible_collection(node,'nokia.srlinux')
