@@ -12,6 +12,7 @@ These instructions and tutorials cover some of the usual early hurdles:
 * [Building Vagrant boxes](libvirt-build-boxes)
 * [Building or installing containers](clab-images)
 * [Selecting Network Devices' Software Release](tutorial-release)
+* [](tutorial-linux)
 
 ```eval_rst
 .. contents:: Other Tutorials
@@ -91,4 +92,5 @@ Documentation of individual configuration modules includes sample lab topology f
 
    example/github.md
    example/release.md
+   example/linux.md
 ```
