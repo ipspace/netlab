@@ -93,6 +93,10 @@ defaults.device: eos
 defaults.devices.eos.image: arista/vEOS-lab-4.21.14M
 ```
 
+```{tip}
+Vagrant box names do not have to include the image version. If you specify just the box name, Vagrant selects the latest (numerically highest) version. Container image names must include the image tag (version).
+```
+
 Change the provider-specific device images if you want to run your topology on multiple virtualization providers. This is how you can set different device image names for Arista EOS virtual machines and containers in the lab topology:
 
 ```
