@@ -373,8 +373,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [c1 -> localhost]
 changed: [pe2 -> localhost]
+changed: [c1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe2]
@@ -402,8 +402,8 @@ skipping: [c1]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [dut]
 ok: [c1]
+ok: [dut]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -471,25 +471,19 @@ ok: [pe2] =>
     !
     !
     do write
-fatal: [dut]: FAILED! => 
+ok: [dut] => 
   msg: |-
-    An unhandled exception occurred while running the lookup plugin 'template'. Error was a <class 'ansible.errors.AnsibleError'>, original message: Unexpected templating type error occurred on (updates:
+    bgp configuration for dut
+    =========================================
+    updates:
   
-    {#
-      Define default import/export policies for iBGP and eBGP: accept all
-    #}
     - path: /routing-policy/policy[name=accept_all]
       value:
-       default-action:
-        policy-result: "accept"
+        default-action:
+          policy-result: "accept"
   
-    {% if bgp.next_hop_self|default(False) %}
-    {#
-      Define a policy to set next hop to self (loopback) when exporting received EBGP routes
-    #}
-    {%  for af in ['ipv4','ipv6'] if af in loopback %}
-    - path: routing-policy/policy[name=next_hop_self_ebgp_{{af}}]
-      val:
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
        default-action:
         policy-result: "accept"
        statement:
@@ -504,29 +498,9 @@ fatal: [dut]: FAILED! =>
           policy-result: "accept"
           bgp:
            next-hop:
-            set: "{{ loopback[af] | ipaddr('address') }}"
-    {%  endfor %}
-    {% endif %}
-  
-    {% from "srlinux.macro.j2" import bgp_config with context %}
-    {{ bgp_config('default',bgp.as,bgp.router_id,bgp,{ 'af' : af }) }}
-    ): macro 'bgp_peer_group' takes not more than 4 argument(s). macro 'bgp_peer_group' takes not more than 4 argument(s). Unexpected templating type error occurred on (updates:
-  
-    {#
-      Define default import/export policies for iBGP and eBGP: accept all
-    #}
-    - path: /routing-policy/policy[name=accept_all]
+            set: "10.0.0.1"
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv6]
       value:
-       default-action:
-        policy-result: "accept"
-  
-    {% if bgp.next_hop_self|default(False) %}
-    {#
-      Define a policy to set next hop to self (loopback) when exporting received EBGP routes
-    #}
-    {%  for af in ['ipv4','ipv6'] if af in loopback %}
-    - path: routing-policy/policy[name=next_hop_self_ebgp_{{af}}]
-      val:
        default-action:
         policy-result: "accept"
        statement:
@@ -541,21 +515,182 @@ fatal: [dut]: FAILED! =>
           policy-result: "accept"
           bgp:
            next-hop:
-            set: "{{ loopback[af] | ipaddr('address') }}"
-    {%  endfor %}
-    {% endif %}
+            set: "2001:db8:1:1::1"
   
-    {% from "srlinux.macro.j2" import bgp_config with context %}
-    {{ bgp_config('default',bgp.as,bgp.router_id,bgp,{ 'af' : af }) }}
-    ): macro 'bgp_peer_group' takes not more than 4 argument(s). macro 'bgp_peer_group' takes not more than 4 argument(s)
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+       admin-state: enable
+       autonomous-system: 65000
+       router-id: 10.0.0.1
+       ebgp-default-policy:
+        export-reject-all: False
+        import-reject-all: False
+  
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+       afi-safi:
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+         multipath:
+          max-paths-level-1: 64
+          max-paths-level-2: 64 # indirect nexthops
+  
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_export
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          mask-length-range: exact
+  
+  
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 192.168.42.0/24
+          mask-length-range: exact
+  
+  
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 2001:db8:1:1::/64
+          mask-length-range: exact
+  
+  
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 2001:db8:42::/64
+          mask-length-range: exact
+  
+  
+  
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+       neighbor:
+       - peer-address: "10.0.0.3"
+         description: pe2
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: enable
+  
+         peer-as: 65101
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+       admin-state: enable
+       afi-safi:
+       - afi-safi-name: ipv4-unicast
+         admin-state: enable
+       - afi-safi-name: ipv6-unicast
+         admin-state: enable
+  
+       timers:
+        connect-retry: 10
+        _annotate_connect-retry: "Reduce default 120s to 10s"
+        minimum-advertisement-interval: 1
+       send-community:
+        standard: True
+        large: True
+        _annotate_large: "Assuming 'standard' implies 'large' here"
+       import-policy: accept_all
+       export-policy: default_export
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+       neighbor:
+       - peer-address: "2001:db8:1:3::1"
+         description: pe2
+         peer-group: ebgp
+         afi-safi:
+         - afi-safi-name: ipv4-unicast
+           admin-state: enable
+         - afi-safi-name: ipv6-unicast
+           admin-state: enable
+  
+         peer-as: 65101
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [c1]
 ok: [pe2]
+ok: [dut]
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [c1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+
+TASK [Check version of nokia.srlinux] ******************************************
+skipping: [dut]
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
+skipping: [dut]
+
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -571,13 +706,78 @@ changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [c1]
+ok: [dut]
 ok: [pe2]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [c1]
+ok: [dut]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    updates:
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/2.0
+                  passive: True
+                  failure-detection:
+                    enable-bfd: False
+  
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "1"
+              version: ospf-v3
+              address-family: ipv6-unicast
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/2.0
+                  passive: True
+                  failure-detection:
+                    enable-bfd: False
 ok: [c1] => 
   msg: |-
     ospf configuration for c1
@@ -685,14 +885,16 @@ ok: [pe2] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [c1]
+ok: [dut]
 ok: [pe2]
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for c1, pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [template] ****************************************************************
-changed: [c1]
 changed: [pe2]
+changed: [c1]
 
 TASK [set_fact] ****************************************************************
 ok: [c1]
@@ -703,14 +905,97 @@ skipping: [c1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [pe2]
 changed: [c1]
+changed: [pe2]
+
+TASK [Check version of nokia.srlinux] ******************************************
+skipping: [dut]
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
+skipping: [dut]
+
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
+skipping: [dut] => (item=bgp.session) 
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, pe2 => (item=ebgp.multihop)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for pe2 => (item=bgp.session)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for pe2 => (item=ebgp.multihop)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+ok: [pe2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [pe2]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+ok: [pe2 -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [pe2]
+
+TASK [Process template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/srlinux.j2 for dut] ***
+skipping: [pe2]
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+ok: [pe2]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+
+TASK [Check version of nokia.srlinux] ******************************************
+skipping: [dut]
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/extra/ebgp.multihop/srlinux.j2] ***
+skipping: [dut]
+
+TASK [Update SRL ebgp.multihop node configuration (template=/home/pipi/net101/tools/netsim/extra/ebgp.multihop/srlinux.j2)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [pe2]
+
+TASK [set_fact] ****************************************************************
+ok: [pe2]
+
+TASK [run /tmp/config.sh to deploy ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
+skipping: [pe2]
+
+TASK [run vtysh to import ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
+changed: [pe2]
 
 TASK [Find configuration template] *********************************************
 ok: [pe2]
@@ -745,44 +1030,12 @@ changed: [pe2]
 TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 skipping: [pe2]
 
-TASK [Find configuration template] *********************************************
-ok: [pe2]
-
-TASK [fail] ********************************************************************
-skipping: [pe2]
-
-TASK [Check is the configuration template is a file] ***************************
-ok: [pe2 -> localhost]
-
-TASK [fail] ********************************************************************
-skipping: [pe2]
-
-TASK [Process template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2 for pe2] ***
-skipping: [pe2]
-
-TASK [Find custom configuration deployment script] *****************************
-ok: [pe2]
-
-TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
-
-TASK [template] ****************************************************************
-changed: [pe2]
-
-TASK [set_fact] ****************************************************************
-ok: [pe2]
-
-TASK [run /tmp/config.sh to deploy ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
-skipping: [pe2]
-
-TASK [run vtysh to import ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
-changed: [pe2]
-
 PLAY RECAP *********************************************************************
 c1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-dut                        : ok=18   changed=4    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
+dut                        : ok=43   changed=16   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 pe2                        : ok=48   changed=11   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the (global) EBGP multihop implementation
+

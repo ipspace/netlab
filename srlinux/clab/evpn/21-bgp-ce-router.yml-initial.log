@@ -440,9 +440,9 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s2 -> localhost]
 changed: [ce1 -> localhost]
 changed: [ce2 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -463,8 +463,8 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -644,42 +644,6 @@ ok: [ce2] =>
     !
     !
     do write
-ok: [s2] => 
-  msg: |-
-    bgp configuration for s2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.0.0.3 remote-as 65000
-      neighbor 10.0.0.3 description s1
-      neighbor 10.0.0.3 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 next-hop-self
-      no neighbor 10.0.0.3 send-community all
-      neighbor 10.0.0.3 send-community standard
-      neighbor 10.0.0.3 send-community large
-      neighbor 10.0.0.3 send-community extended
-    !
-    !
-    !
-    do write
 ok: [s1] => 
   msg: |-
     bgp configuration for s1
@@ -796,6 +760,42 @@ ok: [s1] =>
            admin-state: disable
          - afi-safi-name: evpn
            admin-state: enable # Must have at least 1 address family enabled
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.0.0.3 remote-as 65000
+      neighbor 10.0.0.3 description s1
+      neighbor 10.0.0.3 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 next-hop-self
+      no neighbor 10.0.0.3 send-community all
+      neighbor 10.0.0.3 send-community standard
+      neighbor 10.0.0.3 send-community large
+      neighbor 10.0.0.3 send-community extended
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
@@ -809,8 +809,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml
 
 TASK [template] ****************************************************************
 changed: [ce1]
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -824,8 +824,8 @@ skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [ce1]
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 
 TASK [Check version of nokia.srlinux] ******************************************
 skipping: [s1]
@@ -1102,6 +1102,11 @@ ok: [s1] =>
         - name: ospfv3
           match:
             protocol: ospfv3
+          action:
+            policy-result: accept
+        - name: bgp_evpn
+          match:
+            protocol: bgp-evpn
           action:
             policy-result: accept
   
@@ -1381,20 +1386,21 @@ ok: [s1] =>
     evpn configuration for s1
     =========================================
   
+  
     updates:
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       group:
-       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
-         afi-safi:
-         - afi-safi-name: evpn
-           admin-state: enable
-       route-advertisement:
-        rapid-withdrawal: True
-       afi-safi:
-       - afi-safi-name: evpn
-         evpn:
-          rapid-update: True
+        group:
+        - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: enable
+        route-advertisement:
+          rapid-withdrawal: True
+        afi-safi:
+        - afi-safi-name: evpn
+          evpn:
+            rapid-update: True
 ok: [s2] => 
   msg: |-
     evpn configuration for s2

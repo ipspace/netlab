@@ -5,8 +5,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [spine]
+ok: [h1]
 ok: [h2]
 
 TASK [Find device readiness script] ********************************************
@@ -372,16 +372,16 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
 
 TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -409,12 +409,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-NJWYZeua-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-IHDiJRmD-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -424,8 +424,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
@@ -435,8 +435,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1,
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [spine]
@@ -540,44 +540,6 @@ ok: [l2]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l2] => 
-  msg: |-
-    bgp configuration for l2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.0.0.5 remote-as 65000
-      neighbor 10.0.0.5 description spine
-      neighbor 10.0.0.5 update-source lo
-    !
-      neighbor 10.1.0.6 remote-as 65100
-      neighbor 10.1.0.6 description spine
-      neighbor 10.1.0.6 local-as 65202 no-prepend replace-as
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.1.0.6 activate
-      no neighbor 10.1.0.6 send-community all
-      neighbor 10.1.0.6 send-community standard
-      neighbor 10.1.0.6 send-community large
-    !
-    !
-    !
-    do write
 ok: [l1] => 
   msg: |-
     bgp configuration for l1
@@ -986,11 +948,49 @@ ok: [spine] =>
          local-as:
           as-number: 65100
           prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
+ok: [l2] => 
+  msg: |-
+    bgp configuration for l2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.0.0.5 remote-as 65000
+      neighbor 10.0.0.5 description spine
+      neighbor 10.0.0.5 update-source lo
+    !
+      neighbor 10.1.0.6 remote-as 65100
+      neighbor 10.1.0.6 description spine
+      neighbor 10.1.0.6 local-as 65202 no-prepend replace-as
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.1.0.6 activate
+      no neighbor 10.1.0.6 send-community all
+      neighbor 10.1.0.6 send-community standard
+      neighbor 10.1.0.6 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
@@ -1005,8 +1005,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
 skipping: [l1]
@@ -1183,17 +1183,17 @@ ok: [l1] =>
     updates:
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       group:
-       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
-         afi-safi:
-         - afi-safi-name: evpn
-           admin-state: enable
-       route-advertisement:
-        rapid-withdrawal: True
-       afi-safi:
-       - afi-safi-name: evpn
-         evpn:
-          rapid-update: True
+        group:
+        - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: enable
+        route-advertisement:
+          rapid-withdrawal: True
+        afi-safi:
+        - afi-safi-name: evpn
+          evpn:
+            rapid-update: True
 ok: [spine] => 
   msg: |-
     evpn configuration for spine
@@ -1202,18 +1202,18 @@ ok: [spine] =>
     updates:
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       group:
-       - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
-         afi-safi:
-         - afi-safi-name: evpn
-           admin-state: enable
-         next-hop-self: False
-       route-advertisement:
-        rapid-withdrawal: True
-       afi-safi:
-       - afi-safi-name: evpn
-         evpn:
-          rapid-update: True
+        group:
+        - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: enable
+          next-hop-self: False
+        route-advertisement:
+          rapid-withdrawal: True
+        afi-safi:
+        - afi-safi-name: evpn
+          evpn:
+            rapid-update: True
 ok: [l2] => 
   msg: |-
     evpn configuration for l2
@@ -1261,16 +1261,16 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
 skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
