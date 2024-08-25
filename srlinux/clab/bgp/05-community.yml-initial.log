@@ -11,8 +11,8 @@ ok: [x1]
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -445,9 +445,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, rc, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
-changed: [r2]
 changed: [rc]
+changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -456,8 +456,8 @@ ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [rc]
 changed: [x1]
+changed: [rc]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -485,43 +485,10 @@ ok: [x1]
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.9 remote-as 65000
-      neighbor 10.1.0.9 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.1.0.9 activate
-      no neighbor 10.1.0.9 send-community all
-      neighbor 10.1.0.9 send-community standard
-      neighbor 10.1.0.9 send-community large
-    !
-    !
-    !
-    do write
 ok: [r2] => 
   msg: |-
     bgp configuration for r2
@@ -556,6 +523,44 @@ ok: [r2] =>
       neighbor 10.0.0.1 send-community extended
     !
     !
+    !
+    do write
+ok: [rc] => 
+  msg: |-
+    bgp configuration for rc
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.10/32
+    !
+    !
+      network 172.0.42.0/24
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+    !
+    ip route 172.0.42.0/24 Null0
     !
     do write
 ok: [dut] => 
@@ -609,20 +614,19 @@ ok: [dut] =>
   
     - path: /routing-policy/policy[name=default_export]
       value:
-       default-action:
-        policy-result: reject
-       statement:
-       - name: prefixes
-         match:
-          prefix-set: default_export
-         action:
-          policy-result: accept
-       - name: bgp
-         match:
-          protocol: bgp
-         action:
-          policy-result: accept
-  
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_export
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
     - path: /routing-policy/prefix-set[name=default_export]
       value:
         prefix:
@@ -758,12 +762,12 @@ ok: [dut] =>
            admin-state: disable
   
          peer-as: 65101
-ok: [rc] => 
+ok: [x1] => 
   msg: |-
-    bgp configuration for rc
+    bgp configuration for x1
     =========================================
     !
-    router bgp 65000
+    router bgp 65101
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
@@ -772,36 +776,31 @@ ok: [rc] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.10
+      bgp router-id 10.0.0.3
     !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
     !
-      network 10.0.0.10/32
+      network 10.0.0.3/32
     !
     !
-      network 172.0.42.0/24
     !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
-    ip route 172.0.42.0/24 Null0
     !
     do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -829,9 +828,9 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [r2]
 changed: [rc]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -844,8 +843,8 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [rc]
+changed: [r2]
 changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -855,10 +854,10 @@ ok: [rc]
 ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [dut]
 skipping: [x1]
-ok: [rc]
+ok: [dut]
 ok: [r2]
+ok: [rc]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
@@ -867,27 +866,28 @@ ok: [dut] =>
     ospf configuration for dut
     =========================================
     updates:
+  
     - path: /network-instance[name=default]
       value:
-       router-id: 10.0.0.1
-       protocols:
-        ospf:
-         instance:
-         - name: "0"
-           version: ospf-v2
-           admin-state: enable
-           max-ecmp-paths: 64
-           area:
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: system0.0
-               passive: True
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: ethernet-1/1.0
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
            # OSPF not configured on external interface ethernet-1/2
 ok: [r2] => 
   msg: |-

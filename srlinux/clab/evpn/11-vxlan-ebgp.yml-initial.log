@@ -4,8 +4,8 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [spine]
-ok: [l1]
 ok: [l2]
+ok: [l1]
 ok: [h1]
 ok: [h2]
 
@@ -30,8 +30,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [spine]
@@ -327,42 +327,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -399,6 +363,42 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
@@ -411,10 +411,6 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l1, l2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
-
-TASK [Check version of nokia.srlinux] ******************************************
-ok: [spine] => changed=false 
-  msg: '''nokia.srlinux'' version: 0.5.0'
 
 TASK [tempfile] ****************************************************************
 changed: [spine -> localhost]
@@ -435,8 +431,8 @@ TASK [file] ********************************************************************
 changed: [spine -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [l1 -> localhost]
 changed: [l2 -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [l1]
@@ -446,8 +442,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -466,10 +462,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-wLdgKQyP-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-LmkChCYG-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -502,9 +498,9 @@ ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
-ok: [l2] => 
+ok: [l1] => 
   msg: |-
-    vlan configuration for l2
+    vlan configuration for l1
     =========================================
     #!/bin/bash
     #
@@ -518,9 +514,9 @@ ok: [l2] =>
   
     brctl addif vlan1000 eth2
     exit 0
-ok: [l1] => 
+ok: [l2] => 
   msg: |-
-    vlan configuration for l1
+    vlan configuration for l2
     =========================================
     #!/bin/bash
     #
@@ -545,8 +541,8 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -571,40 +567,6 @@ ok: [l2]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    !
-    router bgp 65201
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.2 remote-as 65100
-      neighbor 10.1.0.2 description spine
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.2 activate
-      no neighbor 10.1.0.2 send-community all
-      neighbor 10.1.0.2 send-community standard
-      neighbor 10.1.0.2 send-community large
-      neighbor 10.1.0.2 send-community extended
-    !
-    !
-    !
-    do write
 ok: [l2] => 
   msg: |-
     bgp configuration for l2
@@ -635,6 +597,40 @@ ok: [l2] =>
       neighbor 10.1.0.6 send-community standard
       neighbor 10.1.0.6 send-community large
       neighbor 10.1.0.6 send-community extended
+    !
+    !
+    !
+    do write
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    !
+    router bgp 65201
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description spine
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.2 activate
+      no neighbor 10.1.0.2 send-community all
+      neighbor 10.1.0.2 send-community standard
+      neighbor 10.1.0.2 send-community large
+      neighbor 10.1.0.2 send-community extended
     !
     !
     !
@@ -804,8 +800,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -816,11 +812,8 @@ skipping: [l1]
 skipping: [l2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [l2]
 changed: [l1]
-
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [spine]
+changed: [l2]
 
 TASK [tempfile] ****************************************************************
 changed: [spine -> localhost]
@@ -935,8 +928,8 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -989,41 +982,6 @@ ok: [l1] =>
     ! L3 VRF EVPN handling
     !
     do write
-ok: [spine] => 
-  msg: |-
-    evpn configuration for spine
-    =========================================
-  
-    updates:
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        group:
-        - group-name: ibgp-ipv4 # Could create a dedicated group for EVPN only?
-          afi-safi:
-          - afi-safi-name: evpn
-            admin-state: enable
-        route-advertisement:
-          rapid-withdrawal: True
-        afi-safi:
-        - afi-safi-name: evpn
-          evpn:
-            rapid-update: True
-            inter-as-vpn: True
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        group:
-        - group-name: ebgp # Could create a dedicated group for EVPN only?
-          export-policy: "accept_all"
-          afi-safi:
-          - afi-safi-name: evpn
-            admin-state: enable
-        route-advertisement:
-          rapid-withdrawal: True
-        afi-safi:
-        - afi-safi-name: evpn
-          evpn:
-            rapid-update: True
-            inter-as-vpn: True
 ok: [l2] => 
   msg: |-
     evpn configuration for l2
@@ -1052,6 +1010,28 @@ ok: [l2] =>
     ! L3 VRF EVPN handling
     !
     do write
+ok: [spine] => 
+  msg: |-
+    evpn configuration for spine
+    =========================================
+  
+  
+    updates:
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        group:
+        - group-name: ebgp # Could create a dedicated group for EVPN only?
+          export-policy: "accept_all"
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: enable
+        route-advertisement:
+          rapid-withdrawal: True
+        afi-safi:
+        - afi-safi-name: evpn
+          evpn:
+            rapid-update: True
+            inter-as-vpn: True
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 ok: [l1]
@@ -1077,9 +1057,6 @@ skipping: [l2]
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
 changed: [l1]
 changed: [l2]
-
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [spine]
 
 TASK [tempfile] ****************************************************************
 changed: [spine -> localhost]
@@ -1107,7 +1084,7 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 l1                         : ok=50   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 l2                         : ok=50   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-spine                      : ok=38   changed=12   unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
+spine                      : ok=37   changed=12   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

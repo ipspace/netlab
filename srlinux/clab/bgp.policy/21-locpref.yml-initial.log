@@ -480,10 +480,6 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1, x2
 
-TASK [Check version of nokia.srlinux] ******************************************
-ok: [dut] => changed=false 
-  msg: '''nokia.srlinux'' version: 0.5.0'
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -503,8 +499,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [probe -> localhost]
+changed: [x1 -> localhost]
 changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -516,8 +512,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
@@ -526,9 +522,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [probe]
 changed: [x1]
 changed: [x2]
+changed: [probe]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -539,8 +535,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [x1]
 ok: [probe]
+ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -551,8 +547,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [probe]
@@ -599,9 +595,6 @@ skipping: [probe]
 skipping: [x1]
 skipping: [x2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -855,20 +848,19 @@ ok: [dut] =>
   
     - path: /routing-policy/policy[name=default_export]
       value:
-       default-action:
-        policy-result: reject
-       statement:
-       - name: prefixes
-         match:
-          prefix-set: default_export
-         action:
-          policy-result: accept
-       - name: bgp
-         match:
-          protocol: bgp
-         action:
-          policy-result: accept
-  
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_export
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
     - path: /routing-policy/prefix-set[name=default_export]
       value:
         prefix:
@@ -880,7 +872,7 @@ ok: [dut] =>
     - path: /routing-policy/prefix-set[name=default_export]
       value:
         prefix:
-        - ip-prefix: 2001:db8:1:1::1/128
+        - ip-prefix: 2001:db8:1:1::/64
           mask-length-range: exact
   
   
@@ -1120,9 +1112,6 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
 
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -1142,8 +1131,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
+changed: [x1]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
@@ -1169,8 +1158,8 @@ ok: [x2]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [x1]
-skipping: [x2]
 ok: [dut]
+skipping: [x2]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1181,54 +1170,56 @@ ok: [dut] =>
     ospf configuration for dut
     =========================================
     updates:
-    - path: /network-instance[name=default]
-      value:
-       router-id: 10.0.0.1
-       protocols:
-        ospf:
-         instance:
-         - name: "0"
-           version: ospf-v2
-           admin-state: enable
-           max-ecmp-paths: 64
-           area:
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: system0.0
-               passive: True
-           # OSPF not configured on external interface ethernet-1/1
-           # OSPF not configured on external interface ethernet-1/2
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: ethernet-1/3.0
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
   
     - path: /network-instance[name=default]
       value:
-       router-id: 10.0.0.1
-       protocols:
-        ospf:
-         instance:
-         - name: "1"
-           version: ospf-v3
-           address-family: ipv6-unicast
-           admin-state: enable
-           max-ecmp-paths: 64
-           area:
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: system0.0
-               passive: True
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
            # OSPF not configured on external interface ethernet-1/1
            # OSPF not configured on external interface ethernet-1/2
-           - area-id: 0.0.0.0
-             interface:
-             - interface-name: ethernet-1/3.0
-               interface-type: "point-to-point"
-               failure-detection:
-                enable-bfd: False
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/3.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+  
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "1"
+              version: ospf-v3
+              address-family: ipv6-unicast
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+           # OSPF not configured on external interface ethernet-1/1
+           # OSPF not configured on external interface ethernet-1/2
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/3.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
 ok: [probe] => 
   msg: |-
     ospf configuration for probe
@@ -1289,9 +1280,6 @@ skipping: [x2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -1348,9 +1336,6 @@ ok: [dut]
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -1370,7 +1355,7 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=53   changed=20   unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+dut                        : ok=52   changed=20   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 probe                      : ok=34   changed=7    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 x2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
