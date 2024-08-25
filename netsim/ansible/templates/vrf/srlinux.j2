@@ -4,8 +4,8 @@
 updates:
 {% for vname,vdata in vrfs.items() %}
 
-- path: network-instance[name={{vname}}]
-  val:
+- path: /network-instance[name={{vname}}]
+  value:
    type: ip-vrf
 
 {% if 'ospf' in vdata %}
@@ -18,16 +18,16 @@ updates:
 
 {# Create an AS path set for this VRF, if vrf.as is set #}
 {% if vdata.as is defined %}
-- path: routing-policy/as-path-set[name={{vname}}]
-  val:
+- path: /routing-policy/as-path-set[name={{vname}}]
+  value:
    expression: "{{ vdata.as }}"
 {% endif %}
 
 {# Creata a community set with a single member for each imported community #}
 {% if vdata.import|default([]) %}
 {%  for c in vdata.import %}
-- path: routing-policy/community-set[name=C{{ c|replace(':','_') }}]
-  val:
+- path: /routing-policy/community-set[name=C{{ c|replace(':','_') }}]
+  value:
    member:
    - "target:{{ c }}" # Single member, else matching is AND
 {% endfor -%}
@@ -35,8 +35,8 @@ updates:
 
 {# Create a single community set for all exported communities, to be added upon import #}
 {% if vdata.export|default([]) %}
-- path: routing-policy/community-set[name={{vname}}_export]
-  val:
+- path: /routing-policy/community-set[name={{vname}}_export]
+  value:
    member:
 {%  for c in vdata.export %}
    - "target:{{ c }}"
@@ -47,30 +47,30 @@ updates:
 {{ bgp_config(vname,bgp.as,bgp.router_id,vdata.bgp,vdata) }}
 {% endif %}
 
-- path: network-instance[name={{vname}}]/protocols/bgp-vpn
-  val:
+- path: /network-instance[name={{vname}}]/protocols/bgp-vpn
+  value:
    bgp-instance:
    - id: 1
      route-distinguisher:
       rd: "{{ vdata.rd }}"
 
 {% if vdata.export|default([]) and vdata.import|default([]) %}
-- path: network-instance[name={{vname}}]/inter-instance-policies
-  val:
+- path: /network-instance[name={{vname}}]/inter-instance-policies
+  value:
    apply-policy:
     export-policy: "{{ vname }}_vpn_export"
     import-policy: "{{ vname }}_vpn_import"
 
-- path: routing-policy/policy[name={{ vname }}_vpn_export]
-  val:
+- path: /routing-policy/policy[name={{ vname }}_vpn_export]
+  value:
    default-action:
     policy-result: "accept"
     bgp:
      communities:
       add: "{{vname}}_export"
 
-- path: routing-policy/policy[name={{ vname }}_vpn_import]
-  val:
+- path: /routing-policy/policy[name={{ vname }}_vpn_import]
+  value:
    default-action:
     policy-result: "reject"
    statement:

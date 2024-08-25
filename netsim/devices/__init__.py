@@ -107,20 +107,29 @@ def get_ansible_collection(cname: str) -> typing.Optional[dict]:
 
 COLLECTION_WARNING: dict = {}
 
-def need_ansible_collection(node: Box, cname: str, install: str = '') -> bool:
+def need_ansible_collection(
+      node: Box,
+      cname: str,
+      version: typing.Optional[str] = None,
+      install: str = '') -> bool:
   global COLLECTION_WARNING
 
   cdata = get_ansible_collection(cname)
   if cdata is not None:
-    return True
+    if version is None:
+      return True
+    if cdata.get('version','0') >= version:
+      return True
   
   if node.device in COLLECTION_WARNING:
     return False
   
   if not install:
     install = f'ansible-galaxy collection install {cname}'
+  v_txt = f' (version {version})' if version else ''
+
   log.error(
-        f'We need {cname} Ansible collection to configure {node.device} devices',
+        f'We need Ansible collection {cname}{v_txt} to configure {node.device} devices',
         category=log.MissingDependency,
         more_hints = [ f'Use "{install}" to install it' ],
         module='devices')

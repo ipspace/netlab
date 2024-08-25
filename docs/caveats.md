@@ -293,24 +293,12 @@ See also [](caveats-junos).
 ## Nokia SR Linux
 * Only supported on top of *Containerlab*
 * Supports container image release 23.3.1 or later (due to YANG model changes)
-* Requires the latest `nokia.grpc` Ansible Galaxy collection and its dependencies to be installed from the git repo. You can also use the **netlab install grpc** command to install them
-
-```
-ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
-python3 -m pip install grpcio protobuf==3.20.1
-```
-
-* As of May 2024, the `nokia.grpc` collection crashes Ansible versions between 4.10.0 and 9.5.1. We recommend upgrading to Ansible release 9.5.1 (also included as part of **netlab install grpc** script):
-
-```
-sudo pip3 install --upgrade 'ansible>=9.5.1'
-```
-
+* Requires `nokia.srlinux` Ansible Galaxy collection (minimum version 0.5.0). Use **ansible-galaxy collection install nokia.srlinux** command to install it.
 * MPLS and LDP are only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
 * Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
 * SR Linux does not support multi-topology IS-IS.
-* SR Linux does not support generic filtering (removal) of extended communities, only standard or large
+* SR Linux does not support configurable propagation of extended BGP communities.
 
 (caveats-sros)=
 ## Nokia SR OS
