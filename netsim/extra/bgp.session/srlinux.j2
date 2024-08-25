@@ -58,13 +58,26 @@
   value:
    type: "{{ type }}"
    key:
-   - index: 0
+   - index: 1
      algorithm: "{{ algorithm }}"
      authentication-key: "{{ n.password }}"
 {%   endif %}
 {%- endmacro %}
 
+{% macro bgp_admin_state(addr,vrf,state) %}
+{%   if addr is string %}
+- path: /network-instance[name={{vrf}}]/protocols/bgp
+  value:
+    neighbor:
+    - peer-address: {{ addr }}
+      admin-state: {{ state }}
+{%   endif %}
+{%- endmacro %}
+
 updates:
+{% for addr in bgp._session_clear|default([]) %}
+{{   bgp_admin_state(addr,'default','disable') }}
+{% endfor %}
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined and (n[af] is string or (af=='ipv6' and n.ipv6)) %}
 {{     ebgp_neighbor(n,af,'default') -}}
@@ -80,3 +93,7 @@ updates:
 {%   endfor %}
 {% endfor %}
 {% endif %}
+
+{% for addr in bgp._session_clear|default([]) %}
+{{   bgp_admin_state(addr,'default','enable') }}
+{% endfor %}

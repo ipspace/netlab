@@ -2,53 +2,79 @@
 {{ '0.0.0.0' if not a else a | ipv4 }}
 {%- endmacro %}
 
-{% macro ospf_config(pid,af,vrf,ospf,vrf_interfaces) %}
+{% macro ospf_config(pid,af,vrf,ospf,vrf_interfaces,evpn_active=False) %}
+{% if vrf != 'default' %}
+- path: /routing-policy/policy[name={{vrf}}_export_ospf]
+  value:
+    default-action:
+      policy-result: reject
+    statement:
+    - name: bgp
+      match:
+        protocol: bgp
+      action:
+        policy-result: accept
+    - name: local
+      match:
+        protocol: local
+      action:
+        policy-result: accept
+{% if evpn_active %}
+    - name: bgp_evpn
+      match:
+        protocol: bgp-evpn
+      action:
+        policy-result: accept
+{% endif %}
+{% endif %}
+
 - path: /network-instance[name={{ vrf|default('default') }}]
   value:
-   router-id: {{ ospf.router_id }}
-   protocols:
-    ospf:
-     instance:
-     - name: "{{ pid }}"
-       version: {{ 'ospf-v2' if af=='ipv4' else 'ospf-v3' }}
+    router-id: {{ ospf.router_id }}
+    protocols:
+      ospf:
+        instance:
+        - name: "{{ pid }}"
+          version: {{ 'ospf-v2' if af=='ipv4' else 'ospf-v3' }}
 {%     if af!='ipv4' %}
-       address-family: ipv6-unicast
+          address-family: ipv6-unicast
 {%     endif %}
-       admin-state: enable
-       max-ecmp-paths: 64
+          admin-state: enable
+          max-ecmp-paths: 64
 {% if ldp is defined and ldp.igp_sync|default(True) %}
-       ldp-synchronization: { }
+          ldp-synchronization: { }
 {% endif %}
 {%     if ospf.reference_bandwidth is defined %}
-       reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
+          reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
 {%     endif %}
-       area:
+{%     if vrf != 'default' %}
+          asbr: {}
+          export-policy: "{{vrf}}_export_ospf"
+{%     endif %}
+          area:
 {%     if vrf=='default' %}
-       - area-id: {{ format_area(ospf.area) }}
-         interface:
-         - interface-name: system0.0
-           passive: True
+          - area-id: {{ format_area(ospf.area) }}
+            interface:
+            - interface-name: system0.0
+              passive: True
 {%     endif %}
 {%     for l in vrf_interfaces if (l.vlan is not defined or l.vlan.mode|default('irb')!='bridge') and l.subif_index is not defined %}
-{%      set if_name_index = l.ifname.split('.') %}
-{%      set if_name = if_name_index[0] if l.type!='stub' else "lo0" %}
-{%      set if_index = if_name_index[1] if if_name_index|length > 1 else l.ifindex if l.type=='stub' else '0' %}
 {%      if 'ospf' not in l %}
-       # OSPF not configured on external interface {{ if_name }}
+       # OSPF not configured on external interface {{ l.ifname }}
 {%      else %}
-       - area-id: {{ format_area(l.ospf.area) }}
-         interface:
-         - interface-name: {{ if_name }}.{{ if_index }}
+          - area-id: {{ format_area(l.ospf.area) }}
+            interface:
+            - interface-name: {{ l.ifname }}{{ '.0' if '.' not in l.ifname else '' }}
 {%         if l.ospf.passive | default(False) %}
-           passive: True
+              passive: True
 {%         endif %}
 {%         if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
-           interface-type: "{{ l.ospf.network_type }}"
+              interface-type: "{{ l.ospf.network_type }}"
 {%         endif %}
-           failure-detection:
-            enable-bfd: {{ l.ospf.bfd|default(False) }}
+              failure-detection:
+                enable-bfd: {{ l.ospf.bfd|default(False) }}
 {%         if l.ospf.cost is defined %}
-           metric: {{ l.ospf.cost }}
+              metric: {{ l.ospf.cost }}
 {%         endif %}
 {%     endif %}
 {%     endfor %}

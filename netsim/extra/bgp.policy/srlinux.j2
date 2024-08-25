@@ -1,15 +1,16 @@
 {% macro ebgp_neighbor(n,af,vrf) -%}
 - path: /network-instance[name={{vrf}}]/protocols/bgp
   value:
-{% if n.type=='ebgp' and af=='ipv6' and n.ipv6|default(0) == True %}
-   group: {# Note: This doesn't allow for different policies per individual neighbor #}
-   - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
+{% if n.type=='ebgp' and n[af] is true %}
+{# Note: This doesn't allow for different policies per individual neighbor #}
+    group:
+    - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
 {% else %}
-   neighbor:
-   - peer-address: {{ n[af]|ipaddr('address') }}
+    neighbor:
+    - peer-address: {{ n[af]|ipaddr('address') }}
 {% endif %}
 {% for direction in [ 'in','out' ] if direction in n.policy %}
-     {{ 'import' if direction=='in' else 'export' }}-policy: {{ n.policy[direction] }}
+      {{ 'import' if direction=='in' else 'export' }}-policy: {{ n.policy[direction] }}
 {% endfor %}
 {%- endmacro %}
 

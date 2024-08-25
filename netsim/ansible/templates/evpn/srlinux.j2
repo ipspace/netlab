@@ -1,30 +1,47 @@
 {#
- Enables the EVPN address family for eBGP or iBGP peers (ipv4 for now)
+  Enables the EVPN address family for eBGP or iBGP peers (ipv4 for now). Assumes bgp.as == AS used for EVPN
 
- Assumes bgp.as == AS used for EVPN
+  The evpn_session trick needs a bit more explanation (we need it because the original author used peer
+  groups to configure various BGP neighbor attributes):
+
+  * Take the BGP neighbors
+  * Use the default value of no neighbors (just in case)
+  * Select neighbors that have "evpn" attribute defined
+  * Select those neighbors with "evpn" attribute that have "evpn" set to True
+  * Select the "type" attribute from those neighbors
+  * Get a unique list of values
 #}
 
+{% set evpn_session = bgp.neighbors|default([])|
+                      selectattr("evpn","defined")|selectattr("evpn")|
+                      map(attribute="type")|unique|list %}
+
 updates:
-{% for type in evpn.session %}
+{% for type in evpn_session %}
 - path: /network-instance[name=default]/protocols/bgp
   value:
-   group:
-   - group-name: {{ 'ibgp-ipv4' if type=='ibgp' else 'ebgp' }} # Could create a dedicated group for EVPN only?
+    group:
+    - group-name: {{ 'ibgp-ipv4' if type=='ibgp' else 'ebgp' }} # Could create a dedicated group for EVPN only?
 {%  if type=='ebgp' %}
-     export-policy: "accept_all"
+      export-policy: "accept_all"
 {%  endif %}
-     afi-safi:
-     - afi-safi-name: evpn
-       admin-state: enable
+      afi-safi:
+      - afi-safi-name: evpn
+        admin-state: enable
 {%  if bgp.rr|default(0) %}
-     next-hop-self: False
+      next-hop-self: False
 {%  endif %}
-   route-advertisement:
-    rapid-withdrawal: True
-   afi-safi:
-   - afi-safi-name: evpn
-     evpn:
-      rapid-update: True
+    route-advertisement:
+      rapid-withdrawal: True
+    afi-safi:
+    - afi-safi-name: evpn
+      evpn:
+        rapid-update: True
+{%   for n in bgp.neighbors|default([]) if n.evpn|default(False) and n.type == 'ebgp' %}
+{%     if loop.first %}
+        inter-as-vpn: True
+{%     endif %}
+{%   endfor %}
 {% endfor %}
 
 {# Enable IP advertisement for all irb interfaces in EVPN vlans #}

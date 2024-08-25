@@ -27,9 +27,9 @@ class SRLINUX(_Quirks):
     if 'isis' in mods:
       if node.get('isis.af.ipv6',False):
          log.error(
-                    f'SR Linux on ({node.name}) does not support IS-IS multi-topology required for ipv6.\n',
-                    log.IncorrectType,
-                    'quirks')
+            f'SR Linux on ({node.name}) does not support IS-IS multi-topology required for ipv6.\n',
+            log.IncorrectType,
+            'quirks')
 
     if 'bgp' in mods:
       for c,vals in topology.get('bgp.community',[]).items():
@@ -38,7 +38,16 @@ class SRLINUX(_Quirks):
               f'SR Linux on ({node.name}) does not support filtering out extended communities for BGP. {c}:{vals}\n',
               Warning,
               'quirks')
-           
+
+    if 'evpn' in mods:
+      for n in node.get('bgp.neighbors',[]):
+        if n.get('evpn',False) and n.get('local_if',False):
+          log.error(
+            f'SR Linux ({node.name}) does not support EVPN AF over interface EBGP sessions',
+            more_data=f'Neighbor {n.name} interface {n.local_if}',
+            category=log.IncorrectType,
+            module='quirks')
+
     if 'mpls' in mods or 'sr' in mods:
       dt = node.clab.type
       if dt not in ['ixr6','ixr10','ixr6e','ixr10e']:

@@ -17,7 +17,7 @@
     import-reject-all: False
 
 {# Configure BGP address families globally #}
-{% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
+{% for af in ['ipv4','ipv6'] if vrf_context.af[af]|default(False) %}
    afi-safi:
    - afi-safi-name: {{ af }}-unicast
      admin-state: enable
@@ -33,23 +33,46 @@
 
 - path: /routing-policy/policy[name={{vrf}}_export]
   value:
-   default-action:
-    policy-result: reject
-   statement:
-   - name: prefixes
-     match:
-      prefix-set: {{vrf}}_export
-     action:
-      policy-result: accept
-   - name: bgp
-     match:
-      protocol: bgp
-     action:
-      policy-result: accept
-
-{% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
+    default-action:
+      policy-result: reject
+    statement:
+    - name: prefixes
+      match:
+        prefix-set: {{vrf}}_export
+      action:
+        policy-result: accept
+    - name: bgp
+      match:
+        protocol: bgp
+      action:
+        policy-result: accept
+{% if vrf != 'default' %}
+    - name: local
+      match:
+        protocol: local
+      action:
+        policy-result: accept
+    - name: ospfv2
+      match:
+        protocol: ospfv2
+      action:
+        policy-result: accept
+    - name: ospfv3
+      match:
+        protocol: ospfv3
+      action:
+        policy-result: accept
+{% if 'evpn' in module %}
+    - name: bgp_evpn
+      match:
+        protocol: bgp-evpn
+      action:
+        policy-result: accept
+{% endif %}
+{% endif %}
+{% for af in ['ipv4','ipv6'] if vrf_context.af[af]|default(False) %}
 {% if loopback[af] is defined and bgp.advertise_loopback and vrf=='default' %}
-{{ bgp_export_prefix(vrf,loopback[af]|ipaddr('address')|ipaddr('host')) }}
+{{ bgp_export_prefix(vrf,loopback[af]|ipaddr('subnet')) }}
 {% endif %}
 
 {% for l in interfaces|default([]) if l.bgp.advertise|default(0) and l[af]|default(False) is string and l.vrf|default('default')==vrf %}
@@ -121,7 +144,7 @@
 {#
   Define IPv4 and IPv6 BGP neighbors
 #}
-{% for n in vrf_bgp.neighbors %}
+{% for n in vrf_bgp.neighbors|default([]) %}
 {% for af in ['ipv4','ipv6'] if n[af] is defined %}
 
 {% if n[af] is string %}
