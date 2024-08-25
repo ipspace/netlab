@@ -51,6 +51,10 @@ The **config** parameter can be a string (the template to deploy) or a dictionar
 * Test entries with **show** parameter must have **valid** expression.
 * Test entries with **valid** expression must have **show**,  **exec**, or **suzieq** parameter.
 
+```{tip}
+A test entry with only **‌wait** and **‌stop_on_error** parameters is a *‌failure barrier*. It succeeds (without waiting) if all the prior test entries have passed and exits the validation process if at least one of the prior tests has failed.
+```
+
 (validate-simple)=
 ## Simple Example
 

@@ -920,7 +920,14 @@ def execute_validation_test(
 
   p_test_header(v_entry,topology)                 # Print test header
   if 'wait' in v_entry and not v_entry.nodes:     # Handle pure wait case
-    if not args.nowait:
+    if v_entry.get('stop_on_error',False):
+      if test_result_count and test_pass_count != test_result_count:
+        log_failure('Validation failed due to previous errors',topology)
+        sys.exit(1)
+      else:
+        log_info(v_entry.get('pass','No errors so far, moving on'),topology)
+
+    if not args.nowait and v_entry.wait:
       wait_before_testing(v_entry,start_time,topology)
     return None
 
