@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**[Release 1.9.0-post1](release-1.9.0-post1) (2024-07-13)**
+
+This release contains [minor improvements](release-1.9.0-post1), numerous [SR Linux configuration fixes](release-1.9.0-post1-device-fixes), a few other [bug fixes](bug-fixes-1.9.0-post1), and [documentation fixes](doc-fixes-1.9.0-post1).
+
 **[Release 1.9.0](release-1.9.0) (2024-08-19)**
 
 * [](generic-routing) supporting routing policies, prefix filters, AS-path filters, and BGP community filters
