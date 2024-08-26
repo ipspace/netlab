@@ -1,0 +1,85 @@
+---
+message: |
+  This lab tests the VRF OSPF default route origination. The device under test
+  should originate the default route in multiple VRFs, one always, the other one
+  based on BGP default route.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ p1, p2, xf ]
+
+vrfs:
+  d1:
+    ospf.default.always: True
+    links: [ dut-p1 ]
+  d2:
+    ospf.default: True
+    links: [ dut-p2, dut-xf ]
+
+nodes:
+  dut:
+    id: 1
+    module: [ ospf, bgp, vrf ]
+    bgp.as: 65000
+    vrfs:
+      d2:
+        loopback.ipv4: 192.168.43.1/32
+  p1:
+  p2:
+  xf:
+    module: [ bgp ]
+    bgp.as: 65100
+
+validate:
+  adj_o1:
+    description: Check OSPF adjacencies with DUT in VRF D1
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ p1 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.d1.ospf.router_id)
+  adj_o2:
+    description: Check OSPF adjacencies with DUT in VRF D2
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ p2 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.d2.ospf.router_id)
+  adj_x:
+    description: Check EBGP sessions with DUT
+    wait_msg: Wait for BGP sessions to be established
+    wait: 30
+    nodes: [ xf ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  df_1:
+    description: Do we have the default route in D1?
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ p1 ]
+    plugin: ospf_prefix('0.0.0.0/0')
+  bgp_dr:
+    description: Enable BGP default route
+    config: bgp_default
+    pass: BGP default route is sent to BGP neighbors
+    nodes: [ xf ]
+  df_d2:
+    description: Check for the conditional default route in D2
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ p2 ]
+    plugin: ospf_prefix('0.0.0.0/0')
+  bgp_ndr:
+    description: Disable BGP default route
+    config:
+      template: bgp_default
+      variable.df_state: 'off'
+    nodes: [ xf ]
+    pass: BGP default route is no longer sent to BGP neighbors
+  df_d2m:
+    description: Check for the lack of conditional default route in D2
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ p2 ]
+    plugin: ospf_prefix('0.0.0.0/0',state='missing')

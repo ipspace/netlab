@@ -1,0 +1,36 @@
+{% import "vyos.default.j2" as ospf_default %}
+
+{% if vdata.ospf.router_id|ipv4 or ospf.router_id|ipv4 %}
+set protocols ospfv3 parameters router-id {{ vdata.ospf.router_id|default(ospf.router_id) }}
+{% endif %}
+
+{% if vdata.ospf.import is defined %}
+{%   for s_proto,s_data in vdata.ospf.import.items() %}
+set protocols ospfv3 redistribute {{ s_proto }}{% if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv6{% endif +%}
+{%   endfor %}
+{% endif %}
+
+{{ ospf_default.config(vdata.ospf,'ipv6') }}
+
+{% if ospf.reference_bandwidth is defined %}
+set protocols ospfv3 auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+
+{% for l in vdata.ospf.interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
+
+set protocols ospfv3 interface {{ l.ifname }} area {{ l.ospf.area }}
+
+{%   if l.ospf.passive|default(False) %}
+set protocols ospfv3 interface {{ l.ifname }} passive
+{%   endif %}
+{%   if l.ospf.network_type is defined %}
+set protocols ospfv3 interface {{ l.ifname }} network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+set protocols ospfv3 interface {{ l.ifname }} cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) %}
+set protocols ospfv3 interface {{ l.ifname }} bfd
+{%   endif %}
+
+{% endfor %}

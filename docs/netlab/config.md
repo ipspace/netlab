@@ -1,3 +1,4 @@
+(netlab-config)=
 # Deploying Custom Device Configurations
 
 **netlab config** uses an internal Ansible playbook (`netsim/ansible/config.ansible`) to deploy custom device configurations generated from the supplied Jinja2 template(s) to lab devices.

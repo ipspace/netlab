@@ -1,0 +1,80 @@
+---
+message: |
+  This lab tests the conditional OSPF default route origination. The device
+  under test should originate the default route if the external router
+  advertises its loopback interface.
+
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ probe, xf ]
+
+routing:
+  prefix:
+    lb.ipv4: 192.168.42.0/24
+  policy:
+    df.match.prefix: lb
+
+nodes:
+  dut:
+    module: [ ospf, bgp, routing ]
+    bgp.as: 65000
+    id: 1
+    ospf.default:
+      policy: df
+      type: e2
+      cost: 40
+  probe:
+  xf:
+    module: [ bgp ]
+    bgp.as: 65100
+    loopback.ipv4: 192.168.42.1/24
+
+links:
+- probe:
+  dut:
+- dut:
+  xf:
+
+validate:
+  adj_ospf:
+    description: Check OSPF adjacencies with DUT
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ probe ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  adj_bgp:
+    description: Check EBGP sessions with DUT
+    wait_msg: Wait for BGP sessions to be established
+    wait: 30
+    nodes: [ xf ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  df:
+    description: Do we have at least some default route?
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ probe ]
+    plugin: ospf_prefix('0.0.0.0/0')
+  bgp_lbd:
+    description: Shut down the loopback interface
+    config:
+      template: bgp_loopback
+      variable.lb_state: down
+    pass: BGP prefix is no longer announced
+    nodes: [ xf ]
+  df_c:
+    description: Check for the conditional default route
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ probe ]
+    plugin: ospf_prefix('0.0.0.0/0',state='missing')
+  bgp_lbe:
+    description: Enable the loopback interface
+    config:
+      template: bgp_loopback
+      variable.lb_state: up
+    pass: BGP prefix should be announced
+    nodes: [ xf ]

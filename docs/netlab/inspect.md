@@ -1,7 +1,7 @@
 (netlab-inspect)=
 # Inspect Data Structures in Transformed Lab Topology
 
-**netlab inspect** prints data structures in transformed lab topology (usually stored in `netlab.snapshot.yml`) created by **netlab create** command. You can display data in YAML or JSON format, and select a subset of data from the transformed topology or from an individual node.
+**netlab inspect** prints data structures in transformed lab topology (usually stored in `netlab.snapshot.yml`) created by the **netlab create** command. You can display data in YAML or JSON format and select a subset of data from the transformed topology or an individual node.
 
 When selecting data from an individual node, _netlab_ adds group variables to node data, effectively displaying what you would see in the Ansible inventory.
 
@@ -13,7 +13,7 @@ When selecting data from an individual node, _netlab_ adds group variables to no
 
 ```text
 usage: netlab inspect [-h] [--snapshot [SNAPSHOT]] [--node NODE] 
-                      [--format {yaml,json}] [expr]
+                      [--all] [--format {yaml,json}] [expr]
 
 Inspect data structures in transformed lab topology
 
@@ -25,6 +25,7 @@ options:
   --snapshot [SNAPSHOT]
                         Transformed topology snapshot file
   --node NODE           Display data for selected node(s)
+  --all                 Add global Ansible variables to node data
   --format {yaml,json}  Select data presentation format
 ```
 
@@ -79,6 +80,10 @@ ansible_ssh_pass: vagrant
 ansible_user: vagrant
 box: arista/veos
 ...
+```
+
+```{tip}
+Use the `--all` option if you want to display the global variables available in Ansible playbooks (address pools, paths, named prefixes)
 ```
 
 Data from multiple nodes is shown in a tabular format, for example:

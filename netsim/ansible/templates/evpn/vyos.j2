@@ -14,11 +14,14 @@ set protocols bgp address-family l2vpn-evpn advertise-all-vni
 
 {% for n in bgp.neighbors if n.evpn|default(False) %}
 {%   for af in ['ipv4','ipv6'] if af in n %}
-set protocols bgp neighbor {{ n[af] }} address-family l2vpn-evpn nexthop-self
-set protocols bgp neighbor {{ n[af] }} address-family l2vpn-evpn soft-reconfiguration inbound
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%     if n.type == 'ibgp' %}
+set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn nexthop-self
+{%     endif %}
+set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn soft-reconfiguration inbound
 
 {%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
-set protocols bgp neighbor {{ n[af] }} address-family l2vpn-evpn route-reflector-client
+set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn route-reflector-client
 {%   endif %}
 
 {%   endfor %}

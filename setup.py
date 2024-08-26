@@ -4,7 +4,6 @@ from pathlib import Path
 import netsim
 import sys
 
-
 long_description = (Path(__file__).parent / "README.md").read_text()
 
 with open("requirements.txt", "r") as fs:
@@ -44,6 +43,6 @@ setup(
 #    "console_scripts": ["netlab=netsim.cli:lab_commands"]
 #  },
   package_data = {
-    "netsim": ["templates/*", "ansible/*", "extra/*"]
+    "netsim": ["templates/*", "ansible/*", "extra/*", "reports/*", "install/*"]
   }
 )

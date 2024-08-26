@@ -1,7 +1,18 @@
 Release Notes
 =============
 
-**Release 1.9.0-dev1 (2024-07-29)**
+**[Release 1.9.0-post1](release-1.9.0-post1) (2024-08-26)**
+
+This release contains [minor improvements](release-1.9.0-post1), numerous [SR Linux configuration fixes](release-1.9.0-post1-device-fixes), a few other [bug fixes](bug-fixes-1.9.0-post1), and [documentation fixes](doc-fixes-1.9.0-post1).
+
+**[Release 1.9.0](release-1.9.0) (2024-08-19)**
+
+* [](generic-routing) supporting routing policies, prefix filters, AS-path filters, and BGP community filters
+* [Default route origination](ospf-default) in OSPFv2 and OSPFv3  
+* [Route import](routing_import) (redistribution) into OSPFv2, OSPFv3, and BGP.
+* [Named prefixes](named-prefixes)
+* [Change device configuration](validate-config) or [use SuzieQ](validate-suzieq) in [validation tests](validate)
+* [VRF multihop EBGP sessions](plugin-ebgp-multihop)
 
 [More details...](release-1.9.0)
 

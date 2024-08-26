@@ -115,19 +115,6 @@ class OSPF(_Module):
     if not ospf_unnumbered(node,features):
       return
 
-    #
-    # Final steps:
-    # * move OSPF-enabled VRF interfaces into VRF dictionary
-    # * Calculate address families
-    # * Enable BFD
-    # * Remove OSPF module if there are no OSPF-enabled global or VRF interfaces
-    # * Propagate OSPF attributes into loopback interface and VRFs
-    #
-    _routing.remove_unaddressed_intf(node,'ospf')
-    _routing.build_vrf_interface_list(node,'ospf',topology)
-    _routing.routing_af(node,'ospf',features)
-    _routing.remove_vrf_routing_blocks(node,'ospf')
-    propagate_node_attributes(node,topology)
-    _routing.remove_unused_igp(node,'ospf',topology.defaults.get('ospf.warnings.inactive',False))
+    _routing.igp_post_transform(node,topology,proto='ospf',vrf_aware=True,propagate=propagate_node_attributes)
     _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
     _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)

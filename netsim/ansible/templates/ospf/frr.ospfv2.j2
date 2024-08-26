@@ -1,3 +1,4 @@
+{% import "ios.default.j2" as ospf_default %}
 {% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
 !
 ! OSPFv2 FRR configuration
@@ -16,11 +17,11 @@ router ospf
  timers throttle spf 10 50 500
  timers throttle lsa all 100
  timers lsa min-arrival 100
-{% if ospf_vrf  %}
-{%   if bgp.as is defined %}
- redistribute bgp
-{%   endif %}
- redistribute connected
+{{ ospf_default.config(ospf_data,'ipv4') }}
+{% if ospf_data.import is defined %}
+{%   for s_proto,s_data in ospf_data.import.items() %}
+ redistribute {{ s_proto }}{% if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv4{% endif +%}
+{%   endfor %}
 {% endif %}
 exit
 !

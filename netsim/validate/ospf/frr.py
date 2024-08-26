@@ -71,7 +71,13 @@ def get_ospf_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
   return data.get(pfx,None)
 
 def check_ospf_cost(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
-  return [ p for p in data if p.cost == value ]
+  m_value = []
+  for p in data:
+    c_field = 'type2cost' if 'E2' in p.routeType else 'cost'
+    if p[c_field] == value:
+      m_value.append(p)
+
+  return m_value
 
 def check_ospf_rt(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
   return [ p for p in data if p.routeType == value ]
@@ -100,6 +106,14 @@ def get_ospf6_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
   return data.get('routes').get(pfx,None)
 
 def check_ospf6_cost(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
+  m_value = []
+  for p in data:
+    c_field = 'metricCostE2' if p.pathType == 'External-2' else 'metricCost'
+    if p[c_field] == value:
+      m_value.append(p)
+
+  return m_value
+
   return [ p for p in data if p.metricCost == value ]
 
 def check_ospf6_rt(data: list, value: typing.Any, **kwargs: typing.Any) -> list:

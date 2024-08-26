@@ -9,6 +9,7 @@ import netaddr
 
 from . import _Module,_routing
 from .. import data
+from ..data import global_vars
 from ..data.types import must_be_int,must_be_list,must_be_asn
 from ..data.validate import validate_item
 from ..augment import devices
@@ -656,3 +657,4 @@ class BGP(_Module):
     _routing.remove_vrf_routing_blocks(node,'bgp')
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
+    _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))

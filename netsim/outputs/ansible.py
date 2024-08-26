@@ -115,12 +115,22 @@ def copy_paths(inventory: Box, topology: Box) -> None:
   for k,v in topology.defaults.paths.items():
     inventory.all.vars[f'paths_{k}'] = v
 
+"""
+Copy other interesting global topology data into all group to make it accessible to all nodes
+"""
+def copy_global_vars(inventory: Box, topology: Box) -> None:
+  for kw in ['prefix']:
+    if kw not in topology:
+      continue
+    inventory.all.vars[kw] = topology[kw]
+
 def create(topology: Box) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
   inventory.all.vars.netlab_provider = topology.defaults.provider
   inventory.all.vars.netlab_name = topology.name
   copy_paths(inventory,topology)
+  copy_global_vars(inventory,topology)
 
   inventory.modules.hosts = {}
   inventory.custom_configs.hosts = {}

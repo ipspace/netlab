@@ -42,6 +42,15 @@ router bgp {{ bgp.as }}
 {%   endfor %}
 {% endfor %}
 !
+{% for n in bgp.neighbors if n.evpn|default(False) and n.type == 'ebgp' %}
+{%  if loop.first %}
+ address-family l2vpn evpn
+{%  endif %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     ebgp_neighbor(n,af) }}
+{%   endfor %}
+{% endfor %}
+!
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
  vrf {{ vname }}

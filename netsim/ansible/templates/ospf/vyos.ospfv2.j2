@@ -1,6 +1,10 @@
+{% import "vyos.default.j2" as ospf_default %}
+
 {% if ospf.router_id|ipv4 %}
 set protocols ospf parameters router-id {{ ospf.router_id }}
 {% endif %}
+
+{{ ospf_default.config(ospf,'ipv4') }}
 
 {% if ospf.reference_bandwidth is defined %}
 set protocols ospf auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
@@ -25,5 +29,11 @@ set protocols ospf interface {{ l.ifname }} cost {{ l.ospf.cost }}
 {%   if l.ospf.bfd|default(False) %}
 set protocols ospf interface {{ l.ifname }} bfd profile netsim
 {%   endif %}
+
+{% if ospf.import is defined %}
+{%   for s_proto,s_data in ospf.import.items() %}
+set protocols ospf redistribute {{ s_proto }}{% if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv4{% endif +%}
+{%   endfor %}
+{% endif %}
 
 {% endfor %}

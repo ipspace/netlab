@@ -1,3 +1,4 @@
+{% import "ios.default.j2" as ospf_default %}
 {% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
 {% if ospf_vrf %}
 router ospf {{ ospf_pid }} vrf {{ ospf_vrf }}
@@ -13,11 +14,13 @@ router ospf {{ ospf_pid }}
 {% for l in intf_data if l.ospf.passive|default(False) %}
  passive-interface {{ l.ifname }}
 {% endfor %}
-{% if ospf_vrf %}
- redistribute connected
-{%   if bgp.as is defined %}
- redistribute bgp {{ bgp.as }} subnets
-{%   endif %}
+{{ ospf_default.config(ospf_data,'ipv4') }}
+{% if ospf_data.import is defined %}
+{%   for s_proto,s_data in ospf_data.import.items() %}
+ redistribute {{ s_proto }}{%
+    if s_proto == 'bgp' %} {{ bgp.as }}{% endif %} subnets{% 
+    if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv4{% endif +%}
+{%   endfor %}
 {% endif %}
 !
 {% for l in intf_data if 'ospf' in l and ('ipv4' in l or 'ipv4' in l.dhcp.client|default({})) %}

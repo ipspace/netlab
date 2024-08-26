@@ -785,13 +785,23 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
 
   host_count = 0                    # Count the number of hosts attached to the link
   for ifdata in link.interfaces:
-    if nodes[ifdata.node].get('role','') == 'host':
+    ndata = nodes[ifdata.node]
+    if ndata.get('role','') == 'host' and not ndata.get('_daemon',False):
       host_count = host_count + 1
 
   if host_count > 0:                # If we have hosts and a single router attached to a non-VLAN link, set link role to 'stub'
     link.host_count = host_count    # ... VLAN case will be set in the VLAN module
-    if not 'role' in link and host_count == node_cnt - 1 and not 'vlan_name' in link:
-      link.role = 'stub'
+
+  if node_cnt == 1:
+    set_link_loopback_type(link,nodes,defaults)
+
+  # Set the link role to stub if the link has no role, has a single router,
+  # is not a VLAN link, and is not a loopback link
+  if not 'role' in link and \
+     host_count == node_cnt - 1 and \
+     link.get('type','') != 'loopback' and \
+     'vlan_name' not in link:
+    link.role = 'stub'
 
   if link.get('dhcp.subnet.ipv4',None):
     link.host_count = link.get('host_count',0) + 1
@@ -800,8 +810,6 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
     return
 
   link.type = 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'     # Set link type based on number of attached nodes
-  if node_cnt == 1:
-    set_link_loopback_type(link,nodes,defaults)
 
   if link.get('host_count',0) > 0:
     link.type = 'lan'

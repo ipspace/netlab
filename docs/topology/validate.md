@@ -21,6 +21,7 @@ Each test has a name (dictionary key) and description (dictionary value) -- anot
 * **devices** (list, optional) -- platforms (network operating systems) that can be used to execute the validation tests. The value of this parameter is set automatically in multi-platform tests; you have to supply it if you specified **show** and **exec** parameters as strings.
 * **show** (string or dictionary) -- a device command executed with the `netlab connect --show` command. The result should be valid JSON.
 * **exec** (string or dictionary) -- any other valid network device command. The command will be executed with the `netlab connect` command.
+* **config** (string or dictionary) -- the configuration template that has to be deployed (using **[netlab config](netlab-config)**) on the specified nodes. Use this feature to trigger changes (for example, interface shutdown or BGP session shutdown) during the testing procedure.
 * **suzieq** (string or dictionary) -- the SuzieQ command to execute and the optional validation parameters ([more details](validate-suzieq)).
 * **valid** (string or dictionary, optional) -- Python code that will be executed once the **show** or **exec** command has completed. The test succeeds if the Python code returns any value that evaluates to `True` when converted to a boolean[^TEX]. The Python code can use the results of the **show** command as variables; the **exec** command printout is available in the `stdout` variable.
 * **plugin** (valid Python function call as string, optional) -- a method of a custom [validation plugin](validate-plugin) that provides either a command to execute or validation results.
@@ -38,12 +39,21 @@ You can also set these test string attributes to prettify the test results:
 
 The **show**, **exec**, and **valid** parameters can be strings or dictionaries. If you're building a lab that will be used with a single platform, specify them as strings; if you want to execute tests on different platforms, specify a dictionary of commands and Python validation snippets. The values of these parameters can be Jinja2 expressions (see [](validate-multi-platform) for more details).
 
+The **config** parameter can be a string (the template to deploy) or a dictionary with two parameters:
+
+* **template**: the template to deploy
+* **variable**: a dictionary of variable values that will be passed to the Ansible playbook as external variables. You can use these variables to influence the functionality of the configuration template ([example](validate-config))
+
 **Notes:**
 
-* Every test entry should have **show**, **exec** or **wait** parameter.
+* Every test entry should have **show**, **exec**, **config**, **suzieq** or **wait** parameter.
 * A test entry with just the **wait** parameter is valid and can be used to delay the test procedure.
 * Test entries with **show** parameter must have **valid** expression.
-* Test entries with **valid** expression must have either **show** or **exec** parameter.
+* Test entries with **valid** expression must have **show**,  **exec**, or **suzieq** parameter.
+
+```{tip}
+A test entry with only **‌wait** and **‌stop_on_error** parameters is a *‌failure barrier*. It succeeds (without waiting) if all the prior test entries have passed and exits the validation process if at least one of the prior tests has failed.
+```
 
 (validate-simple)=
 ## Simple Example
@@ -163,6 +173,62 @@ A similar approach cannot be used for Cisco IOSv. The only way to validate the c
 * You can use the **‌netlab validate -vv** command to generate debugging printouts to help you determine why your tests don't work as expected.
 * **‌netlab validate** command takes the tests from the `netlab.snapshot.yml` file created during the **‌netlab up** process. To recreate that file while the lab is running, use the hidden **‌netlab create --unlock** command.
 * Use [validation plugins](validate-plugin) to create complex validation tests.
+```
+
+(validate-config)=
+## Making Configuration Changes During the Validation Test
+
+Imagine you want to test the OSPFv2 default route origination that depends on a BGP default route. You could use the following approach:
+
+* Change the BGP configuration on a BGP neighbor to send the default route
+* Verify that the external default route is present in the OSPF topology database
+* Change the BGP configuration on a BGP neighbor to stop sending the default route
+* Verify that the external default route is no longer present in the OSPF topology database.
+
+You could use the following configuration template to advertise the BGP default route from Cisco IOS, FRRouting, or Arista EOS. Please note we're using the **df_state** variable to specify whether the default route should be advertised or not.
+
+```
+router bgp {{ bgp.as }}
+!
+{% for af in ['ipv4','ipv6'] %}
+{%   for ngb in bgp.neighbors if af in ngb %}
+{%     if loop.first %}
+  address-family {{ af }}
+{%     endif %}
+    {% if df_state|default('') == 'off' %}no {% endif %}neighbor {{ ngb[af] }} default-originate
+{%   endfor %}
+{% endfor %}
+```
+
+Now that we have the Jinja2 template that changes the BGP default route origination, we could turn the above idea into a _netlab_ validation test using the FRR [validation plugins](validate-plugin)[^CVNN]
+
+[^CVNN]: **xf** is the BGP neighbor of the device we're testing; **probe** is its OSPF neighbor
+
+```yaml
+bgp_dr:
+    description: Enable BGP default route
+    config: bgp_default
+    pass: BGP default route is sent to BGP neighbors
+    nodes: [ xf ]
+  df_c:
+    description: Check for the conditional default route
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ probe ]
+    plugin: ospf_prefix('0.0.0.0/0')
+  bgp_ndr:
+    description: Disable BGP default route
+    config:
+      template: bgp_default
+      variable.df_state: 'off'
+    nodes: [ xf ]
+    pass: BGP default route is no longer sent to BGP neighbors
+  df_x:
+    description: Check the OSPF default route is no longer advertised
+    wait_msg: Wait for SPF to complete
+    wait: 10
+    nodes: [ probe ]
+    plugin: ospf_prefix('0.0.0.0/0',state='missing')
 ```
 
 (validate-plugin)=

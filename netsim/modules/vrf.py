@@ -543,3 +543,4 @@ class VRF(_Module):
     #
     if node.get('bgp.as',None) and not node.get('bgp.router_id',None):
       _routing.router_id(node,'bgp',topology.pools)
+      _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))

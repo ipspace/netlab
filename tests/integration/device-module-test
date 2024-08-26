@@ -9,11 +9,13 @@ import sys
 import os
 import subprocess
 import shutil
+import time
+
 from box import Box
 
 from netsim.utils import log,read as _read
 from netsim.cli import parser_add_verbose
-from netsim.utils import files as _files
+from netsim.utils import files as _files, strings as _strings
 from netsim.data import get_empty_box
 
 def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
@@ -152,7 +154,7 @@ def run_cleanup(args: argparse.Namespace,final: bool = True, abort: bool = True)
     if abort:
       log.fatal(f"netlab down --cleanup failed, check the log files in {args.logdir}")
 
-RESULTS: Box = {}
+RESULTS: Box = get_empty_box()
 
 def log_result(test: str, stage: typing.Optional[str] = None, result: bool = False) -> None:
   global RESULTS
@@ -162,6 +164,14 @@ def log_result(test: str, stage: typing.Optional[str] = None, result: bool = Fal
     RESULTS.pop(test,None)
   else:
     RESULTS[test][stage] = result
+
+def print_fail(step: str, fail_color: str = "bright_red") -> None:
+  _strings.print_colored_text(f"{step}(FAIL)",color=fail_color)
+  print(" ",end="",flush=True)
+
+def print_ok(step: str) -> None:
+  _strings.print_colored_text(f"{step}(ok)",color="bright_green")
+  print(" ",end="",flush=True)
 
 def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   test_path = os.path.abspath(test)
@@ -174,12 +184,14 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     print("Pre-test cleanup:",end=" ",flush=True)
     run_cleanup(args,final=True,abort=False)
 
-  print(f"{test}:",end=" ",flush=True)
+  c_time = time.strftime('%H:%M:%S',time.localtime())
+  print(f"{c_time} {test}:",end=" ",flush=True)
   if execute(f"netlab create {test_path}",args,test=test,log="create",err="create").returncode == 0:
     print("create(ok)",end=" ",flush=True)
     log_result(test,'create',True)
   else:
-    print("create(FAIL)",flush=True)
+    print_fail("create",fail_color="bright_cyan")
+    print("",flush=True)
     log_result(test,'create',False)
     return
 
@@ -187,7 +199,7 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     print("up(ok)",end=" ",flush=True)
     log_result(test,'up',True)
   else:
-    print("up(FAIL)",end=" ",flush=True)
+    print_fail("up")
     log_result(test,'up',False)
     run_cleanup(args)
     return
@@ -196,7 +208,7 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     print("config(ok)",end=" ",flush=True)
     log_result(test,'config',True)
   else:
-    print("config(FAIL)",end=" ",flush=True)
+    print_fail("config")
     log_result(test,'config',False)
     run_cleanup(args)
     return
@@ -212,12 +224,12 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   valid = execute(valid_cmd,args,test=test,log=valid_capture,err=valid_capture)
   if valid.returncode == 0:
     log_result(test,'validate',True)
-    print("validate(ok)",end=" ",flush=True)
+    print_ok("validate")
   elif valid.returncode == 2:
     print("validate(SKIPPED)",end=" ",flush=True)
   else:
     if args.quiet or args.batch:
-      print("validate(FAIL)",end= " ",flush=True)
+      print_fail("validate")
     log_result(test,'validate',False)
     run_cleanup(args)
     return

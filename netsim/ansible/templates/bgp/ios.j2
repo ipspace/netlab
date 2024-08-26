@@ -1,4 +1,5 @@
 {% import "ios.macro.j2" as bgpcfg %}
+{% set ospf_pid = ospf.process|default(1) %}
 !
 ip bgp-community new-format
 !
@@ -26,6 +27,14 @@ router bgp {{ bgp.as }}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
  address-family {{ af }}
   bgp scan-time 5
+{% if bgp.import is defined %}
+!
+{%   for s_proto,s_data in bgp.import.items() %}
+  redistribute {{ s_proto }}{%
+    if s_proto == 'ospf' %} {{ ospf_pid }} match internal external{% endif %}{%
+    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
+{%   endfor %}
+{% endif %}
 !
 {%   if loopback[af] is defined and bgp.advertise_loopback %}
 {{     bgpcfg.bgp_network(af,loopback[af]) }}

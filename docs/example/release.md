@@ -41,6 +41,7 @@ ceos         4.31.2F   6cd23d2d3b3c   5 months ago    2.47GB
 ceos         4.29.2F   07d07431e26d   16 months ago   2.08GB
 ```
 
+(tutorial-release-names)=
 ## Changing the Target Software Release
 
 You can change the container/box name _netlab_ uses for a network device with the [user defaults](defaults-user-file) or with an [environment variable](defaults-env).
@@ -59,6 +60,10 @@ devices._device_.clab.image: _image_name
 ```yaml
 devices._device_.libvirt.image: _image_name
 devices._device_.virtualbox.image: _image_name
+```
+
+```{tip}
+Vagrant box names do not have to include the image version. If you specify just the box name, Vagrant selects the latest (numerically highest) version. Container image names must include the image tag (version).
 ```
 
 For example, to use the Arista EOS 4.28/4.29 release, add the following lines:
