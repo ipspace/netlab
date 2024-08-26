@@ -14,7 +14,7 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.9.0](https://github.com/ipspace/netlab/releases/tag/release_1.9.0). It contains tons of new features, and although we ran the most extensive integration tests ever, it might still have a few bugs.
+The latest release is [release 1.9.0-post1](https://github.com/ipspace/netlab/releases/tag/release_1.9.0-post1). The 1.9.0 release contains tons of new features, and although we ran the most extensive integration tests ever, it might still have a few bugs.
 
 Should you encounter one of those creatures, please report it with [a GitHub issue](https://github.com/ipspace/netlab/issues/new/choose) and use release [release 1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-post2) or [1.8.3](https://github.com/ipspace/netlab/releases/tag/release_1.8.3).
 
