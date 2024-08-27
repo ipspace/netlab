@@ -448,15 +448,9 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut, dut2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
-TASK [Check version of nokia.srlinux] ******************************************
-ok: [dut] => changed=false 
-  msg: '''nokia.srlinux'' version: 0.5.0'
-ok: [dut2] => changed=false 
-  msg: '''nokia.srlinux'' version: 0.5.0'
-
 TASK [tempfile] ****************************************************************
-changed: [dut2 -> localhost]
 changed: [dut -> localhost]
+changed: [dut2 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [dut2 -> localhost]
@@ -467,20 +461,20 @@ skipping: [dut]
 skipping: [dut2]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [dut]
 changed: [dut2]
+changed: [dut]
 
 TASK [debug] *******************************************************************
-skipping: [dut2]
 skipping: [dut]
+skipping: [dut2]
 
 TASK [file] ********************************************************************
-changed: [dut2 -> localhost]
 changed: [dut -> localhost]
+changed: [dut2 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x2 -> localhost]
 changed: [x1 -> localhost]
+changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -490,16 +484,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -538,54 +532,36 @@ ok: [dut] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv6]
+    - path: /routing-policy/community-set[name=ibgp-mark]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "2001:db8:1:1::1"
+        member: [ "65536:0:65536" ]
   
-    - path: /network-instance[name=default]/protocols/bgp
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.1
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
   
-       afi-safi:
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix: [] # Make sure it exists
   
-    - path: /routing-policy/policy[name=default_export]
+    - path: /routing-policy/policy[name=default_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
         - name: prefixes
           match:
-            prefix-set: default_export
+            prefix-set: default_bgp_advertise
           action:
             policy-result: accept
         - name: bgp
@@ -594,7 +570,22 @@ ok: [dut] =>
           action:
             policy-result: accept
   
-    - path: /routing-policy/prefix-set[name=default_export]
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.1
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+  
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 2001:db8:cafe:e42::/64
@@ -603,114 +594,217 @@ ok: [dut] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: disable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_bgp_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "2001:db8:3::2"
-         description: x1
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: disable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "2001:db8:3::2"
+          description: x1
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 65100
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: disable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "2001:db8:3:1::2"
-         description: x2
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: disable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
-  
-         peer-as: 65101
+          peer-as: 65100
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: disable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_bgp_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "2001:db8:cafe:e01::2"
-         description: dut2
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: disable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "2001:db8:3:1::2"
+          description: x2
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 65001
+          peer-as: 65101
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_bgp_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "2001:db8:cafe:e01::2"
+          description: dut2
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
+  
+          peer-as: 65001
+ok: [dut2] => 
+  msg: |-
+    bgp configuration for dut2
+    =========================================
+    updates:
+  
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: accept
+  
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65001
+        router-id: 10.0.0.2
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix:
+        - ip-prefix: 2001:db8:1:2::/64
+          mask-length-range: exact
+  
+  
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_bgp_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "2001:db8:cafe:e01::1"
+          description: dut
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
+  
+          peer-as: 65000
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -777,138 +871,24 @@ ok: [x2] =>
     !
     !
     do write
-ok: [dut2] => 
-  msg: |-
-    bgp configuration for dut2
-    =========================================
-    updates:
-  
-    - path: /routing-policy/policy[name=accept_all]
-      value:
-        default-action:
-          policy-result: "accept"
-  
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv6]
-      value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "2001:db8:1:2::1"
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       admin-state: enable
-       autonomous-system: 65001
-       router-id: 10.0.0.2
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
-  
-       afi-safi:
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix:
-        - ip-prefix: 2001:db8:1:2::/64
-          mask-length-range: exact
-  
-  
-  
-  
-  
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: disable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "2001:db8:cafe:e01::1"
-         description: dut
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: disable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
-  
-         peer-as: 65000
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [dut2]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut, dut2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
-
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-skipping: [dut2]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 changed: [dut2 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [dut -> localhost]
 changed: [dut2 -> localhost]
+changed: [dut -> localhost]
 
 TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
 skipping: [dut]
@@ -923,8 +903,8 @@ skipping: [dut]
 skipping: [dut2]
 
 TASK [file] ********************************************************************
-changed: [dut2 -> localhost]
 changed: [dut -> localhost]
+changed: [dut2 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -939,15 +919,15 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=24   changed=8    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-dut2                       : ok=24   changed=8    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+dut                        : ok=23   changed=8    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut2                       : ok=23   changed=8    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 

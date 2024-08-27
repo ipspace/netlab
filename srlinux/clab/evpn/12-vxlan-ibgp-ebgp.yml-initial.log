@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Find device readiness script] ********************************************
 ok: [l1]
@@ -37,8 +37,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -268,42 +268,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -340,13 +304,49 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
@@ -366,16 +366,16 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
 
 TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -406,7 +406,7 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-YfWviJDV-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-ZmuBWteO-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -418,8 +418,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
@@ -433,8 +433,8 @@ ok: [l2]
 ok: [spine]
 
 TASK [Find configuration template for vlan] ************************************
-skipping: [spine]
 ok: [l1]
+skipping: [spine]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -522,8 +522,8 @@ skipping: [l2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [l1]
@@ -531,414 +531,6 @@ ok: [l2]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    updates:
-  
-    - path: /routing-policy/policy[name=accept_all]
-      value:
-        default-action:
-          policy-result: "accept"
-  
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.3"
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.3
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
-  
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix:
-        - ip-prefix: 10.0.0.3/32
-          mask-length-range: exact
-  
-  
-  
-  
-  
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: disable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.3
-       next-hop-self: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "10.0.0.5"
-         description: spine
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: disable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
-  
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "10.1.0.2"
-         description: spine
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-  
-         peer-as: 65100
-         local-as:
-          as-number: 65201
-          prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
-ok: [spine] => 
-  msg: |-
-    bgp configuration for spine
-    =========================================
-    updates:
-  
-    - path: /routing-policy/policy[name=accept_all]
-      value:
-        default-action:
-          policy-result: "accept"
-  
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
-      value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.5"
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.5
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
-  
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix:
-        - ip-prefix: 10.0.0.5/32
-          mask-length-range: exact
-  
-  
-  
-  
-  
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: disable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.5
-        passive-mode: True
-        _annotate_passive-mode: "Improve robustness during startup"
-       route-reflector:
-        cluster-id: 10.0.0.5
-        client: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "10.0.0.3"
-         description: l1
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: disable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
-  
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: disable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.5
-        passive-mode: True
-        _annotate_passive-mode: "Improve robustness during startup"
-       route-reflector:
-        cluster-id: 10.0.0.5
-        client: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "10.0.0.4"
-         description: l2
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: disable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
-  
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
-       route-reflector:
-        cluster-id: 10.0.0.5
-        client: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "10.1.0.1"
-         description: l1
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-  
-         peer-as: 65201
-         local-as:
-          as-number: 65100
-          prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-  
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
-       route-reflector:
-        cluster-id: 10.0.0.5
-        client: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-       neighbor:
-       - peer-address: "10.1.0.5"
-         description: l2
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-  
-         peer-as: 65202
-         local-as:
-          as-number: 65100
-          prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
 ok: [l2] => 
   msg: |-
     bgp configuration for l2
@@ -977,11 +569,413 @@ ok: [l2] =>
     !
     !
     do write
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    updates:
+  
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
+  
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
+        default-action:
+          policy-result: "accept"
+        statement:
+        - name: set-nh-on-ebgp-routes
+          match:
+            protocol: bgp
+            bgp:
+              as-path-length:
+                value: 1
+                operator: "ge"
+          action:
+            policy-result: "accept"
+            bgp:
+              next-hop:
+                set: "10.0.0.3"
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.3
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_export
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.3/32
+          mask-length-range: exact
+  
+  
+  
+  
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: next_hop_self_ebgp_ipv4
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+        - afi-safi-name: evpn
+          admin-state: enable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.3
+        next-hop-self: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.5"
+          description: spine
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+          - afi-safi-name: evpn
+            admin-state: enable
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.1.0.2"
+          description: spine
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+          peer-as: 65100
+          local-as:
+            as-number: 65201
+            prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
+ok: [spine] => 
+  msg: |-
+    bgp configuration for spine
+    =========================================
+    updates:
+  
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: "accept"
+  
+    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+      value:
+        default-action:
+          policy-result: "accept"
+        statement:
+        - name: set-nh-on-ebgp-routes
+          match:
+            protocol: bgp
+            bgp:
+              as-path-length:
+                value: 1
+                operator: "ge"
+          action:
+            policy-result: "accept"
+            bgp:
+              next-hop:
+                set: "10.0.0.5"
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.5
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_export
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+    - path: /routing-policy/prefix-set[name=default_export]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.5/32
+          mask-length-range: exact
+  
+  
+  
+  
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: next_hop_self_ebgp_ipv4
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+        - afi-safi-name: evpn
+          admin-state: enable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.5
+          passive-mode: True
+          _annotate_passive-mode: "Improve robustness during startup"
+        route-reflector:
+          cluster-id: 10.0.0.5
+          client: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.3"
+          description: l1
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+          - afi-safi-name: evpn
+            admin-state: enable
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: next_hop_self_ebgp_ipv4
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+        - afi-safi-name: evpn
+          admin-state: enable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.5
+          passive-mode: True
+          _annotate_passive-mode: "Improve robustness during startup"
+        route-reflector:
+          cluster-id: 10.0.0.5
+          client: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.4"
+          description: l2
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+          - afi-safi-name: evpn
+            admin-state: enable
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        route-reflector:
+          cluster-id: 10.0.0.5
+          client: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.1.0.1"
+          description: l1
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+          peer-as: 65201
+          local-as:
+            as-number: 65100
+            prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        route-reflector:
+          cluster-id: 10.0.0.5
+          client: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.1.0.5"
+          description: l2
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+          peer-as: 65202
+          local-as:
+            as-number: 65100
+            prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
@@ -1251,16 +1245,16 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
 
 TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]

@@ -332,10 +332,6 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x2, x1
 
-TASK [Check version of nokia.srlinux] ******************************************
-ok: [dut] => changed=false 
-  msg: '''nokia.srlinux'' version: 0.5.0'
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -355,8 +351,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x2 -> localhost]
 changed: [x1 -> localhost]
+changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x2]
@@ -366,8 +362,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x2, x1
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x2]
@@ -507,43 +503,37 @@ ok: [dut] =>
   
     - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
+        default-action:
           policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.1"
+        statement:
+        - name: set-nh-on-ebgp-routes
+          match:
+            protocol: bgp
+            bgp:
+              as-path-length:
+                value: 1
+                operator: "ge"
+          action:
+            policy-result: "accept"
+            bgp:
+              next-hop:
+                set: "10.0.0.1"
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       admin-state: enable
-       autonomous-system: 64500
-       router-id: 10.0.0.1
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        admin-state: enable
+        autonomous-system: 64500
+        router-id: 10.0.0.1
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-       afi-safi:
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
     - path: /routing-policy/prefix-set[name=default_export]
       value:
@@ -580,146 +570,146 @@ ok: [dut] =>
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.1.0.2"
-         description: x1
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "10.1.0.2"
+          description: x1
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 65100
+          peer-as: 65100
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "2001:db8:3::2"
-         description: x1
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "2001:db8:3::2"
+          description: x1
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 65100
+          peer-as: 65100
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.1.0.6"
-         description: x2
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "10.1.0.6"
+          description: x2
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 64507
+          peer-as: 64507
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "2001:db8:3:1::2"
-         description: x2
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "2001:db8:3:1::2"
+          description: x2
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 64507
+          peer-as: 64507
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -729,9 +719,6 @@ ok: [x2]
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
-
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -793,9 +780,6 @@ ok: [dut]
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -815,7 +799,7 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=12   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=32   changed=12   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 

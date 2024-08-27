@@ -436,8 +436,8 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s2 -> localhost]
 changed: [ce2 -> localhost]
+changed: [s2 -> localhost]
 changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -449,8 +449,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
 changed: [ce2]
 
 TASK [set_fact] ****************************************************************
@@ -459,8 +459,8 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
 changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -472,8 +472,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -622,37 +622,34 @@ ok: [s1] =>
   
     - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
+        default-action:
           policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.3"
+        statement:
+        - name: set-nh-on-ebgp-routes
+          match:
+            protocol: bgp
+            bgp:
+              as-path-length:
+                value: 1
+                operator: "ge"
+          action:
+            policy-result: "accept"
+            bgp:
+              next-hop:
+                set: "10.0.0.3"
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.3
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.3
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
   
     - path: /routing-policy/prefix-set[name=default_export]
       value:
@@ -687,44 +684,44 @@ ok: [s1] =>
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: next_hop_self_ebgp_ipv4
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+        - afi-safi-name: evpn
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.3
-       next-hop-self: True
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.3
+        next-hop-self: True
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.0.0.4"
-         description: s2
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
+        neighbor:
+        - peer-address: "10.0.0.4"
+          description: s2
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+          - afi-safi-name: evpn
+            admin-state: enable
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [ce1]
@@ -902,8 +899,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -918,8 +915,8 @@ skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
@@ -1088,19 +1085,16 @@ ok: [s1] =>
   
     - path: /network-instance[name=tenant]/protocols/bgp
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.3
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.3
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
   
     - path: /routing-policy/prefix-set[name=tenant_export]
       value:

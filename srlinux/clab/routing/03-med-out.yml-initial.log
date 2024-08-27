@@ -196,10 +196,6 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe
 
-TASK [Check version of nokia.srlinux] ******************************************
-ok: [dut] => changed=false 
-  msg: '''nokia.srlinux'' version: 0.5.0'
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -285,9 +281,6 @@ ok: [probe]
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
-
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -388,60 +381,54 @@ ok: [dut] =>
   
     - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
+        default-action:
           policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.1"
+        statement:
+        - name: set-nh-on-ebgp-routes
+          match:
+            protocol: bgp
+            bgp:
+              as-path-length:
+                value: 1
+                operator: "ge"
+          action:
+            policy-result: "accept"
+            bgp:
+              next-hop:
+                set: "10.0.0.1"
     - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv6]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
+        default-action:
           policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "2001:db8:1:1::1"
+        statement:
+        - name: set-nh-on-ebgp-routes
+          match:
+            protocol: bgp
+            bgp:
+              as-path-length:
+                value: 1
+                operator: "ge"
+          action:
+            policy-result: "accept"
+            bgp:
+              next-hop:
+                set: "2001:db8:1:1::1"
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.1
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.1
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-       afi-safi:
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
     - path: /routing-policy/prefix-set[name=default_export]
       value:
@@ -449,20 +436,19 @@ ok: [dut] =>
   
     - path: /routing-policy/policy[name=default_export]
       value:
-       default-action:
-        policy-result: reject
-       statement:
-       - name: prefixes
-         match:
-          prefix-set: default_export
-         action:
-          policy-result: accept
-       - name: bgp
-         match:
-          protocol: bgp
-         action:
-          policy-result: accept
-  
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_export
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
     - path: /routing-policy/prefix-set[name=default_export]
       value:
         prefix:
@@ -474,7 +460,7 @@ ok: [dut] =>
     - path: /routing-policy/prefix-set[name=default_export]
       value:
         prefix:
-        - ip-prefix: 2001:db8:1:1::1/128
+        - ip-prefix: 2001:db8:1:1::/64
           mask-length-range: exact
   
   
@@ -485,74 +471,74 @@ ok: [dut] =>
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.1.0.2"
-         description: probe
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "10.1.0.2"
+          description: probe
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 65100
+          peer-as: 65100
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: default_export
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "2001:db8:3::2"
-         description: probe
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "2001:db8:3::2"
+          description: probe
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 65100
+          peer-as: 65100
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -561,9 +547,6 @@ ok: [probe]
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
-
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -621,9 +604,6 @@ ok: [dut]
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
 
@@ -643,7 +623,7 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=43   changed=16   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=42   changed=16   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 probe                      : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
 

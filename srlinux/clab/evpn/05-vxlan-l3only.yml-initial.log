@@ -384,12 +384,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-xYQGzgZJ-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-BKEQhjaF-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -531,37 +531,34 @@ ok: [s1] =>
   
     - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
+        default-action:
           policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.3"
+        statement:
+        - name: set-nh-on-ebgp-routes
+          match:
+            protocol: bgp
+            bgp:
+              as-path-length:
+                value: 1
+                operator: "ge"
+          action:
+            policy-result: "accept"
+            bgp:
+              next-hop:
+                set: "10.0.0.3"
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.3
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.3
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
   
     - path: /routing-policy/prefix-set[name=default_export]
       value:
@@ -596,44 +593,44 @@ ok: [s1] =>
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
+        admin-state: enable
+        import-policy: accept_all
+        export-policy: next_hop_self_ebgp_ipv4
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+        - afi-safi-name: evpn
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.3
-       next-hop-self: True
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.3
+        next-hop-self: True
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.0.0.4"
-         description: s2
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
+        neighbor:
+        - peer-address: "10.0.0.4"
+          description: s2
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+          - afi-safi-name: evpn
+            admin-state: enable
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [s1]
@@ -857,19 +854,16 @@ ok: [s1] =>
   
     - path: /network-instance[name=customer]/protocols/bgp
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.3
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.3
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
   
     - path: /routing-policy/prefix-set[name=customer_export]
       value:
