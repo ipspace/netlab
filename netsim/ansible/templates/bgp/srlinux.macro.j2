@@ -136,18 +136,20 @@
   Create export policies as needed:
 
   * Always create the default BGP export policy
-  * If needed, create per-AF IBGP export policies
+  * If needed, create per-AF IBGP export policies (the convoluted
+    for loops are there to ensure the AF-IBGP export policy is defined
+    only once)
 #}
-{{   bgp_export_policy(vrf,'bgp') }}
-{%   if bgp.next_hop_self|default(False) %}
-{%     for afm in vrf_context.af %}
-{%       for n in vrf_bgp.neighbors if afm in n and n.type == 'ibgp' %}
-{%         if loop.first %}
-{{           bgp_export_policy(vrf,'ibgp-'+afm,loopback[afm]|ipaddr('address')) }}
-{%         endif %}
-{%       endfor %}
+{{ bgp_export_policy(vrf,'bgp') }}
+{% if bgp.next_hop_self|default(False) %}
+{%   for afm in vrf_context.af %}
+{%     for n in vrf_bgp.neighbors if afm in n and n.type == 'ibgp' %}
+{%       if loop.first %}
+{{         bgp_export_policy(vrf,'ibgp-'+afm,loopback[afm]|ipaddr('address')) }}
+{%       endif %}
 {%     endfor %}
-{%   endif %}
+{%   endfor %}
+{% endif %}
 
 - path: /network-instance[name={{ vrf }}]/protocols/bgp
   value:
@@ -183,13 +185,13 @@
   Define IPv4 and IPv6 BGP neighbors
 #}
 {% for n in vrf_bgp.neighbors|default([]) %}
-{% for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 
-{% if n[af] is string %}
+{%     if n[af] is string %}
 {# (Re)create peer group #}
-{% set peer_group = 'ebgp' if n.type=='ebgp' else 'ibgp-local-as' if n.type=='localas_ibgp' else ('ibgp-'+af) %}
-{% set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
-{{ bgp_peer_group(vrf,peer_group,af,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip,vrf_bgp) }}
+{%       set peer_group = 'ebgp' if n.type=='ebgp' else 'ibgp-local-as' if n.type=='localas_ibgp' else ('ibgp-'+af) %}
+{%       set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
+{{       bgp_peer_group(vrf,peer_group,af,'ibgp' if 'ibgp' in n.type else 'ebgp',n,transport_ip,vrf_bgp) }}
 
 - path: /network-instance[name={{vrf}}]/protocols/bgp
   value:
@@ -198,51 +200,47 @@
       description: {{ n.name }}
       peer-group: {{ peer_group }}
   {{ bgp_families(n,ipv4=(af=='ipv4' or 'ipv4' not in n),ipv6=(af=='ipv6')) | indent(2) }}
-{% if 'ebgp' in n.type %}
+{%       if 'ebgp' in n.type %}
       peer-as: {{ n.as }}
-{% elif n.type=='localas_ibgp' %}
+{%       elif n.type=='localas_ibgp' %}
       transport:
         local-address: {{ interfaces[n.ifindex-1][af]|ipaddr('address') }}
-{% elif vrf_bgp.rr|default(False) and n.rr|default(False) %}
+{%       elif vrf_bgp.rr|default(False) and n.rr|default(False) %}
       route-reflector:
         client: False # Don't reflect routes between ibgp route reflectors
       transport:
         passive-mode: False
         _annotate_passive-mode: "Connect actively to other Route Reflectors"
-{% endif %}
-{% if n.local_as is defined %}
+{%       endif %}
+{%       if n.local_as is defined %}
       local-as:
         as-number: {{ n.local_as }}
         prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
-{% endif %}
-
-{% elif n[af]==True %}
-{%   set peer_group = n.type + "-unnumbered" + (('-' + n.local_as|string()) if n.local_as is defined else '') %}
+{%       endif %}
+{%     elif n[af]==True %}
+{#       interface EBGP session #}
+{%       set peer_group = 'intf-'+n.local_if %}
 {{ bgp_peer_group(vrf,peer_group,af,n.type,n,None) }}
-{%   if n.local_as is defined %}
+{%       if n.local_as is defined %}
     local-as:
       as-number: {{ n.local_as }}
       prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP AS in eBGP advertisements
-{% endif %}
+{%       endif %}
 
-{% if n.ipv4_rfc8950|default(False) %}
+{%       if n.ipv4_rfc8950|default(False) %}
 - path: /network-instance[name={{vrf}}]/ip-forwarding
   value:
    receive-ipv4-check: false
    _annotate_receive-ipv4-check: "Allow IPv4 on IPv6 unnumbered interfaces"
-{% endif %}
+{%       endif %}
 
-{% for i in interfaces|default([]) if i.ifindex == n.ifindex %}
-{% set if_name_index = i.ifname.split('.') %}
-{% set if_name = if_name_index[0] %}
-{% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
-- path: /network-instance[name={{vrf}}]/protocols/bgp/dynamic-neighbors/interface[interface-name={{if_name}}.{{if_index}}]
+{%       set ifname = n.local_if if '.' in n.local_if else n.local_if+'.0' %}
+- path: /network-instance[name={{ vrf }}]/protocols/bgp/dynamic-neighbors/interface[interface-name={{ ifname }}]
   value:
     peer-group: "{{ peer_group }}"
     allowed-peer-as: [ {{ n.as }}..{{ n.as }} ]
-{% endfor %}
-{% endif %}
-{% endfor %}
+{%     endif %}
+{%   endfor %}
 {% endfor %}
 
 {#
