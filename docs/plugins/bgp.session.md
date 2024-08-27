@@ -114,7 +114,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Junos[^Junos]       |   ❌  |  ✅  |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
 | Nokia SR OS         |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
 | VyOS                |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
 
