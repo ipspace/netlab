@@ -99,8 +99,8 @@
 {% set nh_self = bgp.next_hop_self|default(False) and type == 'ibgp' %}
 {% set nh_self_rr = nh_self and vrf_bgp.rr|default(False) %}
 {% set ep_name = (vrf + "_ibgp-" + af + "_export") if nh_self_rr else (vrf + "_bgp_export") %}
-    import-policy: {{ "ibgp-mark" if nh_self_rr else "accept_all" }}
-    export-policy: {{ ep_name }}
+    import-policy: [ {{ "ibgp-mark" if nh_self_rr else "accept_all" }} ]
+    export-policy: [ {{ ep_name }} ]
 {{ bgp_families(neighbor) }}
     timers:
       connect-retry: 10
@@ -143,7 +143,7 @@
 {{ bgp_export_policy(vrf,'bgp') }}
 {% if bgp.next_hop_self|default(False) %}
 {%   for afm in vrf_context.af %}
-{%     for n in vrf_bgp.neighbors if afm in n and n.type == 'ibgp' %}
+{%     for n in vrf_bgp.neighbors|default([]) if afm in n and n.type == 'ibgp' %}
 {%       if loop.first %}
 {{         bgp_export_policy(vrf,'ibgp-'+afm,loopback[afm]|ipaddr('address')) }}
 {%       endif %}
