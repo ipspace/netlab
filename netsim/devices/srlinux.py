@@ -39,15 +39,6 @@ class SRLINUX(_Quirks):
               Warning,
               'quirks')
 
-    if 'evpn' in mods:
-      for n in node.get('bgp.neighbors',[]):
-        if n.get('evpn',False) and n.get('local_if',False):
-          log.error(
-            f'SR Linux ({node.name}) does not support EVPN AF over interface EBGP sessions',
-            more_data=f'Neighbor {n.name} interface {n.local_if}',
-            category=log.IncorrectType,
-            module='quirks')
-
     if 'mpls' in mods or 'sr' in mods:
       dt = node.clab.type
       if dt not in ['ixr6','ixr10','ixr6e','ixr10e']:

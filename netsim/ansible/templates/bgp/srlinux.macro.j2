@@ -74,7 +74,7 @@
 {%   endif %}
 {% endmacro %}
 
-{% macro bgp_families(neighbor,ipv4=True,ipv6=True) %}
+{% macro bgp_families(neighbor,ipv4=True,ipv6=True,import=None,export=None) %}
 {% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
     afi-safi:
     - afi-safi-name: ipv4-unicast
@@ -84,8 +84,20 @@
         advertise-ipv6-next-hops: True
         receive-ipv6-next-hops: True
 {% endif %}
+{% if import %}
+      import-policy: {{ import }}
+{% endif %}
+{% if export %}
+      export-policy: {{ export }}
+{% endif %}
     - afi-safi-name: ipv6-unicast
       admin-state: {{ 'enable' if activate.ipv6|default(False) else 'disable' }}
+{% if import %}
+      import-policy: {{ import }}
+{% endif %}
+{% if export %}
+      export-policy: {{ export }}
+{% endif %}
 {% if 'evpn' in neighbor and neighbor.evpn %}
     - afi-safi-name: evpn
       admin-state: enable
@@ -99,9 +111,7 @@
 {% set nh_self = bgp.next_hop_self|default(False) and type == 'ibgp' %}
 {% set nh_self_rr = nh_self and vrf_bgp.rr|default(False) %}
 {% set ep_name = (vrf + "_ibgp-" + af + "_export") if nh_self_rr else (vrf + "_bgp_export") %}
-    import-policy: [ {{ "ibgp-mark" if nh_self_rr else "accept_all" }} ]
-    export-policy: [ {{ ep_name }} ]
-{{ bgp_families(neighbor) }}
+{{ bgp_families(neighbor,import=[ "ibgp-mark" if nh_self_rr else "accept_all" ],export=[ ep_name ]) }}
     timers:
       connect-retry: 10
       _annotate_connect-retry: "Reduce default 120s to 10s"
