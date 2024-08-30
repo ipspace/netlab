@@ -4,8 +4,8 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [rr2]
 ok: [x1]
 
@@ -30,8 +30,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
@@ -521,14 +521,8 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
@@ -536,13 +530,10 @@ changed: [dut]
 TASK [debug] *******************************************************************
 skipping: [dut]
 
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [rr2 -> localhost]
 changed: [r1 -> localhost]
 changed: [r2 -> localhost]
+changed: [rr2 -> localhost]
 changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -556,21 +547,21 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r1]
-changed: [rr2]
 changed: [r2]
+changed: [rr2]
 changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [rr2]
-changed: [x1]
 changed: [r2]
 changed: [r1]
+changed: [rr2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -593,17 +584,17 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
+ok: [r2]
 ok: [r1]
 ok: [rr2]
-ok: [r2]
 ok: [x1]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -653,39 +644,6 @@ ok: [r1] =>
     !
     !
     ip route 172.0.42.0/24 Null0
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.42.1
-    !
-      neighbor 10.1.0.13 remote-as 65000
-      neighbor 10.1.0.13 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 172.42.42.0/24
-    !
-    !
-    !
-      neighbor 10.1.0.13 activate
-      no neighbor 10.1.0.13 send-community all
-      neighbor 10.1.0.13 send-community standard
-      neighbor 10.1.0.13 send-community large
-    !
-    !
     !
     do write
 ok: [dut] => 
@@ -962,6 +920,86 @@ ok: [dut] =>
             admin-state: disable
   
           peer-as: 65101
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.42.1
+    !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 172.42.42.0/24
+    !
+    !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
+    !
+    !
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description rr2
+      neighbor 10.0.0.2 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 next-hop-self
+      no neighbor 10.0.0.2 send-community all
+      neighbor 10.0.0.2 send-community standard
+      neighbor 10.0.0.2 send-community large
+      neighbor 10.0.0.2 send-community extended
+    !
+    !
+    !
+    do write
 ok: [rr2] => 
   msg: |-
     bgp configuration for rr2
@@ -1023,53 +1061,6 @@ ok: [rr2] =>
     !
     !
     do write
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description rr2
-      neighbor 10.0.0.2 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 next-hop-self
-      no neighbor 10.0.0.2 send-community all
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community large
-      neighbor 10.0.0.2 send-community extended
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -1082,14 +1073,8 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [dut]
@@ -1097,20 +1082,17 @@ changed: [dut]
 TASK [debug] *******************************************************************
 skipping: [dut]
 
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
 TASK [template] ****************************************************************
 changed: [r2]
+changed: [x1]
 changed: [rr2]
 changed: [r1]
-changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
-ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
+ok: [r2]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
@@ -1133,8 +1115,8 @@ ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
-ok: [r1]
 skipping: [x1]
+ok: [r1]
 ok: [r2]
 ok: [rr2]
 
@@ -1264,31 +1246,22 @@ TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [x1]
 ok: [dut]
 ok: [r1]
-ok: [rr2]
 ok: [r2]
+ok: [rr2]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [r2]
@@ -1306,15 +1279,15 @@ skipping: [r2]
 skipping: [rr2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [rr2]
 changed: [r2]
+changed: [rr2]
 changed: [r1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=12   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 r1                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 r2                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 rr2                        : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   

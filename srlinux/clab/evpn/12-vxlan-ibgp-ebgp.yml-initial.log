@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Find device readiness script] ********************************************
 ok: [l1]
@@ -37,8 +37,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -268,42 +268,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -340,30 +304,58 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [l1]
@@ -372,10 +364,6 @@ changed: [spine]
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -406,9 +394,9 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-zlIvnLIQ-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-ioreQSLz-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -429,8 +417,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1,
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [spine]
@@ -490,23 +478,14 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -531,6 +510,44 @@ ok: [l2]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l2] => 
+  msg: |-
+    bgp configuration for l2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.0.0.5 remote-as 65000
+      neighbor 10.0.0.5 description spine
+      neighbor 10.0.0.5 update-source lo
+    !
+      neighbor 10.1.0.6 remote-as 65100
+      neighbor 10.1.0.6 description spine
+      neighbor 10.1.0.6 local-as 65202 no-prepend replace-as
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.1.0.6 activate
+      no neighbor 10.1.0.6 send-community all
+      neighbor 10.1.0.6 send-community standard
+      neighbor 10.1.0.6 send-community large
+    !
+    !
+    !
+    do write
 ok: [l1] => 
   msg: |-
     bgp configuration for l1
@@ -991,44 +1008,6 @@ ok: [spine] =>
           local-as:
             as-number: 65100
             prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
-ok: [l2] => 
-  msg: |-
-    bgp configuration for l2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.0.0.5 remote-as 65000
-      neighbor 10.0.0.5 description spine
-      neighbor 10.0.0.5 update-source lo
-    !
-      neighbor 10.1.0.6 remote-as 65100
-      neighbor 10.1.0.6 description spine
-      neighbor 10.1.0.6 local-as 65202 no-prepend replace-as
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.1.0.6 activate
-      no neighbor 10.1.0.6 send-community all
-      neighbor 10.1.0.6 send-community standard
-      neighbor 10.1.0.6 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
@@ -1039,17 +1018,9 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [l1]
@@ -1058,10 +1029,6 @@ changed: [spine]
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1170,23 +1137,14 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1289,17 +1247,9 @@ TASK [Deploy evpn configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [l1]
@@ -1308,10 +1258,6 @@ changed: [spine]
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1331,9 +1277,9 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-l1                         : ok=53   changed=20   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+l1                         : ok=43   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 l2                         : ok=50   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-spine                      : ok=37   changed=12   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+spine                      : ok=31   changed=3    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

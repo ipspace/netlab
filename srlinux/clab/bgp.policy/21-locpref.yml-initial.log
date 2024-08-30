@@ -480,14 +480,8 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1, x2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
@@ -495,12 +489,9 @@ changed: [dut]
 TASK [debug] *******************************************************************
 skipping: [dut]
 
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [probe -> localhost]
+changed: [x1 -> localhost]
 changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -512,19 +503,19 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [probe]
 
 TASK [set_fact] ****************************************************************
+ok: [probe]
 ok: [x1]
 ok: [x2]
-ok: [probe]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
-changed: [probe]
 changed: [x2]
+changed: [probe]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -547,8 +538,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [probe]
@@ -596,23 +587,14 @@ skipping: [x1]
 skipping: [x2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL routing node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/routing/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -676,53 +658,6 @@ ok: [probe] =>
       neighbor 2001:db8:1:1::1 send-community standard
       neighbor 2001:db8:1:1::1 send-community large
       neighbor 2001:db8:1:1::1 send-community extended
-    !
-    !
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.42.1
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 172.42.42.0/24
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-     address-family ipv6 unicast
-    !
-      network 2001:db8:cafe:42::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
     !
     !
     !
@@ -1137,6 +1072,53 @@ ok: [dut] =>
             admin-state: enable
   
           peer-as: 65101
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.42.1
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 172.42.42.0/24
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+      network 2001:db8:cafe:42::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -1148,23 +1130,14 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -1182,8 +1155,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [probe]
+changed: [x1]
 changed: [x2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -1316,23 +1289,14 @@ skipping: [x2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -1372,14 +1336,8 @@ ok: [dut]
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/extra/bgp.policy/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL bgp.policy node configuration (template=/home/pipi/net101/tools/netsim/extra/bgp.policy/srlinux.j2)] ***
 changed: [dut]
@@ -1387,11 +1345,8 @@ changed: [dut]
 TASK [debug] *******************************************************************
 skipping: [dut]
 
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
 PLAY RECAP *********************************************************************
-dut                        : ok=52   changed=20   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=42   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 probe                      : ok=34   changed=7    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 x2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
