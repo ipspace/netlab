@@ -436,8 +436,8 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [ce2 -> localhost]
 changed: [s2 -> localhost]
+changed: [ce2 -> localhost]
 changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -460,8 +460,8 @@ ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [s2]
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -471,9 +471,9 @@ skipping: [ce2]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ce2]
 ok: [ce1]
 ok: [s1]
-ok: [ce2]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -618,25 +618,71 @@ ok: [s1] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+  
+  
+    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
+              community-set: ibgp-mark
+          action:
+            policy-result: accept
+        - name: ebgp-next-hop-self
+          match:
+            protocol: bgp
           action:
             policy-result: "accept"
             bgp:
               next-hop:
                 set: "10.0.0.3"
+  
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
@@ -651,26 +697,7 @@ ok: [s1] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
   
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.3/32
@@ -680,18 +707,18 @@ ok: [s1] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: next_hop_self_ebgp_ipv4
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -773,8 +800,8 @@ ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -915,8 +942,8 @@ skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
@@ -1083,33 +1110,12 @@ ok: [s1] =>
        member:
        - "target:65000:1"
   
-    - path: /network-instance[name=tenant]/protocols/bgp
-      value:
-        admin-state: enable
-        autonomous-system: 65000
-        router-id: 10.0.0.3
-        ebgp-default-policy:
-          export-reject-all: False
-          import-reject-all: False
   
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: enable
-  
-    - path: /routing-policy/prefix-set[name=tenant_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=tenant_export]
+    - path: /routing-policy/policy[name=tenant_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
-        - name: prefixes
-          match:
-            prefix-set: tenant_export
-          action:
-            policy-result: accept
         - name: bgp
           match:
             protocol: bgp
@@ -1136,6 +1142,19 @@ ok: [s1] =>
           action:
             policy-result: accept
   
+  
+    - path: /network-instance[name=tenant]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.3
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
   
   
   

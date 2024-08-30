@@ -416,8 +416,8 @@ changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r2 -> localhost]
-changed: [rs -> localhost]
 changed: [r3 -> localhost]
+changed: [rs -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -428,8 +428,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r3, rs
 
 TASK [template] ****************************************************************
-changed: [rs]
 changed: [r2]
+changed: [rs]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
@@ -438,8 +438,8 @@ ok: [r3]
 ok: [rs]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r3]
+changed: [r2]
 changed: [rs]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -471,12 +471,12 @@ ok: [rs]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r2] => 
+ok: [r3] => 
   msg: |-
-    bgp configuration for r2
+    bgp configuration for r3
     =========================================
     !
-    router bgp 65001
+    router bgp 65002
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
@@ -485,21 +485,21 @@ ok: [r2] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.10
+      bgp router-id 10.0.0.2
     !
-      neighbor 172.16.0.3 remote-as 65100
-      neighbor 172.16.0.3 description rs
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
     !
-      network 10.0.0.10/32
+      network 10.0.0.2/32
     !
     !
     !
-      neighbor 172.16.0.3 activate
-      no neighbor 172.16.0.3 send-community all
-      neighbor 172.16.0.3 send-community standard
-      neighbor 172.16.0.3 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -578,8 +578,8 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_bgp_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -610,12 +610,11 @@ ok: [dut] =>
   
           peer-as: 65100
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_bgp_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -645,39 +644,6 @@ ok: [dut] =>
             admin-state: disable
   
           peer-as: 65002
-ok: [r3] => 
-  msg: |-
-    bgp configuration for r3
-    =========================================
-    !
-    router bgp 65002
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-    !
-    !
-    do write
 ok: [rs] => 
   msg: |-
     bgp configuration for rs
@@ -719,6 +685,39 @@ ok: [rs] =>
     !
     !
     do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65001
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 172.16.0.3 remote-as 65100
+      neighbor 172.16.0.3 description rs
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.10/32
+    !
+    !
+    !
+      neighbor 172.16.0.3 activate
+      no neighbor 172.16.0.3 send-community all
+      neighbor 172.16.0.3 send-community standard
+      neighbor 172.16.0.3 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -749,9 +748,9 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
+changed: [r2]
 changed: [r3]
 changed: [rs]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -774,9 +773,9 @@ TASK [Run custom configuration deployment scripts] *****************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, r2, rs => (item=bgp.session)
 
 TASK [Find configuration template] *********************************************
+ok: [dut]
 ok: [r2]
 ok: [rs]
-ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -784,9 +783,9 @@ skipping: [r2]
 skipping: [rs]
 
 TASK [Check is the configuration template is a file] ***************************
+ok: [r2 -> localhost]
 ok: [dut -> localhost]
 ok: [rs -> localhost]
-ok: [r2 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -826,8 +825,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [rs]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]

@@ -428,9 +428,9 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [rc -> localhost]
 changed: [x1 -> localhost]
+changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -441,9 +441,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, rc, x1
 
 TASK [template] ****************************************************************
-changed: [rc]
 changed: [r2]
 changed: [x1]
+changed: [rc]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -451,9 +451,9 @@ ok: [rc]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [rc]
 changed: [r2]
 changed: [x1]
-changed: [rc]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -465,8 +465,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, rc, x1 => (item=bgp)
@@ -475,8 +475,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [r2]
-ok: [rc]
 ok: [x1]
+ok: [rc]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
@@ -485,6 +485,39 @@ ok: [x1]
 ok: [rc]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
+    !
+    !
+    !
+    do write
 ok: [r2] => 
   msg: |-
     bgp configuration for r2
@@ -519,44 +552,6 @@ ok: [r2] =>
       neighbor 10.0.0.1 send-community extended
     !
     !
-    !
-    do write
-ok: [rc] => 
-  msg: |-
-    bgp configuration for rc
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.10
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.10/32
-    !
-    !
-      network 172.0.42.0/24
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-    !
-    ip route 172.0.42.0/24 Null0
     !
     do write
 ok: [dut] => 
@@ -660,13 +655,15 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-        import-policy: ibgp-mark
-        export-policy: default_ibgp-ipv4_export
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
   
         timers:
           connect-retry: 10
@@ -699,17 +696,18 @@ ok: [dut] =>
             admin-state: disable
   
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-        import-policy: ibgp-mark
-        export-policy: default_ibgp-ipv4_export
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
   
         timers:
           connect-retry: 10
@@ -742,17 +740,18 @@ ok: [dut] =>
             admin-state: disable
   
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_bgp_export
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
   
         timers:
           connect-retry: 10
@@ -780,12 +779,12 @@ ok: [dut] =>
             admin-state: disable
   
           peer-as: 65101
-ok: [x1] => 
+ok: [rc] => 
   msg: |-
-    bgp configuration for x1
+    bgp configuration for rc
     =========================================
     !
-    router bgp 65101
+    router bgp 65000
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
@@ -794,23 +793,28 @@ ok: [x1] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.3
+      bgp router-id 10.0.0.10
     !
-      neighbor 10.1.0.9 remote-as 65000
-      neighbor 10.1.0.9 description dut
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
     !
      address-family ipv4 unicast
     !
-      network 10.0.0.3/32
+      network 10.0.0.10/32
     !
     !
+      network 172.0.42.0/24
     !
-      neighbor 10.1.0.9 activate
-      no neighbor 10.1.0.9 send-community all
-      neighbor 10.1.0.9 send-community standard
-      neighbor 10.1.0.9 send-community large
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
     !
     !
+    ip route 172.0.42.0/24 Null0
     !
     do write
 
@@ -843,8 +847,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [rc]
 changed: [r2]
+changed: [rc]
 changed: [x1]
 
 TASK [set_fact] ****************************************************************
@@ -858,9 +862,9 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [x1]
 changed: [rc]
 changed: [r2]
-changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -870,8 +874,8 @@ ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [x1]
-ok: [r2]
 ok: [dut]
+ok: [r2]
 ok: [rc]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -994,8 +998,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [rc]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]

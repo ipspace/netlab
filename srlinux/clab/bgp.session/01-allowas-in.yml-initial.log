@@ -507,9 +507,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x3]
 changed: [x1]
 changed: [x2]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -517,9 +517,9 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
 changed: [x3]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -541,8 +541,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
@@ -602,8 +602,8 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [x3]
 changed: [x2]
+changed: [x3]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -766,25 +766,44 @@ ok: [dut] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: bgp
           match:
             protocol: bgp
-            bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
           action:
-            policy-result: "accept"
-            bgp:
-              next-hop:
-                set: "10.0.0.1"
+            policy-result: accept
+  
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
@@ -802,26 +821,7 @@ ok: [dut] =>
         - afi-safi-name: ipv6-unicast
           admin-state: enable
   
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.1/32
@@ -833,13 +833,11 @@ ok: [dut] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -870,12 +868,11 @@ ok: [dut] =>
   
           peer-as: 65100
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -906,12 +903,11 @@ ok: [dut] =>
   
           peer-as: 65100
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -942,12 +938,11 @@ ok: [dut] =>
   
           peer-as: 65101
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -978,12 +973,11 @@ ok: [dut] =>
   
           peer-as: 65101
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1014,12 +1008,11 @@ ok: [dut] =>
   
           peer-as: 65102
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1094,9 +1087,9 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [x3]
 changed: [x1]
 changed: [x2]
-changed: [x3]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -1155,8 +1148,8 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [x2 -> localhost]
 ok: [x3 -> localhost]
+ok: [x2 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [x2]

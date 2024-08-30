@@ -263,109 +263,6 @@ ok: [probe] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [x2] => 
-  msg: |-
-    initial configuration for x2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 10.1.0.9 2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:3:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.10 2001:db8:1:2::1 2001:db8:3:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 10.1.0.2 2001:db8:cafe:42::1 2001:db8:3::2 x1" >>/tmp/hosts
-    echo "172.42.43.1 10.1.0.6 2001:db8:cafe:43::1 2001:db8:3:1::2 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname x2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 172.42.43.1/24
-     ipv6 address 2001:db8:cafe:43::1/64
-    !
-    interface eth1
-     no shutdown
-     description x2 -> dut [external]
-     ip address 10.1.0.6/30
-     ipv6 address 2001:db8:3:1::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -469,6 +366,109 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 10.1.0.1 10.1.0.5 10.1.0.9 2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:3:2::1 dut" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.10 2001:db8:1:2::1 2001:db8:3:2::2 probe" >>/tmp/hosts
+    echo "172.42.42.1 10.1.0.2 2001:db8:cafe:42::1 2001:db8:3::2 x1" >>/tmp/hosts
+    echo "172.42.43.1 10.1.0.6 2001:db8:cafe:43::1 2001:db8:3:1::2 x2" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set eth1 down
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 172.42.43.1/24
+     ipv6 address 2001:db8:cafe:43::1/64
+    !
+    interface eth1
+     no shutdown
+     description x2 -> dut [external]
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
@@ -499,9 +499,9 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [probe -> localhost]
 changed: [x1 -> localhost]
 changed: [x2 -> localhost]
-changed: [probe -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [probe]
@@ -512,9 +512,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -522,9 +522,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x2]
 changed: [x1]
 changed: [probe]
-changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -799,42 +799,98 @@ ok: [dut] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+  
+  
+    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
+              community-set: ibgp-mark
+          action:
+            policy-result: accept
+        - name: ebgp-next-hop-self
+          match:
+            protocol: bgp
           action:
             policy-result: "accept"
             bgp:
               next-hop:
                 set: "10.0.0.1"
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv6]
+  
+  
+    - path: /routing-policy/policy[name=default_ibgp-ipv6_export]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
+              community-set: ibgp-mark
+          action:
+            policy-result: accept
+        - name: ebgp-next-hop-self
+          match:
+            protocol: bgp
           action:
             policy-result: "accept"
             bgp:
               next-hop:
                 set: "2001:db8:1:1::1"
+  
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
@@ -852,26 +908,7 @@ ok: [dut] =>
         - afi-safi-name: ipv6-unicast
           admin-state: enable
   
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.1/32
@@ -879,7 +916,7 @@ ok: [dut] =>
   
   
   
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 2001:db8:1:1::/64
@@ -889,13 +926,11 @@ ok: [dut] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: next_hop_self_ebgp_ipv4
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -929,12 +964,11 @@ ok: [dut] =>
             admin-state: enable
   
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv6]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: next_hop_self_ebgp_ipv6
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -968,12 +1002,11 @@ ok: [dut] =>
             admin-state: enable
   
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1004,12 +1037,11 @@ ok: [dut] =>
   
           peer-as: 65100
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1040,12 +1072,11 @@ ok: [dut] =>
   
           peer-as: 65100
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1076,12 +1107,11 @@ ok: [dut] =>
   
           peer-as: 65101
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1141,8 +1171,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************

@@ -380,16 +380,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe2, c1
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [c1]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [pe2]
 ok: [c1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [c1]
 changed: [pe2]
+changed: [c1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe2]
@@ -476,42 +476,44 @@ ok: [dut] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
-          match:
-            protocol: bgp
-            bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
+        - name: mark-ibgp-routes
           action:
-            policy-result: "accept"
             bgp:
-              next-hop:
-                set: "10.0.0.1"
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv6]
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: bgp
           match:
             protocol: bgp
-            bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
           action:
-            policy-result: "accept"
-            bgp:
-              next-hop:
-                set: "2001:db8:1:1::1"
+            policy-result: accept
+  
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
@@ -529,47 +531,28 @@ ok: [dut] =>
         - afi-safi-name: ipv6-unicast
           admin-state: enable
   
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.1/32
           mask-length-range: exact
   
   
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 192.168.42.0/24
           mask-length-range: exact
   
   
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 2001:db8:1:1::/64
           mask-length-range: exact
   
   
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 2001:db8:42::/64
@@ -578,13 +561,11 @@ ok: [dut] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -615,12 +596,11 @@ ok: [dut] =>
   
           peer-as: 65101
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_export
+        import-policy: [ accept_all ]
+        export-policy: [ default_bgp_export ]
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -892,8 +872,8 @@ skipping: [c1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [pe2]
 changed: [c1]
+changed: [pe2]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -929,8 +909,8 @@ skipping: [dut]
 skipping: [pe2]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [pe2 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]

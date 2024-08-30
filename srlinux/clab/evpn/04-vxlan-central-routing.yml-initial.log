@@ -4,11 +4,11 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
@@ -16,8 +16,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
@@ -46,9 +46,9 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -99,6 +99,82 @@ ok: [l1] =>
        type: default
        interface:
        - name: ethernet-1/1.0
+  
+  
+  
+    # TODO: vdata.rd, vdata.import/export, vdata.af
+ok: [spine] => 
+  msg: |-
+    initial configuration for spine
+    =========================================
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.7/32"
+  
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "spine ~ l1"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "spine ~ l1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.2/30"
+          primary: [null]
+  
+    - path: /interface[name=ethernet-1/2]
+      value:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "spine ~ l2"
+  
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
+       description: "spine ~ l2"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.6/30"
+          primary: [null]
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/2.0
   
   
   
@@ -224,198 +300,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [spine] => 
-  msg: |-
-    initial configuration for spine
-    =========================================
-  
-    updates:
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.7/32"
-  
-  
-    - path: /interface[name=ethernet-1/1]
-      value:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-       mtu: 1614
-       subinterface:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-        ip-mtu: 1600
-        index: 0
-        description: "spine ~ l1"
-  
-    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
-      value:
-       description: "spine ~ l1"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.1.0.2/30"
-          primary: [null]
-  
-    - path: /interface[name=ethernet-1/2]
-      value:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-       mtu: 1614
-       subinterface:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-        ip-mtu: 1600
-        index: 0
-        description: "spine ~ l2"
-  
-    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
-      value:
-       description: "spine ~ l2"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.1.0.6/30"
-          primary: [null]
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/2.0
-  
-  
-  
-    # TODO: vdata.rd, vdata.import/export, vdata.af
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.7
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.7
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.7
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.7
-    #
-    # Print the final routing table
-    ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.7
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.7
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.7
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.7
-    #
-    # Print the final routing table
-    ip route
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -471,6 +355,64 @@ ok: [h3] =>
     ip route del 10.2.0.0/24 2>/dev/null
     set -e
     ip route add 10.2.0.0/24 via 172.16.1.7
+    #
+    # Print the final routing table
+    ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.7
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.7
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.7
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.7
     #
     # Print the final routing table
     ip route
@@ -532,15 +474,73 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.7
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.7
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.7
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.7
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [l2]
 ok: [l1]
+ok: [l2]
 ok: [spine]
-ok: [h4]
-ok: [h3]
 ok: [h1]
+ok: [h3]
 ok: [h2]
+ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
@@ -548,8 +548,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
 
 TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [spine -> localhost]
@@ -560,16 +560,16 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
 
 TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -599,21 +599,21 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-dOvSfPea-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-lzHVIIcC-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [file] ********************************************************************
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -794,8 +794,8 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -873,25 +873,71 @@ ok: [l1] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+  
+  
+    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
+              community-set: ibgp-mark
+          action:
+            policy-result: accept
+        - name: ebgp-next-hop-self
+          match:
+            protocol: bgp
           action:
             policy-result: "accept"
             bgp:
               next-hop:
                 set: "10.0.0.5"
+  
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
@@ -906,26 +952,7 @@ ok: [l1] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
   
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.5/32
@@ -935,18 +962,18 @@ ok: [l1] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: next_hop_self_ebgp_ipv4
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -986,25 +1013,71 @@ ok: [spine] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: reject
         statement:
-        - name: set-nh-on-ebgp-routes
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+  
+  
+    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: accept
+        - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
-              as-path-length:
-                value: 1
-                operator: "ge"
+              community-set: ibgp-mark
+          action:
+            policy-result: accept
+        - name: ebgp-next-hop-self
+          match:
+            protocol: bgp
           action:
             policy-result: "accept"
             bgp:
               next-hop:
                 set: "10.0.0.7"
+  
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
@@ -1019,26 +1092,7 @@ ok: [spine] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
   
-    - path: /routing-policy/prefix-set[name=default_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_export
-          action:
-            policy-result: accept
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.7/32
@@ -1048,18 +1102,18 @@ ok: [spine] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: next_hop_self_ebgp_ipv4
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -1096,17 +1150,18 @@ ok: [spine] =>
             admin-state: enable
   
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: next_hop_self_ebgp_ipv4
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-ipv4_export']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -1156,16 +1211,16 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
 skipping: [l1]
 skipping: [spine]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -1464,33 +1519,12 @@ ok: [spine] =>
        member:
        - "target:65000:1"
   
-    - path: /network-instance[name=customer]/protocols/bgp
-      value:
-        admin-state: enable
-        autonomous-system: 65000
-        router-id: 10.0.0.7
-        ebgp-default-policy:
-          export-reject-all: False
-          import-reject-all: False
   
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: enable
-  
-    - path: /routing-policy/prefix-set[name=customer_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=customer_export]
+    - path: /routing-policy/policy[name=customer_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
-        - name: prefixes
-          match:
-            prefix-set: customer_export
-          action:
-            policy-result: accept
         - name: bgp
           match:
             protocol: bgp
@@ -1517,6 +1551,19 @@ ok: [spine] =>
           action:
             policy-result: accept
   
+  
+    - path: /network-instance[name=customer]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.7
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
   
   
   
@@ -1818,8 +1865,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
 skipping: [l1]
@@ -1927,7 +1974,6 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: evpn
             admin-state: enable
-          next-hop-self: False
         route-advertisement:
           rapid-withdrawal: True
         afi-safi:
@@ -1990,8 +2036,8 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]

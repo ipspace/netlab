@@ -318,8 +318,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -329,8 +329,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -365,39 +365,6 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.1.0
-    !
-      neighbor 10.1.0.1 remote-as 65002
-      neighbor 10.1.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 172.42.1.0/24
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-    !
-    !
-    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -478,13 +445,15 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_bgp_export
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
   
         timers:
           connect-retry: 10
@@ -513,17 +482,18 @@ ok: [dut] =>
             as-number: 65002
             prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
   
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-local-as]
       value:
         admin-state: enable
-        import-policy: accept_all
-        export-policy: default_bgp_export
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export']
   
         timers:
           connect-retry: 10
@@ -554,7 +524,6 @@ ok: [dut] =>
           local-as:
             as-number: 65101
             prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
-  
   
     - path: /network-instance[name=default]/next-hop-groups/group[name=blackhole]
       value:
@@ -592,6 +561,39 @@ ok: [x2] =>
     !
       neighbor 10.1.0.5 activate
       neighbor 10.1.0.5 next-hop-self
+    !
+    !
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.1.0
+    !
+      neighbor 10.1.0.1 remote-as 65002
+      neighbor 10.1.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 172.42.1.0/24
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -637,8 +639,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
