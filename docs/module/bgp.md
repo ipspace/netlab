@@ -83,7 +83,7 @@ The following features are only supported on a subset of platforms:
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |
 | Dell OS10             |  ✅ |  ❌  |  ❌  |  ❌  |
 | FRR                   |  ✅ |  ✅ |  ✅ |  ✅ |
-| Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
+| Nokia SR Linux        |  ✅ |  ✅ |  ✅ |  ✅ |
 | Nokia SR OS           |  ✅ |  ✅ |  ❌  |  ❌  |
 | Sonic                 |  ✅ |  ✅ |  ❌  |  ❌  |
 | VyOS                  |  ✅ |  ❌  |  ✅ |  ✅ |
