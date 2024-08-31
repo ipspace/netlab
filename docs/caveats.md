@@ -291,8 +291,9 @@ See also [](caveats-junos).
 
 (caveats-srlinux)=
 ## Nokia SR Linux
+
 * Only supported on top of *Containerlab*
-* Supports container image release 23.3.1 or later (due to YANG model changes)
+* Supports SR Linux release 24.7.1 or later (due to YANG model changes)
 * Requires `nokia.srlinux` Ansible Galaxy collection (minimum version 0.5.0). Use **ansible-galaxy collection install nokia.srlinux** command to install it.
 * MPLS and LDP are only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
 * Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
