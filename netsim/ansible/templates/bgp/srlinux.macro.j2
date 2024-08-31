@@ -23,7 +23,7 @@
       match:
         prefix-set: {{ vrf }}_bgp_advertise
       action:
-        policy-result: accept
+        policy-result: next-policy
 {%   endif %}
 {%   if 'ibgp' in type and nh %}
     - name: rr-next-hop-unchanged
@@ -32,12 +32,12 @@
         bgp:
           community-set: ibgp-mark
       action:
-        policy-result: accept
+        policy-result: next-policy
     - name: ebgp-next-hop-self
       match:
         protocol: bgp
       action:
-        policy-result: "accept"
+        policy-result: next-policy
         bgp:
           next-hop:
             set: "{{ nh }}"
@@ -46,14 +46,14 @@
       match:
         protocol: bgp
       action:
-        policy-result: accept
+        policy-result: next-policy
 {%   endif %}
 {%   if 'evpn' in module and vrf != 'default' %}
     - name: bgp_evpn
       match:
         protocol: bgp-evpn
       action:
-        policy-result: accept
+        policy-result: next-policy
 {%   endif %}
 {%   for s_proto in import %}
 {%     for srl_proto in netlab_match_protomap[s_proto] %}
@@ -61,7 +61,7 @@
       match:
         protocol: {{ srl_proto }}
       action:
-        policy-result: accept
+        policy-result: next-policy
 {%     endfor %}
 {%   endfor %}
 {% endmacro %}
@@ -103,7 +103,7 @@
 {% set nh_self = bgp.next_hop_self|default(False) and type == 'ibgp' %}
 {% set nh_self_rr = nh_self and vrf_bgp.rr|default(False) %}
 {% set ep_name = (vrf + "_ibgp-" + af + "_export") if nh_self_rr else (vrf + "_bgp_export") %}
-{{ bgp_families(neighbor,import=[ "ibgp-mark" if nh_self_rr else "accept_all" ],export=[ ep_name ]) }}
+{{ bgp_families(neighbor,import=[ "ibgp-mark" if nh_self_rr else "accept_all" ],export=[ ep_name, 'accept_all' ]) }}
     timers:
       connect-retry: 10
       _annotate_connect-retry: "Reduce default 120s to 10s"
