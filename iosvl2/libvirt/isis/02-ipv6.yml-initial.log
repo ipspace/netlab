@@ -245,8 +245,6 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host x1
-    ip host x2
     !
     ipv6 unicast-routing
     !
@@ -297,8 +295,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -313,34 +311,30 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host x1
-    ip host x1
-    % Incomplete command.
-  
-    dut(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2 => (item=isis)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=isis)
 
 TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Find configuration template for isis] ************************************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -393,17 +387,50 @@ ok: [x2] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    isis configuration for dut
+    =========================================
+    ipv6 unicast-routing
+    !
+    interface Loopback0
+      ipv6 router isis Gandalf
+    !
+    interface GigabitEthernet0/1
+    ! dut -> x1
+      ipv6 router isis Gandalf
+      isis network point-to-point
+    !
+    interface GigabitEthernet0/2
+    ! dut -> x2
+      ipv6 router isis Gandalf
+      isis network point-to-point
+    !
+    !
+    router isis Gandalf
+      log-adjacency-changes
+      hostname dynamic
+      is-type level-2
+      metric-style wide
+      net 49.0001.0bad.cafe.0001.00
+      address-family ipv6
+        multi-topology
 
 TASK [Find configuration deployment deploy_script for isis] ********************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Deploy isis configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
+TASK [ios_config: deploying isis from /home/pipi/net101/tools/netsim/ansible/templates/isis/ios.j2] ***
+changed: [dut]
+
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -421,10 +448,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests level-2 IS-IS with IPv6. The device under test is a level-2-only
+router with two LAN interfaces connected to adjacent IS-IS routers.
+

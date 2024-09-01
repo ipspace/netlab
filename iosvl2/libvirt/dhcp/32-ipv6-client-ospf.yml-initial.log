@@ -88,7 +88,8 @@ ok: [c1] =>
     !
     ip host c2 10.0.0.3
     ip host relay 10.0.0.1
-    ip host server
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -120,7 +121,8 @@ ok: [c2] =>
     !
     ip host c1 10.0.0.2
     ip host relay 10.0.0.1
-    ip host server
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -196,28 +198,11 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for relay
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [c1]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host server
-    ip host server
-    % Incomplete command.
-  
-    c1(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
-fatal: [c2]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host server
-    ip host server
-    % Incomplete command.
-  
-    c2(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [c2]
+changed: [c1]
 
 TASK [set_fact] ****************************************************************
 ok: [server]
@@ -225,38 +210,55 @@ ok: [server]
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [server -> localhost]
 
-TASK [Initial container configuration via /tmp/config-iWhfmIms-server.sh] ******
+TASK [Initial container configuration via /tmp/config-lhFHEzvI-server.sh] ******
 changed: [server -> localhost]
 
 TASK [file] ********************************************************************
 changed: [server -> localhost]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [relay]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [server]
+ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for relay, server => (item=dhcp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for relay, server => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=dhcp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=ospf)
 
 TASK [Figure out whether to deploy the module dhcp on current device] **********
 ok: [server]
+ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Find configuration template for dhcp] ************************************
 skipping: [server]
+ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [server]
+ok: [c1] => 
+  msg: |-
+    dhcp configuration for c1
+    =========================================
+    interface GigabitEthernet0/1
+      ipv6 enable
+      ipv6 address dhcp
+ok: [c2] => 
+  msg: |-
+    dhcp configuration for c2
+    =========================================
+    interface GigabitEthernet0/1
+      ipv6 enable
+      ipv6 address dhcp
 ok: [relay] => 
   msg: |-
     dhcp configuration for relay
@@ -266,25 +268,80 @@ ok: [relay] =>
 
 TASK [Find configuration deployment deploy_script for dhcp] ********************
 skipping: [server]
+ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Deploy dhcp configuration] ***********************************************
 skipping: [server]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for relay
+
+TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
+changed: [c2]
+changed: [c1]
 
 TASK [eos_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/eos.j2] ***
 changed: [relay]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [server]
+ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [server]
+ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [server]
+ok: [c1] => 
+  msg: |-
+    ospf configuration for c1
+    =========================================
+    router ospf 1
+     router-id 10.0.0.2
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+  
+    router ospfv3 1
+     router-id 10.0.0.2
+     address-family ipv6 unicast
+  
+    !
+    interface GigabitEthernet0/1
+    ! c1 -> [c2,relay]
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
+ok: [c2] => 
+  msg: |-
+    ospf configuration for c2
+    =========================================
+    router ospf 1
+     router-id 10.0.0.3
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+  
+    router ospfv3 1
+     router-id 10.0.0.3
+     address-family ipv6 unicast
+  
+    !
+    interface GigabitEthernet0/1
+    ! c2 -> [c1,relay]
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
 ok: [relay] => 
   msg: |-
     ospf configuration for relay
@@ -326,11 +383,18 @@ ok: [relay] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [server]
+ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [server]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for relay
+
+TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+changed: [c2]
+changed: [c1]
 
 TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
 changed: [relay]
@@ -339,11 +403,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-c1                         : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
-c2                         : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+c1                         : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+c2                         : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 relay                      : ok=26   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 server                     : ok=17   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the OSPF over interfaces using dynamic DHCPv6 addresses. Use
+'netlab validate' to check whether your devices acquired dynamic IPv6 addresses and whether they
+established OSPFv3 adjacency with the DHCP relay.
+

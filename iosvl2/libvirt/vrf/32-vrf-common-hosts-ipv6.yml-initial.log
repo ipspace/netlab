@@ -157,12 +157,6 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-blue
-    ip host dut-common
-    ip host dut-red
-    ip host h1
-    ip host h2
-    ip host srv
     !
     ipv6 unicast-routing
     !
@@ -245,14 +239,14 @@ ok: [h2]
 ok: [srv]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [srv -> localhost]
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [srv -> localhost]
 
-TASK [Initial container configuration via /tmp/config-XiNnFlyJ-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-DboCDxZm-h1.sh] **********
+changed: [srv -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [srv -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h2 -> localhost]
@@ -260,29 +254,73 @@ changed: [h1 -> localhost]
 changed: [srv -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host dut-blue
-    ip host dut-blue
-    % Incomplete command.
-  
-    dut(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    !
+    router bgp 65000
+     address-family ipv6 vrf blue
+      bgp router-id 10.0.0.4
+    !
+      redistribute connected
+    !
+    !
+     address-family ipv6 vrf common
+      bgp router-id 10.0.0.4
+    !
+      redistribute connected
+    !
+    !
+     address-family ipv6 vrf red
+      bgp router-id 10.0.0.4
+    !
+      redistribute connected
+    !
+    !
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [dut]
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 srv                        : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The device under test has two user VRFs and a common services VRF. The
+lab tests inter-VRF route leaking between common VRF and other VRFs
+
+* h1 and h2 should be able to ping srv but not each other
+

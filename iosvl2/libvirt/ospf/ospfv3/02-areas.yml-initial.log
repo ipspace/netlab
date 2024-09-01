@@ -355,9 +355,6 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host x1
-    ip host x2
-    ip host x3
     !
     ipv6 unicast-routing
     !
@@ -390,7 +387,7 @@ ok: [dut] =>
      mtu 1500
      ipv6 address 2001:DB8:2:2::1/64
     !
-    interface GigabitEthernet0/4
+    interface GigabitEthernet1/0
      no shutdown
      no switchport
      description dut -> stub [stub]
@@ -413,8 +410,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
-changed: [x2 -> localhost]
 changed: [x3 -> localhost]
+changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -425,9 +422,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x3]
-changed: [x2]
 changed: [x1]
+changed: [x2]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -435,9 +432,9 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
-changed: [x3]
 changed: [x1]
+changed: [x3]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -445,17 +442,10 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host x1
-    ip host x1
-    % Incomplete command.
-  
-    dut(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -463,19 +453,22 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
+ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, x3 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [x1]
 ok: [x2]
 ok: [x3]
+ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -556,19 +549,57 @@ ok: [x3] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    router ospfv3 1
+     router-id 10.0.0.1
+     address-family ipv6 unicast
+      passive-interface GigabitEthernet1/0
+  
+    !
+    interface Loopback0
+    !
+     ospfv3 1 ipv6 area 0.0.0.2
+    !
+    interface GigabitEthernet0/1
+    ! dut -> x1
+     ospfv3 1 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+    !
+    interface GigabitEthernet0/2
+    ! dut -> x2
+     ospfv3 1 ipv6 area 0.0.0.2
+     ospfv3 network point-to-point
+    !
+    interface GigabitEthernet0/3
+    ! dut -> x3
+     ospfv3 1 ipv6 area 0.0.0.3
+     ospfv3 network point-to-point
+    !
+    interface GigabitEthernet1/0
+    ! dut -> stub
+     ospfv3 1 ipv6 area 0.0.0.2
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x1]
 ok: [x2]
 ok: [x3]
+ok: [dut]
 
 TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
+TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+changed: [dut]
+
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x3]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -581,19 +612,21 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x1]
-changed: [x2]
 changed: [x3]
+changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x3                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests the OSPFv3 areas. The device under test has three interfaces
+in three different areas and the loopback interface in one of those areas.
+

@@ -120,9 +120,6 @@ ok: [r1] =>
     !
     lldp run
     !
-    ip host h1
-    ip host h2
-    ip host r2
     !
     ipv6 unicast-routing
     !
@@ -159,9 +156,6 @@ ok: [r2] =>
     !
     lldp run
     !
-    ip host h1
-    ip host h2
-    ip host r1
     !
     ipv6 unicast-routing
     !
@@ -204,42 +198,89 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-vBifCEmK-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-UKsqkKOj-h1.sh] **********
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [r1]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host h1
-    ip host h1
-    % Incomplete command.
-  
-    r1(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
-fatal: [r2]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host h1
-    ip host h1
-    % Incomplete command.
-  
-    r2(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [r1]
+changed: [r2]
 
 PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r1]
+ok: [r2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2 => (item=eigrp)
+
+TASK [Figure out whether to deploy the module eigrp on current device] *********
+ok: [r1]
+ok: [r2]
+
+TASK [Find configuration template for eigrp] ***********************************
+ok: [r1]
+ok: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r1] => 
+  msg: |-
+    eigrp configuration for r1
+    =========================================
+    ipv6 router eigrp 2
+     eigrp router-id 10.0.0.3
+  
+     passive-interface GigabitEthernet0/1
+    !
+    interface Loopback0
+     ipv6 eigrp 2
+    !
+    interface GigabitEthernet0/1
+     ipv6 eigrp 2
+    !
+    interface GigabitEthernet0/2
+     ipv6 eigrp 2
+    !
+ok: [r2] => 
+  msg: |-
+    eigrp configuration for r2
+    =========================================
+    ipv6 router eigrp 2
+     eigrp router-id 10.0.0.4
+  
+     passive-interface GigabitEthernet0/2
+    !
+    interface Loopback0
+     ipv6 eigrp 2
+    !
+    interface GigabitEthernet0/1
+     ipv6 eigrp 2
+    !
+    interface GigabitEthernet0/2
+     ipv6 eigrp 2
+    !
+
+TASK [Find configuration deployment deploy_script for eigrp] *******************
+ok: [r1]
+ok: [r2]
+
+TASK [Deploy eigrp configuration] **********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r1, r2
+
+TASK [ios_config: deploying eigrp from /home/pipi/net101/tools/netsim/ansible/templates/eigrp/ios.j2] ***
+changed: [r2]
+changed: [r1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -247,9 +288,6 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r1                         : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
-r2                         : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+r1                         : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r2                         : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.

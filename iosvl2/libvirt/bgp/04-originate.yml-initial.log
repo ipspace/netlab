@@ -35,8 +35,8 @@ ok: [dut2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 ok: [dut2]
 
@@ -248,6 +248,8 @@ ok: [dut] =>
     ip host x1 10.0.0.3 172.16.0.3
     ip host x2 10.0.0.4 172.16.1.4
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -277,14 +279,14 @@ ok: [dut] =>
      mtu 1500
      ip address 172.16.2.1 255.255.255.0
     !
-    interface GigabitEthernet0/4
+    interface GigabitEthernet1/0
      no shutdown
      no switchport
      description dut -> dut2 [external]
      mtu 1500
      ip address 172.0.66.1 255.255.255.0
     !
-    interface GigabitEthernet0/5
+    interface GigabitEthernet1/1
      no shutdown
      no switchport
      description dut -> stub [stub]
@@ -405,6 +407,8 @@ ok: [dut2] =>
     ip host x1 10.0.0.3 172.16.0.3
     ip host x2 10.0.0.4 172.16.1.4
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.2 255.255.255.255
@@ -427,8 +431,8 @@ ok: [dut2] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [dut]
 ok: [dut2]
 
 TASK [Deploy initial configuration] ********************************************
@@ -440,22 +444,11 @@ TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [dut2]
-fatal: [dut]: FAILED! => changed=false 
-  module_stderr: |-
-    interface GigabitEthernet0/4
-    interface GigabitEthernet0/4
-               ^
-    % Invalid input detected at '^' marker.
-  
-    dut(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
 changed: [x1 -> localhost]
+changed: [r1 -> localhost]
 changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -467,9 +460,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, x1, x2
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [x2]
 changed: [x1]
+changed: [x2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -492,22 +485,25 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [x1]
 ok: [x2]
+ok: [dut]
 ok: [dut2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut2, r1, x1, x2 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut2, r1, x1, x2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, r1, x1, x2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, r1, x1, x2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [x1]
 ok: [x2]
+ok: [dut]
 ok: [dut2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [r1]
-ok: [x1]
 ok: [x2]
+ok: [x1]
+ok: [dut]
 ok: [dut2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -543,39 +539,6 @@ ok: [r1] =>
       neighbor 10.0.0.1 send-community standard
       neighbor 10.0.0.1 send-community large
       neighbor 10.0.0.1 send-community extended
-    !
-    !
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
     !
     !
     !
@@ -642,24 +605,115 @@ ok: [dut2] =>
       neighbor 172.0.66.1 send-community standard
   
     !
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+      no bgp default ipv4-unicast
+      bgp update-delay 5
+      bgp nopeerup-delay cold-boot 1
+      bgp nopeerup-delay user-initiated 1
+      bgp router-id 10.0.0.1
+      neighbor 10.0.0.5 remote-as 65000
+      neighbor 10.0.0.5 description r1
+      neighbor 10.0.0.5 update-source Loopback0
+  
+      neighbor 172.16.0.3 remote-as 65100
+      neighbor 172.16.0.3 description x1
+  
+      neighbor 172.16.1.4 remote-as 65101
+      neighbor 172.16.1.4 description x2
+  
+      neighbor 172.0.66.2 remote-as 65001
+      neighbor 172.0.66.2 description dut2
+  
+    !
+     address-family ipv4
+      bgp scan-time 5
+    !
+    !
+      network 172.0.42.0 mask 255.255.255.0
+  
+      network 172.42.42.0 mask 255.255.255.0
+  
+    !
+      neighbor 10.0.0.5 activate
+      neighbor 10.0.0.5 advertisement-interval 0
+      neighbor 10.0.0.5 next-hop-self
+      neighbor 10.0.0.5 send-community standard
+      neighbor 10.0.0.5 send-community extended
+  
+      neighbor 172.16.0.3 activate
+      neighbor 172.16.0.3 advertisement-interval 0
+      neighbor 172.16.0.3 send-community standard
+  
+      neighbor 172.16.1.4 activate
+      neighbor 172.16.1.4 advertisement-interval 0
+      neighbor 172.16.1.4 send-community standard
+  
+      neighbor 172.0.66.2 activate
+      neighbor 172.0.66.2 advertisement-interval 0
+      neighbor 172.0.66.2 send-community standard
+  
+    !
+    ip route 172.42.42.0 255.255.255.0 null 0
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 172.16.0.1 remote-as 65000
+      neighbor 172.16.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 172.16.0.1 activate
+      no neighbor 172.16.0.1 send-community all
+      neighbor 172.16.0.1 send-community standard
+      neighbor 172.16.0.1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r1]
 ok: [x1]
 ok: [x2]
+ok: [dut]
 ok: [dut2]
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut, dut2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, x1, x2
 
 TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut2]
+changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [r1]
 changed: [x1]
 changed: [x2]
-changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -680,6 +734,7 @@ TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
 ok: [x1]
 ok: [x2]
+ok: [dut]
 ok: [dut2]
 
 TASK [Find configuration template for ospf] ************************************
@@ -687,6 +742,7 @@ skipping: [dut2]
 skipping: [x1]
 skipping: [x2]
 ok: [r1]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut2]
@@ -719,18 +775,45 @@ ok: [r1] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    router ospf 1
+     router-id 10.0.0.1
+     passive-interface GigabitEthernet1/1
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet0/3
+    ! dut -> r1
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface GigabitEthernet1/1
+    ! dut -> stub
+     ip ospf 1 area 0.0.0.0
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [dut2]
 skipping: [x1]
 skipping: [x2]
 ok: [r1]
+ok: [dut]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [dut2]
 skipping: [x1]
 skipping: [x2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1
+
+TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [r1]
@@ -748,12 +831,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut                        : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 dut2                       : ok=19   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 r1                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 x1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 x2                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the origination and propagation
+of IPv4 prefixes.
+

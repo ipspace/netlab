@@ -199,12 +199,6 @@ ok: [rtr] =>
     !
     lldp run
     !
-    ip host h1
-    ip host h2
-    ip host h3
-    ip host h4
-    ip host rtr-blue
-    ip host rtr-red
     !
     ipv6 unicast-routing
     !
@@ -255,7 +249,7 @@ ok: [rtr] =>
      description rtr -> h2 [stub]
      ipv6 address 2001:DB8:2:2::5/64
     !
-    interface GigabitEthernet0/4
+    interface GigabitEthernet1/0
      no shutdown
      no switchport
      vrf forwarding blue
@@ -269,8 +263,8 @@ ok: [rtr] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [rtr]
 
 TASK [Deploy initial configuration] ********************************************
@@ -285,36 +279,56 @@ ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-LaRbOlZU-h1.sh] **********
-changed: [h3 -> localhost]
+TASK [Initial container configuration via /tmp/config-rzbggReg-h1.sh] **********
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [rtr]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host h1
-    ip host h1
-    % Incomplete command.
-  
-    rtr(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [rtr]
 
 PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [rtr]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for rtr => (item=vrf)
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [rtr]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [rtr]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [rtr] => 
+  msg: |-
+    vrf configuration for rtr
+    =========================================
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [rtr]
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for rtr
+
+TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
+ok: [rtr]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -324,8 +338,14 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-rtr                        : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+rtr                        : ok=17   changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The lab tests the basic VRF lite functionality in an IPv6-only environment.
+The device under test has two VRFs with two interfaces in each VRF.
+
+* h1 and h2 should be able to ping each other
+* h3 and h4 should be able to ping each other
+* h1 should not be able to reach h3
+

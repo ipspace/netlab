@@ -271,8 +271,6 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host x1
-    ip host x2
     !
     ipv6 unicast-routing
     !
@@ -316,8 +314,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -335,42 +333,38 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host x1
-    ip host x1
-    % Incomplete command.
-  
-    dut(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2 => (item=ripv2)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ripv2)
 
 TASK [Figure out whether to deploy the module ripv2 on current device] *********
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Find configuration template for ripv2] ***********************************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -397,17 +391,41 @@ ok: [x2] =>
       network eth2
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ripv2 configuration for dut
+    =========================================
+    !
+    !
+    ipv6 router rip Gandalf
+    !
+    interface Loopback0
+      ipv6 rip Gandalf enable
+    !
+    interface GigabitEthernet0/1
+      ipv6 rip Gandalf enable
+    !
+    interface GigabitEthernet0/2
+      ipv6 rip Gandalf enable
+    !
+    interface GigabitEthernet0/3
+      ipv6 rip Gandalf enable
 
 TASK [Find configuration deployment deploy_script for ripv2] *******************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Deploy ripv2 configuration] **********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
+TASK [ios_config: deploying ripv2 from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/ios.j2] ***
+changed: [dut]
+
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -418,17 +436,20 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests the RIPng passive interfaces. DUT has a passive interface on
+the link with X2, so the route from X2 to DUT should go over X1 (and have
+metric=3)
+

@@ -5,8 +5,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [c1]
 ok: [c2]
-ok: [server]
 ok: [relay]
+ok: [server]
 
 TASK [Find device readiness script] ********************************************
 ok: [c1]
@@ -26,14 +26,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1,
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [c1]
 ok: [c2]
-ok: [relay]
 ok: [server]
+ok: [relay]
 
 TASK [Find configuration template for initial] *********************************
 ok: [c1]
 ok: [c2]
-ok: [server]
 ok: [relay]
+ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [c1] => 
@@ -232,35 +232,6 @@ ok: [c2] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [server] => 
-  msg: |-
-    initial configuration for server
-    =========================================
-    hostname server
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host c1 10.0.0.2
-    ip host c2 10.0.0.3
-    ip host relay 10.0.0.1 172.16.1.1
-    ip host relay-c_vrf 172.16.0.1
-    !
-    !
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     no shutdown
-     description server -> relay [stub]
-     ip address 172.16.1.4 255.255.255.0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [relay] => 
   msg: |-
     initial configuration for relay
@@ -275,6 +246,8 @@ ok: [relay] =>
     ip host c2 10.0.0.3
     ip host relay-c_vrf 172.16.0.1
     ip host server 172.16.1.4
+    !
+    ip routing
     !
     vrf definition c_vrf
      rd 65000:1
@@ -310,20 +283,51 @@ ok: [relay] =>
     no banner exec
     no banner login
     no banner incoming
+ok: [server] => 
+  msg: |-
+    initial configuration for server
+    =========================================
+    hostname server
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.2
+    ip host c2 10.0.0.3
+    ip host relay 10.0.0.1 172.16.1.1
+    ip host relay-c_vrf 172.16.0.1
+    !
+    ip routing
+    !
+    !
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     no shutdown
+     description server -> relay [stub]
+     ip address 172.16.1.4 255.255.255.0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [c1]
 ok: [c2]
-ok: [server]
 ok: [relay]
+ok: [server]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for server, relay
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [c1]
@@ -349,8 +353,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [c1]
 ok: [c2]
-ok: [server]
 ok: [relay]
+ok: [server]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=vrf)
@@ -359,8 +363,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1,
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [c1]
 ok: [c2]
-ok: [relay]
 ok: [server]
+ok: [relay]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [c1]
@@ -401,8 +405,8 @@ ok: [server]
 TASK [Find configuration template for dhcp] ************************************
 ok: [c1]
 ok: [c2]
-ok: [server]
 ok: [relay]
+ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [c1] => 
@@ -480,16 +484,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for relay, server
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [c2]
 changed: [c1]
+changed: [c2]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [c1]
 ok: [c2]
 
 TASK [run /tmp/config.sh to deploy dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 TASK [run vtysh to import dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
 skipping: [c1]

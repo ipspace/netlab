@@ -242,40 +242,6 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut2] => 
-  msg: |-
-    initial configuration for dut2
-    =========================================
-    hostname dut2
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host dut
-    ip host x1
-    ip host x2
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ipv6 address 2001:DB8:1:2::1/64
-    !
-    interface GigabitEthernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet0/1
-     no shutdown
-     no switchport
-     description dut2 -> dut [external]
-     mtu 1500
-     ipv6 address 2001:DB8:CAFE:E01::2/64
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -286,9 +252,6 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut2
-    ip host x1
-    ip host x2
     !
     ipv6 unicast-routing
     !
@@ -321,12 +284,43 @@ ok: [dut] =>
      mtu 1500
      ipv6 address 2001:DB8:CAFE:E01::1/64
     !
-    interface GigabitEthernet0/4
+    interface GigabitEthernet1/0
      no shutdown
      no switchport
      description dut -> stub [stub]
      mtu 1500
      ipv6 address 2001:DB8:CAFE:E42::1/64
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [dut2] => 
+  msg: |-
+    initial configuration for dut2
+    =========================================
+    hostname dut2
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ipv6 address 2001:DB8:1:2::1/64
+    !
+    interface GigabitEthernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet0/1
+     no shutdown
+     no switchport
+     description dut2 -> dut [external]
+     mtu 1500
+     ipv6 address 2001:DB8:CAFE:E01::2/64
     !
     no banner exec
     no banner login
@@ -343,32 +337,15 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [dut2]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host dut
-    ip host dut
-    % Incomplete command.
-  
-    dut2(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
-fatal: [dut]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host dut2
-    ip host dut2
-    % Incomplete command.
-  
-    dut(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut2]
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -398,17 +375,23 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [x2]
+ok: [dut]
+ok: [dut2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
 ok: [x2]
+ok: [dut]
+ok: [dut2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [x1]
 ok: [x2]
+ok: [dut]
+ok: [dut2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -477,17 +460,96 @@ ok: [x2] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+      no bgp default ipv4-unicast
+      bgp update-delay 5
+      bgp nopeerup-delay cold-boot 1
+      bgp nopeerup-delay user-initiated 1
+      bgp router-id 10.0.0.1
+      neighbor 2001:db8:2::3 remote-as 65100
+      neighbor 2001:db8:2::3 description x1
+  
+      neighbor 2001:db8:2:1::4 remote-as 65101
+      neighbor 2001:db8:2:1::4 description x2
+  
+      neighbor 2001:db8:cafe:e01::2 remote-as 65001
+      neighbor 2001:db8:cafe:e01::2 description dut2
+  
+    !
+     address-family ipv6
+      bgp scan-time 5
+    !
+    !
+      network 2001:db8:cafe:e42::/64
+  
+    !
+      neighbor 2001:db8:2::3 activate
+      neighbor 2001:db8:2::3 advertisement-interval 0
+      neighbor 2001:db8:2::3 send-community standard
+  
+      neighbor 2001:db8:2:1::4 activate
+      neighbor 2001:db8:2:1::4 advertisement-interval 0
+      neighbor 2001:db8:2:1::4 send-community standard
+  
+      neighbor 2001:db8:cafe:e01::2 activate
+      neighbor 2001:db8:cafe:e01::2 advertisement-interval 0
+      neighbor 2001:db8:cafe:e01::2 send-community standard
+  
+    !
+ok: [dut2] => 
+  msg: |-
+    bgp configuration for dut2
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65001
+      no bgp default ipv4-unicast
+      bgp update-delay 5
+      bgp nopeerup-delay cold-boot 1
+      bgp nopeerup-delay user-initiated 1
+      bgp router-id 10.0.0.2
+      neighbor 2001:db8:cafe:e01::1 remote-as 65000
+      neighbor 2001:db8:cafe:e01::1 description dut
+  
+    !
+     address-family ipv6
+      bgp scan-time 5
+    !
+      network 2001:db8:1:2::/64
+  
+    !
+    !
+      neighbor 2001:db8:cafe:e01::1 activate
+      neighbor 2001:db8:cafe:e01::1 advertisement-interval 0
+      neighbor 2001:db8:cafe:e01::1 send-community standard
+  
+    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [x1]
 ok: [x2]
+ok: [dut]
+ok: [dut2]
 
 TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut, dut2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
+TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+changed: [dut2]
+changed: [dut]
+
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -505,11 +567,13 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
-dut2                       : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+dut2                       : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the origination and propagation
+of IPv6 prefixes.
+

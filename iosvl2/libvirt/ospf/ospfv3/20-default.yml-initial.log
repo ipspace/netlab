@@ -265,9 +265,6 @@ ok: [dut_c] =>
     !
     lldp run
     !
-    ip host dut_a
-    ip host probe
-    ip host xf
     !
     ipv6 unicast-routing
     !
@@ -304,9 +301,6 @@ ok: [dut_a] =>
     !
     lldp run
     !
-    ip host dut_c
-    ip host probe
-    ip host xf
     !
     ipv6 unicast-routing
     !
@@ -339,32 +333,15 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xf, probe
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [dut_a]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host dut_c
-    ip host dut_c
-    % Incomplete command.
-  
-    dut_a(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
-fatal: [dut_c]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host dut_a
-    ip host dut_a
-    % Incomplete command.
-  
-    dut_c(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut_a]
+changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [xf -> localhost]
 changed: [probe -> localhost]
+changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -394,20 +371,27 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [probe]
 ok: [xf]
+ok: [dut_a]
+ok: [dut_c]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for probe, xf => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for probe, xf => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
 ok: [xf]
+ok: [dut_a]
+ok: [dut_c]
 
 TASK [Find configuration template for bgp] *************************************
+skipping: [dut_a]
 skipping: [probe]
 ok: [xf]
+ok: [dut_c]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut_a]
 skipping: [probe]
 ok: [xf] => 
   msg: |-
@@ -442,14 +426,50 @@ ok: [xf] =>
     !
     !
     do write
+ok: [dut_c] => 
+  msg: |-
+    bgp configuration for dut_c
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+      no bgp default ipv4-unicast
+      bgp update-delay 5
+      bgp nopeerup-delay cold-boot 1
+      bgp nopeerup-delay user-initiated 1
+      bgp router-id 10.0.0.2
+      neighbor 2001:db8:2:2::4 remote-as 65100
+      neighbor 2001:db8:2:2::4 description xf
+  
+    !
+     address-family ipv6
+      bgp scan-time 5
+    !
+      network 2001:db8:1:2::/64
+  
+    !
+    !
+      neighbor 2001:db8:2:2::4 activate
+      neighbor 2001:db8:2:2::4 advertisement-interval 0
+      neighbor 2001:db8:2:2::4 send-community standard
+  
+    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [dut_a]
 skipping: [probe]
 ok: [xf]
+ok: [dut_c]
 
 TASK [Deploy bgp configuration] ************************************************
+skipping: [dut_a]
 skipping: [probe]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut_c
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xf
+
+TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+changed: [dut_c]
 
 TASK [template] ****************************************************************
 changed: [xf]
@@ -466,10 +486,14 @@ changed: [xf]
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [probe]
 ok: [xf]
+ok: [dut_a]
+ok: [dut_c]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [xf]
 ok: [probe]
+ok: [dut_a]
+ok: [dut_c]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -505,14 +529,60 @@ ok: [probe] =>
   
     !
     do write
+ok: [dut_a] => 
+  msg: |-
+    ospf configuration for dut_a
+    =========================================
+    router ospfv3 1
+     router-id 10.0.0.1
+     address-family ipv6 unicast
+     default-information originate always metric-type 2 metric 40
+  
+    !
+    interface Loopback0
+    !
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
+    interface GigabitEthernet0/1
+    ! dut_a -> probe
+     ospfv3 1 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+    !
+ok: [dut_c] => 
+  msg: |-
+    ospf configuration for dut_c
+    =========================================
+    router ospfv3 1
+     router-id 10.0.0.2
+     address-family ipv6 unicast
+     default-information originate metric-type 1 metric 20
+  
+    !
+    interface Loopback0
+    !
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
+    interface GigabitEthernet0/1
+    ! dut_c -> probe
+     ospfv3 1 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+     ospfv3 cost 10
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [xf]
 ok: [probe]
+ok: [dut_a]
+ok: [dut_c]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [xf]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut_a, dut_c
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+changed: [dut_c]
+changed: [dut_a]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -530,11 +600,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
-dut_c                      : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut_a                      : ok=19   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut_c                      : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 xf                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests the OSPF default route origination. The devices under test
+should originate the default route, one always, the other one based one
+BGP default route.
+

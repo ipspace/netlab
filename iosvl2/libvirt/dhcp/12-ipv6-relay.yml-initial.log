@@ -7,13 +7,13 @@ ok: [c1]
 ok: [c2]
 ok: [c3]
 ok: [c4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 ok: [relay]
 
 TASK [Find device readiness script] ********************************************
-ok: [c1]
 ok: [c2]
+ok: [c1]
 ok: [c3]
 ok: [c4]
 ok: [s1]
@@ -535,8 +535,8 @@ ok: [relay] =>
     ip host c2 10.0.0.3
     ip host c3 10.0.0.4
     ip host c4 10.0.0.5
-    ip host s1
-    ip host s2
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -566,7 +566,7 @@ ok: [relay] =>
      description relay -> s1
      ipv6 address 2001:DB8:CAFE:2::1/64
     !
-    interface GigabitEthernet0/4
+    interface GigabitEthernet1/0
      no shutdown
      no switchport
      description relay -> s2
@@ -591,22 +591,22 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for relay
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [c3]
 changed: [c2]
-changed: [c4]
 changed: [c1]
+changed: [c3]
+changed: [c4]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [c1]
-ok: [c4]
-ok: [c2]
 ok: [c3]
+ok: [c2]
+ok: [c4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-changed: [c4]
-changed: [c2]
 changed: [c1]
 changed: [c3]
+changed: [c4]
+changed: [c2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 skipping: [c1]
@@ -619,29 +619,22 @@ ok: [s1]
 ok: [s2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-FMyCJfGJ-s1.sh] **********
+TASK [Initial container configuration via /tmp/config-JBnOcUGn-s1.sh] **********
 changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-fatal: [relay]: FAILED! => changed=false 
-  module_stderr: |-
-    ip host s1
-    ip host s1
-    % Incomplete command.
-  
-    relay(config)#
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [relay]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -652,9 +645,10 @@ ok: [c3]
 ok: [c4]
 ok: [s1]
 ok: [s2]
+ok: [relay]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, c3, c4, s1, s2 => (item=dhcp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, c3, c4, relay, s1, s2 => (item=dhcp)
 
 TASK [Figure out whether to deploy the module dhcp on current device] **********
 ok: [c1]
@@ -663,14 +657,16 @@ ok: [c3]
 ok: [c4]
 ok: [s1]
 ok: [s2]
+ok: [relay]
 
 TASK [Find configuration template for dhcp] ************************************
 ok: [c1]
 ok: [c2]
-skipping: [s1]
 ok: [c3]
+skipping: [s1]
 skipping: [s2]
 ok: [c4]
+ok: [relay]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -803,31 +799,41 @@ ok: [c4] =>
     sysctl net/ipv6/conf/swp1/forwarding=0
     sysctl net/ipv6/conf/swp1/accept_ra=2
     # sysctl net/ipv6/conf/swp1/accept_ra_from_local=1
+ok: [relay] => 
+  msg: |-
+    dhcp configuration for relay
+    =========================================
+    interface GigabitEthernet0/1
+      ipv6 dhcp relay destination 2001:db8:cafe:2::6
+    interface GigabitEthernet0/2
+      ipv6 dhcp relay destination 2001:db8:cafe:3::7
 
 TASK [Find configuration deployment deploy_script for dhcp] ********************
 skipping: [s1]
-skipping: [s2]
 ok: [c1]
 ok: [c2]
+skipping: [s2]
 ok: [c3]
 ok: [c4]
+ok: [relay]
 
 TASK [Deploy dhcp configuration] ***********************************************
 skipping: [s1]
 skipping: [s2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2, c3, c4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for relay
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
 changed: [c1]
-changed: [c2]
 changed: [c4]
 changed: [c3]
+changed: [c2]
 
 TASK [set_fact deployed_config] ************************************************
-ok: [c1]
 ok: [c2]
 ok: [c3]
 ok: [c4]
+ok: [c1]
 
 TASK [run /tmp/config.sh to deploy dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
 changed: [c1]
@@ -841,6 +847,9 @@ skipping: [c2]
 skipping: [c3]
 skipping: [c4]
 
+TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
+changed: [relay]
+
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
@@ -849,10 +858,13 @@ c1                         : ok=21   changed=4    unreachable=0    failed=0    s
 c2                         : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 c3                         : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 c4                         : ok=21   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-relay                      : ok=8    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+relay                      : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s1                         : ok=15   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 s2                         : ok=15   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the DHCPv6 relay functionality of your device. Use
+'netlab validate' to check whether your device propagated DHCPv6 requests from
+DHCP clients to DHCP servers.
+
