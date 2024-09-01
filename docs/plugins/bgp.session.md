@@ -57,7 +57,7 @@ The plugin implements generic BGP session features for the following platforms:
 | ------------------- | :--: | :--: | :--: | :--: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
@@ -83,7 +83,7 @@ BGP session security features are available on these platforms:
 | ------------------- | :------: | :-: | :-: |
 | Arista EOS          |    ✅    | ✅  | ✅  |
 | Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
-| Cisco IOSv          |    ✅    | ✅  |  ❌  |
+| Cisco IOSv/IOSvL2   |    ✅    | ✅  |  ❌  |
 | Cisco IOS-XE[^18v]  |    ✅    |  ✅ |  ✅ |
 | Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
 | Cumulus Linux       |    ✅    | ✅  |  ❌  |
@@ -107,7 +107,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Arista EOS          |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ❌   |  ✅  |   ❌  |   ❌  |
 | Bird                |   ❌  |   ❌  |   ❌  |  ✅  |  ✅  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
@@ -176,7 +176,7 @@ The implementations of the **neighbor remove-private-as** command vary widely ac
 | Operating system    | on | all | replace | ingress | ingress-replace |
 | ------------------- | :--: | :--: | :--: | :--: | :--: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOSv          |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
+| Cisco IOSv/IOSvL2   |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
 | Cisco IOS-XE        |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
