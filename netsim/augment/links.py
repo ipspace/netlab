@@ -784,21 +784,26 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
   link['node_count'] = node_cnt
 
   host_count = 0                    # Count the number of hosts attached to the link
+  router_count = 0                  # ... and the number of routers
   for ifdata in link.interfaces:
     ndata = nodes[ifdata.node]
-    if ndata.get('role','') == 'host' and not ndata.get('_daemon',False):
+    if ndata.get('role','') == 'host':        # If a device has the 'host' role, it's obviously a host
       host_count = host_count + 1
+      if ndata.get('_daemon',False):          # ... but if it is also a daemon, it could also be router
+        router_count = router_count + 1
+    else:
+      router_count = router_count + 1         # ... not a host, must be a router
 
-  if host_count > 0:                # If we have hosts and a single router attached to a non-VLAN link, set link role to 'stub'
-    link.host_count = host_count    # ... VLAN case will be set in the VLAN module
+  if host_count > 0:                          # Remember that we have hosts on the link (so we'll set the default GW)
+    link.host_count = host_count
 
-  if node_cnt == 1:
+  if node_cnt == 1:                           # A link with a single node attached to it. Could model it as a loopback
     set_link_loopback_type(link,nodes,defaults)
 
   # Set the link role to stub if the link has no role, has a single router,
   # is not a VLAN link, and is not a loopback link
   if not 'role' in link and \
-     host_count == node_cnt - 1 and \
+     router_count <= 1 and \
      link.get('type','') != 'loopback' and \
      'vlan_name' not in link:
     link.role = 'stub'
