@@ -412,7 +412,6 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
 
     if not rid_blacklist:                                   # Get the global black lisf if needed
       rid_blacklist = get_router_id_blacklist(topology,proto)
-      print(f'blacklist: {rid_blacklist}')
 
     while True:                                             # Try to get the next router ID from the pool
       rid_pfx = get_router_id_prefix(node,proto,topology.pools,use_id=False)

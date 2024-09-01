@@ -5,10 +5,17 @@ no ip domain lookup
 lldp run
 !
 {% for hname,hdata in hosts.items() if hname != inventory_hostname %}
-{%   set addr_list = hdata.ipv4|default([]) + hdata.ipv6|default([]) %}
+{%   set ipv6_addr = hdata.ipv6|default([]) if netlab_device_type != 'iosvl2' else [] %}
+{%   set addr_list = hdata.ipv4|default([]) + ipv6_addr %}
+{%   if addr_list %}
 ip host {{ hname }} {{ addr_list|join (' ') }}
+{%   endif %}
 {% endfor %}
 !
+{% if af.ipv4|default(False) %}
+ip routing
+!
+{% endif %}
 {% if af.ipv6|default(False) %}
 ipv6 unicast-routing
 !
@@ -41,6 +48,8 @@ interface {{ l.ifname }}
  no shutdown
 {% if l.type == 'vlan_member' and l.vlan.access_id is defined %}
  encapsulation dot1Q {{ l.vlan.access_id }}
+{% elif l.virtual_interface is not defined and netlab_device_type == 'iosvl2' %}
+ no switchport
 {% endif %}
 {% if l.vrf is defined %}
  vrf forwarding {{ l.vrf }}
@@ -55,7 +64,9 @@ interface {{ l.ifname }}
 {% endif %}
 {% if l.mtu is defined %}
 {%   if min_mtu is defined and min_mtu > l.mtu %}
- ip mtu {{ l.mtu }}
+{%     for afm in af %}
+ {{ 'ip' if afm == 'ipv4' else afm }} mtu {{ l.mtu }}
+{%     endfor %}
 {%   else %}
  mtu {{ l.mtu }}
 {%   endif %}
