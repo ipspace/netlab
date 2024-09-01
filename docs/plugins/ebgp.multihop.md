@@ -19,7 +19,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Nokia SR Linux      |  ✅  |  ❌   |
 | Nokia SR OS         |  ✅  |  ❌   |
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v and Cisco Catalyst 8000v
 
 ## Specifying Multihop EBGP Sessions
 

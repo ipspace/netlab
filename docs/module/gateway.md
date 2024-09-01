@@ -21,7 +21,7 @@ The module is supported on these platforms:
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
 | Cisco Catalyst 8000v  |  ❌  | ✅  | ✅  |
 | Cisco CSR 1000v       |  ❌  | ✅  | ✅  |
-| Cisco IOSv            |  ❌  | ✅  | ✅  |
+| Cisco IOSv/IOSvL2     |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |

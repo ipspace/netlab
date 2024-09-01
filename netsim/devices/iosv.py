@@ -6,7 +6,6 @@ from box import Box
 from . import _Quirks
 from ..utils import log
 from ..modules import _routing
-from ..augment import devices
 
 # Cisco IOSv does not support VRRP on BVI interfaces. Go figure...
 #

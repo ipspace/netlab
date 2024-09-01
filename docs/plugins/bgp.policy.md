@@ -52,7 +52,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 |---------------------|:----:|:----:|:----:|:----:|:-----:|:----:|
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
+| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |

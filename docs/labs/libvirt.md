@@ -42,6 +42,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco Catalyst 8000v   | cisco/cat8000v              |
 | Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco IOSv             | cisco/iosv                  |
+| Cisco IOSvL2           | cisco/iosvl2                |
 | Cisco IOS XR           | cisco/iosxr                 |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Dell OS10              | dell/os10                   |
@@ -78,7 +79,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [Cisco ASAv](asav.md)
 * [Cisco Catalyst 8000v](cat8000v.md)
 * [Cisco CSR 1000v](csr.md)
-* [Cisco IOSv](iosv.md)
+* Cisco [IOSv](iosv.md) and [IOSvL2](iosvl2.md)
 * [Cisco IOS XR](iosxr.md)
 * [Cisco Nexus OS](nxos.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
@@ -286,6 +287,7 @@ providers.libvirt.probe: []
    cat8000v.md
    csr.md
    iosv.md
+   iosvl2.md
    iosxr.md
    nxos.md
    dellos10.md

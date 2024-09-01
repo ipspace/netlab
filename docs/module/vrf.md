@@ -42,7 +42,7 @@ These platforms support routing protocols in VRFs:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| Cisco IOS             | ✅ [❗](caveats-iosv) | ✅  | ✅  |
+| Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  |  ❌  | ✅  |

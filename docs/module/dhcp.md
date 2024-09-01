@@ -18,7 +18,7 @@ DHCP clients are supported on these platforms:
 | Operating system      | IPv4 | IPv6 | Default<br>route | Routing over<br>DHCP interfaces |
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅ [❗](caveats-eos) |  ❌  | ✅  |  ❌ [❗](caveats-eos) |
-| Cisco IOSv            | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOSv/IOSvL2     | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
 | Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |  ❌  |
@@ -30,7 +30,7 @@ DHCP servers are supported on these platforms:
 | Operating system      | IPv4 | IPv6 | VRF-aware |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  |  ❌  |
-| Cisco IOSv            | ✅  | ✅  |  ❌  |
+| Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | dnsmasq               | ✅  | ✅  |  ❌  |
 | Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |
@@ -40,7 +40,7 @@ DHCP relays are supported on these platforms:
 | Operating system      | IPv4 | IPv6 | VRF-aware |
 | --------------------- | :-: | :-: | :-: 
 | Arista EOS            | ✅  | ✅  | ✅ [❗](caveats-eos) |
-| Cisco IOSv            | ✅  | ✅  | ✅  |
+| Cisco IOSv/IOSvL2     | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅ [❗](linux-dhcp-relay) |  ❌  |  ❌  |
 | Linux (Ubuntu VM only)| ✅ [❗](linux-dhcp-relay)  |  ❌  |  ❌  |

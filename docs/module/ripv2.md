@@ -20,7 +20,7 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 | Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces |
 | ------------------ | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ❌  |  ❌  |
-| Cisco IOS          | ✅  | ✅  | ✅ [❗](caveats-iosv) |
+| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) |
 | Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) |
 | Cumulus Linux      | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  |
