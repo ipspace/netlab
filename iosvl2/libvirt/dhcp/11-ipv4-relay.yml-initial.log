@@ -5,19 +5,19 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [c1]
 ok: [c2]
-ok: [c4]
 ok: [c3]
-ok: [s2]
+ok: [c4]
 ok: [s1]
+ok: [s2]
 ok: [relay]
 
 TASK [Find device readiness script] ********************************************
 ok: [c1]
-ok: [c2]
 ok: [c3]
+ok: [c2]
 ok: [c4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 ok: [relay]
 
 TASK [Wait for device to become ready] *****************************************
@@ -151,106 +151,6 @@ ok: [c1] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [c2] => 
-  msg: |-
-    initial configuration for c2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname c2
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 c2" >>/tmp/hosts
-    echo "10.0.0.2 c1" >>/tmp/hosts
-    echo "10.0.0.4 c3" >>/tmp/hosts
-    echo "10.0.0.5 c4" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 172.16.3.1 relay" >>/tmp/hosts
-    echo "172.16.2.6 s1" >>/tmp/hosts
-    echo "172.16.3.7 s2" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    sort /tmp/hosts|uniq >>/etc/hosts
-    #
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.3/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1
-      mtu 1500
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['dhcp']
-    #
-    #
-    # Enable FRR daemons
-    #
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description c2 -> [c1,relay]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 ok: [c3] => 
   msg: |-
     initial configuration for c3
@@ -335,6 +235,106 @@ ok: [c3] =>
     interface swp1
     ! no shutdown
      description c3 -> [c4,relay]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [c2] => 
+  msg: |-
+    initial configuration for c2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c2
+    echo "INIT: creating /etc/hosts"
+    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
+    echo "127.0.0.1 c2" >>/tmp/hosts
+    echo "10.0.0.2 c1" >>/tmp/hosts
+    echo "10.0.0.4 c3" >>/tmp/hosts
+    echo "10.0.0.5 c4" >>/tmp/hosts
+    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 172.16.3.1 relay" >>/tmp/hosts
+    echo "172.16.2.6 s1" >>/tmp/hosts
+    echo "172.16.3.7 s2" >>/tmp/hosts
+    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
+    sort /tmp/hosts|uniq >>/etc/hosts
+    #
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.3/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1
+      mtu 1500
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c2 -> [c1,relay]
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -484,6 +484,28 @@ ok: [s1] =>
     #
     # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.2.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.2.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.2.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.2.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.2.1
     #
     # Print the final routing table
     ip route
@@ -520,6 +542,28 @@ ok: [s2] =>
     #
     # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.3.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.3.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.3.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.3.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.3.1
     #
     # Print the final routing table
     ip route
@@ -583,8 +627,8 @@ ok: [c2]
 ok: [c1]
 ok: [c3]
 ok: [c4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [relay]
 
 TASK [Deploy initial configuration] ********************************************
@@ -593,22 +637,22 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for relay
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [c1]
 changed: [c2]
+changed: [c1]
 changed: [c4]
 changed: [c3]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [c1]
-ok: [c4]
 ok: [c2]
 ok: [c3]
+ok: [c4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+changed: [c2]
 changed: [c3]
 changed: [c4]
 changed: [c1]
-changed: [c2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 skipping: [c1]
@@ -624,13 +668,13 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-LrXDhkqr-s1.sh] **********
-changed: [s1 -> localhost]
+TASK [Initial container configuration via /tmp/config-MsYnjRKy-s1.sh] **********
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
@@ -642,11 +686,11 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [c1]
-ok: [c3]
 ok: [c2]
+ok: [c3]
 ok: [c4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [relay]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -671,6 +715,7 @@ skipping: [s2]
 ok: [relay]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
 ok: [c1] => 
   msg: |-
     dhcp configuration for c1
@@ -692,7 +737,7 @@ ok: [c1] =>
     #
     echo "DHCP: executing ifup"
     nohup bash -c 'ifreload -a || ifreload -a' &
-skipping: [s1]
+skipping: [s2]
 ok: [c2] => 
   msg: |-
     dhcp configuration for c2
@@ -714,7 +759,6 @@ ok: [c2] =>
     #
     echo "DHCP: executing ifup"
     nohup bash -c 'ifreload -a || ifreload -a' &
-skipping: [s2]
 ok: [c3] => 
   msg: |-
     dhcp configuration for c3
@@ -767,10 +811,10 @@ ok: [relay] =>
       ip helper-address 172.16.3.7
 
 TASK [Find configuration deployment deploy_script for dhcp] ********************
-ok: [c1]
 skipping: [s1]
-ok: [c2]
+ok: [c1]
 skipping: [s2]
+ok: [c2]
 ok: [c3]
 ok: [c4]
 ok: [relay]
@@ -783,19 +827,19 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
 changed: [c1]
-changed: [c2]
 changed: [c3]
+changed: [c2]
 changed: [c4]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [c1]
 ok: [c2]
-ok: [c4]
 ok: [c3]
+ok: [c4]
 
 TASK [run /tmp/config.sh to deploy dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
-changed: [c3]
 changed: [c1]
+changed: [c3]
 changed: [c2]
 changed: [c4]
 
@@ -828,8 +872,8 @@ skipping: [c4]
 TASK [Check is the configuration template is a file] ***************************
 ok: [c1 -> localhost]
 ok: [c2 -> localhost]
-ok: [c3 -> localhost]
 ok: [c4 -> localhost]
+ok: [c3 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [c1]
@@ -854,9 +898,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
 changed: [c1]
+changed: [c4]
 changed: [c3]
 changed: [c2]
-changed: [c4]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [c1]
@@ -865,10 +909,10 @@ ok: [c3]
 ok: [c4]
 
 TASK [run /tmp/config.sh to deploy bounce config from /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2] ***
+changed: [c1]
+changed: [c2]
 changed: [c3]
 changed: [c4]
-changed: [c2]
-changed: [c1]
 
 TASK [run vtysh to import bounce config from /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2] ***
 skipping: [c1]

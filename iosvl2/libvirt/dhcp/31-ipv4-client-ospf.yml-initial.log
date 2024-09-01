@@ -4,14 +4,14 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [server]
-ok: [c1]
 ok: [c2]
 ok: [relay]
+ok: [c1]
 
 TASK [Find device readiness script] ********************************************
 ok: [server]
-ok: [c1]
 ok: [c2]
+ok: [c1]
 ok: [relay]
 
 TASK [Wait for device to become ready] *****************************************
@@ -72,6 +72,28 @@ ok: [server] =>
     #
     # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.1
     #
     # Print the final routing table
     ip route
@@ -182,9 +204,9 @@ ok: [relay] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [server]
-ok: [c2]
 ok: [c1]
 ok: [relay]
+ok: [c2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
@@ -195,8 +217,8 @@ TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 TASK [set_fact] ****************************************************************
 ok: [server]
@@ -204,7 +226,7 @@ ok: [server]
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [server -> localhost]
 
-TASK [Initial container configuration via /tmp/config-RbNhNbTL-server.sh] ******
+TASK [Initial container configuration via /tmp/config-wxGtbOhI-server.sh] ******
 changed: [server -> localhost]
 
 TASK [file] ********************************************************************
@@ -234,20 +256,20 @@ ok: [relay]
 TASK [Find configuration template for dhcp] ************************************
 skipping: [server]
 ok: [c1]
-ok: [relay]
 ok: [c2]
+ok: [relay]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [server]
-ok: [c1] => 
-  msg: |-
-    dhcp configuration for c1
-    =========================================
-    interface GigabitEthernet0/1
-      ip address dhcp
 ok: [c2] => 
   msg: |-
     dhcp configuration for c2
+    =========================================
+    interface GigabitEthernet0/1
+      ip address dhcp
+ok: [c1] => 
+  msg: |-
+    dhcp configuration for c1
     =========================================
     interface GigabitEthernet0/1
       ip address dhcp
@@ -270,8 +292,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for relay
 
 TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 TASK [eos_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/eos.j2] ***
 changed: [relay]
@@ -363,8 +385,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for relay
 
 TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
 changed: [relay]
