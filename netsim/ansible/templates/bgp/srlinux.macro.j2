@@ -6,7 +6,7 @@
       mask-length-range: exact
 {% endmacro %}
 
-{% macro bgp_export_policy(vrf,type,nh=None) %}
+{% macro bgp_export_policy(vrf,type,nh=None,import=[]) %}
 {%   if vrf == 'default' and type == 'bgp' %}
 - path: /routing-policy/prefix-set[name={{ vrf }}_bgp_advertise]
   value:
@@ -18,12 +18,12 @@
     default-action:
       policy-result: reject
     statement:
-{%   if vrf == 'default' %}
+{%   if 'connected' not in import %}
     - name: prefixes
       match:
         prefix-set: {{ vrf }}_bgp_advertise
       action:
-        policy-result: accept
+        policy-result: next-policy
 {%   endif %}
 {%   if 'ibgp' in type and nh %}
     - name: rr-next-hop-unchanged
@@ -32,12 +32,12 @@
         bgp:
           community-set: ibgp-mark
       action:
-        policy-result: accept
+        policy-result: next-policy
     - name: ebgp-next-hop-self
       match:
         protocol: bgp
       action:
-        policy-result: "accept"
+        policy-result: next-policy
         bgp:
           next-hop:
             set: "{{ nh }}"
@@ -46,32 +46,24 @@
       match:
         protocol: bgp
       action:
-        policy-result: accept
+        policy-result: next-policy
 {%   endif %}
-{%   if vrf != 'default' %}
-    - name: local
-      match:
-        protocol: local
-      action:
-        policy-result: accept
-    - name: ospfv2
-      match:
-        protocol: ospfv2
-      action:
-        policy-result: accept
-    - name: ospfv3
-      match:
-        protocol: ospfv3
-      action:
-        policy-result: accept
-{%     if 'evpn' in module %}
+{%   if 'evpn' in module and vrf != 'default' %}
     - name: bgp_evpn
       match:
         protocol: bgp-evpn
       action:
-        policy-result: accept
-{%     endif %}
+        policy-result: next-policy
 {%   endif %}
+{%   for s_proto in import %}
+{%     for srl_proto in netlab_match_protomap[s_proto] %}
+    - name: export_{{ srl_proto }}
+      match:
+        protocol: {{ srl_proto }}
+      action:
+        policy-result: next-policy
+{%     endfor %}
+{%   endfor %}
 {% endmacro %}
 
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True,import=None,export=None) %}
@@ -111,7 +103,7 @@
 {% set nh_self = bgp.next_hop_self|default(False) and type == 'ibgp' %}
 {% set nh_self_rr = nh_self and vrf_bgp.rr|default(False) %}
 {% set ep_name = (vrf + "_ibgp-" + af + "_export") if nh_self_rr else (vrf + "_bgp_export") %}
-{{ bgp_families(neighbor,import=[ "ibgp-mark" if nh_self_rr else "accept_all" ],export=[ ep_name ]) }}
+{{ bgp_families(neighbor,import=[ "ibgp-mark" if nh_self_rr else "accept_all" ],export=[ ep_name, 'accept_all' ]) }}
     timers:
       connect-retry: 10
       _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -150,12 +142,12 @@
     for loops are there to ensure the AF-IBGP export policy is defined
     only once)
 #}
-{{ bgp_export_policy(vrf,'bgp') }}
+{{ bgp_export_policy(vrf,'bgp',import=vrf_bgp.import|default([])) }}
 {% if bgp.next_hop_self|default(False) %}
 {%   for afm in vrf_context.af %}
 {%     for n in vrf_bgp.neighbors|default([]) if afm in n and n.type == 'ibgp' %}
 {%       if loop.first %}
-{{         bgp_export_policy(vrf,'ibgp-'+afm,loopback[afm]|ipaddr('address')) }}
+{{         bgp_export_policy(vrf,'ibgp-'+afm,loopback[afm]|ipaddr('address'),import=vrf_bgp.import|default([])) }}
 {%       endif %}
 {%     endfor %}
 {%   endfor %}

@@ -63,7 +63,7 @@ The following table describes per-platform support of individual router-level OS
 | Junos[^Junos]            | ✅| ✅| ✅| ❌ | ❌ |
 | Mikrotik RouterOS 6      | ✅| ❌ | ❌ | ❌ | ❌ |
 | Mikrotik RouterOS 7      | ✅| ❌ | ✅| ❌ | ❌ |
-| Nokia SR Linux           | ✅| ✅| ✅| ❌ | ❌ |
+| Nokia SR Linux           | ✅| ✅| ✅| ✅| ❌ |
 | Nokia SR OS              | ✅| ✅| ✅| ❌ | ❌ |
 | VyOS                     | ✅| ✅| ✅| ✅| ✅|
 

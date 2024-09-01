@@ -3,29 +3,25 @@
 {%- endmacro %}
 
 {% macro ospf_config(pid,af,vrf,ospf,vrf_interfaces,evpn_active=False) %}
-{% if vrf != 'default' %}
+{#
+   Just to make it more fun, while one might be 'redistributing' or 'importing' routes into a routing
+   protocol, SR Linux 'exports' them in the same routing protocol, so we have an 'export-policy'
+#}
+{% if ospf.import|default([]) %}
 - path: /routing-policy/policy[name={{vrf}}_export_ospf]
   value:
     default-action:
       policy-result: reject
     statement:
-    - name: bgp
+{%   for s_proto in ospf.import %}
+{%     for srl_proto in netlab_match_protomap[s_proto] if srl_proto != 'bgp-evpn' or evpn_active %}
+    - name: export_{{ srl_proto }}
       match:
-        protocol: bgp
+        protocol: {{ srl_proto }}
       action:
         policy-result: accept
-    - name: local
-      match:
-        protocol: local
-      action:
-        policy-result: accept
-{% if evpn_active %}
-    - name: bgp_evpn
-      match:
-        protocol: bgp-evpn
-      action:
-        policy-result: accept
-{% endif %}
+{%     endfor %}
+{%   endfor %}
 {% endif %}
 
 - path: /network-instance[name={{ vrf|default('default') }}]
@@ -47,7 +43,7 @@
 {%     if ospf.reference_bandwidth is defined %}
           reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
 {%     endif %}
-{%     if vrf != 'default' %}
+{%     if ospf.import|default([]) %}
           asbr: {}
           export-policy: "{{vrf}}_export_ospf"
 {%     endif %}
