@@ -378,13 +378,13 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-TuwRRrWP-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-BXCWjRKf-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -540,12 +540,12 @@ ok: [s1] =>
           match:
             prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
+            policy-result: next-policy
   
   
     - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
@@ -557,19 +557,19 @@ ok: [s1] =>
           match:
             prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
               community-set: ibgp-mark
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: ebgp-next-hop-self
           match:
             protocol: bgp
           action:
-            policy-result: "accept"
+            policy-result: next-policy
             bgp:
               next-hop:
                 set: "10.0.0.3"
@@ -605,11 +605,11 @@ ok: [s1] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export']
+          export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export']
+          export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -853,27 +853,17 @@ ok: [s1] =>
           match:
             protocol: bgp
           action:
-            policy-result: accept
-        - name: local
-          match:
-            protocol: local
-          action:
-            policy-result: accept
-        - name: ospfv2
-          match:
-            protocol: ospfv2
-          action:
-            policy-result: accept
-        - name: ospfv3
-          match:
-            protocol: ospfv3
-          action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp_evpn
           match:
             protocol: bgp-evpn
           action:
-            policy-result: accept
+            policy-result: next-policy
+        - name: export_local
+          match:
+            protocol: local
+          action:
+            policy-result: next-policy
   
   
     - path: /network-instance[name=customer]/protocols/bgp

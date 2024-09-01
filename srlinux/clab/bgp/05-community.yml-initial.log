@@ -432,9 +432,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, rc, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
-changed: [rc]
 changed: [r2]
+changed: [rc]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -466,19 +466,19 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [r2]
-ok: [rc]
 ok: [x1]
+ok: [rc]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r2]
-ok: [rc]
 ok: [x1]
+ok: [rc]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [rc] => 
+ok: [r2] => 
   msg: |-
-    bgp configuration for rc
+    bgp configuration for r2
     =========================================
     !
     router bgp 65000
@@ -490,7 +490,7 @@ ok: [rc] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.10
+      bgp router-id 10.0.0.2
     !
       neighbor 10.0.0.1 remote-as 65000
       neighbor 10.0.0.1 description dut
@@ -498,10 +498,9 @@ ok: [rc] =>
     !
      address-family ipv4 unicast
     !
-      network 10.0.0.10/32
+      network 10.0.0.2/32
     !
     !
-      network 172.0.42.0/24
     !
       neighbor 10.0.0.1 activate
       neighbor 10.0.0.1 next-hop-self
@@ -511,7 +510,6 @@ ok: [rc] =>
       neighbor 10.0.0.1 send-community extended
     !
     !
-    ip route 172.0.42.0/24 Null0
     !
     do write
 ok: [dut] => 
@@ -554,12 +552,12 @@ ok: [dut] =>
           match:
             prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
+            policy-result: next-policy
   
   
     - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
@@ -571,19 +569,19 @@ ok: [dut] =>
           match:
             prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
               community-set: ibgp-mark
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: ebgp-next-hop-self
           match:
             protocol: bgp
           action:
-            policy-result: "accept"
+            policy-result: next-policy
             bgp:
               next-hop:
                 set: "10.0.0.1"
@@ -619,11 +617,11 @@ ok: [dut] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export']
+          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export']
+          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
   
         timers:
           connect-retry: 10
@@ -663,11 +661,11 @@ ok: [dut] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export']
+          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export']
+          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
   
         timers:
           connect-retry: 10
@@ -707,11 +705,11 @@ ok: [dut] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export']
+          export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export']
+          export-policy: ['default_bgp_export', 'accept_all']
   
         timers:
           connect-retry: 10
@@ -739,42 +737,6 @@ ok: [dut] =>
             admin-state: disable
   
           peer-as: 65101
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-    !
-    !
-    do write
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -808,6 +770,44 @@ ok: [x1] =>
     !
     !
     do write
+ok: [rc] => 
+  msg: |-
+    bgp configuration for rc
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.10/32
+    !
+    !
+      network 172.0.42.0/24
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+    !
+    ip route 172.0.42.0/24 Null0
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -829,9 +829,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [rc]
 changed: [x1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -971,8 +971,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [rc]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -983,8 +983,8 @@ skipping: [r2]
 skipping: [rc]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 changed: [rc]
+changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 

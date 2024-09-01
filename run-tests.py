@@ -191,13 +191,14 @@ def run_tests(setup: Box, limit: typing.Optional[str], dry_run: bool = False) ->
   for device in setup.devices:
     for provider in setup.devices[device]:
       for test in setup.tests:
-        if limit is None and test in setup.limits:
-          limit = setup.limits[test]
         if not include_test(setup.devices[device][provider],test):
           continue
         if not device_supports_test(device,setup.tests[test],setup):
           continue
-        run_single_test(device,provider,setup.tests[test].path,limit,setup=setup,dry_run=dry_run)
+        run_single_test(device,provider,setup.tests[test].path,
+          limit=limit or setup.limits[test] or None,
+          setup=setup,
+          dry_run=dry_run)
 
 def main() -> None:
   args = tests_parse(sys.argv[1:])

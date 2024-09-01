@@ -427,8 +427,8 @@ TASK [debug] *******************************************************************
 skipping: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [ce1 -> localhost]
 changed: [ce2 -> localhost]
+changed: [ce1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -440,9 +440,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -450,9 +450,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [s2]
 changed: [ce1]
 changed: [ce2]
-changed: [s2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -631,12 +631,12 @@ ok: [s1] =>
           match:
             prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
+            policy-result: next-policy
   
   
     - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
@@ -648,19 +648,19 @@ ok: [s1] =>
           match:
             prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: rr-next-hop-unchanged
           match:
             protocol: bgp
             bgp:
               community-set: ibgp-mark
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: ebgp-next-hop-self
           match:
             protocol: bgp
           action:
-            policy-result: "accept"
+            policy-result: next-policy
             bgp:
               next-hop:
                 set: "10.0.0.3"
@@ -696,11 +696,11 @@ ok: [s1] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export']
+          export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export']
+          export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -805,6 +805,34 @@ ok: [ce1] =>
   
     !
     do write
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    updates:
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.3
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+           # OSPF not configured on external interface ethernet-1/2
 ok: [ce2] => 
   msg: |-
     ospf configuration for ce2
@@ -859,34 +887,6 @@ ok: [s2] =>
   
     !
     do write
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    updates:
-  
-    - path: /network-instance[name=default]
-      value:
-        router-id: 10.0.0.3
-        protocols:
-          ospf:
-            instance:
-            - name: "0"
-              version: ospf-v2
-              admin-state: enable
-              max-ecmp-paths: 64
-              area:
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: system0.0
-                  passive: True
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/1.0
-                  interface-type: "point-to-point"
-                  failure-detection:
-                    enable-bfd: False
-           # OSPF not configured on external interface ethernet-1/2
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ce1]
@@ -899,9 +899,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -914,9 +914,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [s2]
 changed: [ce1]
 changed: [ce2]
-changed: [s2]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
@@ -1084,27 +1084,27 @@ ok: [s1] =>
           match:
             protocol: bgp
           action:
-            policy-result: accept
-        - name: local
-          match:
-            protocol: local
-          action:
-            policy-result: accept
-        - name: ospfv2
-          match:
-            protocol: ospfv2
-          action:
-            policy-result: accept
-        - name: ospfv3
-          match:
-            protocol: ospfv3
-          action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp_evpn
           match:
             protocol: bgp-evpn
           action:
-            policy-result: accept
+            policy-result: next-policy
+        - name: export_local
+          match:
+            protocol: local
+          action:
+            policy-result: next-policy
+        - name: export_ospfv2
+          match:
+            protocol: ospfv2
+          action:
+            policy-result: next-policy
+        - name: export_ospfv3
+          match:
+            protocol: ospfv3
+          action:
+            policy-result: next-policy
   
   
     - path: /network-instance[name=tenant]/protocols/bgp
