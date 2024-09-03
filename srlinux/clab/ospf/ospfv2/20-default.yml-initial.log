@@ -1,0 +1,797 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [Find device readiness script] ********************************************
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut_c] => 
+  msg: |-
+    initial configuration for dut_c
+    =========================================
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.2/32"
+  
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+       subinterface:
+        index: 0
+        description: "dut_c ~ probe"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "dut_c ~ probe"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.5/30"
+          primary: [null]
+  
+    - path: /interface[name=ethernet-1/2]
+      value:
+       subinterface:
+        index: 0
+        description: "dut_c ~ xf"
+  
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
+       description: "dut_c ~ xf"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.9/30"
+          primary: [null]
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/2.0
+ok: [dut_a] => 
+  msg: |-
+    initial configuration for dut_a
+    =========================================
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.1/32"
+  
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+       subinterface:
+        index: 0
+        description: "dut_a ~ probe"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "dut_a ~ probe"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.1/30"
+          primary: [null]
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+ok: [xf] => 
+  msg: |-
+    initial configuration for xf
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 10.1.0.1 dut_a" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.5 10.1.0.9 dut_c" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.2 10.1.0.6 probe" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.10 xf" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname xf
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description xf -> dut_c [external]
+     ip address 10.1.0.10/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [probe] => 
+  msg: |-
+    initial configuration for probe
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 10.1.0.1 dut_a" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.5 10.1.0.9 dut_c" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.2 10.1.0.6 probe" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.10 xf" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname probe
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description probe -> dut_a
+     ip address 10.1.0.2/30
+    !
+    interface eth2
+     no shutdown
+     description probe -> dut_c
+     ip address 10.1.0.6/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut_c, dut_a
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xf, probe
+
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
+changed: [dut_a]
+changed: [dut_c]
+
+TASK [debug] *******************************************************************
+skipping: [dut_c]
+skipping: [dut_a]
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [probe -> localhost]
+changed: [xf -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [xf]
+skipping: [probe]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
+
+TASK [template] ****************************************************************
+changed: [xf]
+changed: [probe]
+
+TASK [set_fact] ****************************************************************
+ok: [xf]
+ok: [probe]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [xf]
+changed: [probe]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [xf]
+skipping: [probe]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut_a]
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=ospf)
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut_a]
+ok: [dut_c]
+ok: [probe]
+ok: [xf]
+
+TASK [Find configuration template for bgp] *************************************
+skipping: [dut_a]
+skipping: [probe]
+ok: [dut_c]
+ok: [xf]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut_a]
+skipping: [probe]
+ok: [dut_c] => 
+  msg: |-
+    bgp configuration for dut_c
+    =========================================
+    updates:
+  
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: accept
+  
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: next-policy
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: next-policy
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.2
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.2/32
+          mask-length-range: exact
+  
+  
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.1.0.10"
+          description: xf
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+          peer-as: 65100
+ok: [xf] => 
+  msg: |-
+    bgp configuration for xf
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut_c
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
+    !
+    !
+    !
+    do write
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [dut_a]
+skipping: [probe]
+ok: [dut_c]
+ok: [xf]
+
+TASK [Deploy bgp configuration] ************************************************
+skipping: [dut_a]
+skipping: [probe]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut_c
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xf
+
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut_c]
+
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
+changed: [dut_c]
+
+TASK [debug] *******************************************************************
+skipping: [dut_c]
+
+TASK [template] ****************************************************************
+changed: [xf]
+
+TASK [set_fact] ****************************************************************
+ok: [xf]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [xf]
+
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [xf]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut_a]
+ok: [dut_c]
+ok: [probe]
+ok: [xf]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut_a]
+skipping: [xf]
+ok: [dut_c]
+ok: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [xf]
+ok: [dut_a] => 
+  msg: |-
+    ospf configuration for dut_a
+    =========================================
+    updates:
+    - path: /routing-policy/prefix-set[name=default_route]
+      value:
+        prefix:
+        - ip-prefix: "0.0.0.0/0"
+          mask-length-range: exact
+        - ip-prefix: "::/0"
+          mask-length-range: exact
+    - path: /network-instance[name=default]/next-hop-groups/group[name=blackhole]
+      value:
+        blackhole:
+          generate-icmp: True
+  
+    - path: /network-instance[name=default]/static-routes
+      value:
+        route:
+        - prefix: "0.0.0.0/0"
+          preference: 254
+          next-hop-group: blackhole
+    - path: /routing-policy/policy[name=default_export_ospf]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: default
+          match:
+            prefix-set: default_route
+          action:
+            policy-result: accept
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              asbr: {}
+              export-policy: "default_export_ospf"
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+ok: [dut_c] => 
+  msg: |-
+    ospf configuration for dut_c
+    =========================================
+    updates:
+    - path: /routing-policy/prefix-set[name=default_route]
+      value:
+        prefix:
+        - ip-prefix: "0.0.0.0/0"
+          mask-length-range: exact
+        - ip-prefix: "::/0"
+          mask-length-range: exact
+    - path: /routing-policy/policy[name=default_export_ospf]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: default
+          match:
+            prefix-set: default_route
+          action:
+            policy-result: accept
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.2
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              asbr: {}
+              export-policy: "default_export_ospf"
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+                  metric: 10
+           # OSPF not configured on external interface ethernet-1/2
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut_a
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! probe -> dut_c
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf cost 10
+    !
+  
+    !
+    do write
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [xf]
+ok: [dut_a]
+ok: [dut_c]
+ok: [probe]
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [xf]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut_a, dut_c
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
+changed: [dut_c]
+changed: [dut_a]
+
+TASK [debug] *******************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+
+TASK [template] ****************************************************************
+changed: [probe]
+
+TASK [set_fact] ****************************************************************
+ok: [probe]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [probe]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [probe]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut_a                      : ok=21   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut_c                      : ok=27   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+xf                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+
+
+
+This lab tests the OSPF default route origination. The devices under test
+should originate the default route, one always, the other one based one
+BGP default route.
+
