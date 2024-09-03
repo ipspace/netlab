@@ -28,6 +28,7 @@ Each test has a name (dictionary key) and description (dictionary value) -- anot
 * **wait** (integer, optional) -- Time to wait (when specified as the only action in the test) or retry (when used together with other actions). The first wait/retry timeout is measured from when the lab was started; subsequent times are measured from the previous test containing the **wait** parameter.
 * **wait_str** (string, optional) -- Message to print before starting the wait.
 * **stop_on_error** (bool, optional) -- When set to `True`, the validation tests stop if the current test fails on at least one of the devices.
+* **level** (string, optional) -- When set to `warning,` the test failure does not indicate that the whole testing sequence has failed but generates a warning message. 
 
 [^TEX]: Objects, non-empty strings, lists, or dictionaries, integers not equal to zero or `True`. 
 

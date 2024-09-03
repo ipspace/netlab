@@ -25,6 +25,15 @@ options:
   -e, --error-only      Display only validation errors (on stderr)
 ```
 
+The **netlab validate** command returns the overall test results in its exit code:
+
+| Exit code | Meaning |
+|----------:|---------|
+| 0 | All tests passed |
+| 1 | At least one test failed |
+| 2 | `netlab validate` did not find a single usable test to execute |
+| 3 | Some of the tests generated warnings |
+
 ## Example
 
 **netlab validate** command was executed on the [Advertise IPv4 Prefixes to BGP Neighbors](https://bgplabs.net/basic/3-originate/) lab before the user configured BGP prefix origination:

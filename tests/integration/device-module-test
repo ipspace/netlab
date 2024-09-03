@@ -156,7 +156,10 @@ def run_cleanup(args: argparse.Namespace,final: bool = True, abort: bool = True)
 
 RESULTS: Box = get_empty_box()
 
-def log_result(test: str, stage: typing.Optional[str] = None, result: bool = False) -> None:
+def log_result(
+      test: str,
+      stage: typing.Optional[str] = None, 
+      result: typing.Union[bool,str] = False) -> None:
   global RESULTS
 
   test = os.path.basename(test).split('.')[0]
@@ -165,8 +168,8 @@ def log_result(test: str, stage: typing.Optional[str] = None, result: bool = Fal
   else:
     RESULTS[test][stage] = result
 
-def print_fail(step: str, fail_color: str = "bright_red") -> None:
-  _strings.print_colored_text(f"{step}(FAIL)",color=fail_color)
+def print_fail(step: str, fail_status: str = "FAIL", fail_color: str = "bright_red") -> None:
+  _strings.print_colored_text(f"{step}({fail_status})",color=fail_color)
   print(" ",end="",flush=True)
 
 def print_ok(step: str) -> None:
@@ -227,6 +230,9 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     print_ok("validate")
   elif valid.returncode == 2:
     print("validate(SKIPPED)",end=" ",flush=True)
+  elif valid.returncode == 3:
+    log_result(test,'validate','warning')
+    print_fail("validate",fail_status='WARNING',fail_color="bright_yellow")
   else:
     if args.quiet or args.batch:
       print_fail("validate")
