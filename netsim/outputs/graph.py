@@ -20,15 +20,16 @@ def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Opt
     if not node_ip and n.interfaces:
       node_ip = n.interfaces[0].ipv4 or n.interfaces[0].ipv6
     if node_ip:
-      node_ip_str = f'<br /><sub>{node_ip}</sub>'
+      node_ip_str = f'{node_ip}'
 
-  f.write(f'{indent}    label=<{n.name} [{n.device}]{node_ip_str}>\n')
+  f.write(f'{indent}    label="{n.name} [{n.device}]\\n{node_ip_str}"\n')
   f.write('%s    fillcolor="%s"\n' % (indent,settings.colors.get('node','#ff9f01')))
+  f.write('%s    margin="0.3,0.1"\n' % indent)
   f.write('%s  ]\n' % indent)
 
 def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Optional[str] = '') -> None:
   f.write('%s  "%s" [' % (indent,n.bridge))
-  f.write('style=filled fillcolor="%s" fontsize=11' % (settings.colors.get("stub","#d1bfab")))
+  f.write('style=filled fillcolor="%s" fontsize=11 margin="0.3,0.1"' % (settings.colors.get("stub","#d1bfab")))
   f.write(' label="%s"' % (n.prefix.ipv4 or n.prefix.ipv6 or n.bridge))
   f.write("]\n")
 
