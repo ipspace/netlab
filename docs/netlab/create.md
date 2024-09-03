@@ -88,13 +88,14 @@ Without specifying the output format(s), **netlab create** creates a provider co
 
 You could specify one or more output formats with the `-o` CLI parameter. For more details please read the [output formats](../outputs/index.md) part of the documentation.
 
+(netlab-create-set)=
 ## Setting Topology Parameters from Command Line
 
 The following CLI flags can be used to change individual topology parameters:
 
 * `-d` sets default device type (**defaults.device**)
 * `-p` sets virtualization provider (**provider**)
-* `-s` uses `key=value` format to set specified topology element  value. The key could be a hierarchical dotted name.
+* `-s` uses the `key=value` format to set the specified topology element's value. The key could be a hierarchical dotted name.
 * `--plugin` specifies additional plugins not listed in lab topology or system defaults (example: multilab plugin)
 
 ### Example
