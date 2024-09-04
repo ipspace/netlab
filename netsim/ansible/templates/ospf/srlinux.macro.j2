@@ -7,13 +7,43 @@
    Just to make it more fun, while one might be 'redistributing' or 'importing' routes into a routing
    protocol, SR Linux 'exports' them in the same routing protocol, so we have an 'export-policy'
 #}
-{% if ospf.import|default([]) %}
+{% if ospf.default|default(False) %}
+- path: /routing-policy/prefix-set[name=default_route]
+  value:
+    prefix:
+    - ip-prefix: "0.0.0.0/0"
+      mask-length-range: exact
+    - ip-prefix: "::/0"
+      mask-length-range: exact
+{%   if ospf.default.always|default(False) %}
+- path: /network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
+  value:
+    blackhole:
+      generate-icmp: True
+
+- path: /network-instance[name={{vrf}}]/static-routes
+  value:
+    route:
+    - prefix: {{ "0.0.0.0/0" if af == 'ipv4' else "::/0" }}
+      preference: 254
+      next-hop-group: blackhole
+{%   endif %}
+{% endif %}
+{% set ospf_import = ospf.import|default(False) or ospf.default|default(False) %}
+{% if ospf_import %}
 - path: /routing-policy/policy[name={{vrf}}_export_ospf]
   value:
     default-action:
       policy-result: reject
     statement:
-{%   for s_proto in ospf.import %}
+{%   if ospf.default|default(False) %}
+    - name: default
+      match:
+        prefix-set: default_route
+      action:
+        policy-result: accept
+{%   endif %}
+{%   for s_proto in ospf.import|default([]) %}
 {%     for srl_proto in netlab_match_protomap[s_proto] if srl_proto != 'bgp-evpn' or evpn_active %}
     - name: export_{{ srl_proto }}
       match:
@@ -43,7 +73,7 @@
 {%     if ospf.reference_bandwidth is defined %}
           reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
 {%     endif %}
-{%     if ospf.import|default([]) %}
+{%     if ospf_import %}
           asbr: {}
           export-policy: "{{vrf}}_export_ospf"
 {%     endif %}
