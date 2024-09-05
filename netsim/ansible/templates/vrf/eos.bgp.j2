@@ -1,4 +1,5 @@
 {% import "eos.bgp-macro.j2" as bgpcfg %}
+{% import "templates/routing/_redistribute.eos.j2" as redistribute with context %}
 !
 mpls ip
 !
@@ -24,13 +25,7 @@ router bgp {{ bgp.as }}
 {%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 !
   address-family {{ af }}
-{%     if vdata.bgp.import is defined %}
-{%       for s_proto,s_data in vdata.bgp.import.items() %}
-    redistribute {{ s_proto }}{%
-    if s_proto == 'ospf' and af == 'ipv6' %}v3{% endif %}{%
-    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
-{%       endfor %}
-{%     endif %}
+{{     redistribute.config(vdata.bgp,af=af) }}
 {%     for n in vdata.networks|default([]) if af in n %}
     network {{ n[af]|ipaddr('0') }}
 {%     endfor %}

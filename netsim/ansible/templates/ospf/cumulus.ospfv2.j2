@@ -1,4 +1,6 @@
-{% import "ios.default.j2" as ospf_default %}
+{% import "templates/routing/_default.ios.j2" as ospf_default %}
+{% import "templates/routing/_redistribute.frr.j2" as redistribute with context %}
+!
 router ospf
 {% if ospf.router_id|ipv4 %}
  ospf router-id {{ ospf.router_id }}
@@ -9,15 +11,11 @@ router ospf
 {% if ospf.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
 {% endif %}
-{% if ospf.import is defined %}
-{%   for s_proto,s_data in ospf.import.items() %}
- redistribute {{ s_proto }}{% if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv4{% endif +%}
-{%   endfor %}
-{% endif %}
  timers throttle spf 10 50 500
  timers throttle lsa all 100
  timers lsa min-arrival 100
 {{ ospf_default.config(ospf,'ipv4') }}
+{{ redistribute.config(ospf,af='ipv4') }}
 !
 {% if 'ipv4' in loopback %}
 interface {{ loopback.ifname }}

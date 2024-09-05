@@ -1,0 +1,13 @@
+{% macro policy(sp_data,af) -%}
+  {% if 'policy' in sp_data %} route-map {{ sp_data.policy }}-{{ af }}{% endif +%}
+{%- endmacro %}
+{% macro config(pdata,af='ipv4',vrf=False) -%}
+{%   if pdata.import is defined %}
+{%     for s_proto,s_data in pdata.import.items() %}
+{%       if s_proto == 'ospf' and af == 'ipv6' %}
+{%         set s_proto = 'ospfv3' %}
+{%       endif %}
+ redistribute {{ s_proto }}{% if vrf %} include leaked{% endif %}{{ policy(s_data,af) }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}

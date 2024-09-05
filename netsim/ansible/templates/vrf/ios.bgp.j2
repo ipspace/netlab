@@ -1,18 +1,12 @@
 {% import "ios.bgp-macro.j2" as bgpcfg %}
+{% import "templates/routing/_redistribute.ios.j2" as redistribute with context %}
 !
 router bgp {{ bgp.as }}
 {% for vname,vdata in vrfs.items() %}
 {%   for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
  address-family {{ af }} vrf {{ vname }}
   bgp router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
-{% if vdata.bgp.import is defined %}
-!
-{%   for s_proto,s_data in vdata.bgp.import.items() %}
-  redistribute {{ s_proto }}{%
-    if s_proto == 'ospf' %} {{ vdata.vrfidx }} match internal external{% endif %}{%
-    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
-{%   endfor %}
-{% endif %}
+{{     redistribute.config(vdata.bgp,af=af,ospf_pid=vdata.vrfidx) }}
 !
 {%     for n in vdata.networks|default([]) if af in n %}
 {{       bgpcfg.bgp_network(af,n[af]) }}

@@ -1,4 +1,6 @@
-{% import "ios.default.j2" as ospf_default %}
+{% import "templates/routing/_default.ios.j2" as ospf_default %}
+{% import "templates/routing/_redistribute.eos.j2" as redistribute with context %}
+!
 {% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
 !
 ! OSPFv2 configuration
@@ -19,13 +21,7 @@ router ospf {{ ospf_pid }}
  timers lsa rx min interval 100
  timers lsa tx delay initial 100 200 500
 {{ ospf_default.config(ospf_data,'ipv4') }}
-{% if ospf_data.import is defined %}
-{%   for s_proto,s_data in ospf_data.import.items() %}
- redistribute {{ s_proto }}{%
-    if s_proto == 'bgp' and ospf_vrf %} include leaked{% endif %}{%
-    if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv4{% endif +%}
-{%   endfor %}
-{% endif %}
+{{ redistribute.config(ospf_data,af='ipv4',vrf=ospf_vrf) }}
 {% if ospf_data.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
 {% endif %}

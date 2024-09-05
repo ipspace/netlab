@@ -1,0 +1,17 @@
+{% macro policy(sp_data,af) -%}
+  {% if 'policy' in sp_data %} route-map {{ sp_data.policy }}-{{ af }}{% endif +%}
+{%- endmacro %}
+{% macro config(pdata,af='ipv4',t_proto='',ospf_pid=1) -%}
+{%   if pdata.import is defined %}
+{%     set r_append = ' subnets' if t_proto == 'ospf' else '' %}
+{%     for s_proto,s_data in pdata.import.items() %}
+{%       if s_proto == 'bgp' %}
+{%         set s_proto = s_proto + ' ' + bgp.as|string %}
+{%       endif %}
+{%       if s_proto == 'ospf' %}
+{%         set s_proto = s_proto + ' ' + ospf_pid|string + ' match internal external' %}
+{%       endif %}
+ redistribute {{ s_proto }}{{ policy(s_data,af) }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}
