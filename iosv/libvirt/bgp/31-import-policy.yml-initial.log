@@ -238,7 +238,7 @@ ok: [r2] =>
     !
     interface eth2
      no shutdown
-     description r2 -> stub
+     description r2 -> stub [stub]
      ip address 10.42.42.3/24
      ipv6 address 2001:db8:cafe:42::3/64
      ipv6 nd ra-interval 5
@@ -260,6 +260,8 @@ ok: [dut] =>
     !
     ip host r2 10.0.0.3 172.16.1.3 10.42.42.3 2001:db8:1:3::1 2001:db8:2:1::3 2001:db8:cafe:42::3
     ip host x1 10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -306,8 +308,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [r2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -428,6 +430,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -438,6 +442,8 @@ ok: [x1] =>
       neighbor 172.16.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -473,8 +479,8 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
-    !
-      redistribute ospf 1 match internal external route-map i_beacon-ipv4
+     redistribute ospf 1 match internal external route-map i_beacon-ipv4
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -486,8 +492,8 @@ ok: [dut] =>
   
      address-family ipv6
       bgp scan-time 5
-    !
-      redistribute ospf 1 match internal external route-map i_beacon-ipv6
+     redistribute ospf 1 match internal external route-map i_beacon-ipv6
+  
     !
       network 2001:db8:1:1::/64
   
@@ -549,6 +555,7 @@ ok: [r2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -563,6 +570,7 @@ ok: [r2] =>
     interface eth2
     ! r2 -> stub
      ip ospf area 0.0.0.0
+     ip ospf passive
     !
   
     !
@@ -580,12 +588,14 @@ ok: [r2] =>
     interface eth2
     ! r2 -> stub
      ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 passive
     !
     !
     router ospf6
      ospf6 router-id 10.0.0.3
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
   
     exit
   
@@ -597,6 +607,7 @@ ok: [dut] =>
     =========================================
     router ospf 1
      router-id 10.0.0.1
+  
   
     !
     interface Loopback0
@@ -612,6 +623,7 @@ ok: [dut] =>
     router ospfv3 1
      router-id 10.0.0.1
      address-family ipv6 unicast
+  
   
     !
     interface Loopback0

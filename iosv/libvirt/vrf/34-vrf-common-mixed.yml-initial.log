@@ -347,6 +347,8 @@ ok: [dut] =>
     ip host r2 10.0.0.3 172.16.1.3
     ip host srv 10.0.0.4 172.16.2.4
     !
+    ip routing
+    !
     vrf definition blue
      rd 65000:2
      route-target import 65000:2
@@ -427,9 +429,9 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
-changed: [srv -> localhost]
 changed: [r2 -> localhost]
+changed: [srv -> localhost]
+changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [srv]
@@ -440,9 +442,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for srv, r1, r2
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
 changed: [srv]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [srv]
@@ -450,9 +452,9 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [srv]
-changed: [r1]
 changed: [r2]
+changed: [r1]
+changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [srv]
@@ -508,6 +510,8 @@ ok: [srv] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -536,6 +540,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -597,6 +602,7 @@ ok: [r1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -623,6 +629,7 @@ ok: [r2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -670,8 +677,8 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -697,15 +704,15 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv4 vrf blue
       bgp router-id 10.0.0.1
-    !
-      redistribute connected
-      redistribute ospf 101 match internal external
+     redistribute connected
+     redistribute ospf 101 match internal external
+  
     !
     !
      address-family ipv4 vrf common
       bgp router-id 10.0.0.1
-    !
-      redistribute connected
+     redistribute connected
+  
     !
     !
       neighbor 172.16.2.4 remote-as 65100
@@ -717,16 +724,17 @@ ok: [dut] =>
   
      address-family ipv4 vrf red
       bgp router-id 10.0.0.1
-    !
-      redistribute connected
-      redistribute ospf 100 match internal external
+     redistribute connected
+     redistribute ospf 100 match internal external
+  
     !
     !
     router ospf 101 vrf blue
      router-id 10.100.0.101
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/2
     ! dut -> r2
@@ -737,8 +745,9 @@ ok: [dut] =>
     router ospf 100 vrf red
      router-id 10.100.0.100
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/1
     ! dut -> r1
