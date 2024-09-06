@@ -1,3 +1,5 @@
+{% import "templates/routing/_redistribute.ios.j2" as redistribute with context %}
+!
 {% if 'ipv6' in isis.af %}
 ipv6 unicast-routing
 {% endif %}
@@ -50,7 +52,11 @@ router isis {{ isis.instance }}
 {% for l in interfaces|default([]) if 'isis' in l and l.isis.passive %}
   passive-interface {{ l.ifname }}
 {% endfor %}
+{% if 'ipv4' in isis.af %}
+{{   redistribute.config(isis,af='ipv4',ospf_pid=ospf.process|default(1))|indent(1,first=True) }}
+{% endif %}
 {% if isis.af.ipv6 is defined %}
   address-family ipv6
     multi-topology
+{{   redistribute.config(isis,af='ipv6',ospf_pid=ospf.process|default(1))|indent(3,first=True) }}
 {% endif %}

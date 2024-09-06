@@ -5,13 +5,15 @@
 {%   if pdata.import is defined %}
 {%     set r_append = ' subnets' if t_proto == 'ospf' else '' %}
 {%     for s_proto,s_data in pdata.import.items() %}
+{%       set sp_config = s_proto %}
 {%       if s_proto == 'bgp' %}
-{%         set s_proto = s_proto + ' ' + bgp.as|string %}
+{%         set sp_config = sp_config + ' ' + bgp.as|string %}
+{%       elif s_proto == 'isis' %}
+{%         set sp_config = sp_config + ' ' + isis.instance + ' level-1-2' %}
+{%       elif s_proto == 'ospf' %}
+{%         set sp_config = sp_config + ' ' + ospf_pid|string + ' match internal external' %}
 {%       endif %}
-{%       if s_proto == 'ospf' %}
-{%         set s_proto = s_proto + ' ' + ospf_pid|string + ' match internal external' %}
-{%       endif %}
- redistribute {{ s_proto }}{{ policy(s_data,af) }}
+ redistribute {{ sp_config }}{{ policy(s_data,af) }}
 {%     endfor %}
 {%   endif %}
 {%- endmacro %}
