@@ -1,0 +1,121 @@
+---
+message: |
+  Use this topology to test the two-way redistribution between ISIS and OSPFv2/OSPFv3/BGP
+
+defaults.interfaces.mtu: 1500
+
+addressing:
+  loopback:
+    ipv6: 2001:db8:1::/48
+  lan:
+    ipv6: 2001:db8:2::/48
+  p2p:
+    ipv6: 2001:db8:3::/48
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, r2, r3 ]
+
+isis.type: level-1-2
+
+nodes:
+  dut:
+    module: [ bgp, isis, ospf ]
+    bgp.as: 65000
+    bgp.import: [ isis ]
+    ospf.import: [ isis ]
+    isis.import: [ bgp, ospf ]
+  x1:
+    bgp.as: 65100
+    module: [ bgp ]
+  r2:
+    module: [ ospf ]
+  r3:
+    module: [ isis ]
+
+links:
+- dut-x1
+- dut-r2
+- dut-r3
+
+validate:
+  ipv4_ebgp:
+    description: IPv4 EBGP session (X1-DUT) should be established
+    wait_msg: Wait for EBGP session
+    wait: 20
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  ipv6_ebgp:
+    description: IPv6 EBGP session (X1-DUT) should be established
+    wait_msg: Wait for EBGP session
+    wait: 20
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  ipv4_ospf:
+    description: OSPF session (R2-DUT) should be established
+    wait_msg: Wait for OSPF session
+    wait: 20
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  ipv6_ospf:
+    description: OSPFv3 session (R2-DUT) should be established
+    wait_msg: Wait for OSPF session
+    wait: 20
+    nodes: [ r2 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  adj_isis:
+    description: Check IS-IS adjacencies
+    wait_msg: Waiting for IS-IS adjacency process to complete
+    wait: 20
+    nodes: [ r3 ]
+    plugin: isis_neighbor('dut',level='L1L2')
+  isis_bgp_v4:
+    description: Check whether X1 BGP IPv4 prefix is redistributed into IS-IS
+    wait: 15
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ r3 ]
+    plugin: isis_prefix(pfx=nodes.x1.loopback.ipv4,af='ipv4')
+  isis_bgp_v6:
+    description: Check whether X1 BGP IPv6 prefix is redistributed into IS-IS
+    wait: 10
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ r3 ]
+    plugin: isis_prefix(pfx=nodes.x1.loopback.ipv6,af='ipv6')
+  isis_ospf_v4:
+    description: Check whether R2 OSPF IPv4 prefix is redistributed into IS-IS
+    wait: 15
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ r3 ]
+    plugin: isis_prefix(pfx=nodes.r2.loopback.ipv4,af='ipv4')
+  isis_ospf_v6:
+    description: Check whether R2 OSPF IPv6 prefix is redistributed into IS-IS
+    wait: 10
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ r3 ]
+    plugin: isis_prefix(pfx=nodes.r2.loopback.ipv6,af='ipv6')
+  ospf_v4:
+    description: Check whether R3 IS-IS IPv4 prefix is redistributed into OSPF
+    wait: 5
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ r2 ]
+    plugin: ospf_prefix(pfx=nodes.r3.loopback.ipv4)
+  ospf_v6:
+    description: Check whether R3 IS-IS IPv6 prefix is redistributed into OSPF
+    wait: 5
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ r2 ]
+    plugin: ospf6_prefix(pfx=nodes.r3.loopback.ipv6)
+  bgp_v4:
+    description: Check whether R3 IS-IS IPv4 prefix is redistributed into BGP
+    wait: 5
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ x1 ]
+    plugin: bgp_prefix(pfx=nodes.r3.loopback.ipv4,af='ipv4')
+  bgp_v6:
+    description: Check whether R3 IS-IS IPv6 prefix is redistributed into BGP
+    wait: 5
+    wait_msg: Waiting for the loopback prefix to be originated and redistributed
+    nodes: [ x1 ]
+    plugin: bgp_prefix(pfx=nodes.r3.loopback.ipv6,af='ipv6')
