@@ -4,8 +4,8 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [xf]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -402,8 +402,8 @@ ok: [dut] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [xf]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -418,8 +418,8 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [xf -> localhost]
-changed: [p2 -> localhost]
 changed: [p1 -> localhost]
+changed: [p2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -430,9 +430,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, p1, p2
 
 TASK [template] ****************************************************************
-changed: [p1]
-changed: [p2]
 changed: [xf]
+changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [xf]
@@ -440,9 +440,9 @@ ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p1]
 changed: [xf]
 changed: [p2]
+changed: [p1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xf]
@@ -498,6 +498,8 @@ ok: [xf] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -525,7 +527,7 @@ ok: [dut] =>
     !
     !
      address-family ipv4
-    !
+  
       network 10.0.0.1/32
     !
     !
@@ -586,6 +588,7 @@ ok: [p1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -600,6 +603,10 @@ ok: [p1] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -612,6 +619,7 @@ ok: [p2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -627,10 +635,6 @@ ok: [p2] =>
   
     !
     do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [xf]
@@ -647,12 +651,12 @@ TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
-ok: [p1]
 ok: [p2]
+ok: [p1]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [p1]
@@ -694,8 +698,9 @@ ok: [dut] =>
       route-target export vpn-ipv4 65000:1
     !
       address-family ipv4
-        redistribute connected
-        redistribute ospf
+      redistribute connected
+      redistribute ospf
+  
     !
      vrf d2
       router-id 10.0.0.1
@@ -708,8 +713,9 @@ ok: [dut] =>
       neighbor 10.1.0.10 send-community standard large
     !
       address-family ipv4
-        redistribute connected
-        redistribute ospf
+      redistribute connected
+      redistribute ospf
+  
         network 192.168.43.1/32
         neighbor 10.1.0.10 activate
     !
@@ -723,8 +729,9 @@ ok: [dut] =>
      timers lsa tx delay initial 100 200 500
      default-information originate always
   
-     redistribute bgp include leaked
-     redistribute connected
+      redistribute bgp include leaked
+      redistribute connected include leaked
+  
     !
     interface Ethernet1
     ! dut -> p1
@@ -743,8 +750,9 @@ ok: [dut] =>
      timers lsa tx delay initial 100 200 500
      default-information originate
   
-     redistribute bgp include leaked
-     redistribute connected
+      redistribute bgp include leaked
+      redistribute connected include leaked
+  
     !
     interface Ethernet2
     ! dut -> p2

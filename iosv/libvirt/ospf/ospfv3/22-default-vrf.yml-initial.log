@@ -440,9 +440,9 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [xf -> localhost]
 changed: [p2 -> localhost]
 changed: [p1 -> localhost]
-changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -453,18 +453,18 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, p1, p2
 
 TASK [template] ****************************************************************
-changed: [xf]
 changed: [p1]
 changed: [p2]
+changed: [xf]
 
 TASK [set_fact] ****************************************************************
-ok: [p1]
 ok: [xf]
+ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p1]
 changed: [xf]
+changed: [p1]
 changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -521,6 +521,8 @@ ok: [xf] =>
     !
      address-family ipv6 unicast
     !
+  
+    !
       network 2001:db8:1:4::/64
     !
     !
@@ -549,6 +551,7 @@ ok: [dut] =>
     !
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:1::/64
   
@@ -597,6 +600,33 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
+ok: [p1] => 
+  msg: |-
+    ospf configuration for p1
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! p1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -619,31 +649,6 @@ ok: [p2] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
-    exit
-  
-    !
-    do write
-ok: [p1] => 
-  msg: |-
-    ospf configuration for p1
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! p1 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
   
     exit
   
@@ -708,16 +713,16 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv6 vrf d1
       bgp router-id 10.0.0.1
-    !
-      redistribute connected
-      redistribute ospf 100 match internal external
+     redistribute connected
+     redistribute ospf 100 match internal external
+  
     !
     !
      address-family ipv6 vrf d2
       bgp router-id 10.0.0.1
-    !
-      redistribute connected
-      redistribute ospf 101 match internal external
+     redistribute connected
+     redistribute ospf 101 match internal external
+  
     !
       network 2001:db8:cafe:43::/64
   
@@ -732,10 +737,11 @@ ok: [dut] =>
     router ospfv3 100
      router-id 10.0.0.5
      address-family ipv6 unicast vrf d1
-     default-information originate always
+      default-information originate always
   
-     redistribute bgp 65000
-     redistribute connected
+      redistribute bgp 65000
+      redistribute connected
+  
     !
     interface GigabitEthernet0/1
     ! dut -> p1
@@ -746,10 +752,11 @@ ok: [dut] =>
     router ospfv3 101
      router-id 10.0.0.1
      address-family ipv6 unicast vrf d2
-     default-information originate
+      default-information originate
   
-     redistribute bgp 65000
-     redistribute connected
+      redistribute bgp 65000
+      redistribute connected
+  
     !
     interface GigabitEthernet0/2
     ! dut -> p2

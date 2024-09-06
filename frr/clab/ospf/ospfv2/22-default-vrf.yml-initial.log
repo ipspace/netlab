@@ -36,103 +36,6 @@ ok: [p1]
 ok: [p2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [xf] => 
-  msg: |-
-    initial configuration for xf
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.1 dut-d1" >>/tmp/hosts
-    echo "10.1.0.5 10.1.0.9 192.168.43.1 dut-d2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 p1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname xf
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.4/32
-    !
-    interface eth1
-     no shutdown
-     description xf -> dut [external]
-     ip address 10.1.0.10/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -250,6 +153,103 @@ ok: [dut] =>
      no shutdown
      description VRF Loopback d2
      ip address 192.168.43.1/32
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [xf] => 
+  msg: |-
+    initial configuration for xf
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "# Created by netlab initial" >>/tmp/hosts
+    echo "10.0.0.1 dut" >>/tmp/hosts
+    echo "10.1.0.1 dut-d1" >>/tmp/hosts
+    echo "10.1.0.5 10.1.0.9 192.168.43.1 dut-d2" >>/tmp/hosts
+    echo "10.0.0.2 10.1.0.2 p1" >>/tmp/hosts
+    echo "10.0.0.3 10.1.0.6 p2" >>/tmp/hosts
+    echo "10.0.0.4 10.1.0.10 xf" >>/tmp/hosts
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
+  
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname xf
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description xf -> dut [external]
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -461,9 +461,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
-changed: [xf -> localhost]
-changed: [p1 -> localhost]
 changed: [p2 -> localhost]
+changed: [p1 -> localhost]
+changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
@@ -475,21 +475,21 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, xf, p1, p2
 
 TASK [template] ****************************************************************
+changed: [p2]
 changed: [dut]
 changed: [xf]
-changed: [p2]
 changed: [p1]
 
 TASK [set_fact] ****************************************************************
+ok: [dut]
 ok: [xf]
 ok: [p1]
 ok: [p2]
-ok: [dut]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p1]
 changed: [xf]
 changed: [dut]
+changed: [p1]
 changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -544,6 +544,8 @@ ok: [dut] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.1/32
     !
     !
@@ -571,6 +573,8 @@ ok: [xf] =>
       neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.4/32
     !
@@ -645,6 +649,7 @@ ok: [p1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -672,6 +677,7 @@ ok: [p2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -698,9 +704,9 @@ skipping: [xf]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2
 
 TASK [template] ****************************************************************
-changed: [p2]
-changed: [p1]
 changed: [dut]
+changed: [p1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -776,9 +782,9 @@ ok: [dut] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.1
      address-family ipv4 unicast
-    !
-      redistribute connected
-      redistribute ospf
+     redistribute connected
+     redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -795,9 +801,9 @@ ok: [dut] =>
      neighbor 10.1.0.10 remote-as 65100
      neighbor 10.1.0.10 description xf
      address-family ipv4 unicast
-    !
-      redistribute connected
-      redistribute ospf
+     redistribute connected
+     redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -823,6 +829,7 @@ ok: [dut] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface eth1
@@ -844,6 +851,7 @@ ok: [dut] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface eth2
