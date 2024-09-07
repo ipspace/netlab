@@ -97,6 +97,7 @@ See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * It's impossible to configure RIPv2 on individual subnets on Cisco IOS. RIPv2 might be running on more interfaces than intended. _netlab_ configures those interfaces to be *passive*.
 * Cisco IOS does not support passive interfaces in RIPng.
+* Cisco IOS requires a *default metric* when redistributing routes into RIPv2. The RIPv2 configuration template sets the default metric to the value of the **netlab_ripv2_default_metric** node parameter (default: 5)
 * You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image 
 
 (cisco-iosv-ssh)=

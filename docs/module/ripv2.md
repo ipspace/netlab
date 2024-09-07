@@ -17,14 +17,14 @@ This configuration module configures the RIPv2 and RIPng. The module supports th
 
 The following table describes per-platform support of individual RIPv2/RIPng features:
 
-| Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces |
-| ------------------ | :-: | :-: | :-: |
-| Arista EOS         | ✅  |  ❌  |  ❌  |
-| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) |
-| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) |
-| Cumulus Linux      | ✅  | ✅  | ✅  |
-| FRR                | ✅  | ✅  | ✅  |
-| VyOS               | ✅  | ✅  | ✅  |
+| Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import |
+| ------------------ | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  |  ❌  |  ❌  |  ❌  |
+| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) |
+| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) |
+| Cumulus Linux      | ✅  | ✅  | ✅  | ✅  |
+| FRR                | ✅  | ✅  | ✅  | ✅  |
+| VyOS               | ✅  | ✅  | ✅  |  ❌  |
 
 ```{tip}
 See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.ripv2) for more details.
@@ -34,7 +34,9 @@ See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.
 
 ## Lab Topology Parameters
 
-RIPv2/RIPng module does not have global or node parameters. It supports [](routing_passive) and [](routing_external).
+RIPv2/RIPng module does not have global parameters. The only relevant node parameter is the **ripv2.import** parameter specifying the [import (redistribution) of routes](routing_import) into the global RIP instance (default: no route import).
+
+RIPv2 also supports [](routing_passive) and [](routing_external).
 
 ## Example
 
