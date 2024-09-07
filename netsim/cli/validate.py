@@ -1121,10 +1121,10 @@ def run(cli_args: typing.List[str]) -> None:
       log_progress(f'Tests passed: {TEST_COUNT.passed}',topology,f_status='SUCCESS')
     elif TEST_COUNT.count:
       if TEST_COUNT.failed != 0:
-        log_failure(f'{test_plural(TEST_COUNT.count)} completed, {test_plural(TEST_COUNT.failed)} failed',topology)
+        log_failure(f'{test_plural(TEST_COUNT.count).capitalize()} completed, {test_plural(TEST_COUNT.failed)} failed',topology)
       elif TEST_COUNT.warning != 0:
-        log_info(f'{test_plural(TEST_COUNT.warning)} out of {test_plural(TEST_COUNT.count)} generated a warning',topology)
+        log_info(f'{test_plural(TEST_COUNT.warning).capitalize()} out of {test_plural(TEST_COUNT.count)} generated a warning',topology)
     if TEST_COUNT.skip:
-      log_info(f'{test_plural(TEST_COUNT.skip)} out of {test_plural(TEST_COUNT.count)} were skipped, the results are not reliable',topology)
+      log_info(f'{test_plural(TEST_COUNT.skip).capitalize()} out of {test_plural(TEST_COUNT.count)} were skipped, the results are not reliable',topology)
 
   sys.exit(0 if not (TEST_COUNT.failed or TEST_COUNT.warning) else 1 if TEST_COUNT.failed else 3)
