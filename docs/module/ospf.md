@@ -153,7 +153,7 @@ OSPF routing daemons support these interface-level features:
 * **ospf.default** -- External default route origination ([more details](ospf-default))
 * **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
-* **ospf.import** -- [import (redistribute) routes](routing_import) into global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
+* **ospf.import** -- [import (redistribute) routes](routing_import) into the global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
 * **ospf.router_id** -- set [static router ID](routing_router_id).
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
