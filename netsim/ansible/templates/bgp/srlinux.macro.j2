@@ -6,7 +6,7 @@
       mask-length-range: exact
 {% endmacro %}
 
-{% macro bgp_export_policy(vrf,type,nh=None,import=[]) %}
+{% macro bgp_export_policy(vrf,type,nhs=False,import=[]) %}
 {%   if vrf == 'default' and type == 'bgp' %}
 - path: /routing-policy/prefix-set[name={{ vrf }}_bgp_advertise]
   value:
@@ -25,7 +25,7 @@
       action:
         policy-result: next-policy
 {%   endif %}
-{%   if 'ibgp' in type and nh %}
+{%   if 'ibgp' in type and nhs %}
     - name: rr-next-hop-unchanged
       match:
         protocol: bgp
@@ -33,6 +33,10 @@
           community-set: ibgp-mark
       action:
         policy-result: next-policy
+        bgp:
+          communities:
+            remove:
+              ibgp-mark
     - name: ebgp-next-hop-self
       match:
         protocol: bgp
@@ -40,13 +44,17 @@
         policy-result: next-policy
         bgp:
           next-hop:
-            set: "{{ nh }}"
+            set: self
 {%   else %}
     - name: bgp
       match:
         protocol: bgp
       action:
         policy-result: next-policy
+        bgp:
+          communities:
+            remove:
+              ibgp-mark
 {%   endif %}
 {%   if 'evpn' in module and vrf != 'default' %}
     - name: bgp_evpn
@@ -102,7 +110,7 @@
     admin-state: enable
 {% set nh_self = bgp.next_hop_self|default(False) and type == 'ibgp' %}
 {% set nh_self_rr = nh_self and vrf_bgp.rr|default(False) %}
-{% set ep_name = (vrf + "_ibgp-" + af + "_export") if nh_self_rr else (vrf + "_bgp_export") %}
+{% set ep_name = (vrf + "_ibgp-nhs_export") if nh_self_rr else (vrf + "_bgp_export") %}
 {{ bgp_families(neighbor,import=[ "ibgp-mark" if nh_self_rr else "accept_all" ],export=[ ep_name, 'accept_all' ]) }}
     timers:
       connect-retry: 10
@@ -143,13 +151,11 @@
     only once)
 #}
 {{ bgp_export_policy(vrf,'bgp',import=vrf_bgp.import|default([])) }}
-{% if bgp.next_hop_self|default(False) %}
-{%   for afm in vrf_context.af %}
-{%     for n in vrf_bgp.neighbors|default([]) if afm in n and n.type == 'ibgp' %}
-{%       if loop.first %}
-{{         bgp_export_policy(vrf,'ibgp-'+afm,loopback[afm]|ipaddr('address'),import=vrf_bgp.import|default([])) }}
-{%       endif %}
-{%     endfor %}
+{% if bgp.next_hop_self|default(False) and bgp.rr|default(False) %}
+{%   for n in vrf_bgp.neighbors|default([]) if n.type == 'ibgp' %}
+{%     if loop.first %}
+{{       bgp_export_policy(vrf,'ibgp-nhs',nhs=true,import=vrf_bgp.import|default([])) }}
+{%     endif %}
 {%   endfor %}
 {% endif %}
 
