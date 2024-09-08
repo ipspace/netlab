@@ -531,7 +531,7 @@ def get_result_string(
       v_entry: Box,
       n_name: str,
       topology: Box,
-      report_error: bool = True) -> typing.Union[bool,str]:
+      report_error: bool = True) -> typing.Union[bool,int,str]:
 
   node = topology.nodes[n_name]                             # Get the node data
   v_cmd = get_exec_list(v_entry,'exec',node,topology)       # ... and the 'exec' action for the current node

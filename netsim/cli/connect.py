@@ -63,7 +63,7 @@ def docker_connect(
       data: Box,
       p_args: argparse.Namespace,
       rest: typing.List[str],
-      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,str]:
+      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
   host = data.ansible_host or data.host
 
   shell = data.get('docker_shell','bash' if rest else 'bash -il')
@@ -96,7 +96,7 @@ def ssh_connect(
       data: Box,
       p_args: argparse.Namespace,
       rest: typing.List[str],
-      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,str]:
+      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
   host = data.ansible_host or data.host
   c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o','LogLevel=ERROR']
 
@@ -164,7 +164,7 @@ def connect_to_node(
       args: argparse.Namespace,
       rest: list,
       topology: Box,
-      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,str]:
+      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
   node = args.host
   host_data = outputs_common.adjust_inventory_host(
                 node=topology.nodes[node],
@@ -189,7 +189,7 @@ def connect_to_tool(
       rest: typing.Union[str,list],
       topology: Box,
       log_level: LogLevel = LogLevel.INFO,
-      need_output: bool = False) -> typing.Optional[typing.Union[bool,str]]:
+      need_output: bool = False) -> typing.Optional[typing.Union[bool,int,str]]:
 
   cmds = external_commands.get_tool_command(tool,'connect',topology,verbose=False)
   topology.sys.ipaddr = external_commands.get_local_addr()
