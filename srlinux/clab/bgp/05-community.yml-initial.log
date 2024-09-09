@@ -419,9 +419,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [x1 -> localhost]
 changed: [r2 -> localhost]
 changed: [rc -> localhost]
-changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -442,9 +442,9 @@ ok: [rc]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x1]
 changed: [rc]
 changed: [r2]
-changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -456,8 +456,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r2]
-ok: [rc]
 ok: [x1]
+ok: [rc]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, rc, x1 => (item=bgp)
@@ -466,8 +466,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
@@ -497,6 +497,8 @@ ok: [r2] =>
       neighbor 10.0.0.1 update-source lo
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
@@ -558,9 +560,13 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
   
-    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
+    - path: /routing-policy/policy[name=default_ibgp-nhs_export]
       value:
         default-action:
           policy-result: reject
@@ -577,6 +583,10 @@ ok: [dut] =>
               community-set: ibgp-mark
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: ebgp-next-hop-self
           match:
             protocol: bgp
@@ -584,7 +594,7 @@ ok: [dut] =>
             policy-result: next-policy
             bgp:
               next-hop:
-                set: "10.0.0.1"
+                set: self
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -617,11 +627,11 @@ ok: [dut] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
   
         timers:
           connect-retry: 10
@@ -661,11 +671,11 @@ ok: [dut] =>
         - afi-safi-name: ipv4-unicast
           admin-state: enable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
   
         timers:
           connect-retry: 10
@@ -758,6 +768,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -792,6 +804,8 @@ ok: [rc] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.10/32
     !
     !
@@ -812,8 +826,8 @@ ok: [rc] =>
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [r2]
-ok: [rc]
 ok: [x1]
+ok: [rc]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -829,9 +843,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
+changed: [r2]
 changed: [rc]
 changed: [x1]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -903,6 +917,7 @@ ok: [r2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -934,6 +949,7 @@ ok: [rc] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -971,8 +987,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [rc]
 changed: [r2]
+changed: [rc]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -983,8 +999,8 @@ skipping: [r2]
 skipping: [rc]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [rc]
 changed: [r2]
+changed: [rc]
 
 PLAY [Deploy custom deployment templates] **************************************
 

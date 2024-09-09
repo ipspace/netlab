@@ -339,8 +339,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -409,6 +409,8 @@ ok: [x1] =>
     !
      address-family ipv6 unicast
     !
+  
+    !
       network 2001:db8:1:2::/64
     !
     !
@@ -443,6 +445,8 @@ ok: [x2] =>
       neighbor 2001:db8:3:1::1 description dut
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:1::/64
     !
@@ -502,33 +506,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-ipv6_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
             bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: "2001:db8:1:1::1"
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -667,8 +648,8 @@ changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [x2]
@@ -727,6 +708,7 @@ ok: [x1] =>
      ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
   
     exit
   
