@@ -25,10 +25,10 @@ class SRLINUX(_Quirks):
                 break
 
     if 'isis' in mods:
-      if node.get('isis.af.ipv6',False):
+      if node.get('isis.af.ipv6',False) and 'sr' in mods:
          log.error(
-            f'SR Linux on ({node.name}) does not support IS-IS multi-topology required for ipv6.\n',
-            log.IncorrectType,
+            f'SR Linux on ({node.name}) does not support IS-IS multi-topology for IPv6 in combination with segment routing',
+            Warning,
             'quirks')
 
     if 'bgp' in mods:
