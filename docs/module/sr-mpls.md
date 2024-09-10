@@ -33,7 +33,7 @@ SR-MPLS is implemented on the following platforms:
 | Juniper vMX           |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vPTX          |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vSRX          |   ✅  |  ✅  |  ✅   |  ❌   |
-| Nokia SR Linux        |   ✅  |  ✅  |  ✅   |  ❌   |
+| Nokia SR Linux [❗](caveats-srlinux) |   ✅  |  ✅  |  ✅   |  ❌   |
 | Nokia SR OS           |   ✅  |  ✅  |  ✅   |  ❌   |
 
 ## Parameters
