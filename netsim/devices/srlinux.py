@@ -13,6 +13,13 @@ class SRLINUX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    dt = node.clab.type
+    if dt in ['ixr6','ixr10','ixr6e','ixr10e'] and not node.clab.get('license',None):
+      log.error(
+        f'You need a valid SR Linux license to run {dt} container on node {node.name}',
+        log.MissingValue,
+        'quirks')
+
     mods = node.get('module',[])
     if 'vrf' in mods:
         for _,vrf in node.get('vrfs', {}).items():
@@ -40,7 +47,6 @@ class SRLINUX(_Quirks):
               'quirks')
 
     if 'mpls' in mods or 'sr' in mods:
-      dt = node.clab.type
       if dt not in ['ixr6','ixr10','ixr6e','ixr10e']:
         log.error(
           f'SR Linux device type must be set to ixr6/ixr10 for MPLS to work (node {node.name})',
