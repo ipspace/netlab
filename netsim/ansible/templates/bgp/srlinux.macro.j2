@@ -75,33 +75,37 @@
 {% endmacro %}
 
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True,import=None,export=None) %}
-{% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
+{%   set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
     afi-safi:
+{%   if ipv4 %}
     - afi-safi-name: ipv4-unicast
       admin-state: {{ 'enable' if activate.ipv4|default(False) else 'disable' }}
-{% if neighbor.ipv4_rfc8950|default(False) %}
+{%     if neighbor.ipv4_rfc8950|default(False) %}
       ipv4-unicast:
         advertise-ipv6-next-hops: True
         receive-ipv6-next-hops: True
-{% endif %}
-{% if import %}
+{%     endif %}
+{%     if import %}
       import-policy: {{ import }}
-{% endif %}
-{% if export %}
+{%     endif %}
+{%     if export %}
       export-policy: {{ export }}
-{% endif %}
+{%     endif %}
+{%   endif %}
+{%   if ipv6 %}
     - afi-safi-name: ipv6-unicast
       admin-state: {{ 'enable' if activate.ipv6|default(False) else 'disable' }}
-{% if import %}
+{%     if import %}
       import-policy: {{ import }}
-{% endif %}
-{% if export %}
+{%     endif %}
+{%     if export %}
       export-policy: {{ export }}
-{% endif %}
-{% if 'evpn' in neighbor and neighbor.evpn %}
+{%     endif %}
+{%   endif %}
+{%   if 'evpn' in neighbor and neighbor.evpn %}
     - afi-safi-name: evpn
       admin-state: enable
-{% endif %}
+{%   endif %}
 {% endmacro %}
 
 {% macro bgp_peer_group(vrf,name,af,type,neighbor,transport_ip,vrf_bgp) %}
