@@ -301,6 +301,7 @@ See also [](caveats-junos).
 * Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
 * SR Linux does not support configurable propagation of extended BGP communities.
+* The SR Linux prefix filters cannot contain the **deny** action.
 
 (caveats-sros)=
 ## Nokia SR OS

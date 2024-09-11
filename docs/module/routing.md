@@ -29,7 +29,7 @@ The following table describes high-level per-platform support of generic routing
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
-| Nokia SR Linux      |  ✅  |
+| Nokia SR Linux      |  ✅  |  ✅ [❗](caveats-srlinux) |
 | Nokia SR OS         |  ✅  |
 | VyOS                |  ✅  |  ✅  |  ✅  |  ✅  |
 
@@ -105,6 +105,7 @@ You can use these routing policy **match** parameters on devices supported by th
 | Cisco IOS-XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
 | FRR                 | ✅ | ❌  | ✅ | ✅ |
+| Nokia SR Linux      | ✅ |
 | VyOS                | ✅ | ❌  | ✅ | ✅ |
 
 You can use these routing policy **set** parameters on devices supported by the **routing** module:
