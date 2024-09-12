@@ -36,7 +36,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |  ❌  |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-srlinux) |
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |  ❌  |
 | VyOS               | ✅  | ✅  | ❌   |  ❌  |  ❌  |
 
