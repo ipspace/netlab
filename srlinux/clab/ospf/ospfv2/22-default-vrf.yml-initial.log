@@ -460,9 +460,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p2 -> localhost]
 changed: [xf -> localhost]
 changed: [p1 -> localhost]
+changed: [p2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -473,8 +473,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, p1, p2
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [p1]
+changed: [p2]
 changed: [xf]
 
 TASK [set_fact] ****************************************************************
@@ -483,8 +483,8 @@ ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [xf]
 changed: [p1]
+changed: [xf]
 changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -520,39 +520,6 @@ ok: [xf]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
 skipping: [p2]
-ok: [xf] => 
-  msg: |-
-    bgp configuration for xf
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.1.0.9 remote-as 65000
-      neighbor 10.1.0.9 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.1.0.9 activate
-      no neighbor 10.1.0.9 send-community all
-      neighbor 10.1.0.9 send-community standard
-      neighbor 10.1.0.9 send-community large
-    !
-    !
-    !
-    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -599,6 +566,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -619,6 +590,41 @@ ok: [dut] =>
         prefix:
         - ip-prefix: 10.0.0.1/32
           mask-length-range: exact
+ok: [xf] => 
+  msg: |-
+    bgp configuration for xf
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [p1]
@@ -660,8 +666,8 @@ ok: [p2]
 ok: [xf]
 
 TASK [Find configuration template for ospf] ************************************
-skipping: [xf]
 ok: [dut]
+skipping: [xf]
 ok: [p1]
 ok: [p2]
 
@@ -684,6 +690,7 @@ ok: [p1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -711,6 +718,7 @@ ok: [p2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -766,8 +774,8 @@ changed: [p2]
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
 ok: [p1]
-ok: [p2]
 ok: [xf]
+ok: [p2]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [p1]
@@ -805,7 +813,7 @@ ok: [dut] =>
     - path: /network-instance[name=d1]/static-routes
       value:
         route:
-        - prefix: "0.0.0.0/0"
+        - prefix: 0.0.0.0/0
           preference: 254
           next-hop-group: blackhole
     - path: /routing-policy/policy[name=d1_export_ospf]
@@ -828,6 +836,7 @@ ok: [dut] =>
             protocol: local
           action:
             policy-result: accept
+  
   
     - path: /network-instance[name=d1]
       value:
@@ -872,6 +881,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: export_local
           match:
             protocol: local
@@ -975,6 +988,7 @@ ok: [dut] =>
           action:
             policy-result: accept
   
+  
     - path: /network-instance[name=d2]
       value:
         router-id: 10.0.0.1
@@ -1023,6 +1037,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: export_local
           match:
             protocol: local
@@ -1088,8 +1106,6 @@ ok: [dut] =>
           peer-group: ebgp
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: ipv6-unicast
             admin-state: enable
   
           peer-as: 65100

@@ -37,8 +37,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -268,42 +268,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -340,6 +304,42 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l1]
@@ -358,8 +358,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -391,10 +391,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-GVfwwOPY-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-vyeaOpdU-h1.sh] **********
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -406,8 +406,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
@@ -417,12 +417,12 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1,
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Find configuration template for vlan] ************************************
-ok: [l1]
 skipping: [spine]
+ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -501,13 +501,13 @@ skipping: [l2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l2] => 
@@ -535,6 +535,8 @@ ok: [l2] =>
       neighbor 10.1.0.6 local-as 65202 no-prepend replace-as
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.4/32
     !
@@ -594,33 +596,10 @@ ok: [l1] =>
             protocol: bgp
           action:
             policy-result: next-policy
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
             bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: "10.0.0.3"
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -684,8 +663,6 @@ ok: [l1] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: disable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
   
@@ -722,8 +699,6 @@ ok: [l1] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
   
           peer-as: 65100
           local-as:
@@ -775,9 +750,13 @@ ok: [spine] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
   
-    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
+    - path: /routing-policy/policy[name=default_ibgp-nhs_export]
       value:
         default-action:
           policy-result: reject
@@ -794,6 +773,10 @@ ok: [spine] =>
               community-set: ibgp-mark
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: ebgp-next-hop-self
           match:
             protocol: bgp
@@ -801,7 +784,7 @@ ok: [spine] =>
             policy-result: next-policy
             bgp:
               next-hop:
-                set: "10.0.0.5"
+                set: self
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -834,11 +817,11 @@ ok: [spine] =>
         - afi-safi-name: ipv4-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -869,8 +852,6 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: disable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
   
@@ -882,11 +863,11 @@ ok: [spine] =>
         - afi-safi-name: ipv4-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-ipv4_export', 'accept_all']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
   
@@ -916,8 +897,6 @@ ok: [spine] =>
           peer-group: ibgp-ipv4
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: disable
-          - afi-safi-name: ipv6-unicast
             admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
@@ -958,8 +937,6 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
   
           peer-as: 65201
           local-as:
@@ -1001,8 +978,6 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
   
           peer-as: 65202
           local-as:
@@ -1011,8 +986,8 @@ ok: [spine] =>
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine

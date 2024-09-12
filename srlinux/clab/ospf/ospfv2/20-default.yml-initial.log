@@ -365,8 +365,8 @@ skipping: [dut_c]
 skipping: [dut_a]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [probe -> localhost]
 changed: [xf -> localhost]
+changed: [probe -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -396,8 +396,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut_a]
 ok: [dut_c]
-ok: [xf]
 ok: [probe]
+ok: [xf]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
@@ -418,6 +418,41 @@ ok: [xf]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
 skipping: [probe]
+ok: [xf] => 
+  msg: |-
+    bgp configuration for xf
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut_c
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut_c] => 
   msg: |-
     bgp configuration for dut_c
@@ -464,6 +499,10 @@ ok: [dut_c] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -521,43 +560,8 @@ ok: [dut_c] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
   
           peer-as: 65100
-ok: [xf] => 
-  msg: |-
-    bgp configuration for xf
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.1.0.9 remote-as 65000
-      neighbor 10.1.0.9 description dut_c
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.1.0.9 activate
-      no neighbor 10.1.0.9 send-community all
-      neighbor 10.1.0.9 send-community standard
-      neighbor 10.1.0.9 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [dut_a]
@@ -626,7 +630,7 @@ ok: [dut_a] =>
     - path: /network-instance[name=default]/static-routes
       value:
         route:
-        - prefix: "0.0.0.0/0"
+        - prefix: 0.0.0.0/0
           preference: 254
           next-hop-group: blackhole
     - path: /routing-policy/policy[name=default_export_ospf]
@@ -639,6 +643,7 @@ ok: [dut_a] =>
             prefix-set: default_route
           action:
             policy-result: accept
+  
   
     - path: /network-instance[name=default]
       value:
@@ -686,6 +691,7 @@ ok: [dut_c] =>
           action:
             policy-result: accept
   
+  
     - path: /network-instance[name=default]
       value:
         router-id: 10.0.0.2
@@ -723,6 +729,7 @@ ok: [probe] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !

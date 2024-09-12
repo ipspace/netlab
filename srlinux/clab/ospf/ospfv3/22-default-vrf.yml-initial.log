@@ -495,8 +495,8 @@ ok: [p2] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [xf]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -512,8 +512,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p1 -> localhost]
 changed: [p2 -> localhost]
+changed: [p1 -> localhost]
 changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -525,14 +525,14 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, p1, p2
 
 TASK [template] ****************************************************************
-changed: [xf]
 changed: [p1]
+changed: [xf]
 changed: [p2]
 
 TASK [set_fact] ****************************************************************
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [xf]
@@ -572,39 +572,6 @@ ok: [xf]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
 skipping: [p2]
-ok: [xf] => 
-  msg: |-
-    bgp configuration for xf
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 2001:db8:3:2::1 remote-as 65000
-      neighbor 2001:db8:3:2::1 description dut
-    !
-     address-family ipv6 unicast
-    !
-      network 2001:db8:1:4::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3:2::1 activate
-      no neighbor 2001:db8:3:2::1 send-community all
-      neighbor 2001:db8:3:2::1 send-community standard
-      neighbor 2001:db8:3:2::1 send-community large
-    !
-    !
-    !
-    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -651,6 +618,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -671,6 +642,41 @@ ok: [dut] =>
         prefix:
         - ip-prefix: 2001:db8:1:1::/64
           mask-length-range: exact
+ok: [xf] => 
+  msg: |-
+    bgp configuration for xf
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 2001:db8:3:2::1 remote-as 65000
+      neighbor 2001:db8:3:2::1 description dut
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:4::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3:2::1 activate
+      no neighbor 2001:db8:3:2::1 send-community all
+      neighbor 2001:db8:3:2::1 send-community standard
+      neighbor 2001:db8:3:2::1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [p1]
@@ -746,6 +752,7 @@ ok: [p1] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -771,6 +778,7 @@ ok: [p2] =>
      ospf6 router-id 10.0.0.3
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
   
     exit
   
@@ -822,8 +830,8 @@ ok: [xf]
 TASK [Find configuration template for vrf] *************************************
 skipping: [p1]
 skipping: [p2]
-ok: [dut]
 skipping: [xf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
@@ -879,6 +887,7 @@ ok: [dut] =>
           action:
             policy-result: accept
   
+  
     - path: /network-instance[name=d1]
       value:
         router-id: 10.0.0.1
@@ -923,6 +932,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: export_local
           match:
             protocol: local
@@ -1026,6 +1039,7 @@ ok: [dut] =>
           action:
             policy-result: accept
   
+  
     - path: /network-instance[name=d2]
       value:
         router-id: 10.0.0.1
@@ -1075,6 +1089,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: export_local
           match:
             protocol: local

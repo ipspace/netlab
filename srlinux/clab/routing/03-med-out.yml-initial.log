@@ -245,25 +245,28 @@ ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    routing configuration for dut
-    =========================================
-    updates:
-    - path: /routing-policy/policy[name=med_42]
-      value:
-       statement:
-       - name: rpe_10
-         action:
-          policy-result: accept
-          bgp:
-           med:
-            set: 42
 ok: [probe] => 
   msg: |-
     routing configuration for probe
     =========================================
     !
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    updates:
+  
+    - path: /routing-policy/policy[name=med_42]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: rpe_10
+          action:
+            policy-result: accept
+            bgp:
+              med:
+                set: 42
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [dut]
@@ -327,6 +330,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -337,6 +342,8 @@ ok: [probe] =>
       neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -396,6 +403,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -464,8 +475,6 @@ ok: [dut] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: enable
   
           peer-as: 65100
   
@@ -499,8 +508,6 @@ ok: [dut] =>
           description: probe
           peer-group: ebgp
           afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
           - afi-safi-name: ipv6-unicast
             admin-state: enable
   

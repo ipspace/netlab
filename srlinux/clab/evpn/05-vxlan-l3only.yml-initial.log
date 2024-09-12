@@ -375,16 +375,16 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-BXCWjRKf-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-DgoZWuNm-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -486,6 +486,8 @@ ok: [s2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -546,33 +548,10 @@ ok: [s1] =>
             protocol: bgp
           action:
             policy-result: next-policy
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
             bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: "10.0.0.3"
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -636,8 +615,6 @@ ok: [s1] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
 
@@ -719,6 +696,7 @@ ok: [s2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -804,8 +782,8 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
-    !
-      redistribute connected
+     redistribute connected
+  
       label vpn export auto
       export vpn
       import vpn
@@ -854,6 +832,10 @@ ok: [s1] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: bgp_evpn
           match:
             protocol: bgp-evpn

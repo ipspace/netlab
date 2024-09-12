@@ -503,9 +503,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
+changed: [x1]
 changed: [x2]
 changed: [probe]
-changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -538,46 +538,51 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [x1]
-ok: [dut]
 skipping: [x2]
+ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
 skipping: [x2]
-ok: [dut] => 
-  msg: |-
-    routing configuration for dut
-    =========================================
-    updates:
-    - path: /routing-policy/policy[name=lp_17]
-      value:
-       statement:
-       - name: rpe_10
-         action:
-          policy-result: accept
-          bgp:
-           local-preference:
-            set: 17
-    - path: /routing-policy/policy[name=lp_42]
-      value:
-       statement:
-       - name: rpe_10
-         action:
-          policy-result: accept
-          bgp:
-           local-preference:
-            set: 42
 ok: [probe] => 
   msg: |-
     routing configuration for probe
     =========================================
     !
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    updates:
+  
+    - path: /routing-policy/policy[name=lp_17]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: rpe_10
+          action:
+            policy-result: accept
+            bgp:
+              local-preference:
+                set: 17
+    - path: /routing-policy/policy[name=lp_42]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: rpe_10
+          action:
+            policy-result: accept
+            bgp:
+              local-preference:
+                set: 42
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [x1]
@@ -615,8 +620,8 @@ changed: [probe]
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [probe]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
@@ -651,6 +656,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -663,6 +670,8 @@ ok: [probe] =>
       neighbor 10.0.0.1 send-community extended
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -702,6 +711,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.42.0/24
     !
     !
@@ -712,6 +723,8 @@ ok: [x1] =>
       neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:42::/64
     !
@@ -749,6 +762,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.43.0/24
     !
     !
@@ -759,6 +774,8 @@ ok: [x2] =>
       neighbor 10.1.0.5 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:43::/64
     !
@@ -818,60 +835,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
             bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: "10.0.0.1"
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-ipv6_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
-            bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: "2001:db8:1:1::1"
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -944,8 +911,6 @@ ok: [dut] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: enable
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv6]
@@ -982,8 +947,6 @@ ok: [dut] =>
           description: probe
           peer-group: ibgp-ipv6
           afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
           - afi-safi-name: ipv6-unicast
             admin-state: enable
   
@@ -1020,8 +983,6 @@ ok: [dut] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: enable
   
           peer-as: 65100
   
@@ -1055,8 +1016,6 @@ ok: [dut] =>
           description: x1
           peer-group: ebgp
           afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
           - afi-safi-name: ipv6-unicast
             admin-state: enable
   
@@ -1094,8 +1053,6 @@ ok: [dut] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: enable
   
           peer-as: 65101
   
@@ -1129,8 +1086,6 @@ ok: [dut] =>
           description: x2
           peer-group: ebgp
           afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
           - afi-safi-name: ipv6-unicast
             admin-state: enable
   
@@ -1139,8 +1094,8 @@ ok: [dut] =>
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [probe]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -1156,9 +1111,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -1172,8 +1127,8 @@ skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [probe]
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1258,6 +1213,7 @@ ok: [probe] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -1287,6 +1243,7 @@ ok: [probe] =>
      ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
   
     exit
   

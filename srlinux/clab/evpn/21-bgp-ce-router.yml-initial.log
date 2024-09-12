@@ -427,9 +427,9 @@ TASK [debug] *******************************************************************
 skipping: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [ce1 -> localhost]
 changed: [ce2 -> localhost]
 changed: [s2 -> localhost]
-changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -440,8 +440,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -450,9 +450,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce2]
 changed: [ce1]
 changed: [s2]
+changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -574,6 +574,8 @@ ok: [ce1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.1/32
     !
     !
@@ -607,6 +609,8 @@ ok: [ce2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -615,42 +619,6 @@ ok: [ce2] =>
       no neighbor 10.1.0.10 send-community all
       neighbor 10.1.0.10 send-community standard
       neighbor 10.1.0.10 send-community large
-    !
-    !
-    !
-    do write
-ok: [s2] => 
-  msg: |-
-    bgp configuration for s2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.0.0.3 remote-as 65000
-      neighbor 10.0.0.3 description s1
-      neighbor 10.0.0.3 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 next-hop-self
-      no neighbor 10.0.0.3 send-community all
-      neighbor 10.0.0.3 send-community standard
-      neighbor 10.0.0.3 send-community large
-      neighbor 10.0.0.3 send-community extended
     !
     !
     !
@@ -701,33 +669,10 @@ ok: [s1] =>
             protocol: bgp
           action:
             policy-result: next-policy
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
             bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: "10.0.0.3"
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -791,25 +736,61 @@ ok: [s1] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.0.0.3 remote-as 65000
+      neighbor 10.0.0.3 description s1
+      neighbor 10.0.0.3 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 next-hop-self
+      no neighbor 10.0.0.3 send-community all
+      neighbor 10.0.0.3 send-community standard
+      neighbor 10.0.0.3 send-community large
+      neighbor 10.0.0.3 send-community extended
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
 ok: [ce2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -890,6 +871,7 @@ ok: [s2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -987,8 +969,8 @@ ok: [s2] =>
      neighbor 10.1.0.9 remote-as 65101
      neighbor 10.1.0.9 description ce2
      address-family ipv4 unicast
-    !
-      redistribute connected
+     redistribute connected
+  
       label vpn export auto
       export vpn
       import vpn
@@ -1040,6 +1022,10 @@ ok: [s1] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: bgp_evpn
           match:
             protocol: bgp-evpn
@@ -1100,8 +1086,6 @@ ok: [s1] =>
           peer-group: ebgp
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: ipv6-unicast
             admin-state: enable
   
           peer-as: 65100

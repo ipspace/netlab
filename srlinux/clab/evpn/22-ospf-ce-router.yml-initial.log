@@ -427,8 +427,8 @@ TASK [debug] *******************************************************************
 skipping: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [ce2 -> localhost]
 changed: [ce1 -> localhost]
+changed: [ce2 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -440,8 +440,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 changed: [ce2]
 
 TASK [set_fact] ****************************************************************
@@ -577,6 +577,8 @@ ok: [s2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -637,33 +639,10 @@ ok: [s1] =>
             protocol: bgp
           action:
             policy-result: next-policy
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-ipv4_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
             bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: "10.0.0.3"
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -727,8 +706,6 @@ ok: [s1] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
 
@@ -791,6 +768,7 @@ ok: [ce1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -799,6 +777,62 @@ ok: [ce1] =>
     !
     interface eth1
     ! ce1 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [ce2] => 
+  msg: |-
+    ospf configuration for ce2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! ce2 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! s2 -> s1
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -833,60 +867,6 @@ ok: [s1] =>
                   failure-detection:
                     enable-bfd: False
            # OSPF not configured on external interface ethernet-1/2
-ok: [ce2] => 
-  msg: |-
-    ospf configuration for ce2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! ce2 -> s2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! s2 -> s1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ce1]
@@ -899,9 +879,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 
 TASK [template] ****************************************************************
+changed: [s2]
 changed: [ce2]
 changed: [ce1]
-changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -914,9 +894,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
+changed: [s2]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
@@ -973,9 +953,9 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
-    !
-      redistribute connected
-      redistribute ospf
+     redistribute connected
+     redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -996,6 +976,7 @@ ok: [s2] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface eth2
@@ -1085,6 +1066,10 @@ ok: [s1] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: bgp_evpn
           match:
             protocol: bgp-evpn
