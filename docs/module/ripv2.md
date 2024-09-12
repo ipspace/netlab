@@ -21,8 +21,8 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 | Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import | VRF<br>instances |
 | ------------------ | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ❌  |  ❌  |  ❌  |
-| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) |
-| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) |
+| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ |
+| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ |
 | Cumulus Linux      | ✅  | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | VyOS               | ✅  | ✅  | ✅  |  ❌  |

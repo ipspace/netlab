@@ -1,28 +1,3 @@
-{% import "templates/routing/_redistribute.ios.j2" as redistribute with context %}
+{% import "ios.macro.j2" as rip with context %}
 !
-{% if ripv2.af.ipv4|default(False) %}
-router rip
- version 2
- no auto-summary
-{%   if 'import' in ripv2 %}
- default-metric {{ netlab_ripv2_default_metric|default(5) }}
-{%   endif %}
-{{   redistribute.config(ripv2,af='ipv4',ospf_pid=ospf.process|default(1)) }}
-{%   for intf in netlab_interfaces if 'ipv4' in intf and not 'vrf' in intf %}
-  network {{ intf.ipv4|ipaddr('address') }}
-{%     if intf.ripv2.passive|default(False) or not 'ripv2' in intf %}
- passive-interface {{ intf.ifname }}
-{%     endif %}
-{%   endfor %}
-{% endif %}
-!
-{% if ripv2.af.ipv6|default(False) %}
-ipv6 router rip Gandalf
-{{   redistribute.config(ripv2,af='ipv6',ospf_pid=ospf.process|default(1)) }}
-!
-{%   for intf in netlab_interfaces if 'ripv2' in intf and 'ipv6' in intf %}
-!
-interface {{ intf.ifname }}
-  ipv6 rip Gandalf enable
-{%   endfor %}
-{% endif %}
+{{ rip.config(ripv2,vrf='',ospf_pid=ospf.process|default(1)) }}
