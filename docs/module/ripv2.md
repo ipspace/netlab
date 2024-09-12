@@ -18,13 +18,13 @@ This configuration module configures the RIPv2 and RIPng. The module supports th
 
 The following table describes per-platform support of individual RIPv2/RIPng features:
 
-| Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import | VRF<br>instances |
-| ------------------ | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  |  ❌  |  ❌  |  ❌  |
-| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ |
-| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ |
-| Cumulus Linux      | ✅  | ✅  | ✅  | ✅  | ✅  |
-| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import | VRF<br>instances | RIP<br>timers |
+| ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  |  ❌  |  ❌  |  ❌  |  ❌  | ✅ |
+| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ | ✅ |
+| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ | ✅ |
+| Cumulus Linux      | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
+| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | VyOS               | ✅  | ✅  | ✅  |  ❌  |
 
 ```{tip}
@@ -35,15 +35,30 @@ See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.
 
 ## Lab Topology Parameters
 
-RIPv2/RIPng module does not have global parameters. The only relevant node parameter is the **ripv2.import** parameter specifying the [import (redistribution) of routes](routing_import) into the global RIP instance (default: no route import).
+You can change the RIPv2/RIPng timers with the global **rip.timers** dictionary ([more details](rip-timers)).
+
+The RIPv2/RIPng configuration module supports these node parameters:
+
+* **rip.timers**: Change RIP timers for a single node
+* **ripv2.import**: Specify the [import (redistribution) of routes](routing_import) into the global RIP instance (default: no route import).
 
 RIPv2 also supports [](routing_passive) and [](routing_external).
 
 ## VRF Parameters
 
 * By default, _netlab_ redistributes BGP- and connected routes into VRF RIPv2/RIPng instances on all network devices. You can change that on devices supporting configurable route import with the **[ripv2.import](routing_import)** VRF parameter.
+* Use **rip.timers** VRF parameter to change RIP timers for a single VRF instance
 * Set **ripv2.active** to *True* to force a VRF to use RIPv2/RIPng even when no routers are attached to the VRF interfaces.
 * To disable RIPv2/RIPng in a VRF set **ripv2** to *False* (see also [](routing_disable_vrf)).
+
+(rip-timers)=
+## Changing RIP Timers
+
+You can change the RIP protocol timers with the **rip.timers** global/node/VRF dictionary. The dictionary has these elements:
+
+* **update**: periodic RIP update timer. Default: 30 seconds, minimum: 5 seconds
+* **timeout**: route expiration timer. Default: six times the **update** timer, minimum: 5 seconds)
+* **garbage**: garbage collection timer (the time after which an invalid route is removed from the routing table). Default: four times the **update** timer, minimum: 5 seconds
 
 ## Example
 
