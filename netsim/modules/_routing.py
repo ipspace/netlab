@@ -509,7 +509,17 @@ def check_import_request(
       continue
 
     # Add an import routing policy if needed
-    node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
+    i_policy = i_dict.get(f'{s_proto}.policy',None)
+    if i_policy:
+      if 'no_policy' in f_import:
+        log.error(
+          f'Device {node.device} (node {node.name}) cannot use routing policies ' + \
+          f'on route imports ({s_proto} => {proto}, policy {i_policy})',
+          category=log.IncorrectValue,
+          module=proto)
+        break
+      else:
+        node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
 
   if 'ripv2' in i_dict:                                     # Finally, replace RIPv2 with RIP
     i_dict.rip = i_dict.ripv2
