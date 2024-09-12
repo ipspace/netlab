@@ -302,6 +302,9 @@ See also [](caveats-junos).
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
 * SR Linux does not support configurable propagation of extended BGP communities.
 * The SR Linux prefix filters cannot contain the **deny** action.
+* The SR Linux configuration templates do not support additional routing policies on routing protocol route imports
+* SR Linux needs a static default route (with low route preference) to implement OSPF **default-originate always** functionality.
+* SR Linux does not set metrics on routes imported into OSPF. While you can specify the metric and metric type of the OSPF default route, those settings have no impact.
 
 (caveats-sros)=
 ## Nokia SR OS
