@@ -42,7 +42,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco Catalyst 8000v   | cisco/cat8000v              |
 | Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco IOSv             | cisco/iosv                  |
-| Cisco IOSvL2           | cisco/iosvl2                |
+| Cisco IOSvL2           | cisco/iosl2[^IOSL2]         |
 | Cisco IOS XR           | cisco/iosxr                 |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Dell OS10              | dell/os10                   |
@@ -54,12 +54,14 @@ You have to use the following box names when installing or building the Vagrant 
 | Mikrotik RouterOS 7    | mikrotik/chr7               |
 | Sonic                  | netlab/sonic                |
 
+[^IOSL2]: We had to set the box name for Cisco IOSvL2 to `cisco/iosl2` to avoid Vagrant "*you should upgrade this box*" messages ([more details](https://github.com/ipspace/netlab/issues/1313)).
+
 The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
 
 | Virtual network device | Vagrant box name   |
 |------------------------|--------------------|
 | Cumulus VX             | CumulusCommunity/cumulus-vx:4.4.0 |
-| Cumulus VX 5.0 (NVUE)            | CumulusCommunity/cumulus-vx:5.0.1 |
+| Cumulus VX 5.0 (NVUE)  | CumulusCommunity/cumulus-vx:5.0.1 |
 | Generic Linux          | generic/ubuntu2004 |
 | VyOS                   | vyos/current       |
 

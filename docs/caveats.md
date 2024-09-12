@@ -93,6 +93,7 @@ See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 ## Cisco IOSv and IOSvL2
 
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+* Cisco IOSvL2 Vagrant box name is set to `cisco/iosl2` (not `cisco/iosvl2`) to avoid Vagrant generating bogus *never version of this box is available* messages ([more details](https://github.com/ipspace/netlab/issues/1313)).
 * BGP configuration is optimized for reasonable convergence times under lab conditions. Do not use the same settings in a production network.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * It's impossible to configure RIPv2 on individual subnets on Cisco IOS. RIPv2 might be running on more interfaces than intended. _netlab_ configures those interfaces to be *passive*.
