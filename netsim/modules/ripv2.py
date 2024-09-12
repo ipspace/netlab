@@ -26,7 +26,7 @@ class RIPv2(_Module):
         _routing.passive(intf,'ripv2',topology,features,node)   # Set passive flag on other RIPv2 interfaces
 
     _routing.igp_post_transform(node,topology,proto='ripv2',vrf_aware=True)
-    _routing.check_vrf_protocol_support(node,'ripv2','ipv4','ripv2',topology)
-    _routing.check_vrf_protocol_support(node,'ripv2','ipv6','ripng',topology)
+    _routing.check_vrf_protocol_support(node,proto='ripv2',af='ipv4',feature='ripv2',topology=topology)
+    _routing.check_vrf_protocol_support(node,proto='ripv2',af='ipv6',feature='ripng',topology=topology)
     if 'ripv2' in node and 'loopback' in node:
       node.loopback.ripv2.passive = False

@@ -5,6 +5,7 @@ This configuration module configures the RIPv2 and RIPng. The module supports th
 
 * IPv4 and IPv6
 * Passive interfaces
+* VRF RIPv2/RIPng instances
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -17,13 +18,13 @@ This configuration module configures the RIPv2 and RIPng. The module supports th
 
 The following table describes per-platform support of individual RIPv2/RIPng features:
 
-| Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import |
-| ------------------ | :-: | :-: | :-: | :-: |
+| Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import | VRF<br>instances |
+| ------------------ | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ❌  |  ❌  |  ❌  |
 | Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) |
 | Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) |
-| Cumulus Linux      | ✅  | ✅  | ✅  | ✅  |
-| FRR                | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux      | ✅  | ✅  | ✅  | ✅  | ✅  |
+| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | VyOS               | ✅  | ✅  | ✅  |  ❌  |
 
 ```{tip}
@@ -37,6 +38,12 @@ See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.
 RIPv2/RIPng module does not have global parameters. The only relevant node parameter is the **ripv2.import** parameter specifying the [import (redistribution) of routes](routing_import) into the global RIP instance (default: no route import).
 
 RIPv2 also supports [](routing_passive) and [](routing_external).
+
+## VRF Parameters
+
+* By default, _netlab_ redistributes BGP- and connected routes into VRF RIPv2/RIPng instances on all network devices. You can change that on devices supporting configurable route import with the **[ripv2.import](routing_import)** VRF parameter.
+* Set **ripv2.active** to *True* to force a VRF to use RIPv2/RIPng even when no routers are attached to the VRF interfaces.
+* To disable RIPv2/RIPng in a VRF set **ripv2** to *False* (see also [](routing_disable_vrf)).
 
 ## Example
 
