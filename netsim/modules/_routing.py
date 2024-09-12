@@ -357,6 +357,9 @@ def check_vrf_protocol_support(
         module=proto)
       return
 
+    if af:
+      v_data[proto].af[af] = True                 # Add the AF to VRF routing protocol data
+
 """
 get_remote_cp_endpoint: find the remote control-plane endpoint
 
@@ -554,7 +557,8 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
           do_import = is_vrf_protocol(node,vdata,s_proto) or \
                       (proto == 'bgp' and s_proto in node)
           if do_import:
-            vdata[proto]['import'][s_proto] = { 'auto': True }        # ... mark import as auto-generated
+            sp_name = 'rip' if s_proto == 'ripv2' else s_proto        # Use 'rip' for RIPv2 in final data structures
+            vdata[proto]['import'][sp_name] = { 'auto': True }        # ... mark import as auto-generated
     else:                                                             # Explicit import configuration
       if vrf_aware:                                                   # ... if the protocol is VRF-aware check it
         check_import_request(proto,node,vdata[proto],topology,features)
