@@ -303,11 +303,15 @@ def repeat_warnings(cmd: str) -> None:
 """
 Print colored status headers
 """
+def status_green(stat: str, txt: str) -> None:
+  stat = f'[{stat}]'
+  strings.print_colored_text(f'{stat:10s}','green',txt)
+
 def status_created() -> None:
-  strings.print_colored_text('[CREATED] ','green','Created ')
+  status_green('CREATED','Created')
 
 def status_success() -> None:
-  strings.print_colored_text('[SUCCESS] ','green','OK: ')
+  status_green('SUCCESS','OK: ')
 
 def section_header(label: str, text: str, color: str = 'green') -> None:
   if not strings.rich_color:
