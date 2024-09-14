@@ -13,6 +13,53 @@ To use any other Linux distribution or container, or to start a home-built Vagra
 
 [^GL]: You can also set the **defaults.devices.linux._provider_.image** attribute to change the Vagrant box or Docker container for all Linux hosts in your lab.
 
+(linux-hosts)=
+## Hosts File
+
+As the typical lab topology does not include DNS, _netlab_ adds entries for all lab devices to the Linux `/etc/hosts` file. The initial configuration templates add entries mapping all non-VRF IPv4 and IPv6 addresses to node names and entries mapping VRF IPv4 and IPv6 addresses to the *node*-*vrf* name. For example, these are the entries you would get for a dual-stack router with a loopback interface and two data-plane interfaces:
+
+```
+10.0.0.3 fv
+172.16.0.3 fv
+10.1.0.2 fv
+2001:db8:1:3::1 fv
+2001:db8:2::3 fv
+2001:db8:3::2 fv
+```
+
+These are the entries you would get for a router with *red* and *blue* VRFs:
+
+```
+10.0.0.5 rtr
+172.16.0.5 rtr-red
+172.16.1.5 rtr-red
+172.16.2.5 rtr-blue
+172.16.3.5 rtr-blue
+```
+
+The netlab-generated entries are *appended* to the existing `/etc/hosts` file on virtual machines. The container `/etc/hosts` file is generated from scratch to remove the management IP addresses *containerlab* inserted into the `/etc/hosts` file.
+
+If you set the **netlab_intf_hosts** node variable to *‌True*, _netlab_ adds interface names to device names. After setting this variable, the above `/etc/hosts` entries would be changed into these entries:
+
+```
+10.0.0.3 fv
+2001:db8:1:3::1 fv
+172.16.0.3 fv-eth1
+2001:db8:2::3 fv-eth1
+10.1.0.2 fv-eth2
+2001:db8:3::2 fv-eth2
+```
+
+Using the same settings with a VRF-enabled router, you might get the following entries:
+
+```
+10.0.0.5 rtr
+172.16.0.5 rtr-eth1-red
+172.16.1.5 rtr-eth2-red
+172.16.2.5 rtr-eth3-blue
+172.16.3.5 rtr-eth4-blue
+```
+
 (linux-routes)=
 ## Host Routing
 
@@ -107,7 +154,7 @@ _netlab_ initial configuration script will skip Ubuntu package installation if i
 The initial configuration process (**[netlab initial](../netlab/initial.md)**) does not rely on commands executed within Linux containers:
 
 * The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process from the ```templates/provider/clab/frr/hosts.j2``` template (see [](clab-config-template)).
-* Interface IP addresses and static routes to default gateway (see [](linux-routes)) are configured with **ip** commands executed on the Linux host but within the container network namespace.
+* Interface IP addresses and static routes to the default gateway (see [](linux-routes)) are configured with **ip** commands executed on the Linux host but within the container network namespace.
 * Static default route points to the management interface.
 
-You can therefore use any container image as a Linux node.
+You can, therefore, use any container image as a Linux node.

@@ -164,7 +164,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 The following system-wide features are configured on supported network operating systems as part of the initial device configuration:
 
 (platform-initial-config)=
-| Operating system      | Hostname | IPv4 hosts |           LLDP            | Loopback<br />IPv4 address | Loopback<br />IPv6 address |
+| Operating system      | Hostname | IPv4/IPv6<br>hosts |           LLDP            | IPv4<br>Loopback | IPv6<br>Loopback |
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
 | Arista EOS               | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
@@ -172,12 +172,12 @@ The following system-wide features are configured on supported network operating
 | Cisco IOS/IOS XE[^18v]   | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XRv            | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS           | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux            | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux            | ✅  | ✅ [^HIF]  | ✅  | ✅  | ✅  |
 | Cumulus Linux 5.0 (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Dell OS10                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| FRR                      | ✅  | ✅  |  ❌  | ✅  | ✅  |
-| Generic Linux            | ✅  | ✅  |  ✅[❗](linux-lldp) | ✅  | ✅  |
+| FRR                      | ✅  | ✅ [^HIF]  |  ❌  | ✅  | ✅  |
+| Generic Linux            | ✅  | ✅ [^HIF]  |  ✅[❗](linux-lldp) | ✅  | ✅  |
 | Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  | 
 | Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
@@ -185,6 +185,8 @@ The following system-wide features are configured on supported network operating
 | Nokia SR OS              | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Sonic                    | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | VyOS                     | ✅  | ✅  | ✅  | ✅  | ✅  |
+
+[^HIF]: Some Linux-based devices can also use interface names in host names. See [/etc/hosts file on Linux](linux-hosts) for more details.
 
 (platform-initial-interfaces)=
 The following interface parameters are configured on supported network operating systems as part of the initial device configuration:
