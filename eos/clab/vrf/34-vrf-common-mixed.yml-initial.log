@@ -58,19 +58,6 @@ ok: [srv] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -156,19 +143,6 @@ ok: [r1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -253,19 +227,6 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -423,9 +384,9 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
-changed: [srv -> localhost]
 changed: [r2 -> localhost]
+changed: [srv -> localhost]
+changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [srv]
@@ -436,9 +397,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for srv, r1, r2
 
 TASK [template] ****************************************************************
+changed: [srv]
 changed: [r2]
 changed: [r1]
-changed: [srv]
 
 TASK [set_fact] ****************************************************************
 ok: [srv]
@@ -447,8 +408,8 @@ ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [srv]
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [srv]
@@ -470,8 +431,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
-ok: [srv]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
@@ -581,6 +542,34 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [srv]
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 ok: [r1] => 
   msg: |-
     ospf configuration for r1
@@ -613,34 +602,6 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [srv]
@@ -657,8 +618,8 @@ TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]

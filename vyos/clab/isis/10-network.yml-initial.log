@@ -1,0 +1,477 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [x1]
+ok: [dut]
+ok: [x2]
+
+TASK [Find device readiness script] ********************************************
+ok: [x1]
+ok: [dut]
+ok: [x2]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x1
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description x1 -> dut
+     ip address 10.1.0.2/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description x2 -> dut
+     ip address 10.1.0.6/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> x1'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> x2'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+    set interfaces ethernet eth2 address 10.1.0.5/30
+  
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [x2 -> localhost]
+changed: [x1 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [x1]
+skipping: [x2]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+
+TASK [template] ****************************************************************
+changed: [x2]
+changed: [x1]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+ok: [x2]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x1]
+changed: [x2]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [x1]
+skipping: [x2]
+
+TASK [wait_for_connection] *****************************************************
+ok: [dut]
+
+TASK [wait_for] ****************************************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=isis)
+
+TASK [Figure out whether to deploy the module isis on current device] **********
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for isis] ************************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    isis configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+    set protocols isis level level-2
+  
+    set protocols isis dynamic-hostname
+    set protocols isis lsp-gen-interval 1
+    set protocols isis spf-interval 1
+    set protocols isis net '49.0001.0000.0000.0001.00'
+  
+    set protocols isis interface dum0
+  
+    set protocols isis interface eth1
+  
+  
+  
+    set protocols isis interface eth2
+  
+    set protocols isis interface eth2 network point-to-point
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+ok: [x1] => 
+  msg: |-
+    isis configuration for x1
+    =========================================
+    !
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0002.00
+  
+    !
+    interface lo
+     ip router isis Gandalf
+    !
+    interface eth1
+    ! x1 -> dut
+     ip router isis Gandalf
+    !
+    !
+    do write
+ok: [x2] => 
+  msg: |-
+    isis configuration for x2
+    =========================================
+    !
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0003.00
+  
+    !
+    interface lo
+     ip router isis Gandalf
+    !
+    interface eth1
+    ! x2 -> dut
+     ip router isis Gandalf
+     isis network point-to-point
+    !
+    !
+    do write
+
+TASK [Find configuration deployment deploy_script for isis] ********************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy isis configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [wait_for] ****************************************************************
+skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-isis.sh to deploy isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/vyos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [x1]
+changed: [x2]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+ok: [x2]
+
+TASK [run /tmp/config.sh to deploy isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
+skipping: [x1]
+skipping: [x2]
+
+TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
+changed: [x1]
+changed: [x2]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=25   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
+
+
+This lab tests the IS-IS network type settings. The device under test has two
+interfaces with IS-IS network type set to 'broadcast' and 'point-to-point'. It
+has to establish IS-IS adjacencies over both.
+

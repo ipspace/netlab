@@ -53,7 +53,7 @@ ok: [dut] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:2::1 dut" >>/tmp/hosts
+    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:cafe::1 dut" >>/tmp/hosts
     echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:3:2::1 x1" >>/tmp/hosts
     echo "2001:db8:1:3::1 2001:db8:3:1::2 2001:db8:3:2::2 x2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
@@ -155,9 +155,9 @@ ok: [dut] =>
     !
     interface eth3
      no shutdown
-     description dut -> stub
+     description dut -> stub [stub]
      ! no ip address
-     ipv6 address 2001:db8:2::1/64
+     ipv6 address 2001:db8:cafe::1/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -187,7 +187,7 @@ ok: [x1] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:2::1 dut" >>/tmp/hosts
+    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:cafe::1 dut" >>/tmp/hosts
     echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:3:2::1 x1" >>/tmp/hosts
     echo "2001:db8:1:3::1 2001:db8:3:1::2 2001:db8:3:2::2 x2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
@@ -302,7 +302,7 @@ ok: [x2] =>
     # Build hosts file
     #
     echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:2::1 dut" >>/tmp/hosts
+    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:cafe::1 dut" >>/tmp/hosts
     echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:3:2::1 x1" >>/tmp/hosts
     echo "2001:db8:1:3::1 2001:db8:3:1::2 2001:db8:3:2::2 x2" >>/tmp/hosts
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
@@ -405,22 +405,22 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, x2
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 changed: [dut -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
-skipping: [x2]
 skipping: [x1]
+skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
+changed: [x2]
 changed: [dut]
 changed: [x1]
-changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -428,8 +428,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -465,12 +465,14 @@ ok: [dut] =>
     !
     !
     router ripng
-      network lo
-      network eth1
-      network eth2
-      passive-interface eth2
-      network eth3
-      passive-interface eth3
+  
+     network lo
+     network eth1
+     network eth2
+     passive-interface eth2
+     network eth3
+     passive-interface eth3
+  
     !
     do write
 ok: [x1] => 
@@ -480,9 +482,11 @@ ok: [x1] =>
     !
     !
     router ripng
-      network lo
-      network eth1
-      network eth2
+  
+     network lo
+     network eth1
+     network eth2
+  
     !
     do write
 ok: [x2] => 
@@ -492,9 +496,11 @@ ok: [x2] =>
     !
     !
     router ripng
-      network lo
-      network eth1
-      network eth2
+  
+     network lo
+     network eth1
+     network eth2
+  
     !
     do write
 
@@ -507,9 +513,9 @@ TASK [Deploy ripv2 configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [x1]
 changed: [x2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -522,8 +528,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
-changed: [x1]
 changed: [dut]
+changed: [x1]
 changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************

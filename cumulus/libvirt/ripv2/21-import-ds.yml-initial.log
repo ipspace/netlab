@@ -543,9 +543,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
 
 TASK [template] ****************************************************************
+changed: [r3]
 changed: [x1]
 changed: [r2]
-changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -554,8 +554,8 @@ ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [r3]
 changed: [x1]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -590,6 +590,57 @@ ok: [x1]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
 skipping: [r3]
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 172.16.1.1 remote-as 65000
+      neighbor 172.16.1.1 description dut
+    !
+      neighbor 2001:db8:2:1::1 remote-as 65000
+      neighbor 2001:db8:2:1::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 172.16.1.1 activate
+      no neighbor 172.16.1.1 send-community all
+      neighbor 172.16.1.1 send-community standard
+      neighbor 172.16.1.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:2:1::1 activate
+      no neighbor 2001:db8:2:1::1 send-community all
+      neighbor 2001:db8:2:1::1 send-community standard
+      neighbor 2001:db8:2:1::1 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -639,57 +690,6 @@ ok: [dut] =>
       no neighbor 2001:db8:2:1::2 send-community all
       neighbor 2001:db8:2:1::2 send-community standard
       neighbor 2001:db8:2:1::2 send-community large
-    !
-    !
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 172.16.1.1 remote-as 65000
-      neighbor 172.16.1.1 description dut
-    !
-      neighbor 2001:db8:2:1::1 remote-as 65000
-      neighbor 2001:db8:2:1::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 172.16.1.1 activate
-      no neighbor 172.16.1.1 send-community all
-      neighbor 172.16.1.1 send-community standard
-      neighbor 172.16.1.1 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor 2001:db8:2:1::1 activate
-      no neighbor 2001:db8:2:1::1 send-community all
-      neighbor 2001:db8:2:1::1 send-community standard
-      neighbor 2001:db8:2:1::1 send-community large
     !
     !
     !
@@ -746,55 +746,6 @@ ok: [r2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r3]
 skipping: [x1]
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    !
-    router ospf
-     ospf router-id 10.0.0.1
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-     redistribute rip
-  
-    !
-    interface lo
-     ip ospf area 0.0.0.0
-    !
-    interface swp2
-    ! dut -> r2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface swp3
-    ! dut -> r3
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.1
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-     redistribute rip
-  
-  
-     interface lo area 0.0.0.0
-     interface swp2 area 0.0.0.0
-     interface swp3 area 0.0.0.0
-    !
-    interface swp2
-    ! dut -> r2
-     ipv6 ospf6 network point-to-point
-    !
-    interface swp3
-    ! dut -> r3
-     ipv6 ospf6 network point-to-point
-    !
-  
-    do write
 ok: [r2] => 
   msg: |-
     ospf configuration for r2
@@ -843,6 +794,55 @@ ok: [r2] =>
     exit
   
     !
+    do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    !
+    router ospf
+     ospf router-id 10.0.0.1
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+     redistribute rip
+  
+    !
+    interface lo
+     ip ospf area 0.0.0.0
+    !
+    interface swp2
+    ! dut -> r2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface swp3
+    ! dut -> r3
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.1
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+     redistribute rip
+  
+  
+     interface lo area 0.0.0.0
+     interface swp2 area 0.0.0.0
+     interface swp3 area 0.0.0.0
+    !
+    interface swp2
+    ! dut -> r2
+     ipv6 ospf6 network point-to-point
+    !
+    interface swp3
+    ! dut -> r3
+     ipv6 ospf6 network point-to-point
+    !
+  
     do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
@@ -933,6 +933,7 @@ ok: [dut] =>
      network lo
      network swp2
      network swp3
+  
     !
     do write
     CONFIG
@@ -959,6 +960,7 @@ ok: [dut] =>
      network lo
      network swp2
      network swp3
+  
     !
     do write
     CONFIG
@@ -982,6 +984,7 @@ ok: [r3] =>
      network eth1
      passive-interface eth1
      network eth2
+  
     !
     do write
 
