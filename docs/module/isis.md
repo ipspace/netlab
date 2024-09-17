@@ -38,7 +38,7 @@ The following table describes per-platform support of individual IS-IS features:
 | Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |  ❌  |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-srlinux) |
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| VyOS               | ✅  | ✅  | ❌   |  ❌  |  ❌  |
+| VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
