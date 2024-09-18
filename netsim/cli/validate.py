@@ -684,7 +684,7 @@ def execute_validation_expression(
       v_entry: Box,
       node: Box,
       topology: Box,
-      result: Box,
+      result: typing.Union[Box,BoxList],
       verbosity: int,
       report_error: bool,
       report_success: bool = True) -> typing.Optional[bool]:
@@ -701,7 +701,10 @@ def execute_validation_expression(
     return None
   else:
     try:                                      # Otherwise try to evaluate the validation expression
-      result.result = result
+      if isinstance(result,BoxList):
+        result = Box({'result': result})
+      else:
+        result.result = result
       result.re = re                          # Give validation expression access to 're' module
       OK = eval(v_test,{ '__builtins__': BUILTINS },result)
       if OK is None:
@@ -716,8 +719,10 @@ def execute_validation_expression(
       if v_test:
         print(f'Test expression: {v_test}\n')
         print(f'Evaluated result {OK}')
-      for kw in ('re','result'):              # Remove stuff that will crash JSON serialization
-        result.pop(kw,None)
+      if isinstance(result,Box):          # Remove stuff that will crash JSON serialization
+        result.pop('re',None)
+        if isinstance(result.result,Box):
+          result.pop('result',None)
       print(f'Result received from {node.name}\n{"-" * 80}\n{result.to_json()}\n')
 
   if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
