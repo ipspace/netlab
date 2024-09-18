@@ -1,0 +1,347 @@
+Warning in cli: Lab topology source file /home/pipi/net101/tools/tests/integration/gateway/02-vrrp.yml has been modified
+... after the snapshot netlab.snapshot.yml has been created
+... netlab transforms lab topology into device- and platform data and stores the results
+    in a snapshot file that is used by most netlab commands. Changes to source files
+    (including lab topology or defaults) are not automatically reflected in the snapshot
+    file. Use 'netlab create' or 'netlab up' to create a new snapshot file.
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for r2
+
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [r2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r2, h1, h2, dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.42
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.42
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.42
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.42
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.1
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.1
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.1
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.1
+    #
+    # Print the final routing table
+    ip route
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    hostname r2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     description r2 -> [h1,dut]
+     ip address 172.16.0.2/24
+    !
+     mac-address 52dc.cafe.0201
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     description r2 -> [dut,h2]
+     ip address 172.16.1.2/24
+    !
+     mac-address 52dc.cafe.0202
+    !
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    ip host r2 10.0.0.2 172.16.0.2 172.16.1.2
+    !
+    ip routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet0/1
+     no shutdown
+     description dut -> [h1,r2]
+     ip address 172.16.0.1 255.255.255.0
+    !
+    interface GigabitEthernet0/2
+     no shutdown
+     description dut -> [r2,h2]
+     ip address 172.16.1.1 255.255.255.0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [r2]
+
+TASK [set_fact] ****************************************************************
+ok: [h1]
+ok: [h2]
+
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-MnKXyVSg-h1.sh] **********
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [r2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2 => (item=gateway)
+
+TASK [Figure out whether to deploy the module gateway on current device] *******
+ok: [dut]
+ok: [r2]
+
+TASK [Find configuration template for gateway] *********************************
+ok: [dut]
+ok: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    gateway configuration for dut
+    =========================================
+    fhrp version vrrp v3
+    !
+    interface GigabitEthernet0/1
+      vrrp 17 address-family ipv4
+        address 172.16.0.42
+        priority 30
+ok: [r2] => 
+  msg: |-
+    gateway configuration for r2
+    =========================================
+    no ip icmp redirect
+    !
+    interface Ethernet1
+      vrrp 17 ipv4 version 3
+      vrrp 17 ipv4 172.16.0.42
+      vrrp 17 priority-level 20
+
+TASK [Find configuration deployment deploy_script for gateway] *****************
+ok: [dut]
+ok: [r2]
+
+TASK [Deploy gateway configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for r2
+
+TASK [ios_config: deploying gateway from /home/pipi/net101/tools/netsim/ansible/templates/gateway/ios.j2] ***
+changed: [dut]
+
+TASK [eos_config: deploying gateway from /home/pipi/net101/tools/netsim/ansible/templates/gateway/eos.j2] ***
+changed: [r2]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r2                         : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+
+Warning: The following warnings were generated during the 'netlab initial' processing
+Warning: cli: Lab topology source file /home/pipi/net101/tools/tests/integration/gateway/02-vrrp.yml has been modified
+
+
+This lab tests VRRP configuration
+
