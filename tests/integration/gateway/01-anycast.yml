@@ -1,0 +1,93 @@
+---
+message: |
+  This lab tests the anycast gateway functionality. It checks whether the
+  anycast IP is active, whether it has the correct MAC address, and whether the
+  first device in the forwarding path intercepts the packets with the shared MAC
+  address.
+
+module: [ gateway, ospf, vlan ]
+defaults.interfaces.mtu: 1500
+
+vlans:
+  edge:
+    gateway: True
+    links: [ h1-d1, d1-d2, d2-h2 ]
+    ospf.passive: True
+
+groups:
+  probes:
+    provider: clab
+    members: [ r1, r2 ]
+    device: frr
+    module: [ ospf ]
+  hosts:
+    device: linux
+    provider: clab
+    members: [ h1, h2, h3 ]
+
+gateway.protocol: anycast
+gateway.id: 42
+gateway.anycast.mac: 0200.cafe.c001
+
+nodes:
+  d1:
+  d2:
+  r1:
+  r2:
+  h1:
+  h2:
+  h3:
+
+links:
+- d1:
+  r1:
+  prefix:
+    ipv4: 172.16.33.0/24
+    ipv6: 2001:db8:cafe:33::/64
+
+- d2:
+  r2:
+  prefix:
+    ipv4: 172.16.44.0/24
+    ipv6: 2001:db8:cafe:44::/64
+
+- r1-r2-h3
+
+validate:
+  adj_d1:
+    description: Check D1-R1 OSPFv2 adjacencies
+    wait_msg: Waiting for OSPFv2 adjacency process to complete
+    wait: 40
+    nodes: [ r1 ]
+    plugin: ospf_neighbor(nodes.d1.ospf.router_id)
+  adj_d2:
+    description: Check D2-R2 OSPFv2 adjacencies
+    wait_msg: Waiting for OSPFv2 adjacency process to complete
+    wait: 40
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.d2.ospf.router_id)
+  trace_h1:
+    description: Traceroute H1-H3 (should go over R1)
+    wait: 10
+    wait_msg: We might have to wait for the OSPF SPF run
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: traceroute -w 1 -q 2 h3
+    valid: |
+      'r1' in stdout
+  trace_h2:
+    description: Traceroute H1-H3 (should go over R1)
+    wait: 5
+    wait_msg: We might have to wait for the OSPF SPF run
+    nodes: [ h2 ]
+    devices: [ linux ]
+    exec: traceroute -w 1 -q 2 h3
+    valid: |
+      'r2' in stdout
+  arp:
+    description: Check the ARP entry for the anycast gateway
+    nodes: [ h1, h2 ]
+    devices: [ linux ]
+    exec: arp {{ interfaces[0].gateway.ipv4|ipaddr('address') }}
+    valid: |
+      '02:00:ca:fe:c0:01' in stdout

@@ -1,0 +1,105 @@
+---
+message: |
+  This lab tests IPv4 VRRP configuration. It checks whether the
+  device-under-test (DUT) forwards traffic sent to the VRRP IP/MAC address,
+  whether it has correct VRRP priority, and whether the preemption mechanism
+  works.
+
+module: [ gateway ]
+
+groups:
+  probes:
+    device: eos
+    provider: clab
+    members: [ r2 ]
+  hosts:
+    device: linux
+    provider: clab
+    members: [ h1, h2 ]
+
+gateway.protocol: vrrp
+gateway.id: 42
+gateway.vrrp.group: 17
+
+nodes:
+  dut:
+  r2:
+  h1:
+  h2:
+
+links:
+- h1:
+  dut:
+    gateway.vrrp.priority: 30
+  r2:
+    gateway.vrrp.priority: 20
+  gateway: True
+- dut:
+  r2:
+  h2:
+
+validate:
+  r2_eth1_down:
+    description: Remove R2 from the VRRP LAN
+    nodes: [ r2 ]
+    config:
+      template: ifdown
+      variable.ifstate: 'down'
+    pass: R2 has been disconnected from the VRRP LAN
+    stop_on_error: True
+  ping_vrrp:
+    description: Verify VRRP is enabled on DUT
+    wait: 10
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  r2_eth1_up:
+    description: Add R2 to the VRRP LAN
+    nodes: [ r2 ]
+    config:
+      template: ifdown
+      variable.ifstate: 'up'
+    pass: R2 has been reconnected to the VRRP LAN
+    stop_on_error: True
+  r2_vrrp_backup:
+    description: Verify that R2 is in the backup state
+    wait: 10
+    nodes: [ r2 ]
+    show:
+      frr: vrrp interface {{ interfaces[0].ifname }} json
+      eos: vrrp | json
+    valid:
+      frr: result[0].v4.status == 'Backup'
+      eos: virtualRouters[0].state == 'backup'
+  r2_vrrp_prio:
+    nodes: [ r2 ]
+    pass: R2 VRRP priority has been increased to 80
+    config:
+      template: vrrp-priority
+      variable.vrrp_prio: 80
+  r2_vrrp_master:
+    description: Verify that R2 took over as master (VRRP priority on DUT is lower than 80)
+    wait: 10
+    nodes: [ r2 ]
+    show:
+      frr: vrrp interface {{ interfaces[0].ifname }} json
+      eos: vrrp | json
+    valid:
+      frr: result[0].v4.status == 'Master'
+      eos: virtualRouters[0].state == 'master'
+  r2_vrrp_prio_low:
+    nodes: [ r2 ]
+    pass: R2 VRRP priority has been lowered to 20
+    config:
+      template: vrrp-priority
+      variable.vrrp_prio: 20
+  dut_preempt:
+    description: Verify that DUT preempts R2 when its priority is lowered
+    wait: 10
+    nodes: [ r2 ]
+    show:
+      frr: vrrp interface {{ interfaces[0].ifname }} json
+      eos: vrrp | json
+    valid:
+      frr: result[0].v4.status == 'Backup'
+      eos: virtualRouters[0].state == 'backup'
+    level: warning
