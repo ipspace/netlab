@@ -16,49 +16,39 @@ To use any other Linux distribution or container, or to start a home-built Vagra
 (linux-hosts)=
 ## Hosts File
 
-As the typical lab topology does not include DNS, _netlab_ adds entries for all lab devices to the Linux `/etc/hosts` file. The initial configuration templates add entries mapping all non-VRF IPv4 and IPv6 addresses to node names and entries mapping VRF IPv4 and IPv6 addresses to the *node*-*vrf* name. For example, these are the entries you would get for a dual-stack router with a loopback interface and two data-plane interfaces:
+As the typical lab topology does not include DNS, _netlab_ adds entries for all lab devices to the Linux `/etc/hosts` file. The initial configuration templates add entries mapping all non-VRF IPv4 and IPv6 addresses to node names and entries mapping VRF IPv4 and IPv6 addresses to the *vrf*.*node* name.
+
+*netlab* always creates entries for individual device interfaces in the `/etc/hosts` file; otherwise, the name resolution picks a random device IP address instead of the loopback IP address when doing **ping** or **traceroute**. For example, these entries would be generated for a router with two dual-stack interfaces:
 
 ```
-10.0.0.3 fv
-172.16.0.3 fv
-10.1.0.2 fv
-2001:db8:1:3::1 fv
-2001:db8:2::3 fv
-2001:db8:3::2 fv
+10.0.0.1 r
+2001:db8:0:1::1 r
+172.16.0.1 eth1.r
+2001:db8:1::1 eth1.r
+172.16.1.1 eth2.r
+2001:db8:1:1::1 eth2.r
 ```
 
-These are the entries you would get for a router with *red* and *blue* VRFs:
+Similar entries are generated for hosts (devices without loopback interfaces):
 
 ```
-10.0.0.5 rtr
-172.16.0.5 rtr-red
-172.16.1.5 rtr-red
-172.16.2.5 rtr-blue
-172.16.3.5 rtr-blue
+172.16.0.2 h1 eth1.h1
+2001:db8:1::2 h1 eth1.h1
+```
+
+On a VRF-enabled router, you might get the following entries (the router has only VRF interfaces; 10.0.0.42 and 10.0.0.43 are VRF loopback addresses):
+
+```
+10.0.0.5 dut
+172.16.0.5 eth1.red.dut
+172.16.1.5 eth2.red.dut
+172.16.2.5 eth3.blue.dut
+172.16.3.5 eth4.blue.dut
+10.0.0.42 red.dut
+10.0.0.43 blue.dut
 ```
 
 The netlab-generated entries are *appended* to the existing `/etc/hosts` file on virtual machines. The container `/etc/hosts` file is generated from scratch to remove the management IP addresses *containerlab* inserted into the `/etc/hosts` file.
-
-If you set the **netlab_intf_hosts** node variable to *‌True*, _netlab_ adds interface names to device names. After setting this variable, the above `/etc/hosts` entries would be changed into these entries:
-
-```
-10.0.0.3 fv
-2001:db8:1:3::1 fv
-172.16.0.3 fv-eth1
-2001:db8:2::3 fv-eth1
-10.1.0.2 fv-eth2
-2001:db8:3::2 fv-eth2
-```
-
-Using the same settings with a VRF-enabled router, you might get the following entries:
-
-```
-10.0.0.5 rtr
-172.16.0.5 rtr-eth1-red
-172.16.1.5 rtr-eth2-red
-172.16.2.5 rtr-eth3-blue
-172.16.3.5 rtr-eth4-blue
-```
 
 (linux-routes)=
 ## Host Routing
