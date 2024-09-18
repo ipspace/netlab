@@ -25,7 +25,7 @@ The module is supported on these platforms:
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
-| FRRouting             | ❌   | ✅  | ✅  |
+| FRRouting             | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  | ❌  | ❌  |
 | VyOS                  | ❌  | ✅  | ✅  |

@@ -14,4 +14,17 @@ if [ ! -e /sys/class/net/{{ v_if }} ]; then
 fi
 {%   endfor %}
 {% endfor %}
+{% for intf in interfaces if intf.gateway.protocol|default('none') == 'anycast' %}
+{%   set v_if = 'varp-%s'|format(intf.ifindex) %}
+if [ ! -e /sys/class/net/{{ v_if }} ]; then
+  ip link add {{ v_if }} link {{ intf.ifname }} type macvlan mode private
+  ip link set dev {{ v_if }} address {{ intf.gateway.anycast.mac|hwaddr('linux') }}
+  ip link set dev {{ v_if }} up
+{%   for afm in ['ipv4','ipv6'] if afm in intf.gateway %}
+  ip addr add {{ intf.gateway[afm] }} dev {{ v_if }} metric 1024
+{%   endfor %}
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_announce=1
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_ignore=2
+fi
+{% endfor %}
 {% include 'frr.vrrp-config.j2' %}
