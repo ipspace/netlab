@@ -11,6 +11,7 @@ The module supports the following IS-IS features:
 * Wide metrics (enabled by default, cannot be turned off)
 * Unnumbered IPv4 interfaces
 * Passive interfaces
+* VRF IS-IS instances
 * Route import (redistribution)
 * BFD
 
@@ -26,19 +27,19 @@ The module supports the following IS-IS features:
 
 The following table describes per-platform support of individual IS-IS features:
 
-| Operating system   | IS type | IPv6 AF | Multi<br>topology | Unnumbered<br />interfaces | Route<br>import |
-|------------------- | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cisco ASAv         | ✅  | ✅  | ✅  |  ❌  |  ❌  |
-| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XE[^18v] | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-srlinux) |
-| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| Operating system   | IS type | IPv6<br>AF | Multi<br>topology | Unnumbered<br />interfaces | Route<br>import | VRF<br>instances |
+|------------------- | :-: | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco ASAv         | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
+| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| Cisco IOS XE[^18v] | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-srlinux) |  ❌  |
+| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
