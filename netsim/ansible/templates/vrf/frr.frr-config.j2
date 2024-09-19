@@ -1,6 +1,7 @@
 {% import "templates/ospf/frr.ospfv2.j2" as ospfv2 %}
 {% import "templates/ospf/frr.ospfv3.j2" as ospfv3 %}
 {% import "templates/ripv2/frr.macro.j2" as ripv2 %}
+{% import "templates/isis/frr.macro.j2" as isis_config with context %}
 cat >/tmp/vrf_config <<CONFIG
 {% for vname,vdata in vrfs.items() %}
 vrf {{ vname }}
@@ -24,6 +25,9 @@ router bgp {{ bgp.as|default(vrf.as) }}
 {% endfor %}
 {% for vname,vdata in vrfs.items() if vdata.ripv2 is defined %}
 {{   ripv2.config(ripv2=vdata.ripv2,vrf=vname) }}
+{% endfor %}
+{% for vname,vdata in vrfs.items() if vdata.isis is defined %}
+{{   isis_config.config(vdata.isis,vdata.isis.interfaces,vname) }}
 {% endfor %}
 do write
 !
