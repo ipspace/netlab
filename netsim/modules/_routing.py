@@ -351,8 +351,9 @@ def check_vrf_protocol_support(
     # We found the protocol to check in the current VRF, time to check device features
     d_feature = devices.get_device_features(node,topology.defaults)
     if not d_feature.get(f'vrf.{feature}',False): # Does the device support the target protocol/AF combo?
+      f_name = feature if feature != proto else f'{proto} for {af}'
       log.error(
-        f'Device {node.device} (node {node.name}) does not support {feature} in VRFs (found in VRF {v_name})',
+        f'Device {node.device} (node {node.name}) does not support {f_name} in VRFs (found in VRF {v_name})',
         category=log.IncorrectValue,
         module=proto)
       return
