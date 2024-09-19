@@ -509,8 +509,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [x1]
+changed: [r2]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
@@ -519,9 +519,9 @@ ok: [r2]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x1]
 changed: [r3]
 changed: [r2]
-changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -556,6 +556,57 @@ ok: [x1]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
 skipping: [r3]
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -716,57 +767,6 @@ ok: [dut] =>
             admin-state: enable
   
           peer-as: 65100
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [r2]
@@ -820,7 +820,6 @@ ok: [dut] =>
   msg: |-
     isis configuration for dut
     =========================================
-  
     updates:
     - path: /routing-policy/policy[name=default_export_isis]
       value:
@@ -861,7 +860,6 @@ ok: [dut] =>
             admin-state: enable
            ipv6-unicast:
             admin-state: enable
-  
          # IS-IS not configured on external interface ethernet-1/1.0
          - interface-name: ethernet-1/2.0
            circuit-type: point-to-point
@@ -886,6 +884,7 @@ ok: [r3] =>
     isis configuration for r3
     =========================================
     !
+    !
     ipv6 forwarding
     !
     router isis Gandalf
@@ -901,16 +900,17 @@ ok: [r3] =>
   
   
     !
-    interface lo
-     ip router isis Gandalf
-     ipv6 router isis Gandalf
-    !
     interface eth1
     ! r3 -> dut
      ip router isis Gandalf
      ipv6 router isis Gandalf
      isis network point-to-point
     !
+  
+    !
+    interface lo
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
     !
     do write
 
