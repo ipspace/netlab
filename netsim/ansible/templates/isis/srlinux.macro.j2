@@ -1,0 +1,67 @@
+{% import "templates/routing/_redistribute.srlinux.j2" as redistribute with context %}
+{% macro config(isis,interfaces,vrf='default') %}
+{{ redistribute.config(vrf=vrf,proto='isis',p_data=isis,evpn_active=False,af=isis.af.keys()) }}
+- path: /network-instance[name={{ vrf }}]/protocols/isis
+  value:
+   instance:
+   - name: {{ isis.instance }}
+     admin-state: enable
+     net: [ "{{ isis.net | default( "%s.0000.0000.%04d.00" % (isis.area,id) ) }}" ]
+     level-capability: "{{ 'L2' if isis.type=='level-2' else 'L1' if isis.type=='level-1' else 'L1L2' }}"
+{% if isis.default|default(False) or isis.import|default(False) %}
+     export-policy: "{{ vrf }}_export_isis"
+{% endif %}
+{% if isis.af.ipv6 is defined %}
+     ipv6-unicast:
+      admin-state: enable
+{%   if clab.type in ['ixr6','ixr10','ixr6e','ixr10e'] %}
+      multi-topology: {{ 'sr' not in module|default([]) }}
+      _annotate_multi-topology: "Not supported in combination with SR"
+{%   else %}
+      multi-topology: True
+{%   endif %}
+{% endif %}
+{% if ldp is defined and ldp.igp_sync|default(True) %}
+     ldp-synchronization: { }
+{% endif %}
+{% if vrf == 'default' or interfaces %}
+     interface:
+{% endif %}
+{% if vrf == 'default' %}
+     - interface-name: system0.0
+       passive: True
+       ipv4-unicast:
+        admin-state: {{ 'enable' if 'ipv4' in loopback and 'ipv4' in isis.af else 'disable' }}
+       ipv6-unicast:
+        admin-state: {{ 'enable' if 'ipv6' in loopback and 'ipv6' in isis.af else 'disable' }}
+{% endif %}
+{% for l in interfaces if (l.vlan is not defined or l.vlan.mode|default('irb')!='bridge') and l.subif_index is not defined %}
+{%   set ifname = l.ifname if '.' in l.ifname else l.ifname|replace('vlan','irb0.') if l.type=='svi' else (l.ifname+'.0') %}
+{%   if "isis" not in l %}
+     # IS-IS not configured on external interface {{ ifname }}
+{%   else %}
+     - interface-name: {{ ifname }}
+       circuit-type: {{ l.isis.network_type|default("broadcast") }}
+       passive: {{ l.isis.passive }}
+       ipv4-unicast:
+        admin-state: {{ 'enable' if 'ipv4' in l and 'ipv4' in isis.af else 'disable' }}
+        enable-bfd: {{ l.isis.bfd.ipv4|default(False) }}
+{%     if 'ipv6' in l and 'ipv6' in isis.af  %}
+       ipv6-unicast:
+        admin-state: enable
+        enable-bfd: {{ l.isis.bfd.ipv6|default(False) }}
+{%     endif %}
+{%     if l.isis.metric is defined or l.isis.cost is defined %}
+       level:
+{%       if isis.type!='level-2' %}
+       - level-number: 1
+         metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%       endif %}
+{%       if isis.type!='level-1' %}
+       - level-number: 2
+         metric: {{ l.isis.metric|default(l.isis.cost) }}
+{%       endif %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+{% endmacro %}
