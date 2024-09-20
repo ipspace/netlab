@@ -37,7 +37,7 @@ $SUDO apt-get $FLAG_QUIET update
 #
 echo
 echo "Install support software"
-$SUDO apt-get install -y $FLAG_QUIET ca-certificates curl gnupg lsb-release
+$SUDO apt-get install -y $FLAG_QUIET ca-certificates curl gnupg lsb-release iptables
 echo "Install Docker GPG key and set up Docker repository"
 
 # Begin code to identify distribution and populate DISTRIBUTION variable - ghostinthenet - 20220417
