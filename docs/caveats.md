@@ -203,8 +203,15 @@ devices.cumulus.libvirt.memory: 2048
 (caveats-fortios)=
 ## Fortinet FortiOS
 
-* *FortiOS* VM images by default have a 15 day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
-* Ansible automation of FortiOS requires the installation of the [FortiOS Ansible Collection 2.1.3 or greater](https://galaxy.ansible.com/fortinet/fortios) and a FortiOS version > 6.0.
+We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated and might not work with recent Fortinet software releases. A _netlab_ user reported he got Fortinet devices running with the following software releases:
+
+* Fortios v7.0.15 (Vagrant box built with [this recipe](https://github.com/mweisel/fortigate-vagrant-libvirt))
+* Ansible 9.6.1 (Ansible core 2.16.7)
+* **fortinet.fortios** Ansible Galaxy collection version 2.3.6
+
+```{tip}
+*FortiOS* VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+```
 
 ### OSPF Caveats
 
