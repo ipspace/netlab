@@ -11,6 +11,7 @@ from box import Box
 import pathlib
 import tempfile
 import netaddr
+import argparse
 
 from ..data import types,get_empty_box
 from ..utils import log,strings
@@ -393,3 +394,37 @@ class Libvirt(_Provider):
         f"If you have the Vagrant box available in a private repository, use the",
         f"'vagrant box add <url>' command to add it, or use this recipe to build it:",
         dp_data.build ])
+
+  def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> typing.Optional[str]:
+    intf = [ intf for intf in node.interfaces if intf.ifname == args.intf ][0]
+    if intf.get('libvirt.type',None) == 'tunnel':
+      log.error(
+        f'Cannot perform packet capture on libvirt point-to-point links',
+        category=log.FatalError,
+        module='libvirt',
+        skip_header=True,
+        exit_on_error=True,
+        hint='capture')
+
+    domiflist = external_commands.run_command(
+                  ['virsh','domiflist',f'{topology.name}_{node.name}'],
+                  check_result=True,
+                  return_stdout=True)
+    if not isinstance(domiflist,str):
+      return None
+
+    for intf_line in domiflist.split('\n'):
+      intf_data = [ d for d in intf_line.split(' ') if d != '' ]
+      if len(intf_data) != 5:
+        continue
+      if intf_data[2] == intf.bridge:
+        cmd = strings.eval_format(args.command,{'intf': intf_data[0] })
+        return f'sudo {cmd}'
+      
+    log.error(
+      f'Cannot find the interface on node {node.name} attached to libvirt network {intf.bridge}',
+      category=log.FatalError,
+      module='libvirt',
+      skip_header=True,
+      exit_on_error=True)
+    return None
