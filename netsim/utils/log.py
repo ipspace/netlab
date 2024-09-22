@@ -184,7 +184,8 @@ def error(
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
       more_data: typing.Optional[typing.Union[str,list]] = None,
       indent: int = 10,
-      skip_header: typing.Optional[bool] = None) -> None:
+      skip_header: typing.Optional[bool] = None,
+      exit_on_error: bool = False) -> None:
 
   global _ERROR_LOG,err_class_map,_WARNING_LOG,QUIET,err_color_map,_error_header_printed
 
@@ -225,6 +226,8 @@ def error(
     print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning,indent=indent)
 
   if hint is None:                                                  # No pointers to static hints
+    if exit_on_error and category is not Warning:
+      sys.exit(1)
     return
 
   from ..data.global_vars import get_topology
@@ -232,6 +235,8 @@ def error(
 
   topology = get_topology()
   if topology is None:                                              # No valid topology ==> no static hints
+    if exit_on_error and category is not Warning:
+      sys.exit(1)
     return
 
   mod_hints = topology.defaults.hints[module]                       # Get static hints for current module
@@ -247,6 +252,9 @@ def error(
       print(hint_printout,file=sys.stderr)
 
     mod_hints[hint] = ''
+
+  if exit_on_error and category is not Warning:
+    sys.exit(1)
 
 """
 Print informational message. The arguments are similar to the ones used in 'error' function

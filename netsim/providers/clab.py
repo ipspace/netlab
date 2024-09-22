@@ -5,6 +5,7 @@ import typing
 import json
 from box import Box
 import pathlib
+import argparse
 
 from . import _Provider,get_forwarded_ports
 from ..utils import log, strings
@@ -255,3 +256,7 @@ class Containerlab(_Provider):
         f"If you're using a private Docker repository, use the 'docker image pull {node.box}'",
         f"command to pull the image from it or build/install it using this recipe:",
         dp_data.build ])
+
+  def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> str:
+    cmd = strings.eval_format(args.command,{'intf': args.intf})
+    return f'sudo ip netns exec clab-{topology.name}-{node.name} {cmd}'
