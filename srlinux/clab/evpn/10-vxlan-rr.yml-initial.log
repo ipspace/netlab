@@ -30,8 +30,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [rr]
 ok: [s1]
 ok: [s2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [rr]
@@ -132,17 +132,6 @@ ok: [s1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.1 h1" >>/tmp/hosts
-    echo "172.31.1.2 h2" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.1 10.1.0.5 rr" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.2 s1" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.6 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -220,42 +209,6 @@ ok: [s1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -274,17 +227,6 @@ ok: [s2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.1 h1" >>/tmp/hosts
-    echo "172.31.1.2 h2" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.1 10.1.0.5 rr" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.2 s1" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.6 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -399,6 +341,42 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [rr]
@@ -422,8 +400,8 @@ TASK [debug] *******************************************************************
 skipping: [rr]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s1]
@@ -433,8 +411,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -453,10 +431,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-dAfxpuWY-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-plUBaCRh-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -863,8 +841,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [rr]
@@ -882,6 +860,7 @@ ok: [rr] =>
     ospf configuration for rr
     =========================================
     updates:
+  
   
     - path: /network-instance[name=default]
       value:
@@ -986,8 +965,8 @@ TASK [debug] *******************************************************************
 skipping: [rr]
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -1230,8 +1209,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

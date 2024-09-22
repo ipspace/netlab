@@ -127,18 +127,6 @@ ok: [s2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.5 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.9 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 s1" >>/tmp/hosts
-    echo "10.1.0.6 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.2 s2" >>/tmp/hosts
-    echo "10.1.0.10 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -231,18 +219,6 @@ ok: [ce1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.5 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.9 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 s1" >>/tmp/hosts
-    echo "10.1.0.6 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.2 s2" >>/tmp/hosts
-    echo "10.1.0.10 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -327,18 +303,6 @@ ok: [ce2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.5 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.9 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 s1" >>/tmp/hosts
-    echo "10.1.0.6 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.2 s2" >>/tmp/hosts
-    echo "10.1.0.10 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -783,6 +747,35 @@ ok: [ce1] =>
   
     !
     do write
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    updates:
+  
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.3
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+           # OSPF not configured on external interface ethernet-1/2
 ok: [ce2] => 
   msg: |-
     ospf configuration for ce2
@@ -839,34 +832,6 @@ ok: [s2] =>
   
     !
     do write
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    updates:
-  
-    - path: /network-instance[name=default]
-      value:
-        router-id: 10.0.0.3
-        protocols:
-          ospf:
-            instance:
-            - name: "0"
-              version: ospf-v2
-              admin-state: enable
-              max-ecmp-paths: 64
-              area:
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: system0.0
-                  passive: True
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/1.0
-                  interface-type: "point-to-point"
-                  failure-detection:
-                    enable-bfd: False
-           # OSPF not configured on external interface ethernet-1/2
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ce1]
@@ -879,9 +844,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -894,9 +859,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [ce2]
 changed: [ce1]
 changed: [s2]
+changed: [ce2]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
@@ -953,8 +918,8 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
-     redistribute connected
-     redistribute ospf
+      redistribute connected
+      redistribute ospf
   
       label vpn export auto
       export vpn
@@ -1023,6 +988,7 @@ ok: [s1] =>
           action:
             policy-result: accept
   
+  
     - path: /network-instance[name=tenant]
       value:
         router-id: 10.0.0.3
@@ -1042,7 +1008,6 @@ ok: [s1] =>
                   interface-type: "point-to-point"
                   failure-detection:
                     enable-bfd: False
-  
   
   
     - path: /routing-policy/community-set[name=C65000_1]

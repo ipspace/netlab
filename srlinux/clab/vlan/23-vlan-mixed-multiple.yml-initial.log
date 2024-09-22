@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
@@ -30,8 +30,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
@@ -41,42 +41,29 @@ ok: [h4]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
+ok: [s1] => 
   msg: |-
-    initial configuration for h1
+    initial configuration for s1
     =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.5/32"
+  
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -171,29 +158,42 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-ok: [s1] => 
+ok: [h1] => 
   msg: |-
-    initial configuration for s1
+    initial configuration for h1
     =========================================
-  
-    updates:
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.5/32"
-  
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -257,8 +257,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
@@ -271,21 +271,21 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-ylKpgPaL-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-roOMasRv-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
@@ -321,63 +321,63 @@ ok: [s1] =>
     - path: /interface[name=ethernet-1/1]
       value:
        subinterface:
-       - index: 1000
+       - index: 700
          type: bridged
   
   
-    - path: /network-instance[name=vlan1000]
+    - path: /network-instance[name=vlan700]
       value:
        type: mac-vrf
        interface:
-       - name: ethernet-1/1.1000
+       - name: ethernet-1/1.700
   
   
     - path: /interface[name=ethernet-1/2]
       value:
        subinterface:
-       - index: 1000
+       - index: 700
          type: bridged
   
   
-    - path: /network-instance[name=vlan1000]
+    - path: /network-instance[name=vlan700]
       value:
        type: mac-vrf
        interface:
-       - name: ethernet-1/2.1000
+       - name: ethernet-1/2.700
   
   
     - path: /interface[name=ethernet-1/3]
       value:
        subinterface:
-       - index: 1001
+       - index: 701
          type: bridged
   
   
-    - path: /network-instance[name=vlan1001]
+    - path: /network-instance[name=vlan701]
       value:
        type: mac-vrf
        interface:
-       - name: ethernet-1/3.1001
+       - name: ethernet-1/3.701
   
   
     - path: /interface[name=ethernet-1/4]
       value:
        subinterface:
-       - index: 1002
+       - index: 702
          type: bridged
   
   
-    - path: /network-instance[name=vlan1002]
+    - path: /network-instance[name=vlan702]
       value:
        type: mac-vrf
        interface:
-       - name: ethernet-1/4.1002
+       - name: ethernet-1/4.702
   
   
     - path: /interface[name=irb0]
       value:
        subinterface:
-       - index: 1000
+       - index: 700
   
   
   
@@ -385,11 +385,11 @@ ok: [s1] =>
     - path: /interface[name=irb0]
       value:
        subinterface:
-       - index: 1001
+       - index: 701
   
-    - path: /interface[name=irb0]/subinterface[index=1001]
+    - path: /interface[name=irb0]/subinterface[index=701]
       value:
-       description: "VLAN blue (1001) ~ h3"
+       description: "VLAN blue (701) ~ h3"
        ipv4:
         admin-state: enable
         address:
@@ -397,27 +397,27 @@ ok: [s1] =>
           primary: [null]
   
   
-    - path: /network-instance[name=vlan1001]
+    - path: /network-instance[name=vlan701]
       value:
        type: mac-vrf
-       description: "VLAN blue (1001) ~ h3"
+       description: "VLAN blue (701) ~ h3"
        interface:
-       - name: irb0.1001
+       - name: irb0.701
   
     - path: /network-instance[name=default]
       value:
        type: default
        interface:
-       - name: irb0.1001
+       - name: irb0.701
   
     - path: /interface[name=irb0]
       value:
        subinterface:
-       - index: 1002
+       - index: 702
   
-    - path: /interface[name=irb0]/subinterface[index=1002]
+    - path: /interface[name=irb0]/subinterface[index=702]
       value:
-       description: "VLAN green (1002) ~ h4"
+       description: "VLAN green (702) ~ h4"
        ipv4:
         admin-state: enable
         address:
@@ -425,18 +425,18 @@ ok: [s1] =>
           primary: [null]
   
   
-    - path: /network-instance[name=vlan1002]
+    - path: /network-instance[name=vlan702]
       value:
        type: mac-vrf
-       description: "VLAN green (1002) ~ h4"
+       description: "VLAN green (702) ~ h4"
        interface:
-       - name: irb0.1002
+       - name: irb0.702
   
     - path: /network-instance[name=default]
       value:
        type: default
        interface:
-       - name: irb0.1002
+       - name: irb0.702
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]

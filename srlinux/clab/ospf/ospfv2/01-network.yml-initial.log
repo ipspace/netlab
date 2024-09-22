@@ -122,15 +122,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -216,15 +207,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -302,8 +284,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -313,8 +295,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -364,6 +346,7 @@ ok: [dut] =>
     =========================================
     updates:
   
+  
     - path: /network-instance[name=default]
       value:
         router-id: 10.0.0.1
@@ -391,33 +374,6 @@ ok: [dut] =>
                   interface-type: "point-to-point"
                   failure-detection:
                     enable-bfd: False
-ok: [x2] => 
-  msg: |-
-    ospf configuration for x2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! x2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -431,6 +387,7 @@ ok: [x1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -441,6 +398,34 @@ ok: [x1] =>
     ! x1 -> dut
      ip ospf area 0.0.0.0
      ip ospf network broadcast
+    !
+  
+    !
+    do write
+ok: [x2] => 
+  msg: |-
+    ospf configuration for x2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! x2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
     !
   
     !
@@ -465,8 +450,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]

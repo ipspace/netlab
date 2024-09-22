@@ -118,16 +118,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.1 10.1.0.5 dut-red" >>/tmp/hosts
-    echo "10.0.0.10 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.11 10.1.0.6 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -212,16 +202,6 @@ ok: [x2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.1 10.1.0.5 dut-red" >>/tmp/hosts
-    echo "10.0.0.10 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.11 10.1.0.6 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -309,8 +289,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -320,8 +300,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -378,6 +358,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.10/32
     !
     !
@@ -412,6 +394,8 @@ ok: [x2] =>
       neighbor 10.1.0.5 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.11/32
     !
@@ -471,6 +455,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -523,8 +511,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -551,7 +539,6 @@ ok: [dut] =>
        type: ip-vrf
   
   
-  
     - path: /routing-policy/community-set[name=C65000_1]
       value:
        member:
@@ -573,6 +560,10 @@ ok: [dut] =>
             protocol: bgp
           action:
             policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: export_local
           match:
             protocol: local
@@ -629,8 +620,6 @@ ok: [dut] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
-          - afi-safi-name: ipv6-unicast
-            admin-state: enable
   
           peer-as: 65010
   
@@ -665,8 +654,6 @@ ok: [dut] =>
           peer-group: ebgp
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: ipv6-unicast
             admin-state: enable
   
           peer-as: 65011

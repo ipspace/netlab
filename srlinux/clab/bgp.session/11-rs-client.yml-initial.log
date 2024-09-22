@@ -119,16 +119,6 @@ ok: [r2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r3" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 rs" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -214,16 +204,6 @@ ok: [r3] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r3" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 rs" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -308,16 +288,6 @@ ok: [rs] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r3" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 rs" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -407,8 +377,8 @@ skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [rs -> localhost]
-changed: [r3 -> localhost]
 changed: [r2 -> localhost]
+changed: [r3 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -419,9 +389,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r3, rs
 
 TASK [template] ****************************************************************
-changed: [rs]
-changed: [r2]
 changed: [r3]
+changed: [r2]
+changed: [rs]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -443,8 +413,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs => (item=bgp)
@@ -452,22 +422,22 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [r2]
-ok: [rs]
 ok: [r3]
+ok: [rs]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r2]
-ok: [rs]
 ok: [r3]
+ok: [rs]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r2] => 
+ok: [rs] => 
   msg: |-
-    bgp configuration for r2
+    bgp configuration for rs
     =========================================
     !
-    router bgp 65001
+    router bgp 65100
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
@@ -476,23 +446,31 @@ ok: [r2] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.10
+      bgp router-id 10.0.0.3
     !
-      neighbor 172.16.0.3 remote-as 65100
-      neighbor 172.16.0.3 description rs
+      neighbor 172.16.0.1 remote-as 65000
+      neighbor 172.16.0.1 description dut
+    !
+      neighbor 172.16.0.10 remote-as 65001
+      neighbor 172.16.0.10 description r2
     !
      address-family ipv4 unicast
     !
   
     !
-      network 10.0.0.10/32
+      network 10.0.0.3/32
     !
     !
     !
-      neighbor 172.16.0.3 activate
-      no neighbor 172.16.0.3 send-community all
-      neighbor 172.16.0.3 send-community standard
-      neighbor 172.16.0.3 send-community large
+      neighbor 172.16.0.1 activate
+      no neighbor 172.16.0.1 send-community all
+      neighbor 172.16.0.1 send-community standard
+      neighbor 172.16.0.1 send-community large
+    !
+      neighbor 172.16.0.10 activate
+      no neighbor 172.16.0.10 send-community all
+      neighbor 172.16.0.10 send-community standard
+      neighbor 172.16.0.10 send-community large
     !
     !
     !
@@ -676,12 +654,12 @@ ok: [r3] =>
     !
     !
     do write
-ok: [rs] => 
+ok: [r2] => 
   msg: |-
-    bgp configuration for rs
+    bgp configuration for r2
     =========================================
     !
-    router bgp 65100
+    router bgp 65001
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
@@ -690,31 +668,23 @@ ok: [rs] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.3
+      bgp router-id 10.0.0.10
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
-    !
-      neighbor 172.16.0.10 remote-as 65001
-      neighbor 172.16.0.10 description r2
+      neighbor 172.16.0.3 remote-as 65100
+      neighbor 172.16.0.3 description rs
     !
      address-family ipv4 unicast
     !
   
     !
-      network 10.0.0.3/32
+      network 10.0.0.10/32
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
-    !
-      neighbor 172.16.0.10 activate
-      no neighbor 172.16.0.10 send-community all
-      neighbor 172.16.0.10 send-community standard
-      neighbor 172.16.0.10 send-community large
+      neighbor 172.16.0.3 activate
+      no neighbor 172.16.0.3 send-community all
+      neighbor 172.16.0.3 send-community standard
+      neighbor 172.16.0.3 send-community large
     !
     !
     !
@@ -723,8 +693,8 @@ ok: [rs] =>
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -740,9 +710,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [rs]
 changed: [r3]
 changed: [r2]
+changed: [rs]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -756,8 +726,8 @@ skipping: [rs]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r2]
-changed: [r3]
 changed: [rs]
+changed: [r3]
 
 PLAY [Deploy custom deployment templates] **************************************
 
