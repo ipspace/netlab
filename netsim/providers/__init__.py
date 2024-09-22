@@ -21,6 +21,9 @@ from ..utils import files as _files
 from ..utils import templates,log,strings
 from ..outputs.ansible import get_host_addresses
 
+"""
+The generic provider class. Used as a super class of all other providers
+"""
 class _Provider(Callback):
   def __init__(self, provider: str, data: Box) -> None:
     self.provider = provider
@@ -252,6 +255,38 @@ class _Provider(Callback):
 
     topology.links = [
       link for link in topology.links if link.type not in links.VIRTUAL_INTERFACE_TYPES ]
+
+"""
+select_primary_provider: Find the top provider for the topology. For example, you can have
+clab nodes under libvirt provider, but not vice versa
+"""
+def select_primary_provider(topology: Box) -> None:
+  p_default = topology.provider
+
+  # Build a set of all providers used in the topology
+  #
+  p_set = { p_default } | { ndata.provider for ndata in topology.nodes.values() if 'provider' in ndata }
+
+  # Now build the list of providers that can be mixed (in relative order)
+  p_mix_list = [ x for x in topology.defaults.const.multi_provider if x in p_set ]
+  if not p_mix_list:                              # No relevant providers
+    return
+  
+  # Select the top provider from that list
+  p_top = p_mix_list[0]
+  if p_top == p_default:
+    return                                        # No need to change the top provider
+
+  topology.provider = p_top                       # Change the top provider
+  topology.defaults.provider = p_top
+  for ndata in topology.nodes.values():           # Now set the explicit providers for all nodes that need it
+    if not 'provider' in ndata:
+      ndata.provider = p_default
+
+  log.error(
+    f'Topology provider changed from {p_default} to {p_top}. Nodes are not affected',
+    category=Warning,
+    module='providers')
 
 """
 Get a pointer to provider module. Cached in topology._Providers
