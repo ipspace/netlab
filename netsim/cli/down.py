@@ -175,9 +175,14 @@ def stop_all(topology: Box, args: argparse.Namespace) -> None:
 Find a lab instance and change directory so the rest of the shutdown
 process works from that directory
 """
-def change_lab_instance(instance: str) -> None:
+def change_lab_instance(instance: typing.Union[int,str]) -> None:
   topology = _read.system_defaults()
   lab_states = status.read_status(topology)
+  try:                                                      # Maybe the instance is an integer?
+    instance = int(instance)
+  except:
+    pass
+
   if not instance in lab_states:
     log.fatal(f'Unknown instance {instance}, use "netlab status --all" to display running instances')
 
