@@ -1,3 +1,4 @@
+(lab-clab)=
 # Using Containerlab with *netlab*
 
 [Containerlab](https://containerlab.srlinux.dev/) is a Linux-based container orchestration system that creates virtual network topologies using containers as network devices. To use it:

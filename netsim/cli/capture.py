@@ -18,7 +18,8 @@ from ..utils import strings,log
 def capture_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]:
   parser = argparse.ArgumentParser(
     prog="netlab capture",
-    description='Start a packet capture on the specified node/interface')
+    description='Start a packet capture on the specified node/interface',
+    epilog='All other arguments are passed directly to the packet-capturing utility')
   parser.add_argument(
     '--snapshot',
     dest='snapshot',
