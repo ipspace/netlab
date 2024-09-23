@@ -700,3 +700,18 @@ def igp_post_transform(
 
   process_imports(node,proto,topology,['bgp','connected'])
   process_default_route(node,proto,topology)
+
+"""
+routing_protocol_data: Given a node and a protocol name, returns the global protocol data
+and any VRF instances
+
+You can use this generator to iterate over all routing protocol instances without going through
+the "global first, then VRFs" logic on your own
+"""
+def routing_protocol_data(node: Box, proto: str) -> typing.Generator:
+  if isinstance(node.get(proto,None),Box):
+    yield node[proto]
+
+  for vname,vdata in node.get('vrfs',{}).items():
+    if isinstance(vdata.get(proto,None),Box):
+      yield vdata[proto]
