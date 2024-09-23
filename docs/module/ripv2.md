@@ -33,6 +33,7 @@ See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
+(rip-params)=
 ## Lab Topology Parameters
 
 You can change the RIPv2/RIPng timers with the global **rip.timers** dictionary ([more details](rip-timers)).
@@ -44,6 +45,7 @@ The RIPv2/RIPng configuration module supports these node parameters:
 
 RIPv2 also supports [](routing_passive) and [](routing_external).
 
+(rip-vrf)=
 ## VRF Parameters
 
 * By default, _netlab_ redistributes BGP- and connected routes into VRF RIPv2/RIPng instances on all network devices. You can change that on devices supporting configurable route import with the **[ripv2.import](routing_import)** VRF parameter.

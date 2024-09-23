@@ -23,6 +23,7 @@ The module supports the following IS-IS features:
    :backlinks: none
 ```
 
+(isis-platform)=
 ## Platform Support
 
 The following table describes per-platform support of individual IS-IS features:
@@ -86,6 +87,7 @@ isis:
 Specify an **‌isis.area** value that has a single dot (example: 49.0001) within quotes to tell the YAML parser it's not a floating-point number.
 ```
 
+(isis-node)=
 ## Node Parameters
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes. You can also specify these node parameters:
