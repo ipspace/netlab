@@ -14,7 +14,7 @@ from ..augment import devices
 from ..augment import plugin
 from ..utils import templates,strings,log
 from ..utils import files as _files
-from ..data import global_vars
+from ..data import global_vars,append_to_list
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
@@ -80,6 +80,10 @@ def get_host_addresses(topology: Box) -> Box:
     intf_list = node.interfaces
     if 'loopback' in node:                                  # Create a list of all usable interfaces
       intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
+      for af in ['ipv4','ipv6']:
+        if af in node.loopback:
+          lb = str(netaddr.IPNetwork(node.loopback[af]).ip) # Extract IP address from the CIDR prefix
+          append_to_list(hosts[name],'loopback',lb)
 
     for intf in intf_list:                                  # Now iterate over interfaces
       h_name = f'{name}-{intf.vrf}' if 'vrf' in intf else name
@@ -87,11 +91,8 @@ def get_host_addresses(topology: Box) -> Box:
         if not isinstance(intf.get(af,False),str):          # Is the IP address a string (= usable IP address)?
           continue
       
-        if not af in hosts[h_name]:                         # Edge case: first interface
-          hosts[h_name][af] = []                            # ... have to start with an empty list
-
         addr = str(netaddr.IPNetwork(intf[af]).ip)          # Extract IP address from the CIDR prefix
-        hosts[h_name][af].append(addr)                      # ... and append it to the list of usable IP addresses
+        append_to_list(hosts[h_name],af,addr)               # ... and append it to the list of usable IP addresses
 
   global_vars.set('hosts',hosts)                            # Cache the hosts dictionary
   return hosts
