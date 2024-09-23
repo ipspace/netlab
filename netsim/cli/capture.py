@@ -32,15 +32,8 @@ def capture_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     help='Node on which you want to capture traffic')
   parser.add_argument(
     dest='intf', action='store',
-    help='Interface on which you want to capture traffic')
-  parser.add_argument(
-    '--command',
-    dest='command',
-    action='store',
     nargs='?',
-    default='tcpdump -i {intf}',
-    const='tcpdump -i {intf}',
-    help='Command to use for packet capture')
+    help='Interface on which you want to capture traffic')
 
   return parser.parse_known_args(args)
 
@@ -59,9 +52,11 @@ def run(cli_args: typing.List[str]) -> None:
       more_hints=[ 'Use "netlab status" to display the node names in the current lab topology' ])
   
   ndata = topology.nodes[args.node]
-  if args.intf and args.intf not in [ intf.ifname for intf in ndata.interfaces ]:
+  if not args.intf or args.intf not in [ intf.ifname for intf in ndata.interfaces ]:
+    errmsg = f'Invalid interface name {args.intf} for node {args.node} (device {ndata.device})' if args.intf \
+             else 'Missing interface name'
     log.error(
-      f'Invalid interface name {args.intf} for node {args.node} (device {ndata.device})',
+      errmsg,
       category=log.FatalError,
       module='capture',
       skip_header=True,
@@ -76,14 +71,21 @@ def run(cli_args: typing.List[str]) -> None:
   if p_cmd is None:
     log.error(
       f'Cannot perform packet capture for node {args.node} using provider {node_provider}',
+      module='capture',
       category=log.FatalError,
       exit_on_error=True,
       skip_header=True)
 
-  p_cmd_list = p_cmd.split(' ')
-  if not rest and 'tcpdump' in args.command:
-    rest = [ '-l', '-v' ]
+  if not rest:
+    rest = strings.string_to_list(topology.defaults.netlab.capture.command_args)
 
-  p_cmd_list.extend(rest)
-  print(f'Starting packet capture on {args.node}/{args.intf}: {" ".join(p_cmd_list)}')
-  external_commands.run_command(p_cmd_list)
+  p_cmd += rest
+  print(f'Starting packet capture on {args.node}/{args.intf}: {" ".join(p_cmd)}')
+  status = external_commands.run_command(p_cmd,ignore_errors=True,return_exitcode=True)
+  if status == 1:
+    log.error(
+      f'Packet capturing utility reported an error',
+      category=log.FatalError,
+      module='capture',
+      skip_header=True,
+      exit_on_error=True)

@@ -257,6 +257,7 @@ class Containerlab(_Provider):
         f"command to pull the image from it or build/install it using this recipe:",
         dp_data.build ])
 
-  def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> str:
-    cmd = strings.eval_format(args.command,{'intf': args.intf})
-    return f'sudo ip netns exec clab-{topology.name}-{node.name} {cmd}'
+  def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> list:
+    cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
+    cmd = strings.eval_format_list(cmd,{'intf': args.intf})
+    return strings.string_to_list(f'sudo ip netns exec clab-{topology.name}-{node.name}') + cmd
