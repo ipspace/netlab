@@ -310,10 +310,10 @@ def execute(hook: str, topology: Box) -> None:
 """
 Execute a node-level provider hook
 """
-def execute_node(hook: str, node: Box, topology: Box) -> None:
+def execute_node(hook: str, node: Box, topology: Box) -> typing.Any:
   node_provider = devices.get_provider(node,topology.defaults)
   p_module = get_provider_module(topology,node_provider)
-  p_module.call(hook,node,topology)
+  return p_module.call(hook,node,topology)
 
 """
 Mark all nodes and links with relevant provider(s)

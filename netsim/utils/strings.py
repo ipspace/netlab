@@ -101,13 +101,25 @@ def format_structured_dict(d: Box, prefix: str = '') -> str:
 def print_structured_dict(d: Box, prefix: str = '') -> None:
   print(format_structured_dict(d,prefix))
 
-#
-# eval_format: emulate f'strings' evaluated on a data structure
-#
+def string_to_list(txt: typing.Union[str,list], sep: str = ' ') -> list:
+  if isinstance(txt,list):
+    return txt
+  
+  return [ frag for frag in txt.split(sep) if frag != '' ]
+
+"""
+eval_format: emulate f'strings' evaluated on a data structure
+"""
 def eval_format(fmt: str, data: dict) -> str:
   fmt = fmt.replace("'","\\'")         # Escape single quotes to prevent eval crashes
   ex = "f'"+fmt+"'"                    # String to format-evaluate
   return str(eval(ex,dict(data)))      # An awful hack to use f-string specified in a string variable
+
+"""
+eval_format_list: execute eval_format on a list
+"""
+def eval_format_list(fmt_list: list, data: dict) -> list:
+  return [ eval_format(fm_elem,data) if '{' in fm_elem else fm_elem for fm_elem in fmt_list ]
 
 """
 confirm: print the prompt and wait for a yes/no answer

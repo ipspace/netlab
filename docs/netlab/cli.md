@@ -18,6 +18,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 ## Configuring and Controlling the Lab
 
 * **[netlab connect](connect.md)** uses the transformed lab topology data to find the IP address, username, and password of the specified lab device or [external tool](../extools.md), and uses SSH or **docker exec** to connect to the lab device/tool.
+* **[netlab capture](capture.md)** can be used to perform packet capture on VM- or container interfaces
 * **[netlab collect](collect.md)** uses Ansible device facts (or equivalent functionality implemented with Ansible modules) to collect device configurations and store them in the specified directory.
 * **‌[netlab validate](validate.md)** executes tests defined in the lab topology on the lab devices
 * **[netlab down](down.md)** destroys the virtual lab.
@@ -52,6 +53,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 .. toctree::
    :maxdepth: 1
 
+   netlab capture <capture.md>
    netlab clab <clab.md>
    netlab collect <collect.md>
    netlab config <config.md>

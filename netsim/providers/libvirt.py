@@ -11,6 +11,7 @@ from box import Box
 import pathlib
 import tempfile
 import netaddr
+import argparse
 
 from ..data import types,get_empty_box
 from ..utils import log,strings
@@ -219,12 +220,15 @@ class Libvirt(_Provider):
 
     _Provider.pre_transform(self,topology)
 
+    p2p_bridge = topology.defaults.get('providers.libvirt.p2p_bridge',False)
     for l in topology.links:
       if l.get('libvirt.uplink',None):                           # Set 'public' attribute if the link has an uplink
         if not 'public' in l.libvirt:                            # ... but no 'public' libvirt attr
           l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
 
-      if l.get('libvirt.provider',None) and 'vlan' not in l.type:
+      must_be_lan = l.get('libvirt.provider',None) and 'vlan' not in l.type
+      must_be_lan = must_be_lan or (p2p_bridge and l.get('type','p2p') == 'p2p')
+      if must_be_lan:
         l.type = 'lan'
         if not 'bridge' in l:
           l.bridge = "%s_%d" % (topology.name[0:10],l.linkindex)
@@ -393,3 +397,38 @@ class Libvirt(_Provider):
         f"If you have the Vagrant box available in a private repository, use the",
         f"'vagrant box add <url>' command to add it, or use this recipe to build it:",
         dp_data.build ])
+
+  def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> typing.Optional[list]:
+    intf = [ intf for intf in node.interfaces if intf.ifname == args.intf ][0]
+    if intf.get('libvirt.type',None) == 'tunnel':
+      log.error(
+        f'Cannot perform packet capture on libvirt point-to-point links',
+        category=log.FatalError,
+        module='libvirt',
+        skip_header=True,
+        exit_on_error=True,
+        hint='capture')
+
+    domiflist = external_commands.run_command(
+                  ['virsh','domiflist',f'{topology.name}_{node.name}'],
+                  check_result=True,
+                  return_stdout=True)
+    if not isinstance(domiflist,str):
+      return None
+
+    for intf_line in domiflist.split('\n'):
+      intf_data = strings.string_to_list(intf_line)
+      if len(intf_data) != 5:
+        continue
+      if intf_data[2] == intf.bridge:
+        cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
+        cmd = strings.eval_format_list(cmd,{'intf': intf_data[0]})
+        return ['sudo'] + cmd
+      
+    log.error(
+      f'Cannot find the interface on node {node.name} attached to libvirt network {intf.bridge}',
+      category=log.FatalError,
+      module='libvirt',
+      skip_header=True,
+      exit_on_error=True)
+    return None
