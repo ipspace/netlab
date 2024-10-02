@@ -63,7 +63,7 @@ done
 #
 echo "INIT: creating other interface"
 cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-{% for l in interfaces if l.type in ['lan','p2p','stub'] %}
+{% for l in interfaces if l.type in ['lan','p2p','stub','lag'] %}
 auto {{ l.ifname }}
 {%   if l.ipv4 is defined %}
 
@@ -99,6 +99,13 @@ iface {{ l.ifname }} inet6 static
 iface {{ l.ifname }}
   mtu {{ l.mtu }}
 {%     endif %}
+{%   if l.type == 'lag' %}
+  bond-slaves {%- for l2 in interfaces if 'lag' in l2 and l2.type!='lag' and l2.lag.id==l.lag.id %} {{ l2.ifname }}{%- endfor -%}
+{%    if l.lag.lacp|default(lag.lacp)=='slow' %}
+  bond-lacp-rate slow
+{%    endif %}
+{%   endif %}
+
 {% endfor %}
 CONFIG
 #
