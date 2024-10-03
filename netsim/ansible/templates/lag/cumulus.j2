@@ -1,1 +1,33 @@
-# empty
+#!/bin/bash
+#
+set -e
+
+echo "LAG: creating bond interface(s)"
+#
+# Create bond interface entry
+#
+{%- macro bond_interface(data) %}
+auto {{ data.ifname }}
+iface {{ data.ifname }}
+  pre-up ip link add {{ data.ifname }} type bond
+  bond-slaves {%- for i in interfaces if 'lag' in i and i.type=='p2p' and i.lag.id==data.lag.id %} {{ i.ifname }}{%- endfor %}
+{%    set _lacp = data.lag.lacp|default(lag.lacp) %}
+{%    if _lacp=='slow' %}
+  bond-lacp-rate slow
+{%    elif _lacp=='off' %}
+  bond-mode balance-xor
+{%    endif %}
+{% endmacro %}
+
+cat >/etc/network/interfaces.d/20-bond.intf <<CONFIG
+{% for l in interfaces if l.type == 'lag' %}
+{{ bond_interface(l) }}
+{% endfor %}
+CONFIG
+
+#
+echo "LAG: executing ifreload"
+#
+until ifreload -a; do
+  sleep 1
+done

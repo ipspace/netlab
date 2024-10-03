@@ -12,13 +12,12 @@ LAG is currently supported on these platforms:
 
 ## Parameters
 
-The following parameters can be set globally or per node/link:
+The following parameters can be set globally or per node/link/interface:
 
 * **lacp**: LACP protocol interval: "fast", "slow" or "off"
 * **lacp_mode**: "active" or "passive"
 
-The **lag.id** parameter can be set at the link or interface level; all interfaces 
-with the same lag.id value form a Link Aggregation Group.
+The **lag.id** parameter can only be set at the link level; all links with the same lag.id value form a Link Aggregation Group.
 
 ## Example
 
@@ -27,7 +26,7 @@ To create a LAG consisting of 2 links between 2 devices:
 ```
 module: [ lag ]
 
-...
+nodes: [ r1, r2 ]
 
 links:
 - r1:
