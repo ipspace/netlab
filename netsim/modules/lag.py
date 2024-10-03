@@ -43,7 +43,6 @@ class LAG(_Module):
           if_data = data.get_box(i)
           if_data.ifname = features.lag.if_name.format(**i)
           if_data.ifindex = max([j.ifindex for j in (node.interfaces+lag_ifs)]) + 1
-          if_data.links = 1
           if_data.type = 'lag'
           if_data.ports = [i.ifname]
 
@@ -62,14 +61,13 @@ class LAG(_Module):
                 # TODO check at least one side 'active' in case of LACP
               else:
                 log.error(
-                  f'Node {node.name} has a LAG configured on {i.ifname} but its neighbor {n.name} does not support LAGs',
+                  f'Node {node.name} has a LAG configured on {i.ifname} but its neighbor {n.node} does not support LAGs',
                   category=log.IncorrectAttr,
                   module='lag',
                   hint='lag')
 
           lag_ifs.append( if_data )
         else:
-          virt_if[0].links = virt_if[0].links + 1
           virt_if[0].ports.append(i.ifname)
 
         # Remove attributes from physical interface
