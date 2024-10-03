@@ -30,6 +30,7 @@ class LAG(_Module):
         vlag.linkindex = len(topology.links) + 1
         vlag._linkname = f"links[{vlag.linkindex}]"
         vlag.interfaces = [ i for i in link.interfaces ] # Make a deep copy
+        vlag.pop('mtu',None)                             # Remove any MTU attribute
         topology.links.append(vlag)
 
         if log.debug_active('vlan'):
