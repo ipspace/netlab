@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+{% for intf in interfaces if intf.gateway.protocol|default('none') == 'vrrp' %}
+{%   for afm in ['ipv4','ipv6'] if afm in intf.gateway %}
+{%     set v_if = 'vrrp%s-%s-%s'|format('6' if afm == 'ipv6' else '',intf.ifindex,intf.gateway.vrrp.group) %}
+{%     set v_mac = '00:00:5e:00:%02x:%02x'|format(2 if afm == 'ipv6' else 1,intf.gateway.vrrp.group) %}
+if [ ! -e /sys/class/net/{{ v_if }} ]; then
+  ip link add {{ v_if }} link {{ intf.ifname }} type macvlan mode bridge
+  ip link set dev {{ v_if }} address {{ v_mac }}
+  ip addr add {{ intf.gateway[afm] }} dev {{ v_if }}
+  ip link set dev {{ v_if }} up
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_announce=1
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_ignore=2
+fi
+{%   endfor %}
+{% endfor %}
+{% for intf in interfaces if intf.gateway.protocol|default('none') == 'anycast' %}
+{%   set v_if = 'varp-%s'|format(intf.ifindex) %}
+if [ ! -e /sys/class/net/{{ v_if }} ]; then
+  ip link add {{ v_if }} link {{ intf.ifname }} type macvlan mode private
+  ip link set dev {{ v_if }} address {{ intf.gateway.anycast.mac|hwaddr('linux') }}
+  ip link set dev {{ v_if }} up
+{%   for afm in ['ipv4','ipv6'] if afm in intf.gateway %}
+  ip addr add {{ intf.gateway[afm] }} dev {{ v_if }} metric 1024
+{%   endfor %}
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_announce=1
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_ignore=2
+fi
+{% endfor %}
+{% include 'frr.vrrp-config.j2' %}

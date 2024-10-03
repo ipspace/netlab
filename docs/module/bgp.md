@@ -83,7 +83,7 @@ The following features are only supported on a subset of platforms:
 | Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |
 | Dell OS10             |  ✅ |  ❌  |  ❌  |  ❌  |
 | FRR                   |  ✅ |  ✅ |  ✅ |  ✅ |
-| Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ❌  |
+| Nokia SR Linux        |  ✅ |  ✅ |  ✅ [❗](caveats-srlinux) |  ✅ |
 | Nokia SR OS           |  ✅ |  ✅ |  ❌  |  ❌  |
 | Sonic                 |  ✅ |  ✅ |  ❌  |  ❌  |
 | VyOS                  |  ✅ |  ❌  |  ✅ |  ✅ |
@@ -92,7 +92,7 @@ The following features are only supported on a subset of platforms:
 See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
 ```
 
-[^18v]: Includes Cisco IOSv, Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco IOSv, IOSvL2, Cisco CSR 1000v and Cisco Catalyst 8000v
 
 [^INTv4]: IPv4 address family activated on an EBGP session established between IPv6 LLA interfaces and using IPv6 next hop for IPv4 prefixes according to RFC 8950
 

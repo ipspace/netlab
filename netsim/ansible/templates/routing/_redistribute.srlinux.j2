@@ -1,0 +1,50 @@
+{% macro config(vrf='default',proto='ospf',p_data={},evpn_active=True,af=['ipv4']) %}
+{% if p_data.default|default(False) %}
+- path: /routing-policy/prefix-set[name=default_route]
+  value:
+    prefix:
+    - ip-prefix: "0.0.0.0/0"
+      mask-length-range: exact
+    - ip-prefix: "::/0"
+      mask-length-range: exact
+{%   if p_data.default.always|default(False) %}
+- path: /network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
+  value:
+    blackhole:
+      generate-icmp: True
+
+{%     for afm in af %}
+- path: /network-instance[name={{vrf}}]/static-routes
+  value:
+    route:
+    - prefix: {{ "0.0.0.0/0" if afm == 'ipv4' else "::/0" }}
+      preference: 254
+      next-hop-group: blackhole
+{%     endfor %}
+{%   endif %}
+{% endif %}
+{% set p_import = p_data.import|default(False) or p_data.default|default(False) %}
+{% if p_import %}
+- path: /routing-policy/policy[name={{ vrf }}_export_{{ proto }}]
+  value:
+    default-action:
+      policy-result: reject
+    statement:
+{%   if p_data.default|default(False) %}
+    - name: default
+      match:
+        prefix-set: default_route
+      action:
+        policy-result: accept
+{%   endif %}
+{%   for s_proto in p_data.import|default([]) %}
+{%     for srl_proto in netlab_match_protomap[s_proto] if srl_proto != 'bgp-evpn' or evpn_active %}
+    - name: export_{{ srl_proto }}
+      match:
+        protocol: {{ srl_proto }}
+      action:
+        policy-result: accept
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+{% endmacro %}

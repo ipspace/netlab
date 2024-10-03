@@ -1,3 +1,4 @@
+(lab-clab)=
 # Using Containerlab with *netlab*
 
 [Containerlab](https://containerlab.srlinux.dev/) is a Linux-based container orchestration system that creates virtual network topologies using containers as network devices. To use it:
@@ -156,18 +157,21 @@ nodes:
 [_vrnetlab_](https://containerlab.dev/manual/vrnetlab/) is an open-source project that packages network device virtual machines into containers. The resulting containers have a launch process that starts **qemu** (KVM) to spin up a virtual machine. Running *vrnetlab* containers on a VM, therefore, requires nested virtualization.
 
 ```{warning}
-_vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/hellt/vrnetlab/issues/231)), please contact them.
+* _vrnetlab_ has to add another layer of abstraction and [spaghetti networking](vrnetlab-internal-net). If you can choose between a _vrnetlab_ container and a Vagrant box supported by _netlab_, use the Vagrant box.
+* Do not use the original _vrnetlab_ project to create device containers. _netlab_ has been tested with the [vrnetlab fork](https://github.com/hellt/vrnetlab) supported by _containerlab_ (see [containerlab documentation](https://containerlab.dev/manual/vrnetlab/) for more details).
+* Finally, _vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/hellt/vrnetlab/issues/231)), please contact them.
 ```
 
 ### Image Names
 
 The build process generates container tags based on the underlying VM image name. You will probably have to [change the default _netlab_ container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
 
+(vrnetlab-internal-net)=
 ### Internal Container Networking
 
-The packaged container's architecture requires an internal network. The _vrnetlab_ fork supported by _containerlab_ uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool.
+The packaged container's architecture requires an internal network. The [_vrnetlab_ fork](https://github.com/hellt/vrnetlab) supported by _containerlab_ uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool. Fortunately, that fork also adds management VRF (and default route within the management VRF) to most device configurations, making the overlap between _vrnetlab_ internal subnet and _netlab_ loopback pool irrelevant.
 
-If you're experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers, add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
+However, if you're still experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers after rebuilding them with the [latest vrnetlab version](https://github.com/hellt/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
 ```
 addressing:
@@ -177,7 +181,7 @@ addressing:
     ipv4: 10.255.0.0/24
 ```
 
-Alternatively, add the same settings to the user defaults file.
+Alternatively, add the same settings to the [user defaults file](defaults-user-file).
 
 ### Waiting for the VM
 

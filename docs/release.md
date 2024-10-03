@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+**[Release 1.9.1](release-1.9.1) (XXXX-XX-XX)**
+
+* [IS-IS route import](isis-node) ([redistribution](routing_import))
+* [IS-IS VRF instances](isis-platform)
+* [RIP VRF instances](rip-vrf)
+* [RIPng route import](rip-params)
+* [Configurable RIPv2/RIPng protocol timers](rip-timers)
+* Support for [Cisco IOSv layer-2 image](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2)
+
 **[Release 1.9.0-post1](release-1.9.0-post1) (2024-08-26)**
 
 This release contains [minor improvements](release-1.9.0-post1), numerous [SR Linux configuration fixes](release-1.9.0-post1-device-fixes), a few other [bug fixes](bug-fixes-1.9.0-post1), and [documentation fixes](doc-fixes-1.9.0-post1).

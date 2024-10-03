@@ -351,11 +351,15 @@ def check_vrf_protocol_support(
     # We found the protocol to check in the current VRF, time to check device features
     d_feature = devices.get_device_features(node,topology.defaults)
     if not d_feature.get(f'vrf.{feature}',False): # Does the device support the target protocol/AF combo?
+      f_name = feature if feature != proto else f'{proto} for {af}'
       log.error(
-        f'Device {node.device} (node {node.name}) does not support {feature} in VRFs (found in VRF {v_name})',
+        f'Device {node.device} (node {node.name}) does not support {f_name} in VRFs (found in VRF {v_name})',
         category=log.IncorrectValue,
         module=proto)
       return
+
+    if af:
+      v_data[proto].af[af] = True                 # Add the AF to VRF routing protocol data
 
 """
 get_remote_cp_endpoint: find the remote control-plane endpoint
@@ -412,7 +416,6 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
 
     if not rid_blacklist:                                   # Get the global black lisf if needed
       rid_blacklist = get_router_id_blacklist(topology,proto)
-      print(f'blacklist: {rid_blacklist}')
 
     while True:                                             # Try to get the next router ID from the pool
       rid_pfx = get_router_id_prefix(node,proto,topology.pools,use_id=False)
@@ -510,7 +513,17 @@ def check_import_request(
       continue
 
     # Add an import routing policy if needed
-    node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
+    i_policy = i_dict.get(f'{s_proto}.policy',None)
+    if i_policy:
+      if 'no_policy' in f_import:
+        log.error(
+          f'Device {node.device} (node {node.name}) cannot use routing policies ' + \
+          f'on route imports ({s_proto} => {proto}, policy {i_policy})',
+          category=log.IncorrectValue,
+          module=proto)
+        break
+      else:
+        node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
 
   if 'ripv2' in i_dict:                                     # Finally, replace RIPv2 with RIP
     i_dict.rip = i_dict.ripv2
@@ -545,7 +558,8 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
           do_import = is_vrf_protocol(node,vdata,s_proto) or \
                       (proto == 'bgp' and s_proto in node)
           if do_import:
-            vdata[proto]['import'][s_proto] = { 'auto': True }        # ... mark import as auto-generated
+            sp_name = 'rip' if s_proto == 'ripv2' else s_proto        # Use 'rip' for RIPv2 in final data structures
+            vdata[proto]['import'][sp_name] = { 'auto': True }        # ... mark import as auto-generated
     else:                                                             # Explicit import configuration
       if vrf_aware:                                                   # ... if the protocol is VRF-aware check it
         check_import_request(proto,node,vdata[proto],topology,features)
@@ -686,3 +700,18 @@ def igp_post_transform(
 
   process_imports(node,proto,topology,['bgp','connected'])
   process_default_route(node,proto,topology)
+
+"""
+routing_protocol_data: Given a node and a protocol name, returns the global protocol data
+and any VRF instances
+
+You can use this generator to iterate over all routing protocol instances without going through
+the "global first, then VRFs" logic on your own
+"""
+def routing_protocol_data(node: Box, proto: str) -> typing.Generator:
+  if isinstance(node.get(proto,None),Box):
+    yield node[proto]
+
+  for vname,vdata in node.get('vrfs',{}).items():
+    if isinstance(vdata.get(proto,None),Box):
+      yield vdata[proto]

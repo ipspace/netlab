@@ -1,18 +1,19 @@
 {% import "ios.macro.j2" as bgpcfg %}
+{% import "templates/routing/_redistribute.ios.j2" as redistribute with context %}
 {% set ospf_pid = ospf.process|default(1) %}
 !
 ip bgp-community new-format
 !
 router bgp {{ bgp.as }}
-  no bgp default ipv4-unicast
-  bgp update-delay 5
-  bgp nopeerup-delay cold-boot 1
-  bgp nopeerup-delay user-initiated 1
+ no bgp default ipv4-unicast
+ bgp update-delay 5
+ bgp nopeerup-delay cold-boot 1
+ bgp nopeerup-delay user-initiated 1
 {% if bgp.router_id|ipv4 %}
-  bgp router-id {{ bgp.router_id }}
+ bgp router-id {{ bgp.router_id }}
 {% endif %}
 {% if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
-  bgp cluster-id {{ bgp.rr_cluster_id }}
+ bgp cluster-id {{ bgp.rr_cluster_id }}
 {% endif %}
 {#
     Configure IPv4 and IPv6 BGP neighbors
@@ -27,14 +28,7 @@ router bgp {{ bgp.as }}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
  address-family {{ af }}
   bgp scan-time 5
-{% if bgp.import is defined %}
-!
-{%   for s_proto,s_data in bgp.import.items() %}
-  redistribute {{ s_proto }}{%
-    if s_proto == 'ospf' %} {{ ospf_pid }} match internal external{% endif %}{%
-    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
-{%   endfor %}
-{% endif %}
+{{   redistribute.config(bgp,af=af,ospf_pid=ospf_pid)|indent(1,first=True) }}
 !
 {%   if loopback[af] is defined and bgp.advertise_loopback %}
 {{     bgpcfg.bgp_network(af,loopback[af]) }}

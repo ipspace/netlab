@@ -8,9 +8,10 @@ The following implementation nodes for configuration deployment, initial device 
 
    deploy.md
    initial.md
-   ospf.md
    bfd.md
+   gateway.md
+   ospf.md
+   routing.md
    vlan.md
    vrf.md
-   gateway.md
 ```

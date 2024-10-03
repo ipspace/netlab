@@ -1,0 +1,47 @@
+{% import "templates/routing/_redistribute.ios.j2" as redistribute with context %}
+!
+{% macro config(ripv2,vrf='',ospf_pid=1) -%}
+{%   if vrf %}
+ipv6 rip vrf-mode enable
+{%   endif %}
+{%   if ripv2.af.ipv4|default(False) %}
+router rip
+ version 2
+ no auto-summary
+ address-family ipv4 {{ 'vrf '+vrf if vrf else 'unicast' }}
+{%     if 'import' in ripv2 %}
+  default-metric {{ netlab_ripv2_default_metric|default(5) }}
+{%     endif %}
+{%     if 'timers' in ripv2 %}
+  timers basic {{ ripv2.timers['update'] }} {{ ripv2.timers.timeout }} {{ ripv2.timers.garbage }} 1
+{%     endif %}
+{{     redistribute.config(ripv2,af='ipv4',ospf_pid=ospf_pid)|indent(1,first=True) }}
+{%     for intf in ripv2.interfaces|default(netlab_interfaces) %}
+{%       if 'ripv2' in intf and intf.ipv4|default(False) is string %}
+  network {{ intf.ipv4|ipaddr('address') }}
+{%       endif %}
+{%       set in_vrf = (vrf == '' and 'vrf' not in intf) or (intf.vrf == vrf) %}
+{%       if in_vrf and (intf.ripv2.passive|default(False) or not 'ripv2' in intf) %}
+  passive-interface {{ intf.ifname }}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+!
+{%   if ripv2.af.ipv6|default(False) %}
+{%     set r_instance = vrf or 'default' %}
+ipv6 router rip default
+{%     if vrf %}
+ address-family ipv6 vrf {{ vrf }}
+{%     endif %}
+{%     if 'timers' in ripv2 %}
+  timers {{ ripv2.timers['update'] }} {{ ripv2.timers.timeout }} {{ ripv2.timers.garbage }} 1
+{%     endif %}
+{{     redistribute.config(ripv2,af='ipv6',ospf_pid=ospf_pid)|indent(1,first=True) }}
+!
+{%     for intf in ripv2.interfaces|default(netlab_interfaces) if 'ripv2' in intf and 'ipv6' in intf %}
+!
+interface {{ intf.ifname }}
+  ipv6 rip default enable
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}

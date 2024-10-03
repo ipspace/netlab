@@ -1,0 +1,22 @@
+{% macro policy(sp_data,af) -%}
+  {% if 'policy' in sp_data %} route-map {{ sp_data.policy }}-{{ af }}{% endif +%}
+{%- endmacro %}
+{% macro config(pdata,af,af_redistribute=False,isis_level='') -%}
+{%   if pdata.import is defined %}
+{%     for s_proto,s_data in pdata.import.items() %}
+{%       if s_proto == 'ospf' and af == 'ipv6' %}
+{#         FRR calls OSPFv3 ospf6 #}
+{%         set s_proto = 'ospf6' %}
+{%       endif %}
+{%       if af_redistribute %}
+{#         ISIS has to specify AF on redistribute command #}
+{%         set s_proto = af + ' ' + s_proto %}
+{%       endif %}
+{%       if isis_level %}
+{#         ISIS wants to know into which database it should redistribute #}
+{%         set s_proto = s_proto + ' ' + isis_level %}
+{%       endif %}
+ redistribute {{ s_proto }}{{ policy(s_data,af) }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}

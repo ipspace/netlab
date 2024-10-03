@@ -1,4 +1,5 @@
-{% import "ios.default.j2" as ospf_default %}
+{% import "templates/routing/_default.ios.j2" as ospf_default %}
+{% import "templates/routing/_redistribute.frr.j2" as redistribute with context %}
 {% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
 !
 ! OSPFv3 FRR configuration
@@ -36,11 +37,7 @@ router ospf6
  timers lsa min-arrival 100
  timers throttle spf 10 50 500
 {{ ospf_default.config(ospf_data,'ipv6') }}
-{% if ospf_data.import is defined %}
-{%   for s_proto,s_data in ospf_data.import.items() %}
- redistribute {{ s_proto }}{% if 'policy' in s_data %} route-map {{ s_data.policy }}-ipv6{% endif +%}
-{%   endfor %}
-{% endif %}
+{{ redistribute.config(ospf_data,af='ipv6') }}
 {% if ospf_data.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
 {% endif %}

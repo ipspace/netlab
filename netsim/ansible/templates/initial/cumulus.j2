@@ -17,21 +17,10 @@ SCRIPT
 echo "INIT: setting hostname"
 {% set v_hostname = inventory_hostname.replace("_","-") %}
 hostname {{ v_hostname }}
-echo "INIT: creating /etc/hosts"
-awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-echo "127.0.0.1 {{ inventory_hostname }}{% 
-  if "_" in inventory_hostname %} {{ v_hostname }}{% endif %}" >>/tmp/hosts
-{% for hname,hdata in hosts.items() if hname != inventory_hostname %}
-echo "{{ (hdata.ipv4|default([]) + hdata.ipv6|default([]))|join (' ') }} {{ hname }}" >>/tmp/hosts
-{% endfor %}
-cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-{% if ansible_connection != "docker" %}
-mv /tmp/hosts-start /etc/hosts
-{% endif %}
-sort /tmp/hosts|uniq >>/etc/hosts
 #
 {% if clab.kind is not defined %}
-{# no need to disable ZTP in a container #}
+{% include 'linux/hosts.j2' +%}
+{# no need to create hosts file or disable ZTP in a container #}
 #
 # Disable ZTP
 #

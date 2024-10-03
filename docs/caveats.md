@@ -90,13 +90,15 @@ See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 
 (caveats-iosv)=
-## Cisco IOSv
+## Cisco IOSv and IOSvL2
 
 * Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
 * BGP configuration is optimized for reasonable convergence times under lab conditions. Do not use the same settings in a production network.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * It's impossible to configure RIPv2 on individual subnets on Cisco IOS. RIPv2 might be running on more interfaces than intended. _netlab_ configures those interfaces to be *passive*.
 * Cisco IOS does not support passive interfaces in RIPng.
+* Cisco IOS requires a *default metric* when redistributing routes into RIPv2. The RIPv2 configuration template sets the default metric to the value of the **netlab_ripv2_default_metric** node parameter (default: 5)
+* You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image 
 
 (cisco-iosv-ssh)=
 ### SSH Access to Cisco IOSv
@@ -201,8 +203,15 @@ devices.cumulus.libvirt.memory: 2048
 (caveats-fortios)=
 ## Fortinet FortiOS
 
-* *FortiOS* VM images by default have a 15 day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
-* Ansible automation of FortiOS requires the installation of the [FortiOS Ansible Collection 2.1.3 or greater](https://galaxy.ansible.com/fortinet/fortios) and a FortiOS version > 6.0.
+We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated and might not work with recent Fortinet software releases. A _netlab_ user reported he got Fortinet devices running with the following software releases:
+
+* Fortios v7.0.15 (Vagrant box built with [this recipe](https://github.com/mweisel/fortigate-vagrant-libvirt))
+* Ansible 9.6.1 (Ansible core 2.16.7)
+* **fortinet.fortios** Ansible Galaxy collection version 2.3.6
+
+```{tip}
+*FortiOS* VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+```
 
 ### OSPF Caveats
 
@@ -291,14 +300,18 @@ See also [](caveats-junos).
 
 (caveats-srlinux)=
 ## Nokia SR Linux
+
 * Only supported on top of *Containerlab*
-* Supports container image release 23.3.1 or later (due to YANG model changes)
+* Supports SR Linux release 24.7.1 or later (due to YANG model changes)
 * Requires `nokia.srlinux` Ansible Galaxy collection (minimum version 0.5.0). Use **ansible-galaxy collection install nokia.srlinux** command to install it.
-* MPLS and LDP are only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e'])
+* MPLS and LDP are only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e']). You need a license to run these containers.
 * Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
-* SR Linux does not support multi-topology IS-IS.
 * SR Linux does not support configurable propagation of extended BGP communities.
+* The SR Linux prefix filters cannot contain the **deny** action.
+* The SR Linux configuration templates do not support additional routing policies on routing protocol route imports
+* SR Linux needs a static default route (with low route preference) to implement OSPF **default-originate always** functionality.
+* SR Linux does not set metrics on routes imported into OSPF. While you can specify the metric and metric type of the OSPF default route, those settings have no impact.
 
 (caveats-sros)=
 ## Nokia SR OS

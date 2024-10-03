@@ -43,6 +43,7 @@ def transform_setup(topology: Box) -> None:
   log.exit_on_error()
 
   augment.topology.adjust_global_parameters(topology)
+  providers.select_primary_provider(topology)
   log.exit_on_error()
 
   augment.nodes.augment_node_provider_data(topology)

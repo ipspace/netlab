@@ -42,6 +42,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco Catalyst 8000v   | cisco/cat8000v              |
 | Cisco CRS 1000v        | cisco/csr1000v              |
 | Cisco IOSv             | cisco/iosv                  |
+| Cisco IOSvL2           | cisco/iosvl2                |
 | Cisco IOS XR           | cisco/iosxr                 |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
 | Dell OS10              | dell/os10                   |
@@ -78,7 +79,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [Cisco ASAv](asav.md)
 * [Cisco Catalyst 8000v](cat8000v.md)
 * [Cisco CSR 1000v](csr.md)
-* [Cisco IOSv](iosv.md)
+* Cisco [IOSv](iosv.md) and [IOSvL2](iosvl2.md)
 * [Cisco IOS XR](iosxr.md)
 * [Cisco Nexus OS](nxos.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
@@ -127,6 +128,15 @@ The new Vagrant box will be copied into the *libvirt* storage pool the next time
 
 * P2P UDP tunnels are used for links with two nodes, and link **type** is set to **p2p** (the default behavior for links with two nodes). P2P tunnels are transparent; you can run any layer-2 control-plane protocol (including LACP) over them.
 * *libvirt* networks are used for all other links. They are automatically created and deleted by **vagrant up** and **vagrant down** commands executed by **netlab up** and **netlab down**. **netlab up** sets the `group_fwd_mask` for all Vagrant-created Linux bridges to 0x4000 to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
+
+(libvirt-capture)=
+### Packet Capture
+
+The *libvirt* point-to-point UDP tunnels are not implemented as Linux interfaces, making it impossible to start packet capture on the VM interfaces attached to point-to-point tunnels. The VMs must be attached to Linux bridges for the **[netlab capture](netlab-capture)** command to work.
+
+Add **type: lan** to a point-to-point link between two virtual machines to change its implementation into a Linux bridge. You can also set the **defaults.providers.libvirt.p2p_bridge** parameter to *True* if you don't want to use UDP tunnels for point-to-point links (see [](defaults-topology) and [](defaults-user-file) for more information on changing system defaults).
+
+Finally, you could start the lab with the `netlab up -p libvirt:p2p_bridge` command to change the system default for a single lab instance.
 
 (libvirt-network-external)=
 ### Connecting to the Outside World
@@ -286,6 +296,7 @@ providers.libvirt.probe: []
    cat8000v.md
    csr.md
    iosv.md
+   iosvl2.md
    iosxr.md
    nxos.md
    dellos10.md

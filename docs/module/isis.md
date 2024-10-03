@@ -11,6 +11,8 @@ The module supports the following IS-IS features:
 * Wide metrics (enabled by default, cannot be turned off)
 * Unnumbered IPv4 interfaces
 * Passive interfaces
+* VRF IS-IS instances
+* Route import (redistribution)
 * BFD
 
 
@@ -21,23 +23,24 @@ The module supports the following IS-IS features:
    :backlinks: none
 ```
 
+(isis-platform)=
 ## Platform Support
 
 The following table describes per-platform support of individual IS-IS features:
 
-| Operating system      | IS type | IPv6 AF | Multi<br>topology | Unnumbered<br />interfaces | IPv4<br />BFD | IPv6<br />BFD |
-| ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ❌  |
-| Cisco ASAv         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌ |
-| Cisco IOS          | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
-| Cisco IOS XE[^18v] | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
-| Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌ |
-| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌ |
-| FRR                | ✅  | ✅  | ✅  | ✅  | ❌  | ❌ |
-| Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
-| Nokia SR Linux     | ✅  | ✅  | ❌  | ✅  | ✅  | ✅ | 
-| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ | 
-| VyOS               | ✅  | ✅  | ❌  |  ❌  | ✅  | ✅ |
+| Operating system   | IS type | IPv6<br>AF | Multi<br>topology | Unnumbered<br />interfaces | Route<br>import | VRF<br>instances |
+|------------------- | :-: | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco ASAv         | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
+| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| Cisco IOS XE[^18v] | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌  |
+| Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
+| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 
 [^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
 
@@ -48,6 +51,19 @@ The following table describes per-platform support of individual IS-IS features:
 * On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
 * Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
 
+Some platforms can use BFD to speed up IS-IS convergence:
+
+| Operating system      | IPv4<br />BFD | IPv6<br />BFD |
+| ------------------ | :-: | :-: |
+| Arista EOS         | ✅  | ❌  |
+| Cisco IOSv/IOSvL2  | ✅  | ✅ | 
+| Cisco IOS XE[^18v] | ✅  | ✅ | 
+| Cisco Nexus OS     | ✅  |  ❌ |
+| Junos[^Junos]      | ✅  | ✅ |
+| Nokia SR Linux     | ✅  | ✅ | 
+| Nokia SR OS        | ✅  | ✅ | 
+| VyOS               | ✅  | ✅ |
+
 ```{tip}
 See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
 ```
@@ -56,6 +72,7 @@ See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverag
 
 * **isis.area** -- CLNS area prefix. Router address (NET) is computed from area prefix, 6-byte system ID (using **id** node attribute), and NSAP selector (.00)
 * **isis.type** -- IS-IS router type (**level-1**, **level-2** or **level-1-2**. Default: **level-2**)
+* **isis.instance** -- The name of the IS-IS instance. Used on devices that want to have a name for an IS-IS instance. Default: **Gandalf**.
 * **isis.bfd** -- enable BFD for IS-IS. This parameter could be a boolean value (*True*/*False*) or a dictionary of address families, for example:
 
 ```
@@ -67,23 +84,29 @@ isis:
 ```
 
 ```{warning}
-Specify **‌isis.area** with a single dot (example: 49.0001) within quotes to tell the YAML parser it's not a floating-point number.
+Specify an **‌isis.area** value that has a single dot (example: 49.0001) within quotes to tell the YAML parser it's not a floating-point number.
 ```
 
+(isis-node)=
 ## Node Parameters
 
-You can specify node parameters as global values (top-level topology elements) or within individual nodes. You can specify **isis.net** on individual nodes instead of using **isis.area** (see [example](#example) for details).
+You can specify most node parameters as global values (top-level topology elements) or within individual nodes. You can also specify these node parameters:
+
+* **isis.net**: Set specific NET on individual nodes instead of using **isis.area** to generate it (see [example](isis-example) for details).
+* **isis.import** -- [import (redistribute) routes](routing_import) into the global IS-IS instance. By default, no routes are redistributed into the global IS-IS instance.
 
 **Note:**
 * When specifying **isis.net**, avoid values in range *area.0000.0000.0001.00* through *area.0000.0000.0099.00* as they are used for auto-generated NETs.
-
-IS-IS is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable IS-IS on an intra-AS link, set the **isis** link parameter to *False* (see also [](routing_disable)).
 
 ```{tip}
 The IS-IS configuration module is automatically removed from a node that does not run IS-IS on any non-loopback interface. In that case, _netlab_ generates a warning that can be turned off by setting **‌defaults.isis.warnings.inactive** to **‌False**.
 ```
 
 ## Link Parameters
+
+IS-IS is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable IS-IS on an intra-AS link, set the **isis** link parameter to *False* (see also [](routing_disable)).
+
+You can also set these parameters:
 
 * **isis.type** -- Link type (**level-1**, **level-2** or **level-1-2**). Recognized as a valid attribute but not implemented. Please feel free to fix the configuration templates and submit a pull request.
 * **isis.network_type** -- Set IS-IS network type. Valid values are **point-to-point** or *False* (do not set the network type). See also [Default Link Parameters](#default-link-parameters).
@@ -104,7 +127,7 @@ links:
 
 ## Default Link Parameters
 
-The number of neighbors on an interface is used to set IS-IS network type unless it's specified with **isis.network_type** link or interface attribute. Interfaces with exactly one non-host neighbor (point-to-point links) have **isis.network_type** set to **point-to-point**. 
+The number of neighbors on an interface is used to set the IS-IS network type unless it's specified with **isis.network_type** link or interface attribute. Interfaces with exactly one non-host neighbor (point-to-point links) have **isis.network_type** set to **point-to-point**. 
 
 When the **isis.passive** interface parameter is not set on a link or an interface, _netlab_ uses the link roles together with  the link types to decide whether to include an interface in an IS-IS process and whether to make an interface passive:
 
@@ -117,6 +140,7 @@ When the **isis.passive** interface parameter is not set on a link or an interfa
 * The BGP module could set link role. Links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the IS-IS process.
 * Management interfaces are never added to the IS-IS process. They are not in the set of device links and, thus, not considered in the IS-IS configuration template.
 
+(isis-example)=
 ## Example
 
 We want to create a three-router multi-area IS-IS network:

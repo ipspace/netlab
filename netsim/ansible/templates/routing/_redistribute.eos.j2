@@ -1,0 +1,23 @@
+{% macro policy(sp_data,af) -%}
+  {% if 'policy' in sp_data %} route-map {{ sp_data.policy }}-{{ af }}{% endif +%}
+{%- endmacro %}
+{% macro config(pdata,af='ipv4',vrf=False,ospf_match=[]) -%}
+{%   if pdata.import is defined %}
+{%     for s_proto,s_data in pdata.import.items() %}
+{%       set sp_config = 'ospfv3' if s_proto == 'ospf' and af == 'ipv6' else s_proto %}
+{%       if s_proto == 'isis' %}
+{%         set sp_config = sp_config + ' level-1-2' %}
+{%       endif %}
+{%       if vrf %}
+{%         set sp_config = sp_config + ' include leaked' %}
+{%       endif %}
+{%       if s_proto == 'ospf' and ospf_match %}
+{%         for osm in ospf_match %}
+  redistribute {{ sp_config }} match {{ osm }}{{ policy(s_data,af) }}
+{%         endfor %}
+{%       else %}
+  redistribute {{ sp_config }}{{ policy(s_data,af) }}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}

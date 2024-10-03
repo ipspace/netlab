@@ -287,7 +287,11 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
     topo.defaults.device = args.device
 
   if args.provider:
-    topo.provider = args.provider
+    p_list = args.provider.split(':')
+    topo.provider = p_list[0]
+    for p_option in p_list[1:]:
+      for p_element in p_option.split(','):
+        topo.defaults.providers[topo.provider][p_element] = True
 
   if args.plugin:
     if log.debug_active('plugin'):

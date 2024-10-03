@@ -1,0 +1,66 @@
+Creating initial configuration for Cisco IOSv L2 image
+======================================================
+
+* Answer 'no' to the 'Would you like to enter the initial configuration dialog' prompt
+* Press ENTER to start a CLI session
+* Go into enable mode, enter configuration mode
+* Copy-paste the following configuration (see also NOTE below the configuration)
+
+======================================================
+hostname iosvl2
+no ip domain lookup
+ip domain name lab.local
+!
+no service config
+!
+crypto key generate rsa modulus 2048
+ip ssh version 2
+!
+aaa new-model
+!
+aaa authentication login default local
+aaa authorization exec default local
+!
+username vagrant privilege 15 secret vagrant
+!
+ip ssh pubkey-chain
+ username vagrant
+  key-hash ssh-rsa DD3BB82E850406E9ABFFA80AC0046ED6
+!
+vrf definition MGMT
+ description Management interface
+ !
+ address-family ipv4
+ exit-address-family
+!
+interface GigabitEthernet0/0
+ no switchport
+ vrf forwarding MGMT
+ description vagrant-management
+ ip address dhcp
+ no shutdown
+!
+line vty 0 4
+ transport input ssh
+!
+event manager applet ENABLE-MGMT
+ event syslog pattern "SYS-5-RESTART"
+ action 0 cli command "enable"
+ action 1 cli command "conf t"
+ action 2 cli command "interface GigabitEthernet0/0"
+ action 3 cli command "no shutdown"
+ action 4 cli command "exit"
+ action 5 cli command "crypto key generate rsa modulus 2048"
+!
+end
+=============================================
+
+NOTE:
+* On a system with slow CPU, you might have to change the "event syslog ..."
+  trigger to "event timer countdown time 5"
+
+After copying the configuration:
+
+* Exit the configuration mode
+* Save the configuration with 'wr mem'
+* Disconnect from console (ctrl-] usually works).

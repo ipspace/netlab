@@ -1,0 +1,19 @@
+#!/bin/bash
+cat >/tmp/vrrp_config <<CONFIG
+{% for intf in interfaces if intf.gateway.protocol|default('') == 'vrrp' %}
+interface {{ intf.ifname }}
+  vrrp {{ intf.gateway.vrrp.group }} shutdown
+{%     if 'priority' in intf.gateway.vrrp %}
+  vrrp {{ intf.gateway.vrrp.group }} priority {{ intf.gateway.vrrp.priority }}
+{%     endif %}
+{%     if intf.gateway.vrrp.preempt|default(False) %}
+  vrrp {{ intf.gateway.vrrp.group }} preempt
+{%     endif %}
+{%   for af in 'ipv4','ipv6' if af in intf.gateway %}
+  vrrp {{ intf.gateway.vrrp.group }} {{ af|replace('ipv4','ip') }} {{ intf.gateway[af]|ipaddr('address') }}
+{%   endfor %}
+  no vrrp {{ intf.gateway.vrrp.group }} shutdown
+{% endfor %}
+do write
+CONFIG
+vtysh -f /tmp/vrrp_config

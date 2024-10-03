@@ -16,7 +16,7 @@ from box import Box,BoxList
 
 from . import load_snapshot, parser_add_debug, parser_add_verbose, external_commands
 from ..utils import log, templates, strings, status as _status, files as _files
-from ..data import global_vars
+from ..data import global_vars,get_box
 from ..augment import devices
 from .. import data
 from .connect import connect_to_node, connect_to_tool, LogLevel
@@ -77,6 +77,23 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
 #
 ERROR_ONLY: bool = False
 TEST_HEADER: dict = {}
+TEST_COUNT: Box = get_box({'passed': 0, 'failed': 0, 'warning': 0, 'count': 0, 'skip': 0})
+
+'''
+increase_fail_count, increase_pass_count: Increase the counters based on test severity level
+'''
+def increase_fail_count(v_entry: Box) -> None:
+  global TEST_COUNT
+  TEST_COUNT.count += 1
+  if v_entry.get('level',None) == 'warning':
+    TEST_COUNT.warning += 1
+  else:
+    TEST_COUNT.failed += 1
+
+def increase_pass_count(v_entry: Box) -> None:
+  global TEST_COUNT
+  TEST_COUNT.count += 1
+  TEST_COUNT.passed += 1
 
 '''
 list_tests: display validation tests defined for the current lab topology
@@ -121,6 +138,7 @@ def log_failure(
       msg: str,
       topology: Box,
       f_status: str = 'FAIL',
+      f_color: str = 'bright_red',
       more_data: typing.Optional[str] = None) -> None:
 
   global TEST_HEADER,ERROR_ONLY
@@ -131,7 +149,7 @@ def log_failure(
     TEST_HEADER = {}
 
   o_file = sys.stderr if ERROR_ONLY else sys.stdout
-  p_status(f_status,'bright_red',topology,stderr=ERROR_ONLY)
+  p_status(f_status,f_color,topology,stderr=ERROR_ONLY)
   print(msg,file=o_file)
   if more_data:
     p_status('MORE','bright_black',topology,stderr=ERROR_ONLY)
@@ -149,12 +167,12 @@ def log_progress(msg: str, topology: Box, f_status: str = 'PASS') -> None:
 
 # Print generic "ambivalent info" message
 #
-def log_info(msg: str, topology: Box, f_status: str = 'INFO') -> None:
+def log_info(msg: str, topology: Box, f_status: str = 'INFO', f_color: str = 'bright_cyan') -> None:
   global ERROR_ONLY
   if ERROR_ONLY:
     return
 
-  p_status(f_status,'yellow',topology)
+  p_status(f_status,f_color,topology)
   print(msg)
 
 # Print "test failed on node"
@@ -162,7 +180,10 @@ def log_info(msg: str, topology: Box, f_status: str = 'INFO') -> None:
 def p_test_fail(n_name: str, v_entry: Box, topology: Box, fail_msg: str = '') -> None:
   err = v_entry.get('fail',fail_msg or f'Test failed for node {n_name}')
   err = f'Node {n_name}: '+err
-  log_failure(err,topology)
+  if v_entry.get('level') == 'warning':
+    log_failure(err,topology,f_status='WARNING',f_color='bright_yellow')
+  else:
+    log_failure(err,topology)
 
 # Print "test passed"
 #
@@ -171,6 +192,12 @@ def p_test_pass(v_entry: Box, topology: Box) -> None:
   log_progress(msg,topology)
 
 _validation_plugins: dict = {}
+
+'''
+test_plural: get "one test" or "x tests"
+'''
+def test_plural(cnt: int) -> str:
+  return 'one test' if cnt == 1 else f'{cnt} tests'
 
 '''
 extend_first_wait_time: some devices need extra time to start working, even when
@@ -322,7 +349,7 @@ Please note that custom exception raised in the plugin functions get re-raised a
 PluginEvalError exceptions, resulting in custom error messages.
 '''
 def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Optional[Box] = None) -> typing.Any:
-  global test_skip_count
+  global TEST_COUNT
 
   p_name = f'validate_{node.device}'
   exec = f'{p_name}.{action}_{v_entry.plugin}'
@@ -347,7 +374,7 @@ def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Op
         msg=str(wn),
         f_status='SKIPPED',
         topology=topology)
-    test_skip_count += 1
+    TEST_COUNT.skip += 1
     return None
   except AttributeError as ex:
     if p_name in str(ex):
@@ -504,7 +531,7 @@ def get_result_string(
       v_entry: Box,
       n_name: str,
       topology: Box,
-      report_error: bool = True) -> typing.Union[bool,str]:
+      report_error: bool = True) -> typing.Union[bool,int,str]:
 
   node = topology.nodes[n_name]                             # Get the node data
   v_cmd = get_exec_list(v_entry,'exec',node,topology)       # ... and the 'exec' action for the current node
@@ -632,10 +659,6 @@ def wait_before_testing(
     time.sleep(wait_time if wait_time < 5 else 5)     # Wait no more than five seconds
     wait_time = wait_time - 5
 
-test_skip_count: int
-test_result_count: int
-test_pass_count: int
-
 """
 execute_validation_expression: execute the v_entry.valid string in a safe environment with
 error/success logging.
@@ -661,13 +684,12 @@ def execute_validation_expression(
       v_entry: Box,
       node: Box,
       topology: Box,
-      result: Box,
+      result: typing.Union[Box,BoxList],
       verbosity: int,
       report_error: bool,
       report_success: bool = True) -> typing.Optional[bool]:
 
-  global test_skip_count,test_result_count,test_pass_count
-  global BUILTINS
+  global BUILTINS,TEST_COUNT
 
   v_test = get_entry_value(v_entry,'valid',node,topology)
   if not v_test:                              # Do we have a validation expression for the current device?
@@ -675,11 +697,14 @@ def execute_validation_expression(
       f'Test results validation not defined for device {node.device} / node {node.name}',
       f_status = 'SKIPPED',
       topology=topology)
-    test_skip_count += 1
+    TEST_COUNT.skip += 1
     return None
   else:
     try:                                      # Otherwise try to evaluate the validation expression
-      result.result = result
+      if isinstance(result,BoxList):
+        result = Box({'result': result})
+      else:
+        result.result = result
       result.re = re                          # Give validation expression access to 're' module
       OK = eval(v_test,{ '__builtins__': BUILTINS },result)
       if OK is None:
@@ -694,20 +719,21 @@ def execute_validation_expression(
       if v_test:
         print(f'Test expression: {v_test}\n')
         print(f'Evaluated result {OK}')
-      for kw in ('re','result'):              # Remove stuff that will crash JSON serialization
-        result.pop(kw,None)
+      if isinstance(result,Box):          # Remove stuff that will crash JSON serialization
+        result.pop('re',None)
+        if isinstance(result.result,Box):
+          result.pop('result',None)
       print(f'Result received from {node.name}\n{"-" * 80}\n{result.to_json()}\n')
 
   if OK is not None and not OK:               # We have a real result (not skipped) that is not OK
     if report_error:
       p_test_fail(node.name,v_entry,topology)
-      test_result_count += 1
+      increase_fail_count(v_entry)
     return bool(OK)
   elif OK:                                    # ... or we might have a positive result
     if report_success:
       log_progress(f'Validation succeeded on {node.name}',topology)
-      test_result_count += 1
-      test_pass_count += 1
+      increase_pass_count(v_entry)
 
     return bool(OK)
   return OK
@@ -724,37 +750,34 @@ def execute_suzieq_validation(
       verbosity: int,
       report_error: bool) -> typing.Optional[bool]:
 
-  global test_skip_count,test_result_count,test_pass_count
-
   C_OK = None
   if isinstance(result,Box):
-    return execute_validation_expression(v_entry,node,topology,result,verbosity,report_error)
-  
-  for record in result:
-    for kw in ['assert']:
-      if kw in record:
-        record[f'_{kw}'] = record[kw]
-  
-    R_OK = execute_validation_expression(v_entry,node,topology,record,verbosity,report_error,report_success=False)
-    if C_OK is None:
-      C_OK = bool(R_OK)
-    elif R_OK is not None:
-      if v_entry.suzieq.get('valid','any') == 'any':
-        C_OK = C_OK or bool(R_OK)
-      else:
-        C_OK = C_OK and bool(R_OK)
+    C_OK = execute_validation_expression(v_entry,node,topology,result,verbosity,report_error)
+  else:
+    for record in result:
+      for kw in ['assert']:
+        if kw in record:
+          record[f'_{kw}'] = record[kw]
+    
+      R_OK = execute_validation_expression(v_entry,node,topology,record,verbosity,report_error,report_success=False)
+      if C_OK is None:
+        C_OK = bool(R_OK)
+      elif R_OK is not None:
+        if v_entry.suzieq.get('valid','any') == 'any':
+          C_OK = C_OK or bool(R_OK)
+        else:
+          C_OK = C_OK and bool(R_OK)
 
   if C_OK is None:
     return C_OK
   if not C_OK:
     if report_error:
       p_test_fail(node.name,v_entry,topology)
-      test_result_count += 1
+      increase_fail_count(v_entry)
     return C_OK
 
   log_progress(f'Validation succeeded on {node.name}',topology)
-  test_result_count += 1
-  test_pass_count += 1
+  increase_pass_count(v_entry)
   return True
 
 """
@@ -775,8 +798,6 @@ def execute_validation_plugin(
       verbosity: int,
       report_error: bool) -> typing.Optional[bool]:
 
-  global test_skip_count,test_result_count,test_pass_count
-
   try:
     OK = exec_plugin_function('valid',v_entry,node,result)
     if OK is not None and not OK:
@@ -784,7 +805,7 @@ def execute_validation_plugin(
         p_test_fail(node.name,v_entry,topology)
   except Exception as ex:
     if report_error:
-      log_failure(f'{node.name}: {str(ex)}',topology)
+      p_test_fail(node.name,v_entry,topology,str(ex))
     OK = False
 
   if (not OK and verbosity) or verbosity >= 2:
@@ -793,12 +814,12 @@ def execute_validation_plugin(
     print(f'Evaluated result {OK}')
 
   if OK is not None:
-    if report_error or OK:
-      test_result_count += 1
     if OK:
       msg = f'{node.name}: {OK}' if isinstance(OK,str) else f'Validation succeeded on {node.name}'
       log_progress(msg,topology)
-      test_pass_count += 1
+      increase_pass_count(v_entry)
+    elif report_error:
+      increase_fail_count(v_entry)
 
   return OK if OK is None else bool(OK)
 
@@ -812,7 +833,7 @@ def execute_node_validation(
       report_error: bool,
       args: argparse.Namespace) -> typing.Tuple[typing.Optional[bool],typing.Optional[bool]]:
 
-  global test_skip_count,test_result_count,test_pass_count
+  global TEST_COUNT
 
   node = topology.nodes[n_name]
   result = data.get_empty_box()
@@ -826,7 +847,7 @@ def execute_node_validation(
       f'Test action not defined for device {node.device} / node {n_name}',
       f_status='SKIPPED',
       topology=topology)
-    test_skip_count += 1                        # Increment skip count for test results summary
+    TEST_COUNT.skip += 1                        # Increment skip count for test results summary
     return (True,None)                          # Processed, unknown result
 
   if args.verbose >= 2:                         # Print out what will be executed
@@ -837,19 +858,21 @@ def execute_node_validation(
   if action == 'show':                          # We got a 'show' action, try to get parsed results
     result = get_parsed_result(v_entry,n_name,topology,args.verbose)
     if '_error' in result:                      # OOPS, we failed (unrecoverable)
-      test_result_count += 1                    # Increase result count
+      increase_fail_count(v_entry)
       return (True, False)                      # ... and return (processed, failed)
   elif action == 'exec':                        # We got an 'exec' action, try to get something out of the device
     result.stdout = get_result_string(v_entry,n_name,topology,report_error)
     if result.stdout is False:                  # Did the exec command fail?
       if report_error:
-        test_result_count += 1
+        increase_fail_count(v_entry)
         return (True, False)                    # Return (processed, failed)
   elif action == 'suzieq':
     result = get_suzieq_result(v_entry,n_name,topology,args.verbose)
     OK = bool(result) != (v_entry.suzieq.get('expect','data') == 'empty')
     if not OK and report_error:
       p_test_fail(n_name,v_entry,topology,'suzieq did not return the expected data')
+      increase_fail_count(v_entry)
+      return(True,False)
 
   if OK != False and 'valid' in v_entry:        # Do we have a validation expression in the test entry?
     if action == 'suzieq':
@@ -884,8 +907,6 @@ The validation entry has:
 * 'nodes' list that is used to build the '--limit' argument 
 '''
 def execute_netlab_config(v_entry: Box, topology: Box) -> bool:
-  global test_skip_count,test_result_count,test_pass_count
-
   node_str = ",".join(v_entry.nodes)
   cmd = f'netlab config {v_entry.config.template} --limit {node_str}'
   for k,v in v_entry.config.variable.items():
@@ -894,7 +915,7 @@ def execute_netlab_config(v_entry: Box, topology: Box) -> bool:
     print(f'Executing {cmd}')
   log_info(f'Executing configuration snippet {v_entry.config.template}',topology)
   if external_commands.run_command(cmd,check_result=True,ignore_errors=True,return_stdout=True):
-    test_pass_count += 1
+    increase_pass_count(v_entry)
     msg = v_entry.get('pass','Devices configured')
     log_progress(msg,topology)
     return True
@@ -903,6 +924,7 @@ def execute_netlab_config(v_entry: Box, topology: Box) -> bool:
     f'"{cmd}" failed',
     topology,
     more_data='Execute the command manually to figure out what went wrong')
+  increase_fail_count(v_entry)
   return False
 
 '''
@@ -913,7 +935,7 @@ def execute_validation_test(
       topology: Box,
       start_time: typing.Optional[typing.Union[int,float]],
       args: argparse.Namespace) -> typing.Optional[bool]:
-  global test_skip_count,test_result_count,test_pass_count
+  global TEST_COUNT
 
   # Return value uses ternary logic: OK (True), Fail(False), Skipped (None)
   ret_value = None
@@ -921,7 +943,7 @@ def execute_validation_test(
   p_test_header(v_entry,topology)                 # Print test header
   if 'wait' in v_entry and not v_entry.nodes:     # Handle pure wait case
     if v_entry.get('stop_on_error',False):
-      if test_result_count and test_pass_count != test_result_count:
+      if TEST_COUNT.failed:
         log_failure('Validation failed due to previous errors',topology)
         sys.exit(1)
       else:
@@ -936,11 +958,10 @@ def execute_validation_test(
       f'There are no nodes specified for this test, skipping...',
       f_status='SKIPPED',
       topology=topology)
-    test_skip_count += 1
+    TEST_COUNT.skip += 1
     return None
 
   if 'config' in v_entry:
-    test_result_count = test_result_count + 1
     return execute_netlab_config(v_entry,topology)
 
   wait_time = 0 if args.nowait else v_entry.get('wait',0)
@@ -982,6 +1003,7 @@ def execute_validation_test(
       log_info(
         f'Succeeded in { round(time.time() - start_time,1) } seconds',
         f_status = 'PASS',
+        f_color= 'light_green',
         topology=topology)
     p_test_pass(v_entry,topology)                 # ... declare Mission Accomplished
 
@@ -1042,7 +1064,7 @@ def filter_by_nodes(args: argparse.Namespace, topology: Box) -> None:
 Main routine: run all tests, handle validation errors, print summary results
 '''
 def run(cli_args: typing.List[str]) -> None:
-  global test_skip_count,test_result_count,test_pass_count,ERROR_ONLY
+  global TEST_COUNT,ERROR_ONLY
   args = validate_parse(cli_args)
   log.set_logging_flags(args)
   topology = load_snapshot(args)
@@ -1066,9 +1088,6 @@ def run(cli_args: typing.List[str]) -> None:
   ERROR_ONLY = args.error_only
   status = True
   cnt = 0
-  test_skip_count = 0
-  test_result_count = 0
-  test_pass_count = 0
   topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
   start_time = _status.lock_timestamp() or time.time()
   log.init_log_system(header=False)
@@ -1103,12 +1122,14 @@ def run(cli_args: typing.List[str]) -> None:
 
   if not ERROR_ONLY:
     print()
-    if test_pass_count and test_pass_count == test_result_count:
-      log_progress(f'Tests passed: {test_pass_count}',topology,f_status='SUCCESS')
-    elif test_result_count:
-      log_failure('Tests completed, validation failed',topology)
+    if TEST_COUNT.passed == TEST_COUNT.count:
+      log_progress(f'Tests passed: {TEST_COUNT.passed}',topology,f_status='SUCCESS')
+    elif TEST_COUNT.count:
+      if TEST_COUNT.failed != 0:
+        log_failure(f'{test_plural(TEST_COUNT.count).capitalize()} completed, {test_plural(TEST_COUNT.failed)} failed',topology)
+      elif TEST_COUNT.warning != 0:
+        log_info(f'{test_plural(TEST_COUNT.warning).capitalize()} out of {test_plural(TEST_COUNT.count)} generated a warning',topology)
+    if TEST_COUNT.skip:
+      log_info(f'{test_plural(TEST_COUNT.skip).capitalize()} out of {test_plural(TEST_COUNT.count)} were skipped, the results are not reliable',topology)
 
-    if test_skip_count:
-      log_info('Some tests were skipped, the results are not reliable',topology)
-
-  sys.exit(0 if status else 1)
+  sys.exit(0 if not (TEST_COUNT.failed or TEST_COUNT.warning) else 1 if TEST_COUNT.failed else 3)

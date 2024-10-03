@@ -1,4 +1,5 @@
 {% import "eos.bgp-macro.j2" as bgpcfg %}
+{% import "templates/routing/_redistribute.eos.j2" as redistribute with context %}
 !
 mpls ip
 !
@@ -9,12 +10,14 @@ router bgp {{ bgp.as }}
   router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
   rd {{ vdata.rd }}
 {%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
-{%     for rt in vdata.import %}
+{%     if 'evpn' not in module %}
+{%       for rt in vdata.import %}
   route-target import vpn-{{ af }} {{ rt }}
-{%     endfor %}
-{%     for rt in vdata.export %}
+{%       endfor %}
+{%       for rt in vdata.export %}
   route-target export vpn-{{ af }} {{ rt }}
-{%     endfor %}
+{%       endfor %}
+{%     endif %}
 {%   endfor %}
 {%   for n in vdata.bgp.neighbors|default([]) %}
 {%     for af in ['ipv4','ipv6'] if n[af] is defined %}
@@ -24,13 +27,7 @@ router bgp {{ bgp.as }}
 {%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 !
   address-family {{ af }}
-{%     if vdata.bgp.import is defined %}
-{%       for s_proto,s_data in vdata.bgp.import.items() %}
-    redistribute {{ s_proto }}{%
-    if s_proto == 'ospf' and af == 'ipv6' %}v3{% endif %}{%
-    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
-{%       endfor %}
-{%     endif %}
+{{     redistribute.config(vdata.bgp,af=af)|indent(2,first=True) }}
 {%     for n in vdata.networks|default([]) if af in n %}
     network {{ n[af]|ipaddr('0') }}
 {%     endfor %}

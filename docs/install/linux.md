@@ -75,6 +75,16 @@ links: [ s1-s2, s2-s3, s1-s2-s3 ]
 * Connect to the Cumulus VX devices with `vagrant ssh` or `netlab connect`
 * Destroy the lab with `netlab down`
 
+## Host networking caveats
+
+*netlab* relays on standard Linux bridges to implement multi-access links. If you encounter a situation where layer2 traffic passes through the bridge, but you have no layer3 connectivity, the easiest way to work arround the problem is to disable your distribution's firewall and reboot. In NixOS, the operating system where this problem was first encoutered, you can follow the receipe:
+
+* Open your global `configuration.nix` file in the editor of choiche
+* Add the configuration option `networking.firewall.enable  = false;` Save the file
+* Execute `nixos-rebuild switch` command to reach the new desired configuration state
+* Reboot into the new configuration
+
+
 ```eval_rst
 .. toctree::
    :caption: Next Steps

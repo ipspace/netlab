@@ -25,11 +25,11 @@ The following table describes high-level per-platform support of generic routing
 | ------------------ | :-: | :-: | :-: |:-: | :-: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOSv          |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
-| Nokia SR Linux      |  ✅  |
+| Nokia SR Linux      |  ✅  |  ✅ [❗](caveats-srlinux) |
 | Nokia SR OS         |  ✅  |
 | VyOS                |  ✅  |  ✅  |  ✅  |  ✅  |
 
@@ -101,10 +101,11 @@ You can use these routing policy **match** parameters on devices supported by th
 |---------------------|:--:|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ❌  | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ❌  | ✅ | ✅ |
-| Cisco IOSv          | ✅ | ❌  | ✅ | ✅ |
+| Cisco IOSv/IOSvL2   | ✅ | ❌  | ✅ | ✅ |
 | Cisco IOS-XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
 | FRR                 | ✅ | ❌  | ✅ | ✅ |
+| Nokia SR Linux      | ✅ |
 | VyOS                | ✅ | ❌  | ✅ | ✅ |
 
 You can use these routing policy **set** parameters on devices supported by the **routing** module:
@@ -113,7 +114,7 @@ You can use these routing policy **set** parameters on devices supported by the 
 |---------------------|:--:|:--:|:--:|:--:| :--:|
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOSv          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOSv/IOSvL2   | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS-XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -127,7 +128,7 @@ The **set.community** attribute can be used to set these BGP communities on supp
 |---------------------|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ❌  | ❌  | ✅ | ✅ |
-| Cisco IOSv          | ✅ | ❌  | ❌  | ✅ | ❌  |
+| Cisco IOSv/IOSvL2   | ✅ | ❌  | ❌  | ✅ | ❌  |
 | Cisco IOS-XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |

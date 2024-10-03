@@ -70,7 +70,8 @@ def run_command(
     check_result : bool = False,
     ignore_errors: bool = False,
     return_stdout: bool = False,
-    run_always: bool = False) -> typing.Union[bool,str]:
+    return_exitcode: bool = False,
+    run_always: bool = False) -> typing.Union[bool,int,str]:
 
   if log.debug_active('cli'):
     print(f"Not running: {cmd}")
@@ -94,9 +95,12 @@ def run_command(
     return True
 
   try:
-    result = subprocess.run(cmd,capture_output=check_result,check=True,text=True)
+    result = subprocess.run(cmd,capture_output=check_result,check=not return_exitcode,text=True)
     if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... run result: {result}')
+    if return_exitcode:
+      log_command(cmd,f'FAIL(result.returncode)' if result.returncode else 'OK')
+      return result.returncode
     if not check_result:
       log_command(cmd,'OK')
       return True

@@ -1,0 +1,22 @@
+{% for hname,hdata in hostvars.items() %}
+{%   set intf_list = hdata.interfaces|default([]) %}
+{%   if hdata.loopback is defined %}
+{%     set intf_list = [ hdata.loopback ] + intf_list %}
+{%   endif %}
+{%   for intf in intf_list %}
+{%     set h_entry = hname %}
+{%     if intf.vrf is defined %}
+{%       set h_entry = intf.vrf + '.' + h_entry %}
+{%     endif %}
+{%     if intf.type != 'loopback' %}
+{%       set h_entry = intf.ifname.replace('/','-') + '.' + h_entry %}
+{%     endif %}
+{%     set need_host = hdata.loopback is not defined %}
+{%     if intf.ipv4|default(False) is string %}
+{{ intf.ipv4|ipaddr('address') }} {% if need_host %}{{ hname }} {% endif +%}{{ h_entry }}
+{%     endif %}
+{%     if intf.ipv6|default(False) is string %}
+{{ intf.ipv6|ipaddr('address') }} {% if need_host %}{{ hname }} {% endif +%}{{ h_entry }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}

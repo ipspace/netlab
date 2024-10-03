@@ -1,0 +1,32 @@
+{% import "templates/routing/_redistribute.frr.j2" as redistribute with context %}
+!
+{% macro config(ripv2,vrf='') -%}
+{%   if ripv2.af.ipv4|default(False) %}
+router rip{% if vrf %} vrf {{ vrf }}{% endif +%}
+ version 2
+{%     if 'timers' in ripv2 %}
+ timers basic {{ ripv2.timers['update'] }} {{ ripv2.timers.timeout }} {{ ripv2.timers.garbage }}
+{%     endif %}
+{{     redistribute.config(ripv2,af='ipv4') }}
+{%     for intf in ripv2.interfaces|default(netlab_interfaces) if 'ripv2' in intf and 'ipv4' in intf %}
+ network {{ intf.ifname }}
+{%       if intf.ripv2.passive|default(False) %}
+ passive-interface {{ intf.ifname }}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+!
+{%   if ripv2.af.ipv6|default(False) %}
+router ripng{% if vrf %} vrf {{ vrf }}{% endif +%}
+{%     if 'timers' in ripv2 %}
+ timers basic {{ ripv2.timers['update'] }} {{ ripv2.timers.timeout }} {{ ripv2.timers.garbage }}
+{%     endif %}
+{{     redistribute.config(ripv2,af='ipv6') }}
+{%     for intf in ripv2.interfaces|default(netlab_interfaces) if 'ripv2' in intf and 'ipv6' in intf %}
+ network {{ intf.ifname }}
+{%       if intf.ripv2.passive|default(False) %}
+ passive-interface {{ intf.ifname }}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}

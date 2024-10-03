@@ -1,0 +1,96 @@
+---
+message: |
+  The device under test has two IPv6-only VRFs with two interfaces in each VRF.
+  Routers are attached to those interfaces and run RIPng and BGP with device
+  under test.
+
+  This scenario tests RIPng in VRF, redistribution of connected subnets into
+  RIPng and two-way RIPng-to-BGP redistribution.
+
+  * r1 and r2 should be able to ping each other
+  * r3 and r4 should be able to ping each other
+  * r1 should not be able to reach r3
+
+defaults.sources.extra: [ ipv6-defaults.yml ]
+
+groups:
+  ce_rip:
+    members: [ r1, r3 ]
+    module: [ ripv2 ]
+    device: frr
+    provider: clab
+  ce_bgp:
+    members: [ r2, r4 ]
+    module: [ bgp ]
+    device: frr
+    provider: clab
+  pe:
+    members: [ dut ]
+    module: [ vrf, ripv2, bgp ]
+
+vrfs:
+  red:
+    links: [ dut-r1, dut-r2 ]
+  blue:
+    links: [ dut-r3, dut-r4 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+  r1:
+  r2:
+    bgp.as: 65100
+  r3:
+  r4:
+    bgp.as: 65101
+
+links:
+- r1:
+- r3:
+
+validate:
+  ebgp:
+    description: Check EBGP adjacencies with DUT
+    wait_msg: Waiting for EBGP sessions to start
+    nodes: [ r2, r4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+    wait: 20
+    stop_on_error: true
+  red_c_rip:
+    description: Check connected subnet as RIPng prefix on R1
+    wait: 15
+    wait_msg: Waiting for RIPng convergence
+    fail: DUT is not redistributing connected subnets into RIPv2
+    nodes: [ r1 ]
+    plugin: rt_prefix(nodes.r2.interfaces[0].ipv6,af='ipv6',proto='rip')
+  red_bgp_rip:
+    description: Check for BGP prefix in RIPng
+    wait_msg: Waiting for BGP and RIPng convergence
+    fail: BGP is not redistributed into RIPng
+    wait: 10
+    nodes: [ r1 ]
+    plugin: rt_prefix(nodes.r2.loopback.ipv6,af='ipv6',proto='rip')
+  red_rip_bgp:
+    description: Check for RIPng prefix in BGP
+    wait_msg: Waiting for RIPng and BGP convergence
+    fail: RIPng is not redistributed into BGP
+    wait: 40
+    nodes: [ r2 ]
+    plugin: bgp_prefix(nodes.r1.interfaces[0].ipv6,af='ipv6')
+  red_lb_ping:
+    description: Loopback-to-loopback reachability test in VRF red
+    nodes: [ r1 ]
+    plugin: ping('r2',src=nodes.r1.interfaces[0].ipv6,af='ipv6')
+  red_p_rip:
+    description: Check for reachability of connected routes in RIPv2
+    nodes: [ r2 ]
+    plugin: ping(nodes.r1.interfaces[0].ipv6,af='ipv6')
+  blue_lb_ping:
+    description: Loopback-to-loopback reachability test in VRF blue
+    wait: 10
+    nodes: [ r3 ]
+    plugin: ping('r4',src=nodes.r3.interfaces[0].ipv6,af='ipv6')
+  inter_vrf:
+    description: Ping-based isolation test between blue and red VRF
+    nodes: [ r1 ]
+    plugin: ping('r4',expect='fail',af='ipv6')

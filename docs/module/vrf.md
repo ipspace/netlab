@@ -38,16 +38,16 @@ VRFs are supported on these platforms:
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:
 
-| Operating system      | VRF-aware<br />OSPF | VRF-aware<br />OSPFv3 | VRF-aware<br />EBGP |
-| --------------------- | :-: | :-: | :-: |
+| Operating system      | OSPFv2 | OSPFv3 | EBGP | RIPv2 | RIPng
+| --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| Cisco IOS             | ✅ [❗](caveats-iosv) | ✅  | ✅  |
-| Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  |
+| Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
-| Cumulus Linux         | ✅  |  ❌  | ✅  |
+| Cumulus Linux         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  |
-| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
+| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |

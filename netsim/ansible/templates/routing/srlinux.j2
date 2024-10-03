@@ -1,20 +1,54 @@
 updates:
+{#
+    Prefix filters
+#}
+{% for pf_name,pf_list in routing.prefix|default({})|items %}
+- path: /routing-policy/prefix-set[name={{ pf_name }}]
+  value:
+    prefix:
+{%   for p_entry in pf_list %}{# Iterate over prefix list entries #}
+{%     for p_af in af if p_af in p_entry %}{# Iterate over address families in the prefix list entry #}
+    - ip-prefix: {{ p_entry[p_af] }}
+{%     if p_entry.min[p_af] is defined or p_entry.max[p_af] is defined %}
+      mask-length-range: {{ 
+        p_entry.min[p_af]|default(p_entry[p_af]|ipaddr('prefix')) }}..{{ 
+        p_entry.max[p_af]|default(32 if p_af == 'ipv4' else 128) }}
+{%     else %}
+      mask-length-range: exact
+{%     endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+
+{#
+    Routing policies
+#}
 {% for rp_name,rp_list in routing.policy|default({})|items %}
 - path: /routing-policy/policy[name={{ rp_name }}]
   value:
-   statement:
-{%  for entry in rp_list %}
-   - name: rpe_{{ entry.sequence }}
-     action:
-      policy-result: accept
-      bgp:
-{%    if 'locpref' in entry.set %}
-       local-preference:
-        set: {{ entry.set.locpref }}
-{%    endif %}
-{%    if 'med' in entry.set %}
-       med:
-        set: {{ entry.set.med }}
-{%    endif %}
-{%  endfor %}
+    default-action:
+      policy-result: reject
+    statement:
+{%   for entry in rp_list %}
+    - name: rpe_{{ entry.sequence }}
+{%     if 'match' in entry %}
+      match:
+{%       if entry.match.prefix is defined %}
+        prefix-set: {{ entry.match.prefix }}
+{%       endif %}
+{%     endif %}
+      action:
+        policy-result: {{ 'accept' if entry.action == 'permit' else 'reject' }}
+{%     if entry.set.locpref is defined or entry.set.med is defined %}
+        bgp:
+{%       if 'locpref' in entry.set %}
+          local-preference:
+            set: {{ entry.set.locpref }}
+{%       endif %}
+{%       if 'med' in entry.set %}
+          med:
+            set: {{ entry.set.med }}
+{%       endif %}
+{%     endif %}
+{%   endfor %}
 {% endfor %}

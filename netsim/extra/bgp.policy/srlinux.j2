@@ -1,20 +1,21 @@
 {% macro ebgp_neighbor(n,af,vrf) -%}
-- path: /network-instance[name={{vrf}}]/protocols/bgp
-  value:
-{% if n.type=='ebgp' and n[af] is true %}
-{# Note: This doesn't allow for different policies per individual neighbor #}
-    group:
-    - group-name: "ebgp-unnumbered{{ ('-' + n.local_as|string()) if n.local_as is defined else '' }}"
-{% else %}
-    neighbor:
-    - peer-address: {{ n[af]|ipaddr('address') }}
-{% endif %}
-{% for direction in [ 'in','out' ] if direction in n.policy %}
-      {{ 'import' if direction=='in' else 'export' }}-policy: {{ n.policy[direction] }}
-{% endfor %}
+{%   for direction in [ 'in','out' ] if direction in n.policy %}
+{%     set p_path = 'import-policy' if direction == 'in' else 'export-policy' %}
+{%     set p_path = 'afi-safi[afi-safi-name='+af+'-unicast]/'+p_path %}
+{%     if n.type=='ebgp' and n[af] is true %}
+- path: /network-instance[name={{vrf}}]/protocols/bgp/group[group-name=intf-{{ n.local_if }}]/{{ p_path }}
+{%     else %}
+- path: /network-instance[name={{vrf}}]/protocols/bgp/neighbor[peer-address={{ n[af]|ipaddr('address') }}]/{{ p_path }}
+{%     endif %}
+{%     if direction == 'out' %}
+  value: [ {{ vrf }}_bgp_export, {{ n.policy[direction] }} ]
+{%     else %}
+  value: [ {{ n.policy[direction] }} ]
+{%     endif %}
+{%   endfor %}
 {%- endmacro %}
 
-updates:
+replace:
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined and 'policy' in n %}
 {{     ebgp_neighbor(n,af,'default') -}}

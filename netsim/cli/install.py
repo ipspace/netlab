@@ -98,7 +98,7 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
 """
 has_command: figures out whether a command is available
 """
-def has_command(cmd: str) -> typing.Union[bool,str]:
+def has_command(cmd: str) -> typing.Union[bool,int,str]:
   return external_commands.run_command(['bash','-c',f'command -v {cmd}'],check_result=True,ignore_errors=True)
 
 """

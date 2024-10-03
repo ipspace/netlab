@@ -65,4 +65,12 @@ class ISIS(_Module):
       validate.must_be_string(
         l,'isis.type',f'nodes.{node.name}.interfaces.{l.ifname}',module='isis',valid_values=isis_type)
 
-    _routing.igp_post_transform(node,topology,proto='isis',vrf_aware=False)
+    _routing.igp_post_transform(node,topology,proto='isis',vrf_aware=True)
+    _routing.check_vrf_protocol_support(node,'isis','ipv4','isis',topology)
+    _routing.check_vrf_protocol_support(node,'isis','ipv6','isis',topology)
+
+    # Finally, change the VRF IS-IS instance name to the VRF name to make it unique
+    #
+    for vname,vdata in node.get('vrfs',{}).items():
+      if vdata.get('isis.instance',None):
+        vdata.isis.instance = vname

@@ -9,7 +9,7 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1, x2 ]
+    members: [ x1, x2, r1 ]
 
 defaults.bgp.as: 65000
 defaults.interfaces.mtu: 1500
@@ -18,16 +18,20 @@ nodes:
   dut:
     bgp.originate: [ 172.42.42.0/24 ]
     bgp.advertise_loopback: False
+    module: [ bgp, ospf ]
   dut2:
     bgp.as: 65001
   x1:
     bgp.as: 65100
   x2:
     bgp.as: 65101
+  r1:
+    module: [ bgp, ospf ]
 
 links:
 - dut-x1
 - dut-x2
+- dut-r1
 - dut:
   dut2:
   prefix.ipv4: 172.0.66.0/24
@@ -36,33 +40,39 @@ links:
   bgp.advertise: True
 
 validate:
-  session:
-    description: Check EBGP sessions with DUT (wait up to 20 seconds)
-    wait: 20
+  ospf_adj:
+    description: Check OSPF session with DUT
+    wait: 30
+    wait_msg: Wait for OSPF session to be established
+    nodes: [ r1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  bgp_adj:
+    description: Check BGP sessions with DUT
+    wait: 30
     wait_msg: Wait for BGP sessions to be established
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, r1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   originate:
     description: Check whether DUT originates the beacon prefix
     wait_msg: Wait for prefix origination and BGP convergence
     wait: 30
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, r1 ]
     plugin: bgp_prefix('172.42.42.0/24')
   loopback:
     description: Check whether DUT2 originates the loopback prefix
     wait_msg: Wait for prefix origination and BGP convergence
     wait: 15
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, r1 ]
     plugin: bgp_prefix('10.0.0.2/32')
   stub:
     description: Check whether DUT originates a stub prefix
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, r1 ]
     plugin: bgp_prefix('172.0.42.0/24')
   suppress_lb:
     description: Check whether DUT suppresses the loopback prefix
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, r1 ]
     plugin: bgp_prefix('10.0.0.1/32',state='missing')
   suppress_p2p:
     description: Check whether DUT originates an unwanted prefix on a P2P link
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, r1 ]
     plugin: bgp_prefix('172.0.66.0/24',state='missing')

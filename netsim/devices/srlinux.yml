@@ -9,6 +9,11 @@ group_vars:
   ansible_network_os: srlinux # nokia.srlinux.srlinux
   ansible_connection: paramiko
   netlab_console_connection: ssh
+  netlab_match_protomap:
+    ospf: [ ospfv2, ospfv3 ]
+    bgp: [ bgp, bgp-evpn ]
+    connected: [ local ]
+    isis: [ isis ]
 sr:
   srgb_range_start: 500000
   srgb_range_size: 1000
@@ -17,7 +22,7 @@ bfd:                                    # SR Linux supports lower BFD timers tha
   min_tx: 100
   min_rx: 100
 clab:
-  image: ghcr.io/nokia/srlinux:24.3.2
+  image: ghcr.io/nokia/srlinux:24.7.2
   node:
     kind: srl
     type: ixrd2
@@ -40,6 +45,7 @@ features:
     activate_af: True
     ipv6_lla: True
     rfc8950: True
+    import: [ ospf, isis, connected, vrf, no_policy ]
   evpn:
     irb: True
     asymmetrical_irb: True
@@ -50,13 +56,19 @@ features:
       ipv4: True
       ipv6: True
       network: True
+    import: [ ospf, bgp, connected, vrf, no_policy ]
   mpls:
     ldp: True                           # on 7250 IXR only
   ospf:
     unnumbered: True
+    import: [ bgp, isis, connected, vrf, no_policy ]
+    default: true
   routing:
     policy:
+      match:
+        prefix: True
       set: [ locpref, med ]
+    prefix: True
   sr: True
   vlan:
     model: router
@@ -68,6 +80,7 @@ features:
     ospfv2: True
     ospfv3: True
     bgp: True
+    isis: True
   vxlan:
     requires: [ evpn ]                  # vrf for l3 vxlan
 external:

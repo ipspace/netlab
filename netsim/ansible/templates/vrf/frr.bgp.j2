@@ -1,3 +1,4 @@
+{% import "templates/routing/_redistribute.frr.j2" as redistribute with context %}
 !
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  no bgp ebgp-requires-policy
@@ -19,14 +20,7 @@ router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
 {% endfor %}
 {% for af in ['ipv4','ipv6'] if vdata.af[af]|default(False) %}
  address-family {{ af }} unicast
-{% if vdata.bgp.import is defined %}
-!
-{%   for s_proto,s_data in vdata.bgp.import.items() %}
-  redistribute {{ s_proto }}{%
-    if s_proto == 'ospf' and af == 'ipv6' %}6{% endif %}{%
-    if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
-{%   endfor %}
-{% endif %}
+{{   redistribute.config(vdata.bgp,af=af)|indent(1,first=True) }}
   label vpn export auto
   export vpn
   import vpn

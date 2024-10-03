@@ -9,13 +9,14 @@ import os
 import sys
 import string
 import pathlib
-import glob
 import shutil
 import tarfile
+import re
 
 from box import Box
 
 from ...utils import strings, status, templates, log, read as _read, files as _files
+from ...data.types import must_be_id
 from .. import external_commands
 from .. import parser_add_debug, parser_add_verbose
 from ...providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
@@ -253,6 +254,21 @@ window and follow the instructions.
 
   vm_cleanup('vm_box',ignore_errors=True)
 
+"""
+valid_version: Check the version number
+"""
+def valid_version(v: str) -> bool:
+  match_str = '[0-9a-zA-Z_][.a-zA-Z0-9_-]{0,15}'
+  if re.fullmatch(match_str,v):
+    return True
+  
+  log.error(
+    f'Box version number can contain ASCII letters, numbers, dots, or dashes',
+    category=log.IncorrectValue,
+    module='libvirt')
+  print()
+  return False
+
 def lp_create_box(args: argparse.Namespace,settings: Box,target: str) -> None:
   log.section_header('CREATING','Creating Vagrant box')
   strings.print_colored_text('[INFO]    ','bright_cyan',None)
@@ -326,8 +342,13 @@ You might want to limit yourself to using alphanumeric characters and dots.
 
 Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
 """)
-  version = input('Enter box version: ')
+  while True:
+    version = input('Enter box version: ')
+    if valid_version(version):
+      break
+
   description = devdata.libvirt.description or devdata.description or (args.device+" box")
+  json_name = f'{args.device}-{version}-box.json'
   json = string.Template("""
 {
   "name": "$boxname",
@@ -346,9 +367,9 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
 }
 """)
   strings.print_colored_text('[CREATE]  ','green',None)
-  print("Creating box metadata in box.json")
+  print(f"Creating box metadata in {json_name}")
   _files.create_file_from_text(
-    fname="box.json",
+    fname=json_name,
     txt=json.substitute(
       boxname=boxname,
       description=description,
@@ -357,9 +378,9 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
 
   strings.print_colored_text('[IMPORT]  ','green',None)
   print(f"Importing Vagrant box {boxname} version {version}")
-  if not external_commands.run_command("vagrant box add box.json"):
+  if not external_commands.run_command(f"vagrant box add {json_name}"):
     log.fatal(
-      'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add box.json" to add it.','libvirt')
+      f'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add {json_name}" to add it.','libvirt')
 
 def build(args: argparse.Namespace, topology: Box, workdir: str) -> None:
   skip = args.skip

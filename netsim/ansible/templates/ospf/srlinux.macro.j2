@@ -1,32 +1,15 @@
+{% import "templates/routing/_redistribute.srlinux.j2" as redistribute with context %}
+
 {% macro format_area(a) -%}
 {{ '0.0.0.0' if not a else a | ipv4 }}
 {%- endmacro %}
 
 {% macro ospf_config(pid,af,vrf,ospf,vrf_interfaces,evpn_active=False) %}
-{% if vrf != 'default' %}
-- path: /routing-policy/policy[name={{vrf}}_export_ospf]
-  value:
-    default-action:
-      policy-result: reject
-    statement:
-    - name: bgp
-      match:
-        protocol: bgp
-      action:
-        policy-result: accept
-    - name: local
-      match:
-        protocol: local
-      action:
-        policy-result: accept
-{% if evpn_active %}
-    - name: bgp_evpn
-      match:
-        protocol: bgp-evpn
-      action:
-        policy-result: accept
-{% endif %}
-{% endif %}
+{#
+   Just to make it more fun, while one might be 'redistributing' or 'importing' routes into a routing
+   protocol, SR Linux 'exports' them in the same routing protocol, so we have an 'export-policy'
+#}
+{{ redistribute.config(vrf=vrf,proto='ospf',p_data=ospf,evpn_active=evpn_active,af=[ af ]) }}
 
 - path: /network-instance[name={{ vrf|default('default') }}]
   value:
@@ -47,9 +30,9 @@
 {%     if ospf.reference_bandwidth is defined %}
           reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
 {%     endif %}
-{%     if vrf != 'default' %}
+{%     if ospf.default|default(False) or ospf.import|default(False) %}
           asbr: {}
-          export-policy: "{{vrf}}_export_ospf"
+          export-policy: "{{ vrf }}_export_ospf"
 {%     endif %}
           area:
 {%     if vrf=='default' %}
