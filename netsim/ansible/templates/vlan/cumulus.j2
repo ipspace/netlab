@@ -18,11 +18,10 @@ auto bridge
 iface bridge
     bridge-vlan-aware yes
 {% if vlans is defined %}
-{%   for vdata in vlans.values() %}
-    bridge-vids {{ vdata.id }}
-{%   endfor %}
+{%  set vids = vlans.values() | map(attribute='id') | sort | map('string') %}
+    bridge-vids {{ ",".join(vids) }}
 {%  endif %}
-{% for ifdata in interfaces if ifdata.virtual_interface is not defined and ifdata.vlan is defined %}
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type!="svi" %}
     bridge-ports {{ ifdata.ifname }}
 {% endfor %}
 CONFIG
@@ -35,7 +34,7 @@ cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
 auto {{ ifdata.ifname }}
 {%   endif %}
 iface {{ ifdata.ifname }}
-{%   if ifdata.vlan.trunk_id is defined %}
+{%   if ifdata.vlan.trunk_id is defined and ifdata.type == "svi" %}
     bridge-vids {{ ifdata.vlan.trunk_id|sort|join(",") }}
 {%     if ifdata.vlan.native is defined %}
     bridge-pvid {{ ifdata.vlan.access_id }}
