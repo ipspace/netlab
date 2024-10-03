@@ -29,6 +29,13 @@ class LAG(_Module):
     for i in node.interfaces:
       # 1. Check if the interface is part of a LAG
       if 'lag' in i:
+        _type = i.get("type")
+        if _type!="p2p":
+          log.error(
+              f'Node {node.name} has a LAG configured on {i.ifname} which is not a p2p link ({_type})',
+              category=log.IncorrectAttr,
+              module='lag',
+              hint='lag')
 
         # If not already, create virtual lag interface on first link in LAG (per node)
         virt_if = [ v for v in lag_ifs if v.lag.id == i.lag.id ]
@@ -44,11 +51,21 @@ class LAG(_Module):
           for p in ['clab','linkindex','mtu']:
             if_data.pop(p,None)
 
-          # Fix neighbors
-          for n in if_data.get('neighbors',{}):
+          # Fix neighbors, should be 1 on a p2p link
+          if_data.neighbors = [ data.get_box( if_data.get('neighbors',[{}])[0] ) ]
+          for n in if_data.neighbors:
             if 'lag' in n:
-              n.ifname = f"lag-{n.lag.id}"
-              # TODO check at least one side 'active' in case of LACP
+              neighbor = topology.nodes[n.node]
+              nb_features = devices.get_device_features(neighbor,topology.defaults)
+              if 'lag' in nb_features: # Interface name is device type specific
+                n.ifname = nb_features.lag.if_name.format(**n)  
+                # TODO check at least one side 'active' in case of LACP
+              else:
+                log.error(
+                  f'Node {node.name} has a LAG configured on {i.ifname} but its neighbor {n.name} does not support LAGs',
+                  category=log.IncorrectAttr,
+                  module='lag',
+                  hint='lag')
 
           lag_ifs.append( if_data )
         else:
@@ -61,8 +78,15 @@ class LAG(_Module):
             i.pop(p,None)
 
         for n in i.get('neighbors',{}):
-          for p in list(n.keys()):
-            if p not in topology.defaults.lag.attributes.keep_intf:
-              n.pop(p,None)
+          if 'lag' in n:
+            for p in list(n.keys()):
+              if p not in topology.defaults.lag.attributes.keep_intf:
+                n.pop(p,None)
+          else:
+            log.error(
+              f'Node {node.name} has a LAG configured on {i.ifname} but its link neighbor does not',
+              category=Warning,
+              module='lag',
+              hint='lag')
 
     node.interfaces.extend( lag_ifs )
