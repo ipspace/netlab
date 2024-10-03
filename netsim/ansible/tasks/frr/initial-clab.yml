@@ -5,6 +5,7 @@
     modprobe vrf || echo "FAILED"
   become: true
   delegate_to: localhost
+  run_once: true
   tags: [ print_action, always ]
   register: modprobe_result
   ignore_errors: True
@@ -13,6 +14,15 @@
   when: modprobe_result.stdout|default('') is search("FAILED")
   set_fact:
     netlab_mgmt_vrf: False
+
+- name: Load bonding kernel module
+  when: "'lag' in module|default([])"
+  shell: |
+    modprobe bonding
+  become: true
+  delegate_to: localhost
+  run_once: true
+  tags: [ print_action, always ]
 
 - include_tasks: deploy-config.yml
   tags: [ print_action, always ]

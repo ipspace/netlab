@@ -512,7 +512,7 @@ def create_vlan_link_data(init: typing.Union[Box,dict],vname: str, parent: typin
   return link_data
 
 """
-create_vlan_member_interface: Create interface data for a VLAN mamber link
+create_vlan_member_interface: Create interface data for a VLAN member link
 
 Used by create_vlan_links and create_loopback_vlan_links
 """
