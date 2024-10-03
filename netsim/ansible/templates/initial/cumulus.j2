@@ -100,9 +100,12 @@ iface {{ l.ifname }}
   mtu {{ l.mtu }}
 {%     endif %}
 {%   if l.type == 'lag' %}
-  bond-slaves {%- for l2 in interfaces if 'lag' in l2 and l2.type!='lag' and l2.lag.id==l.lag.id %} {{ l2.ifname }}{%- endfor -%}
-{%    if l.lag.lacp|default(lag.lacp)=='slow' %}
+  bond-slaves {{ " ".join(l.ports) }}
+{%    set _lacp = l.lag.lacp|default(lag.lacp) %}
+{%    if _lacp=='slow' %}
   bond-lacp-rate slow
+{%    elif _lacp=='off' %}
+  bond-mode balance-xor
 {%    endif %}
 {%   endif %}
 

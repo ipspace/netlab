@@ -38,6 +38,7 @@ class LAG(_Module):
           if_data.ifindex = max([j.ifindex for j in (node.interfaces+lag_ifs)]) + 1
           if_data.links = 1
           if_data.type = 'lag'
+          if_data.ports = [i.ifname]
 
           # Remove unwanted data
           for p in ['clab','linkindex','mtu']:
@@ -52,7 +53,7 @@ class LAG(_Module):
           lag_ifs.append( if_data )
         else:
           virt_if[0].links = virt_if[0].links + 1
-          virt_if[0].name = virt_if[0].name + ',' + i.name
+          virt_if[0].ports.append(i.ifname)
 
         # Remove attributes from physical interface
         for p in list(i.keys()):
