@@ -248,7 +248,6 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     ifdata[provider] = pdata
 
 def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
-  print(f"JvB create_virtual_interface: {ifdata}")
   devtype = ifdata.get('type','loopback')         # Get virtual interface type, default to loopback interface
   ifindex_offset = (
     devices.get_device_attribute(node,f'{devtype}_offset',defaults) or
@@ -391,7 +390,7 @@ def assign_link_prefix(
   
   # Don't assign a prefix to physical links that are part of a lag
   if 'lag' in link and link.get("type","")!="lag":
-    return []
+    return data.get_empty_box()
 
   if 'prefix' in link:                                    # User specified a static link prefix
     pfx_list = addressing.parse_prefix(link.prefix,path=link_path)
