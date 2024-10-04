@@ -7,6 +7,15 @@ from .. import data
 from ..utils import log
 from ..augment import devices
 
+#
+# Checks if 2 lists have the same elements, independent of order
+#
+def same_list(l1,l2):
+  for l in l1:
+    if l not in l2:
+      return False
+  return len(l1)==len(l2)
+
 class LAG(_Module):
 
   """
@@ -20,7 +29,8 @@ class LAG(_Module):
       # Lookup virtual LAG link with same id between same pair of nodes, create if not existing
       vlag = None
       for l in topology.links:
-        if 'lag' in l and l.get('type',"")=="lag" and l.lag.id == link.lag.id and l.interfaces==link.interfaces:
+        if 'lag' in l and l.get('type',"")=="lag" and l.lag.id == link.lag.id \
+            and same_list(l.interfaces,link.interfaces):
           vlag = l
           break
       
