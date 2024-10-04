@@ -1,7 +1,7 @@
 import typing
 import netaddr
 
-from box import Box
+from box import Box, BoxList
 from . import _Module
 from .. import data
 from ..utils import log
@@ -10,7 +10,7 @@ from ..augment import devices
 #
 # Checks if 2 lists have the same elements, independent of order
 #
-def same_list(l1,l2):
+def same_list(l1:BoxList,l2:BoxList) -> bool:
   for l in l1:
     if l not in l2:
       return False
@@ -39,7 +39,7 @@ class LAG(_Module):
         vlag.type = "lag"
         vlag.linkindex = len(topology.links) + 1
         vlag._linkname = f"links[{vlag.linkindex}]"
-        vlag.interfaces = [ i for i in link.interfaces ] # Make a deep copy
+        vlag.interfaces = [ i for i in link.interfaces ] # Make a deep copy, could use a set?
         vlag.pop('mtu',None)                             # Remove any MTU attribute
         topology.links.append(vlag)
 
