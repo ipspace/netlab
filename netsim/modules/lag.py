@@ -5,71 +5,74 @@ from box import Box, BoxList
 from . import _Module
 from .. import data
 from ..utils import log
-from ..augment import devices
-
-#
-# Checks if 2 lists have the same elements, independent of order
-#
-def same_list(l1:BoxList,l2:BoxList) -> bool:
-  for l in l1:
-    if l not in l2:
-      return False
-  return len(l1)==len(l2)
+from ..augment import devices, links
 
 class LAG(_Module):
 
   """
-  link_pre_transform: Create virtual LAG links
+  link_pre_transform: Process LAG links and add member links to the topology
   """
   def link_pre_transform(self, link: Box, topology: Box) -> None:
-    if log.debug_active('vlan'):
+    if log.debug_active('lag'):
       print(f'LAG link_pre_transform for {link}')
-    if 'lag' in link and link.get('type',"")!="lag":
 
-      # Lookup virtual LAG link with same id between same pair of nodes, create if not existing
-      vlag = None
-      for l in topology.links:
-        if 'lag' in l and l.get('type',"")=="lag" and l.lag.id == link.lag.id \
-            and same_list(l.interfaces,link.interfaces):
-          vlag = l
-          break
-      
-      if vlag is None:
-        vlag = data.get_box(link)
-        vlag.type = "lag"
-        vlag.linkindex = len(topology.links) + 1
-        vlag._linkname = f"links[{vlag.linkindex}]"
-        vlag.interfaces = [ i for i in link.interfaces ] # Make a deep copy, could use a set?
-        vlag.pop('mtu',None)                             # Remove any MTU attribute
-        topology.links.append(vlag)
+    # Iterate over links with lag.id, skip over member links we added below
+    if 'lag' in link and link.get('type',"")!="p2p":
+      if 'members' not in link.lag:
+        log.error(
+              f'Link {link._linkname} defines "lag.id"={link.lag.id} but no "lag.members"',
+              category=log.MissingValue,
+              module='lag',
+              hint='lag')
 
-        if log.debug_active('vlan'):
-          print(f'LAG link_pre_transform created virtual link: {vlag}')
+      if len(link.interfaces)!=2: # Future: MC-LAG would be 3
+        log.error(
+            'Current LAG module only supports lags between exactly 2 nodes',
+            category=log.IncorrectAttr,
+            module='lag',
+            hint='lag')
 
-        # remove any VLAN attributes from original link
-        link.pop('vlan',None)
-
-  """
-  node_post_transform: Check for correct supported configuration of LAG
-  """
-  def node_post_transform(self, node: Box, topology: Box) -> None:
-    features = devices.get_device_features(node,topology.defaults)
-    for i in node.interfaces:
-      # 1. Check if the interface is part of a LAG
-      if 'lag' in i:
+      # 1. Check that the nodes involved all support LAG
+      for i in link.interfaces:
+        n = topology.nodes[i.node]
+        features = devices.get_device_features(n,topology.defaults)
         if 'lag' not in features:
           log.error(
-              f'Node {node.name} does not support LAG configured on {i.ifname}',
+              f'Node {n.name} does not support LAG configured on link {link._linkname}',
               category=log.IncorrectAttr,
               module='lag',
               hint='lag')
 
-        _type = i.get("type")
-        if _type=="lag":
-          continue
-        elif _type!="p2p":
+      if isinstance(link.lag.members,int):
+        count = link.lag.members
+        link.lag.members = []
+        for i in range(1,count):
+          link.lag.members.append( { 'interfaces': link.interfaces + [] } )  # Deep copy
+
+      # 2. Normalize member links list
+      link.lag.members = links.adjust_link_list(link.lag.members,topology.nodes,f'lag{link.lag.id}.link[{{link_cnt}}]')
+
+      if log.debug_active('lag'):
+        print(f'LAG link_pre_transform after normalizing members: {link}')
+
+      # 3. Check that the nodes in member links match the ones declared for the LAG
+      declared = { l.node for l in link.interfaces }
+      for m in link.lag.members:
+        if any({ l.node not in declared for l in m.interfaces }):
           log.error(
-              f'Node {node.name} has a LAG configured on {i.ifname} which is not a p2p link ({_type})',
+              f'Nodes {m.interfaces} in member link {m._linkname} do not match with LAG {link.lag.id}: {declared}',
               category=log.IncorrectAttr,
               module='lag',
               hint='lag')
+
+        # Add lag ID and append
+        m.lag.id = link.lag.id
+        m.linkindex = len(topology.links)+1
+        m.type = 'p2p'
+        m.prefix = False    # Disable IP assignment
+        if 'mtu' in link:
+          m.mtu = link.mtu  # Copy any MTU setting
+        topology.links.append( m )
+
+      link.type = 'lag'
+      # Link code marks it as a 'virtual_interface'
