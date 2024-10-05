@@ -42,6 +42,14 @@ class LAG(_Module):
               category=log.IncorrectAttr,
               module='lag',
               hint='lag')
+        ATT = 'lag.lacp_mode'
+        lacp_mode = i.get(ATT) or link.get(ATT) or n.get(ATT) or topology.defaults.get(ATT)
+        if lacp_mode=='passive' and not features.lag.get('passive',False):
+          log.error(
+              f'Node {n.name} does not support passive LACP configured on link {link._linkname}',
+              category=log.IncorrectAttr,
+              module='lag',
+              hint='lag')
 
       if isinstance(link.lag.members,int):
         count = link.lag.members
