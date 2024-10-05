@@ -1,12 +1,11 @@
 Release Notes
 =============
 
-**[Release 1.9.1](release-1.9.1) (XXXX-XX-XX)**
+**[Release 1.9.1](release-1.9.1) (2024-10-05)**
 
-* [IS-IS route import](isis-node) ([redistribution](routing_import))
-* [IS-IS VRF instances](isis-platform)
-* [RIP VRF instances](rip-vrf)
-* [RIPng route import](rip-params)
+* [**netlab capture**](netlab-capture) command implements packet capture on VM- or container interfaces
+* IS-IS [route import](isis-node) ([redistribution](routing_import)) and [IS-IS VRF instances](isis-platform)
+* RIPv2/Ripng [route import](rip-params) and [VRF instances](rip-vrf)
 * [Configurable RIPv2/RIPng protocol timers](rip-timers)
 * Support for [Cisco IOSv layer-2 image](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2)
 

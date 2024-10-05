@@ -11,19 +11,21 @@ Using *netlab* you can:
 
 Based on your lab topology the **[netlab up](netlab/up.md)** command will:
 
-* Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, MPLS/VPN, and EVPN routing design
+* Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, RIPv2/RIPng, BGP, MPLS/VPN, and EVPN routing design
 * Prepare all the necessary configuration files to start the lab
 * Start the lab using Vagrant or containerlab
 * Create additional virtual networking infrastructure needed to support your lab
 * Deploy initial configurations (interfaces, IPv4 and IPv6 addresses, usernames...) to your lab devices
-* Configure VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, VRRP, anycast gateways,
+* Configure VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, RIPv2, RIPng, IS-IS, BGP, VRRP, anycast gateways,
   MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
+* Configure prefix lists, AS-path filters, BGP community filters, route maps, route redistribution, and default route origination.
 * Start external network management tools specified in lab topology like Graphite or SuzieQ
 
-When the lab is fully configured, you can:
+When the lab is fully configured, you can use the:
 
-* Use the **[netlab connect](netlab/connect.md)** command to connect to network devices via SSH or **docker exec**
-* Use the **[netlab config](netlab/config.md)** command to deploy custom configuration snippets
+* **[netlab connect](netlab-connect)** command to connect to network devices via SSH or **docker exec**
+* **[netlab config](netlab-config)** command to deploy custom configuration snippets
+* **[netlab capture](netlab-capture)** command to capture packets on VM- or container interfaces
 
 Before shutting down your lab with the **[netlab down](netlab/down.md)** command, you might want to run the **[netlab collect](netlab/collect.md)** command to save the configuration changes you made.
 
