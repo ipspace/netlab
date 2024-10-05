@@ -165,7 +165,7 @@ class _Provider(Callback):
       if template_name:
         node_data = node + { 'hostvars': topology.nodes, 
                              'hosts': get_host_addresses(topology),
-                             'mgmtpool': topology.addressing.mgmt }  # Needed for subnet prefix
+                             'addressing': topology.addressing }  # Needed for subnet prefix
         if '/' in file_name:                      # Create subdirectory in out_folder if needed
           pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
         try:
