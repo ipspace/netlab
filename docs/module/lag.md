@@ -6,7 +6,7 @@ This configuration module configures link bonding parameters, for LAGs between 2
 LAG is currently supported on these platforms:
 
 | Operating system      |   lag     |  LACP off  |  LACP passive
-| --------------------- | :-------: | :--------: |  :----------: 
+| --------------------- | :-------: | :--------: |  :----------:
 | Cumulus Linux         |    ✅     |     ✅     |      ❌
 | FRR                   |    ✅     |     ✅     |      ❌
 
@@ -21,7 +21,7 @@ The following parameters can be set globally or per node/link/interface:
 
 * **lacp_mode**: "active" or "passive"
 
-The **lag.id** parameter can only be set at the link level; all links with the same lag.id value form a Link Aggregation Group.
+By setting the **lag.id** parameter at the link level and defining **lag.members**, a *lag* type link is created with the given list or count of member links.
 
 ## Example
 
@@ -36,7 +36,25 @@ links:
 - r1:
   r2:
   lag.id: 1
+  lag.members: 2
+```
+Additional parameters such as vlan trunks, OSPF cost, etc. can be applied to such *lag* type links. 
+
+In case additional attributes are required for the member links, the following syntax can also be used
+```
+links:
 - r1:
   r2:
-  lag.id: 1
+  lag:
+   id: 1
+   members:
+   - r1:
+       ifindex: 49  # Use 100G links 1/1/49 and 1/1/50
+     r2:
+       ifindex: 49
+   - r1:
+       ifindex: 50
+     r2:
+       ifindex: 50
 ```
+Naturally, the links in lag.members can only use nodes associated with the lag link

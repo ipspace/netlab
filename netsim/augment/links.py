@@ -298,8 +298,8 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
       if sys_mtu and node.mtu == ifdata.mtu:    # .. is it equal to node MTU?
         ifdata.pop('mtu',None)                  # .... remove interface MTU on devices that support system MTU
     else:                                       # Node MTU is defined, interface MTU is not
-      if not sys_mtu and ifdata.get('type',None)!='lag':  # .. does the device support system MTU?
-        ifdata.mtu = node.mtu                   # .... no, copy node MTU to interface MTU unless it's a LAG
+      if not sys_mtu:                           # .. does the device support system MTU?
+        ifdata.mtu = node.mtu                   # .... no, copy node MTU to interface MTU
 
   node.interfaces.append(ifdata)
 
@@ -387,10 +387,6 @@ def assign_link_prefix(
       addr_pools: Box,
       nodes: Box,
       link_path: str = 'links') -> Box:
-  
-  # Don't assign a prefix to physical links that are part of a lag
-  if 'lag' in link and link.get("type","")!="lag":
-    return data.get_empty_box()
 
   if 'prefix' in link:                                    # User specified a static link prefix
     pfx_list = addressing.parse_prefix(link.prefix,path=link_path)
