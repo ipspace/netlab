@@ -3,17 +3,17 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [l2]
 ok: [h2]
+ok: [l2]
 ok: [h1]
 ok: [l1]
 ok: [spine]
 
 TASK [Find device readiness script] ********************************************
-ok: [l2]
 ok: [h1]
-ok: [l1]
+ok: [l2]
 ok: [h2]
+ok: [l1]
 ok: [spine]
 
 TASK [Wait for device to become ready] *****************************************
@@ -28,16 +28,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1,
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [l2]
+ok: [h2]
 ok: [h1]
 ok: [l1]
 ok: [spine]
-ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [l2]
-ok: [h1]
 ok: [l1]
 ok: [spine]
+ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -125,42 +125,6 @@ ok: [spine] =>
         no shutdown
     !
     !
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -215,17 +179,6 @@ ok: [l2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 172.16.0.1 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -304,13 +257,49 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l2]
-ok: [l1]
+ok: [h2]
 ok: [spine]
 ok: [h1]
-ok: [h2]
+ok: [l1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for l1, spine
@@ -318,24 +307,24 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
 
 TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [file] ********************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -363,16 +352,16 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-BqjskWsx-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-NLJlZqqH-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -499,6 +488,8 @@ ok: [l2] =>
       neighbor 10.0.0.1 update-source lo
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.3/32
     !
@@ -811,8 +802,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for evpn] *************************
 changed: [spine]
@@ -855,8 +846,8 @@ skipping: [spine]
 
 TASK [Check is the configuration template is a file] ***************************
 ok: [l1 -> localhost]
-ok: [l2 -> localhost]
 ok: [spine -> localhost]
+ok: [l2 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -886,8 +877,8 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for ebgp.multihop] ****************
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [aoscx_config: deploying ebgp.multihop from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/arubacx.j2] ***
 changed: [l1]

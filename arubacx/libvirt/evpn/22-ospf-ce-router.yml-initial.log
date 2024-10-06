@@ -102,18 +102,6 @@ ok: [s2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 ce1" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 ce2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 s1" >>/tmp/hosts
-    echo "172.16.1.3 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 s2" >>/tmp/hosts
-    echo "172.16.2.4 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -206,18 +194,6 @@ ok: [ce1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 ce1" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 ce2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 s1" >>/tmp/hosts
-    echo "172.16.1.3 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 s2" >>/tmp/hosts
-    echo "172.16.2.4 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -302,18 +278,6 @@ ok: [ce2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 ce1" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 ce2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 s1" >>/tmp/hosts
-    echo "172.16.1.3 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 s2" >>/tmp/hosts
-    echo "172.16.2.4 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -408,9 +372,9 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
+changed: [s2 -> localhost]
 changed: [ce2 -> localhost]
 changed: [ce1 -> localhost]
-changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -421,13 +385,13 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [ce2]
+changed: [s2]
 changed: [ce1]
 
 TASK [set_fact] ****************************************************************
-ok: [s2]
 ok: [ce1]
+ok: [s2]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -563,6 +527,8 @@ ok: [s2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -670,6 +636,7 @@ ok: [ce1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -697,6 +664,7 @@ ok: [ce2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -711,27 +679,6 @@ ok: [ce2] =>
   
     !
     do write
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    router ospf 1
-        router-id 10.0.0.3
-  
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! s1 -> s2
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-    !
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -744,6 +691,7 @@ ok: [s2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -759,6 +707,30 @@ ok: [s2] =>
   
     !
     do write
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    !
+    router ospf 1
+        router-id 10.0.0.3
+  
+  
+  
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface loopback 0
+        ip ospf 1 area 0.0.0.0
+    !
+    interface 1/1/1
+    ! s1 -> s2
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ce1]
@@ -771,8 +743,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -786,9 +758,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
+changed: [s2]
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
@@ -829,8 +801,10 @@ ok: [s1] =>
     router ospf 2 vrf tenant
         router-id 10.0.0.3
   
-        redistribute bgp
-        redistribute connected
+  
+  
+     redistribute bgp
+     redistribute connected
   
   
         area 0.0.0.0
@@ -887,9 +861,9 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
-    !
       redistribute connected
       redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -910,6 +884,7 @@ ok: [s2] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface eth2

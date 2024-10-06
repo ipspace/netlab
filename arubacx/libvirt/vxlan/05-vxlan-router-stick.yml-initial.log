@@ -3,15 +3,15 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [ros]
 ok: [s1]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
-ok: [h2]
 ok: [ros]
+ok: [h2]
 ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
@@ -24,77 +24,18 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [ros]
 ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [ros]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    hostname s1
-    !
-    lldp
-    !
-  
-  
-    !
-    vlan 1001
-     name blue
-    !
-    vlan 1000
-     name red
-    !
-  
-    !
-  
-    !
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        ip mtu 1600
-        description s1 -> ros
-        ip address 10.1.0.2/30
-        no shutdown
-    !
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        no shutdown
-    !
-  
-    interface 1/1/3
-        shutdown
-        mtu 9198
-        no shutdown
-    !
-  
-    interface vlan1000
-        description VLAN red (1000) -> [h1,ros]
-    !
-  
-    interface vlan1001
-        description VLAN blue (1001) -> [h2,ros]
-    !
-    !
 ok: [ros] => 
   msg: |-
     initial configuration for ros
@@ -155,242 +96,191 @@ ok: [ros] =>
         ip address 172.16.1.2/24
     !
     !
-ok: [h1] => 
+ok: [s1] => 
   msg: |-
-    initial configuration for h1
+    initial configuration for s1
     =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)$ "
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    hostname h1
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    10.0.0.2 10.1.0.1 ros
-    172.16.0.2 172.16.1.2 ros-tenant
-    10.0.0.1 10.1.0.2 s1
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
-    #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h1
-  
-    NEED_APT_UPDATE=YES
-  
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
+    hostname s1
+    !
+    lldp
+    !
   
   
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
+    !
+    vlan 1001
+     name blue
+    !
+    vlan 1000
+     name red
+    !
   
-    # Loopback addressing
+    !
   
-    # Interface addressing
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          addresses:
-            - 172.16.0.3/24
-    SCRIPT
+    !
+    interface loopback 0
+        ip address 10.0.0.1/32
+    !
+    interface mgmt
+        no lldp transmit
+        no lldp receive
+    !
   
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          routes:
-            - to: 172.16.0.0/16
-              via: 172.16.0.2
-            - to: 10.0.0.0/24
-              via: 172.16.0.2
-            - to: 10.1.0.0/16
-              via: 172.16.0.2
-            - to: 10.2.0.0/24
-              via: 172.16.0.2
-    SCRIPT
   
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    interface 1/1/1
+        shutdown
+        mtu 9198
+        ip mtu 1600
+        description s1 -> ros
+        ip address 10.1.0.2/30
+        no shutdown
+    !
+  
+    interface 1/1/2
+        shutdown
+        mtu 9198
+        no shutdown
+    !
+  
+    interface 1/1/3
+        shutdown
+        mtu 9198
+        no shutdown
+    !
+  
+    interface vlan1000
+        description VLAN red (1000) -> [h1,ros]
+    !
+  
+    interface vlan1001
+        description VLAN blue (1001) -> [h2,ros]
+    !
+    !
 ok: [h2] => 
   msg: |-
     initial configuration for h2
     =========================================
     #!/bin/bash
     #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
     set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    # Create bash profile script
+    # Disable IPv4 and IPv6 forwarding
     #
-    cat <<SCRIPT >/root/.bash_profile
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.2
+    #
+    # Print the final routing table
+    ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
     #!/bin/bash
     #
-    export PS1="\h(bash)$ "
-    SCRIPT
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
     #
-    # Build hosts file
+    #  /etc/hosts file is generated as a clab bind.
     #
-    hostname h2
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    cat <<SCRIPT >/tmp/hosts
+    # Disable IPv4 and IPv6 forwarding
     #
-    # Created by netlab initial
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    10.0.0.2 10.1.0.1 ros
-    172.16.0.2 172.16.1.2 ros-tenant
-    10.0.0.1 10.1.0.2 s1
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
-    #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h2
-  
-    NEED_APT_UPDATE=YES
-  
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
-    # Loopback addressing
-  
     # Interface addressing
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          addresses:
-            - 172.16.1.4/24
-    SCRIPT
-  
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          routes:
-            - to: 172.16.0.0/16
-              via: 172.16.1.2
-            - to: 10.0.0.0/24
-              via: 172.16.1.2
-            - to: 10.1.0.0/16
-              via: 172.16.1.2
-            - to: 10.2.0.0/24
-              via: 172.16.1.2
-    SCRIPT
-  
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.2
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [h1]
 ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros, s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
@@ -412,13 +302,21 @@ TASK [file] ********************************************************************
 changed: [s1 -> localhost]
 changed: [ros -> localhost]
 
-TASK [template] ****************************************************************
-changed: [h1]
-changed: [h2]
+TASK [set_fact] ****************************************************************
+ok: [h1]
+ok: [h2]
 
-TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
-changed: [h2]
-changed: [h1]
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-IGPwNVwA-h1.sh] **********
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -433,8 +331,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=vxlan)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [ros]
 ok: [s1]
+ok: [ros]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [ros]
@@ -492,8 +390,8 @@ changed: [ros]
 changed: [s1]
 
 TASK [file] ********************************************************************
-changed: [ros -> localhost]
 changed: [s1 -> localhost]
+changed: [ros -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [ros]
@@ -508,8 +406,11 @@ ok: [ros] =>
   msg: |-
     ospf configuration for ros
     =========================================
+    !
     router ospf 1
         router-id 10.0.0.2
+  
+  
   
   
   
@@ -529,8 +430,11 @@ ok: [s1] =>
   msg: |-
     ospf configuration for s1
     =========================================
+    !
     router ospf 1
         router-id 10.0.0.1
+  
+  
   
   
   
@@ -555,8 +459,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros, s1
 
 TASK [tempfile] ****************************************************************
-changed: [ros -> localhost]
 changed: [s1 -> localhost]
+changed: [ros -> localhost]
 
 TASK [template] ****************************************************************
 changed: [ros -> localhost]
@@ -567,8 +471,8 @@ changed: [s1]
 changed: [ros]
 
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
@@ -593,7 +497,9 @@ ok: [ros] =>
     router ospf 2 vrf tenant
         router-id 10.0.0.2
   
-        redistribute connected
+  
+  
+     redistribute connected
   
   
         area 0.0.0.0
@@ -682,16 +588,16 @@ changed: [ros -> localhost]
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [ros -> localhost]
 changed: [s1 -> localhost]
+changed: [ros -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for vxlan] ************************
 changed: [ros]
 changed: [s1]
 
 TASK [aoscx_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/arubacx.j2] ***
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
@@ -701,8 +607,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 ros                        : ok=58   changed=25   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s1                         : ok=49   changed=20   unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
