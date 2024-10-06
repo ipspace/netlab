@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
@@ -225,9 +225,9 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [rr2] => 
+ok: [x1] => 
   msg: |-
-    initial configuration for rr2
+    initial configuration for x1
     =========================================
     #!/bin/bash
     #
@@ -290,7 +290,7 @@ ok: [rr2] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname rr2
+    hostname x1
     !
     vrf mgmt
      exit-vrf
@@ -299,12 +299,12 @@ ok: [rr2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 172.42.42.1/24
     !
     interface eth1
      no shutdown
-     description rr2 -> r1
-     ip address 172.16.1.2/24
+     description x1 -> dut [external]
+     ip address 172.16.3.4/24
     !
     do write
     CONFIG
@@ -420,14 +420,10 @@ ok: [dut] =>
     interface swp1
     ! no shutdown
      description dut -> r1
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp2
     ! no shutdown
      description dut -> x1 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -442,9 +438,9 @@ ok: [dut] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [x1] => 
+ok: [rr2] => 
   msg: |-
-    initial configuration for x1
+    initial configuration for rr2
     =========================================
     #!/bin/bash
     #
@@ -507,7 +503,7 @@ ok: [x1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x1
+    hostname rr2
     !
     vrf mgmt
      exit-vrf
@@ -516,12 +512,12 @@ ok: [x1] =>
     !
     interface lo
      no shutdown
-     ip address 172.42.42.1/24
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description x1 -> dut [external]
-     ip address 172.16.3.4/24
+     description rr2 -> r1
+     ip address 172.16.1.2/24
     !
     do write
     CONFIG
@@ -567,9 +563,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
 
 TASK [template] ****************************************************************
+changed: [rr2]
 changed: [r2]
 changed: [r1]
-changed: [rr2]
 changed: [x1]
 
 TASK [set_fact] ****************************************************************
@@ -579,10 +575,10 @@ ok: [rr2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [rr2]
 changed: [r2]
-changed: [r1]
 changed: [x1]
+changed: [r1]
+changed: [rr2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -789,6 +785,41 @@ ok: [r2] =>
     !
     !
     do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.42.1
+    !
+      neighbor 172.16.3.1 remote-as 65000
+      neighbor 172.16.3.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 172.42.42.0/24
+    !
+    !
+    !
+      neighbor 172.16.3.1 activate
+      no neighbor 172.16.3.1 send-community all
+      neighbor 172.16.3.1 send-community standard
+      neighbor 172.16.3.1 send-community large
+    !
+    !
+    !
+    do write
 ok: [rr2] => 
   msg: |-
     bgp configuration for rr2
@@ -852,41 +883,6 @@ ok: [rr2] =>
     !
     !
     do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.42.1
-    !
-      neighbor 172.16.3.1 remote-as 65000
-      neighbor 172.16.3.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 172.42.42.0/24
-    !
-    !
-    !
-      neighbor 172.16.3.1 activate
-      no neighbor 172.16.3.1 send-community all
-      neighbor 172.16.3.1 send-community standard
-      neighbor 172.16.3.1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -912,15 +908,15 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [x1]
-changed: [r1]
 changed: [rr2]
+changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
-ok: [rr2]
 ok: [r2]
+ok: [rr2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
@@ -930,8 +926,8 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [rr2]
 changed: [x1]
 
@@ -939,8 +935,8 @@ TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
@@ -1094,8 +1090,8 @@ TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansibl
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [rr2]
 changed: [r2]
+changed: [rr2]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************

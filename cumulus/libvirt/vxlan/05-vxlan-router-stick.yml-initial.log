@@ -36,6 +36,122 @@ ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.0.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.0.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.0.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.0.2
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.2
+    #
+    # Print the final routing table
+    ip route
 ok: [ros] => 
   msg: |-
     initial configuration for ros
@@ -58,17 +174,25 @@ ok: [ros] =>
     #
     echo "INIT: setting hostname"
     hostname ros
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 ros" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "172.16.0.2 172.16.1.2 ros-tenant" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 s1" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
     #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.2 ros
+    10.1.0.1 swp1.ros
+    172.16.0.2 vlan1000.tenant.ros
+    172.16.1.2 vlan1001.tenant.ros
+    10.0.0.1 s1
+    10.1.0.2 swp1.s1
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable ZTP
     #
@@ -127,20 +251,14 @@ ok: [ros] =>
     interface swp1
     ! no shutdown
      description ros -> s1
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1000
     ! no shutdown
      description VLAN red (1000) -> [h1,s1]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1001
     ! no shutdown
      description VLAN blue (1001) -> [h2,s1]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -177,17 +295,25 @@ ok: [s1] =>
     #
     echo "INIT: setting hostname"
     hostname s1
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 s1" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 ros" >>/tmp/hosts
-    echo "172.16.0.2 172.16.1.2 ros-tenant" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
     #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.2 ros
+    10.1.0.1 swp1.ros
+    172.16.0.2 vlan1000.tenant.ros
+    172.16.1.2 vlan1001.tenant.ros
+    10.0.0.1 s1
+    10.1.0.2 swp1.s1
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable ZTP
     #
@@ -247,30 +373,20 @@ ok: [s1] =>
     interface swp1
     ! no shutdown
      description s1 -> ros
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp2
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp3
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1000
     ! no shutdown
      description VLAN red (1000) -> [h1,ros]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1001
     ! no shutdown
      description VLAN blue (1001) -> [h2,ros]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -285,232 +401,6 @@ ok: [s1] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)$ "
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    hostname h1
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    10.0.0.2 10.1.0.1 ros
-    172.16.0.2 172.16.1.2 ros-tenant
-    10.0.0.1 10.1.0.2 s1
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
-    #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h1
-  
-    NEED_APT_UPDATE=YES
-  
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
-    # Loopback addressing
-  
-    # Interface addressing
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          addresses:
-            - 172.16.0.3/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          routes:
-            - to: 172.16.0.0/16
-              via: 172.16.0.2
-            - to: 10.0.0.0/24
-              via: 172.16.0.2
-            - to: 10.1.0.0/16
-              via: 172.16.0.2
-            - to: 10.2.0.0/24
-              via: 172.16.0.2
-    SCRIPT
-  
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)$ "
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    hostname h2
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    10.0.0.2 10.1.0.1 ros
-    172.16.0.2 172.16.1.2 ros-tenant
-    10.0.0.1 10.1.0.2 s1
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
-    #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h2
-  
-    NEED_APT_UPDATE=YES
-  
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
-    # Loopback addressing
-  
-    # Interface addressing
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          addresses:
-            - 172.16.1.4/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          routes:
-            - to: 172.16.0.0/16
-              via: 172.16.1.2
-            - to: 10.0.0.0/24
-              via: 172.16.1.2
-            - to: 10.1.0.0/16
-              via: 172.16.1.2
-            - to: 10.2.0.0/24
-              via: 172.16.1.2
-    SCRIPT
-  
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [ros]
@@ -520,31 +410,39 @@ ok: [h2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for ros, s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [ros]
 ok: [s1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 skipping: [ros]
 skipping: [s1]
 
-TASK [template] ****************************************************************
-changed: [h1]
-changed: [h2]
+TASK [set_fact] ****************************************************************
+ok: [h1]
+ok: [h2]
 
-TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
-changed: [h1]
-changed: [h2]
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-HJKBSGLq-h1.sh] **********
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -652,8 +550,8 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for ros, s1
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [ros]
@@ -680,11 +578,14 @@ ok: [ros] =>
   msg: |-
     ospf configuration for ros
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.2
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -700,11 +601,14 @@ ok: [s1] =>
   msg: |-
     ospf configuration for s1
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.1
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -737,8 +641,8 @@ skipping: [ros]
 skipping: [s1]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ros]
@@ -791,6 +695,7 @@ ok: [ros] =>
      timers lsa min-arrival 100
   
      redistribute connected
+  
     exit
     !
     interface vlan1000
@@ -923,16 +828,16 @@ TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for ros, s1
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [ros]
 ok: [s1]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/cumulus.j2] ***
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/cumulus.j2] ***
 skipping: [ros]
@@ -942,8 +847,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 ros                        : ok=48   changed=10   unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 s1                         : ok=41   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
