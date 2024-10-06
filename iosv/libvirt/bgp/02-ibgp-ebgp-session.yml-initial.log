@@ -50,15 +50,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 x1" >>/tmp/hosts
-    echo "172.42.42.1 172.16.1.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -144,15 +135,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 x1" >>/tmp/hosts
-    echo "172.42.42.1 172.16.1.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -232,6 +214,8 @@ ok: [dut] =>
     ip host x1 10.0.0.2 172.16.0.2
     ip host x2 172.42.42.1 172.16.1.3
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -283,16 +267,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -342,6 +326,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -377,6 +363,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.42.0/24
     !
     !
@@ -397,11 +385,11 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 10.0.0.2 remote-as 65000
       neighbor 10.0.0.2 description x1
       neighbor 10.0.0.2 update-source Loopback0
@@ -412,6 +400,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -442,8 +431,8 @@ TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -482,6 +471,7 @@ ok: [x1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -502,6 +492,7 @@ ok: [dut] =>
     =========================================
     router ospf 1
      router-id 10.0.0.1
+  
   
     !
     interface Loopback0

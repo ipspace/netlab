@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Find device readiness script] ********************************************
 ok: [rtr]
@@ -30,8 +30,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Find configuration template for initial] *********************************
 ok: [rtr]
@@ -41,6 +41,112 @@ ok: [h3]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [rtr] => 
+  msg: |-
+    initial configuration for rtr
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth4.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
+    ip link set eth3 mtu 1500
+    ip link set eth4 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname rtr
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+    !
+    interface eth1
+     no shutdown
+     description rtr -> h1 [stub]
+     ip address 172.16.0.5/24
+    !
+    interface eth2
+     no shutdown
+     description rtr -> h3 [stub]
+     ip address 172.16.1.5/24
+    !
+    interface eth3
+     no shutdown
+     description rtr -> h2 [stub]
+     ip address 172.16.2.5/24
+    !
+    interface eth4
+     no shutdown
+     description rtr -> h4 [stub]
+     ip address 172.16.3.5/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -157,125 +263,6 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [rtr] => 
-  msg: |-
-    initial configuration for rtr
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.2.2 h2" >>/tmp/hosts
-    echo "172.16.1.3 h3" >>/tmp/hosts
-    echo "172.16.3.4 h4" >>/tmp/hosts
-    echo "10.0.0.5 rtr" >>/tmp/hosts
-    echo "172.16.2.5 172.16.3.5 rtr-blue" >>/tmp/hosts
-    echo "172.16.0.5 172.16.1.5 rtr-red" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth4.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
-    ip link set eth3 mtu 1500
-    ip link set eth4 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname rtr
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.5/32
-    !
-    interface eth1
-     no shutdown
-     description rtr -> h1 [stub]
-     ip address 172.16.0.5/24
-    !
-    interface eth2
-     no shutdown
-     description rtr -> h3 [stub]
-     ip address 172.16.1.5/24
-    !
-    interface eth3
-     no shutdown
-     description rtr -> h2 [stub]
-     ip address 172.16.2.5/24
-    !
-    interface eth4
-     no shutdown
-     description rtr -> h4 [stub]
-     ip address 172.16.3.5/24
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -437,17 +424,17 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-WpDfKGrU-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-WyFWXymJ-h1.sh] **********
 changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 

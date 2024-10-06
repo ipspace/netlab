@@ -4,8 +4,8 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -54,16 +54,6 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 2001:db8:1:2::1 2001:db8:2:2::2 probe" >>/tmp/hosts
-    echo "10.0.0.3 172.42.42.3 172.16.0.3 2001:db8:1:3::1 2001:db8:cafe:42::3 2001:db8:2::3 x1" >>/tmp/hosts
-    echo "10.0.0.4 172.42.42.4 172.16.1.4 2001:db8:1:4::1 2001:db8:cafe:42::4 2001:db8:2:1::4 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -158,16 +148,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 2001:db8:1:2::1 2001:db8:2:2::2 probe" >>/tmp/hosts
-    echo "10.0.0.3 172.42.42.3 172.16.0.3 2001:db8:1:3::1 2001:db8:cafe:42::3 2001:db8:2::3 x1" >>/tmp/hosts
-    echo "10.0.0.4 172.42.42.4 172.16.1.4 2001:db8:1:4::1 2001:db8:cafe:42::4 2001:db8:2:1::4 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -255,52 +235,6 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host probe 10.0.0.2 172.16.2.2 2001:db8:1:2::1 2001:db8:2:2::2
-    ip host x1 10.0.0.3 172.42.42.3 172.16.0.3 2001:db8:1:3::1 2001:db8:cafe:42::3 2001:db8:2::3
-    ip host x2 10.0.0.4 172.42.42.4 172.16.1.4 2001:db8:1:4::1 2001:db8:cafe:42::4 2001:db8:2:1::4
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-     ipv6 address 2001:DB8:1:1::1/64
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     no shutdown
-     description dut -> x1 [external]
-     ip address 172.16.0.1 255.255.255.0
-     ipv6 address 2001:DB8:2::1/64
-    !
-    interface GigabitEthernet3
-     no shutdown
-     description dut -> x2 [external]
-     ip address 172.16.1.1 255.255.255.0
-     ipv6 address 2001:DB8:2:1::1/64
-    !
-    interface GigabitEthernet4
-     no shutdown
-     description dut -> probe
-     ip address 172.16.2.1 255.255.255.0
-     ipv6 address 2001:DB8:2:2::1/64
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -319,16 +253,6 @@ ok: [x2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 2001:db8:1:2::1 2001:db8:2:2::2 probe" >>/tmp/hosts
-    echo "10.0.0.3 172.42.42.3 172.16.0.3 2001:db8:1:3::1 2001:db8:cafe:42::3 2001:db8:2::3 x1" >>/tmp/hosts
-    echo "10.0.0.4 172.42.42.4 172.16.1.4 2001:db8:1:4::1 2001:db8:cafe:42::4 2001:db8:2:1::4 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -417,11 +341,59 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host probe 10.0.0.2 172.16.2.2 2001:db8:1:2::1 2001:db8:2:2::2
+    ip host x1 10.0.0.3 172.42.42.3 172.16.0.3 2001:db8:1:3::1 2001:db8:cafe:42::3 2001:db8:2::3
+    ip host x2 10.0.0.4 172.42.42.4 172.16.1.4 2001:db8:1:4::1 2001:db8:cafe:42::4 2001:db8:2:1::4
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+     ipv6 address 2001:DB8:1:1::1/64
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     no shutdown
+     description dut -> x1 [external]
+     ip address 172.16.0.1 255.255.255.0
+     ipv6 address 2001:DB8:2::1/64
+    !
+    interface GigabitEthernet3
+     no shutdown
+     description dut -> x2 [external]
+     ip address 172.16.1.1 255.255.255.0
+     ipv6 address 2001:DB8:2:1::1/64
+    !
+    interface GigabitEthernet4
+     no shutdown
+     description dut -> probe
+     ip address 172.16.2.1 255.255.255.0
+     ipv6 address 2001:DB8:2:2::1/64
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [probe]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -435,9 +407,9 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [probe -> localhost]
 changed: [x2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [probe]
@@ -458,9 +430,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [probe]
 changed: [x1]
 changed: [x2]
+changed: [probe]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -542,8 +514,8 @@ TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [probe]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -554,13 +526,13 @@ skipping: [probe]
 skipping: [x2]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [probe]
 changed: [x2]
+changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
@@ -596,6 +568,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -608,6 +582,8 @@ ok: [probe] =>
       neighbor 10.0.0.1 send-community extended
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -653,6 +629,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
       network 172.42.42.0/24
@@ -669,6 +647,8 @@ ok: [x1] =>
       neighbor 172.16.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:3::/64
     !
@@ -688,6 +668,85 @@ ok: [x1] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description probe
+      neighbor 10.0.0.2 update-source Loopback0
+  
+      neighbor 2001:db8:1:2::1 remote-as 65000
+      neighbor 2001:db8:1:2::1 description probe
+      neighbor 2001:db8:1:2::1 update-source Loopback0
+  
+      neighbor 172.16.0.3 remote-as 65100
+      neighbor 172.16.0.3 description x1
+  
+      neighbor 2001:db8:2::3 remote-as 65100
+      neighbor 2001:db8:2::3 description x1
+  
+      neighbor 172.16.1.4 remote-as 65101
+      neighbor 172.16.1.4 description x2
+  
+      neighbor 2001:db8:2:1::4 remote-as 65101
+      neighbor 2001:db8:2:1::4 description x2
+  
+    !
+     address-family ipv4
+      bgp scan-time 5
+  
+    !
+      network 10.0.0.1 mask 255.255.255.255
+  
+    !
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 advertisement-interval 0
+      neighbor 10.0.0.2 next-hop-self
+      neighbor 10.0.0.2 send-community standard
+      neighbor 10.0.0.2 send-community extended
+  
+      neighbor 172.16.0.3 activate
+      neighbor 172.16.0.3 advertisement-interval 0
+      neighbor 172.16.0.3 send-community standard
+  
+      neighbor 172.16.1.4 activate
+      neighbor 172.16.1.4 advertisement-interval 0
+      neighbor 172.16.1.4 send-community standard
+  
+     address-family ipv6
+      bgp scan-time 5
+  
+    !
+      network 2001:db8:1:1::/64
+  
+    !
+    !
+      neighbor 2001:db8:1:2::1 activate
+      neighbor 2001:db8:1:2::1 advertisement-interval 0
+      neighbor 2001:db8:1:2::1 next-hop-self
+      neighbor 2001:db8:1:2::1 send-community standard
+      neighbor 2001:db8:1:2::1 send-community extended
+  
+      neighbor 2001:db8:2::3 activate
+      neighbor 2001:db8:2::3 advertisement-interval 0
+      neighbor 2001:db8:2::3 send-community standard
+  
+      neighbor 2001:db8:2:1::4 activate
+      neighbor 2001:db8:2:1::4 advertisement-interval 0
+      neighbor 2001:db8:2:1::4 send-community standard
+  
+    !
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -718,6 +777,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
       network 172.42.42.0/24
@@ -734,6 +795,8 @@ ok: [x2] =>
       neighbor 172.16.1.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:4::/64
     !
@@ -753,88 +816,11 @@ ok: [x2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    ip bgp-community new-format
-    !
-    router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description probe
-      neighbor 10.0.0.2 update-source Loopback0
-  
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description probe
-      neighbor 2001:db8:1:2::1 update-source Loopback0
-  
-      neighbor 172.16.0.3 remote-as 65100
-      neighbor 172.16.0.3 description x1
-  
-      neighbor 2001:db8:2::3 remote-as 65100
-      neighbor 2001:db8:2::3 description x1
-  
-      neighbor 172.16.1.4 remote-as 65101
-      neighbor 172.16.1.4 description x2
-  
-      neighbor 2001:db8:2:1::4 remote-as 65101
-      neighbor 2001:db8:2:1::4 description x2
-  
-    !
-     address-family ipv4
-      bgp scan-time 5
-    !
-      network 10.0.0.1 mask 255.255.255.255
-  
-    !
-    !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 advertisement-interval 0
-      neighbor 10.0.0.2 next-hop-self
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community extended
-  
-      neighbor 172.16.0.3 activate
-      neighbor 172.16.0.3 advertisement-interval 0
-      neighbor 172.16.0.3 send-community standard
-  
-      neighbor 172.16.1.4 activate
-      neighbor 172.16.1.4 advertisement-interval 0
-      neighbor 172.16.1.4 send-community standard
-  
-     address-family ipv6
-      bgp scan-time 5
-    !
-      network 2001:db8:1:1::/64
-  
-    !
-    !
-      neighbor 2001:db8:1:2::1 activate
-      neighbor 2001:db8:1:2::1 advertisement-interval 0
-      neighbor 2001:db8:1:2::1 next-hop-self
-      neighbor 2001:db8:1:2::1 send-community standard
-      neighbor 2001:db8:1:2::1 send-community extended
-  
-      neighbor 2001:db8:2::3 activate
-      neighbor 2001:db8:2::3 advertisement-interval 0
-      neighbor 2001:db8:2::3 send-community standard
-  
-      neighbor 2001:db8:2:1::4 activate
-      neighbor 2001:db8:2:1::4 advertisement-interval 0
-      neighbor 2001:db8:2:1::4 send-community standard
-  
-    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Deploy bgp configuration] ************************************************
@@ -845,8 +831,8 @@ TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
@@ -861,8 +847,8 @@ skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
-changed: [probe]
 changed: [x2]
+changed: [probe]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [probe]
@@ -891,6 +877,7 @@ ok: [probe] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -922,6 +909,7 @@ ok: [probe] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -932,6 +920,7 @@ ok: [dut] =>
     =========================================
     router ospf 1
      router-id 10.0.0.1
+  
   
     !
     interface Loopback0
@@ -947,6 +936,7 @@ ok: [dut] =>
     router ospfv3 1
      router-id 10.0.0.1
      address-family ipv6 unicast
+  
   
     !
     interface Loopback0

@@ -21,14 +21,14 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -123,70 +123,6 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> x1'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> x2'
-  
-    set interfaces ethernet eth2 mtu 1500
-  
-    set interfaces ethernet eth2 address 10.42.1.1/24
-  
-  
-  
-  
-  
-    set interfaces ethernet eth3 description 'dut -> stub [stub]'
-  
-    set interfaces ethernet eth3 mtu 1500
-  
-    set interfaces ethernet eth3 address 10.42.2.1/24
-  
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -279,6 +215,70 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> x1'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> x2'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+    set interfaces ethernet eth2 address 10.42.1.1/24
+  
+  
+  
+  
+  
+    set interfaces ethernet eth3 description 'dut -> stub [stub]'
+  
+    set interfaces ethernet eth3 mtu 1500
+  
+    set interfaces ethernet eth3 address 10.42.2.1/24
+  
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
@@ -408,6 +408,7 @@ ok: [x1] =>
     =========================================
     !
     !
+    !
     router isis Gandalf
      log-adjacency-changes
      hostname dynamic
@@ -416,9 +417,6 @@ ok: [x1] =>
      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
      net 49.0001.0000.0000.0002.00
   
-    !
-    interface lo
-     ip router isis Gandalf
     !
     interface eth1
     ! x1 -> dut
@@ -432,12 +430,17 @@ ok: [x1] =>
      isis network point-to-point
      isis metric 100
     !
+  
+    !
+    interface lo
+     ip router isis Gandalf
     !
     do write
 ok: [x2] => 
   msg: |-
     isis configuration for x2
     =========================================
+    !
     !
     !
     router isis Gandalf
@@ -448,9 +451,6 @@ ok: [x2] =>
      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
      net 49.0001.0000.0000.0003.00
   
-    !
-    interface lo
-     ip router isis Gandalf
     !
     interface eth1
     ! x2 -> dut
@@ -464,6 +464,10 @@ ok: [x2] =>
      isis network point-to-point
      isis metric 100
     !
+  
+    !
+    interface lo
+     ip router isis Gandalf
     !
     do write
 
@@ -495,8 +499,8 @@ TASK [execute config-isis.sh to deploy isis config from /home/pipi/net101/tools/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -507,8 +511,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

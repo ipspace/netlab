@@ -50,15 +50,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.3.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.2.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 172.16.2.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -151,15 +142,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.3.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.2.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 172.16.2.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -246,6 +228,8 @@ ok: [dut] =>
     ip host x1 10.0.0.2 172.16.0.2 172.16.2.2
     ip host x2 10.0.0.3 172.16.1.3 172.16.2.3
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -266,7 +250,7 @@ ok: [dut] =>
     !
     interface GigabitEthernet4
      no shutdown
-     description dut -> stub
+     description dut -> stub [stub]
      ip address 172.16.3.1 255.255.255.0
     !
     no banner exec
@@ -289,8 +273,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x2 -> localhost]
 changed: [x1 -> localhost]
+changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -308,8 +292,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -342,11 +326,14 @@ ok: [x1] =>
     =========================================
     !
     router rip
-      version 2
-      network lo
-      network eth1
-      network eth2
+     version 2
+     timers basic 5 180 120
+  
+     network lo
+     network eth1
+     network eth2
     !
+  
     !
     do write
 ok: [x2] => 
@@ -355,11 +342,14 @@ ok: [x2] =>
     =========================================
     !
     router rip
-      version 2
-      network lo
-      network eth1
-      network eth2
+     version 2
+     timers basic 5 180 120
+  
+     network lo
+     network eth1
+     network eth2
     !
+  
     !
     do write
 ok: [dut] => 
@@ -368,8 +358,11 @@ ok: [dut] =>
     =========================================
     !
     router rip
-      version 2
-      no auto-summary
+     version 2
+     no auto-summary
+     address-family ipv4 unicast
+      timers basic 5 180 120 1
+  
       network 10.0.0.1
       network 172.16.0.1
       network 172.16.1.1
@@ -391,8 +384,8 @@ TASK [ios_config: deploying ripv2 from /home/pipi/net101/tools/netsim/ansible/te
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]

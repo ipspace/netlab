@@ -9,8 +9,8 @@ ok: [dut_c]
 ok: [dut_a]
 
 TASK [Find device readiness script] ********************************************
-ok: [xf]
 ok: [probe]
+ok: [xf]
 ok: [dut_c]
 ok: [dut_a]
 
@@ -36,43 +36,6 @@ ok: [dut_c]
 ok: [dut_a]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut_c] => 
-  msg: |-
-    initial configuration for dut_c
-    =========================================
-    hostname dut_c
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host dut_a 2001:db8:1:1::1 2001:db8:2::1
-    ip host probe 2001:db8:1:3::1 2001:db8:2::3 2001:db8:2:1::3
-    ip host xf 2001:db8:1:4::1 2001:db8:2:2::4
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ipv6 address 2001:DB8:1:2::1/64
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     no shutdown
-     description dut_c -> probe
-     ipv6 address 2001:DB8:2:1::2/64
-    !
-    interface GigabitEthernet3
-     no shutdown
-     description dut_c -> xf [external]
-     ipv6 address 2001:DB8:2:2::2/64
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [xf] => 
   msg: |-
     initial configuration for xf
@@ -91,16 +54,6 @@ ok: [xf] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 dut_a" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 2001:db8:2:2::2 dut_c" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2::3 2001:db8:2:1::3 probe" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -176,17 +129,17 @@ ok: [xf] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut_a] => 
+ok: [dut_c] => 
   msg: |-
-    initial configuration for dut_a
+    initial configuration for dut_c
     =========================================
-    hostname dut_a
+    hostname dut_c
     !
     no ip domain lookup
     !
     lldp run
     !
-    ip host dut_c 2001:db8:1:2::1 2001:db8:2:1::2 2001:db8:2:2::2
+    ip host dut_a 2001:db8:1:1::1 2001:db8:2::1
     ip host probe 2001:db8:1:3::1 2001:db8:2::3 2001:db8:2:1::3
     ip host xf 2001:db8:1:4::1 2001:db8:2:2::4
     !
@@ -194,7 +147,7 @@ ok: [dut_a] =>
     !
     !
     interface Loopback0
-     ipv6 address 2001:DB8:1:1::1/64
+     ipv6 address 2001:DB8:1:2::1/64
     !
     interface GigabitEthernet1
      no lldp transmit
@@ -202,8 +155,13 @@ ok: [dut_a] =>
     !
     interface GigabitEthernet2
      no shutdown
-     description dut_a -> probe
-     ipv6 address 2001:DB8:2::1/64
+     description dut_c -> probe
+     ipv6 address 2001:DB8:2:1::2/64
+    !
+    interface GigabitEthernet3
+     no shutdown
+     description dut_c -> xf [external]
+     ipv6 address 2001:DB8:2:2::2/64
     !
     no banner exec
     no banner login
@@ -226,16 +184,6 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 dut_a" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 2001:db8:2:2::2 dut_c" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2::3 2001:db8:2:1::3 probe" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -324,6 +272,38 @@ ok: [probe] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut_a] => 
+  msg: |-
+    initial configuration for dut_a
+    =========================================
+    hostname dut_a
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host dut_c 2001:db8:1:2::1 2001:db8:2:1::2 2001:db8:2:2::2
+    ip host probe 2001:db8:1:3::1 2001:db8:2::3 2001:db8:2:1::3
+    ip host xf 2001:db8:1:4::1 2001:db8:2:2::4
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ipv6 address 2001:DB8:1:1::1/64
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     no shutdown
+     description dut_a -> probe
+     ipv6 address 2001:DB8:2::1/64
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [xf]
@@ -343,8 +323,8 @@ changed: [dut_a]
 changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [xf -> localhost]
 changed: [probe -> localhost]
+changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -372,8 +352,8 @@ skipping: [probe]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [xf]
 ok: [probe]
+ok: [xf]
 ok: [dut_a]
 ok: [dut_c]
 
@@ -417,6 +397,8 @@ ok: [xf] =>
     !
      address-family ipv6 unicast
     !
+  
+    !
       network 2001:db8:1:4::/64
     !
     !
@@ -437,17 +419,18 @@ ok: [dut_c] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.2
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.2
       neighbor 2001:db8:2:2::4 remote-as 65100
       neighbor 2001:db8:2:2::4 description xf
   
     !
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:2::/64
   
@@ -500,6 +483,47 @@ ok: [dut_c]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
+ok: [dut_a] => 
+  msg: |-
+    ospf configuration for dut_a
+    =========================================
+    router ospfv3 1
+     router-id 10.0.0.1
+     address-family ipv6 unicast
+      default-information originate always metric-type 2 metric 40
+  
+  
+    !
+    interface Loopback0
+    !
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
+    interface GigabitEthernet2
+    ! dut_a -> probe
+     ospfv3 1 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+    !
+ok: [dut_c] => 
+  msg: |-
+    ospf configuration for dut_c
+    =========================================
+    router ospfv3 1
+     router-id 10.0.0.2
+     address-family ipv6 unicast
+      default-information originate metric-type 1 metric 20
+  
+  
+    !
+    interface Loopback0
+    !
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
+    interface GigabitEthernet2
+    ! dut_c -> probe
+     ospfv3 1 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+     ospfv3 cost 10
+    !
 ok: [probe] => 
   msg: |-
     ospf configuration for probe
@@ -528,49 +552,11 @@ ok: [probe] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
     do write
-ok: [dut_a] => 
-  msg: |-
-    ospf configuration for dut_a
-    =========================================
-    router ospfv3 1
-     router-id 10.0.0.1
-     address-family ipv6 unicast
-     default-information originate always metric-type 2 metric 40
-  
-    !
-    interface Loopback0
-    !
-     ospfv3 1 ipv6 area 0.0.0.0
-    !
-    interface GigabitEthernet2
-    ! dut_a -> probe
-     ospfv3 1 ipv6 area 0.0.0.0
-     ospfv3 network point-to-point
-    !
-ok: [dut_c] => 
-  msg: |-
-    ospf configuration for dut_c
-    =========================================
-    router ospfv3 1
-     router-id 10.0.0.2
-     address-family ipv6 unicast
-     default-information originate metric-type 1 metric 20
-  
-    !
-    interface Loopback0
-    !
-     ospfv3 1 ipv6 area 0.0.0.0
-    !
-    interface GigabitEthernet2
-    ! dut_c -> probe
-     ospfv3 1 ipv6 area 0.0.0.0
-     ospfv3 network point-to-point
-     ospfv3 cost 10
-    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [xf]

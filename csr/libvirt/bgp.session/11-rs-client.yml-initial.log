@@ -25,14 +25,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -54,16 +54,6 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 r3" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 rs" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -150,16 +140,6 @@ ok: [r3] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 r3" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 rs" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -245,16 +225,6 @@ ok: [rs] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 r3" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 rs" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -335,6 +305,8 @@ ok: [dut] =>
     ip host r3 10.0.0.2 172.16.1.2
     ip host rs 10.0.0.3 172.16.0.3
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -359,8 +331,8 @@ ok: [dut] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
-ok: [rs]
 ok: [r3]
+ok: [rs]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -374,8 +346,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [rs -> localhost]
 changed: [r2 -> localhost]
+changed: [rs -> localhost]
 changed: [r3 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -387,9 +359,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r3, rs
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r3]
 changed: [rs]
+changed: [r3]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -425,8 +397,8 @@ ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [r2]
-ok: [rs]
 ok: [r3]
+ok: [rs]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -450,6 +422,8 @@ ok: [r2] =>
       neighbor 172.16.0.3 description rs
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.10/32
     !
@@ -487,6 +461,8 @@ ok: [rs] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -512,11 +488,11 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 172.16.0.3 remote-as 65100
       neighbor 172.16.0.3 description rs
   
@@ -526,6 +502,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -561,6 +538,8 @@ ok: [r3] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -576,8 +555,8 @@ ok: [r3] =>
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 ok: [dut]
 
 TASK [Deploy bgp configuration] ************************************************
@@ -589,8 +568,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [r3]
-changed: [rs]
 changed: [r2]
+changed: [rs]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -603,8 +582,8 @@ skipping: [r3]
 skipping: [rs]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r3]
 changed: [r2]
+changed: [r3]
 changed: [rs]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -623,9 +602,9 @@ skipping: [r2]
 skipping: [rs]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [r2 -> localhost]
 ok: [dut -> localhost]
 ok: [rs -> localhost]
+ok: [r2 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]

@@ -3,12 +3,12 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [d1]
 ok: [d2]
+ok: [d1]
 ok: [r1]
-ok: [h1]
 ok: [r2]
 ok: [h2]
+ok: [h1]
 ok: [h3]
 
 TASK [Find device readiness script] ********************************************
@@ -36,18 +36,18 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [d1]
 ok: [d2]
 ok: [r1]
-ok: [h1]
 ok: [r2]
-ok: [h2]
+ok: [h1]
 ok: [h3]
+ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [d1]
 ok: [d2]
 ok: [r1]
 ok: [r2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -150,6 +150,364 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [d1] => 
+  msg: |-
+    initial configuration for d1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname d1
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 d1
+    172.16.33.1 swp1.d1
+    2001:db8:cafe:33::1 swp1.d1
+    172.16.0.1 vlan1000.d1
+    10.0.0.2 d2
+    172.16.44.2 swp1.d2
+    2001:db8:cafe:44::2 swp1.d2
+    172.16.0.2 vlan1000.d2
+    10.0.0.3 r1
+    172.16.33.3 eth1.r1
+    2001:db8:cafe:33::3 eth1.r1
+    172.16.1.3 eth2.r1
+    10.0.0.4 r2
+    172.16.44.4 eth1.r2
+    2001:db8:cafe:44::4 eth1.r2
+    172.16.1.4 eth2.r2
+    172.16.0.5 h1 eth1.h1
+    172.16.0.6 h2 eth1.h2
+    172.16.1.7 h3 eth1.h3
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.1/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      mtu 1500
+      address 172.16.33.1/24
+  
+    iface swp1 inet6 static
+      mtu 1500
+      address 2001:db8:cafe:33::1/64
+    auto swp2
+    auto swp3
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    #
+    # Enable FRR modules for ['vlan', 'ospf', 'gateway']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "ospfd=yes" >>/etc/frr/daemons
+    echo "ospf6d=yes" >>/etc/frr/daemons
+    echo "vrrpd=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    ipv6 forwarding
+    !
+    interface swp1
+    ! no shutdown
+     description d1 -> r1
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp2
+    ! no shutdown
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp3
+    ! no shutdown
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface vlan1000
+    ! no shutdown
+     description VLAN edge (1000) -> [h1,d2,h2]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [d2] => 
+  msg: |-
+    initial configuration for d2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname d2
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 d1
+    172.16.33.1 swp1.d1
+    2001:db8:cafe:33::1 swp1.d1
+    172.16.0.1 vlan1000.d1
+    10.0.0.2 d2
+    172.16.44.2 swp1.d2
+    2001:db8:cafe:44::2 swp1.d2
+    172.16.0.2 vlan1000.d2
+    10.0.0.3 r1
+    172.16.33.3 eth1.r1
+    2001:db8:cafe:33::3 eth1.r1
+    172.16.1.3 eth2.r1
+    10.0.0.4 r2
+    172.16.44.4 eth1.r2
+    2001:db8:cafe:44::4 eth1.r2
+    172.16.1.4 eth2.r2
+    172.16.0.5 h1 eth1.h1
+    172.16.0.6 h2 eth1.h2
+    172.16.1.7 h3 eth1.h3
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.2/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      mtu 1500
+      address 172.16.44.2/24
+  
+    iface swp1 inet6 static
+      mtu 1500
+      address 2001:db8:cafe:44::2/64
+    auto swp2
+    auto swp3
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    #
+    # Enable FRR modules for ['vlan', 'ospf', 'gateway']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "ospfd=yes" >>/etc/frr/daemons
+    echo "ospf6d=yes" >>/etc/frr/daemons
+    echo "vrrpd=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    ipv6 forwarding
+    !
+    interface swp1
+    ! no shutdown
+     description d2 -> r2
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp2
+    ! no shutdown
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp3
+    ! no shutdown
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface vlan1000
+    ! no shutdown
+     description VLAN edge (1000) -> [h1,d1,h2]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.7/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.3
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.3
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.3
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.3
+    #
+    # Print the final routing table
+    ip route
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -307,156 +665,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [d2] => 
-  msg: |-
-    initial configuration for d2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname d2
-    #
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.1 d1
-    172.16.33.1 d1
-    2001:db8:cafe:33::1 d1
-    172.16.0.1 d1
-    10.0.0.2 d2
-    172.16.44.2 d2
-    2001:db8:cafe:44::2 d2
-    172.16.0.2 d2
-    10.0.0.3 r1
-    172.16.33.3 r1
-    2001:db8:cafe:33::3 r1
-    172.16.1.3 r1
-    10.0.0.4 r2
-    172.16.44.4 r2
-    2001:db8:cafe:44::4 r2
-    172.16.1.4 r2
-    172.16.0.5 h1
-    172.16.0.6 h2
-    172.16.1.7 h3
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.2/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      mtu 1500
-      address 172.16.44.2/24
-  
-    iface swp1 inet6 static
-      mtu 1500
-      address 2001:db8:cafe:44::2/64
-    auto swp2
-    auto swp3
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
-    #
-    # Enable FRR modules for ['vlan', 'ospf', 'gateway']
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "ospfd=yes" >>/etc/frr/daemons
-    echo "ospf6d=yes" >>/etc/frr/daemons
-    echo "vrrpd=yes" >>/etc/frr/daemons
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    ipv6 forwarding
-    !
-    interface swp1
-    ! no shutdown
-     description d2 -> r2
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp2
-    ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp3
-    ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface vlan1000
-    ! no shutdown
-     description VLAN edge (1000) -> [h1,d1,h2]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -515,214 +723,6 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.7/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.7/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.3
-    #
-    # Print the final routing table
-    ip route
-ok: [d1] => 
-  msg: |-
-    initial configuration for d1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname d1
-    #
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.1 d1
-    172.16.33.1 d1
-    2001:db8:cafe:33::1 d1
-    172.16.0.1 d1
-    10.0.0.2 d2
-    172.16.44.2 d2
-    2001:db8:cafe:44::2 d2
-    172.16.0.2 d2
-    10.0.0.3 r1
-    172.16.33.3 r1
-    2001:db8:cafe:33::3 r1
-    172.16.1.3 r1
-    10.0.0.4 r2
-    172.16.44.4 r2
-    2001:db8:cafe:44::4 r2
-    172.16.1.4 r2
-    172.16.0.5 h1
-    172.16.0.6 h2
-    172.16.1.7 h3
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.1/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      mtu 1500
-      address 172.16.33.1/24
-  
-    iface swp1 inet6 static
-      mtu 1500
-      address 2001:db8:cafe:33::1/64
-    auto swp2
-    auto swp3
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
-    #
-    # Enable FRR modules for ['vlan', 'ospf', 'gateway']
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "ospfd=yes" >>/etc/frr/daemons
-    echo "ospf6d=yes" >>/etc/frr/daemons
-    echo "vrrpd=yes" >>/etc/frr/daemons
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    ipv6 forwarding
-    !
-    interface swp1
-    ! no shutdown
-     description d1 -> r1
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp2
-    ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp3
-    ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface vlan1000
-    ! no shutdown
-     description VLAN edge (1000) -> [h1,d2,h2]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [d1]
@@ -730,8 +730,8 @@ ok: [d2]
 ok: [r1]
 ok: [r2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for d1, d2
@@ -739,16 +739,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [d2]
 changed: [d1]
+changed: [d2]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [d1]
 ok: [d2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-changed: [d2]
 changed: [d1]
+changed: [d2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 skipping: [d1]
@@ -774,8 +774,8 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -787,19 +787,19 @@ ok: [h2]
 ok: [h3]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-aBJJTLVY-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-KJJmKpyt-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -822,48 +822,13 @@ ok: [r2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [r1]
-ok: [d1]
 skipping: [r2]
+ok: [d1]
 ok: [d2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r2]
-ok: [d2] => 
-  msg: |-
-    vlan configuration for d2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    #
-    # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
-    #
-    cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
-    auto bridge
-    iface bridge
-        bridge-vlan-aware yes
-        bridge-vids 1000
-        bridge-ports swp2
-        bridge-ports swp3
-    CONFIG
-    #
-    # Create VLAN interfaces
-    #
-    cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
-    iface swp2
-        bridge-access 1000
-    iface swp3
-        bridge-access 1000
-    auto vlan1000
-    iface vlan1000
-        address 172.16.0.2/24
-  
-        vlan-id 1000
-        vlan-raw-device bridge
-    CONFIG
-    ifreload -a
 ok: [d1] => 
   msg: |-
     vlan configuration for d1
@@ -899,6 +864,41 @@ ok: [d1] =>
         vlan-raw-device bridge
     CONFIG
     ifreload -a
+ok: [d2] => 
+  msg: |-
+    vlan configuration for d2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    #
+    # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
+    #
+    cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
+    auto bridge
+    iface bridge
+        bridge-vlan-aware yes
+        bridge-vids 1000
+        bridge-ports swp2
+        bridge-ports swp3
+    CONFIG
+    #
+    # Create VLAN interfaces
+    #
+    cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
+    iface swp2
+        bridge-access 1000
+    iface swp3
+        bridge-access 1000
+    auto vlan1000
+    iface vlan1000
+        address 172.16.0.2/24
+  
+        vlan-id 1000
+        vlan-raw-device bridge
+    CONFIG
+    ifreload -a
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [r1]
@@ -912,16 +912,16 @@ skipping: [r2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for d1, d2
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [d2]
 changed: [d1]
+changed: [d2]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [d1]
 ok: [d2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
-changed: [d1]
 changed: [d2]
+changed: [d1]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
 skipping: [d1]
@@ -940,6 +940,88 @@ ok: [r1]
 ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [d1] => 
+  msg: |-
+    ospf configuration for d1
+    =========================================
+    !
+    router ospf
+     ospf router-id 10.0.0.1
+     passive-interface vlan1000
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    !
+    interface lo
+     ip ospf area 0.0.0.0
+    !
+    interface swp1
+    ! d1 -> r1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface vlan1000
+    ! VLAN edge (1000) -> [h1,d2,h2]
+     ip ospf area 0.0.0.0
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.1
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+     interface swp1 area 0.0.0.0
+    !
+    interface swp1
+    ! d1 -> r1
+     ipv6 ospf6 network point-to-point
+    !
+  
+    do write
+ok: [d2] => 
+  msg: |-
+    ospf configuration for d2
+    =========================================
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     passive-interface vlan1000
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    !
+    interface lo
+     ip ospf area 0.0.0.0
+    !
+    interface swp1
+    ! d2 -> r2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface vlan1000
+    ! VLAN edge (1000) -> [h1,d1,h2]
+     ip ospf area 0.0.0.0
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+     interface swp1 area 0.0.0.0
+    !
+    interface swp1
+    ! d2 -> r2
+     ipv6 ospf6 network point-to-point
+    !
+  
+    do write
 ok: [r1] => 
   msg: |-
     ospf configuration for r1
@@ -988,47 +1070,6 @@ ok: [r1] =>
     exit
   
     !
-    do write
-ok: [d2] => 
-  msg: |-
-    ospf configuration for d2
-    =========================================
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     passive-interface vlan1000
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    !
-    interface lo
-     ip ospf area 0.0.0.0
-    !
-    interface swp1
-    ! d2 -> r2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface vlan1000
-    ! VLAN edge (1000) -> [h1,d1,h2]
-     ip ospf area 0.0.0.0
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-     interface swp1 area 0.0.0.0
-    !
-    interface swp1
-    ! d2 -> r2
-     ipv6 ospf6 network point-to-point
-    !
-  
     do write
 ok: [r2] => 
   msg: |-
@@ -1079,47 +1120,6 @@ ok: [r2] =>
   
     !
     do write
-ok: [d1] => 
-  msg: |-
-    ospf configuration for d1
-    =========================================
-    !
-    router ospf
-     ospf router-id 10.0.0.1
-     passive-interface vlan1000
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    !
-    interface lo
-     ip ospf area 0.0.0.0
-    !
-    interface swp1
-    ! d1 -> r1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface vlan1000
-    ! VLAN edge (1000) -> [h1,d2,h2]
-     ip ospf area 0.0.0.0
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.1
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-     interface swp1 area 0.0.0.0
-    !
-    interface swp1
-    ! d1 -> r1
-     ipv6 ospf6 network point-to-point
-    !
-  
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [d1]
@@ -1144,8 +1144,8 @@ skipping: [d1]
 skipping: [d2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
-changed: [d2]
 changed: [d1]
+changed: [d2]
 
 TASK [template] ****************************************************************
 changed: [r1]
@@ -1160,8 +1160,8 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
 ok: [d1]
@@ -1171,8 +1171,8 @@ ok: [r2]
 
 TASK [Find configuration template for gateway] *********************************
 skipping: [r1]
-skipping: [r2]
 ok: [d1]
+skipping: [r2]
 ok: [d2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1231,16 +1231,16 @@ skipping: [r2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for d1, d2
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [d1]
 changed: [d2]
+changed: [d1]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [d1]
 ok: [d2]
 
 TASK [run /tmp/config.sh to deploy gateway config from /home/pipi/net101/tools/netsim/ansible/templates/gateway/cumulus.j2] ***
-changed: [d2]
 changed: [d1]
+changed: [d2]
 
 TASK [run vtysh to import gateway config from /home/pipi/net101/tools/netsim/ansible/templates/gateway/cumulus.j2] ***
 skipping: [d1]

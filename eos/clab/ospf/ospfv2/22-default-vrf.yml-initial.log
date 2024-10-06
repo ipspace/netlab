@@ -4,8 +4,8 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [xf]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -34,8 +34,8 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [xf]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -57,18 +57,6 @@ ok: [xf] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.1 dut-d1" >>/tmp/hosts
-    echo "10.1.0.5 10.1.0.9 192.168.43.1 dut-d2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 p1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -155,18 +143,6 @@ ok: [p1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.1 dut-d1" >>/tmp/hosts
-    echo "10.1.0.5 10.1.0.9 192.168.43.1 dut-d2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 p1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -252,18 +228,6 @@ ok: [p2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.1 dut-d1" >>/tmp/hosts
-    echo "10.1.0.5 10.1.0.9 192.168.43.1 dut-d2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 p1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -337,6 +301,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -417,8 +382,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [xf -> localhost]
 changed: [p1 -> localhost]
+changed: [xf -> localhost]
 changed: [p2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -430,9 +395,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, p1, p2
 
 TASK [template] ****************************************************************
+changed: [p1]
 changed: [xf]
 changed: [p2]
-changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [xf]
@@ -441,8 +406,8 @@ ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [xf]
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xf]
@@ -603,10 +568,6 @@ ok: [p1] =>
   
     !
     do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -635,6 +596,10 @@ ok: [p2] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [xf]
@@ -655,16 +620,16 @@ changed: [p2]
 changed: [p1]
 
 TASK [set_fact] ****************************************************************
-ok: [p2]
 ok: [p1]
+ok: [p2]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [p1]
 skipping: [p2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [p1]
@@ -698,8 +663,8 @@ ok: [dut] =>
       route-target export vpn-ipv4 65000:1
     !
       address-family ipv4
-      redistribute connected
-      redistribute ospf
+        redistribute connected
+        redistribute ospf
   
     !
      vrf d2
@@ -713,8 +678,8 @@ ok: [dut] =>
       neighbor 10.1.0.10 send-community standard large
     !
       address-family ipv4
-      redistribute connected
-      redistribute ospf
+        redistribute connected
+        redistribute ospf
   
         network 192.168.43.1/32
         neighbor 10.1.0.10 activate

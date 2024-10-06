@@ -86,15 +86,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 10.42.42.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -161,7 +152,7 @@ ok: [x1] =>
     !
     interface eth2
      no shutdown
-     description x1 -> stub
+     description x1 -> stub [stub]
      ip address 10.42.42.3/24
     !
     do write
@@ -186,15 +177,6 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 10.42.42.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -307,8 +289,8 @@ ok: [x1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [x1]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -412,6 +394,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
       network 10.42.42.0/24
@@ -513,6 +497,7 @@ ok: [r2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -531,8 +516,11 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
+    !
     router ospf 1
         router-id 10.0.0.1
+  
+  
   
      redistribute bgp route-map i_beacon-ipv4
   

@@ -55,16 +55,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 172.16.2.1 172.16.3.1 2001:db8:1:1::1 2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:2:3::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 2001:db8:1:3::1 2001:db8:2:2::3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 172.16.3.4 2001:db8:1:4::1 2001:db8:2::4 2001:db8:2:3::4 r3" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2:1::2 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -158,16 +148,6 @@ ok: [r2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 172.16.2.1 172.16.3.1 2001:db8:1:1::1 2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:2:3::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 2001:db8:1:3::1 2001:db8:2:2::3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 172.16.3.4 2001:db8:1:4::1 2001:db8:2::4 2001:db8:2:3::4 r3" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2:1::2 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -260,16 +240,6 @@ ok: [r3] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 172.16.2.1 172.16.3.1 2001:db8:1:1::1 2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:2:3::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 2001:db8:1:3::1 2001:db8:2:2::3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 172.16.3.4 2001:db8:1:4::1 2001:db8:2::4 2001:db8:2:3::4 r3" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2:1::2 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -427,9 +397,9 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
-changed: [r3 -> localhost]
 changed: [x1 -> localhost]
+changed: [r3 -> localhost]
+changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -450,9 +420,9 @@ ok: [r2]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r3]
 changed: [r2]
 changed: [x1]
-changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -773,6 +743,7 @@ ok: [r3] =>
     !
     router rip
      version 2
+     timers basic 5 180 120
   
      network lo
      network eth1
@@ -780,6 +751,7 @@ ok: [r3] =>
      network eth2
     !
     router ripng
+     timers basic 5 180 120
   
      network lo
      network eth1
@@ -798,6 +770,7 @@ ok: [dut] =>
      no auto-summary
      address-family ipv4 unicast
       default-metric 5
+      timers basic 5 180 120 1
       redistribute bgp 65000
       redistribute ospf 1 match internal external
   
@@ -807,6 +780,7 @@ ok: [dut] =>
       network 172.16.3.1
     !
     ipv6 router rip default
+      timers 5 180 120 1
       redistribute bgp 65000
       redistribute ospf 1 match internal external
   

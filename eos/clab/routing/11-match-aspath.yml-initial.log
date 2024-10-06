@@ -28,8 +28,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
@@ -57,16 +57,6 @@ ok: [x1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 10.1.0.9 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 x2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -134,6 +124,91 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description x2 -> dut [external]
+     ip address 10.1.0.6/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [x3] => 
   msg: |-
     initial configuration for x3
@@ -152,16 +227,6 @@ ok: [x3] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 10.1.0.9 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 x2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -236,6 +301,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -277,106 +343,11 @@ ok: [dut] =>
     !
      mac-address 52dc.cafe.0103
     !
-ok: [x2] => 
-  msg: |-
-    initial configuration for x2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 10.1.0.9 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 x2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname x2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.3/32
-    !
-    interface eth1
-     no shutdown
-     description x2 -> dut [external]
-     ip address 10.1.0.6/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -390,9 +361,9 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
-changed: [x3 -> localhost]
 changed: [x2 -> localhost]
+changed: [x3 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -403,13 +374,13 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
 changed: [x3]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -537,9 +508,9 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [x3]
 changed: [x2]
 changed: [x1]
+changed: [x3]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
@@ -574,6 +545,8 @@ ok: [x1] =>
       neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
@@ -614,6 +587,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -646,6 +621,8 @@ ok: [x3] =>
       neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.4/32
     !
@@ -686,7 +663,7 @@ ok: [dut] =>
     !
     !
      address-family ipv4
-    !
+  
       network 10.0.0.1/32
     !
     !
@@ -711,8 +688,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [x3]
 changed: [x2]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -743,8 +720,8 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [x1 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]

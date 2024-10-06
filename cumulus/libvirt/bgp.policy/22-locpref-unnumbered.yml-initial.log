@@ -36,144 +36,6 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname dut
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
-    #
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.1/32
-    iface lo inet6 loopback
-      address 2001:db8:1:1::1/64
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      mtu 1500
-      address 10.0.0.1/32
-    auto swp2
-  
-    iface swp2 inet static
-      mtu 1500
-      address 10.0.0.1/32
-    auto swp3
-  
-    iface swp3 inet static
-      mtu 1500
-      address 172.16.0.1/24
-  
-    iface swp3 inet6 static
-      mtu 1500
-      address 2001:db8:2::1/64
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
-    sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
-    sysctl -qw net.ipv6.conf.swp3.disable_ipv6=0
-    #
-    # Enable FRR modules for ['bgp', 'ospf', 'routing']
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "bgpd=yes" >>/etc/frr/daemons
-    echo "ospfd=yes" >>/etc/frr/daemons
-    echo "ospf6d=yes" >>/etc/frr/daemons
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    ipv6 forwarding
-    !
-    interface swp1
-    ! no shutdown
-     description dut -> x1 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp2
-    ! no shutdown
-     description dut -> x2 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp3
-    ! no shutdown
-     description dut -> probe
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 ok: [probe] => 
   msg: |-
     initial configuration for probe
@@ -192,16 +54,6 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -296,16 +148,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -398,16 +240,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -481,6 +313,163 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname dut
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 dut
+    2001:db8:1:1::1 dut
+    172.16.0.1 swp3.dut
+    2001:db8:2::1 swp3.dut
+    10.0.0.2 probe
+    2001:db8:1:2::1 probe
+    172.16.0.2 eth1.probe
+    2001:db8:2::2 eth1.probe
+    172.42.42.1 x1
+    2001:db8:cafe:42::1 x1
+    172.42.43.1 x2
+    2001:db8:cafe:43::1 x2
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.1/32
+    iface lo inet6 loopback
+      address 2001:db8:1:1::1/64
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      mtu 1500
+      address 10.0.0.1/32
+  
+    iface swp1 inet6
+      mtu 1500
+    auto swp2
+  
+    iface swp2 inet static
+      mtu 1500
+      address 10.0.0.1/32
+  
+    iface swp2 inet6
+      mtu 1500
+    auto swp3
+  
+    iface swp3 inet static
+      mtu 1500
+      address 172.16.0.1/24
+  
+    iface swp3 inet6 static
+      mtu 1500
+      address 2001:db8:2::1/64
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp3.disable_ipv6=0
+    #
+    # Enable FRR modules for ['bgp', 'ospf', 'routing']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "bgpd=yes" >>/etc/frr/daemons
+    echo "ospfd=yes" >>/etc/frr/daemons
+    echo "ospf6d=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    ipv6 forwarding
+    !
+    interface swp1
+    ! no shutdown
+     description dut -> x1 [external]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp2
+    ! no shutdown
+     description dut -> x2 [external]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp3
+    ! no shutdown
+     description dut -> probe
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
@@ -518,9 +507,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -528,9 +517,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x2]
 changed: [probe]
 changed: [x1]
-changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -559,8 +548,8 @@ ok: [x2]
 TASK [Find configuration template for routing] *********************************
 skipping: [probe]
 skipping: [x1]
-ok: [dut]
 skipping: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [probe]
@@ -653,6 +642,8 @@ ok: [dut] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.1/32
     !
     !
@@ -675,6 +666,8 @@ ok: [dut] =>
       neighbor swp2 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:1::/64
     !
@@ -726,6 +719,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -738,6 +733,8 @@ ok: [probe] =>
       neighbor 10.0.0.1 send-community extended
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -777,6 +774,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.42.0/24
     !
     !
@@ -787,6 +786,8 @@ ok: [x1] =>
       neighbor eth1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:42::/64
     !
@@ -824,6 +825,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.43.0/24
     !
     !
@@ -834,6 +837,8 @@ ok: [x2] =>
       neighbor eth1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:43::/64
     !
@@ -871,8 +876,8 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [probe]
 
 TASK [set_fact] ****************************************************************
@@ -886,9 +891,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [probe]
 changed: [x1]
 changed: [x2]
-changed: [probe]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -909,11 +914,14 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.1
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -923,8 +931,13 @@ ok: [dut] =>
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
+    !
     router ospf6
      ospf6 router-id 10.0.0.1
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
      interface lo area 0.0.0.0
      interface swp3 area 0.0.0.0
     !
@@ -946,6 +959,7 @@ ok: [probe] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -976,6 +990,7 @@ ok: [probe] =>
      ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
   
     exit
   

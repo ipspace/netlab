@@ -376,8 +376,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut_a]
 ok: [dut_c]
-ok: [probe]
 ok: [xf]
+ok: [probe]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
@@ -579,14 +579,14 @@ changed: [xf]
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut_a]
 ok: [dut_c]
-ok: [xf]
 ok: [probe]
+ok: [xf]
 
 TASK [Find configuration template for ospf] ************************************
-skipping: [xf]
 ok: [dut_a]
-ok: [dut_c]
+skipping: [xf]
 ok: [probe]
+ok: [dut_c]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -648,6 +648,40 @@ ok: [dut_a] =>
                   interface-type: "point-to-point"
                   failure-detection:
                     enable-bfd: False
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut_a
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! probe -> dut_c
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf cost 10
+    !
+  
+    !
+    do write
 ok: [dut_c] => 
   msg: |-
     ospf configuration for dut_c
@@ -697,46 +731,12 @@ ok: [dut_c] =>
                     enable-bfd: False
                   metric: 10
            # OSPF not configured on external interface ethernet-1/2
-ok: [probe] => 
-  msg: |-
-    ospf configuration for probe
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut_a
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! probe -> dut_c
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf cost 10
-    !
-  
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [xf]
 ok: [dut_a]
-ok: [probe]
 ok: [dut_c]
+ok: [probe]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [xf]

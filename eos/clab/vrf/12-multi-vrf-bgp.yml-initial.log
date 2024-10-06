@@ -5,8 +5,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -38,9 +38,9 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
+ok: [r3]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -391,6 +391,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -461,8 +462,8 @@ ok: [dut] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -477,24 +478,24 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
+changed: [r2 -> localhost]
 changed: [r3 -> localhost]
 changed: [r4 -> localhost]
-changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
 skipping: [r2]
-skipping: [r3]
 skipping: [r4]
+skipping: [r3]
 
 TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
+changed: [r1]
 changed: [r2]
 changed: [r3]
 changed: [r4]
-changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -503,10 +504,10 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
-changed: [r3]
 changed: [r1]
+changed: [r2]
 changed: [r4]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -537,8 +538,8 @@ ok: [dut]
 TASK [Find configuration template for bgp] *************************************
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -612,62 +613,6 @@ ok: [r2] =>
     !
     !
     do write
-ok: [r3] => 
-  msg: |-
-    bgp configuration for r3
-    =========================================
-    !
-    router bgp 65103
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.23
-    !
-      neighbor 10.1.0.9 remote-as 65000
-      neighbor 10.1.0.9 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.23/32
-    !
-    !
-    !
-      neighbor 10.1.0.9 activate
-      no neighbor 10.1.0.9 send-community all
-      neighbor 10.1.0.9 send-community standard
-      neighbor 10.1.0.9 send-community large
-    !
-    !
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    !
-    router bgp 65000
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.1
-    !
-    !
-     address-family ipv4
-  
-      network 10.0.0.1/32
-    !
-    !
-    !
-    !
 ok: [r4] => 
   msg: |-
     bgp configuration for r4
@@ -703,6 +648,62 @@ ok: [r4] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    !
+    router bgp 65000
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.1
+    !
+    !
+     address-family ipv4
+  
+      network 10.0.0.1/32
+    !
+    !
+    !
+    !
+ok: [r3] => 
+  msg: |-
+    bgp configuration for r3
+    =========================================
+    !
+    router bgp 65103
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.23
+    !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.23/32
+    !
+    !
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r1]
@@ -719,16 +720,16 @@ TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [r3]
 changed: [r1]
 changed: [r2]
 changed: [r4]
-changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
@@ -737,10 +738,10 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r3]
-changed: [r1]
 changed: [r2]
+changed: [r3]
 changed: [r4]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -785,7 +786,7 @@ ok: [dut] =>
       neighbor 10.1.0.14 send-community standard large
     !
       address-family ipv4
-      redistribute connected
+        redistribute connected
   
         neighbor 10.1.0.10 activate
         neighbor 10.1.0.14 activate
@@ -805,7 +806,7 @@ ok: [dut] =>
       neighbor 10.1.0.6 send-community standard large
     !
       address-family ipv4
-      redistribute connected
+        redistribute connected
   
         neighbor 10.1.0.2 activate
         neighbor 10.1.0.6 activate

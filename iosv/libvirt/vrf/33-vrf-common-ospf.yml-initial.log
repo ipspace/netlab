@@ -55,19 +55,6 @@ ok: [r1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -152,19 +139,6 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -251,19 +225,6 @@ ok: [srv] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -347,6 +308,8 @@ ok: [dut] =>
     ip host r2 10.0.0.3 172.16.1.3
     ip host srv 10.0.0.4 172.16.2.4
     !
+    ip routing
+    !
     vrf definition blue
      rd 65000:2
      route-target import 65000:2
@@ -412,8 +375,8 @@ ok: [dut] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
-ok: [r2]
 ok: [srv]
+ok: [r2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -444,9 +407,9 @@ ok: [r2]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
-changed: [r2]
 changed: [srv]
+changed: [r2]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -497,6 +460,7 @@ ok: [r1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -524,6 +488,7 @@ ok: [r2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -550,6 +515,7 @@ ok: [srv] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -584,9 +550,9 @@ TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
+changed: [r2]
 changed: [r1]
 changed: [srv]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -599,8 +565,8 @@ skipping: [r2]
 skipping: [srv]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [srv]
 changed: [r1]
+changed: [srv]
 changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -627,30 +593,31 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv4 vrf blue
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 101 match internal external
+  
     !
     !
      address-family ipv4 vrf common
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 102 match internal external
+  
     !
     !
      address-family ipv4 vrf red
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 100 match internal external
+  
     !
     !
     router ospf 101 vrf blue
      router-id 10.100.0.101
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/2
     ! dut -> r2
@@ -661,8 +628,9 @@ ok: [dut] =>
     router ospf 102 vrf common
      router-id 10.100.0.102
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/3
     ! dut -> srv
@@ -673,8 +641,9 @@ ok: [dut] =>
     router ospf 100 vrf red
      router-id 10.100.0.100
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/1
     ! dut -> r1

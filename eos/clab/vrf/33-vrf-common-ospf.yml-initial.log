@@ -10,8 +10,8 @@ ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
-ok: [r2]
 ok: [srv]
+ok: [r2]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -301,6 +301,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -378,9 +379,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [srv -> localhost]
 changed: [r1 -> localhost]
+changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
@@ -391,18 +392,18 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [r2]
 changed: [srv]
+changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -436,8 +437,8 @@ ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [r1]
-ok: [srv]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -463,34 +464,6 @@ ok: [r1] =>
     !
     interface eth1
     ! r1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -529,11 +502,39 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [r1]
-ok: [srv]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -544,9 +545,9 @@ TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [srv]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -596,8 +597,8 @@ ok: [dut] =>
       route-target export vpn-ipv4 65000:2
     !
       address-family ipv4
-      redistribute connected
-      redistribute ospf
+        redistribute connected
+        redistribute ospf
   
     !
      vrf common
@@ -609,8 +610,8 @@ ok: [dut] =>
       route-target export vpn-ipv4 65000:3
     !
       address-family ipv4
-      redistribute connected
-      redistribute ospf
+        redistribute connected
+        redistribute ospf
   
     !
      vrf red
@@ -621,8 +622,8 @@ ok: [dut] =>
       route-target export vpn-ipv4 65000:1
     !
       address-family ipv4
-      redistribute connected
-      redistribute ospf
+        redistribute connected
+        redistribute ospf
   
     !
     ! OSPFv2 configuration
