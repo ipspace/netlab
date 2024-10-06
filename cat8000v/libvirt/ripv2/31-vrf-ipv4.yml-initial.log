@@ -1,0 +1,874 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [r1]
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [r1]
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r4, r1, r3
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [r2]
+ok: [r4]
+ok: [r1]
+ok: [r3]
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [r1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description r2 -> dut [external]
+     ip address 172.16.1.3/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [r4] => 
+  msg: |-
+    initial configuration for r4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r4
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+    !
+    interface eth1
+     no shutdown
+     description r4 -> dut [external]
+     ip address 172.16.3.5/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r1
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description r1 -> dut
+     ip address 172.16.0.2/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r3
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description r3 -> dut
+     ip address 172.16.2.4/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host dut-blue 172.16.2.1 172.16.3.1
+    ip host dut-red 172.16.0.1 172.16.1.1
+    ip host r1 10.0.0.2 172.16.0.2
+    ip host r2 10.0.0.3 172.16.1.3
+    ip host r3 10.0.0.4 172.16.2.4
+    ip host r4 10.0.0.5 172.16.3.5
+    !
+    ip routing
+    !
+    vrf definition blue
+     rd 65000:2
+     route-target import 65000:2
+     route-target export 65000:2
+    !
+     address-family ipv4
+     exit-address-family
+    !
+    vrf definition red
+     rd 65000:1
+     route-target import 65000:1
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     no shutdown
+     vrf forwarding red
+     description dut -> r1
+     ip address 172.16.0.1 255.255.255.0
+    !
+    interface GigabitEthernet3
+     no shutdown
+     vrf forwarding red
+     description dut -> r2 [external]
+     ip address 172.16.1.1 255.255.255.0
+    !
+    interface GigabitEthernet4
+     no shutdown
+     vrf forwarding blue
+     description dut -> r3
+     ip address 172.16.2.1 255.255.255.0
+    !
+    interface GigabitEthernet5
+     no shutdown
+     vrf forwarding blue
+     description dut -> r4 [external]
+     ip address 172.16.3.1 255.255.255.0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [r2]
+ok: [r3]
+ok: [r4]
+ok: [r1]
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r2, r4, r1, r3
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [r1 -> localhost]
+changed: [r4 -> localhost]
+changed: [r2 -> localhost]
+changed: [r3 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r4, r1, r3
+
+TASK [template] ****************************************************************
+changed: [r2]
+changed: [r3]
+changed: [r4]
+changed: [r1]
+
+TASK [set_fact] ****************************************************************
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [r1]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r2]
+changed: [r4]
+changed: [r3]
+changed: [r1]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ripv2)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+skipping: [r1]
+skipping: [r3]
+ok: [r2]
+ok: [r4]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
+skipping: [r3]
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 172.16.1.1 remote-as 65000
+      neighbor 172.16.1.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 172.16.1.1 activate
+      no neighbor 172.16.1.1 send-community all
+      neighbor 172.16.1.1 send-community standard
+      neighbor 172.16.1.1 send-community large
+    !
+    !
+    !
+    do write
+ok: [r4] => 
+  msg: |-
+    bgp configuration for r4
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.5
+    !
+      neighbor 172.16.3.1 remote-as 65000
+      neighbor 172.16.3.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.5/32
+    !
+    !
+    !
+      neighbor 172.16.3.1 activate
+      no neighbor 172.16.3.1 send-community all
+      neighbor 172.16.3.1 send-community standard
+      neighbor 172.16.3.1 send-community large
+    !
+    !
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+    !
+     address-family ipv4
+      bgp scan-time 5
+  
+    !
+      network 10.0.0.1 mask 255.255.255.255
+  
+    !
+    !
+    !
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [r1]
+skipping: [r3]
+ok: [r4]
+ok: [r2]
+ok: [dut]
+
+TASK [Deploy bgp configuration] ************************************************
+skipping: [r1]
+skipping: [r3]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2, r4
+
+TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [r2]
+changed: [r4]
+
+TASK [set_fact] ****************************************************************
+ok: [r2]
+ok: [r4]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [r2]
+skipping: [r4]
+
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [r4]
+changed: [r2]
+
+TASK [Figure out whether to deploy the module ripv2 on current device] *********
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+ok: [dut]
+
+TASK [Find configuration template for ripv2] ***********************************
+skipping: [r2]
+ok: [r1]
+skipping: [r4]
+ok: [r3]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [r4]
+ok: [r1] => 
+  msg: |-
+    ripv2 configuration for r1
+    =========================================
+    !
+    router rip
+     version 2
+     timers basic 5 180 120
+  
+     network lo
+     network eth1
+    !
+  
+    !
+    do write
+ok: [r3] => 
+  msg: |-
+    ripv2 configuration for r3
+    =========================================
+    !
+    router rip
+     version 2
+     timers basic 5 180 120
+  
+     network lo
+     network eth1
+    !
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    ripv2 configuration for dut
+    =========================================
+    !
+    !
+
+TASK [Find configuration deployment deploy_script for ripv2] *******************
+skipping: [r2]
+skipping: [r4]
+ok: [r1]
+ok: [r3]
+ok: [dut]
+
+TASK [Deploy ripv2 configuration] **********************************************
+skipping: [r2]
+skipping: [r4]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r3
+
+TASK [ios_config: deploying ripv2 from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/ios.j2] ***
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [r1]
+changed: [r3]
+
+TASK [set_fact] ****************************************************************
+ok: [r1]
+ok: [r3]
+
+TASK [run /tmp/config.sh to deploy ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
+skipping: [r1]
+skipping: [r3]
+
+TASK [run vtysh to import ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
+changed: [r3]
+changed: [r1]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [r1]
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    !
+    router bgp 65000
+     address-family ipv4 vrf blue
+      bgp router-id 10.0.0.1
+      redistribute connected
+      redistribute rip
+  
+    !
+    !
+      neighbor 172.16.3.5 remote-as 65101
+      neighbor 172.16.3.5 description r4
+  
+      neighbor 172.16.3.5 activate
+      neighbor 172.16.3.5 advertisement-interval 0
+      neighbor 172.16.3.5 send-community standard
+  
+     address-family ipv4 vrf red
+      bgp router-id 10.0.0.1
+      redistribute connected
+      redistribute rip
+  
+    !
+    !
+      neighbor 172.16.1.3 remote-as 65100
+      neighbor 172.16.1.3 description r2
+  
+      neighbor 172.16.1.3 activate
+      neighbor 172.16.1.3 advertisement-interval 0
+      neighbor 172.16.1.3 send-community standard
+  
+    ipv6 rip vrf-mode enable
+    router rip
+     version 2
+     no auto-summary
+     address-family ipv4 vrf blue
+      default-metric 5
+      timers basic 5 180 120 1
+      redistribute bgp 65000
+      redistribute connected
+  
+      network 172.16.2.1
+    !
+  
+    ipv6 rip vrf-mode enable
+    router rip
+     version 2
+     no auto-summary
+     address-family ipv4 vrf red
+      default-metric 5
+      timers basic 5 180 120 1
+      redistribute bgp 65000
+      redistribute connected
+  
+      network 172.16.0.1
+    !
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+ok: [dut]
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=31   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r3                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r4                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+
+
+
+The device under test has two VRFs with two interfaces in each VRF.
+Routers are attached to those interfaces and run RIP and BGP with
+device under test.
+
+This scenario tests RIPv2 in VRF, redistribution of connected subnets
+into RIPv2 and two-way RIPv2-to-BGP redistribution.
+
+* r1 and r2 should be able to ping each other
+* r3 and r4 should be able to ping each other
+* r1 should not be able to reach r3
+

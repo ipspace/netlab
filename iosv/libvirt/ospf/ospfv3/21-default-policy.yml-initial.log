@@ -50,15 +50,6 @@ ok: [xf] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "2001:db8:cafe:42::1 2001:db8:2:1::3 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -151,15 +142,6 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "2001:db8:cafe:42::1 2001:db8:2:1::3 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -288,8 +270,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [xf -> localhost]
 changed: [probe -> localhost]
+changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -400,6 +382,8 @@ ok: [xf] =>
     !
      address-family ipv6 unicast
     !
+  
+    !
       network 2001:db8:cafe:42::/64
     !
     !
@@ -420,17 +404,18 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 2001:db8:2:1::3 remote-as 65100
       neighbor 2001:db8:2:1::3 description xf
   
     !
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:1::/64
   
@@ -501,6 +486,7 @@ ok: [probe] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -512,7 +498,8 @@ ok: [dut] =>
     router ospfv3 1
      router-id 10.0.0.1
      address-family ipv6 unicast
-     default-information originate metric-type 2 metric 40 route-map df-ipv6
+      default-information originate metric-type 2 metric 40 route-map df-ipv6
+  
   
     !
     interface Loopback0

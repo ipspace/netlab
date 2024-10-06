@@ -7,8 +7,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
@@ -16,8 +16,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
@@ -37,8 +37,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Find configuration template for initial] *********************************
@@ -198,20 +198,6 @@ ok: [l2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.1.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.7 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    echo "172.16.0.7 172.16.1.7 spine-customer" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -358,64 +344,6 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.3/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.7
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.7
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.7
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.7
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -471,6 +399,64 @@ ok: [h2] =>
     ip route del 10.2.0.0/24 2>/dev/null
     set -e
     ip route add 10.2.0.0/24 via 172.16.0.7
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.7
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.7
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.7
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.7
     #
     # Print the final routing table
     ip route
@@ -537,39 +523,27 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h2]
 ok: [h1]
-ok: [h4]
+ok: [h2]
 ok: [h3]
+ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
 
-TASK [tempfile] ****************************************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -595,33 +569,33 @@ skipping: [l2]
 TASK [set_fact] ****************************************************************
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-JzqjqUmO-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-EIRnqFea-h1.sh] **********
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
@@ -633,8 +607,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1,
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [l1]
@@ -781,17 +755,9 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [l1]
@@ -800,10 +766,6 @@ changed: [spine]
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -819,8 +781,8 @@ skipping: [l2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [l1]
@@ -850,6 +812,8 @@ ok: [l2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.6/32
     !
     !
@@ -873,62 +837,63 @@ ok: [l1] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.5"
+        member: [ "65536:0:65536" ]
   
-    - path: /network-instance[name=default]/protocols/bgp
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.5
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix: [] # Make sure it exists
   
-    - path: /routing-policy/policy[name=default_export]
+    - path: /routing-policy/policy[name=default_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
         - name: prefixes
           match:
-            prefix-set: default_export
+            prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.5
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.5/32
@@ -938,48 +903,46 @@ ok: [l1] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
+        admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: evpn
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.5
-       next-hop-self: True
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.5
+        next-hop-self: True
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.0.0.7"
-         description: spine
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
+        neighbor:
+        - peer-address: "10.0.0.7"
+          description: spine
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: evpn
+            admin-state: enable
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -989,62 +952,94 @@ ok: [spine] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.7"
+        member: [ "65536:0:65536" ]
   
-    - path: /network-instance[name=default]/protocols/bgp
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.7
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix: [] # Make sure it exists
   
-    - path: /routing-policy/policy[name=default_export]
+    - path: /routing-policy/policy[name=default_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
         - name: prefixes
           match:
-            prefix-set: default_export
+            prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
+  
+  
+    - path: /routing-policy/policy[name=default_ibgp-nhs_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: next-policy
+        - name: rr-next-hop-unchanged
+          match:
+            protocol: bgp
+            bgp:
+              community-set: ibgp-mark
+          action:
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
+        - name: ebgp-next-hop-self
+          match:
+            protocol: bgp
+          action:
+            policy-result: next-policy
+            bgp:
+              next-hop:
+                set: self
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.7
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.7/32
@@ -1054,132 +1049,117 @@ ok: [spine] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
+        admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+        - afi-safi-name: evpn
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.7
-        passive-mode: True
-        _annotate_passive-mode: "Improve robustness during startup"
-       route-reflector:
-        cluster-id: 10.0.0.7
-        client: True
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.7
+          passive-mode: True
+          _annotate_passive-mode: "Improve robustness during startup"
+        route-reflector:
+          cluster-id: 10.0.0.7
+          client: True
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.0.0.5"
-         description: l1
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
-  
+        neighbor:
+        - peer-address: "10.0.0.5"
+          description: l1
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: evpn
+            admin-state: enable
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
+        admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+        - afi-safi-name: evpn
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: next_hop_self_ebgp_ipv4
-       peer-as: 65000
-       transport:
-        local-address: 10.0.0.7
-        passive-mode: True
-        _annotate_passive-mode: "Improve robustness during startup"
-       route-reflector:
-        cluster-id: 10.0.0.7
-        client: True
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.7
+          passive-mode: True
+          _annotate_passive-mode: "Improve robustness during startup"
+        route-reflector:
+          cluster-id: 10.0.0.7
+          client: True
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.0.0.6"
-         description: l2
-         peer-group: ibgp-ipv4
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
+        neighbor:
+        - peer-address: "10.0.0.6"
+          description: l2
+          peer-group: ibgp-ipv4
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: evpn
+            admin-state: enable
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1210,6 +1190,7 @@ ok: [l1] =>
     =========================================
     updates:
   
+  
     - path: /network-instance[name=default]
       value:
         router-id: 10.0.0.5
@@ -1238,6 +1219,7 @@ ok: [spine] =>
     ospf configuration for spine
     =========================================
     updates:
+  
   
     - path: /network-instance[name=default]
       value:
@@ -1281,6 +1263,7 @@ ok: [l2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -1298,24 +1281,16 @@ ok: [l2] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [l1]
@@ -1324,10 +1299,6 @@ changed: [spine]
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1403,7 +1374,6 @@ ok: [l1] =>
        type: ip-vrf
   
   
-  
     - path: /routing-policy/community-set[name=C65000_1]
       value:
        member:
@@ -1459,7 +1429,6 @@ ok: [spine] =>
        type: ip-vrf
   
   
-  
     - path: /routing-policy/community-set[name=C65000_1]
       value:
        member:
@@ -1470,62 +1439,45 @@ ok: [spine] =>
        member:
        - "target:65000:1"
   
-    - path: /network-instance[name=customer]/protocols/bgp
-      value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.7
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=customer_export]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=customer_export]
+    - path: /routing-policy/policy[name=customer_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
-        - name: prefixes
-          match:
-            prefix-set: customer_export
-          action:
-            policy-result: accept
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
-        - name: local
-          match:
-            protocol: local
-          action:
-            policy-result: accept
-        - name: ospfv2
-          match:
-            protocol: ospfv2
-          action:
-            policy-result: accept
-        - name: ospfv3
-          match:
-            protocol: ospfv3
-          action:
-            policy-result: accept
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
         - name: bgp_evpn
           match:
             protocol: bgp-evpn
           action:
-            policy-result: accept
+            policy-result: next-policy
+        - name: export_local
+          match:
+            protocol: local
+          action:
+            policy-result: next-policy
   
+  
+    - path: /network-instance[name=customer]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.7
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
   
   
   
@@ -1576,17 +1528,9 @@ TASK [Deploy vrf configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL vrf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2)] ***
 changed: [l1]
@@ -1595,10 +1539,6 @@ changed: [spine]
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1822,29 +1762,17 @@ TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1936,7 +1864,6 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: evpn
             admin-state: enable
-          next-hop-self: False
         route-advertisement:
           rapid-withdrawal: True
         afi-safi:
@@ -1978,17 +1905,9 @@ TASK [Deploy evpn configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-changed: [spine -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
-skipping: [l1]
-skipping: [spine]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
+ok: [spine]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [l1]
@@ -1997,10 +1916,6 @@ changed: [spine]
 TASK [debug] *******************************************************************
 skipping: [l1]
 skipping: [spine]
-
-TASK [file] ********************************************************************
-changed: [spine -> localhost]
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -2022,9 +1937,9 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-l1                         : ok=73   changed=28   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+l1                         : ok=59   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 l2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-spine                      : ok=73   changed=28   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+spine                      : ok=59   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
 
 

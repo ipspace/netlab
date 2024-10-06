@@ -33,6 +33,11 @@ def tests_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store',
     help='Exclude devices from tests')
   parser.add_argument(
+    '-s','--skip-tests',
+    dest='skip',
+    action='store',
+    help='Skip some tests (equivalent to -x for devices)')
+  parser.add_argument(
     '-p','--provider',
     dest='provider',
     action='store',
@@ -47,8 +52,18 @@ def tests_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='limit',
     action='store',
     help='Select a subset of tests in a single test suite')
+  parser.add_argument(
+    '--dry-run',
+    dest='dryrun',
+    action='store_true',
+    help='Do a dry run (print the commands that would be executed)')
 
   return parser.parse_args(args)
+
+def check_valid_tests(setup: Box, t_list: list) -> None:
+  for test in t_list:
+    if test not in setup.tests.keys():
+      log.fatal(f'Unknown integration test {test}',module='tests')
 
 def prune_setup(setup: Box, args: argparse.Namespace) -> None:
   if not args.all and not args.device:
@@ -79,11 +94,19 @@ def prune_setup(setup: Box, args: argparse.Namespace) -> None:
 
   if args.tests:
     x_tests = args.tests.split(',')
-    for test in x_tests:
-      if test not in setup.tests.keys():
-        log.fatal(f'Unknown integration test {args.tests}',module='tests')
+    for idx,test in enumerate(x_tests):
+      if ':' in test:
+        t_components = test.split(':')
+        x_tests[idx] = t_components[0]
+        setup.limits[x_tests[idx]] = t_components[1]
 
+    check_valid_tests(setup,x_tests)
     setup.tests = { k:v for k,v in setup.tests.items() if k in x_tests }
+
+  if args.skip:
+    s_tests = args.skip.split(',')
+    check_valid_tests(setup,s_tests)
+    setup.tests = { k:v for k,v in setup.tests.items() if k not in s_tests }
 
   for test in list(setup.tests.keys()):
     if setup.tests[test] is None:
@@ -122,14 +145,21 @@ def device_supports_test(device: str, t_data: Box, setup: Box) -> bool:
   
   return True
 
-def run_single_test(device: str, provider: str, test: str, limit: typing.Optional[str], setup: Box) -> bool:
+def run_single_test(
+      device: str,
+      provider: str,
+      test: str,
+      limit: typing.Optional[str],
+      setup: Box,
+      dry_run: bool = False) -> bool:
   print()
-  _strings.print_colored_text('[RUNNING]    ',color='green')
-  print(f'Device: {device} Provider: {provider} Test suite: {test} Limit: {limit} (abort with ctrl/c)')
-  _strings.print_colored_text('[LASTCHANCE] ',color='green')
-  print('Abort with CTRL/C')
-  print()
-  time.sleep(1)
+  if not dry_run:
+    _strings.print_colored_text('[RUNNING]    ',color='green')
+    print(f'Device: {device} Provider: {provider} Test suite: {test} Limit: {limit} (abort with ctrl/c)')
+    _strings.print_colored_text('[LASTCHANCE] ',color='green')
+    print('Abort with CTRL/C')
+    print()
+    time.sleep(1)
 
   os.environ['NETLAB_DEVICE'] = device
   os.environ['NETLAB_PROVIDER'] = provider
@@ -149,12 +179,15 @@ def run_single_test(device: str, provider: str, test: str, limit: typing.Optiona
   cmd = [ './device-module-test', test, '--workdir', workdir, '--logdir', log_path, '--batch' ]
   if limit:
     cmd += [ '--redo', limit ]
-  run_command(cmd,ignore_errors=True)
+  if dry_run:
+    print(f'DRY RUN: {cmd}')
+  else:
+    run_command(cmd,ignore_errors=True)
   os.chdir(pwd)
 
   return True
 
-def run_tests(setup: Box, limit: typing.Optional[str]) -> None:
+def run_tests(setup: Box, limit: typing.Optional[str], dry_run: bool = False) -> None:
   for device in setup.devices:
     for provider in setup.devices[device]:
       for test in setup.tests:
@@ -162,7 +195,10 @@ def run_tests(setup: Box, limit: typing.Optional[str]) -> None:
           continue
         if not device_supports_test(device,setup.tests[test],setup):
           continue
-        run_single_test(device,provider,setup.tests[test].path,limit,setup)
+        run_single_test(device,provider,setup.tests[test].path,
+          limit=limit or setup.limits[test] or None,
+          setup=setup,
+          dry_run=dry_run)
 
 def main() -> None:
   args = tests_parse(sys.argv[1:])
@@ -172,7 +208,7 @@ def main() -> None:
 #  print(setup.to_yaml())
 
   try:
-    run_tests(setup,args.limit)
+    run_tests(setup,args.limit,args.dryrun)
   except KeyboardInterrupt as ex:
     print('\nAborted by keyboard interrupt')
 

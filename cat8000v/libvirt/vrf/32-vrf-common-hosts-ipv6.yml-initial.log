@@ -73,43 +73,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [srv] => 
-  msg: |-
-    initial configuration for srv
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:2:2::3/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:2:2::3/64 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -138,6 +101,43 @@ ok: [h2] =>
     ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:2:1::2/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [srv] => 
+  msg: |-
+    initial configuration for srv
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:2::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:2::3/64 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -228,8 +228,8 @@ ok: [dut] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
-ok: [h2]
 ok: [srv]
+ok: [h2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -252,14 +252,14 @@ changed: [h1 -> localhost]
 changed: [srv -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-KdZHoSXF-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-wGJIrwDF-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [srv -> localhost]
 
 TASK [file] ********************************************************************
-changed: [srv -> localhost]
 changed: [h2 -> localhost]
+changed: [srv -> localhost]
 changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -285,20 +285,20 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv6 vrf blue
       bgp router-id 10.0.0.4
-    !
       redistribute connected
+  
     !
     !
      address-family ipv6 vrf common
       bgp router-id 10.0.0.4
-    !
       redistribute connected
+  
     !
     !
      address-family ipv6 vrf red
       bgp router-id 10.0.0.4
-    !
       redistribute connected
+  
     !
     !
 

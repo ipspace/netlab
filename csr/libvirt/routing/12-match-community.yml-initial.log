@@ -50,15 +50,6 @@ ok: [probe] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.2.1 172.16.3.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 probe" >>/tmp/hosts
-    echo "10.0.0.3 172.16.3.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -144,15 +135,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.2.1 172.16.3.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 probe" >>/tmp/hosts
-    echo "10.0.0.3 172.16.3.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -232,6 +214,8 @@ ok: [dut] =>
     ip host probe 10.0.0.2 172.16.2.2
     ip host x1 10.0.0.3 172.16.3.3
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -270,8 +254,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [probe -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [probe]
@@ -289,8 +273,8 @@ ok: [probe]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -318,11 +302,6 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
-  msg: |-
-    routing configuration for probe
-    =========================================
-    !
 ok: [x1] => 
   msg: |-
     routing configuration for x1
@@ -343,6 +322,11 @@ ok: [x1] =>
     ip prefix-list pf1-ipv4 seq 10 permit 172.16.0.0/24
     !
     ip prefix-list pf2-ipv4 seq 10 permit 172.16.1.0/24
+ok: [probe] => 
+  msg: |-
+    routing configuration for probe
+    =========================================
+    !
 ok: [dut] => 
   msg: |-
     routing configuration for dut
@@ -382,8 +366,8 @@ TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -429,6 +413,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -441,42 +427,6 @@ ok: [probe] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    ip bgp-community new-format
-    !
-    router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
-      neighbor 172.16.2.2 remote-as 65100
-      neighbor 172.16.2.2 description probe
-  
-      neighbor 172.16.3.3 remote-as 65101
-      neighbor 172.16.3.3 description x1
-  
-    !
-     address-family ipv4
-      bgp scan-time 5
-    !
-      network 10.0.0.1 mask 255.255.255.255
-  
-    !
-    !
-      neighbor 172.16.2.2 activate
-      neighbor 172.16.2.2 advertisement-interval 0
-      neighbor 172.16.2.2 send-community standard
-  
-      neighbor 172.16.3.3 activate
-      neighbor 172.16.3.3 advertisement-interval 0
-      neighbor 172.16.3.3 send-community standard
-  
-    !
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -498,6 +448,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -514,6 +466,43 @@ ok: [x1] =>
     ip route 172.16.1.0/24 Null0
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+      neighbor 172.16.2.2 remote-as 65100
+      neighbor 172.16.2.2 description probe
+  
+      neighbor 172.16.3.3 remote-as 65101
+      neighbor 172.16.3.3 description x1
+  
+    !
+     address-family ipv4
+      bgp scan-time 5
+  
+    !
+      network 10.0.0.1 mask 255.255.255.255
+  
+    !
+    !
+      neighbor 172.16.2.2 activate
+      neighbor 172.16.2.2 advertisement-interval 0
+      neighbor 172.16.2.2 send-community standard
+  
+      neighbor 172.16.3.3 activate
+      neighbor 172.16.3.3 advertisement-interval 0
+      neighbor 172.16.3.3 send-community standard
+  
+    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [probe]
@@ -528,8 +517,8 @@ TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -540,8 +529,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 

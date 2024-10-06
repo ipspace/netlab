@@ -50,15 +50,6 @@ ok: [dut] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:2::2 x1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:3:1::2 2001:db8:2:1::3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -165,15 +156,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:2::2 x1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:3:1::2 2001:db8:2:1::3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -257,9 +239,9 @@ ok: [x1] =>
     !
     interface eth2
      no shutdown
-     description x1 -> stub
+     description x1 -> stub [stub]
      ! no ip address
-     ipv6 address 2001:db8:2::2/64
+     ipv6 address 2001:db8:cafe::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -285,15 +267,6 @@ ok: [x2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:3::1 2001:db8:3:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:3::2 2001:db8:2::2 x1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:3:1::2 2001:db8:2:1::3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -378,9 +351,9 @@ ok: [x2] =>
     !
     interface eth2
      no shutdown
-     description x2 -> stub
+     description x2 -> stub [stub]
      ! no ip address
-     ipv6 address 2001:db8:2:1::3/64
+     ipv6 address 2001:db8:cafe:1::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -398,8 +371,8 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, x2
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [dut -> localhost]
 changed: [x1 -> localhost]
+changed: [dut -> localhost]
 changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -411,8 +384,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 changed: [dut]
 
 TASK [set_fact] ****************************************************************
@@ -421,9 +394,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x2]
 changed: [dut]
 changed: [x1]
-changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
@@ -458,9 +431,12 @@ ok: [dut] =>
     !
     !
     router ripng
-      network lo
-      network eth1
-      network eth2
+     timers basic 5 180 120
+  
+     network lo
+     network eth1
+     network eth2
+  
     !
     do write
 ok: [x1] => 
@@ -470,10 +446,13 @@ ok: [x1] =>
     !
     !
     router ripng
-      network lo
-      network eth1
-      network eth2
-      passive-interface eth2
+     timers basic 5 180 120
+  
+     network lo
+     network eth1
+     network eth2
+     passive-interface eth2
+  
     !
     do write
 ok: [x2] => 
@@ -483,10 +462,13 @@ ok: [x2] =>
     !
     !
     router ripng
-      network lo
-      network eth1
-      network eth2
-      passive-interface eth2
+     timers basic 5 180 120
+  
+     network lo
+     network eth1
+     network eth2
+     passive-interface eth2
+  
     !
     do write
 
@@ -515,8 +497,8 @@ skipping: [x2]
 
 TASK [run vtysh to import ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
 changed: [x2]
-changed: [dut]
 changed: [x1]
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

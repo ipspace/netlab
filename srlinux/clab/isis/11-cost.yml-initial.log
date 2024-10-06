@@ -120,15 +120,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -214,15 +205,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -300,8 +282,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x2 -> localhost]
 changed: [x1 -> localhost]
+changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -326,23 +308,14 @@ TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ans
 skipping: [x1]
 skipping: [x2]
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -370,6 +343,7 @@ ok: [dut] =>
     isis configuration for dut
     =========================================
     updates:
+  
     - path: /network-instance[name=default]/protocols/isis
       value:
        instance:
@@ -384,7 +358,6 @@ ok: [dut] =>
             admin-state: enable
            ipv6-unicast:
             admin-state: disable
-  
          - interface-name: ethernet-1/1.0
            circuit-type: point-to-point
            passive: False
@@ -412,23 +385,28 @@ ok: [x1] =>
     isis configuration for x1
     =========================================
     !
-    router isis Gandalf
-      log-adjacency-changes
-      hostname dynamic
-      is-type level-1-2
-      metric-style wide
-      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-      net 49.0001.0000.0000.0002.00
     !
-    interface lo
-      ip router isis Gandalf
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0002.00
+  
+  
     !
     interface eth1
     ! x1 -> dut
-      ip router isis Gandalf
-      isis network point-to-point
-      isis metric 70000
+     ip router isis Gandalf
+     isis network point-to-point
+     isis metric 70000
     !
+  
+    !
+    interface lo
+     ip router isis Gandalf
     !
     do write
 ok: [x2] => 
@@ -436,23 +414,28 @@ ok: [x2] =>
     isis configuration for x2
     =========================================
     !
-    router isis Gandalf
-      log-adjacency-changes
-      hostname dynamic
-      is-type level-1-2
-      metric-style wide
-      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-      net 49.0001.0000.0000.0003.00
     !
-    interface lo
-      ip router isis Gandalf
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0003.00
+  
+  
     !
     interface eth1
     ! x2 -> dut
-      ip router isis Gandalf
-      isis network point-to-point
-      isis metric 80000
+     ip router isis Gandalf
+     isis network point-to-point
+     isis metric 80000
     !
+  
+    !
+    interface lo
+     ip router isis Gandalf
     !
     do write
 
@@ -465,23 +448,14 @@ TASK [Deploy isis configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/isis/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL isis node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/isis/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [x2]
@@ -496,14 +470,14 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=23   changed=8    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=19   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 

@@ -50,15 +50,6 @@ ok: [r1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -144,15 +135,6 @@ ok: [r2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.10 172.16.0.10 r2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -232,6 +214,8 @@ ok: [dut] =>
     ip host r1 10.0.0.2 172.16.0.2
     ip host r2 10.0.0.10 172.16.0.10
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -270,8 +254,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -312,39 +296,6 @@ ok: [r2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65001
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.10
-    !
-      neighbor 172.16.0.1 remote-as 65100
-      neighbor 172.16.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.10/32
-    !
-    !
-    !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
-    !
-    !
-    !
-    do write
 ok: [r1] => 
   msg: |-
     bgp configuration for r1
@@ -366,7 +317,44 @@ ok: [r1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 172.16.0.1 activate
+      no neighbor 172.16.0.1 send-community all
+      neighbor 172.16.0.1 send-community standard
+      neighbor 172.16.0.1 send-community large
+    !
+    !
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65001
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 172.16.0.1 remote-as 65100
+      neighbor 172.16.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.10/32
     !
     !
     !
@@ -386,11 +374,11 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65100
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 172.16.0.2 remote-as 65000
       neighbor 172.16.0.2 description r1
   
@@ -400,6 +388,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -440,8 +429,8 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -459,8 +448,8 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [r1 -> localhost]
+ok: [dut -> localhost]
 ok: [r2 -> localhost]
 
 TASK [fail] ********************************************************************
@@ -486,8 +475,8 @@ TASK [ios_config: deploying bgp.session from /home/pipi/net101/tools/netsim/extr
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]

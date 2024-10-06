@@ -4,13 +4,13 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [srv]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [srv]
 ok: [r1]
+ok: [srv]
 ok: [r2]
 ok: [dut]
 
@@ -34,8 +34,8 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [srv]
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -57,19 +57,6 @@ ok: [srv] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -156,19 +143,6 @@ ok: [r2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -254,19 +228,6 @@ ok: [r1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -340,6 +301,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -423,8 +385,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [srv -> localhost]
+changed: [r2 -> localhost]
 changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -446,9 +408,9 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
-changed: [r2]
 changed: [srv]
+changed: [r2]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [srv]
@@ -504,6 +466,8 @@ ok: [srv] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -531,7 +495,7 @@ ok: [dut] =>
     !
     !
      address-family ipv4
-    !
+  
       network 10.0.0.1/32
     !
     !
@@ -592,6 +556,7 @@ ok: [r1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -618,6 +583,7 @@ ok: [r2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -653,8 +619,8 @@ TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -703,6 +669,7 @@ ok: [dut] =>
       address-family ipv4
         redistribute connected
         redistribute ospf
+  
     !
      vrf common
       router-id 10.0.0.1
@@ -718,6 +685,7 @@ ok: [dut] =>
     !
       address-family ipv4
         redistribute connected
+  
         neighbor 10.1.0.10 activate
     !
      vrf red
@@ -730,6 +698,7 @@ ok: [dut] =>
       address-family ipv4
         redistribute connected
         redistribute ospf
+  
     !
     ! OSPFv2 configuration
     !
@@ -740,8 +709,9 @@ ok: [dut] =>
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
   
-     redistribute bgp include leaked
-     redistribute connected
+      redistribute bgp include leaked
+      redistribute connected include leaked
+  
     !
     interface Ethernet2
     ! dut -> r2
@@ -759,8 +729,9 @@ ok: [dut] =>
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
   
-     redistribute bgp include leaked
-     redistribute connected
+      redistribute bgp include leaked
+      redistribute connected include leaked
+  
     !
     interface Ethernet1
     ! dut -> r1

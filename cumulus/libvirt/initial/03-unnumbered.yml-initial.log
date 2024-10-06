@@ -43,13 +43,19 @@ ok: [r] =>
     #
     echo "INIT: setting hostname"
     hostname r
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 r" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
     #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 r
+    2001:db8:0:1::1 r
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable ZTP
     #
@@ -80,6 +86,9 @@ ok: [r] =>
     iface swp1 inet static
       mtu 1500
       address 10.0.0.1/32
+  
+    iface swp1 inet6
+      mtu 1500
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -108,7 +117,7 @@ ok: [r] =>
     !
     interface swp1
     ! no shutdown
-     description r -> stub
+     description r -> stub [stub]
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !

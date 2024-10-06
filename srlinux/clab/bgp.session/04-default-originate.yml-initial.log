@@ -101,14 +101,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 2001:db8:3::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 2001:db8:3::2 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -191,27 +183,14 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1
 
-TASK [Check version of nokia.srlinux] ******************************************
-ok: [dut] => changed=false 
-  msg: '''nokia.srlinux'' version: 0.5.0'
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -276,6 +255,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
     !
     !
       neighbor 10.1.0.1 activate
@@ -284,6 +265,8 @@ ok: [x1] =>
       neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
     !
     !
@@ -304,68 +287,64 @@ ok: [dut] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.1"
+        member: [ "65536:0:65536" ]
   
-    - path: /network-instance[name=default]/protocols/bgp
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
-       admin-state: enable
-       autonomous-system: 65000
-       router-id: 10.0.0.1
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-       afi-safi:
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix: [] # Make sure it exists
   
-    - path: /routing-policy/policy[name=default_export]
+    - path: /routing-policy/policy[name=default_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
         - name: prefixes
           match:
-            prefix-set: default_export
+            prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
   
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.1
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
   
   
   
@@ -375,74 +354,73 @@ ok: [dut] =>
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.1.0.2"
-         description: x1
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "10.1.0.2"
+          description: x1
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
   
-         peer-as: 65100
-  
+          peer-as: 65100
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: enable
+        admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "2001:db8:3::2"
-         description: x1
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: enable
+        neighbor:
+        - peer-address: "2001:db8:3::2"
+          description: x1
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
   
-         peer-as: 65100
+          peer-as: 65100
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -452,26 +430,14 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -511,17 +477,8 @@ ok: [dut]
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
-TASK [Check version of nokia.srlinux] ******************************************
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/extra/bgp.session/srlinux.j2] ***
-skipping: [dut]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
 
 TASK [Update SRL bgp.session node configuration (template=/home/pipi/net101/tools/netsim/extra/bgp.session/srlinux.j2)] ***
 changed: [dut]
@@ -529,11 +486,8 @@ changed: [dut]
 TASK [debug] *******************************************************************
 skipping: [dut]
 
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=12   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 

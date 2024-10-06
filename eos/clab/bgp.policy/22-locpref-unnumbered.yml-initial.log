@@ -10,8 +10,8 @@ ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -57,16 +57,6 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 2001:db8:1:1::1 2001:db8:3::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 2001:db8:1:2::1 2001:db8:3::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -161,16 +151,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 2001:db8:1:1::1 2001:db8:3::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 2001:db8:1:2::1 2001:db8:3::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -263,16 +243,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 2001:db8:1:1::1 2001:db8:3::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 2001:db8:1:2::1 2001:db8:3::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -353,6 +323,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -438,18 +409,18 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [probe]
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
+ok: [probe]
 ok: [x1]
 ok: [x2]
-ok: [probe]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [probe]
 changed: [x1]
 changed: [x2]
-changed: [probe]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -560,6 +531,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -572,6 +545,8 @@ ok: [probe] =>
       neighbor 10.0.0.1 send-community extended
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -611,6 +586,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.42.0/24
     !
     !
@@ -621,6 +598,8 @@ ok: [x1] =>
       neighbor eth1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:42::/64
     !
@@ -658,6 +637,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.43.0/24
     !
     !
@@ -668,6 +649,8 @@ ok: [x2] =>
       neighbor eth1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:43::/64
     !
@@ -751,7 +734,7 @@ ok: [dut] =>
     !
     !
      address-family ipv4
-    !
+  
       network 10.0.0.1/32
     !
     !
@@ -764,7 +747,7 @@ ok: [dut] =>
       neighbor ebgp_intf_Ethernet2 next-hop address-family ipv6 originate
     !
      address-family ipv6
-    !
+  
       network 2001:db8:1:1::/64
     !
     !
@@ -789,14 +772,14 @@ TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
 changed: [x2]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [probe]
@@ -805,8 +788,8 @@ skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [probe]
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [probe]
@@ -835,6 +818,7 @@ ok: [probe] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -866,6 +850,7 @@ ok: [probe] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -883,6 +868,7 @@ ok: [dut] =>
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
+  
   
     !
     interface Loopback0

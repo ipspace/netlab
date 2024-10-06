@@ -53,15 +53,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.2 10.42.42.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -134,7 +125,7 @@ ok: [x1] =>
     !
     interface eth2
      no shutdown
-     description x1 -> stub
+     description x1 -> stub [stub]
      ip address 10.42.42.3/24
     !
     do write
@@ -159,15 +150,6 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 10.1.0.5 dut" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.2 10.42.42.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -242,6 +224,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -291,8 +274,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [x1 -> localhost]
+changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -406,6 +389,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
       network 10.42.42.0/24
@@ -438,7 +423,7 @@ ok: [dut] =>
     !
     !
      address-family ipv4
-    !
+  
       network 10.0.0.1/32
     !
     !
@@ -496,6 +481,7 @@ ok: [r2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -524,7 +510,8 @@ ok: [dut] =>
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
   
-     redistribute bgp route-map i_beacon-ipv4
+      redistribute bgp route-map i_beacon-ipv4
+  
     !
     interface Loopback0
     !

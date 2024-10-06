@@ -55,16 +55,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:dead:beef::2 x1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 x2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 2001:db8:1:4::1 2001:db8:2:2::4 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -142,7 +132,7 @@ ok: [x1] =>
     !
     interface eth2
      no shutdown
-     description x1 -> stub
+     description x1 -> stub [stub]
      ! no ip address
      ipv6 address 2001:db8:dead:beef::2/64
      ipv6 nd ra-interval 5
@@ -170,16 +160,6 @@ ok: [x2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:dead:beef::2 x1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 x2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 2001:db8:1:4::1 2001:db8:2:2::4 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -274,16 +254,6 @@ ok: [x3] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1 2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:dead:beef::2 x1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 x2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 2001:db8:1:4::1 2001:db8:2:2::4 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -372,6 +342,8 @@ ok: [dut] =>
     ip host x2 10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3
     ip host x3 10.0.0.4 172.16.2.4 2001:db8:1:4::1 2001:db8:2:2::4
     !
+    ip routing
+    !
     ipv6 unicast-routing
     !
     !
@@ -436,8 +408,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [x3]
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -445,8 +417,8 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x3]
+changed: [x2]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -542,9 +514,9 @@ TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
-changed: [x1]
 changed: [x3]
+changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -557,8 +529,8 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 changed: [x3]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -598,6 +570,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -610,6 +584,8 @@ ok: [x1] =>
       neighbor 172.16.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -650,6 +626,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -660,6 +638,8 @@ ok: [x2] =>
       neighbor 172.16.1.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:3::/64
     !
@@ -697,6 +677,8 @@ ok: [x3] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -707,6 +689,8 @@ ok: [x3] =>
       neighbor 172.16.2.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:4::/64
     !
@@ -728,11 +712,11 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 172.16.0.2 remote-as 65100
       neighbor 172.16.0.2 description x1
   
@@ -754,6 +738,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -773,6 +758,7 @@ ok: [dut] =>
   
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:1::/64
   
@@ -807,8 +793,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x2]
-changed: [x3]
 changed: [x1]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]

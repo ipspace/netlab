@@ -82,7 +82,7 @@ ok: [dut] =>
         shutdown
         mtu 9198
         vrf attach tenant
-        description dut -> stub
+        description dut -> stub [stub]
         ip address 192.168.42.1/24
         ipv6 address 2001:db8:42::1/64
         no ipv6 nd suppress-ra
@@ -119,16 +119,6 @@ ok: [pe2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:2:1::2 c1" >>/tmp/hosts
-    echo "10.0.0.1 2001:db8:1:1::1 dut" >>/tmp/hosts
-    echo "172.16.0.1 192.168.42.1 10.2.0.1 2001:db8:2::1 2001:db8:42::1 2001:db8:4::1 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 pe2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -222,16 +212,6 @@ ok: [c1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 2001:db8:1:2::1 2001:db8:2::2 2001:db8:2:1::2 c1" >>/tmp/hosts
-    echo "10.0.0.1 2001:db8:1:1::1 dut" >>/tmp/hosts
-    echo "172.16.0.1 192.168.42.1 10.2.0.1 2001:db8:2::1 2001:db8:42::1 2001:db8:4::1 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 2001:db8:1:3::1 2001:db8:2:1::3 pe2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -422,6 +402,8 @@ ok: [pe2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -432,6 +414,8 @@ ok: [pe2] =>
       neighbor 10.2.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:3::/64
     !
@@ -535,6 +519,7 @@ ok: [c1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -575,6 +560,7 @@ ok: [c1] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -591,6 +577,7 @@ ok: [pe2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -622,6 +609,7 @@ ok: [pe2] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -637,8 +625,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
 
 TASK [template] ****************************************************************
-changed: [c1]
 changed: [pe2]
+changed: [c1]
 
 TASK [set_fact] ****************************************************************
 ok: [c1]
@@ -649,8 +637,8 @@ skipping: [c1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [c1]
 changed: [pe2]
+changed: [c1]
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -689,8 +677,10 @@ ok: [dut] =>
     router ospf 2 vrf tenant
         router-id 10.0.0.1
   
-        redistribute bgp
-        redistribute connected
+  
+  
+     redistribute bgp
+     redistribute connected
   
   
         area 0.0.0.0
@@ -717,8 +707,10 @@ ok: [dut] =>
     router ospfv3 2 vrf tenant
         router-id 10.0.0.1
   
-        redistribute bgp
-        redistribute connected
+  
+  
+     redistribute bgp
+     redistribute connected
   
   
         area 0.0.0.0

@@ -5,15 +5,15 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [s1]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [h4]
+ok: [s1]
 ok: [h3]
 
 TASK [Wait for device to become ready] *****************************************
@@ -29,16 +29,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1,
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [h3]
+ok: [s1]
 ok: [h4]
 
 TASK [Find configuration template for initial] *********************************
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [h3]
-ok: [s1]
 ok: [h4]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -52,10 +52,10 @@ ok: [s1] =>
   
   
     !
-    vlan 1001
+    vlan 701
      name blue
     !
-    vlan 1000
+    vlan 700
      name red
     !
   
@@ -95,14 +95,50 @@ ok: [s1] =>
         no shutdown
     !
   
-    interface vlan1000
-        description VLAN red (1000) -> [h1,h2] [stub]
+    interface vlan700
+        description VLAN red (700) -> [h1,h2] [stub]
     !
   
-    interface vlan1001
-        description VLAN blue (1001) -> [h3,h4] [stub]
+    interface vlan701
+        description VLAN blue (701) -> [h3,h4] [stub]
     !
     !
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -211,49 +247,13 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [h4]
-ok: [s1]
 ok: [h3]
+ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
@@ -281,15 +281,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-RoHkyDjl-h1.sh] **********
-changed: [h3 -> localhost]
+TASK [Initial container configuration via /tmp/config-LdyIPpyu-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
@@ -321,23 +321,23 @@ ok: [s1] =>
     !
     interface 1/1/1
      no routing
-     vlan access 1000
+     vlan access 700
     !
     interface 1/1/2
      no routing
-     vlan access 1000
+     vlan access 700
     !
     interface 1/1/3
      no routing
-     vlan access 1001
+     vlan access 701
     !
     interface 1/1/4
      no routing
-     vlan access 1001
+     vlan access 701
     !
-    interface vlan1000
+    interface vlan700
     !
-    interface vlan1001
+    interface vlan701
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]

@@ -45,14 +45,6 @@ ok: [probe] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -138,6 +130,8 @@ ok: [dut] =>
     lldp run
     !
     ip host probe 10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -291,6 +285,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -301,6 +297,8 @@ ok: [probe] =>
       neighbor 172.16.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -322,11 +320,11 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 172.16.0.2 remote-as 65100
       neighbor 172.16.0.2 description probe
   
@@ -336,6 +334,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -347,6 +346,7 @@ ok: [dut] =>
   
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:1::/64
   

@@ -65,11 +65,16 @@ def sum_results(data: Box) -> None:
         data[k].pop('caveat',None)
 
     for step in data[k].keys():
+      if step == 'validate' and data[k][step] == 'warning':
+        increase_counter(data,'warning')
+        OK = True
+        continue
+
       if step == 'validate' and 'caveat' in data[k]:
         OK = False
         continue
 
-      if data[k][step] is False or step == 'caveat':
+      if data[k][step] is False or (step == 'caveat' and data[k].get('validate') is False):
         increase_counter(data,step)
         OK = False
 
@@ -148,7 +153,15 @@ def summary_results(test_data: Box, log_path: str) -> Box:
   summary = Box(default_box=True,box_dots=True)
   summary.result = '✅'
   for kw in SUMMARY_MAP.keys():
-    if kw in test_data and test_data[kw] is False:
+    if kw not in test_data:
+      continue
+
+    if test_data[kw] == 'warning':
+      summary.result = "<span style='color: orange;'>&#x2714;</span>"
+      summary.url = f'{log_path}-{LOG_MAP[kw]}.log'
+      return summary
+
+    if test_data[kw] is False:
       summary.result = SUMMARY_MAP[kw]
       summary.url = f'{log_path}-{LOG_MAP[kw]}.log'
       if summary.result == 'failed' and 'caveat' in test_data:

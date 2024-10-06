@@ -5,8 +5,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
-ok: [s3]
 ok: [h1]
+ok: [s3]
 ok: [h2]
 ok: [h3]
 ok: [h4]
@@ -42,8 +42,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
 ok: [s2]
 ok: [s3]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
@@ -53,9 +53,9 @@ TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [s2]
 ok: [s3]
-ok: [h2]
 ok: [h1]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 ok: [h5]
 ok: [h6]
@@ -83,21 +83,32 @@ ok: [s1] =>
     #
     echo "INIT: setting hostname"
     hostname s1
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 s1" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.0.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "172.16.1.5 h5" >>/tmp/hosts
-    echo "172.16.1.6 h6" >>/tmp/hosts
-    echo "10.0.0.8 10.1.0.2 10.1.0.5 s2" >>/tmp/hosts
-    echo "10.0.0.9 10.1.0.6 10.1.0.10 s3" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
     #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.7 s1
+    10.1.0.1 swp1.s1
+    10.1.0.9 swp2.s1
+    10.0.0.8 s2
+    10.1.0.2 swp1.s2
+    10.1.0.5 swp2.s2
+    10.0.0.9 s3
+    10.1.0.6 swp1.s3
+    10.1.0.10 swp2.s3
+    172.16.0.1 h1 eth1.h1
+    172.16.0.2 h2 eth1.h2
+    172.16.0.3 h3 eth1.h3
+    172.16.1.4 h4 eth1.h4
+    172.16.1.5 h5 eth1.h5
+    172.16.1.6 h6 eth1.h6
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable ZTP
     #
@@ -162,36 +173,24 @@ ok: [s1] =>
     interface swp1
     ! no shutdown
      description s1 -> s2
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp2
     ! no shutdown
      description s1 -> s3
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp3
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp4
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1000
     ! no shutdown
      description VLAN red (1000) -> [h1,h2,s2,h3,s3]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1001
     ! no shutdown
      description VLAN blue (1001) -> [h4,h5,s2,h6,s3]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -228,21 +227,32 @@ ok: [s2] =>
     #
     echo "INIT: setting hostname"
     hostname s2
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 s2" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.0.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "172.16.1.5 h5" >>/tmp/hosts
-    echo "172.16.1.6 h6" >>/tmp/hosts
-    echo "10.0.0.7 10.1.0.1 10.1.0.9 s1" >>/tmp/hosts
-    echo "10.0.0.9 10.1.0.6 10.1.0.10 s3" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
     #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.7 s1
+    10.1.0.1 swp1.s1
+    10.1.0.9 swp2.s1
+    10.0.0.8 s2
+    10.1.0.2 swp1.s2
+    10.1.0.5 swp2.s2
+    10.0.0.9 s3
+    10.1.0.6 swp1.s3
+    10.1.0.10 swp2.s3
+    172.16.0.1 h1 eth1.h1
+    172.16.0.2 h2 eth1.h2
+    172.16.0.3 h3 eth1.h3
+    172.16.1.4 h4 eth1.h4
+    172.16.1.5 h5 eth1.h5
+    172.16.1.6 h6 eth1.h6
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable ZTP
     #
@@ -307,36 +317,24 @@ ok: [s2] =>
     interface swp1
     ! no shutdown
      description s2 -> s1
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp2
     ! no shutdown
      description s2 -> s3
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp3
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp4
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1000
     ! no shutdown
      description VLAN red (1000) -> [h1,s1,h2,h3,s3]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1001
     ! no shutdown
      description VLAN blue (1001) -> [h4,s1,h5,h6,s3]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -351,6 +349,42 @@ ok: [s2] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [s3] => 
   msg: |-
     initial configuration for s3
@@ -373,21 +407,32 @@ ok: [s3] =>
     #
     echo "INIT: setting hostname"
     hostname s3
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 s3" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.0.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "172.16.1.5 h5" >>/tmp/hosts
-    echo "172.16.1.6 h6" >>/tmp/hosts
-    echo "10.0.0.7 10.1.0.1 10.1.0.9 s1" >>/tmp/hosts
-    echo "10.0.0.8 10.1.0.2 10.1.0.5 s2" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
     #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.7 s1
+    10.1.0.1 swp1.s1
+    10.1.0.9 swp2.s1
+    10.0.0.8 s2
+    10.1.0.2 swp1.s2
+    10.1.0.5 swp2.s2
+    10.0.0.9 s3
+    10.1.0.6 swp1.s3
+    10.1.0.10 swp2.s3
+    172.16.0.1 h1 eth1.h1
+    172.16.0.2 h2 eth1.h2
+    172.16.0.3 h3 eth1.h3
+    172.16.1.4 h4 eth1.h4
+    172.16.1.5 h5 eth1.h5
+    172.16.1.6 h6 eth1.h6
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable ZTP
     #
@@ -452,36 +497,24 @@ ok: [s3] =>
     interface swp1
     ! no shutdown
      description s3 -> s2
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp2
     ! no shutdown
      description s3 -> s1
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp3
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp4
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1000
     ! no shutdown
      description VLAN red (1000) -> [h1,s1,h2,s2,h3]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1001
     ! no shutdown
      description VLAN blue (1001) -> [h4,s1,h5,s2,h6]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -496,6 +529,78 @@ ok: [s3] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -568,78 +673,6 @@ ok: [h5] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.3/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h6] => 
   msg: |-
     initial configuration for h6
@@ -676,53 +709,17 @@ ok: [h6] =>
     #
     # Print the final routing table
     ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [s3]
-ok: [h2]
+ok: [h3]
 ok: [h1]
 ok: [h4]
-ok: [h3]
-ok: [h5]
+ok: [h2]
 ok: [h6]
+ok: [h5]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2, s3
@@ -739,8 +736,8 @@ ok: [s2]
 ok: [s3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-changed: [s3]
 changed: [s1]
+changed: [s3]
 changed: [s2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
@@ -760,25 +757,25 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
-changed: [h6 -> localhost]
 changed: [h3 -> localhost]
+changed: [h6 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-HQftumSp-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-AqUEJDbi-h1.sh] **********
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 changed: [h5 -> localhost]
+changed: [h2 -> localhost]
 changed: [h6 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
-changed: [h3 -> localhost]
-changed: [h1 -> localhost]
 changed: [h5 -> localhost]
+changed: [h4 -> localhost]
 changed: [h6 -> localhost]
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -933,9 +930,9 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2, s3
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s3]
 changed: [s1]
 changed: [s2]
+changed: [s3]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [s1]
@@ -943,9 +940,9 @@ ok: [s2]
 ok: [s3]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
-changed: [s2]
-changed: [s3]
 changed: [s1]
+changed: [s3]
+changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
 skipping: [s1]
@@ -967,11 +964,14 @@ ok: [s1] =>
   msg: |-
     ospf configuration for s1
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.7
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -992,11 +992,14 @@ ok: [s2] =>
   msg: |-
     ospf configuration for s2
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.8
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -1017,11 +1020,14 @@ ok: [s3] =>
   msg: |-
     ospf configuration for s3
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.9
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -1048,9 +1054,9 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2, s3
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s3]
 changed: [s1]
 changed: [s2]
+changed: [s3]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [s1]
@@ -1209,8 +1215,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml
 
 TASK [copy cumulus config to /tmp/config.sh] ***********************************
 changed: [s3]
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact deployed_config] ************************************************
 ok: [s1]
@@ -1218,9 +1224,9 @@ ok: [s2]
 ok: [s3]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/cumulus.j2] ***
-changed: [s1]
 changed: [s3]
 changed: [s2]
+changed: [s1]
 
 TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/cumulus.j2] ***
 skipping: [s1]

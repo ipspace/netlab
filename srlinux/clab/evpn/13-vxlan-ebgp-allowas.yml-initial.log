@@ -6,15 +6,15 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Find device readiness script] ********************************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [spine]
@@ -108,17 +108,6 @@ ok: [spine] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -192,6 +181,42 @@ ok: [spine] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -210,17 +235,6 @@ ok: [l2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -299,42 +313,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -411,14 +389,8 @@ TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ans
 skipping: [spine]
 skipping: [l2]
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [l1]
@@ -426,18 +398,15 @@ changed: [l1]
 TASK [debug] *******************************************************************
 skipping: [l1]
 
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-
 TASK [set_fact] ****************************************************************
 ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-LPdKHAXd-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-dlrPuzVv-h1.sh] **********
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -521,23 +490,14 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -583,6 +543,8 @@ ok: [l2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -620,6 +582,8 @@ ok: [spine] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.1/32
     !
     !
@@ -648,62 +612,63 @@ ok: [l1] =>
     - path: /routing-policy/policy[name=accept_all]
       value:
         default-action:
-          policy-result: "accept"
+          policy-result: accept
   
-    - path: /routing-policy/policy[name=next_hop_self_ebgp_ipv4]
+    - path: /routing-policy/community-set[name=ibgp-mark]
       value:
-       default-action:
-        policy-result: "accept"
-       statement:
-       - name: set-nh-on-ebgp-routes
-         match:
-          protocol: bgp
-          bgp:
-           as-path-length:
-            value: 1
-            operator: "ge"
-         action:
-          policy-result: "accept"
-          bgp:
-           next-hop:
-            set: "10.0.0.2"
+        member: [ "65536:0:65536" ]
   
-    - path: /network-instance[name=default]/protocols/bgp
+    - path: /routing-policy/policy[name=ibgp-mark]
       value:
-       admin-state: enable
-       autonomous-system: 65200
-       router-id: 10.0.0.2
-       ebgp-default-policy:
-        export-reject-all: False
-        import-reject-all: False
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
   
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-         multipath:
-          max-paths-level-1: 64
-          max-paths-level-2: 64 # indirect nexthops
-  
-    - path: /routing-policy/prefix-set[name=default_export]
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix: [] # Make sure it exists
   
-    - path: /routing-policy/policy[name=default_export]
+    - path: /routing-policy/policy[name=default_bgp_export]
       value:
         default-action:
           policy-result: reject
         statement:
         - name: prefixes
           match:
-            prefix-set: default_export
+            prefix-set: default_bgp_advertise
           action:
-            policy-result: accept
+            policy-result: next-policy
         - name: bgp
           match:
             protocol: bgp
           action:
-            policy-result: accept
-    - path: /routing-policy/prefix-set[name=default_export]
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65200
+        router-id: 10.0.0.2
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
       value:
         prefix:
         - ip-prefix: 10.0.0.2/32
@@ -713,46 +678,44 @@ ok: [l1] =>
   
   
   
-  
-  
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
-       admin-state: enable
-       afi-safi:
-       - afi-safi-name: ipv4-unicast
-         admin-state: enable
-       - afi-safi-name: ipv6-unicast
-         admin-state: disable
-       - afi-safi-name: evpn
-         admin-state: enable # Must have at least 1 address family enabled
+        admin-state: enable
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: evpn
+          admin-state: enable
   
-       timers:
-        connect-retry: 10
-        _annotate_connect-retry: "Reduce default 120s to 10s"
-        minimum-advertisement-interval: 1
-       send-community:
-        standard: True
-        large: True
-        _annotate_large: "Assuming 'standard' implies 'large' here"
-       import-policy: accept_all
-       export-policy: default_export
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        send-community:
+          standard: True
+          large: True
+          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
       value:
-       neighbor:
-       - peer-address: "10.1.0.2"
-         description: spine
-         peer-group: ebgp
-         afi-safi:
-         - afi-safi-name: ipv4-unicast
-           admin-state: enable
-         - afi-safi-name: ipv6-unicast
-           admin-state: disable
-         - afi-safi-name: evpn
-           admin-state: enable # Must have at least 1 address family enabled
+        neighbor:
+        - peer-address: "10.1.0.2"
+          description: spine
+          peer-group: ebgp
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+          - afi-safi-name: evpn
+            admin-state: enable
   
-         peer-as: 65100
+          peer-as: 65100
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
@@ -763,14 +726,8 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2, spine
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [l1]
@@ -778,12 +735,9 @@ changed: [l1]
 TASK [debug] *******************************************************************
 skipping: [l1]
 
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
-
 TASK [template] ****************************************************************
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [l2]
@@ -892,23 +846,14 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -944,7 +889,6 @@ ok: [l1] =>
       value:
         group:
         - group-name: ebgp # Could create a dedicated group for EVPN only?
-          export-policy: "accept_all"
           afi-safi:
           - afi-safi-name: evpn
             admin-state: enable
@@ -1018,23 +962,14 @@ TASK [Deploy evpn configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2, spine
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1049,8 +984,8 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -1085,23 +1020,14 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
-TASK [tempfile] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [template] ****************************************************************
-changed: [l1 -> localhost]
-
-TASK [Generated JSON-RPC config based on /home/pipi/net101/tools/netsim/extra/bgp.session/srlinux.j2] ***
-skipping: [l1]
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [l1]
 
 TASK [Update SRL bgp.session node configuration (template=/home/pipi/net101/tools/netsim/extra/bgp.session/srlinux.j2)] ***
 changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
-
-TASK [file] ********************************************************************
-changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1118,7 +1044,7 @@ skipping: [l2]
 PLAY RECAP *********************************************************************
 h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-l1                         : ok=62   changed=24   unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+l1                         : ok=50   changed=6    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 l2                         : ok=58   changed=13   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 spine                      : ok=36   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 

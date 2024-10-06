@@ -55,19 +55,6 @@ ok: [srv] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -152,19 +139,6 @@ ok: [r1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -251,19 +225,6 @@ ok: [r2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -347,6 +308,8 @@ ok: [dut] =>
     ip host r2 10.0.0.3 172.16.1.3
     ip host srv 10.0.0.4 172.16.2.4
     !
+    ip routing
+    !
     vrf definition blue
      rd 65000:2
      route-target import 65000:2
@@ -427,9 +390,9 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
 changed: [srv -> localhost]
 changed: [r2 -> localhost]
+changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [srv]
@@ -440,9 +403,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for srv, r1, r2
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r1]
 changed: [srv]
+changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [srv]
@@ -450,9 +413,9 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [srv]
-changed: [r1]
 changed: [r2]
+changed: [r1]
+changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [srv]
@@ -508,6 +471,8 @@ ok: [srv] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -528,14 +493,15 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -597,6 +563,7 @@ ok: [r1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -623,6 +590,7 @@ ok: [r2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -658,8 +626,8 @@ TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -670,8 +638,8 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -697,15 +665,15 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv4 vrf blue
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 101 match internal external
+  
     !
     !
      address-family ipv4 vrf common
       bgp router-id 10.0.0.1
-    !
       redistribute connected
+  
     !
     !
       neighbor 172.16.2.4 remote-as 65100
@@ -717,16 +685,17 @@ ok: [dut] =>
   
      address-family ipv4 vrf red
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 100 match internal external
+  
     !
     !
     router ospf 101 vrf blue
      router-id 10.100.0.101
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/2
     ! dut -> r2
@@ -737,8 +706,9 @@ ok: [dut] =>
     router ospf 100 vrf red
      router-id 10.100.0.100
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/1
     ! dut -> r1

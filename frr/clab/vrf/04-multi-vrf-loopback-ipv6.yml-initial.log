@@ -78,43 +78,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:2:1::2/64 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -133,19 +96,6 @@ ok: [dut] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:5::1 dut" >>/tmp/hosts
-    echo "2001:db8:2:2::5 2001:db8:2:3::5 2001:db8:c001:cafe::1 dut-blue" >>/tmp/hosts
-    echo "2001:db8:2::5 2001:db8:2:1::5 2001:db8:c001:cafe::1 dut-red" >>/tmp/hosts
-    echo "2001:db8:2::1 h1" >>/tmp/hosts
-    echo "2001:db8:2:1::2 h2" >>/tmp/hosts
-    echo "2001:db8:2:2::3 h3" >>/tmp/hosts
-    echo "2001:db8:2:3::4 h4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -284,9 +234,9 @@ ok: [dut] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h4] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h2
     =========================================
     #!/bin/bash
     #
@@ -309,9 +259,9 @@ ok: [h4] =>
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:2:3::4/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:2:3::4/64 dev eth1
+    ip -6 addr add 2001:db8:2:1::2/64 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -358,10 +308,47 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:3::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:3::4/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
 ok: [dut]
+ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
@@ -399,20 +386,20 @@ ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-uXTdnGHg-h1.sh] **********
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-mxvlXPol-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************

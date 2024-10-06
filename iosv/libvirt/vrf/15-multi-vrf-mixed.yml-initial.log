@@ -5,8 +5,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
 ok: [r4]
-ok: [r1]
 ok: [r3]
+ok: [r1]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -29,16 +29,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
 ok: [r4]
+ok: [r3]
 ok: [r1]
 ok: [dut]
-ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -59,19 +59,6 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 r3" >>/tmp/hosts
-    echo "10.0.0.5 172.16.3.5 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -158,19 +145,6 @@ ok: [r4] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 r3" >>/tmp/hosts
-    echo "10.0.0.5 172.16.3.5 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -256,19 +230,6 @@ ok: [r1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 r3" >>/tmp/hosts
-    echo "10.0.0.5 172.16.3.5 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -335,80 +296,6 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host dut-blue 172.16.2.1 172.16.3.1
-    ip host dut-red 172.16.0.1 172.16.1.1
-    ip host r1 10.0.0.2 172.16.0.2
-    ip host r2 10.0.0.3 172.16.1.3
-    ip host r3 10.0.0.4 172.16.2.4
-    ip host r4 10.0.0.5 172.16.3.5
-    !
-    vrf definition blue
-     rd 65000:2
-     route-target import 65000:2
-     route-target export 65000:2
-    !
-     address-family ipv4
-     exit-address-family
-    !
-    vrf definition red
-     rd 65000:1
-     route-target import 65000:1
-     route-target export 65000:1
-    !
-     address-family ipv4
-     exit-address-family
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface GigabitEthernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet0/1
-     no shutdown
-     vrf forwarding red
-     description dut -> r1
-     mtu 1500
-     ip address 172.16.0.1 255.255.255.0
-    !
-    interface GigabitEthernet0/2
-     no shutdown
-     vrf forwarding red
-     description dut -> r2 [external]
-     mtu 1500
-     ip address 172.16.1.1 255.255.255.0
-    !
-    interface GigabitEthernet0/3
-     no shutdown
-     vrf forwarding blue
-     description dut -> r3
-     mtu 1500
-     ip address 172.16.2.1 255.255.255.0
-    !
-    interface GigabitEthernet0/4
-     no shutdown
-     vrf forwarding blue
-     description dut -> r4 [external]
-     mtu 1500
-     ip address 172.16.3.1 255.255.255.0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -427,19 +314,6 @@ ok: [r3] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 r3" >>/tmp/hosts
-    echo "10.0.0.5 172.16.3.5 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -507,12 +381,88 @@ ok: [r3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host dut-blue 172.16.2.1 172.16.3.1
+    ip host dut-red 172.16.0.1 172.16.1.1
+    ip host r1 10.0.0.2 172.16.0.2
+    ip host r2 10.0.0.3 172.16.1.3
+    ip host r3 10.0.0.4 172.16.2.4
+    ip host r4 10.0.0.5 172.16.3.5
+    !
+    ip routing
+    !
+    vrf definition blue
+     rd 65000:2
+     route-target import 65000:2
+     route-target export 65000:2
+    !
+     address-family ipv4
+     exit-address-family
+    !
+    vrf definition red
+     rd 65000:1
+     route-target import 65000:1
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet0/1
+     no shutdown
+     vrf forwarding red
+     description dut -> r1
+     mtu 1500
+     ip address 172.16.0.1 255.255.255.0
+    !
+    interface GigabitEthernet0/2
+     no shutdown
+     vrf forwarding red
+     description dut -> r2 [external]
+     mtu 1500
+     ip address 172.16.1.1 255.255.255.0
+    !
+    interface GigabitEthernet0/3
+     no shutdown
+     vrf forwarding blue
+     description dut -> r3
+     mtu 1500
+     ip address 172.16.2.1 255.255.255.0
+    !
+    interface GigabitEthernet0/4
+     no shutdown
+     vrf forwarding blue
+     description dut -> r4 [external]
+     mtu 1500
+     ip address 172.16.3.1 255.255.255.0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -526,10 +476,10 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r4 -> localhost]
-changed: [r2 -> localhost]
-changed: [r3 -> localhost]
 changed: [r1 -> localhost]
+changed: [r4 -> localhost]
+changed: [r3 -> localhost]
+changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -541,10 +491,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r4, r1, r3
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r4]
-changed: [r3]
 changed: [r1]
+changed: [r4]
+changed: [r2]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -554,9 +504,9 @@ ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r4]
-changed: [r2]
-changed: [r1]
 changed: [r3]
+changed: [r1]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -581,16 +531,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [r1]
 skipping: [r3]
 ok: [r2]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -615,6 +565,8 @@ ok: [r2] =>
       neighbor 172.16.1.1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.3/32
     !
@@ -649,6 +601,8 @@ ok: [r4] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.5/32
     !
     !
@@ -669,14 +623,15 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -718,8 +673,8 @@ changed: [r4]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [r4]
 ok: [dut]
 
@@ -745,6 +700,7 @@ ok: [r1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -772,6 +728,7 @@ ok: [r3] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -821,14 +778,14 @@ skipping: [r1]
 skipping: [r3]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
@@ -851,9 +808,9 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv4 vrf blue
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 101 match internal external
+  
     !
     !
       neighbor 172.16.3.5 remote-as 65101
@@ -865,9 +822,9 @@ ok: [dut] =>
   
      address-family ipv4 vrf red
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 100 match internal external
+  
     !
     !
       neighbor 172.16.1.3 remote-as 65100
@@ -880,8 +837,9 @@ ok: [dut] =>
     router ospf 101 vrf blue
      router-id 10.101.0.1
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/3
     ! dut -> r3
@@ -892,8 +850,9 @@ ok: [dut] =>
     router ospf 100 vrf red
      router-id 10.100.0.1
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/1
     ! dut -> r1

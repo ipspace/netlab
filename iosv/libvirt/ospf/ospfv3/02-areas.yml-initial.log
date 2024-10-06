@@ -55,16 +55,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:bad:cafe::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 x1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:1::3 x2" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -158,16 +148,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:bad:cafe::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 x1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:1::3 x2" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -260,16 +240,6 @@ ok: [x3] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:bad:cafe::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 x1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:1::3 x2" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 x3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -389,7 +359,7 @@ ok: [dut] =>
     !
     interface GigabitEthernet0/4
      no shutdown
-     description dut -> stub
+     description dut -> stub [stub]
      mtu 1500
      ipv6 address 2001:DB8:BAD:CAFE::1/64
     !
@@ -409,8 +379,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
-changed: [x3 -> localhost]
 changed: [x2 -> localhost]
+changed: [x3 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -421,9 +391,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x3]
 changed: [x2]
 changed: [x1]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -431,8 +401,8 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x3]
+changed: [x2]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -464,12 +434,39 @@ ok: [x3]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [x3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 ok: [x2] => 
   msg: |-
     ospf configuration for x2
@@ -491,6 +488,7 @@ ok: [x2] =>
      ospf6 router-id 10.0.0.3
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
   
     exit
   
@@ -518,6 +516,7 @@ ok: [x3] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -530,6 +529,7 @@ ok: [dut] =>
      router-id 10.0.0.1
      address-family ipv6 unicast
       passive-interface GigabitEthernet0/4
+  
   
     !
     interface Loopback0
@@ -555,32 +555,6 @@ ok: [dut] =>
     ! dut -> stub
      ospfv3 1 ipv6 area 0.0.0.2
     !
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! x1 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-    exit
-  
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x1]
@@ -596,9 +570,9 @@ TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [x3]
 changed: [x2]
 changed: [x1]
-changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -611,9 +585,9 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x1]
 changed: [x2]
 changed: [x3]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

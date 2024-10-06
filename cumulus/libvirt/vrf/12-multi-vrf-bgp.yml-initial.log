@@ -30,8 +30,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
@@ -41,151 +41,6 @@ ok: [r3]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname dut
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.11 172.16.0.11 r1" >>/tmp/hosts
-    echo "10.0.0.12 172.16.1.12 r2" >>/tmp/hosts
-    echo "10.0.0.23 172.16.2.23 r3" >>/tmp/hosts
-    echo "10.0.0.24 172.16.3.24 r4" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
-    #
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.1/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      mtu 1500
-      address 172.16.0.1/24
-    auto swp2
-  
-    iface swp2 inet static
-      mtu 1500
-      address 172.16.1.1/24
-    auto swp3
-  
-    iface swp3 inet static
-      mtu 1500
-      address 172.16.2.1/24
-    auto swp4
-  
-    iface swp4 inet static
-      mtu 1500
-      address 172.16.3.1/24
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
-    sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
-    sysctl -qw net.ipv6.conf.swp3.disable_ipv6=0
-    sysctl -qw net.ipv6.conf.swp4.disable_ipv6=0
-    #
-    # Enable FRR modules for ['bgp', 'vrf']
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "bgpd=yes" >>/etc/frr/daemons
-    echo "bgpd=yes" >>/etc/frr/daemons
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description dut -> r1 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp2
-    ! no shutdown
-     description dut -> r2 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp3
-    ! no shutdown
-     description dut -> r3 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp4
-    ! no shutdown
-     description dut -> r4 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -204,19 +59,6 @@ ok: [r1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.11 172.16.0.11 r1" >>/tmp/hosts
-    echo "10.0.0.12 172.16.1.12 r2" >>/tmp/hosts
-    echo "10.0.0.23 172.16.2.23 r3" >>/tmp/hosts
-    echo "10.0.0.24 172.16.3.24 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -303,19 +145,6 @@ ok: [r2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.11 172.16.0.11 r1" >>/tmp/hosts
-    echo "10.0.0.12 172.16.1.12 r2" >>/tmp/hosts
-    echo "10.0.0.23 172.16.2.23 r3" >>/tmp/hosts
-    echo "10.0.0.24 172.16.3.24 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -401,19 +230,6 @@ ok: [r3] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.11 172.16.0.11 r1" >>/tmp/hosts
-    echo "10.0.0.12 172.16.1.12 r2" >>/tmp/hosts
-    echo "10.0.0.23 172.16.2.23 r3" >>/tmp/hosts
-    echo "10.0.0.24 172.16.3.24 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -480,6 +296,154 @@ ok: [r3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname dut
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 dut
+    172.16.0.1 swp1.red.dut
+    172.16.1.1 swp2.red.dut
+    172.16.2.1 swp3.blue.dut
+    172.16.3.1 swp4.blue.dut
+    10.0.0.11 r1
+    172.16.0.11 eth1.r1
+    10.0.0.12 r2
+    172.16.1.12 eth1.r2
+    10.0.0.23 r3
+    172.16.2.23 eth1.r3
+    10.0.0.24 r4
+    172.16.3.24 eth1.r4
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.1/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      mtu 1500
+      address 172.16.0.1/24
+    auto swp2
+  
+    iface swp2 inet static
+      mtu 1500
+      address 172.16.1.1/24
+    auto swp3
+  
+    iface swp3 inet static
+      mtu 1500
+      address 172.16.2.1/24
+    auto swp4
+  
+    iface swp4 inet static
+      mtu 1500
+      address 172.16.3.1/24
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp3.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp4.disable_ipv6=0
+    #
+    # Enable FRR modules for ['bgp', 'vrf']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "bgpd=yes" >>/etc/frr/daemons
+    echo "bgpd=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description dut -> r1 [external]
+    !
+    interface swp2
+    ! no shutdown
+     description dut -> r2 [external]
+    !
+    interface swp3
+    ! no shutdown
+     description dut -> r3 [external]
+    !
+    interface swp4
+    ! no shutdown
+     description dut -> r4 [external]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 ok: [r4] => 
   msg: |-
     initial configuration for r4
@@ -498,19 +462,6 @@ ok: [r4] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.2.1 172.16.3.1 dut-blue" >>/tmp/hosts
-    echo "172.16.0.1 172.16.1.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.11 172.16.0.11 r1" >>/tmp/hosts
-    echo "10.0.0.12 172.16.1.12 r2" >>/tmp/hosts
-    echo "10.0.0.23 172.16.2.23 r3" >>/tmp/hosts
-    echo "10.0.0.24 172.16.3.24 r4" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -581,8 +532,8 @@ ok: [r4] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [r3]
 ok: [r4]
 
@@ -618,10 +569,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
-changed: [r1]
 changed: [r4]
+changed: [r1]
 changed: [r2]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -630,9 +581,9 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r3]
 changed: [r2]
 changed: [r1]
-changed: [r3]
 changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -658,8 +609,8 @@ TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
@@ -686,6 +637,8 @@ ok: [dut] =>
       bgp router-id 10.0.0.1
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.1/32
     !
@@ -714,6 +667,8 @@ ok: [r1] =>
       neighbor 172.16.0.1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.11/32
     !
@@ -748,6 +703,8 @@ ok: [r2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.12/32
     !
     !
@@ -781,6 +738,8 @@ ok: [r4] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.24/32
     !
     !
@@ -813,6 +772,8 @@ ok: [r3] =>
       neighbor 172.16.2.1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.23/32
     !
@@ -851,14 +812,14 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
-changed: [r4]
 changed: [r3]
+changed: [r4]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [r3]
 ok: [r4]
 
@@ -947,8 +908,8 @@ ok: [dut] =>
      neighbor 172.16.3.24 remote-as 65104
      neighbor 172.16.3.24 description r4
      address-family ipv4 unicast
-    !
       redistribute connected
+  
       label vpn export auto
       export vpn
       import vpn
@@ -973,8 +934,8 @@ ok: [dut] =>
      neighbor 172.16.1.12 remote-as 65102
      neighbor 172.16.1.12 description r2
      address-family ipv4 unicast
-    !
       redistribute connected
+  
       label vpn export auto
       export vpn
       import vpn

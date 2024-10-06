@@ -50,15 +50,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 10.42.42.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -125,7 +116,7 @@ ok: [x1] =>
     !
     interface eth2
      no shutdown
-     description x1 -> stub
+     description x1 -> stub [stub]
      ip address 10.42.42.3/24
     !
     do write
@@ -150,15 +141,6 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 10.42.42.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -239,6 +221,8 @@ ok: [dut] =>
     ip host r2 10.0.0.2 172.16.1.2
     ip host x1 10.0.0.3 172.16.0.3 10.42.42.3
     !
+    ip routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -277,8 +261,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [r2 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -390,6 +374,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
       network 10.42.42.0/24
@@ -411,17 +397,18 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 172.16.0.3 remote-as 65100
       neighbor 172.16.0.3 description x1
   
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -483,6 +470,7 @@ ok: [r2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -504,7 +492,8 @@ ok: [dut] =>
     router ospf 1
      router-id 10.0.0.1
   
-     redistribute bgp 65000 subnets route-map i_beacon-ipv4
+     redistribute bgp 65000 route-map i_beacon-ipv4
+  
     !
     interface Loopback0
     !

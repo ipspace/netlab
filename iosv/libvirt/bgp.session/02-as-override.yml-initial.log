@@ -50,15 +50,6 @@ ok: [x1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 2001:db8:4::1 2001:db8:4:1::1 dut" >>/tmp/hosts
-    echo "172.42.42.1 172.16.0.2 2001:db8:a02::1 2001:db8:4::2 x1" >>/tmp/hosts
-    echo "172.42.43.1 172.16.1.3 2001:db8:a03::1 2001:db8:4:1::3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -152,15 +143,6 @@ ok: [x2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 2001:db8:4::1 2001:db8:4:1::1 dut" >>/tmp/hosts
-    echo "172.42.42.1 172.16.0.2 2001:db8:a02::1 2001:db8:4::2 x1" >>/tmp/hosts
-    echo "172.42.43.1 172.16.1.3 2001:db8:a03::1 2001:db8:4:1::3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -248,6 +230,8 @@ ok: [dut] =>
     ip host x1 172.42.42.1 172.16.0.2 2001:db8:a02::1 2001:db8:4::2
     ip host x2 172.42.43.1 172.16.1.3 2001:db8:a03::1 2001:db8:4:1::3
     !
+    ip routing
+    !
     ipv6 unicast-routing
     !
     !
@@ -327,8 +311,8 @@ TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
@@ -361,6 +345,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.42.0/24
     !
     !
@@ -371,6 +357,8 @@ ok: [x1] =>
       neighbor 172.16.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:a02::/64
     !
@@ -408,6 +396,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.43.0/24
     !
     !
@@ -418,6 +408,8 @@ ok: [x2] =>
       neighbor 172.16.1.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:a03::/64
     !
@@ -439,11 +431,11 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 172.16.0.2 remote-as 65100
       neighbor 172.16.0.2 description x1
   
@@ -459,6 +451,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -474,6 +467,7 @@ ok: [dut] =>
   
      address-family ipv6
       bgp scan-time 5
+  
     !
     !
     !
@@ -500,8 +494,8 @@ TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -512,8 +506,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 

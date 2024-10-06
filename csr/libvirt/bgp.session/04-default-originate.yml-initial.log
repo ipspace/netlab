@@ -1,3 +1,9 @@
+Warning in cli: Lab topology source file /home/pipi/net101/tools/tests/integration/bgp.session/04-default-originate.yml has been modified
+... after the snapshot netlab.snapshot.yml has been created
+... netlab transforms lab topology into device- and platform data and stores the results
+    in a snapshot file that is used by most netlab commands. Changes to source files
+    (including lab topology or defaults) are not automatically reflected in the snapshot
+    file. Use 'netlab create' or 'netlab up' to create a new snapshot file.
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 
 PLAY [Deploy initial device configuration] *************************************
@@ -44,14 +50,6 @@ ok: [x1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:4::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:4::2 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -137,6 +135,8 @@ ok: [dut] =>
     lldp run
     !
     ip host x1 10.0.0.2 172.16.0.2 2001:db8:4::2
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -235,6 +235,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
     !
     !
       neighbor 172.16.0.1 activate
@@ -243,6 +245,8 @@ ok: [x1] =>
       neighbor 172.16.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
     !
     !
@@ -262,11 +266,11 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
       neighbor 172.16.0.2 remote-as 65100
       neighbor 172.16.0.2 description x1
   
@@ -276,6 +280,7 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
     !
     !
@@ -285,6 +290,7 @@ ok: [dut] =>
   
      address-family ipv6
       bgp scan-time 5
+  
     !
     !
     !
@@ -350,6 +356,9 @@ PLAY RECAP *********************************************************************
 dut                        : ok=23   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
+
+Warning: The following warnings were generated during the 'netlab initial' processing
+Warning: cli: Lab topology source file /home/pipi/net101/tools/tests/integration/bgp.session/04-default-originate.yml has been modified
 
 
 This lab tests the BGP default route origination. The DUT should advertise a default route to X1.

@@ -55,18 +55,6 @@ ok: [xf] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:2::1 dut-d1" >>/tmp/hosts
-    echo "2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:cafe:43::1 dut-d2" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 p1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:1::3 p2" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -160,18 +148,6 @@ ok: [p1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:2::1 dut-d1" >>/tmp/hosts
-    echo "2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:cafe:43::1 dut-d2" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 p1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:1::3 p2" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -264,18 +240,6 @@ ok: [p2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 dut" >>/tmp/hosts
-    echo "2001:db8:2::1 dut-d1" >>/tmp/hosts
-    echo "2001:db8:2:1::1 2001:db8:2:2::1 2001:db8:cafe:43::1 dut-d2" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2::2 p1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:1::3 p2" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -440,8 +404,8 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p2 -> localhost]
 changed: [p1 -> localhost]
+changed: [p2 -> localhost]
 changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -458,14 +422,14 @@ changed: [p1]
 changed: [p2]
 
 TASK [set_fact] ****************************************************************
-ok: [p1]
 ok: [xf]
+ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p1]
 changed: [xf]
 changed: [p2]
+changed: [p1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xf]
@@ -521,6 +485,8 @@ ok: [xf] =>
     !
      address-family ipv6 unicast
     !
+  
+    !
       network 2001:db8:1:4::/64
     !
     !
@@ -541,14 +507,15 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
     !
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:1::/64
   
@@ -597,6 +564,33 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
+ok: [p1] => 
+  msg: |-
+    ospf configuration for p1
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! p1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -619,31 +613,6 @@ ok: [p2] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
-    exit
-  
-    !
-    do write
-ok: [p1] => 
-  msg: |-
-    ospf configuration for p1
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! p1 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
   
     exit
   
@@ -669,8 +638,8 @@ TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -708,16 +677,16 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv6 vrf d1
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 100 match internal external
+  
     !
     !
      address-family ipv6 vrf d2
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 101 match internal external
+  
     !
       network 2001:db8:cafe:43::/64
   
@@ -732,10 +701,11 @@ ok: [dut] =>
     router ospfv3 100
      router-id 10.0.0.5
      address-family ipv6 unicast vrf d1
-     default-information originate always
+      default-information originate always
   
-     redistribute bgp 65000
-     redistribute connected
+      redistribute bgp 65000
+      redistribute connected
+  
     !
     interface GigabitEthernet0/1
     ! dut -> p1
@@ -746,10 +716,11 @@ ok: [dut] =>
     router ospfv3 101
      router-id 10.0.0.1
      address-family ipv6 unicast vrf d2
-     default-information originate
+      default-information originate
   
-     redistribute bgp 65000
-     redistribute connected
+      redistribute bgp 65000
+      redistribute connected
+  
     !
     interface GigabitEthernet0/2
     ! dut -> p2

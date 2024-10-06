@@ -13,8 +13,8 @@ TASK [Find device readiness script] ********************************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [rtr]
@@ -41,146 +41,6 @@ ok: [h3]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [rtr] => 
-  msg: |-
-    initial configuration for rtr
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname rtr
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 rtr" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.2.2 h2" >>/tmp/hosts
-    echo "172.16.1.3 h3" >>/tmp/hosts
-    echo "172.16.3.4 h4" >>/tmp/hosts
-    echo "172.16.2.5 172.16.3.5 rtr-blue" >>/tmp/hosts
-    echo "172.16.0.5 172.16.1.5 rtr-red" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
-    #
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.5/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      mtu 1500
-      address 172.16.0.5/24
-    auto swp2
-  
-    iface swp2 inet static
-      mtu 1500
-      address 172.16.1.5/24
-    auto swp3
-  
-    iface swp3 inet static
-      mtu 1500
-      address 172.16.2.5/24
-    auto swp4
-  
-    iface swp4 inet static
-      mtu 1500
-      address 172.16.3.5/24
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['vrf']
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "bgpd=yes" >>/etc/frr/daemons
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description rtr -> h1 [stub]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp2
-    ! no shutdown
-     description rtr -> h3 [stub]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp3
-    ! no shutdown
-     description rtr -> h2 [stub]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp4
-    ! no shutdown
-     description rtr -> h4 [stub]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -297,6 +157,145 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [rtr] => 
+  msg: |-
+    initial configuration for rtr
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname rtr
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.5 rtr
+    172.16.0.5 swp1.red.rtr
+    172.16.1.5 swp2.red.rtr
+    172.16.2.5 swp3.blue.rtr
+    172.16.3.5 swp4.blue.rtr
+    172.16.0.1 h1 eth1.h1
+    172.16.2.2 h2 eth1.h2
+    172.16.1.3 h3 eth1.h3
+    172.16.3.4 h4 eth1.h4
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.5/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      mtu 1500
+      address 172.16.0.5/24
+    auto swp2
+  
+    iface swp2 inet static
+      mtu 1500
+      address 172.16.1.5/24
+    auto swp3
+  
+    iface swp3 inet static
+      mtu 1500
+      address 172.16.2.5/24
+    auto swp4
+  
+    iface swp4 inet static
+      mtu 1500
+      address 172.16.3.5/24
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['vrf']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "bgpd=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description rtr -> h1 [stub]
+    !
+    interface swp2
+    ! no shutdown
+     description rtr -> h3 [stub]
+    !
+    interface swp3
+    ! no shutdown
+     description rtr -> h2 [stub]
+    !
+    interface swp4
+    ! no shutdown
+     description rtr -> h4 [stub]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -445,21 +444,21 @@ ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-yDKpaKxa-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-cRUjpriY-h1.sh] **********
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 

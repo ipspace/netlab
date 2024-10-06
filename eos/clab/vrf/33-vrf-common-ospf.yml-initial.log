@@ -4,14 +4,14 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
-ok: [srv]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
-ok: [r2]
 ok: [srv]
+ok: [r2]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -57,19 +57,6 @@ ok: [r1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -156,19 +143,6 @@ ok: [r2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -254,19 +228,6 @@ ok: [srv] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.5 dut-blue" >>/tmp/hosts
-    echo "10.1.0.9 dut-common" >>/tmp/hosts
-    echo "10.1.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 r2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -340,6 +301,7 @@ ok: [dut] =>
     hostname dut
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -417,8 +379,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
 changed: [srv -> localhost]
+changed: [r1 -> localhost]
 changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -430,9 +392,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
+changed: [srv]
 changed: [r2]
 changed: [r1]
-changed: [srv]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -441,8 +403,8 @@ ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
-changed: [srv]
 changed: [r2]
+changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -493,6 +455,7 @@ ok: [r1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -507,37 +470,6 @@ ok: [r1] =>
   
     !
     do write
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
 ok: [srv] => 
   msg: |-
     ospf configuration for srv
@@ -551,6 +483,7 @@ ok: [srv] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -559,6 +492,38 @@ ok: [srv] =>
     !
     interface eth1
     ! srv -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -580,8 +545,8 @@ TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [srv]
+changed: [r1]
 changed: [r2]
 
 TASK [set_fact] ****************************************************************
@@ -634,6 +599,7 @@ ok: [dut] =>
       address-family ipv4
         redistribute connected
         redistribute ospf
+  
     !
      vrf common
       router-id 10.0.0.1
@@ -646,6 +612,7 @@ ok: [dut] =>
       address-family ipv4
         redistribute connected
         redistribute ospf
+  
     !
      vrf red
       router-id 10.0.0.1
@@ -657,6 +624,7 @@ ok: [dut] =>
       address-family ipv4
         redistribute connected
         redistribute ospf
+  
     !
     ! OSPFv2 configuration
     !
@@ -667,8 +635,9 @@ ok: [dut] =>
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
   
-     redistribute bgp include leaked
-     redistribute connected
+      redistribute bgp include leaked
+      redistribute connected include leaked
+  
     !
     interface Ethernet2
     ! dut -> r2
@@ -686,8 +655,9 @@ ok: [dut] =>
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
   
-     redistribute bgp include leaked
-     redistribute connected
+      redistribute bgp include leaked
+      redistribute connected include leaked
+  
     !
     interface Ethernet3
     ! dut -> srv
@@ -705,8 +675,9 @@ ok: [dut] =>
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
   
-     redistribute bgp include leaked
-     redistribute connected
+      redistribute bgp include leaked
+      redistribute connected include leaked
+  
     !
     interface Ethernet1
     ! dut -> r1

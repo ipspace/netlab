@@ -32,8 +32,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spi
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [spine]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [l1]
 
 TASK [Find configuration template for initial] *********************************
@@ -62,17 +62,6 @@ ok: [spine] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -166,17 +155,6 @@ ok: [l2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -254,42 +232,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -317,6 +259,42 @@ ok: [h1] =>
     ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -374,8 +352,8 @@ ok: [l1] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [l1]
 
 TASK [Deploy initial configuration] ********************************************
@@ -395,8 +373,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for spine, l2
 
 TASK [template] ****************************************************************
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [spine]
@@ -421,10 +399,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-HQfVYDpA-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-BVbyMULc-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -545,6 +523,8 @@ ok: [l2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -581,6 +561,8 @@ ok: [spine] =>
       neighbor 10.1.0.5 description l2
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.1/32
     !
@@ -620,7 +602,7 @@ ok: [l1] =>
     !
     !
      address-family ipv4
-    !
+  
       network 10.0.0.2/32
     !
     !
@@ -842,8 +824,8 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [l2]
 changed: [spine]
+changed: [l2]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -859,8 +841,8 @@ skipping: [l1]
 skipping: [l2]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [l2 -> localhost]
 ok: [l1 -> localhost]
+ok: [l2 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [l1]

@@ -3,16 +3,16 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [probe]
 ok: [xf]
+ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
 
 TASK [Find device readiness script] ********************************************
 ok: [xf]
+ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
-ok: [probe]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut_a]
@@ -24,16 +24,16 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, xf, probe
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [probe]
 ok: [xf]
+ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
 
 TASK [Find configuration template for initial] *********************************
 ok: [xf]
+ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
-ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut_a] => 
@@ -118,16 +118,6 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 dut_a" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 172.16.2.2 dut_c" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 172.16.1.3 probe" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -221,16 +211,6 @@ ok: [xf] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 dut_a" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 172.16.2.2 dut_c" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 172.16.1.3 probe" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -300,9 +280,9 @@ ok: [xf] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [xf]
+ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
-ok: [probe]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut_a, dut_c
@@ -313,24 +293,24 @@ changed: [dut_c -> localhost]
 changed: [dut_a -> localhost]
 
 TASK [template] ****************************************************************
-changed: [dut_c -> localhost]
 changed: [dut_a -> localhost]
+changed: [dut_c -> localhost]
 
 TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [dut_a]
 changed: [dut_c]
+changed: [dut_a]
 
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [dut_a]
 changed: [dut_c]
 
 TASK [file] ********************************************************************
-changed: [dut_c -> localhost]
 changed: [dut_a -> localhost]
+changed: [dut_c -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [probe -> localhost]
 changed: [xf -> localhost]
+changed: [probe -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -368,8 +348,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [xf]
 ok: [probe]
+ok: [xf]
 ok: [dut_a]
 ok: [dut_c]
 
@@ -402,6 +382,8 @@ ok: [xf] =>
       neighbor 172.16.2.2 description dut_c
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.4/32
     !
@@ -482,8 +464,8 @@ changed: [xf]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [probe]
-ok: [dut_a]
 ok: [xf]
+ok: [dut_a]
 ok: [dut_c]
 
 TASK [Find configuration template for ospf] ************************************
@@ -498,7 +480,7 @@ ok: [dut_a] =>
   msg: |-
     ospf configuration for dut_a
     =========================================
-  
+    !
     router ospf 1
         router-id 10.0.0.1
   
@@ -519,32 +501,6 @@ ok: [dut_a] =>
         ip ospf 1 area 0.0.0.0
         ip ospf network point-to-point
     !
-ok: [dut_c] => 
-  msg: |-
-    ospf configuration for dut_c
-    =========================================
-  
-    router ospf 1
-        router-id 10.0.0.2
-  
-     default-information originate metric 20
-  
-  
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut_c -> probe
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-        ip ospf cost 10
-    !
 ok: [probe] => 
   msg: |-
     ospf configuration for probe
@@ -557,6 +513,7 @@ ok: [probe] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -578,6 +535,32 @@ ok: [probe] =>
   
     !
     do write
+ok: [dut_c] => 
+  msg: |-
+    ospf configuration for dut_c
+    =========================================
+    !
+    router ospf 1
+        router-id 10.0.0.2
+  
+     default-information originate metric 20
+  
+  
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface loopback 0
+        ip ospf 1 area 0.0.0.0
+    !
+    interface 1/1/1
+    ! dut_c -> probe
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+        ip ospf cost 10
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [xf]
