@@ -358,7 +358,7 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
   if not fhrp_assigned:
     return
 
-  for intf in link.interfaces:                                        # Copy link gateway into interface attributes
+  for intf in link.get('interfaces',[]):                              # Copy link gateway into interface attributes
     if 'gateway' in nodes[intf.node].get('module',[]):                # ... but only for nodes using the gateway module
       for af in log.AF_LIST:
         if af in link.gateway:
