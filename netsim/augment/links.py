@@ -338,14 +338,12 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
   if not gwid:                                                        # No usable gateway ID, nothing to do
     return
 
-  fhrp_assigned = False
   for af in log.AF_LIST:
     if not af in pfx_list or isinstance(pfx_list[af],bool):           # No usable IPv4/IPv6 prefix, nothing to do
       continue
 
     try:                                                              # Now try to get N-th IP address on that link
       link.gateway[af] = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix[af]),link.gateway.id)
-      fhrp_assigned = True
     except Exception as ex:
       log.error(
         f'Cannot generate gateway IP address on {link_path}' + \
@@ -354,18 +352,17 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
         log.IncorrectValue,
         'links')
       return
-
-  if not fhrp_assigned:
-    return
-
-  for intf in link.get('interfaces',[]):                              # Copy link gateway into interface attributes
-    if 'gateway' in nodes[intf.node].get('module',[]):                # ... but only for nodes using the gateway module
-      for af in log.AF_LIST:
-        if af in link.gateway:
-          intf.gateway[af] = link.gateway[af]
-
-  if log.debug_active('links'):     # pragma: no cover (debugging)
+  if log.debug_active('links'):
     print(f'FHRP gateway set for {link}')
+  return
+
+def copy_fhrp_gw_to_interfaces(link: Box, nodes: Box) -> None:
+  if 'gateway' in link:
+    for intf in link.interfaces:                              # Copy link gateway into interface attributes
+      if 'gateway' in nodes[intf.node].get('module',[]):      # ... but only for nodes using the gateway module
+        for af in log.AF_LIST:
+          if af in link.gateway:
+            intf.gateway[af] = link.gateway[af]
 
 """
 Assign a prefix (IPv4+IPv6) to a link:
@@ -1057,6 +1054,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
 
     cleanup_link_interface_AF_entries(link)
     set_default_gateway(link,nodes)
+    copy_fhrp_gw_to_interfaces(link,nodes)
 
   interface_feature_check(nodes,defaults)
   set_node_af(nodes)
