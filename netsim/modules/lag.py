@@ -20,7 +20,7 @@ class LAG(_Module):
     if 'lag' in link and link.get('type',"")!="p2p":
       if 'members' not in link.lag:
         log.error(
-              f'Link {link._linkname} defines "lag.id"={link.lag.id} but no "lag.members"',
+              f'Link {link._linkname} uses a lag but does not include "lag.members"',
               category=log.MissingValue,
               module='lag',
               hint='lag')
@@ -54,11 +54,11 @@ class LAG(_Module):
       if isinstance(link.lag.members,int):
         count = link.lag.members
         link.lag.members = []
-        for i in range(1,count):
+        for i in range(0,count):
           link.lag.members.append( { 'interfaces': link.interfaces + [] } )  # Deep copy
 
-      # 2. Normalize member links list
-      link.lag.members = links.adjust_link_list(link.lag.members,topology.nodes,f'lag{link.lag.id}.link[{{link_cnt}}]')
+      # 2. Normalize member links list, using linkindex as globally unique lag ID
+      link.lag.members = links.adjust_link_list(link.lag.members,topology.nodes,f'lag{link.linkindex}.link[{{link_cnt}}]')
 
       if log.debug_active('lag'):
         print(f'LAG link_pre_transform after normalizing members: {link}')
@@ -68,13 +68,13 @@ class LAG(_Module):
       for m in link.lag.members:
         if any({ l.node not in declared for l in m.interfaces }):
           log.error(
-              f'Nodes {m.interfaces} in member link {m._linkname} do not match with LAG {link.lag.id}: {declared}',
+              f'Nodes {m.interfaces} in member link {m._linkname} do not match with LAG : {declared}',
               category=log.IncorrectAttr,
               module='lag',
               hint='lag')
 
         # Add lag ID and append
-        m.lag.id = link.lag.id
+        m.lag._parent_linkindex = link.linkindex
         m.linkindex = len(topology.links)+1
         m.type = 'p2p'
         m.prefix = False    # Disable IP assignment
@@ -84,3 +84,6 @@ class LAG(_Module):
 
       link.type = 'lag'
       # Link code marks it as a 'virtual_interface'
+
+      if log.debug_active('lag'):
+        print(f'LAG after link_pre_transform: {link}')
