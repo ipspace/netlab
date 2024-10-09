@@ -10,11 +10,11 @@ echo "LAG: creating bond interface(s)"
 auto {{ data.ifname }}
 iface {{ data.ifname }}
   pre-up ip link add {{ data.ifname }} type bond
-  bond-slaves {%- for i in interfaces if 'lag' in i and i.type=='p2p' and i.lag.id==data.lag.id %} {{ i.ifname }}{%- endfor %}
+  bond-slaves {%- for i in interfaces if 'parentindex' in i and i.parentindex==data.linkindex %} {{ i.ifname }}{%- endfor %}
 {%    set _lacp = data.lag.lacp|default(lag.lacp) %}
 {%    if _lacp=='slow' %}
   bond-lacp-rate slow
-{%    elif _lacp=='off' %}
+{%    elif _lacp=='off' or data.lag.mode|default(lag.mode)=="balance-xor" %}
   bond-mode balance-xor
 {%    endif %}
 {% endmacro %}
