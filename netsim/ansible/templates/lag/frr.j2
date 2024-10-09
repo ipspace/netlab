@@ -7,27 +7,25 @@ set -e # Exit immediately when any command fails
 # Create bonds for LAGs, if any. Requires kernel bonding module loaded
 #
 {% for l in interfaces if 'lag' in l %}
-{%  if l.type=='lag' %}
+{%  if 'parentindex' not in l %}
 {%   set _lacp = l.lag.lacp|default(lag.lacp) %}
 {%   set lacp_act = 'off' if _lacp=='off' else 'on' %}
 {%   set lacp_rate = ('lacp_rate ' + _lacp) if _lacp!='off' else '' %}
-{%   set _p = "balance-xor" if _lacp=='off' else "802.3ad" %}
-{%   set mode = "mode " + _p + " xmit_hash_policy encap3+4" %}
-ip link add dev {{l.ifname}} type bond {{mode}} lacp_active {{lacp_act}} {{lacp_rate}} || true
-ip link set dev {{l.ifname}} down
-{%  else %}
-ip link set dev {{ l.ifname }} down
+{%   set _m = l.mode|default(lag.mode) %}
+{%   if _m=="802.3ad" %}
+{%     set _m = _m + " xmit_hash_policy encap3+4" %}
+{%   endif %}
+ip link add dev {{l.ifname}} type bond mode {{_m}} lacp_active {{lacp_act}} {{lacp_rate}} || true
 {%  endif %}
+ip link set dev {{ l.ifname }} down
 {% endfor %}
 
 {% for l in interfaces if 'lag' in l %}
-{%  if l.type=='lag' %}
-ip link set dev {{l.ifname}} up
-{%  else %}
-ip link set dev {{ l.ifname }} master {% for i in interfaces if i.type=='lag' and i.lag.id==l.lag.id %}{{ i.ifname }}
-{% endfor %}
-ip link set dev {{ l.ifname }} up
+{%  if 'parentindex' in l %}
+ip link set dev {{ l.ifname }} master {% for i in interfaces if i.type=='lag' and i.linkindex==l.parentindex %}{{ i.ifname }}
+{%   endfor %}
 {%  endif %}
+ip link set dev {{ l.ifname }} up
 {% endfor %}
 
 exit 0

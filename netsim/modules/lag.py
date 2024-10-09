@@ -1,11 +1,14 @@
 import typing
 import netaddr
+import re
 
 from box import Box, BoxList
 from . import _Module
 from .. import data
 from ..utils import log
 from ..augment import devices, links
+
+GROUPNAME = re.compile(r'^links\[(?P<group>\w+)\]\[\d+\]')
 
 class LAG(_Module):
 
@@ -16,12 +19,12 @@ class LAG(_Module):
     if log.debug_active('lag'):
       print(f'LAG link_pre_transform for {link}')
 
-    # Iterate over links with lag.id, skip over member links we added below
-    if 'lag' in link and link.get('type',"")!="p2p":
-      if 'members' not in link.lag:
-        log.error(
-              f'Link {link._linkname} uses a lag but does not include "lag.members"',
-              category=log.MissingValue,
+    # Iterate over links with type lag, created for link group(s)
+    if link.get('type',"")=="lag" and not ('lag' in link and '_parent' in link.lag):
+      if not GROUPNAME.match(link._linkname):
+         log.error(
+              f'LAG link {link._linkname} is not part of a link group',
+              category=log.IncorrectAttr,
               module='lag',
               hint='lag')
 
@@ -51,39 +54,29 @@ class LAG(_Module):
               module='lag',
               hint='lag')
 
-      if isinstance(link.lag.members,int):
-        count = link.lag.members
-        link.lag.members = []
-        for i in range(0,count):
-          link.lag.members.append( { 'interfaces': link.interfaces + [] } )  # Deep copy
+      group_name = GROUPNAME.search(link._linkname).group("group")
+       
+      # Find parent virtual link, create if not existing
+      parent = [ l for l in topology.links if l.get("type")=="lag" and l._linkname == group_name ]
+      if not parent:
+        parent = data.get_box(link)
+        parent._linkname = group_name
+        parent.linkindex = len(topology.links) + 1
+        parent.interfaces = link.interfaces + []    # Deep copy
+        parent.lag._parent = True                   # Set flag for filtering
+        topology.links.append( parent )
+        if log.debug_active('lag'):
+          print(f'LAG link_pre_transform created virtual parent {parent}')
+      else:
+        parent = parent[0]
+        # parent.interfaces.extend( link.interfaces )  # results in duplicate bond interfaces?
 
-      # 2. Normalize member links list, using linkindex as globally unique lag ID
-      link.lag.members = links.adjust_link_list(link.lag.members,topology.nodes,f'lag{link.linkindex}.link[{{link_cnt}}]')
-
-      if log.debug_active('lag'):
-        print(f'LAG link_pre_transform after normalizing members: {link}')
-
-      # 3. Check that the nodes in member links match the ones declared for the LAG
-      declared = { l.node for l in link.interfaces }
-      for m in link.lag.members:
-        if any({ l.node not in declared for l in m.interfaces }):
-          log.error(
-              f'Nodes {m.interfaces} in member link {m._linkname} do not match with LAG : {declared}',
-              category=log.IncorrectAttr,
-              module='lag',
-              hint='lag')
-
-        # Add lag ID and append
-        m.lag._parent_linkindex = link.linkindex
-        m.linkindex = len(topology.links)+1
-        m.type = 'p2p'
-        m.prefix = False    # Disable IP assignment
-        if 'mtu' in link:
-          m.mtu = link.mtu  # Copy any MTU setting
-        topology.links.append( m )
-
-      link.type = 'lag'
-      # Link code marks it as a 'virtual_interface'
+      # Modify the LAG member link
+      link.type = "p2p"                   # Change type back to p2p
+      link.lag = link.lag or {}           # ..and make sure template code can check for lag links
+      link.prefix = False                 # Disallow IP addressing
+      link.pop('vlan',None)               # Remove any VLAN, moved to the virtual lag interface
+      link.parentindex = parent.linkindex # Link physical interface to its virtual parent
 
       if log.debug_active('lag'):
-        print(f'LAG after link_pre_transform: {link}')
+        print(f'After LAG link_pre_transform: {link}')
