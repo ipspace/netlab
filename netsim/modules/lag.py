@@ -32,13 +32,14 @@ class LAG(_Module):
 
     # Iterate over links with type lag, created for link group(s)
     if link.get('type',"")=="lag" and not ('lag' in link and '_parent' in link.lag):
-      if not GROUPNAME.match(link._linkname):
+      match = GROUPNAME.search(link._linkname)
+      if not match:
          log.error(
               f'LAG link {link._linkname} is not part of a link group',
               category=log.IncorrectAttr,
               module='lag',
               hint='lag')
-      group_name = GROUPNAME.search(link._linkname).group("group")
+      group_name = match.group("group")
 
       # Check that lag member links have exactly 2 nodes
       if len(link.interfaces)!=2:
@@ -68,8 +69,8 @@ class LAG(_Module):
               hint='lag')
 
       # Find parent virtual link, create if not existing
-      parent = [ l for l in topology.links if l.get("type")=="lag" and l._linkname == group_name ]
-      if not parent:
+      parents = [ l for l in topology.links if l.get("type")=="lag" and l._linkname == group_name ]
+      if not parents:
         parent = data.get_box(link)
         parent._linkname = group_name
         parent.linkindex = len(topology.links) + 1
@@ -81,7 +82,7 @@ class LAG(_Module):
         if log.debug_active('lag'):
           print(f'LAG link_pre_transform created virtual parent {parent}')
       else:
-        parent = parent[0]
+        parent = parents[0]
         # For future mc-lag: add any new nodes
         # parent.interfaces.extend( [ n for n in link.interfaces if n not in parent.interfaces ] )
 
