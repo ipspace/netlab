@@ -12,8 +12,9 @@ LAG is currently supported on these platforms:
 
 ## Parameters
 
-The following parameters can be set globally or per node/link/interface:
+The following parameters can be set globally or per node/link:
 
+* **mode**: lag mode, one of "802.3ad" (default), "balance-xor" or "active-backup"
 * **lacp**: LACP protocol interval: "fast", "slow" or "off"
 
   Note that 'link down' is not easily detectable in a virtual environment with veth pairs, therefore it is strongly recommended
@@ -21,11 +22,13 @@ The following parameters can be set globally or per node/link/interface:
 
 * **lacp_mode**: "active" or "passive"
 
-By setting the **lag.id** parameter at the link level and defining **lag.members**, a *lag* type link is created with the given list or count of member links.
+* **ifindex**: Optional parameter to control naming of the bonding device
+
+By setting the link type to **lag** for a link group, a *lag* type link is created with the given list of member links.
 
 ## Example
 
-To create a LAG consisting of 2 links between 2 devices:
+To create a LAG consisting of 2 links between devices 'r1' and 'r2':
 
 ```
 module: [ lag ]
@@ -33,28 +36,24 @@ module: [ lag ]
 nodes: [ r1, r2 ]
 
 links:
-- r1:
-  r2:
-  lag.id: 1
-  lag.members: 2
+- group: lag1
+  type: lag
+  members: [ r1-r2, r1-r2 ]
 ```
-Additional parameters such as vlan trunks, OSPF cost, etc. can be applied to such *lag* type links. 
+Additional parameters such as vlan trunks, OSPF cost, etc. can be applied to such *lag* type link groups. 
 
-In case additional attributes are required for the member links, the following syntax can also be used
+In case additional attributes are required for the member links, the members can be expanded:
 ```
 links:
-- r1:
-  r2:
-  lag:
-   id: 1
-   members:
-   - r1:
-       ifindex: 49  # Use 100G links 1/1/49 and 1/1/50
-     r2:
-       ifindex: 49
-   - r1:
-       ifindex: 50
-     r2:
-       ifindex: 50
+- group: lag1
+  type: lag
+  members:
+  - r1:
+     ifindex: 49  # Use 100G links 1/1/49 and 1/1/50
+    r2:
+     ifindex: 49
+  - r1:
+     ifindex: 50
+    r2:
+     ifindex: 50
 ```
-Naturally, the links in lag.members can only use nodes associated with the lag link
