@@ -1056,6 +1056,7 @@ def expand_groups(topology: Box) -> None:
       continue                                      # Report error and skip otherwise
 
     copy_group_data = data.get_box(link)            # We'll copy all group data into member links
+    copy_group_data._link_group = link.group        # Keep track of link group that members belong to
     for key in ['group','members','_linkname']:     # Apart from the link name and 
       copy_group_data.pop(key,None)
 
