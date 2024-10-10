@@ -85,8 +85,38 @@ def cleanup_protocol_parameters(node: Box,topology: Box) -> list:
 
   return active_proto
 
+'''
+Process a gateway ID found somewhere in the data structures.
+'''
+def process_gw_id(
+      gw_id: typing.Optional[int] = None,
+      required: bool = False,
+      path: str = 'Global/default') -> None:
+
+  if gw_id is None:
+    if not required:
+      return
+    log.error(f'{path} gateway.id parameter is missing',log.MissingValue,'gateway')
+    return
+  
+  if not data.is_true_int(gw_id):
+    log.error(f'{path} gateway.id parameter is not integer',log.IncorrectValue,'gateway')
+    return
+  
+  if gw_id < 0:
+    return
+  
+  reserve_id(gw_id)
+
 class FHRP(_Module):
 
+  '''
+  The main job of the module_init routine is to find potential low-value
+  gateway.ids and reserve those IDs before they can be used for nodes.
+
+  At this point, the data validation and other sanity checks were not done yet,
+  so we have to be extra-careful accessing the data structures.
+  '''
   def module_init(self, topology: Box) -> None:
     gw = data.get_global_settings(topology,'gateway')
     if not gw or gw is None:
@@ -98,15 +128,26 @@ class FHRP(_Module):
 
     check_gw_protocol(gw,'topology.gateway',topology)
 
-    if not data.is_true_int(gw.id):
-      log.error(
-        f'Global/default gateway.id parameter is missing or not integer',
-        log.IncorrectType,
-        'gateway')
-      return
+    process_gw_id(gw.get('id',None),required=True)          # Process global GW ID
 
-    if gw.id > 0:
-      reserve_id(gw.id)
+    for link in topology.links:                             # Iterate over links
+      if not isinstance(link,Box):                          # A link should be a Box by this time, but who knows...
+        continue
+
+      # Check the link gateway ID. If it doesn't exist, get returns None, and the function
+      # returns immediately (no error is reported due to required == False).
+      #
+      process_gw_id(link.get('gateway.id',None),required=False,path=f'Link {link._linkname}')
+
+    vlans = topology.get('vlans',None)                    # We might have global VLAN definitions
+    if isinstance(vlans,Box):                             # If we do and the data looks sane
+      for vname,vdata in vlans.items():                   # ... iterate over VLAN definitions
+        if not isinstance(vdata,Box):                     # ... skipping data that makes no sense (not a Box)
+          continue
+
+        # Process VLAN GW ID like you would a link gateway ID
+        #
+        process_gw_id(vdata.get('gateway.id',None),required=False,path=f'VLAN {vname}')
 
   def link_pre_link_transform(self, link: Box, topology: Box) -> None:
     if not 'gateway' in link:
