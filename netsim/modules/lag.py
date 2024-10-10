@@ -32,14 +32,16 @@ class LAG(_Module):
 
     # Iterate over links with type lag, created for link group(s)
     if link.get('type',"")=="lag" and not ('lag' in link and '_parent' in link.lag):
-      match = GROUPNAME.search(link._linkname)
-      if not match:
-         log.error(
-              f'LAG link {link._linkname} is not part of a link group',
-              category=log.IncorrectAttr,
-              module='lag',
-              hint='lag')
-      group_name = match.group("group")
+      _match = GROUPNAME.search(link._linkname)
+      if not _match:
+        log.error(
+            f'LAG link {link._linkname} is not part of a link group',
+            category=log.IncorrectAttr,
+            module='lag',
+            hint='lag')
+        group_name = "?"
+      else:
+        group_name = _match.group("group")
 
       # Check that lag member links have exactly 2 nodes
       if len(link.interfaces)!=2:
