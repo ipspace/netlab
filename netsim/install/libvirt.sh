@@ -32,7 +32,7 @@ $SUDO apt-get $FLAG_QUIET update
 echo
 echo "Install common libraries and support software"
 $SUDO apt-get install -y $FLAG_QUIET libxslt-dev libxml2-dev zlib1g-dev genisoimage
-$SUDO apt-get install -y $FLAG_QUIET ebtables dnsmasq-base sshpass tree jq bridge-utils curl lsb_release
+$SUDO apt-get install -y $FLAG_QUIET ebtables dnsmasq-base sshpass tree jq bridge-utils curl lsb-release
 echo ".. common libraries installed"
 echo
 echo "Install libvirt packages"
