@@ -358,12 +358,6 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
   if not fhrp_assigned:
     return
 
-  for intf in link.interfaces:                                        # Copy link gateway into interface attributes
-    if 'gateway' in nodes[intf.node].get('module',[]):                # ... but only for nodes using the gateway module
-      for af in log.AF_LIST:
-        if af in link.gateway:
-          intf.gateway[af] = link.gateway[af]
-
   if log.debug_active('links'):     # pragma: no cover (debugging)
     print(f'FHRP gateway set for {link}')
 
@@ -889,6 +883,44 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
             log.IncorrectValue,
             'interfaces')
 
+'''
+copy_link_gateway -- copy link gateway addresses to node-on-link (future interface) data
+
+The link.gateway.ipv4/link.gateway.ipv6 attributes are not copied into
+node-on-link data automatically, so we need an extra step after assigning the
+link gateway IP (based on gateway.id)
+
+Please note that the link gateway IP has to be propagated only to nodes that use
+the gateway module to avoid confusion in configuration templates.
+'''
+def copy_link_gateway(link: Box, nodes: Box) -> None:
+  if 'gateway' not in link:
+    return
+  for intf in link.interfaces:                                        # Copy link gateway into interface attributes
+    if 'gateway' not in nodes[intf.node].get('module',[]):           # ... but only for nodes using the gateway module
+      continue
+    for af in log.AF_LIST:
+      if af in link.gateway:
+        intf.gateway[af] = link.gateway[af]
+
+'''
+set_default_gateway -- copy link default gateway into host interface data
+
+We're almost done with the link processing. The link data is complete and the
+node interfaces have been created. As the last step, we find links that have
+host attached and copy link gateway IP address into host interface data -- but
+only for the first host interface.
+
+For links without they 'gateway' attribute, we take the IPv4 address of the
+first device that is not a host and that does not use DHCP as the link gateway
+IPv4 address.
+
+Please note we can't do this step before the node interfaces have been created
+because we don't know what the "first interface" is before that.
+
+Finally, while the code might copy 'gateway.ipv6' into interface data if it was
+set somewhere else, we don't expect that to be used. IPv6 should use RA.
+'''
 def set_default_gateway(link: Box, nodes: Box) -> None:
   if not 'host_count' in link:      # No hosts attached to the link, get out
     return
@@ -1052,6 +1084,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     set_link_bridge_name(link,defaults)
     link_default_pools = ['p2p','lan'] if link.type == 'p2p' else ['lan']
     assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
+    copy_link_gateway(link,nodes)
     assign_interface_addresses(link,pools,nodes,defaults)
     create_node_interfaces(link,pools,nodes,defaults=defaults)
 
