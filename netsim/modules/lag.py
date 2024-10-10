@@ -1,14 +1,11 @@
 import typing
 import netaddr
-import re
 
 from box import Box, BoxList
 from . import _Module, _dataplane
 from .. import data
 from ..utils import log
 from ..augment import devices, links
-
-GROUPNAME = re.compile(r'^links\[(?P<group>[\w\-_]+)\]\[\d+\]')
 
 ID_SET = 'lag_id'
 
@@ -31,18 +28,8 @@ class LAG(_Module):
       print(f'LAG link_pre_transform for {link}')
 
     # Iterate over links with type lag, created for link group(s)
-    if link.get('type',"")=="lag" and not ('lag' in link and '_parent' in link.lag):
-      _match = GROUPNAME.search(link._linkname)
-      if not _match:
-        log.error(
-            f'LAG link {link._linkname} is not part of a link group',
-            category=log.IncorrectAttr,
-            module='lag',
-            hint='lag')
-        group_name = "?"
-      else:
-        group_name = _match.group("group")
-
+    if link.get('type',"")=="lag" and '_link_group' in link:
+      group_name = link._link_group
       # Check that lag member links have exactly 2 nodes
       if len(link.interfaces)!=2:
         log.error(
@@ -75,9 +62,9 @@ class LAG(_Module):
       if not parents:
         parent = data.get_box(link)
         parent._linkname = group_name
+        parent.pop('_link_group',None)              # Don't include parent in group
         parent.linkindex = len(topology.links) + 1
         parent.interfaces = link.interfaces + []    # Deep copy, assumes all links have same 2 nodes
-        parent.lag._parent = True                   # Set flag for filtering
         if 'ifindex' not in parent.lag:             # Use given lag.ifindex, if any
           parent.lag.ifindex = _dataplane.get_next_id(ID_SET)
         topology.links.append( parent )
