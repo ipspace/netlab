@@ -1103,3 +1103,4 @@ def cleanup(topology: Box) -> None:
 
   for link in topology.links:
     link.pop('_linkname',None)
+    link.pop('_link_group',None)
