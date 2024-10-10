@@ -785,7 +785,10 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       vlan_ifdata.type = "svi"
       vlan_ifdata.neighbors = []                                            # No neighbors so far
                                                                             # Overwrite interface settings with VLAN settings
-      vlan_ifdata = vlan_ifdata + { k:v for k,v in vlan_data.items() if k not in svi_skipattr }
+      vlan_ifdata = vlan_ifdata + {
+                      k:v for k,v in vlan_data.items()
+                        if k not in svi_skipattr and
+                           (v is not True or k not in vlan_ifdata) }
       fix_vlan_mode_attribute(vlan_ifdata)
       node.interfaces.append(vlan_ifdata)                                   # ... and add SVI interface to list of node interfaces
       vlan_ifmap[access_vlan] = vlan_ifdata
