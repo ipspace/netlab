@@ -24,7 +24,7 @@ class LAG(_Module):
     populate_lag_id_set(topology)
 
   """
-  link_pre_transform: Process LAG links and add member links to the topology
+  link_pre_transform: Process LAG link groups and add virtual parent links to the topology
   """
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     if log.debug_active('lag'):
@@ -38,15 +38,17 @@ class LAG(_Module):
               category=log.IncorrectAttr,
               module='lag',
               hint='lag')
+      group_name = GROUPNAME.search(link._linkname).group("group")
 
-      if len(link.interfaces)!=2: # Future: MC-LAG would be 3
+      # Check that lag member links have exactly 2 nodes
+      if len(link.interfaces)!=2:
         log.error(
-            'Current LAG module only supports lags between exactly 2 nodes',
+            f'Links in LAG group {group_name} must have exactly 2 nodes',
             category=log.IncorrectAttr,
             module='lag',
             hint='lag')
 
-      # 1. Check that the nodes involved all support LAG
+      # 1. Check that the 2 nodes involved all (both) support LAG
       for i in link.interfaces:
         n = topology.nodes[i.node]
         features = devices.get_device_features(n,topology.defaults)
@@ -65,8 +67,6 @@ class LAG(_Module):
               module='lag',
               hint='lag')
 
-      group_name = GROUPNAME.search(link._linkname).group("group")
-       
       # Find parent virtual link, create if not existing
       parent = [ l for l in topology.links if l.get("type")=="lag" and l._linkname == group_name ]
       if not parent:
