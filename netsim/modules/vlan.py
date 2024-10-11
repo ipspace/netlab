@@ -749,6 +749,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       if vlan_subif:
         ifdata.vlan.mode = 'route'
         ifdata.vlan.access_id = vlan_data.id
+        ifdata.vlan.name = access_vlan
       else:
         ifdata._vlan_mode = 'route'                                         # Flags we need to clean up up the routed native VLAN mess
         if native_vlan:                                                     # ... we can't use the vlan.* attributes as they might get removed
@@ -775,6 +776,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
         { k:v for k,v in ifdata.items() if k in copy_attr })                # ... that will also give us IP/gateway addresses
       if vlan_mode:                                                         # Set VLAN forwarding mode for completness' sake
         vlan_ifdata.vlan.mode = vlan_mode
+      vlan_ifdata.vlan.name = access_vlan
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
       vlan_ifdata.ifname = svi_name.format(                                 # ... ifindex, ifname, description
                               vlan=vlan_data.id,
