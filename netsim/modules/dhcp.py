@@ -35,11 +35,14 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
   # DHCP clients
   #
   for intf in node.interfaces:
-    if not intf.get('dhcp.client',False):
+    if not intf.get('dhcp.client',False):         # Not a DHCP client? OK
       continue
+    if intf.get('dhcp.server',False):             # Also a DHCP relay? That can't be
+      intf.dhcp.pop('client',None)                # ... remove the client flag
+      continue                                    # ... and move on
     for af in ('ipv4','ipv6'):
       if not af in intf.dhcp.client:
-        continue
+        continue        
       if not features.dhcp.client[af]:
         log.error(
           f'Node {node.name} (device {node.device}) does not support {af} DHCP client',
@@ -239,7 +242,11 @@ class DHCP(_Module):
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     for intf in link.get('interfaces',[]):
       for af in ('ipv4','ipv6'):
-        if intf.get(af,False) != 'dhcp':            # Interface is not using DHCP, move on
+        if intf.get('dhcp',None):                   # The interface already has DHCP settings, move on
+          continue
+
+        # The interface and the link are not using DHCP, move on
+        if intf.get(af,False) != 'dhcp' and not link.get(f'dhcp.client.{af}',False):
           continue
 
         if not intf.node in topology.nodes:         # Node is not valid. Weird, but move on
@@ -250,10 +257,7 @@ class DHCP(_Module):
         link.dhcp.subnet[af] = True                 # ... and 'we have DHCP clients' flag on the subnet
 
         node = topology.nodes[intf.node]            # Get parent node
-        if 'module' not in node:                    # ... and enable DHCP module on the node
-          node.module = [ 'dhcp' ]
-        elif 'dhcp' not in node.module:
-          node.module.append('dhcp')
+        data.append_to_list(node,'module','dhcp')   # ... and enable DHCP module on the node
 
   """
   Final DHCP transformation:
