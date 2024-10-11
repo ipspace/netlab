@@ -8,14 +8,14 @@ set -e # Exit immediately when any command fails
 #
 {% for l in interfaces if 'lag' in l %}
 {%  if 'parentindex' not in l %}
-{%   set _lacp = l.lag.lacp|default(lag.lacp) %}
-{%   set lacp_act = 'off' if _lacp=='off' else 'on' %}
-{%   set lacp_rate = ('lacp_rate ' + _lacp) if _lacp!='off' else '' %}
 {%   set _m = l.lag.mode|default(lag.mode) %}
 {%   if _m=="802.3ad" %}
-{%     set _m = _m + " xmit_hash_policy encap3+4" %}
+{%     set _lacp = l.lag.lacp|default(lag.lacp) %}
+{%     set lacp_act = 'off' if _lacp=='off' else 'on' %}
+{%     set lacp_rate = (' lacp_rate ' + _lacp) if _lacp!='off' else '' %}
+{%     set _m = _m + " xmit_hash_policy encap3+4 lacp_active " + lacp_act + lacp_rate %}
 {%   endif %}
-ip link add dev {{l.ifname}} type bond mode {{_m}} lacp_active {{lacp_act}} {{lacp_rate}} || true
+ip link add dev {{l.ifname}} type bond mode {{_m}}
 {%  endif %}
 ip link set dev {{ l.ifname }} down
 {% endfor %}
