@@ -105,7 +105,7 @@ More details:
 
 [Custom deployment templates](custom-config) are specified in **config** group- or node parameter. `initial-config.ansible` playbook used by **netlab initial** command tries to find the target configuration template in user-  and system (`netsim/extra`) directories and uses node name, `netlab_device_type` and `ansible_network_os` Ansible variables to allow you to create numerous device-specific configuration templates.
 
-You'll find more details in _[](dev-find-custom)_ documentation.
+You'll find more details in _[](custom-config)_ and _[](dev-find-custom)_ documentation.
 
 ## Limiting the Scope of Configuration Deployments
 
