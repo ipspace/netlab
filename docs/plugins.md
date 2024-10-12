@@ -11,6 +11,7 @@
    plugins/bgp.policy.md
    plugins/ebgp.multihop.md
    plugins/bgp.originate.md
+   plugins/check.config.md
    plugins/fabric.md
    plugins/multilab.md
 ```
@@ -54,4 +55,5 @@ Plugins providing support for additional networking features usually rely on Jin
    :caption: More information
 
    dev/plugins.md
+   dev/transform.md
 ```

@@ -83,6 +83,7 @@ More information
    modules.md
    module-reference.md
    providers.md
+   plugins.md
    defaults.md
    outputs/index.md
    customize.md
