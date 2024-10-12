@@ -109,6 +109,7 @@ The data transformation has three major steps:
 * Process device quirks
 * Cleanup links: remove empty **links** list and **_linkname** attribute from individual links
 * Cleanup groups: remove settings (keys starting with '\_') from **groups** dictionary
+* Execute **cleanup** plugin hooks
 * Delete temporary data structures from the topology: list of plugin modules, addressing pools, and pointers to provider modules.
 
 ## Configuration Module Transformations
