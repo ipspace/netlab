@@ -132,7 +132,7 @@ def build_topology_dhcp_pools(topology: Box) -> None:
       if isinstance(af_pfx,str):
         pools[pid][af] = af_pfx
 
-      if vdata.get(f'gateway.{af}'):
+      if vdata.get(f'gateway.{af}',None):
         pools[pid].gateway[af] = vdata.gateway[af]
 
     if pid in pools and 'vrf' in vdata:                     # Copy VLAN VRF if we got some usable prefixes
@@ -174,17 +174,21 @@ def build_topology_dhcp_pools(topology: Box) -> None:
 
     pools[pid].active = True
     for af in log.AF_LIST:                                  # Iterate over link address families
-      if af not in link.dhcp.subnet or af not in link.prefix:
-        continue                                            # No AF prefix or no clients within this AF
+      if af not in link.dhcp.subnet:
+        continue                                            # No clients within this AF
+
+      af_pfx = link.get(f'prefix.{af}',None)                # Get AF prefix
+      if not isinstance(af_pfx,str):
+        continue                                            # No usable AF prefix
 
       if af in pools[pid]:                                  # Pool already has a prefix
-        if pools[pid][af] != link.prefix[af]:               # Check for mismatch between link and VLAN prefix
+        if pools[pid][af] != af_pfx:                        # Check for mismatch between link and VLAN prefix
           log.error(
-            f'Mismatch in DHCP pool {pid} prefix {pools[pid][af]}, link {lname} claims the prefix should be {link.prefix[af]}',
+            f'Mismatch in DHCP pool {pid} prefix {pools[pid][af]}, link {lname} claims the prefix should be {af_pfx}',
             category=log.IncorrectValue,
             module='dhcp')
       else:
-        pools[pid][af] = link.prefix[af]                    # New pool, add prefix
+        pools[pid][af] = af_pfx                             # New pool, add prefix
 
       if af in link.get('gateway',{}):                      # Save default gateway if present
         pools[pid].gateway[af] = str(netaddr.IPNetwork(link.gateway[af]).ip)
