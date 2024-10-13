@@ -1,0 +1,136 @@
+#!/bin/bash
+#
+set -e
+set -x
+{% if clab is not defined %}
+cat <<SCRIPT >.bash_profile
+#!/bin/bash
+#
+export PS1="\h(bash)#"
+echo "Use sudo vtysh to connect to FRR daemon"
+echo
+SCRIPT
+{% include 'linux/hosts.j2' +%}
+#
+# Configure system defaults on Ubuntu
+#
+hostnamectl set-hostname {{ inventory_hostname }}
+{% else %}
+cat <<SCRIPT >/root/.bash_profile
+#!/bin/bash
+#
+export PS1="\h(bash)#"
+echo "Use vtysh to connect to FRR daemon"
+echo
+SCRIPT
+{%   if netlab_mgmt_vrf|default(False) %}
+#
+# Get the current next hop for the default route
+#
+def_nh=$(ip route list default|awk '{ print $3 }')
+#
+# Create the management VRF and add eth0 to it
+#
+if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+  ip link add mgmt type vrf table 42
+fi
+ip link set mgmt up
+sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+ip link set eth0 master mgmt
+#
+# Reinstall the default route if we had it before
+#
+if [[ -n "$def_nh" ]]; then
+  ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+fi
+{%   endif %}
+{% endif %}
+#
+# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+#
+{% if clab is not defined or clab.binds|default({})=={} %}
+{%   include 'frr/daemons.j2' +%}
+/usr/lib/frr/frrinit.sh restart
+{% endif %}
+
+#
+# Create loopbacks and stub devices
+#
+{% for i in netlab_interfaces if i.type in ['loopback','stub'] %}
+if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
+  if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
+    ip link add {{ i.ifname }} type dummy
+    ip link set dev {{ i.ifname }} up
+  fi
+fi
+{% endfor %}
+
+# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] %}
+{%   if l.ipv6 is not defined %}
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.disable_ipv6=1
+{%   elif role|default('router') != 'host' %}
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.autoconf=0
+sysctl -qw net.ipv6.conf.{{ l.ifname }}.accept_ra=0
+ip link set {{ l.ifname }} down
+ip link set {{ l.ifname }} up
+{%   endif %}
+{% endfor %}
+
+#
+# Add vtysh.conf file
+echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+#
+# Set Ethernet interface MTU
+{% for l in interfaces if l.mtu is defined %}
+ip link set {{ l.ifname }} mtu {{ l.mtu }}
+{% endfor %}
+#
+# Rest of initial configuration done through VTYSH
+#
+cat >/tmp/config <<CONFIG
+hostname {{ inventory_hostname }}
+!
+{% if clab is defined and netlab_mgmt_vrf|default(False) %}
+vrf mgmt
+ exit-vrf
+!
+{% endif %}
+{% if 'ipv6' in af %}
+ipv6 forwarding
+{% endif %}
+{% set frr_defaults = netlab_frr_defaults|default('datacenter') %}
+frr defaults {{ frr_defaults }}
+!
+{% for l in netlab_interfaces %}
+interface {{ l.ifname }}
+ no shutdown
+{% if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{% elif l.type|default("") == "stub" %}
+ description Stub interface
+{% endif %}
+{% if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
+ ip address {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
+{% else %}
+ ! no ip address
+{% endif %}
+{% if l.ipv6 is defined %}
+{%  if l.ipv6 is string and l.ipv6|ipv6 %}
+ ipv6 address {{ l.ipv6 }}
+{%  endif %}
+{%  if l.type != 'loopback' %}
+ ipv6 nd ra-interval 5
+ no ipv6 nd suppress-ra
+{%  endif %}
+{% endif %}
+{% if l.bandwidth is defined %}
+ bandwidth {{ l.bandwidth  }}
+{% endif %}
+!
+{% endfor %}
+do write
+CONFIG
+vtysh -f /tmp/config
+exit 0
