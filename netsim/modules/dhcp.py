@@ -300,23 +300,26 @@ class DHCP(_Module):
   """
   def link_pre_transform(self, link: Box, topology: Box) -> None:
     for intf in link.get('interfaces',[]):
+      if not intf.node in topology.nodes:           # Node is not valid. Weird, but move on
+        continue
+
+      node = topology.nodes[intf.node]              # Get parent node
       for af in ('ipv4','ipv6'):
-        if intf.get('dhcp',None):                   # The interface already has DHCP settings, move on
-          continue
+        if intf.get(af,False) == 'dhcp':            # Deal with IPv4/IPv6 address set to DHCP
+          intf.dhcp.client[af] = True               # Set DHCP client flag on the interface
+          intf.pop(af)                              # Pop the interface address -- we don't want to confuse link augmentation
+          if link.get(f'dhcp.client.{af}',None) is False:
+            log.error(
+              f'Node {intf.name} cannot get a DHCP {af} address on link {link._linkname} that has DHCP disabled')
+            continue
 
-        # The interface and the link are not using DHCP, move on
-        if intf.get(af,False) != 'dhcp' and not link.get(f'dhcp.client.{af}',False):
-          continue
+        # Copy link DHCP client status to interface in case the node does not have DHCP module enabled
+        if link.get(f'dhcp.client.{af}',False) and intf.get(f'dhcp.client.{af}',None) is not False:
+          intf.dhcp.client[af] = True
 
-        if not intf.node in topology.nodes:         # Node is not valid. Weird, but move on
-          continue
-
-        intf.pop(af)                                # Pop the interface address -- we don't want to confuse link augmentation
-        intf.dhcp.client[af] = True                 # Set DHCP client flag on the interface
-        link.dhcp.subnet[af] = True                 # ... and 'we have DHCP clients' flag on the subnet
-
-        node = topology.nodes[intf.node]            # Get parent node
-        data.append_to_list(node,'module','dhcp')   # ... and enable DHCP module on the node
+        if intf.get(f'dhcp.client.{af}',False):     # Do we have DHCP client on this interface?
+          data.append_to_list(node,'module','dhcp') # ... enable DHCP module on the node
+          link.dhcp.subnet[af] = True               # ... and set 'we have DHCP clients' flag on the subnet
 
   """
   Final DHCP transformation:
@@ -325,18 +328,20 @@ class DHCP(_Module):
   * Remove static interface addresses on DHCP clients
   * Build DHCP pools on DHCP servers
   """
-  def node_post_transform(self, node: Box, topology: Box) -> None:
-    if not check_protocol_support(node,topology):
-      return
+  def module_post_transform(self, topology: Box) -> None:
+    for node in topology.nodes.values():
+      if not check_protocol_support(node,topology):
+        continue
 
-    for intf in node.get('interfaces',[]):
-      for af in ('ipv4','ipv6'):
-        if intf.get(f'dhcp.client.{af}',False):
-          intf.pop(af,None)
-          check_dynamic_routing(intf,node,topology)
+      for intf in node.get('interfaces',[]):
+        for af in ('ipv4','ipv6'):
+          if intf.get(f'dhcp.client.{af}',False):
+            intf.pop(af,None)
+            check_dynamic_routing(intf,node,topology)
 
-        if intf.get('dhcp.server',False):
-          set_dhcp_relay(intf,node.name,topology)
-
-    if node.get('dhcp.server',False):
-      set_dhcp_server_pools(node,topology)
+          if intf.get('dhcp.server',False):
+            set_dhcp_relay(intf,node.name,topology)
+        
+    for node in topology.nodes.values():
+      if node.get('dhcp.server',False):
+        set_dhcp_server_pools(node,topology)
