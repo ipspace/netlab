@@ -66,6 +66,11 @@ You have to set **‌dhcp.vrf** to _False_ on a Cisco IOS XE DHCP server when yo
 
 You can enable the DHCP client on all non-relaying devices attached to a link with the boolean **dhcp.client.ipv4** link attribute and the DHCPv6 client with the boolean **dhcp.client.ipv6** attribute.
 
+```{warning}
+* While you can use the **‌dhcp.client** parameter to enable DHCP for all hosts attached to a VLAN segment ([see example](dhcp-vlan-example)), do not use DHCP on [routed VLANs](vlan-addressing-routed).
+* The Default router IP address is not set for the VLAN-serving DHCP pools unless you use the **‌gateway** module with anycast or VRRP default gateway on the VLAN.
+```
+
 ## Interface Parameters
 
 * To start a DHCP client on an interface, set the **ipv4** or **ipv6** address to **dhcp**. You can use the **dhcp.client.ipv4** or the **dhcp.client.ipv6** interface attribute only when the node already uses the DHCP module. 
@@ -147,6 +152,7 @@ links:
 - relay-server
 ```
 
+(dhcp-vlan-example)=
 The following example enables the DHCP client on all hosts attached to a VLAN and the DHCP relay on the access switch:
 
 ```
