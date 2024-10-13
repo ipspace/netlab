@@ -1,0 +1,527 @@
+dhcp:
+  pools:
+  - clean_name: vlan_red
+    excluded:
+      ipv4:
+      - 172.16.0.2
+    ipv4: 172.16.0.0/24
+    name: vlan_red
+  - clean_name: vlan_blue
+    excluded:
+      ipv6:
+      - 2001:db8:cafe:1::2
+    gateway:
+      ipv6: 2001:db8:cafe:1::1
+    ipv6: 2001:db8:cafe:1::/64
+    name: vlan_blue
+gateway:
+  anycast:
+    mac: 0200.cafe.00ff
+    unicast: true
+  vrrp:
+    group: 1
+groups:
+  hosts:
+    device: linux
+    members:
+    - h1
+    - h2
+    - h3
+input:
+- topology/input/dhcp-vlan.yml
+- package:topology-defaults.yml
+libvirt:
+  providers:
+    clab: true
+links:
+- bridge: input_1
+  gateway:
+    ipv4: 192.168.42.2/24
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 192.168.42.2/24
+    ipv6: 2001:db8:cafe:d001::2/64
+    node: s1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 192.168.42.6/24
+    ipv6: 2001:db8:cafe:d001::6/64
+    node: dhs
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 192.168.42.0/24
+    ipv6: 2001:db8:cafe:d001::/64
+  type: lan
+- bridge: input_2
+  dhcp:
+    subnet:
+      ipv6: true
+  gateway:
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    id: 1
+    ipv6: 2001:db8:cafe:1::1/64
+    protocol: anycast
+    vrrp:
+      group: 1
+  interfaces:
+  - _vlan_mode: irb
+    dhcp:
+      server:
+      - dhs
+    gateway:
+      ipv6: 2001:db8:cafe:1::1/64
+    ifindex: 2
+    ifname: Ethernet2
+    ipv6: 2001:db8:cafe:1::2/64
+    node: s1
+    vlan:
+      access: blue
+  - dhcp:
+      client:
+        ipv6: true
+    ifindex: 1
+    ifname: eth1
+    ipv6: 2001:db8:cafe:1::5/64
+    node: h3
+  linkindex: 2
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv6: 2001:db8:cafe:1::/64
+  type: lan
+  vlan:
+    access: blue
+- bridge: input_3
+  dhcp:
+    client:
+      ipv4: true
+    subnet:
+      ipv4: true
+  interfaces:
+  - _vlan_mode: irb
+    dhcp:
+      client:
+        ipv4: true
+    ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: red
+  - dhcp:
+      client:
+        ipv4: true
+    ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.3/24
+    node: h1
+  linkindex: 3
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
+- bridge: input_4
+  dhcp:
+    client:
+      ipv4: true
+    subnet:
+      ipv4: true
+  interfaces:
+  - _vlan_mode: irb
+    dhcp:
+      client:
+        ipv4: true
+    ifindex: 4
+    ifname: Ethernet4
+    ipv4: 172.16.0.2/24
+    node: s1
+    vlan:
+      access: red
+  - dhcp:
+      client:
+        ipv4: true
+    ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.4/24
+    node: h2
+  linkindex: 4
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
+module:
+- vlan
+- dhcp
+- gateway
+name: input
+nodes:
+  dhs:
+    _daemon: true
+    _daemon_config:
+      dhcp: /etc/dhcp.ignore
+      dnsmasq: /etc/dnsmasq.conf
+    _daemon_parent: linux
+    af:
+      ipv4: true
+      ipv6: true
+    box: netlab/dnsmasq:latest
+    clab:
+      binds:
+      - clab_files/dhs/hosts:/etc/hosts
+      - clab_files/dhs/dnsmasq:/etc/dnsmasq.conf
+      - clab_files/dhs/dhcp:/etc/dhcp.ignore
+      config_templates:
+      - hosts:/etc/hosts
+      - dnsmasq:/etc/dnsmasq.conf
+      - dhcp:/etc/dhcp.ignore
+      kind: linux
+    device: dnsmasq
+    dhcp:
+      pools:
+      - clean_name: vlan_red
+        excluded:
+          ipv4:
+          - 172.16.0.2
+        ipv4: 172.16.0.0/24
+        name: vlan_red
+      - clean_name: vlan_blue
+        excluded:
+          ipv6:
+          - 2001:db8:cafe:1::2
+        gateway:
+          ipv6: 2001:db8:cafe:1::1
+        ipv6: 2001:db8:cafe:1::/64
+        name: vlan_blue
+      server: true
+    hostname: clab-input-dhs
+    id: 6
+    interfaces:
+    - bridge: input_1
+      gateway:
+        ipv4: 192.168.42.2/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 192.168.42.6/24
+      ipv6: 2001:db8:cafe:d001::6/64
+      linkindex: 1
+      mtu: 1500
+      name: dhs -> s1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 192.168.42.2/24
+        ipv6: 2001:db8:cafe:d001::2/64
+        node: s1
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.106
+      mac: 08:4f:a9:00:00:06
+    module:
+    - dhcp
+    mtu: 1500
+    name: dhs
+    provider: clab
+    role: host
+  h1:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 3
+    interfaces:
+    - bridge: input_3
+      dhcp:
+        client:
+          ipv4: true
+      gateway:
+        ipv4: 172.16.0.2/24
+      ifindex: 1
+      ifname: eth1
+      linkindex: 3
+      name: h1 -> [s1,h2]
+      neighbors:
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+      - dhcp:
+          client:
+            ipv4: true
+        ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h2
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    module:
+    - dhcp
+    name: h1
+    role: host
+  h2:
+    af:
+      ipv4: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 4
+    interfaces:
+    - bridge: input_4
+      dhcp:
+        client:
+          ipv4: true
+      gateway:
+        ipv4: 172.16.0.2/24
+      ifindex: 1
+      ifname: eth1
+      linkindex: 4
+      name: h2 -> [h1,s1]
+      neighbors:
+      - dhcp:
+          client:
+            ipv4: true
+        ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: h1
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:00:00:04
+    module:
+    - dhcp
+    name: h2
+    role: host
+  h3:
+    af:
+      ipv6: true
+    box: generic/ubuntu2004
+    device: linux
+    id: 5
+    interfaces:
+    - bridge: input_2
+      dhcp:
+        client:
+          ipv6: true
+      ifindex: 1
+      ifname: eth1
+      linkindex: 2
+      name: h3 -> [s1]
+      neighbors:
+      - ifname: Vlan1001
+        ipv6: 2001:db8:cafe:1::2/64
+        node: s1
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: 08:4f:a9:00:00:05
+    module:
+    - dhcp
+    name: h3
+    role: host
+  s1:
+    af:
+      ipv4: true
+      ipv6: true
+    box: arista/veos
+    device: eos
+    dhcp:
+      relay: true
+    gateway:
+      anycast:
+        mac: 0200.cafe.00ff
+        unicast: true
+    id: 2
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 192.168.42.2/24
+      ipv6: 2001:db8:cafe:d001::2/64
+      linkindex: 1
+      name: s1 -> dhs
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.42.6/24
+        ipv6: 2001:db8:cafe:d001::6/64
+        node: dhs
+      type: lan
+    - bridge: input_2
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 2
+      type: lan
+      vlan:
+        access: blue
+        access_id: 1001
+    - bridge: input_3
+      ifindex: 3
+      ifname: Ethernet3
+      linkindex: 3
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge: input_4
+      ifindex: 4
+      ifname: Ethernet4
+      linkindex: 4
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      gateway:
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        id: 1
+        ipv6: 2001:db8:cafe:1::1/64
+        protocol: anycast
+      ifindex: 5
+      ifname: Vlan1001
+      ipv6: 2001:db8:cafe:1::2/64
+      name: VLAN blue (1001) -> [h3]
+      neighbors:
+      - dhcp:
+          client:
+            ipv6: true
+        ifname: eth1
+        ipv6: 2001:db8:cafe:1::5/64
+        node: h3
+      role: stub
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: blue
+    - bridge_group: 2
+      dhcp:
+        relay:
+          ipv4:
+          - 192.168.42.6
+        server:
+        - dhs
+      ifindex: 6
+      ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      name: VLAN red (1000) -> [h1,h2]
+      neighbors:
+      - dhcp:
+          client:
+            ipv4: true
+        ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: h1
+      - dhcp:
+          client:
+            ipv4: true
+        ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h2
+      role: stub
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: red
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - vlan
+    - dhcp
+    - gateway
+    name: s1
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      blue:
+        bridge_group: 1
+        id: 1001
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv6: 2001:db8:cafe:1::/64
+      red:
+        bridge_group: 2
+        dhcp:
+          client:
+            ipv4: true
+          server:
+          - dhs
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+provider: libvirt
+vlans:
+  blue:
+    host_count: 1
+    id: 1001
+    neighbors:
+    - dhcp:
+        client:
+          ipv6: true
+      ifname: eth1
+      ipv6: 2001:db8:cafe:1::5/64
+      node: h3
+    - ifname: Vlan1001
+      ipv6: 2001:db8:cafe:1::2/64
+      node: s1
+    prefix:
+      allocation: id_based
+      ipv6: 2001:db8:cafe:1::/64
+  red:
+    dhcp:
+      client:
+        ipv4: true
+    host_count: 2
+    id: 1000
+    neighbors:
+    - dhcp:
+        client:
+          ipv4: true
+      ifname: eth1
+      ipv4: 172.16.0.3/24
+      node: h1
+    - ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      node: s1
+    - dhcp:
+        client:
+          ipv4: true
+      ifname: eth1
+      ipv4: 172.16.0.4/24
+      node: h2
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.0.0/24

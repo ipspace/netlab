@@ -1,0 +1,48 @@
+#
+# VLAN-DHCP test case
+#
+
+provider: libvirt
+
+module: [ dhcp, vlan, gateway ]
+
+groups:
+  hosts:
+    device: linux
+    members: [ h1, h2, h3 ]
+
+vlans:
+  red:
+    dhcp.client.ipv4: True
+    links: [ s1-h1, s1-h2 ]
+  blue:
+    prefix.ipv6: 2001:db8:cafe:1::/64
+
+nodes:
+  s1:
+    device: eos
+    vlans:
+      red:
+        dhcp.server: dhs
+  h1:
+    device: linux
+  h2:
+    device: linux
+  h3:
+  dhs:
+    device: dnsmasq
+    provider: clab
+
+links:
+- s1:
+  dhs:
+  prefix:
+    ipv4: 192.168.42.0/24
+    ipv6: 2001:db8:cafe:d001::/64
+- s1:
+    dhcp.server: dhs
+  h3:
+    ipv6: dhcp
+  vlan.access: blue
+  gateway.id: 1
+  gateway.protocol: anycast
