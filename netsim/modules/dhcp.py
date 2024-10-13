@@ -37,8 +37,12 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
   for intf in node.interfaces:
     if not intf.get('dhcp.client',False):         # Not a DHCP client? OK
       continue
-    if intf.get('dhcp.server',False):             # Also a DHCP relay? That can't be
+
+    # Also a DHCP relay or server? That wouldn't work
+    if intf.get('dhcp.server',False) or node.get('dhcp.server',False):
       intf.dhcp.pop('client',None)                # ... remove the client flag
+      if not intf.dhcp:
+        intf.pop('dhcp',None)
       continue                                    # ... and move on
     for af in ('ipv4','ipv6'):
       if not af in intf.dhcp.client:
@@ -194,7 +198,17 @@ def build_topology_dhcp_pools(topology: Box) -> None:
         pools[pid].gateway[af] = str(netaddr.IPNetwork(link.gateway[af]).ip)
 
       for intf in link.get('interfaces',[]):                # Now iterate over the interfaces attached to the link
-        if af not in intf or af in intf.get('dhcp.client',{}):
+        if af not in intf:                                  # Irrelevant interface, move on
+          continue
+        if not isinstance(intf[af],str):                    # Not a usable IP address, move on
+          continue
+
+        #
+        # Find the true (node) interface -- it might have a different DHCP.client setting
+        node_intf = [ nif for nif in topology.nodes[intf.node].interfaces if intf.ifindex == nif.ifindex ]
+        if not node_intf:                                   # Failed to find the interface
+          continue                                          # ... weird, but it's better than crashing
+        if node_intf[0].get(f'dhcp.client.{af}',False):
           continue                                          # Ignore IP addresses of DHCP clients
 
         # Append non-DHCP addresses to the excluded list
