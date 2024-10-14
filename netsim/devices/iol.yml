@@ -1,0 +1,100 @@
+---
+description: Cisco IOL
+interface_name: Ethernet0/{ifindex}
+loopback_interface_name: Loopback{ifindex}
+tunnel_interface_name: Tunnel{ifindex}
+group_vars:
+  ansible_user: admin
+  ansible_ssh_pass: admin
+  ansible_become_method: enable
+  ansible_become_password: admin
+  ansible_network_os: ios
+  ansible_connection: network_cli
+  netlab_device_type: iol
+  netlab_initial: always
+
+clab:
+  image: vrnetlab/cisco_iol:17.12.01
+  mtu: 1500
+  node:
+    kind: cisco_iol
+    
+routing:
+  _rm_per_af: True
+features:
+  bfd: true
+  bgp:
+    local_as: true
+    vrf_local_as: true
+    local_as_ibgp: true
+    activate_af: true
+    import: [ ospf, isis, ripv2, connected, vrf ]
+    community:
+      standard: [ standard ]
+      extended: [ extended ]
+  dhcp:
+    client:
+      ipv4: true
+      ipv6: true
+      routing: true
+    relay: true
+    vrf: true
+    server: true
+  eigrp: true
+  initial:
+    ipv4:
+      unnumbered: false
+    ipv6:
+      lla: true
+  isis:
+    import: [ bgp, ospf, ripv2, connected ]
+    unnumbered:
+      ipv4: true
+      ipv6: true
+      network: true
+  mpls:
+    ldp: true
+    bgp: true
+    vpn: true
+    6pe: true
+  ospf:
+    unnumbered: true
+    import: [ bgp, isis, ripv2, connected, vrf ]
+    default.policy: true
+  ripv2:
+    ipv4: true
+    ipv6: true
+    passive: true
+    import: [ bgp, isis, ospf, connected, vrf ]
+  routing:
+    policy:
+      set:
+        locpref: True
+        med: True
+        weight: True
+        prepend: True
+        community:
+          standard: True
+          append: True
+      match: [ prefix, nexthop, aspath, community ]
+    prefix: True
+    aspath: True
+    community:
+      expanded: True
+  vlan:
+    model: router
+    svi_interface_name: BVI{bvi}
+    subif_name: "{ifname}.{subif_index}"
+    mixed_trunk: true
+    native_routed: true
+  vrf:
+    ospfv2: True
+    ospfv3: True
+    bgp: True
+    ripv2: True
+    ripng: True
+  gateway:
+    protocol: [ vrrp ]
+external:
+  image: none
+graphite.icon: router
