@@ -70,7 +70,7 @@ nodes:
 * **group** -- list of [groups](groups.md) this node belongs to.
 * **id** -- static node identifier[^id] (see below)
 * **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are specified in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
-* **loopback** -- static loopback addresses. Must be a dictionary with **ipv4** and/or **ipv6** attributes.
+* **loopback** -- [non-standard loopback addresses](node-loopback).
 * **memory** -- memory allocated to the VM lab device. It does not apply to container-based devices.
 * **module** -- the list of [configuration modules](modules.md) used by this node.
 * **mgmt** -- management IPv4/IPv6 addresses. Used primarily with the [**external** provider](labs/external.md)
@@ -82,6 +82,11 @@ nodes:
 ```{tip}
 The [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
 ```
+
+(node-loopback)=
+You can use the **loopback** node attribute to change the [default allocation of loopback addresses](addressing-loopback). It's a dictionary that can contain static loopback prefixes (**ipv4** and/or **ipv6** attributes) or an alternate addressing pool (**pool** attribute[^LBIN]).
+
+[^LBIN]: The alternate pool you use for IPv4 loopback addresses should have **loopback** in its name (to tell _netlab_ to set the allocated prefix length to /32) or a [**prefix** attribute](address-pool-specs), preferably set to 32.
 
 (node-ansible-data)=
 In node data, you can also override Ansible group variables starting with `ansible_` or `netlab_`. For example, to use SSH instead of Docker to connect to a Linux container, set `ansible_connection` to `ssh` in node data:
