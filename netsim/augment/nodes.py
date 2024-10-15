@@ -362,8 +362,8 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
     augment_node_device_data(n,defaults)
 
     n.af = {}                                                 # Nodes must have AF attribute
-    if pools.loopback and n.get('role','') != 'host':
-      prefix_list = addressing.get(pools,['loopback'],n.id)
+    if n.get('role','') != 'host':
+      prefix_list = addressing.get(pools,[ n.get('loopback.pool','loopback') ],n.id)
       for af in prefix_list:
         if isinstance(prefix_list[af],bool):
           if prefix_list[af]:
