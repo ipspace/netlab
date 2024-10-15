@@ -86,7 +86,7 @@ The [Supported Virtualization Providers](platforms.md#supported-virtualization-p
 (node-loopback)=
 You can use the **loopback** node attribute to change the [default allocation of loopback addresses](addressing-loopback). It's a dictionary that can contain static loopback prefixes (**ipv4** and/or **ipv6** attributes) or an alternate addressing pool (**pool** attribute[^LBIN]).
 
-[^LBIN]: The alternate pool you use for IPv4 loopback addresses should have **loopback** in its name (to tell _netlab_ to set the allocated prefix length to /32) or a [**prefix** attribute](address-pool-specs), preferably set to 32.
+[^LBIN]: The alternate pool you use for IPv4 loopback addresses should have **loopback** in its name (to tell _netlab_ to set the allocated prefix length to /32) or a [**prefix** attribute](address-pool-specs), preferably set to 32. The IPv6 prefix length is automatically set to /64 unless you specify it with the **prefix6** attribute.
 
 (node-ansible-data)=
 In node data, you can also override Ansible group variables starting with `ansible_` or `netlab_`. For example, to use SSH instead of Docker to connect to a Linux container, set `ansible_connection` to `ssh` in node data:
