@@ -232,6 +232,7 @@ We're not testing Fortinet implementation as part of the regular integration tes
 * FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with the `sudo apt install linux-generic` and reboot the server.
 * FRR 9.0 and later creates malformed IS-IS LSPs; the bug has been fixed in release 10.0.1 ([details](https://github.com/FRRouting/frr/issues/14514)). You cannot build an IS-IS network using Arista EOS and FRR if you're running an affected version of FRR.
 * FRR configures BFD as part of OSPFv2/OSPFv3 configuration.
+* STP is *disabled* on Linux bridges used to implement VLANs on this platform, so FRR devices cannot be used in toplogies that include L2 loops. Cumulus (with FRR inside) may work better in that case
 
 (caveats-junos)=
 ## Common Junos caveats
