@@ -71,7 +71,7 @@ Anycast implementation of shared first-hop IPv4 address supports these parameter
 * **gateway.anycast.mac** -- Static MAC address used for the anycast IPv4 address
 
 ```{tip}
-Many implementations require unique unicast IPv4 addresses configured on interfaces with anycast IPv4 address. Set **gateway.anycast.unicast** to *False* only when absolutely necessary.
+* Many implementations require unique unicast IPv4 addresses configured on interfaces with anycast IPv4 address. Set **gateway.anycast.unicast** to *False* only when absolutely necessary.
 ```
 
 ## Virtual Router Redundancy Protocol (VRRP)
@@ -88,7 +88,7 @@ More complex topologies, such as multiple VRRPv3 instances *on the same subnet*,
 
 ### VRRP Parameters
 
-*netlab* supports these VRRP parameters that can be specified globally or on individual links or interfaces.
+*netlab* supports these VRRP parameters that can be specified globally, on individual nodes, or individual links or interfaces.
 
 * **vrrp.group** (default: 1) -- VRRP group
 * **vrrp.priority** (interface parameter, integer)
