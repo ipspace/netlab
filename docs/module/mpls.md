@@ -26,8 +26,7 @@ The following table describes per-platform support of individual MPLS label dist
 | ----------------------| :---: | :------: | :--: | :--: | :--: |
 | Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Aruba AOS-CX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco IOSv            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco CSR 1000v       |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Cisco IOSv/IOS XE[^xe] |   ✅ |   ✅    |   ❌  |   ❌  |   ❌  |
 | FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Juniper vMX           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Juniper vPTX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
@@ -36,6 +35,8 @@ The following table describes per-platform support of individual MPLS label dist
 | Nokia SR Linux        |   [❗](caveats-srlinux)  |   ❌    |   ✅  |   ❌  |   ❌  |
 | Nokia SR OS           |   ✅  |   ✅    |   ✅  |   ❌  |   ❌  |
 | VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+
+[^xe]: Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image. MPLS does not work on Catalyst 8000v.
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
@@ -46,8 +47,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Operating system      | BGP LU | Exp.Null | Disable<br>unlabeled |
 | ----------------------| :----: | :------: | :------: |
 | Arista EOS            |   ✅   |    ❌   |    ✅    |
-| Cisco IOSv            |   ✅   |    ✅   |    ❌    |
-| Cisco CSR 1000v       |   ✅   |    ✅   |    ❌    |
+| Cisco IOSv/IOS XE[^xe] |  ✅   |    ✅   |    ❌    |
 | Mikrotik RouterOS 6   |   ❌   |    ❌   |    ❌    |
 | Mikrotik RouterOS 7   |   ❌   |    ❌   |    ❌    |
 | Nokia SR OS           |   ✅   |    ✅   |    ❌    |
@@ -65,8 +65,7 @@ The following table describes per-platform support of individual MPLS label dist
 | ----------------------| :---: | :---: |
 | Arista EOS            |   ✅  |   ✅  |
 | Aruba AOS-CX          |   [❗](caveats-aruba)  |   ❌  |
-| Cisco IOSv            |   ✅  |   ✅  |
-| Cisco CSR 1000v       |   ✅  |   ✅  |
+| Cisco IOSv/IOS XE[^xe] |  ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |
 | Juniper vMX           |   ✅  |   ✅  |
 | Juniper vPTX          |   ✅  |   ✅  |
@@ -84,8 +83,7 @@ The following table describes per-platform support of individual MPLS label dist
 | Operating system      | 6PE |
 | ----------------------| :-: |
 | Arista EOS            | ✅  |
-| Cisco IOSv            | ✅  |
-| Cisco CSR 1000v       | ✅  |
+| Cisco IOSv/IOS XE[^xe] | ✅ |
 | Nokia SR OS           | ✅  |
 
 **Notes**
