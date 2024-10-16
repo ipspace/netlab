@@ -26,8 +26,8 @@ The following table describes per-platform support of individual MPLS label dist
 | ----------------------| :---: | :------: | :--: | :--: | :--: |
 | Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Aruba AOS-CX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco IOS             |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco IOS XE          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Cisco IOSv            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Cisco CSR 1000v       |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Juniper vMX           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Juniper vPTX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
@@ -46,8 +46,8 @@ The following table describes per-platform support of individual MPLS label dist
 | Operating system      | BGP LU | Exp.Null | Disable<br>unlabeled |
 | ----------------------| :----: | :------: | :------: |
 | Arista EOS            |   ✅   |    ❌   |    ✅    |
-| Cisco IOS             |   ✅   |    ✅   |    ❌    |
-| Cisco IOS XE          |   ✅   |    ✅   |    ❌    |
+| Cisco IOSv            |   ✅   |    ✅   |    ❌    |
+| Cisco CSR 1000v       |   ✅   |    ✅   |    ❌    |
 | Mikrotik RouterOS 6   |   ❌   |    ❌   |    ❌    |
 | Mikrotik RouterOS 7   |   ❌   |    ❌   |    ❌    |
 | Nokia SR OS           |   ✅   |    ✅   |    ❌    |
@@ -65,8 +65,8 @@ The following table describes per-platform support of individual MPLS label dist
 | ----------------------| :---: | :---: |
 | Arista EOS            |   ✅  |   ✅  |
 | Aruba AOS-CX          |   [❗](caveats-aruba)  |   ❌  |
-| Cisco IOS             |   ✅  |   ✅  |
-| Cisco IOS XE          |   ✅  |   ✅  |
+| Cisco IOSv            |   ✅  |   ✅  |
+| Cisco CSR 1000v       |   ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |
 | Juniper vMX           |   ✅  |   ✅  |
 | Juniper vPTX          |   ✅  |   ✅  |
@@ -84,8 +84,8 @@ The following table describes per-platform support of individual MPLS label dist
 | Operating system      | 6PE |
 | ----------------------| :-: |
 | Arista EOS            | ✅  |
-| Cisco IOS             | ✅  |
-| Cisco IOS XE          | ✅  |
+| Cisco IOSv            | ✅  |
+| Cisco CSR 1000v       | ✅  |
 | Nokia SR OS           | ✅  |
 
 **Notes**

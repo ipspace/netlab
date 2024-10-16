@@ -18,8 +18,8 @@
 | Cisco ASAv                                | asav               |
 | Cisco Catalyst 8000v [❗](caveats-cat8000v) | cat8000v                |
 | Cisco CSR 1000v [❗](caveats-csr)         | csr                |
-| Cisco IOL                                 | iol                |
-| Cisco IOL L2                              | ioll2               |
+| Cisco IOS-on-Linux (IOL) [❗](caveats-iol)      | iol                |
+| Cisco IOS-on-Linux L2 image (IOL L2)[❗](caveats-iol) | ioll2               |
 | Cisco IOSv [❗](caveats-iosv)             | iosv               |
 | [Cisco IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) [❗](caveats-iosv)             | iosvl2               |
 | Cisco IOS XRv  [❗](caveats-iosxr)        | iosxr              |
@@ -76,8 +76,8 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco ASAv         | [✅](build-asav)  |  ❌  |  ❌  |
 | Cisco Catalyst 8000v | [✅](build-cat8000v) |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOL          |  ❌             | ❌  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOL L2       |  ❌             | ❌  |  ✅[❗](clab-vrnetlab)   |
+| Cisco IOL          |  ❌ | ❌  |  ✅[❗](clab-vrnetlab)  |
+| Cisco IOL L2       |  ❌ | ❌  |  ✅[❗](clab-vrnetlab)   |
 | Cisco IOSv         | [✅](build-iosv)  | ✅  |  ❌  |
 | Cisco IOSvL2       | [✅](build-iosvl2)|  ❌  |  ❌  |
 | Cisco IOS XRv      | [✅](build-iosxr) |  ❌  | ✅  |
@@ -159,7 +159,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Sonic                 |          ✅           |           ❌           |
 | VyOS                  |          ✅           |           ✅           |
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
 [^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 

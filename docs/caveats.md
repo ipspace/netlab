@@ -122,6 +122,15 @@ Host 192.168.121.*
 
 [^CSP]: Change the address range if you're using a different IP prefix for the management network or if you're using the *multilab* plugin.
 
+(caveats-iol)=
+## Cisco IOS on Linux (IOL) and IOL Layer-2 Image
+
+* Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/).
+* You need Containerlab 0.58.0 or greater to run these images.
+* You cannot use VLANs 1002 through 1005 with Cisco IOL layer-2 image
+
+See also [common Cisco IOS](caveats-iosv) caveats.
+
 (caveats-iosxr)=
 ## Cisco IOS XRv
 
