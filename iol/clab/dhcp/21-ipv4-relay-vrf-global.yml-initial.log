@@ -1,0 +1,574 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [c1]
+ok: [c2]
+ok: [relay]
+ok: [server]
+
+TASK [Find device readiness script] ********************************************
+ok: [c1]
+ok: [c2]
+ok: [server]
+ok: [relay]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [c1]
+skipping: [c2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/csr-clab.yml for server
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for relay
+
+TASK [Check if 'sshpass' is installed] *****************************************
+changed: [server -> localhost]
+
+TASK [Execute local ssh command to check csr readiness] ************************
+FAILED - RETRYING: [server -> localhost]: Execute local ssh command to check csr readiness (20 retries left).
+FAILED - RETRYING: [server -> localhost]: Execute local ssh command to check csr readiness (19 retries left).
+changed: [server -> localhost]
+
+TASK [Confirm server SSH server works] *****************************************
+ok: [server] => 
+  msg: Node server is ready.
+
+TASK [Check if 'sshpass' is installed] *****************************************
+changed: [relay -> localhost]
+
+TASK [Execute local ssh command to check iol readiness] ************************
+changed: [relay -> localhost]
+
+TASK [Confirm relay SSH server works] ******************************************
+ok: [relay] => 
+  msg: Node relay is ready.
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, server, relay
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [c1]
+ok: [c2]
+ok: [server]
+ok: [relay]
+
+TASK [Find configuration template for initial] *********************************
+ok: [c1]
+ok: [c2]
+ok: [server]
+ok: [relay]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [c1] => 
+  msg: |-
+    initial configuration for c1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c1
+    #
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.2/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1
+      mtu 1500
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c1 -> [c2,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [c2] => 
+  msg: |-
+    initial configuration for c2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c2
+    #
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.3/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1
+      mtu 1500
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c2 -> [c1,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [relay] => 
+  msg: |-
+    initial configuration for relay
+    =========================================
+    hostname relay
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.2
+    ip host c2 10.0.0.3
+    ip host relay-c_vrf 172.16.0.1
+    ip host server 172.16.1.4
+    !
+    ip routing
+    !
+    vrf definition c_vrf
+     rd 65000:1
+     route-target import 65000:1
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     no shutdown
+     vrf forwarding c_vrf
+     description relay -> [c1,c2]
+     mtu 1500
+     ip address 172.16.0.1 255.255.255.0
+    !
+    interface Ethernet0/2
+     no shutdown
+     description relay -> server [stub]
+     mtu 1500
+     ip address 172.16.1.1 255.255.255.0
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [server] => 
+  msg: |-
+    initial configuration for server
+    =========================================
+    hostname server
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.2
+    ip host c2 10.0.0.3
+    ip host relay 10.0.0.1 172.16.1.1
+    ip host relay-c_vrf 172.16.0.1
+    !
+    ip routing
+    !
+    !
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     no shutdown
+     description server -> relay [stub]
+     ip address 172.16.1.4 255.255.255.0
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [c1]
+ok: [c2]
+ok: [relay]
+ok: [server]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for server, relay
+
+TASK [copy cumulus config to /tmp/config.sh] ***********************************
+changed: [c1]
+changed: [c2]
+
+TASK [set_fact deployed_config] ************************************************
+ok: [c1]
+ok: [c2]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+changed: [c1]
+changed: [c2]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+skipping: [c1]
+skipping: [c2]
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [server]
+changed: [relay]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [c1]
+ok: [c2]
+ok: [relay]
+ok: [server]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=dhcp)
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [c1]
+ok: [c2]
+ok: [server]
+ok: [relay]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
+ok: [relay]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
+ok: [relay] => 
+  msg: |-
+    vrf configuration for relay
+    =========================================
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
+ok: [relay]
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for relay
+
+TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
+ok: [relay]
+
+TASK [Figure out whether to deploy the module dhcp on current device] **********
+ok: [c1]
+ok: [c2]
+ok: [relay]
+ok: [server]
+
+TASK [Find configuration template for dhcp] ************************************
+ok: [c1]
+ok: [c2]
+ok: [relay]
+ok: [server]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [c1] => 
+  msg: |-
+    dhcp configuration for c1
+    =========================================
+    #!/bin/bash
+    #
+    # Disable IPv6 RA on DHCPv6 client interfaces
+    #
+    #
+    # Configure DHCP clients on interfaces
+    #
+    set -e
+    #
+    echo "DHCP: set IP addresses on interfaces"
+    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+    iface swp1 inet dhcp
+      mtu 1500
+    CONFIG
+    #
+    echo "DHCP: executing ifup"
+    nohup bash -c 'ifreload -a || ifreload -a' &
+ok: [c2] => 
+  msg: |-
+    dhcp configuration for c2
+    =========================================
+    #!/bin/bash
+    #
+    # Disable IPv6 RA on DHCPv6 client interfaces
+    #
+    #
+    # Configure DHCP clients on interfaces
+    #
+    set -e
+    #
+    echo "DHCP: set IP addresses on interfaces"
+    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+    iface swp1 inet dhcp
+      mtu 1500
+    CONFIG
+    #
+    echo "DHCP: executing ifup"
+    nohup bash -c 'ifreload -a || ifreload -a' &
+ok: [relay] => 
+  msg: |-
+    dhcp configuration for relay
+    =========================================
+    ip dhcp relay information option vpn
+    !
+    interface Ethernet0/1
+      ip helper-address global 172.16.1.4
+ok: [server] => 
+  msg: |-
+    dhcp configuration for server
+    =========================================
+    ip dhcp excluded-address vrf c_vrf 172.16.0.1
+    !
+    ip dhcp pool links_1_
+     vrf c_vrf
+     network 172.16.0.0 255.255.255.0
+     default-router 172.16.0.1
+    !
+    ip dhcp relay information option vpn
+    !
+
+TASK [Find configuration deployment deploy_script for dhcp] ********************
+ok: [c1]
+ok: [c2]
+ok: [relay]
+ok: [server]
+
+TASK [Deploy dhcp configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for relay, server
+
+TASK [copy cumulus config to /tmp/config.sh] ***********************************
+changed: [c2]
+changed: [c1]
+
+TASK [set_fact deployed_config] ************************************************
+ok: [c1]
+ok: [c2]
+
+TASK [run /tmp/config.sh to deploy dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
+changed: [c2]
+changed: [c1]
+
+TASK [run vtysh to import dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
+skipping: [c1]
+skipping: [c2]
+
+TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
+changed: [relay]
+changed: [server]
+
+PLAY [Deploy custom deployment templates] **************************************
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for c1, c2 => (item=bounce)
+
+TASK [Find configuration template] *********************************************
+ok: [c1]
+ok: [c2]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [c2 -> localhost]
+ok: [c1 -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+
+TASK [Process template /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2 for c1] ***
+skipping: [c1]
+skipping: [c2]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [c1]
+ok: [c2]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2
+
+TASK [copy cumulus config to /tmp/config.sh] ***********************************
+changed: [c1]
+changed: [c2]
+
+TASK [set_fact deployed_config] ************************************************
+ok: [c1]
+ok: [c2]
+
+TASK [run /tmp/config.sh to deploy bounce config from /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2] ***
+changed: [c2]
+changed: [c1]
+
+TASK [run vtysh to import bounce config from /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2] ***
+skipping: [c1]
+skipping: [c2]
+
+PLAY RECAP *********************************************************************
+c1                         : ok=31   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+c2                         : ok=31   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+relay                      : ok=28   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+server                     : ok=23   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
+
+
+Use this topology to test the inter-VRF DHCPv4 relay functionality of your
+device. Use 'netlab validate' to check whether your device propagated DHCPv4
+requests from DHCP clients in VRF c_vrf to DHCP servers in global routing
+table.
+
