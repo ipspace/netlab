@@ -37,7 +37,7 @@ The following table describes high-level per-platform support of generic routing
 See [Routing Integration Tests Results](https://release.netlab.tools/_html/coverage.routing) for more details.
 ```
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 (generic-routing-policies)=
 ## Routing Policies

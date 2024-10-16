@@ -1,6 +1,6 @@
 # Bidirectional Forwarding Detection (BFD) Configuration Module
 
-This configuration module configures the basic BFD ([RFC5880](https://datatracker.ietf.org/doc/html/rfc5880)) parameters. To configure fast failover with BFD, use the routing protocol [configuration modules](../module-reference.md). At the moment you can use BFD with  [IS-IS](isis.md) and [OSPF](ospf.md).
+This configuration module configures the basic BFD ([RFC5880](https://datatracker.ietf.org/doc/html/rfc5880)) parameters. To configure fast failover with BFD, use the routing protocol [configuration modules](../module-reference.md). At the moment, you can use BFD with [IS-IS](isis.md) and [OSPF](ospf.md).
 
 (bfd-platform)=
 BFD is supported on these platforms:
@@ -10,7 +10,7 @@ BFD is supported on these platforms:
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  |  ❌  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
-| Cisco IOS XE          | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅[❗](caveats-frr) | ✅  |  ❌  |
 | FRR                   | ✅[❗](caveats-frr) | ✅  |  ❌  |
@@ -21,6 +21,8 @@ BFD is supported on these platforms:
 | Nokia SR Linux        | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
 | VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  |
+
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 

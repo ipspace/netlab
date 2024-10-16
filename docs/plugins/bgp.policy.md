@@ -60,7 +60,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 | Nokia SR OS         |  ✅  |  ✅  |  ✅  |  ❌  |   ❌  |  ✅  |
 | VyOS                |  ✅  |  ✅  |  ✅  |  ❌  |   ✅  |   ❌  |
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 ```{tip}
 See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.policy) for more details.

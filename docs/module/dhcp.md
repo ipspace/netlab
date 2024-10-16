@@ -23,7 +23,7 @@ DHCP clients are supported on these platforms:
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
 | Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |  ❌  |
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 DHCP servers are supported on these platforms: 
 

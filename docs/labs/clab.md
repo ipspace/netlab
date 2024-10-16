@@ -32,8 +32,8 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | BIRD                   | netlab/bird:latest           |
 | Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
 | Cisco CSR 1000v        | vrnetlab/vr-csr:17.03.04     |
-| Cisco IOL              | vrnetlab/cisco_iol:17.12.01 |
-| Cisco IOL L2           | vrnetlab/cisco_iol:L2-17.12.01 |
+| Cisco IOL [❗](caveats-iol)    | vrnetlab/cisco_iol:17.12.01 |
+| Cisco IOL L2 [❗](caveats-iol) | vrnetlab/cisco_iol:L2-17.12.01 |
 | Cisco IOS XRd          | ios-xr/xrd-control-plane:7.11.1 |
 | Cisco Nexus OS         | vrnetlab/vr-n9kv:9.3.8       |
 | Cumulus VX             | networkop/cx:4.4.0           |
@@ -50,15 +50,13 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Nokia SR OS            | vrnetlab/vr-sros:latest      |
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
-* Cumulus VX, FRR, Linux, and Nokia SR Linux images are automatically downloaded from Docker Hub.
+* Cumulus VX, FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
 * Build the BIRD and dnsmasq images with the **netlab clab build** command.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
-* Nokia SR OS container image (requires a license); see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
+* Nokia SR OS container image requires a license; see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
-* Cisco IOL and IOL L2 images require Containerlab 0.58.0 or greater.
-* Building Cisco IOL and IOL L2 images is only supported with Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/).
 
-You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Nexus 9300v, and IOS XR, OpenWRT, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
+You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Cisco CSR 1000v, Cisco IOS on Linux (including layer-2 image), Nexus 9300v, IOS XR, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
 
 ```{warning}
 * You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
@@ -173,9 +171,9 @@ The build process generates container tags based on the underlying VM image name
 (vrnetlab-internal-net)=
 ### Internal Container Networking
 
-The packaged container's architecture requires an internal network. The [_vrnetlab_ fork](https://github.com/hellt/vrnetlab) supported by _containerlab_ uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the _netlab_ loopback address pool. Fortunately, that fork also adds management VRF (and default route within the management VRF) to most device configurations, making the overlap between _vrnetlab_ internal subnet and _netlab_ loopback pool irrelevant.
+The packaged container's architecture requires an internal network. The [*vrnetlab* fork](https://github.com/hellt/vrnetlab) supported by *containerlab* uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the *netlab* loopback address pool. Fortunately, that fork also adds management VRF (and default route within the management VRF) to most device configurations, making the overlap between the *vrnetlab* internal subnet and the *netlab* loopback pool irrelevant. However, all VMs in *vrnetlab* containers will have the same IP and MAC address on the management interface, potentially confusing any network management system you might use with your lab.
 
-However, if you're still experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers after rebuilding them with the [latest vrnetlab version](https://github.com/hellt/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
+Finally, if you're still experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers after rebuilding them with the [latest vrnetlab version](https://github.com/hellt/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
 ```
 addressing:

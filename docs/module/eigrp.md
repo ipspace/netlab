@@ -1,12 +1,14 @@
 # EIGRP Configuration Module
 
-This configuration module configures the EIGRP routing process on Cisco IOSv, Cisco IOS-XE (CSR 1000v and Catalyst 8000v), and Cisco Nexus-OS.
+This configuration module configures the EIGRP routing process on Cisco IOSv, Cisco IOS-XE[^18v], and Cisco Nexus-OS.
+
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 Supported features:
 
 * IPv4 and IPv6
 * EIGRP AS number
-* Unnumbered point-to-point interfaces (Cisco IOS/IOS-XE only)
+* Unnumbered point-to-point interfaces (Cisco IOS-XE only)
 * Passive interfaces
 
 ## Global Parameters

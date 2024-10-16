@@ -70,7 +70,7 @@ The following table describes per-platform support of individual router-level OS
 **Notes:**
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 
@@ -112,7 +112,7 @@ The following table documents the interface-level OSPF features:
 | Arista EOS               | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX             | ✅ | ✅ | ❌  | ✅ |
 | Cisco IOS                | ✅ | ✅ | ❌  | ✅ |
-| Cisco IOS XE             | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS XRv            | ✅ | ✅ | ✅ | ✅ |
 | Cisco Nexus OS           | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux            | ✅ | ✅ | ✅ | ✅ |

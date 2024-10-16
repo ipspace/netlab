@@ -68,7 +68,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |
 | VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
 

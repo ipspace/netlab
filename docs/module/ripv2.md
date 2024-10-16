@@ -31,7 +31,7 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.ripv2) for more details.
 ```
 
-[^18v]: Includes Cisco CSR 1000v and Cisco Catalyst 8000v
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 (rip-params)=
 ## Lab Topology Parameters
