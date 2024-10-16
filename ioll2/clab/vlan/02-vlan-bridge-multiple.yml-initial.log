@@ -5,8 +5,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [s1]
 
 TASK [Find device readiness script] ********************************************
@@ -196,17 +196,85 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-fatal: [s1]: FAILED! => 
-  msg: 'An unhandled exception occurred while running the lookup plugin ''template''. Error was a <class ''jinja2.exceptions.TemplateNotFound''>, original message: ioll2.vlan.j2. ioll2.vlan.j2'
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 172.31.1.1
+    ip host h2 172.31.1.2
+    ip host h3 172.31.1.3
+    ip host h4 172.31.1.4
+    !
+    ip routing
+    !
+    vlan 701
+     name blue
+    !
+    vlan 700
+     name red
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.5 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Ethernet0/2
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Ethernet0/3
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Ethernet1/0
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Vlan700
+     no shutdown
+     description VLAN red (700) -> [h1,h2] [stub]
+    !
+    interface Vlan701
+     no shutdown
+     description VLAN blue (701) -> [h3,h4] [stub]
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
@@ -217,22 +285,82 @@ ok: [h4]
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-ngSZTcMt-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-oBPMXheD-h1.sh] **********
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s1]
 
 PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1 => (item=vlan)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [s1]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    vlan 701
+     name blue
+    !
+    vlan 700
+     name red
+    !
+  
+    !
+    interface Ethernet0/1
+     switchport
+     switchport access vlan 700
+    !
+    interface Ethernet0/2
+     switchport
+     switchport access vlan 700
+    !
+    interface Ethernet0/3
+     switchport
+     switchport access vlan 701
+    !
+    interface Ethernet1/0
+     switchport
+     switchport access vlan 701
+    !
+    interface Vlan700
+    !
+    interface Vlan701
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1
+
+TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/ioll2.j2] ***
+changed: [s1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -242,8 +370,15 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=9    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+s1                         : ok=21   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The device under test is a simple bridge without an IP address in the red
+or blue VLAN. Both VLANs are using the same IP prefix to identify potential
+inter-VLAN leaking.
+
+* h1 and h2 should be able to ping each other
+* h3 and h4 should be able to ping each other
+* h1 should not be able to reach h3
+

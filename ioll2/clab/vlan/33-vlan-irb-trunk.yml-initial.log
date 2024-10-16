@@ -15,8 +15,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
@@ -29,8 +29,8 @@ TASK [Check if 'sshpass' is installed] *****************************************
 changed: [s1 -> localhost]
 
 TASK [Execute local ssh command to check ioll2 readiness] **********************
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
 changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
@@ -234,8 +234,6 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-fatal: [s2]: FAILED! => 
-  msg: 'An unhandled exception occurred while running the lookup plugin ''template''. Error was a <class ''jinja2.exceptions.TemplateNotFound''>, original message: ioll2.vlan.j2. ioll2.vlan.j2'
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -294,17 +292,152 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-fatal: [s1]: FAILED! => 
-  msg: 'An unhandled exception occurred while running the lookup plugin ''template''. Error was a <class ''jinja2.exceptions.TemplateNotFound''>, original message: ioll2.vlan.j2. ioll2.vlan.j2'
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 172.16.0.1
+    ip host h2 172.16.0.2
+    ip host h3 172.16.1.3
+    ip host h4 172.16.1.4
+    ip host s2 10.0.0.6 172.16.0.6 172.16.1.6
+    !
+    ip routing
+    !
+    vlan 701
+     name blue
+    !
+    vlan 700
+     name red
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.5 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     no shutdown
+     no switchport
+     description s1 -> s2
+     mtu 1500
+    !
+    interface Ethernet0/2
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Ethernet0/3
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Vlan700
+     no shutdown
+     description VLAN red (700) -> [h1,s2,h2]
+     ip address 172.16.0.5 255.255.255.0
+    !
+    interface Vlan701
+     no shutdown
+     description VLAN blue (701) -> [h3,s2,h4]
+     ip address 172.16.1.5 255.255.255.0
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    hostname s2
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 172.16.0.1
+    ip host h2 172.16.0.2
+    ip host h3 172.16.1.3
+    ip host h4 172.16.1.4
+    ip host s1 10.0.0.5 172.16.0.5 172.16.1.5
+    !
+    ip routing
+    !
+    vlan 701
+     name blue
+    !
+    vlan 700
+     name red
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.6 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     no shutdown
+     no switchport
+     description s2 -> s1
+     mtu 1500
+    !
+    interface Ethernet0/2
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Ethernet0/3
+     no shutdown
+     no switchport
+     mtu 1500
+    !
+    interface Vlan700
+     no shutdown
+     description VLAN red (700) -> [h1,s1,h2]
+     ip address 172.16.0.6 255.255.255.0
+    !
+    interface Vlan701
+     no shutdown
+     description VLAN blue (701) -> [h3,s1,h4]
+     ip address 172.16.1.6 255.255.255.0
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [s1]
+ok: [s2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
@@ -313,24 +446,117 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-KjsRKstm-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-WUCNbrAp-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s2]
+changed: [s1]
 
 PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    vlan 701
+     name blue
+    !
+    vlan 700
+     name red
+    !
+  
+    !
+    interface Ethernet0/1
+     switchport
+     switchport trunk encapsulation dot1q
+     switchport mode trunk
+     switchport trunk allowed vlan 700,701
+    !
+    interface Ethernet0/2
+     switchport
+     switchport access vlan 700
+    !
+    interface Ethernet0/3
+     switchport
+     switchport access vlan 701
+    !
+    interface Vlan700
+    !
+    interface Vlan701
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    vlan 701
+     name blue
+    !
+    vlan 700
+     name red
+    !
+  
+    !
+    interface Ethernet0/1
+     switchport
+     switchport trunk encapsulation dot1q
+     switchport mode trunk
+     switchport trunk allowed vlan 700,701
+    !
+    interface Ethernet0/2
+     switchport
+     switchport access vlan 700
+    !
+    interface Ethernet0/3
+     switchport
+     switchport access vlan 701
+    !
+    interface Vlan700
+    !
+    interface Vlan701
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
+
+TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/ioll2.j2] ***
+changed: [s1]
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -340,9 +566,19 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=9    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
-s2                         : ok=8    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+s1                         : ok=21   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s2                         : ok=20   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The devices under test are layer-3 switches bridging
+between ports in the same VLAN and routing across VLANs
+
+* All hosts should be able to ping each other and
+  switch interfaces in the same VLAN
+* Hosts should be able to ping loopback address of the
+  adjacent switch (static routes point to nearest router)
+
+Please note it might take a while for the lab to work due to
+STP learning phase
+
