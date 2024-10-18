@@ -363,6 +363,9 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     n.af = {}                                                 # Nodes must have AF attribute
     if n.get('role','') != 'host':
+      n.loopback.type = 'loopback'
+      n.loopback.neighbors = []
+      n.loopback.virtual_interface = True
       prefix_list = addressing.get(pools,[ n.get('loopback.pool','loopback') ],n.id)
       for af in prefix_list:
         if isinstance(prefix_list[af],bool):
@@ -386,9 +389,6 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
       if lbname:
         n.loopback.ifname = lbname
         n.loopback.ifindex = 0
-        n.loopback.type = 'loopback'
-        n.loopback.neighbors = []
-        n.loopback.virtual_interface = True
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
