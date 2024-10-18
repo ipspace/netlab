@@ -1,3 +1,4 @@
+(netlab-customize)=
 # Customize netlab
 
 _netlab_ is designed to be highly extensible and customizable. Starting with the system settings, you can:
