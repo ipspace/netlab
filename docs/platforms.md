@@ -75,10 +75,10 @@ You cannot use all supported network devices with all virtualization providers. 
 | Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Cisco ASAv         | [✅](build-asav)  |  ❌  |  ❌  |
 | Cisco Catalyst 8000v | [✅](build-cat8000v) |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOL          |  ❌ | ❌  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOL L2       |  ❌ | ❌  |  ✅[❗](clab-vrnetlab)   |
-| Cisco IOSv         | [✅](build-iosv)  | ✅  |  ❌  |
+| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab) |
+| Cisco IOL          |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
+| Cisco IOL L2       |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
+| Cisco IOSv         | [✅](build-iosv)  | ✅  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOSvL2       | [✅](build-iosvl2)|  ❌  |  ❌  |
 | Cisco IOS XRv      | [✅](build-iosxr) |  ❌  | ✅  |
 | Cisco Nexus 9300v  | [✅](build-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
