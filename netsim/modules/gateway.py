@@ -121,7 +121,7 @@ class FHRP(_Module):
   '''
   def module_init(self, topology: Box) -> None:
     gw = data.get_global_settings(topology,'gateway')
-    if not gw or gw is None:
+    if not gw or gw is None or not isinstance(gw,Box):
       log.error(
         f'Global/default gateway parameters are missing. We need at least a gateway ID',
         log.IncorrectType,
@@ -139,7 +139,8 @@ class FHRP(_Module):
       # Check the link gateway ID. If it doesn't exist, get returns None, and the function
       # returns immediately (no error is reported due to required == False).
       #
-      process_gw_id(link.get('gateway.id',None),required=False,path=f'Link {link._linkname}')
+      if isinstance(link.get('gateway',None),Box):
+        process_gw_id(link.get('gateway.id',None),required=False,path=f'Link {link._linkname}')
 
     vlans = topology.get('vlans',None)                    # We might have global VLAN definitions
     if isinstance(vlans,Box):                             # If we do and the data looks sane
