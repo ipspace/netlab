@@ -36,7 +36,7 @@ SR-MPLS is implemented on the following platforms:
 | Nokia SR Linux [❗](caveats-srlinux) |   ✅  |  ✅  |  ✅   |  ❌   |
 | Nokia SR OS           |   ✅  |  ✅  |  ✅   |  ❌   |
 
-[^xe]: Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image. MPLS does not work on Catalyst 8000v.
+[^xe]: Catalyst 8000v, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
 
 ## Parameters
 

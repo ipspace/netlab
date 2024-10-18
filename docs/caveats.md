@@ -77,6 +77,7 @@ cEOS MPLS data plane was introduced in release 4.32.1F.
 
 * Apart from the VLAN configuration, Catalyst 8000v implementation uses the same configuration templates as CSR 1000v.
 * Catalyst 8000v accepts CSR 1000v-based VXLAN configuration, but the validation tests fail. You cannot configure VXLAN on Catalyst 8000v with the current _netlab_ release.
+* MPLS and SR-MPLS require a license that enables the advanced functionality after a reboot. That license is automatically enabled in recent _netlab_ and _vrnetlab_ releases, but you cannot apply it to a running lab; you have to rebuild the Catalyst 8000v Vagrant box or container.
 
 See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 
