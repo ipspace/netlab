@@ -1,10 +1,10 @@
 (netlab-config)=
 # Deploying Custom Device Configurations
 
-**netlab config** uses an internal Ansible playbook (`netsim/ansible/config.ansible`) to deploy custom device configurations generated from the supplied Jinja2 template(s) to lab devices.
+**netlab config** uses an internal Ansible playbook (`netsim/ansible/config.ansible`) to deploy custom device configurations generated from the supplied Jinja2 template(s) to lab devices. It takes lab parameters from the _netlab_ snapshot file and Ansible inventory created by the **[netlab create](netlab-create)** or **[netlab up](netlab-up)** command.
 
-```{tip}
-**netlab config** command does not need a topology file (so you don't have to specify one even if you're using a non-default topology name). It's just a thin wrapper around an Ansible playbook that uses Ansible inventory created by the **netlab create** or **netlab up** command.
+You have to use **netlab config** on a running lab. If you want to try out the configuration templates without starting the lab,  add the [**config** attribute](custom-config) to node data and run **netlab create** (to create the Ansible inventory) followed by **[netlab initial -c -o](netlab-initial)** to create the configuration files.
+
 ```
 
 ## Usage
@@ -28,9 +28,11 @@ All other arguments are passed directly to ansible-playbook
 
 ## Selecting Configuration Template
 
-When the configuration template specified in the **netlab config** command is not a Jinja2 template, the command tries to find the configuration template for individual lab devices using node name, `netlab_device_type`, and `ansible_network_os` Ansible variables, allowing you to create a set of templates to deploy the same functionality to lab devices running different network operating systems.
+The configuration template specified in the **netlab config** command can be a Jinja2 template (**netlab config** automatically adds the `.j2` suffix) or a directory of configuration templates.
 
-See [](netlab-initial-custom) and [](dev-find-custom) for more details.
+When you specify a directory name, the **netlab config** command tries to find the configuration template for individual lab devices using node name, `netlab_device_type`, and `ansible_network_os` Ansible variables, allowing you to create a set of templates to deploy the same functionality to lab devices running different network operating systems.
+
+See [](custom-config), [](netlab-initial-custom) and [](dev-find-custom) for more details.
 
 ## Limiting the Scope of Configuration Deployments
 
