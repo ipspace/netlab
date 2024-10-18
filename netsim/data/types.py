@@ -77,11 +77,16 @@ def wrong_type_message(
   if '_type' not in err_stat and '_value' not in err_stat:
     raise Exception("FATAL (wrong_type_message) err_stat does not contain _type or _value")
 
-  if '_help' in err_stat:                               # Did the validation function specify extra help?
+  if '_help' in context:
+    ctxt.extend(textwrap.wrap(context['_help']))
+  elif '_help' in err_stat:                             # Did the validation function specify extra help?
     if exp_type not in _wrong_type_help:                # Did we print this help before? Adjust context if not
       help = err_stat.get("_help")
       ctxt.extend(textwrap.wrap(f'FYI: {exp_type} is {help}'))
       _wrong_type_help[exp_type] = help
+
+  if '_hint' in context:
+    ctxt.extend(textwrap.wrap(context['_hint']))
 
   if '_value' in err_stat:                             # _value contains explanation why the value is incorrect
     expected = err_stat.get('_value')                  # ... even though the type is correct

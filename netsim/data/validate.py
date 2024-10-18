@@ -397,6 +397,8 @@ subtype_validation: dict = {
   'list': validate_list
 }
 
+PASS_ATTRIBUTES: typing.Final[list] = ['_hint','_help']
+
 def validate_item(
       parent: typing.Optional[Box],
       key: typing.Any,
@@ -410,7 +412,7 @@ def validate_item(
       attributes: Box,
       enabled_modules: list) -> typing.Any:
 
-  global _bi,_tv,subtype_validation
+  global _bi,_tv,subtype_validation,PASS_ATTRIBUTES
 
   data = key if parent is None else parent[key]
   if data_type is None:                                               # Trivial case - data type not specified
@@ -458,7 +460,9 @@ def validate_item(
         alt_context['_alt_types'] = alt_result['_alt_types']
 
   # Copy data type into validation attributes, skipping validation attributes and data type name
-  validation_attr = { k:v for k,v in data_type.items() if not k.startswith('_') and k != 'type' }
+  validation_attr = { 
+    k:v for k,v in data_type.items() 
+      if (not k.startswith('_') and k != 'type') or k in PASS_ATTRIBUTES }
   if '_alt_types' in alt_context:
     validation_attr['_alt_types'] = alt_context['_alt_types']
 

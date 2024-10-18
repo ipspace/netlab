@@ -143,6 +143,13 @@ When an attribute has a data type defined with the **type** attribute, you can u
 **Notes**
 * **_keys** attribute is rarely used in dictionary definitions. Using a [shortcut definition](validation-shortcut-type) is much better. See [examples](validation-definition-examples) for a counterexample.
 
+You can also specify additional hints and help messages with an attribute:
+
+| Keyword   | Meaning |
+|-----------|---------|
+| **_help** | Help displayed when a value does not match the data type.<br>Overrides the built-in help message |
+| **_hint** | Additional hint(s) displayed together with an error message.<br>Use this attribute to explain what could be wrong |
+
 (validation-definition-examples)=
 ### Data Type Definition Examples
 
@@ -164,6 +171,18 @@ bgp.attributes:
       ipv4: [ ibgp, ebgp ]
       ipv6: [ ibgp, ebgp ]
 ```  
+
+Topology name definition contains an error message that should be more useful than the generic 'identifier is...' message:
+
+```
+global:
+  name: 
+    type: id
+    _help: |
+      Topology name should be no longer than 16 characters. It should start with a letter
+      and contain letters, underscores or numbers. netlab derives it from directory name
+      when it's not specified in the lab topology file.
+```
 
 *clab* provider parameters include a **type** attribute, colliding with the validation **type** attribute. Valid *clab* attributes thus have to be specified with **_keys** dictionary:
 
