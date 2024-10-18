@@ -13,7 +13,7 @@ def check_reserved_vlans(node: Box, topology: Box) -> None:
   for vname,vdata in node.get('vlans',{}).items():
     if vdata.id in range(1002,1006):
       log.error(
-        f'Cannot use VLAN ID {vdata.id} (VLAN {vname}) on Cisco IOSvL2 for historic reasons',
+        f'Cannot use VLAN ID {vdata.id} (VLAN {vname}) on Cisco IOSvL2 and IOLL2 for historic reasons',
         category=log.IncorrectValue,
         module='quirks')
 
