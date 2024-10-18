@@ -10,7 +10,7 @@ Topology-level transformation:
 import os
 from box import Box
 
-from ..utils import log
+from ..utils import log,strings
 from .. import data
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_list,must_be_string,must_be_dict
@@ -20,7 +20,7 @@ def topology_sanity_check(topology: Box) -> None:
     topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
     for bad_char in (' ','.'):
       topo_name = topo_name.replace(bad_char,'_')
-    topology.name = topo_name
+    topology.name = strings.make_id(topo_name)
 
   if 'module' in topology:
     must_be_list(topology,'module','')
