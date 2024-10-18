@@ -100,6 +100,9 @@ def ssh_connect(
   host = data.ansible_host or data.host
   c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o','LogLevel=ERROR']
 
+  if data.netlab_ssh_args:
+    c_args.extend(data.netlab_ssh_args.split(' '))
+
   if data.ansible_ssh_pass:
     c_args = ['sshpass','-p',data.ansible_ssh_pass ] + c_args
 
