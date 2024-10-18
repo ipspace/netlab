@@ -194,6 +194,10 @@ def print_colored_text(txt: str, color: str, alt_txt: typing.Optional[str] = '',
 make_id: Make an identifier out of a string
 """
 def make_id(txt: str) -> str:
-  not_allowed = f'[^a-zA-Z0-9_]'
-  id = re.sub(not_allowed,'_',txt)
+  not_allowed = f'[^a-zA-Z0-9_]'                        # Everything but letters, numbers, and undescore is forbidden
+  id = re.sub(not_allowed,'_',txt)                      # Replace forbidden characters with underscores
+  id = re.sub('^[0-9]*','',id)                          # Remove leading numbers
+  if id.startswith('_') and not txt.startswith('_'):    # Remove leading underscores but only if the original text did not start
+    id = re.sub('^_*','',id) or id                      # with underscores and if there's something else in the id
+
   return id
