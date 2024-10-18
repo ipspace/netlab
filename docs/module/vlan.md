@@ -25,6 +25,7 @@ VLANs are supported on these platforms:
 | Aruba AOS-CX          | ✅  | ✅  | ❌  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco IOSvL2          | ✅  | ✅  | ❌   | ✅ | ✅ |
+| Cisco IOL L2 [❗](caveats-iol)  | ✅  | ✅  | ❌   | ❌   | ✅ |
 | Cisco Catalyst 8000v  | ✅  | ✅  | ❌[❗](caveats-csr)   | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅  | ✅  | ❌[❗](caveats-csr)   | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |
