@@ -2,11 +2,16 @@
 message: |
   The devices under test form a connected triangle (loop) with 2 VLANs. 
   
-  If STP is enabled, this topology requires per-VLAN STP (PVRST); the VLANs themselves don't form a loop, but the links do
+  If STP is enabled, this topology requires per-VLAN STP (PVRST); the VLANs themselves don't form a loop, but the links do.
+  Per-VLAN priority settings should make S1 root for red, and S2 for blue VLAN
 
   * h1 and h2 should be able to ping each other
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
+
+  For FRR, use
+  ```docker exec -it clab-stp-s1 /usr/sbin/brctl showstp vlan1000``` and
+  ```docker exec -it clab-stp-s2 /usr/sbin/brctl showstp vlan1001``` and
 
 stp.pvrst: True # Topology requires running STP per VLAN
 
@@ -27,6 +32,12 @@ vlans:
   blue:
     mode: bridge
     links: [ s1-h3, s3-h4, s1-s3, s2-s3 ]  # NOT s1-s2
+
+nodes:
+ s1:
+  vlans.red.stp.priority: 4096   # Test per-VLAN priority
+ s2:
+  vlans.blue.stp.priority: 4096
 
 validate:
   ping_red:
