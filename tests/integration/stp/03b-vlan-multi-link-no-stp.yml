@@ -8,6 +8,8 @@ message: |
   For FRR, use ```docker exec -it clab-stp-s1 /usr/sbin/brctl showstp vlan1000``` to verify
   Cumulus: ```docker exec -it clab-stp-s1 /sbin/brctl showstp bridge```
 
+  This test removes the STP module, and relies on Cumulus' default configuration (it fails)
+
 groups:
   _auto_create: True
   hosts:
@@ -16,25 +18,27 @@ groups:
     provider: clab
   switches:
     members: [ s1, s2 ]
-    module: [ vlan, stp ]
-
-nodes:
- s2:
-  stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
+    module: [ vlan ]
 
 vlans:
   red:
     mode: bridge
-    links:
-    - s1-h1
-    - s2-h2
-    # Dual link between s1/s2
-    - s1:
-       stp.port_priority: 16  # S1 uses this link to send to S2, unless it is down
-      s2:
-    - s1:
-       stp.port_priority: 32  # Backup link (lower priority)
-      s2:
+    links: [ s1-h1, s2-h2 ]
+  untagged:
+    id: 1
+    mode: bridge
+
+links: # Dual link between s1/s2
+- s1:
+   # stp.port_priority: 1  # S1 uses this link to send to S2, unless it is down
+  s2:
+  vlan.trunk: [ untagged, red ]  # Must be a trunk allowing packets on VLAN 1 for this topology to work on Cumulus
+  vlan.native: untagged
+- s1:
+   # stp.port_priority: 2
+  s2:
+  vlan.trunk: [ untagged, red ]
+  vlan.native: untagged
 
 validate:
   ping:
