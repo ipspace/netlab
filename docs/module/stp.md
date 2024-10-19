@@ -20,7 +20,7 @@ The following table describes per-platform support of individual STP features:
 
 * **stp.enable** (bool) -- Enable STP. Optional, default: **True**.
 
-## Node Parameters
+## Node Parameters (global or per VLAN)
 
 * **stp.priority** (int 0..61440 in increments of 1024) -- STP priority for root election, by default all nodes have equal priority 32656.  In case of equal priority, the bridge with the lowest MAC address becomes root; note that MAC addresses are assigned randomly in Netlab
 
