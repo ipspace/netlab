@@ -17,14 +17,8 @@ from . import load_snapshot, _nodeset, parser_add_verbose
 from ..outputs import common as outputs_common
 from ..utils import strings, log
 
-from .connect import quote_list, docker_connect, ssh_connect
+from .connect import quote_list, docker_connect, ssh_connect, LogLevel, get_log_level
 
-
-class LogLevel(IntEnum):
-  NONE = 0
-  INFO = 1
-  ARGS = 2
-  DRY_RUN = 3
 
 
 #
@@ -54,16 +48,6 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
       help='Node(s) to run command on')
   return parser.parse_known_args(args)
 
-
-def get_log_level(args: argparse.Namespace) -> LogLevel:
-    if args.dry_run:
-        return LogLevel.DRY_RUN
-    elif args.quiet:
-        return LogLevel.NONE
-    elif args.verbose:
-        return LogLevel.ARGS
-    else:
-        return LogLevel.INFO
        
 def exec_on_node(
       args: argparse.Namespace,
