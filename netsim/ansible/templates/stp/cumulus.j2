@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+
+#
+# Configure STP on the multi-vlan bridge
+#
+cat >/etc/network/interfaces.d/53-stp.intf <<CONFIG
+
+auto bridge
+iface bridge
+ bridge-stp {{ 'on' if stp.enable|default(True) else 'off' }}
+{% if 'priority' in stp %}
+ mstpctl-treeprio {{ stp.priority }}
+{% endif %}
+
+{#
+ # Disable STP on specific interfaces if requested, configure port priority
+ #}
+{% for ifdata in interfaces if ifdata.vlan is defined and 'stp' in ifdata  %}
+{%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
+iface {{ ifdata.ifname }}
+{%    if not ifdata.stp.enable|default(True) %}
+ mstpctl-portbpdufilter yes   # Disable STP on this port
+{%    elif 'port_priority' in ifdata.stp %}
+ mstpctl-treeportprio {{ ifdata.stp.port_priority }}
+{%    endif %} 
+{%   endif %}
+{% endfor %}
+CONFIG
+
+ifreload -a
