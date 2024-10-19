@@ -61,3 +61,11 @@ class STP(_Module):
             f'node {node.name} (device {node.device}) stp.port_priority {val} must be a multiple of {port_priority.multiple}',
             log.IncorrectValue,
             'stp')
+        
+        # Check if per-VLAN priority is being used
+        if intf.type=='svi' and 'priority' in intf.stp:
+          if not features.stp.get('pvrst',False):
+            log.error(
+              f'node {node.name} (device {node.device}) does not support per-VLAN STP (PVRST) used on VLAN {intf.name}',
+              log.IncorrectValue,
+              'stp')
