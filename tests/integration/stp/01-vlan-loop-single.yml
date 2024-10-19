@@ -1,0 +1,36 @@
+---
+message: |
+  The devices under test form a connected triangle (loop) without IP addresses
+  in the red VLAN
+
+  h1 and h2 should be able to ping each other, and no forwarding loop should occur
+
+  The bridge with the highest priority (s1) should become the root, the link s2-s3 should get blocked
+  Use ```docker exec -it clab-stp-s3 /usr/sbin/brctl showstp vlan1000``` to verify
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2, s3 ]
+    module: [ vlan, stp ]
+
+nodes:
+ s1:
+  stp.priority: 1024  # High STP bridge priority (low value) -> becomes root
+
+vlans:
+  red:
+    mode: bridge
+    links: [ s1-h1, s2-h2, s1-s2, s1-s3, s2-s3 ]
+
+validate:
+  ping:
+    description: Pinging H2 from H1
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
