@@ -103,8 +103,7 @@ def run(cli_args: typing.List[str]) -> None:
   selector = args.node
 
   if selector in topology.nodes:
-    
-    exec_on_node_node(args,rest,topology,selector,log_level)
+    exec_on_node(args,rest,topology,selector,log_level)
   elif selector in topology.groups:
     node_list= topology.groups.get(selector, {}).get('members', [])
     for node in node_list:
