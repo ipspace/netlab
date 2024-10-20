@@ -14,12 +14,11 @@ from box import Box
 
 from . import external_commands, set_dry_run
 from . import load_snapshot, _nodeset, parser_add_verbose
+from .connect import quote_list, docker_connect, ssh_connect, LogLevel, get_log_level
+
 from ..outputs import common as outputs_common
 from ..utils import strings, log
 from ..augment.groups import group_members
-from .connect import quote_list, docker_connect, ssh_connect, LogLevel, get_log_level
-
-
 
 #
 # CLI parser for 'netlab ' command
@@ -47,8 +46,7 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
       dest='node', action='store',
       help='Node(s) to run command on')
   return parser.parse_known_args(args)
-
-       
+      
 def exec_on_node(
       args: argparse.Namespace,
       rest: list,
@@ -71,7 +69,6 @@ def exec_on_node(
     return ssh_connect(host_data,args,rest,log_level)
   else:
     log.fatal(f'Unknown connection method {connection} for host {node}',module='connect')
-
 
 def run(cli_args: typing.List[str]) -> None:
   (args, rest) = connect_parse(cli_args)
