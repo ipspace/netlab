@@ -497,8 +497,8 @@ def get_parsed_result(v_entry: Box, n_name: str, topology: Box, verbosity: int) 
 
   # Set up arguments for the 'netlab connect' command and execute it
   #
-  args = argparse.Namespace(quiet=True,host=n_name,output=True,show=v_cmd,verbose=False)
-  result = connect_to_node(args=args,rest=[],topology=topology,log_level=LogLevel.NONE)
+  args = argparse.Namespace(quiet=True,output=True,show=v_cmd,verbose=False)
+  result = connect_to_node(node=n_name,args=args,rest=[],topology=topology,log_level=LogLevel.NONE)
 
   if verbosity >= 3:                                        # Extra-verbose: print the results we got
     print(f'Executed {v_cmd} got {result}')
@@ -546,8 +546,8 @@ def get_result_string(
 
   # Set up arguments for the 'netlab connect' command and execute it
   #
-  args = argparse.Namespace(quiet=True,host=n_name,output=True,show=None,verbose=False)
-  result = connect_to_node(args=args,rest=v_cmd,topology=topology,log_level=LogLevel.NONE)
+  args = argparse.Namespace(quiet=True,output=True,show=None,verbose=False)
+  result = connect_to_node(node=n_name,args=args,rest=v_cmd,topology=topology,log_level=LogLevel.NONE)
 
   if result is False:                                       # Report an error if 'netlab connect' failed
     if report_error:

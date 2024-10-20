@@ -163,12 +163,13 @@ def create_command_list(host: Box, args: argparse.Namespace, rest: list) -> list
   else:
     return rest
 
-def connect_to_node(
+def connect_to_node(      
+      node: str, 
       args: argparse.Namespace,
       rest: list,
       topology: Box,
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
-  node = args.host
+  
   host_data = outputs_common.adjust_inventory_host(
                 node=topology.nodes[node],
                 defaults=topology.defaults,
@@ -241,7 +242,7 @@ def run(cli_args: typing.List[str]) -> None:
   host = args.host
 
   if host in topology.nodes:
-    connect_to_node(args,rest,topology,log_level)
+    connect_to_node(node=host,args=args,rest=rest,topology=topology,log_level=log_level)
   elif host in topology.tools:
     connect_to_tool(host,rest,topology,log_level)
   else:
