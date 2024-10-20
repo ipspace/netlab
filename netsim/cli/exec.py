@@ -24,7 +24,7 @@ from ..augment.groups import group_members
 #
 # CLI parser for 'netlab ' command
 #
-def exec_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]::
+def exec_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]:
   parser = argparse.ArgumentParser(
       prog="netlab exec",
       description='Run a command on one or more network devices',
