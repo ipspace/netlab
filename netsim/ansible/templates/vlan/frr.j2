@@ -12,6 +12,12 @@ fi
 {% for i in interfaces if i.type == 'svi' %}
 if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
   brctl addbr {{ i.ifname }}
+
+{# If STP is required, enable it before bringing up the bridge device to avoid any forwarding loops #}
+{%  if 'stp' in module|default([]) and (i.stp|default(stp)).enable|default(True) %}
+  brctl stp {{ i.ifname }} on
+{%  endif %}
+
   ip link set dev {{ i.ifname }} up
   ip addr flush dev {{ i.ifname }}
 {%   if 'ipv4' in i and (i.ipv4 is string or 'ipv4' in loopback) %}
