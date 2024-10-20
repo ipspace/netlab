@@ -36,7 +36,7 @@ def dict_to_mapping(d: typing.Union[Box,dict]) -> list:
 Convert a file mapping -- list of strings in a:b format -- into a dictionary
 """
 def mapping_to_dict(m: list) -> dict:
-  return { k:v for k,v in [ l.split(':') for l in m ] }
+  return { k:v for k,v in [ l.split(':',1) for l in m ] }  # Limit max splits to 2
 
 """
 Check mapping list -- it must be a list of strings, and each string must have exactly one :
