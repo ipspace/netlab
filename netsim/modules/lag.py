@@ -9,78 +9,95 @@ from ..augment import devices, links
 
 ID_SET = 'lag_id'
 
+"""
+populate_lag_id_set -- Collect any user defined lag.ifindex values globally and initialize ID generator
+"""
 def populate_lag_id_set(topology: Box) -> None:
   _dataplane.create_id_set(ID_SET)
   LAG_IDS = { l.lag.ifindex for l in topology.links if 'lag' in l and 'ifindex' in l.lag }
   _dataplane.extend_id_set(ID_SET,LAG_IDS)
   _dataplane.set_id_counter(ID_SET,topology.defaults.lag.start_lag_id,100)
 
+"""
+check_lag_feature -- Verify that all nodes involved in a LAG link support the feature
+"""
+def check_lag_feature(memberlink: Box,topology: Box) -> bool:
+
+  # Check that lag member links have exactly 2 nodes
+  if len(memberlink.interfaces)!=2:
+    log.error(
+      f'Link {memberlink._linkname} in LAG {memberlink.lag.ifindex} must have exactly 2 nodes',
+      category=log.IncorrectAttr,
+      module='lag')
+    return False
+
+  ok = True
+  for i in memberlink.interfaces:
+    n = topology.nodes[i.node]
+    features = devices.get_device_features(n,topology.defaults)
+    if 'lag' not in features:
+      log.error(
+          f'Node {n.name} does not support LAG configured on link {memberlink._linkname}',
+          category=log.IncorrectAttr,
+          module='lag',
+          hint='lag')
+      ok = False
+    ATT = 'lag.lacp_mode'
+    lacp_mode = i.get(ATT) or memberlink.get(ATT) or n.get(ATT) or topology.defaults.get(ATT)
+    if lacp_mode=='passive' and not features.lag.get('passive',False):
+      log.error(
+          f'Node {n.name} does not support passive LACP configured on link {memberlink._linkname}',
+          category=log.IncorrectAttr,
+          module='lag',
+          hint='lag')
+      ok = False
+  return ok
+
+"""
+create_lag_member_links -- iterate over topology.links and expand any that have lag.members defined
+"""
+def create_lag_member_links(topology: Box) -> None:
+  for l in list(topology.links):
+      if 'lag' in l:
+        if not 'members' in l.lag:
+          log.error(
+            f'must define "lag.members" on link {l._linkname}',
+            category=log.IncorrectAttr,
+            module='lag')
+        l.type = 'lag'
+
+        if 'ifindex' not in l.lag:                   # Use user provided lag.ifindex, if any
+          l.lag.ifindex = _dataplane.get_next_id(ID_SET)
+
+        copy_link_data = data.get_box(l)             # We'll copy all link data into member links
+        copy_link_data.type = "p2p"                  # Mark as p2p
+        copy_link_data.prefix = False                # Don't allow IP assignment for these links
+        for k in ['vlan','lag.members']:             # Remove lag.members and any VLAN parameters 
+          copy_link_data.pop(k,None)
+
+        lag_members = l.lag.members
+        l.lag.pop("members",None)                    # Remove explicit list of members
+        for idx,member in enumerate(lag_members):
+          member = links.adjust_link_object(member,f'lag{l.lag.ifindex}[{idx+1}]',topology.nodes)
+
+          # After normalizing, check that all nodes involved support LAGs
+          if check_lag_feature(member,topology):
+            member = copy_link_data + member         # Copy group data into member link
+            member.linkindex = len(topology.links)+1
+            member.parentindex = l.linkindex         # Keep track of parent
+            if log.debug_active('lag'):
+              print(f'LAG create_lag_member_links -> adding link {member}')
+            topology.links.append(member)
+
+            if not l.interfaces:                     # Copy interfaces from first member link
+              l.interfaces = member.interfaces + []  # Deep copy, assumes all links have same 2 nodes
+
 class LAG(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
+    if log.debug_active('lag'):
+      print(f'LAG module_pre_transform')
     populate_lag_id_set(topology)
 
-  """
-  link_pre_transform: Process LAG link groups and add virtual parent links to the topology
-  """
-  def link_pre_transform(self, link: Box, topology: Box) -> None:
-    if log.debug_active('lag'):
-      print(f'LAG link_pre_transform for {link}')
-
-    # Iterate over links with type lag, created for link group(s)
-    if link.get('type',"")=="lag" and '_link_group' in link:
-      group_name = link._link_group
-      # Check that lag member links have exactly 2 nodes
-      if len(link.interfaces)!=2:
-        log.error(
-            f'Links in LAG group {group_name} must have exactly 2 nodes',
-            category=log.IncorrectAttr,
-            module='lag',
-            hint='lag')
-
-      # 1. Check that the 2 nodes involved all (both) support LAG
-      for i in link.interfaces:
-        n = topology.nodes[i.node]
-        features = devices.get_device_features(n,topology.defaults)
-        if 'lag' not in features:
-          log.error(
-              f'Node {n.name} does not support LAG configured on link {link._linkname}',
-              category=log.IncorrectAttr,
-              module='lag',
-              hint='lag')
-        ATT = 'lag.lacp_mode'
-        lacp_mode = i.get(ATT) or link.get(ATT) or n.get(ATT) or topology.defaults.get(ATT)
-        if lacp_mode=='passive' and not features.lag.get('passive',False):
-          log.error(
-              f'Node {n.name} does not support passive LACP configured on link {link._linkname}',
-              category=log.IncorrectAttr,
-              module='lag',
-              hint='lag')
-
-      # Find parent virtual link, create if not existing
-      parents = [ l for l in topology.links if l.get("type")=="lag" and l._linkname == group_name ]
-      if not parents:
-        parent = data.get_box(link)
-        parent._linkname = group_name
-        parent.pop('_link_group',None)              # Don't include parent in group
-        parent.linkindex = len(topology.links) + 1
-        parent.interfaces = link.interfaces + []    # Deep copy, assumes all links have same 2 nodes
-        if 'ifindex' not in parent.lag:             # Use given lag.ifindex, if any
-          parent.lag.ifindex = _dataplane.get_next_id(ID_SET)
-        topology.links.append( parent )
-        if log.debug_active('lag'):
-          print(f'LAG link_pre_transform created virtual parent {parent}')
-      else:
-        parent = parents[0]
-        # For future mc-lag: add any new nodes
-        # parent.interfaces.extend( [ n for n in link.interfaces if n not in parent.interfaces ] )
-
-      # Modify the LAG member link
-      link.type = "p2p"                   # Change type back to p2p
-      link.lag = link.lag or {}           # ..and make sure template code can check for lag links
-      link.prefix = False                 # Disallow IP addressing
-      link.pop('vlan',None)               # Remove any VLAN, moved to the virtual lag interface
-      link.parentindex = parent.linkindex # Link physical interface to its virtual parent
-
-      if log.debug_active('lag'):
-        print(f'After LAG link_pre_transform: {link}')
+    # Expand lag.members into additional p2p links
+    create_lag_member_links(topology)

@@ -20,11 +20,13 @@ The following parameters can be set globally or per node/link:
   Note that 'link down' is not easily detectable in a virtual environment with veth pairs, therefore it is strongly recommended
   to enable LACP whenever possible
 
-* **lacp_mode**: "active" or "passive"
+* **lacp_mode**: "active" (default) or "passive"; note that at most 1 node can be passive
 
+The following parameters can be set per link:
+* **members**: List or dict of links that form the LAG, mandatory and formatted like **topology.links**
 * **ifindex**: Optional parameter to control naming of the bonding device
 
-By setting the link type to **lag** for a link group, a *lag* type link is created with the given list of member links.
+By creating a link with  **lag.members** defined, a *lag* type link is created with the given list of member links.
 
 ## Example
 
@@ -36,18 +38,14 @@ module: [ lag ]
 nodes: [ r1, r2 ]
 
 links:
-- group: lag1
-  type: lag
-  members: [ r1-r2, r1-r2 ]
+- lag.members: [ r1-r2, r1-r2 ]
 ```
-Additional parameters such as vlan trunks, OSPF cost, etc. can be applied to such *lag* type link groups. 
+Additional parameters such as vlan trunks, OSPF cost, etc. can be applied to such *lag* type links. 
 
 In case additional attributes are required for the member links, the members can be expanded:
 ```
 links:
-- group: lag1
-  type: lag
-  members:
+- lag.members:
   - r1:
      ifindex: 49  # Use 100G links 1/1/49 and 1/1/50
     r2:
