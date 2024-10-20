@@ -163,18 +163,18 @@ def create_command_list(host: Box, args: argparse.Namespace, rest: list) -> list
   else:
     return rest
 
-def connect_to_node(
+def connect_to_node(      
       args: argparse.Namespace,
       rest: list,
       topology: Box,
-      node: str,
+      node: typing.Optional[str] = None, 
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
   
   host_data = outputs_common.adjust_inventory_host(
                 node=topology.nodes[node],
                 defaults=topology.defaults,
                 group_vars=True)
-  host_data.host = node
+  host_data.host = node or args.host
   connection = host_data.netlab_console_connection or host_data.ansible_connection
 
   rest = create_command_list(host_data,args,rest)
