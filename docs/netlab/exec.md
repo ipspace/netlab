@@ -1,7 +1,7 @@
 (netlab-exec)=
-# Executing Commands ono Lab Devices
+# Executing Commands on Lab Devices
 
-**netlab exec** command uses information stored in the _netlab_ snapshot file and reported with the **[`netlab inspect --node`](inspect.md)** command toexec to a lab device or tool using SSH or **docker exec**.
+**netlab exec** command uses information stored in the _netlab_ snapshot file and reported with the **[`netlab inspect --node`](inspect.md)** command to execute a command on one or more lab devices using SSH or **docker exec**.
 
 ## Usage
 
