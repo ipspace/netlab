@@ -16,7 +16,7 @@ from . import external_commands, set_dry_run
 from . import load_snapshot, _nodeset, parser_add_verbose
 from ..outputs import common as outputs_common
 from ..utils import strings, log
-
+from ..augment.groups import group_members
 from .connect import quote_list, docker_connect, ssh_connect, LogLevel, get_log_level
 
 
@@ -89,7 +89,7 @@ def run(cli_args: typing.List[str]) -> None:
   if selector in topology.nodes:
     exec_on_node(args,rest,topology,selector,log_level)
   elif selector in topology.groups:
-    node_list= topology.groups.get(selector, {}).get('members', [])
+    node_list = group_members(topology,selector)
     for node in node_list:
         exec_on_node(args,rest,topology,node,log_level)   
   else:  
