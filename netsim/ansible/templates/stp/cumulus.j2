@@ -11,8 +11,9 @@ cat >/etc/network/interfaces.d/53-stp.intf <<CONFIG
 auto bridge
 iface bridge
  bridge-stp {{ 'on' if stp.enable|default(True) else 'off' }}
+ mstpctl-forcevers stp {# Other options are rstp or mstp #}
  #
- # Newer versions support 'mstpctl-pvrst-mode yes' to enable PVRST
+ # Newer versions 5.x support 'mstpctl-pvrst-mode yes' to enable PVRST
  #
 {% if 'priority' in stp %}
  mstpctl-treeprio {{ stp.priority }}
@@ -27,10 +28,22 @@ iface {{ ifdata.ifname }}
 {%    if not ifdata.stp.enable|default(True) %}
  mstpctl-portbpdufilter yes   # Disable STP on this port
 {%    elif 'port_priority' in ifdata.stp %}
- mstpctl-treeportprio {{ ifdata.stp.port_priority }}
+#
+# Use 4x port_priority to get the same 4-bit value on the wire
+#
+ mstpctl-treeportprio {{ ifdata.stp.port_priority * 4 }}
+#
+# Newer versions 5.x support mstpctl-port-vlan-priority <vlan id>={{ ifdata.stp.port_priority }}
+#
 {%    endif %} 
 {%   endif %}
 {% endfor %}
 CONFIG
 
 ifreload -a
+
+#
+# If STP port priority was changed, the system sends duplicate BDPUs with both the old and new port priority
+# This causes peers to remain in 'listening' state forever
+# Restart mstpd to fix that
+service mstpd restart
