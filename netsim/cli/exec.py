@@ -14,7 +14,8 @@ from box import Box
 
 from . import external_commands, set_dry_run
 from . import load_snapshot, _nodeset, parser_add_verbose
-from .connect import quote_list, docker_connect, ssh_connect, LogLevel, get_log_level
+from .connect import quote_list, docker_connect, ssh_connect, connect_to_node,\
+  LogLevel, get_log_level
 
 from ..outputs import common as outputs_common
 from ..utils import strings, log
@@ -23,7 +24,7 @@ from ..augment.groups import group_members
 #
 # CLI parser for 'netlab ' command
 #
-def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]:
+def exec_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
       prog="netlab exec",
       description='Run a command on one or more network devices',
@@ -47,31 +48,8 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
       help='Node(s) to run command on')
   return parser.parse_known_args(args)
       
-def exec_on_node(
-      args: argparse.Namespace,
-      rest: list,
-      topology: Box,
-      node: str,
-      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
-  
-  host_data = outputs_common.adjust_inventory_host(
-                node=topology.nodes[node],
-                defaults=topology.defaults,
-                group_vars=True)
-  host_data.host = node
-  connection = host_data.netlab_console_connection or host_data.ansible_connection
-
-  if connection == 'docker':
-    return docker_connect(host_data,args,rest,log_level)
-  elif connection in ['paramiko','ssh','network_cli','netconf','httpapi'] or not connection:
-    if connection in ['netconf','httpapi']:
-      print(f"Using SSH to connect to a device configured with {connection} connection")
-    return ssh_connect(host_data,args,rest,log_level)
-  else:
-    log.fatal(f'Unknown connection method {connection} for host {node}',module='connect')
-
 def run(cli_args: typing.List[str]) -> None:
-  (args, rest) = connect_parse(cli_args)
+  (args, rest) = exec_parse(cli_args)
   log.set_logging_flags(args)
   log_level = get_log_level(args)
   set_dry_run(args)
@@ -82,17 +60,17 @@ def run(cli_args: typing.List[str]) -> None:
   rest = quote_list(rest)    
   topology = load_snapshot(args)
   selector = args.node
-
-  if selector in topology.nodes:
-    exec_on_node(args,rest,topology,selector,log_level)
+  args = argparse.Namespace(show=None,verbose=False, quiet=True,Output=True) 
+  if selector in topology.nodes:   
+    connect_to_node(args,rest,topology,selector,log_level)
   elif selector in topology.groups:
     node_list = group_members(topology,selector)
-    for node in node_list:
-        exec_on_node(args,rest,topology,node,log_level)   
+    for node in node_list:           
+        connect_to_node(args,rest,topology,node,log_level)   
   else:  
     node_list = _nodeset.parse_nodeset(selector,topology)
     for node in node_list:
-        exec_on_node(args,rest,topology,node,log_level)
+        connect_to_node(args,rest,topology,node,log_level)
   
  
 
