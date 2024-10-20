@@ -27,6 +27,7 @@ When the lab is fully configured, you can use the:
 * **[netlab config](netlab-config)** command to deploy custom configuration snippets
 * **[netlab capture](netlab-capture)** command to capture packets on VM- or container interfaces
 * **[netlab exec](netlab-exec)** command to execute arbitrary commands on one or more network devices
+
 Before shutting down your lab with the **[netlab down](netlab/down.md)** command, you might want to run the **[netlab collect](netlab/collect.md)** command to save the configuration changes you made.
 
 ## Getting Started
