@@ -40,6 +40,9 @@ If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://g
 **netlab connect**
 : Use SSH or **docker exec** to [connect to a lab device](https://netlab.tools/netlab/connect/) using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords specified in lab topology or *netlab* device defaults.
 
+**netlab exec**
+: Use SSH or **docker exec** to [execute a command on one or more network devices](https://netlab.tools/netlab/exec/) using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords specified in lab topology or *netlab* device defaults.
+
 **netlab capture**
 : [Perform packet capture](https://netlab.tools/netlab/capture/) on VM- and container interfaces
 
