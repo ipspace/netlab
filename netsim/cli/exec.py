@@ -24,7 +24,7 @@ from ..augment.groups import group_members
 #
 # CLI parser for 'netlab ' command
 #
-def exec_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]:
+def exec_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]::
   parser = argparse.ArgumentParser(
       prog="netlab exec",
       description='Run a command on one or more network devices',
@@ -61,16 +61,16 @@ def run(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
   selector = args.node
   args = argparse.Namespace(show=None,verbose=False, quiet=True,Output=True) 
-  if selector in topology.nodes:   
-    connect_to_node(args,rest,topology,selector,log_level)
+  if selector in topology.nodes:
+    connect_to_node(node=selector,args=args,rest=rest,topology=topology,log_level=log_level)
   elif selector in topology.groups:
     node_list = group_members(topology,selector)
     for node in node_list:           
-        connect_to_node(args,rest,topology,node,log_level)   
+        connect_to_node(node=node,args=args,rest=rest,topology=topology,log_level=log_level)   
   else:  
     node_list = _nodeset.parse_nodeset(selector,topology)
     for node in node_list:
-        connect_to_node(args,rest,topology,node,log_level)
+        connect_to_node(node=node,args=args,rest=rest,topology=topology,log_level=log_level)
   
  
 

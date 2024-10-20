@@ -242,7 +242,7 @@ def run(cli_args: typing.List[str]) -> None:
   host = args.host
 
   if host in topology.nodes:
-    connect_to_node(args,rest,topology,host,log_level)
+    connect_to_node(node=host,args=args,rest=rest,topology=topology,log_level=log_level)
   elif host in topology.tools:
     connect_to_tool(host,rest,topology,log_level)
   else:
