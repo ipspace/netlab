@@ -86,7 +86,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
 
   # special loader with duplicate key checking for PyYAML
   class UniqueKeyLoader(yaml.SafeLoader):
-    def construct_mapping(self, node, deep=False):
+    def construct_mapping(self, node : yaml.MappingNode, deep : bool = False) -> dict:
       mapping = []
       for key_node, value_node in node.value:
           key = self.construct_object(key_node, deep=deep)
