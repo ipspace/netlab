@@ -187,6 +187,10 @@ def find_node_device(n: Box, topology: Box) -> bool:
   if dev_def.get('node.module') and 'module' not in n:      # Have to copy default device module into node data
     n.module = dev_def.node.module                          # ... before modules are initialized
 
+  # JvB: Add device specific attributes to the data model, could auto-prefix with provider name
+  if 'attributes' in dev_def:
+    topology.defaults.attributes = topology.defaults.attributes + dev_def.attributes
+
   return True
 
 """
