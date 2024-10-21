@@ -6,6 +6,7 @@ import sys
 import typing
 import argparse
 import pathlib
+import yaml
 
 from box import Box
 
@@ -82,10 +83,22 @@ def include_yaml(data: Box, source_file: str) -> None:
 read_cache: dict = {}
 
 def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
+
+  # special loader with duplicate key checking for PyYAML
+  class UniqueKeyLoader(yaml.SafeLoader):
+    def construct_mapping(self, node, deep=False):
+      mapping = []
+      for key_node, value_node in node.value:
+          key = self.construct_object(key_node, deep=deep)
+          if key in mapping:
+            log.fatal(f"Duplicate section in YAML file: {key}") 
+          mapping.append(key)
+      return super().construct_mapping(node, deep)
+
   global read_cache
   if string is not None:
     try:
-      yaml_data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False)
+      yaml_data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False,Loader=UniqueKeyLoader)
       return yaml_data
     except:                                                                    # pragma: no cover -- can't get here unless there's a package error
       log.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
@@ -114,7 +127,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
         print("YAML file %s does not exist" % filename) # pragma: no cover -- too hard to test to bother
       return None
     try:
-      yaml_data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
+      yaml_data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False,Loader=UniqueKeyLoader)
       include_yaml(yaml_data,filename)
       read_cache[filename] = Box(yaml_data)
     except:
