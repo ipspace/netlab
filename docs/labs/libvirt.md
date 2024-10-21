@@ -102,6 +102,9 @@ The following node parameters influence the VM configuration created by *vagrant
 * **memory** -- VM memory (in MB)
 * **libvirt.nic_model_type** -- VM NIC model (example: e1000). Default _netlab_ settings usually work fine.
 * **libvirt.nic_adapter_count** -- maximum number of VM NICs (default: 8)
+* **libvirt.uuid** -- sets the libvirt VM UUID (some devices use the UUID to create their serial numbers). The value of this parameter is not checked[^UUID].
+
+[^UUID]: In other words, you're on your own. After starting a lab, you can get a valid VM UUID with **virsh dumpxml _vm_name_|grep uuid** command (use **netlab status** to display the VM name).
 
 ### Replacing Vagrant Boxes
 
