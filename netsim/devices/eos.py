@@ -65,6 +65,27 @@ def check_dhcp_clients(node: Box, topology: Box) -> None:
       category=log.IncorrectType,
       module='quirks')
 
+def configure_ceos_attributes(node: Box, topology: Box) -> None:
+  serialnumber = node.eos.get('serialnumber',None)
+  systemmacaddr = node.eos.get('systemmacaddr',None)
+  if serialnumber or systemmacaddr:
+    if 'clab' not in node or node.clab.kind != "ceos":
+      log.error(
+        f"eos.serialnumber and eos.systemmacaddr can only be set for Arista cEOS containers using Containerlab (node {node.name}).",
+        category=log.IncorrectType,
+        module='quirks')
+    _node = topology.defaults.devices.eos.clab.node
+    if 'config_templates' in _node:
+      if '/mnt/flash/ceos-config' in _node.config_templates.values():
+        log.error(
+          f"ceos-config template/mapping already defined, unable to configure eos.serialnumber (node {node.name}).",
+          category=log.Skipped,
+          module='quirks')
+      else:
+        topology.defaults.devices.eos.clab.node.config_templates['ceos-config'] = "/mnt/flash/ceos-config"
+    else:
+      topology.defaults.devices.eos.clab.node.config_templates = { 'ceos-config' : "/mnt/flash/ceos-config" }
+
 class EOS(_Quirks):
 
   @classmethod
@@ -80,3 +101,5 @@ class EOS(_Quirks):
       check_shared_mac(node,topology)
     if 'dhcp' in mods:
       check_dhcp_clients(node,topology)
+    if 'eos' in node:
+      configure_ceos_attributes(node,topology)
