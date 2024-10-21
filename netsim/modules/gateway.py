@@ -32,6 +32,9 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
   for intf in node.interfaces:                                        # Iterate over interfaces
     if not 'gateway' in intf:                                         # ... and skip interfaces without FHRP
       continue
+
+    if intf.gateway is True:
+      intf.gateway = topology.gateway + node.get('gateway',{})        # Propagate global and node level params, for discussion - may not be correct
     gw_proto = intf.gateway.protocol                                  # We're asuming someone else did a sanity check on this value
     if gw_proto in proto_list:                                        # Already checked?
       continue
