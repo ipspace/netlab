@@ -15,13 +15,30 @@
 * The DHCP client on Arista EOS is finicky. When the DHCP state changes on one of the data-plane Ethernet interfaces, the management interface might lose its IPv4 address.
 * You can set Arista cEOS serial number and system MAC address with the **eos.serialnumber** and **eos.systemmacaddr** node properties.
 * Use **libvirt.uuid** node property to ensure a vEOS VM does not change its serial number every time you start the lab.
+* Anycast gateways and DHCP/DHCPv6 clients do not work on Arista cEOS Ethernet interfaces.
+* cEOS MPLS data plane was introduced in release 4.32.1F.
 
-The following features do not work on Arista cEOS Ethernet interfaces:
+The default name of the management interface is **Management0** on vEOS and **Management1** on cEOS. If you'd like to change the management interface name on cEOS:
 
-* Anycast gateways
-* DHCP and DHCPv6 clients
+* Create `intf_map` file in the topology directory with the following contents:
 
-cEOS MPLS data plane was introduced in release 4.32.1F.
+```
+{
+  "ManagementIntf": {
+    "eth0": "Management0"
+  }
+}
+```
+
+* Map that file into the `/mnt/flash/EosIntfMapping_json` container file in the node **clab.binds** dictionary, for example:
+
+```
+nodes:
+  r:
+    device: eos
+    clab.binds:
+      intf_map: /mnt/flash/EosIntfMapping_json
+```
 
 (caveats-aruba)=
 ## Aruba AOS-CX
