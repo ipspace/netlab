@@ -5,6 +5,7 @@ from box import Box
 
 from . import _Quirks
 from ..utils import log
+from .. import data
 from ..augment import devices
 
 def check_mlps_vlan_bundle(node: Box) -> None:
@@ -68,23 +69,28 @@ def check_dhcp_clients(node: Box, topology: Box) -> None:
 def configure_ceos_attributes(node: Box, topology: Box) -> None:
   serialnumber = node.eos.get('serialnumber',None)
   systemmacaddr = node.eos.get('systemmacaddr',None)
-  if serialnumber or systemmacaddr:
-    if 'clab' not in node or node.clab.kind != "ceos":
+  if not serialnumber and not systemmacaddr:
+    return
+
+  if 'clab' not in node or node.clab.kind != "ceos":
+    log.error(
+      f"eos.serialnumber and eos.systemmacaddr can only be set for Arista cEOS containers (node {node.name}).",
+      category=Warning,
+      more_hints=['Use libvirt.uuid to influence serial number on EOS virtual machines'],
+      module='quirks')
+    return
+  
+  mnt_config = '/mnt/flash/ceos-config'
+  for ct in node.get('clab.binds',[]):
+    if mnt_config in ct:
       log.error(
-        f"eos.serialnumber and eos.systemmacaddr can only be set for Arista cEOS containers using Containerlab (node {node.name}).",
-        category=log.IncorrectType,
+        f"{mnt_config} file is already mapped, unable to configure eos.serialnumber (node {node.name}).",
+        category=log.Skipped,
         module='quirks')
-    _node = topology.defaults.devices.eos.clab.node
-    if 'config_templates' in _node:
-      if '/mnt/flash/ceos-config' in _node.config_templates.values():
-        log.error(
-          f"ceos-config template/mapping already defined, unable to configure eos.serialnumber (node {node.name}).",
-          category=log.Skipped,
-          module='quirks')
-      else:
-        topology.defaults.devices.eos.clab.node.config_templates['ceos-config'] = "/mnt/flash/ceos-config"
-    else:
-      topology.defaults.devices.eos.clab.node.config_templates = { 'ceos-config' : "/mnt/flash/ceos-config" }
+      return
+
+  data.append_to_list(node.clab,'binds',f'clab_files/{node.name}/ceos-config:{mnt_config}')
+  data.append_to_list(node.clab,'config_templates',f'ceos-config:{mnt_config}')
 
 class EOS(_Quirks):
 
