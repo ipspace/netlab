@@ -12,7 +12,9 @@
 
 * Routed VLANs cannot be used in EVPN MPLS VLAN bundles
 * Arista EOS uses an [invalid value for the suboption 150 of the DHCP option 82](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html#vendor-interoperability-is-fun) when doing inter-VRF DHCPv4 relaying.
-* The DHCP client on Arista EOS is finicky. Management interface might lose its IPv4 address when the DHCP state changes on one of the data-plane Ethernet interfaces.
+* The DHCP client on Arista EOS is finicky. When the DHCP state changes on one of the data-plane Ethernet interfaces, the management interface might lose its IPv4 address.
+* You can set Arista cEOS serial number and system MAC address with the **eos.serialnumber** and **eos.systemmacaddr** node properties.
+* Use **libvirt.uuid** node property to ensure a vEOS VM does not change its serial number every time you start the lab.
 
 The following features do not work on Arista cEOS Ethernet interfaces:
 
