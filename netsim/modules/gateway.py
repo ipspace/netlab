@@ -153,8 +153,50 @@ class FHRP(_Module):
         process_gw_id(vdata.get('gateway.id',None),required=False,path=f'VLAN {vname}')
 
   def link_pre_link_transform(self, link: Box, topology: Box) -> None:
-    if not 'gateway' in link:
-      return
+    #
+    # Step#1: deal with 'gateway' interface attributes
+    #
+    # If an interface has 'gateway' parameter (and it's not False), we must enable
+    # gateway on the link and remember that we have to turn 'gateway' off on other
+    # interfaces if needed
+    #
+    # Also: combining 'gateway:False' on link with 'gateway:True' on interface is
+    # a stupidity and will be rejected
+    #
+    copy_to_link = False
+    for intf in link.interfaces:
+      if 'gateway' not in intf:                             # No 'extra special' stuff, move on
+        continue
+      if intf.get('gateway',None) is False:                 # The 'special' stuff is don't do it?
+        continue                                            # ... sure, I can do that ;)
+      if 'gateway' in link:                                 # Do we already have 'gateway' on link?
+        if link.gateway is False:                           # If we have 'gateway:false' we're dealing with a stupidity
+          log.error(
+            'Cannot combine gateway:false on link with gateway:true on interface',
+            more_data=f'Link {link._linkname} node {intf.node}',
+            category=log.IncorrectValue,
+            module='gateway')
+      else:
+        link.gateway = True                                 # Found interface gateway attribute but no link GW. Fix that
+        copy_to_link = True                                 # And remember that someone gave us extra work to do :(
+
+    #
+    # Step#2: If we enabled link gateway due to interface gateway attribute, we have to turn it off elsewhere
+    #
+    if copy_to_link:
+      for intf in link.interfaces:                          # Another walk through interfaces (thank you, user, for extra work)
+        # Does the node use gateway module?
+        if 'gateway' in topology.nodes[intf.node].get('module',[]):
+          if 'gateway' not in intf:                         # ... but does not have gateway parameters set on this link?
+            intf.gateway = False                            # ... then we have to turn gateway off for this interface
+          elif intf.gateway is True:                        # Otherwise, do we still have 'do gateway' value there?
+            intf.pop('gateway',None)                        # ... get rid of it, we already propagated it to the link
+
+    # OK, we're done with dealing with topologies that require extra special granularity of default gateways
+    # Now back to our regular programming ;)
+    #
+    if not 'gateway' in link:                               # Still no gateway parameter on the link?
+      return                                                # Cool, I like having it easy ;)
 
     global_gateway = data.get_global_settings(topology,'gateway')
     if not global_gateway:                      # pragma: no cover
@@ -194,6 +236,10 @@ class FHRP(_Module):
           'gateway')
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
+    for intf in node.interfaces:                                      # First a sanity cleanup for people with the extra-granular
+      if intf.get('gateway',None) is False:                           # requirements: remove 'gateway:False' from interfaces
+        intf.pop('gateway',None)
+
     if not check_protocol_support(node,topology):
       return
 

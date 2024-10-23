@@ -897,8 +897,10 @@ the gateway module to avoid confusion in configuration templates.
 def copy_link_gateway(link: Box, nodes: Box) -> None:
   if 'gateway' not in link:
     return
-  for intf in link.interfaces:                                        # Copy link gateway into interface attributes
-    if 'gateway' not in nodes[intf.node].get('module',[]):           # ... but only for nodes using the gateway module
+  for intf in link.interfaces:                              # Copy link gateway into interface attributes
+    if 'gateway' not in nodes[intf.node].get('module',[]):  # ... but only for nodes using the gateway module
+      continue
+    if intf.get('gateway',None) is False:                   # Skip interfaces where gateway is explicitly turned off
       continue
     for af in log.AF_LIST:
       if af in link.gateway:
