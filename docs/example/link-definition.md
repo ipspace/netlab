@@ -143,6 +143,7 @@ links:
   - node: r3
 ```
 
+(link-interface-attribute)=
 ### Links with Interface Attributes
 
 Each interface (node-to-link attachment) can have its own attributes specified as a dictionary under the node key. For example, you might want to set OSPF cost and disable BFD for a single node on a multi-access link:
