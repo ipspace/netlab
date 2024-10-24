@@ -789,7 +789,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
                                                                             # Overwrite interface settings with VLAN settings
       vlan_ifdata = vlan_ifdata + {
                       k:v for k,v in vlan_data.items()
-                        if k not in svi_skipattr and
+                        if k not in svi_skipattr and k not in copy_attr and
                            (v is not True or k not in vlan_ifdata) }
       fix_vlan_mode_attribute(vlan_ifdata)
       node.interfaces.append(vlan_ifdata)                                   # ... and add SVI interface to list of node interfaces
@@ -1279,6 +1279,28 @@ class VLAN(_Module):
 
   def module_pre_link_transform(self, topology: Box) -> None:
     create_loopback_vlan_links(topology)
+
+  # We need to copy a few attributes from node VLAN data into access link interface data, for example
+  # the node IPv4/IPv6 address (to support static addressing) and "gateway" attribute to enable
+  # selective VLAN gateway module activation
+  #
+  # This operation needs to be done when the link data structures have already been transformed into
+  # the canonical "interfaces" list format, so we cannot do it any sooner than this point.
+  #
+  def link_pre_link_transform(self, link: Box, topology: Box) -> None:
+    if 'vlan' not in link:
+      return
+
+    for intf in link.interfaces:
+      vname = intf.get('vlan.access',None)
+      if not vname:
+        continue
+      if vname not in topology.nodes[intf.node].get('vlans',{}):
+        continue
+      vdata = topology.nodes[intf.node].vlans[vname]
+      for attr in topology.defaults.vlan.attributes.copy_vlan_to_intf:
+        if attr in vdata:
+          intf[attr] = vdata[attr]
 
   def module_post_link_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
