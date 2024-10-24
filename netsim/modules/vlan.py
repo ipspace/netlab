@@ -1299,9 +1299,8 @@ class VLAN(_Module):
         continue
       vdata = topology.nodes[intf.node].vlans[vname]
       for attr in topology.defaults.vlan.attributes.copy_vlan_to_intf:
-        if attr not in vdata:
-          continue
-        intf[attr] = vdata[attr]
+        if attr in vdata:
+          intf[attr] = vdata[attr]
 
   def module_post_link_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
