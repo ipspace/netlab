@@ -8,6 +8,10 @@ The VLAN configuration module implements VLANs and VLAN-related interfaces inclu
 * Bridging-only and IRB VLANs
 * Routed subinterfaces
 
+```{warning}
+The VLAN module implements data-plane functionality but does not configure the Spanning Tree Protocol (STP), leaving the vendor defaults unchanged. Trying to connect devices with incompatible defaults might result in connectivity problems. In that case, you'll have to fix the STP mismatches with additional device configuration.
+```
+
 ```eval_rst
 .. contents:: Table of Contents
    :depth: 2
