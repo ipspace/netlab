@@ -148,8 +148,9 @@ Host 192.168.121.*
 * Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/).
 * You need Containerlab 0.58.0 or greater to run these images.
 * You cannot use VLANs 1002 through 1005 with Cisco IOL layer-2 image
-* Bridging (bridge groups) does not work in Cisco IOL (router) image.
+* Bridging (bridge groups) does not work in the Cisco IOL (router) image.
 * Containerlab 0.58.0 sets the same base MAC address for all IOL nodes, resulting in duplicate spanning tree system IDs. Lab topologies with more than one IOL node might not work correctly.
+* STP does not work correctly with the current packaging of the IOL L2 container, making multi-node VLAN topologies impossible to build.
 
 See also [common Cisco IOS](caveats-iosv) caveats.
 
