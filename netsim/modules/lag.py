@@ -14,7 +14,8 @@ populate_lag_id_set -- Collect any user defined lag.ifindex values globally and 
 """
 def populate_lag_id_set(topology: Box) -> None:
   _dataplane.create_id_set(ID_SET)
-  LAG_IDS = { l.lag.ifindex for l in topology.links if l.get('lag.ifindex',None) }
+  # Note that 0 is a valid lag.ifindex value
+  LAG_IDS = { l.lag.ifindex for l in topology.links if 'lag' in l and 'ifindex' in l.lag }
   _dataplane.extend_id_set(ID_SET,LAG_IDS)
   _dataplane.set_id_counter(ID_SET,topology.defaults.lag.start_lag_id,100)
 
