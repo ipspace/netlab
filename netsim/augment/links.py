@@ -15,7 +15,7 @@ from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from . import devices,addressing
 
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
-  'loopback', 'tunnel' ]
+  'loopback', 'tunnel', 'lag' ]
 
 def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
@@ -381,6 +381,7 @@ def assign_link_prefix(
       addr_pools: Box,
       nodes: Box,
       link_path: str = 'links') -> Box:
+
   if 'prefix' in link:                                    # User specified a static link prefix
     pfx_list = addressing.parse_prefix(link.prefix,path=link_path)
     if log.debug_active('addr'):                          # pragma: no cover (debugging printout)
@@ -851,7 +852,7 @@ def check_link_type(data: Box) -> bool:
 
   if link_type == 'loopback' and node_cnt != 1:
     log.error(
-      f'Looopback link {data._linkname} can have a single node attached\n... {data}',
+      f'Loopback link {data._linkname} can have a single node attached\n... {data}',
       log.IncorrectValue,
       'links')
     return False
@@ -1082,7 +1083,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       continue
 
     set_link_bridge_name(link,defaults)
-    link_default_pools = ['p2p','lan'] if link.type == 'p2p' else ['lan']
+    link_default_pools = ['p2p','lan'] if link.type in ['p2p','lag'] else ['lan']
     assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
     copy_link_gateway(link,nodes)
     assign_interface_addresses(link,pools,nodes,defaults)
