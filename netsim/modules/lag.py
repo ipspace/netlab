@@ -4,6 +4,7 @@ import netaddr
 from box import Box, BoxList
 from . import _Module, _dataplane
 from .. import data
+from ..data import types as _types
 from ..utils import log
 from ..augment import devices, links
 
@@ -30,6 +31,9 @@ def create_lag_member_links(topology: Box) -> None:
         log.error(f'must define "lag.members" on LAG link {l._linkname}',
           category=log.IncorrectAttr,
           module='lag')
+      elif not _types.must_be_list(parent=l.lag,key='members',path=l._linkname,module='lag'):
+        return
+
       l.type = 'lag'
       if 'ifindex' not in l.lag:                     # Use user provided lag.ifindex, if any
         l.lag.ifindex = _dataplane.get_next_id(ID_SET)
@@ -41,7 +45,7 @@ def create_lag_member_links(topology: Box) -> None:
       lag_members = l.lag.members
       l.lag.pop("members",None)                      # Remove explicit list of members
       for idx,member in enumerate(lag_members):
-        member = links.adjust_link_object(member,f'lag{l.lag.ifindex}[{idx+1}]',topology.nodes)
+        member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
 
         if len(member.interfaces)!=2:                # Check that there are exactly 2 nodes involved
           log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
@@ -98,8 +102,8 @@ class LAG(_Module):
     for i in node.interfaces:
       if 'lag' not in i:
         continue
-      ATT = 'lag.lacp_mode'
-      lacp_mode = i.get(ATT) or node.get(ATT) or topology.defaults.get(ATT)
+
+      lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
       if lacp_mode=='passive' and not features.lag.get('passive',False):
         log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
           category=log.IncorrectAttr,

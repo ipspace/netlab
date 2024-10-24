@@ -23,7 +23,7 @@ The following parameters can be set globally or per node/link:
 * **lacp_mode**: "active" (default) or "passive"; note that at most 1 node can be passive
 
 The following parameters can be set per link:
-* **members**: List or dict of links that form the LAG, mandatory and formatted like **topology.links**
+* **members**: List of links that form the LAG, mandatory and formatted like **topology.links**
 * **ifindex**: Optional parameter to control naming of the bonding device
 
 By creating a link with  **lag.members** defined, a *lag* type link is created with the given list of member links.
