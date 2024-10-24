@@ -92,6 +92,6 @@ More complex topologies, such as multiple VRRPv3 instances *on the same subnet*,
 
 * **vrrp.group** (default: 1) -- VRRP group
 * **vrrp.priority** (interface parameter, integer)
-* **vrrp.preempt** (interface parameter, boolean)
+* **vrrp.preempt** (interface parameter, boolean) -- VRRP preempting is enabled by default; you can disable it with **vrrp.preempt: False**.
 
 No other aspect of VRRP (VRRP version, timers...) is manageable through *netlab* parameters; if you want to configure them, create a plugin to implement additional VRRP functionality.
