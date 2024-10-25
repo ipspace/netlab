@@ -171,10 +171,10 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
     v_attr[attr].use_count = v_attr[attr].use_count + 1
 
     for vname in vlan_list:                                       # Check that VLANs exist
-      if vname in topology.get('vlans',{}):
-        continue
       if not obj is link and vname in topology.nodes[obj.node].get('vlans',{}):
-        v_attr[attr].node_set.add(obj.node)
+        v_attr[attr].node_set.add(obj.node)                       # First check node vlans, and add node to the node_set if found
+        continue
+      if vname in topology.get('vlans',{}):                       # Then check global vlans
         continue
       log.error(
         text=f'VLAN {vname} used in vlan.{attr}{node_error} is not defined',
@@ -330,13 +330,18 @@ def validate_trunk_vlan_list(link: Box) -> bool:
   return not has_error
 
 """
-copy_vlan_attributes: copy prefix and link type from vlan to link
+copy_vlan_attributes: copy prefix and link type and gateway from vlan to link
 """
 def copy_vlan_attributes(vlan: str, vlan_data: Box, link: Box) -> None:
   if 'prefix' in vlan_data:
     link.prefix = vlan_data.prefix
   if not 'type' in link:
     link.type = vlan_data.get('type','lan')
+  if vlan_data.get('gateway',False):
+    if not 'gateway' in link or link.gateway is True:
+      link.gateway = vlan_data.gateway
+    elif link.gateway is not False:
+      link.gateway = vlan_data.gateway + link.gateway                 # Merge with any link-level attributes
   link.vlan_name = vlan
 
 """
@@ -478,7 +483,7 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
   link_vlan = list(link_vlan_set)[0]                  # Got the access/native VLAN
   if link_vlan in topology.get('vlans',{}):
     copy_vlan_attributes(link_vlan,topology.vlans[link_vlan],link)
-    return
+    # return # Removed, also copy node vlan attributes if any
 
   if not node_set:
     log.fatal(f'Cannot find the node using VLAN {link_vlan}\n... {link}')
