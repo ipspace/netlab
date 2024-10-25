@@ -464,7 +464,6 @@ set_link_vlan_prefix: copy link attributes from VLAN for access/native VLAN link
 def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
   link_vlan_set: set = set()
   node_set: set = set()
-
   if 'access' in v_attr:
     link_vlan_set = v_attr.access.set
     node_set = v_attr.access.node_set
@@ -1232,12 +1231,24 @@ class VLAN(_Module):
     if not validate_link_vlan_attributes(link,v_attr,topology):
       return
 
+    """
+    Updates the node_set for an access or native vlan
+    """
+    def update_nodeset(vlan: Box, node: str) -> None:
+      if 'access' in vlan:                                                        # For a rare link-level access VLAN
+        v_attr.access.node_set.add(node)                                          # add this node to its node_set
+      elif 'native' in vlan:
+        v_attr.native.node_set.add(node)                                          # same for native vlan set
+
     # Merge link VLAN attributes into interface VLAN attributes to make subsequent steps easier
-    if 'vlan' in link:
-      for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
-        intf_node = topology.nodes[intf.node]
-        if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
+    for intf in link.interfaces:                                                  # Iterate over all interfaces attached to the link
+      intf_node = topology.nodes[intf.node]
+      if 'vlan' in intf_node.get('module',[]):                                    # ... is the node a VLAN-aware node?
+        if 'vlan' in link:
           intf.vlan = link.vlan + intf.vlan                                       # ... merge link VLAN attributes with interface attributes
+          update_nodeset(link.vlan,intf.node)
+        if 'vlan' in intf:
+          update_nodeset(intf.vlan,intf.node)
 
     if log.debug_active('vlan'):
       print(f'VLAN link_pre_transform for {link}')
