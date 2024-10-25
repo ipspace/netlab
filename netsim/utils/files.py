@@ -141,7 +141,7 @@ def get_traversable_path(dir_name : str) -> typing.Any:
     pkg_files: typing.Any = None
 
     package = '.'.join(__name__.split('.')[:-2])
-    pkg_files = resources.files(package)        # type: ignore
+    pkg_files = resources.files(package)
     if dir_name == '':
       return pkg_files
     else:
