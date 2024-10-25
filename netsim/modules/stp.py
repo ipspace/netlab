@@ -38,29 +38,31 @@ class STP(_Module):
 
     port_priority = features.get('stp.port_priority', { 'max': 255 } )
     for intf in node.get('interfaces',[]):
-      if 'stp' in intf:
-        val = intf.get('stp.port_priority',0)
-        if val > port_priority.max:
+      if 'stp' not in intf:
+        continue
+      
+      val = intf.get('stp.port_priority',0)
+      if val > port_priority.max:
+        log.error(
+          f'node {node.name} (device {node.device}) only supports stp.port_priority up to {port_priority.max}, found {val}',
+          log.IncorrectValue,
+          'stp')
+      elif 'multiple' in port_priority and (val % port_priority.multiple):
+        log.error(
+          f'node {node.name} (device {node.device}) stp.port_priority {val} must be a multiple of {port_priority.multiple}',
+          log.IncorrectValue,
+          'stp')
+      
+      # Check if per-VLAN priority is being used
+      if intf.type=='svi' and 'priority' in intf.stp:
+        stp_proto = topology.get('stp.protocol','stp')
+        if stp_proto != 'mstp':
           log.error(
-            f'node {node.name} (device {node.device}) only supports stp.port_priority up to {port_priority.max}, found {val}',
+            f'Topology requires per-VLAN STP (MSTP) used on VLAN {intf.name} but global default is {stp_proto}',
             log.IncorrectValue,
             'stp')
-        elif 'multiple' in port_priority and (val % port_priority.multiple):
+        elif not 'mstp' in features.get('stp.supported_protocols',[]):
           log.error(
-            f'node {node.name} (device {node.device}) stp.port_priority {val} must be a multiple of {port_priority.multiple}',
+            f'node {node.name} (device {node.device}) does not support per-VLAN STP (MSTP) used on VLAN {intf.name}',
             log.IncorrectValue,
             'stp')
-        
-        # Check if per-VLAN priority is being used
-        if intf.type=='svi' and 'priority' in intf.stp:
-          stp_proto = topology.get('stp.protocol','stp')
-          if stp_proto != 'mstp':
-            log.error(
-              f'Topology requires per-VLAN STP (MSTP) used on VLAN {intf.name} but global default is {stp_proto}',
-              log.IncorrectValue,
-              'stp')
-          elif not 'mstp' in features.get('stp.supported_protocols',[]):
-            log.error(
-              f'node {node.name} (device {node.device}) does not support per-VLAN STP (MSTP) used on VLAN {intf.name}',
-              log.IncorrectValue,
-              'stp')
