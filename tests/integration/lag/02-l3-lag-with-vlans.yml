@@ -1,0 +1,47 @@
+---
+message: |
+  The devices under test are a pair of routers with a L3 LAG link with a trunk of VLANs between them
+  h1 and h2 should be able to ping each other, same applies for h3 and h4
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ r1,r2 ]
+    module: [lag,vlan]
+
+vlans:
+ v1:
+ v2:
+
+links:
+- vlan.trunk: [ v1, v2 ]
+  lag.members:
+  - r1-r2
+  - r1-r2
+- r1:
+   vlan.access: v1
+  h1:
+- r2:
+   vlan.access: v1
+  h2:
+- r1:
+   vlan.access: v2
+  h3:
+- r2:
+   vlan.access: v2
+  h4:
+
+validate:
+  ping12:
+    description: Pinging H2 from H1 on VLAN v1
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
+  ping34:
+    description: Pinging H4 from H3 on VLAN v2
+    nodes: [ h3 ]
+    plugin: ping('h4')

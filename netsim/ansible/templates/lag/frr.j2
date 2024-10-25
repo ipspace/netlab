@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+
+#
+# Create bonds for LAGs, if any. Requires kernel bonding module loaded
+#
+{% for l in interfaces if 'lag' in l %}
+{%  if l.type=='lag' %}
+{%   set _m = l.lag.mode|default(lag.mode) %}
+{%   if _m=="802.3ad" %}
+{%     set _lacp = l.lag.lacp|default(lag.lacp) %}
+{%     set lacp_act = 'off' if _lacp=='off' else 'on' %}
+{%     set lacp_rate = (' lacp_rate ' + _lacp) if _lacp!='off' else '' %}
+{%     set _m = _m + " xmit_hash_policy encap3+4 lacp_active " + lacp_act + lacp_rate %}
+{%   endif %}
+ip link add dev {{l.ifname}} type bond mode {{_m}}
+{%  endif %}
+ip link set dev {{ l.ifname }} down
+{% endfor %}
+
+{% for l in interfaces if 'lag' in l %}
+{%  if l.type=='p2p' %}
+ip link set dev {{ l.ifname }} master {% for i in interfaces if i.type=='lag' and i.linkindex==l.parentindex %}{{ i.ifname }}
+{%   endfor %}
+{%  endif %}
+ip link set dev {{ l.ifname }} up
+{% endfor %}
+
+exit 0

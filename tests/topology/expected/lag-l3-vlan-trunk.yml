@@ -1,0 +1,461 @@
+input:
+- topology/input/lag-l3-vlan-trunk.yml
+- package:topology-defaults.yml
+lag:
+  lacp: fast
+  lacp_mode: active
+  mode: 802.3ad
+links:
+- bridge: input_1
+  interfaces:
+  - ifindex: 30000
+    ifname: bond0
+    node: r1
+    vlan:
+      trunk:
+        v1: {}
+        v2: {}
+  - ifindex: 30000
+    ifname: bond0
+    node: r2
+    vlan:
+      trunk:
+        v1: {}
+        v2: {}
+  lag:
+    ifindex: 0
+  linkindex: 1
+  node_count: 2
+  prefix: {}
+  type: lag
+  vlan:
+    trunk:
+      v1: {}
+      v2: {}
+- interfaces:
+  - ifindex: 1
+    ifname: eth1
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    node: r2
+  lag:
+    ifindex: 0
+  linkindex: 2
+  node_count: 2
+  parentindex: 1
+  prefix: false
+  type: p2p
+- interfaces:
+  - ifindex: 2
+    ifname: eth2
+    node: r1
+  - ifindex: 2
+    ifname: eth2
+    node: r2
+  lag:
+    ifindex: 0
+  linkindex: 3
+  node_count: 2
+  parentindex: 1
+  prefix: false
+  type: p2p
+- interfaces:
+  - ifindex: 3
+    ifname: eth3
+    node: r1
+  - ifindex: 3
+    ifname: eth3
+    node: r2
+  lag:
+    ifindex: 0
+  linkindex: 4
+  node_count: 2
+  parentindex: 1
+  prefix: false
+  type: p2p
+module:
+- lag
+- vlan
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.0.1
+    clab:
+      binds:
+      - clab_files/r1/daemons:/etc/frr/daemons
+      - clab_files/r1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - ifindex: 30000
+      ifname: bond0
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 1
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: bond0
+        node: r2
+      subif_index: 2
+      type: lag
+      virtual_interface: true
+    - ifindex: 1
+      ifname: eth1
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 2
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth1
+        node: r2
+      parentindex: 1
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 3
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth2
+        node: r2
+      parentindex: 1
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 4
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth3
+        node: r2
+      parentindex: 1
+      type: p2p
+    - ifindex: 4
+      ifname: bond0.1000
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      parent_ifindex: 30000
+      parent_ifname: bond0
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: v1
+        access_id: 1000
+    - ifindex: 5
+      ifname: bond0.1001
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      parent_ifindex: 30000
+      parent_ifname: bond0
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: v2
+        access_id: 1001
+    - bridge_group: 1
+      ifindex: 6
+      ifname: vlan1000
+      ipv4: 172.16.0.1/24
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      name: VLAN v1 (1000) -> [r2]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.2/24
+        node: r2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: v1
+    - bridge_group: 2
+      ifindex: 7
+      ifname: vlan1001
+      ipv4: 172.16.1.1/24
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      name: VLAN v2 (1001) -> [r2]
+      neighbors:
+      - ifname: vlan1001
+        ipv4: 172.16.1.2/24
+        node: r2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: v2
+    lag:
+      lacp: fast
+      lacp_mode: active
+      mode: 802.3ad
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - lag
+    - vlan
+    mtu: 1500
+    name: r1
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+      v2:
+        bridge_group: 2
+        id: 1001
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+  r2:
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.0.1
+    clab:
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/r2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - ifindex: 30000
+      ifname: bond0
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: bond0
+        node: r1
+      subif_index: 2
+      type: lag
+      virtual_interface: true
+    - ifindex: 1
+      ifname: eth1
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 2
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: eth1
+        node: r1
+      parentindex: 1
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 3
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: eth2
+        node: r1
+      parentindex: 1
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      lag:
+        ifindex: 0
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 4
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: eth3
+        node: r1
+      parentindex: 1
+      type: p2p
+    - ifindex: 4
+      ifname: bond0.1000
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      parent_ifindex: 30000
+      parent_ifname: bond0
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: v1
+        access_id: 1000
+    - ifindex: 5
+      ifname: bond0.1001
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      parent_ifindex: 30000
+      parent_ifname: bond0
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: v2
+        access_id: 1001
+    - bridge_group: 1
+      ifindex: 6
+      ifname: vlan1000
+      ipv4: 172.16.0.2/24
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      name: VLAN v1 (1000) -> [r1]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: r1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: v1
+    - bridge_group: 2
+      ifindex: 7
+      ifname: vlan1001
+      ipv4: 172.16.1.2/24
+      lag:
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      name: VLAN v2 (1001) -> [r1]
+      neighbors:
+      - ifname: vlan1001
+        ipv4: 172.16.1.1/24
+        node: r1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: v2
+    lag:
+      lacp: fast
+      lacp_mode: active
+      mode: 802.3ad
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - lag
+    - vlan
+    mtu: 1500
+    name: r2
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+      v2:
+        bridge_group: 2
+        id: 1001
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+provider: clab
+vlans:
+  v1:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: vlan1000
+      ipv4: 172.16.0.2/24
+      node: r2
+    - ifname: vlan1000
+      ipv4: 172.16.0.1/24
+      node: r1
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.0.0/24
+  v2:
+    host_count: 0
+    id: 1001
+    neighbors:
+    - ifname: vlan1001
+      ipv4: 172.16.1.2/24
+      node: r2
+    - ifname: vlan1001
+      ipv4: 172.16.1.1/24
+      node: r1
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.1.0/24
