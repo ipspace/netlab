@@ -12,10 +12,7 @@ from pathlib import Path
 from ..utils import log
 from . import external_commands
 
-try:
-  from importlib import resources
-except ImportError:
-  import importlib_resources as resources # type: ignore
+from importlib import resources
 
 def find_playbook(name: str) -> typing.Union[str,None]:
   cwd = Path(os.getcwd()).resolve()
