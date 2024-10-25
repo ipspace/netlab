@@ -764,6 +764,9 @@ def must_be_mac(value: typing.Any) -> dict:
 
   try:
     parse = netaddr.EUI(value)                                        # now let's check if we have a MAC address
+
+    if int(parse) & 0x010000000000:                                   # Check if the multicast bit is set
+      return { '_value': "Unicast MAC address" }
   except Exception as ex:
     return { '_value': "MAC address" }
 
