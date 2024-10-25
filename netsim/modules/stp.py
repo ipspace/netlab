@@ -10,33 +10,22 @@ from . import _Module
 
 class STP(_Module):
 
-  # Check for device support when pvrst is required
+  # Check for device support for globally selected STP protocol variant
   def node_pre_transform(self, node: Box, topology: Box) -> None:
 
-    if not topology.stp.get('pvrst',False):
-      return
-
-    if not 'stp' in node.get('module',[]):
-      return
-    
+    protocol = topology.get("stp.protocol","stp")
     features = devices.get_device_features(node,topology.defaults)
 
-    if not 'stp' in features:
+    supported_protocols = features.get("stp.supported_protocols",[])
+    if protocol not in supported_protocols:
       log.error(
-        f'node {node.name} (device {node.device}) does not support STP module',
-        log.IncorrectValue,
-        'stp')
-      return
-
-    if not features.stp.get('pvrst',False):
-      log.error(
-        f'node {node.name} (device {node.device}) does not support per-VLAN STP (PVRST)',
+        f'node {node.name} (device {node.device}) does not support requested STP protocol ({protocol})',
         log.IncorrectValue,
         'stp')
 
   # Check max port_priority values
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    if not 'stp' in node.get('module',[]):
+    if not node.get("stp.enable", True):
       return
     features = devices.get_device_features(node,topology.defaults)
 
@@ -64,8 +53,14 @@ class STP(_Module):
         
         # Check if per-VLAN priority is being used
         if intf.type=='svi' and 'priority' in intf.stp:
-          if not features.stp.get('pvrst',False):
+          stp_proto = topology.get('stp.protocol','stp')
+          if stp_proto != 'mstp':
             log.error(
-              f'node {node.name} (device {node.device}) does not support per-VLAN STP (PVRST) used on VLAN {intf.name}',
+              f'Topology requires per-VLAN STP (MSTP) used on VLAN {intf.name} but global default is {stp_proto}',
+              log.IncorrectValue,
+              'stp')
+          elif not 'mstp' in features.get('stp.supported_protocols',[]):
+            log.error(
+              f'node {node.name} (device {node.device}) does not support per-VLAN STP (MSTP) used on VLAN {intf.name}',
               log.IncorrectValue,
               'stp')
