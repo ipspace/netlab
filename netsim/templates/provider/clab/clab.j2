@@ -22,37 +22,41 @@ topology:
 {%   if n.mgmt.ipv6 is defined %}
       mgmt-ipv6: {{ n.mgmt.ipv6 }}
 {%   endif %}
-      kind: {{ clab.kind | default(n.device) }}
-{%    for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
-{%      if clab[cset] is string %}
+{%   set kind = clab.kind | default(n.device) %}
+      kind: {{ kind }}
+{%   if kind == 'linux' and 'restart-policy' not in clab %}
+      restart-policy: 'no'
+{%   endif %}
+{%   for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
+{%     if clab[cset] is string %}
       {{ cset }}: '{{ clab[cset] }}'
-{%      else %}
+{%     else %}
       {{ cset }}: {{ clab[cset] }}
-{%      endif %}
-{%    endfor %}
+{%     endif %}
+{%   endfor %}
       image: {{ clab.image|default(n.box) }}
       runtime: {{ clab.runtime|default(defaults.providers.clab.runtime) }}
-{%    if groups is defined %}
+{%   if groups is defined %}
       group: {% for g in groups if n.name in groups[g].members %}{{'' if loop.first else ','}}{{g}}{% endfor %}
 
-{%    endif %}
-{% if 'srl-agents' in clab %}
+{%   endif %}
+{%   if 'srl-agents' in clab %}
       extras:
         srl-agents: {{ clab['srl-agents'] }}
-{% endif %}
-{% if 'binds' in clab %}
+{%   endif %}
+{%   if 'binds' in clab %}
       binds:
-{% for bind_item in clab.binds %}
+{%     for bind_item in clab.binds %}
       - {{ bind_item }}
-{% endfor %}
-{% endif %}
-{% if 'startup-config' in clab %}
-{%   set cfg = clab['startup-config'] %}
+{%     endfor %}
+{%   endif %}
+{%   if 'startup-config' in clab %}
+{%     set cfg = clab['startup-config'] %}
       startup-config: {{ ("|\n" + cfg) | indent(8) if '\n' in cfg else cfg }}
-{% endif %}
-{% if clab.license is defined %}
+{%   endif %}
+{%   if clab.license is defined %}
       license: {{ clab.license }}
-{% endif %}
+{%   endif %}
 {% endfor %}
 
 {% if links|default([]) %}
