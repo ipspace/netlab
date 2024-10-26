@@ -1,0 +1,20 @@
+spanning-tree mode {{ stp.protocol }} {# options are stp, rstp or mstp #}
+
+{% if 'priority' in stp %}
+spanning-tree priority {{ stp.priority }}
+{% endif %}
+
+{% for ifdata in interfaces if ifdata.vlan is defined and 'stp' in ifdata  %}
+{%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
+interface {{ ifdata.ifname }}
+{%    if not ifdata.stp.enable|default(True) %}
+ no spanning-tree vlan-id {{ ifdata.vlan.trunk_id }}   # Disable STP on this port
+{%    elif 'port_priority' in ifdata.stp %}
+#
+# Use 4x port_priority to get the same 4-bit value on the wire
+#
+ spanning-tree port-priority {{ ifdata.stp.port_priority * 4 }}
+#
+{%    endif %} 
+{%   endif %}
+{% endfor %}
