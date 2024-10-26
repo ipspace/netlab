@@ -17,7 +17,7 @@
 
 ## Supported Versions
 
-Recent _netlab_ releases were tested with _containerlab_ version 0.55.0. That's also the version the **netlab install containerlab** command installs.
+The latest _netlab_ release was tested with _containerlab_ version 0.59.0. That's also the version the **netlab install containerlab** command installs.
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
@@ -287,10 +287,11 @@ You can also change these *containerlab* parameters:
 
 * **clab.kind** -- [containerlab device kind](https://containerlab.dev/manual/kinds/). Set in the system defaults for all supported devices; use it only to specify the device type for [unknown devices](platform-unknown).
 * **clab.type** to set node type (used by Nokia SR OS and Nokia SR Linux).
-* **clab.env** to set container environment (used to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations))
-* **clab.ports** to map container ports to host ports
-* **clab.cmd** to execute a command in a container.
-* **clab.startup-delay** to make certain node(s) to boot/start later than others (amount in seconds)
+* **clab.env** to [set container environment](https://containerlab.dev/manual/nodes/#env) (used to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations))
+* **clab.ports** to [map container ports to host ports](https://containerlab.dev/manual/nodes/#ports)
+* **clab.cmd** to [change the command of a container image](https://containerlab.dev/manual/nodes/#cmd).
+* **clab.startup-delay** to make certain node(s) [boot/start later than others](https://containerlab.dev/manual/nodes/#startup-delay) (amount in seconds)
+* **clab.restart-policy** to set the [container restart policy](https://containerlab.dev/manual/nodes/#restart-policy)
 
 ```{warning}
 String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
