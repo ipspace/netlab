@@ -172,10 +172,11 @@ class FHRP(_Module):
       if 'gateway' in link:                                 # Do we already have 'gateway' on link?
         if link.gateway is False:                           # If we have 'gateway:false' we're dealing with a stupidity
           log.error(
-            'Cannot combine gateway:false on link with gateway:true on interface',
+            'Interface gateway attribute ignored due to gateway:false configured on the link',
             more_data=f'Link {link._linkname} node {intf.node}',
-            category=log.IncorrectValue,
+            category=Warning,
             module='gateway')
+          intf.pop('gateway',None)
       else:
         link.gateway = True                                 # Found interface gateway attribute but no link GW. Fix that
         copy_to_link = True                                 # And remember that someone gave us extra work to do :(
