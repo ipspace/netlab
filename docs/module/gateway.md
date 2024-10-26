@@ -41,6 +41,14 @@ The module supports the following global parameters:
 
 The Gateway configuration module is enabled on all links that have the **gateway** attribute set to *True* or to a dictionary of valid parameters. You can change most global parameters on a per-link basis.
 
+## Interface Parameters
+
+You can specify **gateway: True** or a dictionary of valid parameters on [individual interfaces](link-interface-attribute) (nodes-on-a-link data).
+
+Specifying a **gateway** interface attribute on a link that does not have a **gateway** attribute automatically enables the Gateway configuration module on the connected link but turns it off for other nodes connected to the same link, ensuring the Gateway module is active only on the nodes where you explicitly enabled it.
+
+Similarly, you can use the **gateway: False** setting to turn off the default gateway functionality on individual interfaces on a link on which the Gateway configuration module is enabled.
+
 ## Reserved IP Addresses
 
 A positive **gateway.id** value could generate IP addresses that overlap with node interface addresses on subnets using [ID-based address allocation](addr-allocation).
@@ -79,7 +87,7 @@ Anycast implementation of shared first-hop IPv4 address supports these parameter
 *netlab* supports a single VRRPv3 instance per subnet/interface. The VRRPv3 instance can provide shared IPv4 and IPv6 addresses.
 
 ```{tip}
-More complex topologies, such as multiple VRRPv3 instances *on the same subnet*, could be deployed with a judicious application of interface parameters[^VNS], but you won't be able to model multiple VRRPv3 instances *per interface*[^VDM].
+More complex topologies, such as multiple VRRPv3 instances *on the same subnet*, could be deployed with a judicious application of interface parameters[^VNS]. Still, you won't be able to model multiple VRRPv3 instances *per interface*[^VDM].
 ```
 
 [^VNS]: These topologies are unsupported and will not be integrated into the *netlab* core. If you want an easier way of configuring them in a lab topology, please feel free to create a plugin.
@@ -88,7 +96,7 @@ More complex topologies, such as multiple VRRPv3 instances *on the same subnet*,
 
 ### VRRP Parameters
 
-*netlab* supports these VRRP parameters that can be specified globally, on individual nodes, or individual links or interfaces.
+*netlab* supports these VRRP parameters that can be specified globally or on individual nodes, links, or interfaces.
 
 * **vrrp.group** (default: 1) -- VRRP group
 * **vrrp.priority** (interface parameter, integer)
