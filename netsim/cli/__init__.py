@@ -277,6 +277,24 @@ def lab_status_log(topology: Box, log_line: str) -> None:
       lab_status_update(t,s,
         update = { 'log_line': log_line }))
 
+"""
+error_and_exit -- display an error message nicer than log.fatal and exit
+"""
+
+def error_and_exit(errmsg: str,**kwargs: typing.Any) -> typing.NoReturn:
+  global NETLAB_SCRIPT
+  if 'module' not in kwargs:
+    kwargs['module'] = NETLAB_SCRIPT
+  if 'category' not in kwargs:
+    kwargs['category'] = log.FatalError
+
+  for kw in ['skip_header','exit_on_error']:
+    if kw not in kwargs:
+      kwargs[kw] = True
+
+  log.error(errmsg,**kwargs)
+  sys.exit(1)
+
 #
 # Main command dispatcher
 #

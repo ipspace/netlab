@@ -7,7 +7,7 @@ import sys
 import typing
 import argparse
 
-from . import load_snapshot,_nodeset,external_commands
+from . import load_snapshot,_nodeset,external_commands,error_and_exit
 from .. import providers
 from ..augment import devices
 from ..utils import strings,log
@@ -53,17 +53,26 @@ def run(cli_args: typing.List[str]) -> None:
       more_hints=[ 'Use "netlab status" to display the node names in the current lab topology' ])
   
   ndata = topology.nodes[args.node]
-  if not args.intf or args.intf not in [ intf.ifname for intf in ndata.interfaces ]:
-    errmsg = f'Invalid interface name {args.intf} for node {args.node} (device {ndata.device})' if args.intf \
-             else 'Missing interface name'
-    log.error(
-      errmsg,
-      category=log.FatalError,
-      module='capture',
-      skip_header=True,
-      exit_on_error=True,
-      more_hints=[ f'Use "netlab report --node {args.node} addressing" to display valid interface names and their descriptions' ])
-    sys.exit(1)
+  intf_hint = [ f'Use "netlab report --node {args.node} addressing" to display valid interface names and their descriptions' ]
+  if not args.intf:
+    error_and_exit('Missing interface name',more_hints=intf_hint)
+
+  # Try to find the capture interface based on the device interface name
+  intf_list = [ intf for intf in ndata.interfaces if intf.ifname == args.intf ]
+
+  # Not found, try to find it based on the clab interface name (used for vrnetlab containers)
+  if not intf_list:
+    intf_list = [ intf for intf in ndata.interfaces if intf.clab.name == args.intf ]
+
+  # Still an empty list of matches, obviously the interface name is incorrect
+  if not intf_list:
+    error_and_exit(
+      f'Invalid interface name {args.intf} for node {args.node} (device {ndata.device})',
+      more_hints=intf_hint)
+
+  intf = intf_list[0]                             # Now get the interface data of the first (and hopefully only) match
+  if intf.get('clab.name',None):                  # ... and if we have clab interface name (vrnetlab container)
+    args.intf = intf.clab.name                    # ... change the capture interface name
 
   node_provider = devices.get_provider(ndata,topology.defaults)
   p_module = providers.get_provider_module(topology,node_provider)
