@@ -206,6 +206,7 @@ The VLAN **mode** can be set in global- or node **vlans** dictionary or with the
 
 [^VVR]: You can use this functionality to implement VXLAN-to-VXLAN routing in a router-on-a-stick design or asymmetric IRB.
 
+(vlan-interface-parameters)=
 ### VLAN Interface Parameters
 
 You can change VLAN interface[^VLANIF] parameters within the node **vlans** dictionary. For example, use the following definitions to set the OSPF cost for the **red** VLAN interface on node **s1**:
@@ -229,7 +230,7 @@ links:
   ...
 ```
 
-You can also set interface parameters for every interface connected to a routed VLAN within global VLAN definition. For example, you could set the OSPF cost for all interfaces connected to the **red** VLAN:
+You can also set interface parameters for every interface connected to a routed VLAN within the global VLAN definition. For example, you could set the OSPF cost for all interfaces connected to the **red** VLAN:
 
 ```
 vlans:

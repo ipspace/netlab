@@ -296,6 +296,34 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
                 intf[af] = False                                  # ... make sure it's not connected to the native VLAN subnet
   return link_ok
 
+"""
+check_link_interface_attributes -- validate that the interfaces in bridge/IRB mode do not
+carry any extra attributes
+"""
+def check_link_interface_attributes(link: Box, intf: Box, topology: Box) -> None:
+  valid_attr = list(topology.defaults.vlan.attributes.phy_ifattr) + [ 'node','_vlan_mode' ]
+  vlan_mode = get_vlan_interface_mode(intf)                 # Get interface VLAN forwarding mode
+  if vlan_mode is None or vlan_mode == 'route':             # No access VLAN or routed subinterface
+    return                                                  # ... interface attributes are OK
+
+  invalid = []                                              # This is where we collect invalid attributes
+  for attr in intf.keys():                                  # Now iterate over interface attributes
+    if attr in valid_attr:                                  # L2 attribute below VLANs?
+      continue                                              # ... OK, move on
+    if attr in log.AF_LIST and intf[attr] is False:         # Address family set to False?
+      continue                                              # ... OK, we need that to enforce bridge forwarding mode
+    invalid.append(attr)                                    # Everything else is invalid
+
+  if not invalid:
+    return
+
+  log.error(
+    f"You must use 'nodes.{intf.node}.vlans.{intf.vlan.access}' dictionary to set VLAN interface attributes,",
+    more_data=[
+      f"Link {link._linkname}, node {intf.node}, vlan {intf.vlan.access}",
+      f"Interface VLAN forwarding mode: {vlan_mode}, unexpected attributes {','.join(invalid)}", f"{intf}" ],
+    category=log.IncorrectValue,
+    module='vlan')
 
 """
 validate_trunk_vlan_list -- validate that the nodes connected to a VLAN trunk have at least some common VLANs
@@ -1307,18 +1335,23 @@ class VLAN(_Module):
   def module_pre_link_transform(self, topology: Box) -> None:
     create_loopback_vlan_links(topology)
 
-  # We need to copy a few attributes from node VLAN data into access link interface data, for example
-  # the node IPv4/IPv6 address (to support static addressing) and "gateway" attribute to enable
-  # selective VLAN gateway module activation
-  #
-  # This operation needs to be done when the link data structures have already been transformed into
-  # the canonical "interfaces" list format, so we cannot do it any sooner than this point.
-  #
+  """
+  We have to copy a few attributes from node VLAN data into access link interface data, for example
+  the node IPv4/IPv6 address (to support static addressing) and "gateway" attribute to enable
+  selective VLAN gateway module activation
+
+  This operation needs to be done when the link data structures have already been transformed into
+  the canonical "interfaces" list format, so we cannot do it any sooner than this point.
+
+  We also have to check that the interfaces in bridge/irb mode do not have any non-VLAN parameters
+  as those parameters would get ignored.
+  """
   def link_pre_link_transform(self, link: Box, topology: Box) -> None:
     for intf in link.interfaces:
       vname = intf.get('vlan.access',None)
       if not vname:
         continue
+      check_link_interface_attributes(link,intf,topology)
       if vname not in topology.nodes[intf.node].get('vlans',{}):
         continue
       vdata = topology.nodes[intf.node].vlans[vname]
@@ -1326,6 +1359,22 @@ class VLAN(_Module):
         if attr in vdata:
           intf[attr] = vdata[attr]
 
+  """
+  We're almost done, but there's still some hard work to do:
+
+  * Make sure VLAN data exists on the nodes
+  * Create SVI interfaces
+  * Rename VLAN subinterfaces
+  * Transform routed native VLAN interfaces into regular interfaces
+  * Check whether the device can support the topology we're trying to implement
+  * Rebuild the neighbors on SVI interfaces
+
+  Finally:
+
+  * Remove VLAN member links
+  * Cleanup VLAN-specific attributes
+  * Fix VLAN-wide default gateway
+  """
   def module_post_link_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
       if 'vlan' in n.get('module',[]):
