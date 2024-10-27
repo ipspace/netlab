@@ -120,7 +120,9 @@ def process_child_device(dname: str, devices: Box) -> None:
   devices[dname].pop('parent',None)                         # ... and remove it to break potential circular references
 
   process_child_device(p_device,devices)                    # Process inheritance in parent device
-  devices[dname] = devices[p_device] + devices[dname]       # ... and merge parent settings with the child device
+  p_data = Box(devices[p_device])                           # Build a copy of parent device data
+  p_data.pop("template",None)                               # ... remove the template flag
+  devices[dname] = p_data + devices[dname]                  # ... and merge parent settings with the child device
 
   data.remove_null_values(devices[dname])                   # Finally, remove null values from the resulting dictionary
 
@@ -204,16 +206,20 @@ def augment_device_settings(topology: Box) -> None:
   if not isinstance(devices,Box):
     log.fatal('Internal error: defaults.devices must be a dictionary')
 
-  for dname in devices.keys():                              # To be on the safe side...
-    if not isinstance(devices[dname],Box):                  # ... validate device definition data type
+  for dname in devices.keys():                    # To be on the safe side...
+    if not isinstance(devices[dname],Box):        # ... validate device definition data type
       log.fatal(f'Internal error: definition of device {dname} is not a dictionary')
 
   merge_daemons(topology)
   process_device_inheritance(topology)
   build_module_support_lists(topology)
 
-  for dname in devices.keys():                              # After completing device transformation, do a few sanity checks
-    for kw in ['interface_name','description']:             # ... list of attributes taken from nodes
+  for dname in list(devices.keys()):              # After completing device transformation, do a few sanity checks
+    if 'template' in devices[dname]:              # Remove template devices
+      devices.pop(dname,None)
+      continue
+
+    for kw in ['interface_name','description']:   # List of mandatory attributes
       if not kw in devices[dname]:
         log.error(
           f'Device {dname} defined in defaults.devices.{dname} does not have {kw} attribute',
