@@ -68,7 +68,7 @@ You can enable the DHCP client on all non-relaying devices attached to a link wi
 
 ```{warning}
 * While you can use the **‌dhcp.client** parameter to enable DHCP for all hosts attached to a VLAN segment ([see example](dhcp-vlan-example)), do not use DHCP on [routed VLANs](vlan-addressing-routed).
-* The Default router IP address is not set for the VLAN-serving DHCP pools unless you use the **‌gateway** module with anycast or VRRP default gateway on the VLAN.
+* You cannot use **‌dhcp.client** link/VLAN parameter to enable the DHCP client on a VLAN interface. You have to enable the DHCP client on an IRB VLAN interface within the node **‌vlans** dictionary ([more details](vlan-interface-parameters)).
 ```
 
 ## Interface Parameters

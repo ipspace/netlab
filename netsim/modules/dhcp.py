@@ -329,6 +329,9 @@ class DHCP(_Module):
 
         # Copy link DHCP client status to interface in case the node does not have DHCP module enabled
         if link.get(f'dhcp.client.{af}',False) and intf.get(f'dhcp.client.{af}',None) is not False:
+          vlan_intf = intf.get('_vlan_mode',None)
+          if vlan_intf in ['bridge','irb']:         # No automatic DHCP clients on bridging/IRB interfaces
+            continue
           intf.dhcp.client[af] = True
 
         if intf.get(f'dhcp.client.{af}',False):     # Do we have DHCP client on this interface?
