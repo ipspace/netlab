@@ -87,6 +87,35 @@ def copy_merge_attributes(attr: Box) -> None:
         attr[ns][attr_name] = attr[source_ns][attr_name] + attr[ns][attr_name]
         attr[ns][attr_name].pop('merge',None)                         # ... and remove the merge request
 
+"""
+copy_merge_device_features -- merge features across similar devices
+
+The processing of merge requests is a bit awkward. For example, 'merge: ios' within csr.features.bgp means
+'merge from ios.features.bgp'
+"""
+def copy_merge_device_features(
+      data: Box,
+      devices: typing.Optional[Box] = None,
+      path: str = "") -> None:
+  for kw in data.keys():
+    if not isinstance(data[kw],Box):
+      continue
+    if 'merge' not in data[kw] and 'copy' not in data[kw]:
+      copy_merge_device_features(data[kw],devices or data,f'{path}.{kw}' if path else kw)
+    else:
+      src_path = data[kw].get('merge',None) or data[kw].get('copy',None)
+      if devices and path:
+        if '.' in path:
+          src_path += '.' + path.split('.',1)[1]
+        src_path += '.' + kw
+      else:
+        devices = data
+
+      if not src_path in devices:
+        log.fatal(f'Cannot process copy/merge request in {path}.{kw}: {src_path} does not exist')
+
+      data[kw] = (devices[src_path] + data[kw]) if 'merge' in data[kw] else devices[src_path]
+
 '''
 process_copy_requests: process 'copy attribute' requests from a late defaults data structure
 '''
@@ -94,9 +123,11 @@ def process_copy_requests(defaults: Box) -> None:
   for def_name,def_data in defaults.items():                          # Iterate over default values
     if not isinstance(def_data,Box):                                  # Value not a dictionary => nothing to do
       continue
-    if not 'attributes' in def_data:                                  # No attributes in this value => skip it
-      continue
-    copy_merge_attributes(def_data.attributes)                        # Seems OK, process copy/merge attribute requests
+    if 'attributes' in def_data:
+      copy_merge_attributes(def_data.attributes)                      # Process copy/merge attribute requests
+
+  if 'devices' in defaults:
+    copy_merge_device_features(defaults.devices)                      # Merge features across similar devices
 
 def attributes(topology: Box) -> None:
   defaults=topology.defaults

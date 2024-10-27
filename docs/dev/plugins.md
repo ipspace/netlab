@@ -41,6 +41,51 @@ A plugin can specify global variables that are used to influence the plugin beha
 * `_execute_after`: A list of plugins that should execute before the current plugin. For example, the **ebgp.multihop** plugin has to be executed after **ebgp.utils** plugin, and therefore defines `_execute_after = [ 'ebgp.utils' ]`
 * `_config_name`: The name of extra configuration templates to add to the node **config** attribute when a node using the plugin functionality requires additional device configuration. This variable is set during the plugin initialization process, but it's still recommended to define it in the plugin and set its value to a string to prevent **mypy** complaints.
 
+## Plugin Defaults
+
+A directory containing the `plugin.py` Python module can include plugin defaults (`defaults.yml`). The contents of the `defaults.yml` file are merged with the topology defaults after processing **merge** and **copy** requests for attributes and device features.
+
+### Merging Attributes
+
+Within the `defaults.yml` file, you can copy an attribute definition from another attribute with the **copy** or **merge** parameter that contains the namespace of the other attribute. The **copy**/**merge** parameter must be specified on a top-level attribute within an attribute namespace.
+
+For example, the **bgp.session** plugin copies the node definition of the **bgp.gtsm** attribute from the global definition. This is the relevant part of the `defaults.yml` file:
+
+```
+bgp:
+  attributes:
+    global:
+      gtsm:
+        type: int
+        min_value: 1
+        max_value: 254
+        true_value: 1
+
+    node:
+      gtsm:
+        copy: global
+```
+
+### Merging Device Features
+
+If your plugin relies on device **features**, you can copy/merge them between similar devices with the **copy** or **merge** keyword anywhere below the device name. For example, this is the definition of BGP policy features for all IOS-based devices:
+
+```
+devices:
+  iosv.features.bgp:
+    _default_locpref: True
+    bandwidth:
+      in: auto
+  cat8000v:
+    copy: iosv
+  csr:
+    copy: iosv
+  iol:
+    copy: iosv
+  ioll2:
+    copy: iosv
+```
+
 ## Sample Plugin
 
 All anycast servers in a BGP anycast topology should have the same AS number but [do not need IBGP sessions between themselves](https://blog.ipspace.net/2022/01/netsim-plugins.html). A [custom plugin](https://github.com/ipspace/netlab-examples/tree/master/plugins/adjust-bgp-sessions) deletes IBGP sessions for any node with **bgp.anycast** attribute.
