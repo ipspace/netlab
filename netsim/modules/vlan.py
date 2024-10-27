@@ -1288,17 +1288,22 @@ class VLAN(_Module):
   # the canonical "interfaces" list format, so we cannot do it any sooner than this point.
   #
   def link_pre_link_transform(self, link: Box, topology: Box) -> None:
-    if 'vlan' not in link:
-      return
+    
+    # Process both link level and interface level access vlans
+    # if 'vlan' not in link:
+    #  return
+    link_vname = link.get('vlan.access',None)
 
     for intf in link.interfaces:
-      vname = intf.get('vlan.access',None)
-      if not vname:
-        continue
-      if vname not in topology.nodes[intf.node].get('vlans',{}):
-        continue
-      vdata = topology.nodes[intf.node].vlans[vname]
+      vname = intf.get('vlan.access',None) or link_vname
+      vdata = {}
+      if vname and vname in topology.nodes[intf.node].get('vlans',{}):
+        vdata = topology.nodes[intf.node].vlans[vname]
       for attr in topology.defaults.vlan.attributes.copy_vlan_to_intf:
+        if attr in intf:
+          log.error(f'Cannot set {attr}={intf[attr]} on access VLAN "{vname}" interface on node {intf.node} -- try node.vlans level instead',
+            log.IncorrectAttr,
+            'vlan')
         if attr in vdata:
           intf[attr] = vdata[attr]
 
