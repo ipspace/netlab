@@ -68,13 +68,17 @@ def validate_global_node_match(vname: str, node: Box, topology: Box) -> bool:
 
   return OK
 
-#
-# Validate VLAN attributes and set missing attributes:
-#
-# * VLAN and VNI
-# * Subnet prefix
-# * VLAN forwarding mode
-#
+"""
+Validate VLAN attributes and set missing attributes:
+
+* VLAN and VNI
+* Subnet prefix
+* VLAN forwarding mode
+
+Note that the node VLAN would already have a copy of the global VLAN data
+at this point, so most of the changes done on node VLANs would be applicable
+to single-node VLANs.
+"""
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
@@ -161,10 +165,11 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
                                                                   # Build a list of VLANs out of a string or a dict
     vlan_list = [ obj.vlan[attr] ] if isinstance(obj.vlan[attr],str) else obj.vlan[attr].keys()
     if not attr in v_attr:                                        # Prepare attribute collection dictionary if needed
-      v_attr[attr].list = []
-      v_attr[attr].set = set()
-      v_attr[attr].node_set = set()
-      v_attr[attr].use_count = 0
+      v_attr[attr].list = []                                      # The list of mentioned VLANs
+      v_attr[attr].set = set()                                    # The same list as a set
+      v_attr[attr].global_vlan = []                               # The list of global VLANs
+      v_attr[attr].node_set = set()                               # The set of nodes using node-local VLANs
+      v_attr[attr].use_count = 0                                  # The number of times we found this attribute
 
     v_attr[attr].list.extend(vlan_list)                           # ... and add collected VLANs to attribute dictionary
     v_attr[attr].set.update(vlan_list)
@@ -172,6 +177,7 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
 
     for vname in vlan_list:                                       # Check that VLANs exist
       if vname in topology.get('vlans',{}):
+        v_attr[attr].global_vlan.append(vname)
         continue
       if not obj is link and vname in topology.nodes[obj.node].get('vlans',{}):
         v_attr[attr].node_set.add(obj.node)
@@ -208,6 +214,25 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
       log.IncorrectValue,
       'vlan')
     return False
+
+  if 'access' in v_attr:
+    g_set = set(v_attr.access.global_vlan)
+    if len(g_set) > 1:
+      set_txt = ','.join(set(v_attr.access.global_vlan))
+      log.error(
+        f"Cannot use more than one global access VLAN on link {link._linkname}",
+        more_data=f"Found {set_txt}",
+        category=log.IncorrectValue,
+        module='vlan')
+      return False
+    
+    if len(v_attr.access.set) > 1:
+      set_txt = ','.join(set(v_attr.access.set))
+      log.error(
+        f"Using more than one access VLAN per link is not supported",
+        more_data=f"Link {link._linkname}, access VLANs: {set_txt}",
+        category=Warning,
+        module='vlan')
 
   link_ok = True
   for attr in vlan_link_attr.keys():                              # Loop over VLAN attributes
@@ -1208,6 +1233,8 @@ class VLAN(_Module):
         # Set node-level VLAN forwarding mode and merge topology VLAN data into node VLAN data
         set_node_vlan_mode(node.vlans[vname],node,topology.vlans[vname],topology)
         node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
+      else:                                                 # Single node VLAN, set forwarding mode
+        set_node_vlan_mode(node.vlans[vname],node,node.vlans[vname],topology)
 
     validate_vlan_attributes(node,topology)
 
