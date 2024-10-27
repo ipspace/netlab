@@ -1,26 +1,16 @@
 ---
 description: Cisco IOSv
+parent: ios
 interface_name: GigabitEthernet0/{ifindex}
-loopback_interface_name: Loopback{ifindex}
-tunnel_interface_name: Tunnel{ifindex}
 group_vars:
+  netlab_device_type: ios
   ansible_user: vagrant
   ansible_ssh_pass: vagrant
-  ansible_become_method: enable
   ansible_become_password: vagrant
-  ansible_network_os: ios
-  ansible_connection: network_cli
-  netlab_device_type: ios
-  netlab_initial: always
 libvirt:
   image: cisco/iosv
   build: https://netlab.tools/labs/iosv/
   create_template: iosv.xml.j2
-#      create:
-#        virt-install --connect=qemu:///system --name=vm_box --os-type=linux --arch=x86_64 --cpu host --vcpus=1
-#          --noacpi --machine=pc-1.0 --virt-type=kvm --watchdog i6300esb,action=reset --ram=512
-#          --disk path=vm.qcow2,bus=virtio,format=qcow2,cache=writethrough
-#          --network=network:vagrant-libvirt,model=e1000 --graphics none --import
 virtualbox:
   image: cisco/iosv
 clab:
@@ -28,90 +18,8 @@ clab:
     ansible_ssh_pass: VR-netlab9
     ansible_user: vrnetlab
     netlab_check_retries: 20
-    # yamllint disable-line rule:line-length
-    netlab_ssh_args: "-o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa"
   image: vrnetlab/cisco_vios:15.9.3
   node:
     kind: linux
   interface.name: eth{ifindex}
   build: https://github.com/hellt/vrnetlab/tree/master/vios
-
-routing:
-  _rm_per_af: True
-features:
-  bfd: true
-  bgp:
-    local_as: true
-    vrf_local_as: true
-    local_as_ibgp: true
-    activate_af: true
-    import: [ ospf, isis, ripv2, connected, vrf ]
-    community:
-      standard: [ standard ]
-      extended: [ extended ]
-  dhcp:
-    client:
-      ipv4: true
-      ipv6: true
-      routing: true
-    relay: true
-    vrf: true
-    server: true
-  eigrp: true
-  initial:
-    ipv4:
-      unnumbered: false
-    ipv6:
-      lla: true
-  isis:
-    import: [ bgp, ospf, ripv2, connected ]
-    unnumbered:
-      ipv4: true
-      ipv6: true
-      network: true
-  mpls:
-    ldp: true
-    bgp: true
-    vpn: true
-    6pe: true
-  ospf:
-    unnumbered: true
-    import: [ bgp, isis, ripv2, connected, vrf ]
-    default.policy: true
-  ripv2:
-    ipv4: true
-    ipv6: true
-    passive: true
-    import: [ bgp, isis, ospf, connected, vrf ]
-  routing:
-    policy:
-      set:
-        locpref: True
-        med: True
-        weight: True
-        prepend: True
-        community:
-          standard: True
-          append: True
-      match: [ prefix, nexthop, aspath, community ]
-    prefix: True
-    aspath: True
-    community:
-      expanded: True
-  vlan:
-    model: router
-    svi_interface_name: BVI{bvi}
-    subif_name: "{ifname}.{subif_index}"
-    mixed_trunk: true
-    native_routed: true
-  vrf:
-    ospfv2: True
-    ospfv3: True
-    bgp: True
-    ripv2: True
-    ripng: True
-  gateway:
-    protocol: [ vrrp ]
-external:
-  image: none
-graphite.icon: router
