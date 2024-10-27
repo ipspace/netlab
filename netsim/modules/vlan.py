@@ -1315,9 +1315,6 @@ class VLAN(_Module):
   # the canonical "interfaces" list format, so we cannot do it any sooner than this point.
   #
   def link_pre_link_transform(self, link: Box, topology: Box) -> None:
-    if 'vlan' not in link:
-      return
-
     for intf in link.interfaces:
       vname = intf.get('vlan.access',None)
       if not vname:
