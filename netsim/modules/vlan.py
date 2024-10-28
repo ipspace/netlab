@@ -1302,6 +1302,7 @@ class VLAN(_Module):
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
     if not link_vlan is None:
+      link.vlan_name = link_vlan                                                  # Mark the use of this vlan to avoid creating loopback vlan
       set_access_vlan_interface_mode(link,link_vlan,topology)
       routed_vlan = routed_access_vlan(link,topology,link_vlan)
       vlan_data = topology.get(f'vlans.{link_vlan}',None)                         # Get global VLAN data
