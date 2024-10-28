@@ -155,19 +155,30 @@ Host 192.168.121.*
 See also [common Cisco IOS](caveats-iosv) caveats.
 
 (caveats-iosxr)=
-## Cisco IOS XRv
+## Cisco IOS XR
+
+### Cisco IOS XRv
 
 * netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name. In that case, you must set **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
 * Copying Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. The vagrant configuration file uses a fixed SSH password.
 * Maximum interface bandwidth on IOS XRv is 1 Gbps (1000000).
 * It seems IOS XR starts an SSH server before it parses the device configuration[^WCPGW], and newer versions of Vagrant don't like that and will ask you for the password for user **vagrant**. Ignore that prompt and the subsequent error messages[^POT]; you might get a running lab in a few minutes[^MAS].
-* The IOS XRd container seems to be a resource hog. If you experience errors during the initial device configuration, reduce the number of parallel configuration processes -- set the ANSIBLE_FORKS environment variable to one with `export ANSIBLE_FORKS=1`.
 
 [^WCPGW]: Yeah, what could possibly go wrong?
 
 [^POT]: You'll get plenty of those. Even when the IOS XR device is configured, and you can log into the console, it hates accepting SSH sessions.
 
 [^MAS]: Hint: you have plenty of time to make coffee and a snack.
+
+### Cisco XRd
+
+* The `cisco.iosxr` Ansible Galaxy collection, used to initialize the device and push configurations, is currently incompatible with IOS XRd. A [pull request](https://github.com/ansible-collections/cisco.iosxr/pull/510) exists to fix this, but it has not been merged yet. Until then, you can utilize the following command to install the fork:
+
+```shell
+ansible-galaxy collection install git+https://github.com/jmussmann/ansible_collection_cisco.iosxr.git,issue/509
+```
+
+* The IOS XRd container seems to be a resource hog. If you experience errors during the initial device configuration, reduce the number of parallel configuration processes -- set the ANSIBLE_FORKS environment variable to one with `export ANSIBLE_FORKS=1`.
 
 (caveats-nxos)=
 ## Cisco Nexus OS
