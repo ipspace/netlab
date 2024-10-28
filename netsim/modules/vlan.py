@@ -1321,8 +1321,8 @@ class VLAN(_Module):
       for intf in link.interfaces:
         if 'vlan' in intf:
           intf.vlan.mode = 'route'
-          if len(link.interfaces)==2:
-            intf.vlan.routed_link = True                                          # Mark it as a routed link? has issues
+          # if len(link.interfaces)==2:
+          #  intf.vlan.routed_link = True                                          # Mark it as a routed link? has issues
     else:
       set_link_vlan_prefix(link,v_attr,topology)
 
