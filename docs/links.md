@@ -11,7 +11,7 @@ Links between virtual lab devices are specified in the **links** element of the 
 You can use all four link formats in the same topology file; each link definition is always converted into a dictionary+list of interfaces format and augmented with addressing details during the [topology transformation process](dev/transform.md).
 
 ```{tip}
-You can make the list of links more structured by formatting it as a dictionary with subsets of links as dictionary values.
+You can add structure to the list of links by formatting it as a dictionary, with subsets of links as dictionary values.
 ```
 
 ```eval_rst
@@ -58,7 +58,7 @@ links:
   - r3
 ```
 
-The *links-as-dictionary* format has no other impact than a different (more structured) presentation format and more detailed link names displayed in error messages.
+The links-as-dictionary format has only one impact: it has a different (more structured) presentation format and displays more detailed link names in error messages.
 
 (link-attributes)=
 ## Link Attributes
@@ -68,7 +68,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **bandwidth** -- link bandwidth. Used to configure interface bandwidth when supported by the connected device(s).
 * **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
 * **disable** -- remove the link from the lab topology when set to `True`. You can use this attribute to simplify the topology when debugging it[^CIN].
-* **gateway** -- default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) for more details.
+* **gateway** -- sets the default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) and [](module-gateway) for more details.
 * **group** -- [link group](link-groups) identifier
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
 * **members** -- list of links in a [link group](link-groups)
@@ -76,14 +76,14 @@ A dictionary describing an individual link contains *node names* and *additional
 * **name** -- link name (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
 * **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
-* **role** -- link role selects specific configuration module behavior. Typical link roles include *stub*, *passive*, and *external*. Please read [](module/routing.md) for more details.
+* **role** -- The link *role* influences the behavior of several configuration modules. Typical link roles include *stub*, *passive*, and *external*. Please read [](module/routing.md) for more details.
 * **type** -- [link type](#link-types) (lan, p2p, stub, loopback, tunnel)
 
 [^CIN]: Disabled links are removed from lab topology, which might cause changes in interface names.
 
 You can use most link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
 
-* **ifindex** -- optional per-node interface index used to generate the interface/port name. Use this parameter to select specific ports to match typical network designs (for example, high-speed ports for uplinks) when the virtualization provider supports mapping host interfaces into VM/container interfaces.
+* **ifindex** -- optional per-node interface index used to generate the interface/port name. Use this parameter to select specific ports to match typical network designs (for example, high-speed ports for uplinks) when the virtualization provider supports mapping host interfaces into VM/container interfaces.  The **ifindex** parameter currently works for [genuine containers](clab-images) (not the [*vrnetlab* containers](clab-vrnetlab) that run a VM inside a container) and external devices. It does not work correctly with virtual machines; either VMs started in the Vagrant/libvirt environment or the VMs running inside the *vrnetlab* containers.
 * **ifname** -- target interface name. Use to create tunnel interfaces on some platforms or to create unusual interface types.
 
 [^NOIP]: You might need links without IP configuration to test VLANs, bridging, or EVPN.
@@ -99,13 +99,13 @@ defaults:
   device: iosv
 
 nodes:
-- name: e1
-  module: [ isis,ospf ]
-- name: e2
-  module: [ isis ]
-- name: pe1
-  device: nxos
-  module: [ isis,ospf ]
+  e1:
+    module: [ isis,ospf ]
+  e2:
+    module: [ isis ]
+  pe1:
+    device: nxos
+    module: [ isis,ospf ]
 
 links:
 - pe1:
@@ -117,7 +117,7 @@ links:
 
 ## Link Types
 
-Lab topology could contain *lan*, *p2p*, *stub*, *loopback* and *tunnel* links. The link type could be specified with the **type** attribute; when that attribute is missing the link type is selected based on the number of devices connected to the link:
+Lab topology could contain *lan*, *p2p*, *stub*, *loopback*, *lag*, and *tunnel* links. The link type could be specified with the **type** attribute; when that attribute is missing, the link type is selected based on the number of devices connected to the link:
 
 * Single node connected to a link ⇒ *stub* or *loopback* (see below)
 * Two nodes connected to a link ⇒ *p2p*
@@ -126,7 +126,7 @@ Lab topology could contain *lan*, *p2p*, *stub*, *loopback* and *tunnel* links. 
 The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
 
 * Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address; the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to other links are taken from the *lan* pool unless you specified the **pool** link attribute. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the highest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links).
+* Prefixes assigned to other links are taken from the *lan* pool unless you specify the **pool** link attribute. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the highest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links).
 
 The default link types usually work well, and you should use the **pool** attribute to specify the address pool instead of changing the link **type**. You might have to change link **type** in advanced scenarios; for example, you must set link **type** to **lan** to use Linux bridges instead of UDP tunnels in [libvirt](labs/libvirt.md) environment.
 
@@ -135,7 +135,7 @@ The default link types usually work well, and you should use the **pool** attrib
 
 Stub links (links with a single node) are treated as physical links and consume VM/container interfaces. Some virtualization platforms limit the number of VM interfaces, so you might be forced to turn such links into loopback interfaces.
 
-You could turn an interface attached to a stub link into a loopback interface with **type: loopback** link attribute. You could also change the default behavior with the `defaults.devices.<device>.features.stub_loopback` device-specific setting or set the `defaults.links.stub_loopback` global default..
+You could turn an interface attached to a stub link into a loopback interface with the **type: loopback** link attribute. You could also change the default behavior with the `defaults.devices.<device>.features.stub_loopback` device-specific setting or set the `defaults.links.stub_loopback` global default.
 
 For example, to turn stub links into loopbacks on Arista EOS devices, use the following setting:
 
@@ -220,7 +220,7 @@ links:
 (link-groups)=
 ## Link Groups
 
-When your lab topology contains numerous links with identical (or similar) attributes, it might be worth defining those links as a *link group*. A link group MUST have a **group** attribute (an *identifier*) and a list of **member** links.
+When your lab topology contains numerous links with identical (or similar) attributes, it might be worth defining them as a *link group*. A link group MUST have a **group** attribute (an *identifier*) and a list of **member** links.
 
 The link initialization phase of the lab topology transformation creates new regular links from the group **member** links. Group attributes (apart from **group** and **members**) are added to the member link attributes.
 
@@ -236,7 +236,7 @@ links:
 (links-static-addressing)=
 ## Static Link Addressing
 
-You can use the **prefix** attribute to specify the IPv4 and/or IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
+You can use the **prefix** attribute to specify the IPv4 and IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
 
 The **prefix** attribute could be an IPv4 CIDR prefix or a dictionary with **ipv4**, **ipv6**, and **[allocation](addr-allocation)** elements.
 
@@ -250,7 +250,7 @@ You can use the shorthand (string) syntax if you're building an IPv4-only networ
   prefix: 192.168.22.0/24
 ```
 
-In dual-stack or IPv6-only environments you have to use the prefix dictionary syntax:
+In dual-stack or IPv6-only environments, you have to use the prefix dictionary syntax:
 
 ```
 - name: IPv6-only link
@@ -274,7 +274,7 @@ In dual-stack or IPv6-only environments you have to use the prefix dictionary sy
 
 ## Static Interface Addressing
 
-You can specify a static interface address within the link-specific node data with the **ipv4** and/or **ipv6** attributes. You can also set **ipv4** or **ipv6** attribute of link-specific node data to these special values:
+You can specify a static interface address within the link-specific node data with the **ipv4** and **ipv6** attributes. You can also set **ipv4** or **ipv6** attribute of link-specific node data to these special values:
 
 * *True*: enable IPv4 or IPv6 on the interface without assigning it an IP address (unnumbered/LLA-only interface)
 * *False*: disable IPv4 or IPv6 on the interface, allowing you to have layer-2-only nodes attached to an IPv4/IPv6 subnet (needed to implement stretched subnets).
@@ -383,7 +383,7 @@ For example, to build a lab using 8K jumbo frames, use:
 defaults.interfaces.mtu: 8192
 ```
 
-All devices without explicit MTU setting will inherit the lab-wide default (8192), which will be further propagated to all interfaces without an explicit MTU value.
+All devices without an explicit MTU setting will inherit the lab-wide default (8192). That default will then be propagated to all interfaces without an explicit MTU value.
 
 **mtu** parameter can also be specified within device defaults. For example, to set the default Cumulus Linux MTU to 1500, use:
 
@@ -393,13 +393,13 @@ defaults.devices.cumulus.mtu: 1500
 
 ### Lab-wide MTU
 
-The **defaults.interfaces.mtu** setting specifies the lab-wide default MTU value. If needed, you can change that value with the node, link, or interface **mtu** parameter.
+The **defaults.interfaces.mtu** setting specifies the lab-wide default MTU value. If necessary, you can change that value with the node, link, or interface **mtu** parameter.
 
 ## Hosts and Default Gateways
 
 A lab device could be a networking device or a host[^HOST]. Links with attached hosts are treated slightly differently than the regular links:
 
-* The link type is set to **lan** regardless of the number of nodes attached to it.
+* The link type is set to **lan** regardless of the number of attached nodes.
 * If the link **role** is not defined in the topology file, it's set to **stub**  to turn the attached router interfaces into *passive* interfaces[^NOPASS].
 * If the link **gateway** attribute is not defined, it's set to the IP address of the first attached non-host device. You can set the link **gateway** to any value you wish; the value is not checked.
 * The link **gateway** attribute is copied into the interface data of host nodes and is used to create static routes pointing to the default gateway during the initial device configuration.

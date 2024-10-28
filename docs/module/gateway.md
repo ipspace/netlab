@@ -1,3 +1,4 @@
+(module-gateway)=
 # First-Hop Gateway Configuration Module
 
 The first-hop Gateway configuration module implements mechanisms used to implement a shared router IPv4 address on a stub access network.
