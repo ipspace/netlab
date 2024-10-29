@@ -207,6 +207,8 @@ class FHRP(_Module):
       link.gateway = global_gateway
     elif link.gateway is False:                 # We DEFINITELY don't want FHRP on this link ==> remove it and move on
       link.pop('gateway',None)
+      for intf in link.interfaces:              # Also, remove the gateway attribute from the interfaces
+        intf.pop('gateway',None)
       return
     else:                                       # Otherwise merge global defaults with links settings (because we usually don't do that)
       check_gw_protocol(link.gateway,f'{link._linkname}',topology)
@@ -235,6 +237,13 @@ class FHRP(_Module):
           strings.extra_data_printout(strings.format_structured_dict(link)),
           log.IncorrectValue,
           'gateway')
+
+    # Finally, some interfaces might have had 'gateway' set to True. Now that we have the
+    # full gateway structure, copy that to those interfaces
+
+    for intf in link.interfaces:
+      if intf.get('gateway',None) is True:
+        intf.gateway = link.gateway
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     for intf in node.interfaces:                                      # First a sanity cleanup for people with the extra-granular
