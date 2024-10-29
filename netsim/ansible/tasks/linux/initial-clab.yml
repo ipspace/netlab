@@ -3,7 +3,8 @@
 # the /etc/hosts file is created as a clab bind.
 #
 # The commands to set up Linux networking are executed on the container host in the context
-# of container namespace so we don't need the 'ip' command or Python in the container.
+# of container namespace so we don't need the 'ip' command or Python in the container 
+# (but do require 'sudo' access on localhost).
 #
 # This task list:
 # 
@@ -22,15 +23,25 @@
     dest: "{{ exec_script }}"
   delegate_to: localhost
 
-- name: "Initial container configuration via {{ exec_script }}"
-  shell: |
-    set -e
-    pid=$(docker inspect -f {% raw %}'{{.State.Pid}}'{% endraw %} clab-{{ netlab_name }}-{{inventory_hostname }})
-    mkdir -p /var/run/netns
-    ln -s /proc/$pid/ns/net /var/run/netns/$pid
-    ip netns exec $pid bash {{ exec_script }}
-    rm /var/run/netns/$pid
-  become: true
+- block:
+  - name: "Get container process ID"
+    shell: |
+      set -e
+      pid=$(docker inspect -f {% raw %}'{{.State.Pid}}'{% endraw %} clab-{{ netlab_name }}-{{inventory_hostname }})
+      echo $pid
+    register: pid
+  - name: "Initial container({{ pid.stdout }}) configuration via {{ exec_script }}, uses 'sudo' on host"
+    shell: |
+      set -e
+      mkdir -p /var/run/netns
+      ln -s /proc/{{ pid.stdout }}/ns/net /var/run/netns/{{ pid.stdout }}
+      ip netns exec {{ pid.stdout }} bash {{ exec_script }}
+
+  always:
+  - name: Cleanup temporary namespace
+    shell: rm /var/run/netns/{{ pid.stdout }}
+
+  become: true  # Required to create/remove symlink for network namespace
   delegate_to: localhost  
   tags: [ print_action, always ]
 
