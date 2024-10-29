@@ -1199,6 +1199,22 @@ def create_vlan_access_links(topology: Box) -> None:
     vdata.pop('links')                                                      # Finally, clean up the VLAN definition
 
 """
+check_vlan_duplicate_address -- using the VLAN neighbor lists, try to find duplicate addresses
+
+This check might not be perfect, but it's better than not checking.
+"""
+def check_vlan_duplicate_address(object: Box, topology: Box) -> None:
+  for vname,vdata in object.get('vlans',{}).items():
+    if 'neighbors' not in vdata:
+      continue
+    link_data = get_box({
+      '_linkname': vname,
+      'interfaces': vdata.neighbors,
+      'gateway': vdata.get('gateway',{})
+    })
+    links.check_duplicate_address(link_data,obj_name='vlan')
+
+"""
 cleanup_vlan_flags -- remove internal attributes from VLANs,links and interfaces
 """
 
@@ -1385,6 +1401,9 @@ class VLAN(_Module):
         cleanup_routed_native_vlan(n,topology)
         check_mixed_trunks(n,topology)
         check_mixed_native_trunk(n,topology)
+
+    if topology.defaults.warnings.duplicate_address:
+      check_vlan_duplicate_address(topology,topology)
 
     for n in topology.nodes.values():
       set_svi_neighbor_list(n,topology)
