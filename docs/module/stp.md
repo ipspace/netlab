@@ -7,13 +7,13 @@ Many platforms already support and enable STP by default; this module provides e
 
 The following table describes per-platform support of individual STP features:
 
-| Operating system   | STP | MSTP | RSTP | Per-VLAN RSTP | Enable per port
-| ------------------ | :-: | :--: | :--: | :-----------: | :--------------:
-| Arista EOS         | ✅  |  ✅  |  ✅  |      ✅       |       ✅        ! Note: STP is enabled by default, using MSTP
-| Cumulus Linux      | ✅  |  ❌  |  ✅  |      ❌       |       ❌        ! Note: STP is enabled by default, unless disabled through this module
-| FRR                | ✅  |  ❌  |  ❌  |      ❌       |       ✅        ! Note: STP is disabled by default
+| Operating system   | STP | MSTP | RSTP | Per-VLAN (R)STP | Enable per port
+| ------------------ | :-: | :--: | :--: | :-------------: | :--------------:
+| Arista EOS         | ✅  |  ✅  |  ✅  |       ✅        |       ✅      ! Note: STP is enabled by default, using MSTP
+| Cumulus Linux      | ✅  |  ❌  |  ✅  |       ❌        |       ❌      ! Note: STP is enabled by default, unless disabled through this module
+| FRR                | ✅  |  ❌  |  ❌  |       ✅        |       ✅      ! Note: STP is disabled by default
 
-Note that in real networks MSTP ports fallback to regular STP upon receiving a plain STP BPDU; such a scenario cannot currently be replicated in Netlab, due to the single global default protocol being enforced.
+Note that MSTP/RSTP ports fallback to regular STP upon receiving a plain STP BPDU.
 
 ## Global Parameters
 
