@@ -1029,6 +1029,34 @@ def set_linkindex(topology: Box) -> None:
     linkindex = linkindex + 1
 
 '''
+check_duplicate_address: Check whether any two nodes on the link got duplicate IP
+'''
+def check_duplicate_address(
+      link: Box,
+      link_name: typing.Optional[str] = None,
+      obj_name: str = 'link',
+      module: typing.Optional[str] = None) -> None:
+
+  for af in log.AF_LIST:
+    dup_dict = {}
+    gw_ip = link.get(f'gateway.{af}',None)
+    if isinstance(gw_ip,str):
+      dup_dict[gw_ip] = 'gateway'
+    for intf in link.interfaces:
+      if_ip = intf.get(af,None)
+      if not isinstance(if_ip,str):
+        continue
+      if if_ip in dup_dict:
+        link_name = link_name or link._linkname
+        log.error(
+          f'Duplicate address {if_ip} found on {obj_name} {link_name}: {intf.node} and {dup_dict[if_ip]}',
+          category=log.IncorrectValue,
+          more_hints=['Set defaults.warnings.duplicate_address to False to disable this check'],
+          module=module or obj_name)
+      else:
+        dup_dict[if_ip] = intf.node
+
+'''
 expand_groups -- expand link groups (identified by 'group' and 'members' attributes) into individual links
 appended to the end of the link list
 
@@ -1097,6 +1125,8 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     create_node_interfaces(link,pools,nodes,defaults=defaults)
 
     cleanup_link_interface_AF_entries(link)
+    if defaults.warnings.duplicate_address:
+      check_duplicate_address(link)
     set_default_gateway(link,nodes)
 
   interface_feature_check(nodes,defaults)
