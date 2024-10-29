@@ -155,5 +155,8 @@ def load_ansible_filters() -> None:
   add_filters(get_ansible_filter_map('ansible_collections.ansible.netcommon.plugins.filter.ipaddr'))
   add_filters(get_ansible_filter_map('ansible_collections.ansible.netlog.plugins.filter.ipaddr'))
 
+  # Add Ansible core filters like 'to_yaml'
+  add_filters(get_ansible_filter_map('ansible.plugins.filter.core'))
+
   if debug_active('template'):
     print(f'ansible filter map: {ansible_filter_map}')
