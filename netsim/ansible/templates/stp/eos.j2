@@ -15,13 +15,18 @@ spanning-tree priority {{ stp.priority }}
 {%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
 interface {{ ifdata.ifname }}
 {%    if not ifdata.stp.enable|default(True) %}
- no spanning-tree vlan-id {{ ifdata.vlan.trunk_id }}   # Disable STP on this port
-{%    elif 'port_priority' in ifdata.stp %}
+ no spanning-tree vlan-id {{ ifdata.vlan.trunk_id }}   # Disable STP on this VLAN
+{%    else %}
+{%     if 'priority' in ifdata.stp %}
+ spanning-tree vlan-id {{ ifdata.vlan.trunk_id }} priority {{ ifdata.stp.priority }}
+{%     endif %}
+{%     if 'port_priority' in ifdata.stp %}
 #
 # Use 4x port_priority to get the same 4-bit value on the wire
 #
  spanning-tree port-priority {{ ifdata.stp.port_priority * 4 }}
 #
+{%     endif %} 
 {%    endif %} 
 {%   endif %}
 {% endfor %}
