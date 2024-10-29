@@ -10,8 +10,8 @@ The following table describes per-platform support of individual STP features:
 | Operating system   | STP | MSTP | RSTP | Per-VLAN (R)STP | Enable per port
 | ------------------ | :-: | :--: | :--: | :-------------: | :--------------:
 | Arista EOS         | ✅  |  ✅  |  ✅  |       ✅        |       ✅      ! Note: STP is enabled by default, using MSTP
-| Cumulus Linux      | ✅  |  ❌  |  ✅  |       ❌        |       ❌      ! Note: STP is enabled by default, unless disabled through this module
-| FRR                | ✅  |  ❌  |  ❌  |       ✅        |       ✅      ! Note: STP is disabled by default
+| Cumulus Linux      | ✅  |  ❌  |  ✅  |       ❌        |       ✅      ! Note: STP is enabled by default, unless disabled through this module
+| FRR                | ✅  |  ❌  |  ❌  |       ✅        |       ❌      ! Note: STP is disabled by default
 
 Note that MSTP/RSTP ports fallback to regular STP upon receiving a plain STP BPDU.
 
