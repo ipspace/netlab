@@ -53,16 +53,17 @@ class STP(_Module):
           log.IncorrectValue,
           'stp')
       
-      # Check if per-VLAN priority is being used
-      if intf.type=='svi' and 'priority' in intf.stp:
+    # Check if per-VLAN priority is being used
+    for vname,vdata in node.get('vlans',{}).items():
+      if vdata.get('stp.priority',None):
         stp_proto = topology.get('stp.protocol','stp')
-        if stp_proto != 'mstp':
+        if stp_proto != 'pvrst':
           log.error(
-            f'Topology requires per-VLAN STP (MSTP) used on VLAN {intf.name} but global default is {stp_proto}',
+            f"Topology requires per-VLAN STP (pvrst) used on VLAN '{vname}' but global default is '{stp_proto}'",
             log.IncorrectValue,
             'stp')
-        elif not 'mstp' in features.get('stp.supported_protocols',[]):
+        elif not 'pvrst' in features.get('stp.supported_protocols',[]):
           log.error(
-            f'node {node.name} (device {node.device}) does not support per-VLAN STP (MSTP) used on VLAN {intf.name}',
+            f"node {node.name} (device {node.device}) does not support per-VLAN STP (pvrst) used on VLAN '{vname}'",
             log.IncorrectValue,
             'stp')

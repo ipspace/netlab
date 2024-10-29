@@ -1,19 +1,15 @@
 ---
 message: |
   The devices under test form a connected triangle (loop) with 2 VLANs. 
-  
-  If STP is enabled, this topology requires per-VLAN STP (PVRST); the VLANs themselves don't form a loop, but the links do.
-  Per-VLAN priority settings should make S1 root for red, and S2 for blue VLAN
+
+  Since the VLANs themselves don't form a loop, STP can be disabled (making sure untagged packets are disallowed using a trunk).
+  However, in this test we enable STP on the blue VLAN just in case
 
   * h1 and h2 should be able to ping each other
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
 
-  For FRR, use
-  ```docker exec -it clab-stp-s1 /usr/sbin/brctl showstp vlan1000``` and
-  ```docker exec -it clab-stp-s2 /usr/sbin/brctl showstp vlan1001``` and
-
-stp.protocol: pvrst # Topology requires running STP per VLAN
+stp.enable: True # Globally enabled
 
 groups:
   _auto_create: True
@@ -28,27 +24,23 @@ groups:
 vlans:
   red:
     mode: bridge
-    links: [ s1-h1, s2-h2, s1-s2 ]  # NOT s1-s3
+    links: [ s1-h1, s2-h2 ]
+    stp.enable: False # Disable on 'red' VLAN
   blue:
     mode: bridge
-    links: [ s1-h3, s3-h4, s1-s3 ]  # NOT s1-s2
+    links: [ s1-h3, s3-h4 ]
 
 links:
+- s1:
+  s2:
+  vlan.trunk: [red]
+- s1:
+  s3:
+  vlan.trunk: [blue]
 - s2:
   s3:
-  # vlan.trunk: [ red, blue ]
-  vlan.access: red
-
-- s2:
-  s3:
-  # vlan.trunk: [ red, blue ]
-  vlan.access: blue
-
-nodes:
- s1:
-  vlans.red.stp.priority: 4096   # Test per-VLAN priority
- s2:
-  vlans.blue.stp.priority: 4096
+  vlan.trunk: [red,blue]
+  vlan.native: red       # Disallow untagged packets on this link to break the native loop
 
 validate:
   ping_red:
