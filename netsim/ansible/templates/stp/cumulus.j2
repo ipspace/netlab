@@ -22,21 +22,20 @@ iface bridge
 {#
  # Disable STP on specific interfaces if requested, configure port priority
  #}
-{% for ifdata in interfaces if ifdata.vlan is defined and 'stp' in ifdata  %}
-{%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
+{% for ifdata in interfaces if 'stp' in ifdata  %}
 iface {{ ifdata.ifname }}
-{%    if not ifdata.stp.enable|default(True) %}
+{%  if not ifdata.stp.enable|default(True) %}
  mstpctl-portbpdufilter yes   # Disable STP on this port
-{%    elif 'port_priority' in ifdata.stp %}
+{%  elif 'port_priority' in ifdata.stp %}
 #
 # Use 4x port_priority to get the same 4-bit value on the wire
 #
+{%     set restart_mstpd=True %}
  mstpctl-treeportprio {{ ifdata.stp.port_priority * 4 }}
 #
 # Newer versions 5.x support mstpctl-port-vlan-priority <vlan id>={{ ifdata.stp.port_priority }}
 #
-{%    endif %} 
-{%   endif %}
+{%  endif %}
 {% endfor %}
 CONFIG
 
@@ -46,4 +45,6 @@ ifreload -a
 # If STP port priority was changed, the system sends duplicate BDPUs with both the old and new port priority
 # This causes peers to remain in 'listening' state forever
 # Restart mstpd to fix that
+{% if restart_mstpd is defined %}
 service mstpd restart
+{% endif %}

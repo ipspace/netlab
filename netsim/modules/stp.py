@@ -52,6 +52,12 @@ class STP(_Module):
           f'node {node.name} (device {node.device}) stp.port_priority {val} must be a multiple of {port_priority.multiple}',
           log.IncorrectValue,
           'stp')
+
+      if 'enable' in intf.stp and not features.get('stp.enable_per_port',False):
+        log.error(
+          f'node {node.name} (device {node.device}) does not support enabling/disabling STP only on a specific port ({intf.ifname})',
+          log.IncorrectValue,
+          'stp')
       
     # Check if per-VLAN priority is being used
     for vname,vdata in node.get('vlans',{}).items():

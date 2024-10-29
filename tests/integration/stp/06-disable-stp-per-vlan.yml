@@ -9,6 +9,10 @@ message: |
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
 
+  Checks:
+  cEOS: ```docker exec -it clab-stp-s2 Cli -c "show spanning-tree"```
+  Cumulus: ```docker exec -it clab-stp-s1 /sbin/brctl showstp bridge```
+
 stp.enable: True # Globally enabled
 
 groups:
@@ -42,10 +46,14 @@ links:
   s3:
   vlan.trunk: [red,blue]
   vlan.native: red       # Disallow untagged packets on this link to break the native loop
+- s2:
+   stp.enable: False # Disable on a port without a VLAN
+  s3:
+  pool: l2only
 
 validate:
   ping_red:
-    description: Ping-based reachability test in VLAN red
+    description: Ping-based reachability test in VLAN red h1->s1->s2->h2 (STP disabled)
     nodes: [ h1 ]
     wait_msg: Waiting for STP to enable the ports
     wait: 45
