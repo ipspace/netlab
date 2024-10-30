@@ -116,6 +116,8 @@ def create_network_template(topology: Box) -> str:
 def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
   mgmt_net = topology.addressing.mgmt._network if topology is not None else ''
   mgmt_net = mgmt_net or LIBVIRT_MANAGEMENT_NETWORK_NAME
+  mgmt_br  = topology.addressing.mgmt._bridge if topology is not None else ''
+  mgmt_br  = mgmt_br or LIBVIRT_MANAGEMENT_BRIDGE_NAME
   create_net = True
 
   if topology is not None and topology.addressing.mgmt._permanent:
@@ -132,6 +134,8 @@ def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
       ['virsh','net-destroy',mgmt_net],check_result=True,ignore_errors=True,return_stdout=True)
     external_commands.run_command(
       ['virsh','net-undefine',mgmt_net],check_result=True,ignore_errors=True,return_stdout=True)
+    external_commands.run_command(
+      ['sudo','ip','link','delete',mgmt_br],check_result=True,ignore_errors=True,return_stdout=True)
 
   if not create_net:
     return
