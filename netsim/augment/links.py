@@ -209,6 +209,31 @@ def get_link_propagate_attributes(defaults: Box) -> set:
          set(defaults.attributes.link_no_propagate)
 
 """
+get_unique_ifindex: given interface type, and a start and stop value, find a unique ifindex
+"""
+def get_unique_ifindex(
+      node: Box,
+      iftype: typing.Optional[str] = None,
+      start: int = 1, stop: typing.Optional[int] = None) -> int:
+  if stop is None:                                # Assume we can have at most 1000 interfaces of a given type
+    stop = start + 1000
+
+  idx_list = [                                    # Build a list of already-used ifindex values
+    intf.ifindex for intf in node.interfaces 
+      if iftype == intf.type or (iftype is None and intf.type not in VIRTUAL_INTERFACE_TYPES) ]
+  ifindex = start
+  while ifindex < stop:                           # Iterate through ifindex values
+    if ifindex not in idx_list:                   # ... returning the first one that is not used
+      return ifindex
+    ifindex = ifindex + 1
+
+  log.error(                                      # Ouch, ran out of values :(
+    'Cannot get a unique interface index between {start} and {stop} for node {node.name}',
+    category=log.IncorrectValue,
+    module='links')
+  return start + len(node.interfaces) + 1         # Return something just to keep going (we'll fail anyway)
+
+"""
 Add interface data structure to a node:
 
 * Add node-specific interface index
@@ -223,20 +248,16 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     ifindex_offset = 1
 
   # Allow user to select a specific interface index per link
-  ifindex = ifdata.get('ifindex',None)
+  if 'ifindex' not in ifdata:
+    ifdata.ifindex = get_unique_ifindex(node,start=ifindex_offset)
 
-  # When computing default ifindex, consider only non-loopback interfaces
-  if not ifindex:
-   ifindex = len([
-               intf for intf in node.interfaces
-                 if not intf.get('type',None) in VIRTUAL_INTERFACE_TYPES
-                 ]) + ifindex_offset
-
+  # Set interface name -- either in 'ifname' field (for the "real" interface name)
+  # or in the "netlab_ifname" field to track what netlab would have generated
+  #
   ifname_format = devices.get_device_attribute(node,'interface_name',defaults)
-
-  ifdata.ifindex = ifindex
-  if ifname_format and not 'ifname' in ifdata:
-    ifdata.ifname = strings.eval_format(ifname_format,ifdata)
+  if ifname_format:
+    ifn_field = 'ifname' if 'ifname' not in ifdata else 'netlab_ifname'
+    ifdata[ifn_field] = strings.eval_format(ifname_format,ifdata)
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
   pdata = data.get_box(pdata)                     # Create a copy of the provider interface data
@@ -253,34 +274,41 @@ def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     devices.get_device_attribute(node,f'{devtype}_offset',defaults) or
     1 if devtype == 'loopback' else 0)            # Loopback interfaces have to start with 1 to prevent overlap with built-in loopback
 
+  # Adjust ifindex to prevent overlap between device types
+  #
+  devtype_offset = (VIRTUAL_INTERFACE_TYPES.index(devtype)+1) * 10000
+
   ifdata.virtual_interface = True
   ifdata.pop('bridge',None)
 
-  if not 'ifindex' in ifdata:
-    ifdata.ifindex = len([intf for intf in node.interfaces if intf.get('type',None) == devtype]) + ifindex_offset
-  ifname_format  = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
+  if 'ifindex' not in ifdata:
+    ifdata.ifindex = get_unique_ifindex(node,iftype=devtype,start=ifindex_offset+devtype_offset)
 
-  if not 'ifname' in ifdata:
-    if not ifname_format:
-      if devtype == 'loopback':
-        log.error(
-          f'Device {node.device}/node {node.name} does not support loopback links',
-          log.IncorrectValue,
-          'links')
-        return
-      else:
-        print(ifdata)
-        log.error(
-          f'Need explicit interface name (ifname) for {devtype} interface on node {node.name} ({node.device})',
-          log.IncorrectValue,
-          'links')
-        return
-    ifdata.ifname = strings.eval_format(ifname_format,ifdata)
+  if 'ifname' in ifdata:
+    return
 
-  # Adjust ifindex to prevent overlap between device types
+  # If we can get the interface name format, create interface name using a reduced
+  # ifindex. For example, loopback interfaces have ifindex starting with 10001, but
+  # the interface names start with Loopback1
   #
-  ifindex_offset = (VIRTUAL_INTERFACE_TYPES.index(devtype)+1) * 10000
-  ifdata.ifindex += ifindex_offset
+  ifname_format  = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
+  if ifname_format:
+    ifdata.ifname = strings.eval_format(ifname_format,ifdata + { 'ifindex': ifdata.ifindex - devtype_offset })
+    return
+
+  # We could not find the relevant interface name template. Report an error
+  #
+  if devtype == 'loopback':
+    log.error(
+      f'Device {node.device}/node {node.name} does not support loopback links',
+      log.IncorrectValue,
+      'links')
+  else:
+    log.error(
+      f'Need explicit interface name (ifname) for {devtype} interface on node {node.name} ({node.device})',
+      category=log.IncorrectValue,
+      more_data=str(ifdata),
+      module='links')
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if ifdata.get('type',None) in VIRTUAL_INTERFACE_TYPES:
