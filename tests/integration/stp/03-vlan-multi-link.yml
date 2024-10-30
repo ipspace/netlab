@@ -1,0 +1,46 @@
+---
+message: |
+  The devices under test have multiple links between them which form a loop unless STP blocks all but one
+
+  h1 and h2 should be able to ping each other, and no forwarding loop should occur
+
+  The bridge with the highest priority (s2) should become the root, all but one port should get blocked by S1 in order of port priority
+  For FRR, use ```docker exec -it clab-stp-s1 /usr/sbin/brctl showstp vlan1000``` to verify
+  Cumulus: ```docker exec -it clab-stp-s1 /sbin/brctl showstp bridge```
+  cEOS: ```docker exec -it clab-stp-s2 Cli -c "show spanning-tree"```
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, stp ]
+
+nodes:
+ s2:
+  stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
+
+vlans:
+  red:
+    mode: bridge
+    links:
+    - s1-h1
+    - s2-h2
+    # Dual link between s1/s2
+    - s1:
+      s2:
+       stp.port_priority: 32  # Backup link (lower priority)
+    - s1:
+      s2:
+       stp.port_priority: 16  # Sent to S1 which should cause it to select this link as root port
+
+validate:
+  ping:
+    description: Pinging H2 from H1
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')

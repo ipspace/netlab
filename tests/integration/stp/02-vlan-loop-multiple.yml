@@ -1,0 +1,69 @@
+---
+message: |
+  The devices under test form a connected triangle (loop) with 2 VLANs. 
+  
+  If STP is enabled, this topology requires per-VLAN STP (PVRST); the VLANs themselves don't form a loop, but the links do.
+  Per-VLAN priority settings should make S1 root for red, and S2 for blue VLAN
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3
+
+  For FRR, use
+  ```docker exec -it clab-stp-s1 /usr/sbin/brctl showstp vlan1000``` and
+  ```docker exec -it clab-stp-s2 /usr/sbin/brctl showstp vlan1001``` and
+
+stp.protocol: pvrst # Topology requires running STP per VLAN
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1,s2,s3 ]
+    module: [ vlan, stp ]
+
+vlans:
+  red:
+    mode: bridge
+    links: [ s1-h1, s2-h2, s1-s2 ]  # NOT s1-s3
+  blue:
+    mode: bridge
+    links: [ s1-h3, s3-h4, s1-s3 ]  # NOT s1-s2
+
+links:
+- s2:
+  s3:
+  # vlan.trunk: [ red, blue ]
+  vlan.access: red
+
+- s2:
+  s3:
+  # vlan.trunk: [ red, blue ]
+  vlan.access: blue
+
+nodes:
+ s1:
+  vlans.red.stp.priority: 4096   # Test per-VLAN priority
+ s2:
+  vlans.blue.stp.priority: 4096
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    nodes: [ h3 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 20
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    plugin: ping('h3',expect='fail')

@@ -1,0 +1,772 @@
+groups:
+  hosts:
+    device: linux
+    members:
+    - h1
+    - h2
+    - h3
+    - h4
+    node_data:
+      provider: clab
+  switches:
+    members:
+    - s1
+    - s2
+    - s3
+    module:
+    - vlan
+    - stp
+input:
+- topology/input/stp-mstp.yml
+- package:topology-defaults.yml
+libvirt:
+  providers:
+    clab: true
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    node: s2
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  - ifindex: 1
+    ifname: Ethernet1
+    node: s3
+    vlan:
+      trunk:
+        blue: {}
+        red: {}
+  linkindex: 1
+  node_count: 2
+  prefix: {}
+  type: p2p
+  vlan:
+    trunk:
+      blue: {}
+      red: {}
+- bridge: input_2
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 1
+    ifname: Ethernet1
+    node: s1
+    vlan:
+      access: red
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.3/24
+    node: h1
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 2
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
+- bridge: input_3
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 2
+    ifname: Ethernet2
+    node: s2
+    vlan:
+      access: red
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.4/24
+    node: h2
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 3
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
+- bridge: input_4
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 2
+    ifname: Ethernet2
+    node: s1
+    vlan:
+      access: red
+  - _vlan_mode: bridge
+    ifindex: 3
+    ifname: Ethernet3
+    node: s2
+    vlan:
+      access: red
+  linkindex: 4
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red
+- bridge: input_5
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 3
+    ifname: Ethernet3
+    node: s1
+    vlan:
+      access: blue
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.1.5/24
+    node: h3
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 5
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.1.0/24
+  type: lan
+  vlan:
+    access: blue
+- bridge: input_6
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 2
+    ifname: Ethernet2
+    node: s3
+    vlan:
+      access: blue
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.1.6/24
+    node: h4
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 6
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.1.0/24
+  type: lan
+  vlan:
+    access: blue
+- bridge: input_7
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 4
+    ifname: Ethernet4
+    node: s1
+    vlan:
+      access: blue
+  - _vlan_mode: bridge
+    ifindex: 3
+    ifname: Ethernet3
+    node: s3
+    vlan:
+      access: blue
+  linkindex: 7
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.1.0/24
+  type: lan
+  vlan:
+    access: blue
+module:
+- vlan
+- stp
+name: input
+nodes:
+  h1:
+    af:
+      ipv4: true
+    box: python:3.9-alpine
+    clab:
+      binds:
+      - clab_files/h1/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-input-h1
+    id: 3
+    interfaces:
+    - bridge: input_2
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.3/24
+      linkindex: 2
+      mtu: 1500
+      name: h1 -> [s1,s2,h2,s3]
+      neighbors:
+      - ifname: Vlan1000
+        node: s1
+      - ifname: Vlan1000
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h2
+      - ifname: Vlan1000
+        node: s3
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    mtu: 1500
+    name: h1
+    provider: clab
+    role: host
+  h2:
+    af:
+      ipv4: true
+    box: python:3.9-alpine
+    clab:
+      binds:
+      - clab_files/h2/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-input-h2
+    id: 4
+    interfaces:
+    - bridge: input_3
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.4/24
+      linkindex: 3
+      mtu: 1500
+      name: h2 -> [h1,s1,s2,s3]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: h1
+      - ifname: Vlan1000
+        node: s1
+      - ifname: Vlan1000
+        node: s2
+      - ifname: Vlan1000
+        node: s3
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:00:00:04
+    mtu: 1500
+    name: h2
+    provider: clab
+    role: host
+  h3:
+    af:
+      ipv4: true
+    box: python:3.9-alpine
+    clab:
+      binds:
+      - clab_files/h3/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-input-h3
+    id: 5
+    interfaces:
+    - bridge: input_5
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.1.5/24
+      linkindex: 5
+      mtu: 1500
+      name: h3 -> [s1,s3,s2,h4]
+      neighbors:
+      - ifname: Vlan1001
+        node: s1
+      - ifname: Vlan1001
+        node: s3
+      - ifname: Vlan1001
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.1.6/24
+        node: h4
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: 08:4f:a9:00:00:05
+    mtu: 1500
+    name: h3
+    provider: clab
+    role: host
+  h4:
+    af:
+      ipv4: true
+    box: python:3.9-alpine
+    clab:
+      binds:
+      - clab_files/h4/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-input-h4
+    id: 6
+    interfaces:
+    - bridge: input_6
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.1.6/24
+      linkindex: 6
+      mtu: 1500
+      name: h4 -> [h3,s1,s3,s2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.1.5/24
+        node: h3
+      - ifname: Vlan1001
+        node: s1
+      - ifname: Vlan1001
+        node: s3
+      - ifname: Vlan1001
+        node: s2
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.106
+      mac: 08:4f:a9:00:00:06
+    mtu: 1500
+    name: h4
+    provider: clab
+    role: host
+  s1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 1
+    interfaces:
+    - bridge: input_2
+      ifindex: 1
+      ifname: Ethernet1
+      linkindex: 2
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge: input_4
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 4
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge: input_5
+      ifindex: 3
+      ifname: Ethernet3
+      linkindex: 5
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: blue
+        access_id: 1001
+    - bridge: input_7
+      ifindex: 4
+      ifname: Ethernet4
+      linkindex: 7
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: blue
+        access_id: 1001
+    - bridge_group: 1
+      ifindex: 5
+      ifname: Vlan1000
+      name: VLAN red (1000) -> [h1,s2,h2,s3]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: h1
+      - ifname: Vlan1000
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h2
+      - ifname: Vlan1000
+        node: s3
+      stp:
+        enable: true
+        priority: 4096
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: red
+    - bridge_group: 2
+      ifindex: 6
+      ifname: Vlan1001
+      name: VLAN blue (1001) -> [h3,s3,s2,h4]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.1.5/24
+        node: h3
+      - ifname: Vlan1001
+        node: s3
+      - ifname: Vlan1001
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.1.6/24
+        node: h4
+      stp:
+        enable: true
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: blue
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - vlan
+    - stp
+    name: s1
+    stp:
+      enable: true
+      protocol: mstp
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      blue:
+        bridge_group: 2
+        id: 1001
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      red:
+        bridge_group: 1
+        id: 1000
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+        stp:
+          priority: 4096
+  s2:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      linkindex: 1
+      name: s2 -> s3
+      neighbors:
+      - ifname: Ethernet1
+        node: s3
+      stp:
+        enable: true
+      type: p2p
+      vlan:
+        trunk:
+          blue: {}
+          red: {}
+        trunk_id:
+        - 1000
+        - 1001
+    - bridge: input_3
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 3
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge: input_4
+      ifindex: 3
+      ifname: Ethernet3
+      linkindex: 4
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 6
+      ifname: Vlan1000
+      name: VLAN red (1000) -> [h1,s1,h2,s3]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: h1
+      - ifname: Vlan1000
+        node: s1
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h2
+      - ifname: Vlan1000
+        node: s3
+      stp:
+        enable: true
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: red
+    - bridge_group: 2
+      ifindex: 7
+      ifname: Vlan1001
+      name: VLAN blue (1001) -> [h3,s1,s3,h4]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.1.5/24
+        node: h3
+      - ifname: Vlan1001
+        node: s1
+      - ifname: Vlan1001
+        node: s3
+      - ifname: eth1
+        ipv4: 172.16.1.6/24
+        node: h4
+      stp:
+        enable: true
+        priority: 4096
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: blue
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - vlan
+    - stp
+    name: s2
+    stp:
+      enable: true
+      protocol: mstp
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      blue:
+        bridge_group: 2
+        id: 1001
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+        stp:
+          priority: 4096
+      red:
+        bridge_group: 1
+        id: 1000
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+  s3:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 7
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      linkindex: 1
+      name: s3 -> s2
+      neighbors:
+      - ifname: Ethernet1
+        node: s2
+      stp:
+        enable: true
+      type: p2p
+      vlan:
+        trunk:
+          blue: {}
+          red: {}
+        trunk_id:
+        - 1000
+        - 1001
+    - bridge: input_6
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 6
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: blue
+        access_id: 1001
+    - bridge: input_7
+      ifindex: 3
+      ifname: Ethernet3
+      linkindex: 7
+      stp:
+        enable: true
+      type: lan
+      vlan:
+        access: blue
+        access_id: 1001
+    - bridge_group: 1
+      ifindex: 6
+      ifname: Vlan1001
+      name: VLAN blue (1001) -> [h3,s1,s2,h4]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.1.5/24
+        node: h3
+      - ifname: Vlan1001
+        node: s1
+      - ifname: Vlan1001
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.1.6/24
+        node: h4
+      stp:
+        enable: true
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: blue
+    - bridge_group: 2
+      ifindex: 7
+      ifname: Vlan1000
+      name: VLAN red (1000) -> [h1,s1,s2,h2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.3/24
+        node: h1
+      - ifname: Vlan1000
+        node: s1
+      - ifname: Vlan1000
+        node: s2
+      - ifname: eth1
+        ipv4: 172.16.0.4/24
+        node: h2
+      stp:
+        enable: true
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: red
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.7/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.107
+      mac: 08:4f:a9:00:00:07
+    module:
+    - vlan
+    - stp
+    name: s3
+    stp:
+      enable: true
+      protocol: mstp
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      blue:
+        bridge_group: 1
+        id: 1001
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      red:
+        bridge_group: 2
+        id: 1000
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+provider: libvirt
+stp:
+  enable: true
+  protocol: mstp
+vlans:
+  blue:
+    host_count: 2
+    id: 1001
+    mode: bridge
+    neighbors:
+    - ifname: eth1
+      ipv4: 172.16.1.5/24
+      node: h3
+    - ifname: Vlan1001
+      node: s1
+    - ifname: Vlan1001
+      node: s3
+    - ifname: Vlan1001
+      node: s2
+    - ifname: eth1
+      ipv4: 172.16.1.6/24
+      node: h4
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.1.0/24
+  red:
+    host_count: 2
+    id: 1000
+    mode: bridge
+    neighbors:
+    - ifname: eth1
+      ipv4: 172.16.0.3/24
+      node: h1
+    - ifname: Vlan1000
+      node: s1
+    - ifname: Vlan1000
+      node: s2
+    - ifname: eth1
+      ipv4: 172.16.0.4/24
+      node: h2
+    - ifname: Vlan1000
+      node: s3
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.0.0/24
