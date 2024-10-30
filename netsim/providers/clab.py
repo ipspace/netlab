@@ -232,7 +232,7 @@ class Containerlab(_Provider):
   """
   def get_node_name(self, node: str, topology: Box) -> str:
     lab_prefix = topology.get("defaults.providers.clab.lab_prefix")
-    return f'{ lab_prefix }{ topology.name }-{ node }' if lab_prefix else node
+    return f'{ lab_prefix }-{ topology.name }-{ node }' if lab_prefix else node
 
   def validate_node_image(self, node: Box, topology: Box) -> None:
     if not getattr(self,'image_cache',None):                # Create an image cache on first call
