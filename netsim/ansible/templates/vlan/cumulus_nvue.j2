@@ -1,0 +1,34 @@
+- set:
+    bridge:
+      domain:
+        br_default:
+          untagged: 1
+{% if vlans is defined %}
+{%  for vname,vdata in vlans.items() %}
+{%   if loop.first %}
+          vlan:
+{%   endif %}
+            '{{ vdata.id }}': {}
+{%  endfor %}
+{% endif %}
+
+    interface:
+{% for i in interfaces if i.vlan is defined and (i.virtual_interface is not defined or i.type=="lag") %}
+{%  if i.vlan.trunk_id is defined and i.type != "lag" %}
+{%   set vids = i.vlan.trunk_id %}
+{%  elif i.vlan.access_id is defined %}
+{%   set vids = [ i.vlan.access_id ] %}
+{%  endif %}
+     {{ i.ifname }}:
+        bridge:
+          domain:
+            br_default:{% if not vids|default([]) %} {}
+{%                        else %}
+{%          for v in vids|sort %}
+{%           if loop.first +%}
+             vlan:
+{%           endif %}
+              '{{ v }}': {}
+{%          endfor %}
+{%                        endif %}
+{% endfor %}
