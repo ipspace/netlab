@@ -162,7 +162,7 @@ def load_kmods(topology: Box) -> None:
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
-    node.hostname = "clab-%s-%s" % (topology.name,node.name)
+    node.hostname = self.get_node_name(node.name,topology)
     node_fp = get_forwarded_ports(node,topology)
     if node_fp:
       add_forwarded_ports(node,node_fp)
@@ -223,8 +223,16 @@ class Containerlab(_Provider):
       log.error('Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')
       return get_empty_box()
 
+  """
+  Defines the container host naming convention (globally), this becomes "ansible_host" in Ansible
+  and gets added to /etc/hosts for DNS name resolution
+
+  'clab-' is the default Containerlab prefix; it can be configured (including setting it to "")
+  through "defaults.providers.clab.lab_prefix"
+  """
   def get_node_name(self, node: str, topology: Box) -> str:
-    return f'clab-{ topology.name }-{ node }'
+    lab_prefix = topology.get("defaults.providers.clab.lab_prefix")
+    return f'{ lab_prefix }{ topology.name }-{ node }'
 
   def validate_node_image(self, node: Box, topology: Box) -> None:
     if not getattr(self,'image_cache',None):                # Create an image cache on first call
@@ -260,4 +268,5 @@ class Containerlab(_Provider):
   def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> list:
     cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
     cmd = strings.eval_format_list(cmd,{'intf': args.intf})
-    return strings.string_to_list(f'sudo ip netns exec clab-{topology.name}-{node.name}') + cmd
+    node_name = self.get_node_name(node.name,topology)
+    return strings.string_to_list(f'sudo ip netns exec {node_name}') + cmd
