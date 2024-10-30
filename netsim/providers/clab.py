@@ -227,12 +227,12 @@ class Containerlab(_Provider):
   Defines the container host naming convention (globally), this becomes "ansible_host" in Ansible
   and gets added to /etc/hosts for DNS name resolution
 
-  'clab-' is the default Containerlab prefix; it can be configured (including setting it to "")
+  'clab' is the default Containerlab prefix; it can be configured (including setting it to "")
   through "defaults.providers.clab.lab_prefix"
   """
   def get_node_name(self, node: str, topology: Box) -> str:
     lab_prefix = topology.get("defaults.providers.clab.lab_prefix")
-    return f'{ lab_prefix }{ topology.name }-{ node }'
+    return f'{ lab_prefix }{ topology.name }-{ node }' if lab_prefix else node
 
   def validate_node_image(self, node: Box, topology: Box) -> None:
     if not getattr(self,'image_cache',None):                # Create an image cache on first call
