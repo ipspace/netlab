@@ -397,7 +397,8 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
     providers.execute_node("augment_node_data",n,topology)
 
 '''
-Final cleanup of node data
+Cleanup daemon configuration file data -- remove all daemon config mappings that
+are not used by a module, a plugin (based on "config" data) or a device itself
 '''
 def cleanup_daemon_config(n: Box) -> None:
   for k in list(n._daemon_config.keys()):
@@ -411,10 +412,31 @@ def cleanup_daemon_config(n: Box) -> None:
 
     n._daemon_config.pop(k,None)
 
+'''
+Check uniqueness of interface names
+'''
+def check_unique_ifnames(n: Box) -> None:
+  ifnames: dict = {}
+  for intf in n.interfaces:
+    if 'ifname' not in intf:
+      log.fatal(f'Interfaces {intf.ifindex} on node {n.name} does not have an interface name')
+    if intf.ifname in ifnames:
+      log.error(
+        f'Node {n.name} has overlapping interface name {intf.ifname} ' +\
+        f'between interfaces #{intf.ifindex} and #{ifnames[intf.ifname].ifindex}',
+        category=log.IncorrectValue,
+        module='nodes')
+    else:
+      ifnames[intf.ifname] = intf
+
+'''
+Final cleanup of node data
+'''
 def cleanup(topology: Box) -> None:
   plugin_config = topology.get('_plugin_config',[])
 
   for name,n in topology.nodes.items():
+    check_unique_ifnames(n)
     if '_daemon_config' in n:
       cleanup_daemon_config(n)
 
