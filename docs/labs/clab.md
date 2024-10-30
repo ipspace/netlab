@@ -306,6 +306,16 @@ provider: clab
 defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 ```
 
+### defaults.providers.clab.lab_prefix: Controlling container naming
+By default, Netlab uses "clab" as the lab prefix, which causes each container to be named "clab-{ topology name }-{ node name }".
+If you prefer "plain" node names (e.g. matching DNS names used in your network), you can set ```defaults.providers.clab.lab_prefix=""```
+to remove both prefix strings and leave just the node name.
+
+Example:
+```
+netlab up topo.yml -s defaults.providers.clab.lab_prefix=""
+```
+
 ```{eval-rst}
 .. toctree::
    :caption: Installing Container Images
