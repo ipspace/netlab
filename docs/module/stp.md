@@ -8,24 +8,34 @@ Many platforms already support and enable STP by default; this module provides e
 The following table describes per-platform support of individual STP features:
 
 | Operating system   | STP | MSTP | RSTP | Per-VLAN (R)STP | Enable per port
-| ------------------ | :-: | :--: | :--: | :-------------: | :--------------:
-| Arista EOS         | ✅  |  ✅  |  ✅  |       ✅        |       ✅      ! Note: STP is enabled by default, using MSTP
-| Cumulus Linux      | ✅  |  ❌  |  ✅  |       ❌        |       ✅      ! Note: STP is enabled by default, unless disabled through this module
-| FRR                | ✅  |  ❌  |  ❌  |       ✅        |       ❌      ! Note: STP is disabled by default
+| ------------------ |:---:|:---:|:---:|:---:|:---:|
+| Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
+| Cumulus Linux[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
+| FRR[^FRR]          | ✅  |  ❌  |  ❌  |  ✅ | ❌   |
 
-Note that MSTP/RSTP ports fallback to regular STP upon receiving a plain STP BPDU.
+[^EOS]: MSTP is enabled by default
+[^CL]: STP is enabled by default
+[^FRR]: STP is disabled by default
+
+```{tip}
+MSTP/RSTP ports fall back to regular STP upon receiving a plain STP BPDU.
+```
 
 ## Global Parameters
 
 * **stp.protocol** (one of stp, mstp, rstp or pvrst) -- Global STP flavor to run on supporting nodes, default **stp**
 
-## Global, Node, Link and Interface Parameters
+## Global, Node, Link, Interface, and VLAN Parameters
 
-* **stp.enable** (bool) -- Enable STP. Optional, default: **True**. Set this to **False** explicitly to disable STP on platforms that enable it by default. Not responsible for loops created as a result...
+* **stp.enable** (bool) -- Enable STP. Optional, default: **True**. Set this to **False** explicitly to disable STP on platforms that enable it by default. We're not responsible for the loops you might get as a result.
+
+```{tip}
+You can set the **‌stp.enable** parameter in the **‌vlans** dictionary to enable per-VLAN STP.
+```
 
 ## Node Parameters (global or per VLAN)
 
-* **stp.priority** (int 0..61440 in increments of 1024) -- STP priority for root election, by default all nodes have equal priority 32656.  In case of equal priority, the bridge with the lowest MAC address becomes root; note that MAC addresses are assigned randomly in Netlab
+* **stp.priority** (int 0..61440 in increments of 1024) -- STP priority for root election, by default, all nodes have equal priority 32656.  In case of equal priority, the bridge with the lowest MAC address becomes root; note that MAC addresses are assigned randomly in Netlab
 
 ## Interface Parameters
 

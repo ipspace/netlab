@@ -14,10 +14,12 @@ The following configuration modules are included in the **netlab** distribution:
    module/gateway.md
    module/routing.md
    module/isis.md
+   module/lag.md
    MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
    module/ospf.md
    module/ripv2.md
    module/sr-mpls.md
+   module/stp.md
    module/vrf.md
    module/vlan.md
    module/vxlan.md
