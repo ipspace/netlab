@@ -410,16 +410,25 @@ def assign_link_prefix(
       nodes: Box,
       link_path: str = 'links') -> Box:
 
-  if 'prefix' in link:                                    # User specified a static link prefix
-    pfx_list = addressing.parse_prefix(link.prefix,path=link_path)
+  if 'prefix' in link:                                    # Does the link have prefix parameters?
+    pfx_data = addressing.parse_prefix(link.prefix,path=link_path)
     if log.debug_active('addr'):                          # pragma: no cover (debugging printout)
-      print(f'link {link_path} got prefix {pfx_list} from {link.prefix}')
+      print(f'link {link_path} got prefix {pfx_data} from {link.prefix}')
     
-    if isinstance(link.prefix,str):
-      link.prefix = addressing.rebuild_prefix(pfx_list)   # convert str to prefix dictionary
+    if link.prefix is False:                              # There should be no prefix on this link, get out
+      return pfx_data
 
-    set_fhrp_gateway(link,pfx_list,nodes,link_path)
-    return pfx_list
+    if isinstance(link.prefix,str):                       # Is the prefix an IPv4 address?
+      link.prefix = addressing.rebuild_prefix(pfx_data)   # ... convert it to prefix dictionary
+
+    set_fhrp_gateway(link,pfx_data,nodes,link_path)       # Try to set the FHRP gateway
+    #
+    # Did we get a usable prefix? It should be empty (l2only) or have IPv4 or IPv6 prefix
+    if not pfx_data or 'ipv4' in pfx_data or 'ipv6' in pfx_data:
+      return pfx_data
+
+  else:                                                   # No prefix parameters on the link
+    pfx_data = data.get_empty_box()
 
   if 'unnumbered' in link:                                # User requested an unnumbered link
     link.prefix = data.get_box({ 'unnumbered': True })
@@ -440,6 +449,8 @@ def assign_link_prefix(
   link.prefix = {
       af: str(v) if af in log.AF_LIST and not isinstance(v,bool) else v for af,v in pfx_list.items()
     }
+  if pfx_data:                                            # Was there some extra prefix data specified on the link?
+    link.prefix += pfx_data                               # Add that to the pool prefix
   if not link.prefix:
     link.pop('prefix',None)
 
