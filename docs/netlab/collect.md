@@ -1,3 +1,4 @@
+(netlab-collect)=
 # Collecting Device Configurations
 
 **netlab collect** command uses Ansible *device facts* modules (or an equivalent list of Ansible tasks) to collect device configurations and store them in specified output directory.

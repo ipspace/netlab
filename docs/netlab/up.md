@@ -3,20 +3,33 @@
 
 **netlab up** is a high-level command that:
 
-* Uses **[netlab create](create.md)** to create virtualization provider configuration file, transformed topology snapshot, and network automation configuration files (Ansible inventory). You can skip this step with the `--snapshot` flag;
+* Uses **[netlab create](create.md)** to create virtualization provider configuration file, transformed topology snapshot, and network automation configuration files (Ansible inventory).
+
+```{tip}
+You can skip this step and reuse existing configuration files with the `--snapshot` flag ([more details](netlab-up-restart));
+```
+
 * Checks the [virtualization provider](../providers.md) installation;
-* Create the required virtual infrastructure (see below)
+* Creates the lab management network ([more details](libvirt-mgmt))
 * Starts the virtual lab using the [selected virtualization provider](topology-reference-top-elements);
-* Performs provider-specific initialization (see below)
+* Performs provider-specific initialization ([more details](netlab-up-provider))
 * Deploys device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag, or reloads saved configurations if it was started with the `--reload-config` flag.
-
-After configuring the lab with **netlab initial**, **netlab up** displays the [help **message** defined in the lab topology](topology-reference-top-elements).
-
-You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab using the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
 
 ![netlab up functional diagram](up.png)
 
+After configuring the lab with **netlab initial**, **netlab up** displays the [help **message** defined in the lab topology](topology-reference-top-elements).
+
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+
 ## Usage
+
+You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab or restart a lab after a server reboot ([more details](netlab-up-restart)) using the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
 
 ```text
 usage: netlab up [-h] [--log] [-v] [-q] [--defaults [DEFAULTS ...]] [-d DEVICE]
@@ -73,10 +86,6 @@ Do not use the `--fast-config` option with custom configuration templates that m
 
 When started with the `--reload-config` flag, **netlab up** tries to load device configurations saved with a previous **netlab collect** command to the newly-started lab devices.
 
-```{warning}
-This is a new (last-minute) feature and might only work well on some platforms. Please [open a bug report](https://github.com/ipspace/netlab/issues/new/choose) if you experience problems.
-```
-
 The process should work (relatively) flawlessly on traditional network devices that use a single configuration file. However, do keep in mind these caveats:
 
 * Saved device configurations don't replace startup device configurations; they are merged with them.
@@ -85,8 +94,20 @@ The process should work (relatively) flawlessly on traditional network devices t
 There are also numerous device-specific caveats:
 
 * Only the FRRouting configuration is restored on Cumulus Linux and FRR. **netlab** executes initial device configuration on these devices to set up interfaces and enable FRRouting daemons.
-* The initial state of Cisco IOS interfaces is **shutdown**, but the saved configuration does not include the **no shutdown** command. **netlab** executes the initial configuration of IOSv and CSR 1000v devices to enable the interfaces.
+* The initial state of Cisco IOS interfaces is **shutdown**, but the saved configuration does not include the **no shutdown** command. **netlab** executes the initial configuration on Cisco IOS/IOS-XE devices to enable the interfaces.
 
+(netlab-up-restart)=
+## Restarting a Lab after a Server Reboot
+
+You can use the `netlab up --snapshot` command to restart a lab after a server crash, power failure, or reboot. 
+
+The command will power up the existing Vagrant virtual machines, recreate networking components, and restart the containers (including the [VM-in-container *vrnetlab* containers](clab-vrnetlab)).
+
+The restarted virtual machines will start with the saved startup configuration (assuming you saved the configuration before the crash), allowing you to skip the initial configuration process with the `netlab up --snapshot --no-config` command.
+
+_netlab_ cannot recreate the container configurations. While starting the lab, you can reload the configuration with the `netlab up --snapshot --reload` command if you previously collected it with the **[netlab collect](netlab-collect)** command.
+
+(netlab-up-provider)=
 ## Provider-Specific Initialization
 
 **netlab up** can execute provider-specific tasks before invoking the orchestration tool (*Vagrant* or *containerlab*) or after the virtual lab has been created
