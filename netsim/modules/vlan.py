@@ -852,8 +852,11 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
 
     update_vlan_neighbor_list(access_vlan,ifdata,vlan_ifdata,node,topology)
 
+    ifdata._vlan_saved_neighbors = ifdata.neighbors                         # Save neighbors
     for attr in list(ifdata.keys()):                                        # Clean up physical interface data
-      if not attr in skip_ifattr:
+      if '_vlan_saved' in attr:                                             # Skip the saved attributes
+        continue
+      if not attr in skip_ifattr:                                           # ... and physical interface attributes
         ifdata.pop(attr,None)
 
     ifdata.vlan.access_id = vlan_data.id                                    # Add VLAN ID to interface data to simplify config templates
@@ -1412,3 +1415,20 @@ class VLAN(_Module):
 
     cleanup_vlan_flags(topology)
     fix_vlan_gateways(topology)
+
+  """
+  Final cleanup of interface data: restore neighbors and regenerate descriptions
+  on VLAN access links
+  """
+  def node_cleanup(self, node: Box, topology: Box) -> None:
+    for intf in node.interfaces:
+      if '_vlan_saved_neighbors' not in intf:
+        continue
+      intf.neighbors = intf._vlan_saved_neighbors
+      intf.pop('_vlan_saved_neighbors',None)
+      intf.name = links.get_interface_description(node.name,intf)
+      if intf.get('vlan.access',None):
+        if intf.get('parent_ifindex',None):
+          intf.name = f'[SubIf VLAN {intf.vlan.access}] {intf.name}'
+        else:
+          intf.name = f'[Access VLAN {intf.vlan.access}] {intf.name}'

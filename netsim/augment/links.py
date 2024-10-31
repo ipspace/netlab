@@ -706,6 +706,14 @@ def cleanup_link_interface_AF_entries(link: Box) -> None:
         continue
 
 """
+Get interface description from interface neighbors
+"""
+def get_interface_description(node_name: str, intf: Box) -> str:
+  ngb_names = [ n.node for n in intf.neighbors ]
+  ngb_list  = 'stub' if not ngb_names else ngb_names[0] if len(ngb_names) == 1 else f"[{','.join(ngb_names)}]"
+  return f'{node_name} -> {ngb_list}' 
+
+"""
 Calculate interface description:
 
 * Link name (if exists)
