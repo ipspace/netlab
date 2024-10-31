@@ -1,0 +1,37 @@
+# STP default settings and attributes
+#
+---
+requires: [ vlan ]  # Perhaps not on all platforms
+transform_after: [ vlan ]
+config_after: [ vlan ]
+# no_propagate: [ protocol ]
+
+enable: True        # By default, enable STP everywhere (on all bridges created by Netlab) when this module is used
+protocol: "stp"     # Default to basic 802.1D STP protocol, users may explicitly enable fancier newer flavors
+
+attributes:
+  global:
+    enable: bool
+    protocol: { type: str, valid_values: [stp,rstp,mstp,pvrst] }  # mstp = IEEE 802.1s, pvrst = Per-VLAN Rapid Spanning Tree (802.1w)
+  node:
+    enable:
+      copy: global
+    priority: { type: int, min_value: 0, max_value: 61440 }    # Increments of 4096, default 32768, lower value = higher priority
+    protocol:
+  link:
+    enable:
+     copy: global
+  # node_copy: [ enable ]  # controlled at node vlan level, don't copy to interfaces
+  interface:
+    enable: bool
+    port_priority: { type: int, min_value: 0, max_value: 255 } # Used in determining root/designated ports, some platforms use lower max
+
+
+_top:               # Modification of global defaults
+  attributes:
+    node_vlan:
+      stp.priority: { type: int, min_value: 0, max_value: 61440 }  # Per-VLAN STP priority for this node, implies pvrst
+
+features:
+  supported_protocols: Subset of supported STP variants
+  enable_per_port: Whether the device supports port level granularity for enable/disable

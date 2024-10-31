@@ -6,7 +6,10 @@
 import sys
 import typing
 
-from importlib import resources
+try:
+  from importlib import resources
+except ImportError:
+  import importlib_resources as resources # type: ignore
 
 def print_usage(fname: str) -> None:
   package = '.'.join(__name__.split('.')[:-1])

@@ -1,0 +1,70 @@
+---
+message: |
+  The devices under test form a connected triangle (loop) with 2 VLANs. 
+
+  Since the VLANs themselves don't form a loop, STP can be disabled (making sure untagged packets are disallowed using a trunk).
+  However, in this test we enable STP on the blue VLAN just in case
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3
+
+  Checks:
+  cEOS: ```docker exec -it clab-stp-s2 Cli -c "show spanning-tree"```
+  Cumulus: ```docker exec -it clab-stp-s1 /sbin/brctl showstp bridge```
+
+stp.enable: True # Globally enabled
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1,s2,s3 ]
+    module: [ vlan, stp ]
+
+vlans:
+  red:
+    mode: bridge
+    links: [ s1-h1, s2-h2 ]
+    stp.enable: False # Disable on 'red' VLAN
+  blue:
+    mode: bridge
+    links: [ s1-h3, s3-h4 ]
+
+links:
+- s1:
+  s2:
+  vlan.trunk: [red]
+- s1:
+   stp.enable: False # Disable on this blue port too
+  s3:
+  vlan.trunk: [blue]
+- s2:
+  s3:
+  vlan.trunk: [red,blue]
+  vlan.native: red       # Disallow untagged packets on this link to break the native loop
+- s2:
+   stp.enable: False # Disable on a port without a VLAN
+  s3:
+  pool: l2only
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red h1->s1->s2->h2 (STP disabled)
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    nodes: [ h3 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 20
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    plugin: ping('h3',expect='fail')

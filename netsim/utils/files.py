@@ -12,7 +12,12 @@ import typing
 from . import log
 from ..data import global_vars
 
-from importlib import resources
+try:
+  from importlib import resources
+  new_resources = hasattr(resources,'files')
+except ImportError:
+  new_resources = False
+  import importlib_resources as resources         # type: ignore
 
 #
 # Find paths to module, user and system directory (needed for various templates)
@@ -140,8 +145,11 @@ def get_traversable_path(dir_name : str) -> typing.Any:
     dir_name = dir_name.replace('package:','')
     pkg_files: typing.Any = None
 
-    package = '.'.join(__name__.split('.')[:-2])
-    pkg_files = resources.files(package)
+    if not new_resources:
+      pkg_files = pathlib.Path(get_moddir())
+    else:
+      package = '.'.join(__name__.split('.')[:-2])
+      pkg_files = resources.files(package)        # type: ignore
     if dir_name == '':
       return pkg_files
     else:
