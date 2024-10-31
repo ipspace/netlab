@@ -287,7 +287,9 @@ You can also change these *containerlab* parameters:
 
 * **clab.kind** -- [containerlab device kind](https://containerlab.dev/manual/kinds/). Set in the system defaults for all supported devices; use it only to specify the device type for [unknown devices](platform-unknown).
 * **clab.type** to set node type (used by Nokia SR OS and Nokia SR Linux).
+* **clab.dns** to [configure DNS servers and search domains](https://containerlab.dev/manual/nodes/#dns)
 * **clab.env** to [set container environment](https://containerlab.dev/manual/nodes/#env) (used to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations))
+* **clab.license** to configure a license file for those platforms that require one
 * **clab.ports** to [map container ports to host ports](https://containerlab.dev/manual/nodes/#ports)
 * **clab.cmd** to [change the command of a container image](https://containerlab.dev/manual/nodes/#cmd).
 * **clab.startup-delay** to make certain node(s) [boot/start later than others](https://containerlab.dev/manual/nodes/#startup-delay) (amount in seconds)
