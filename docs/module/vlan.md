@@ -24,15 +24,16 @@ The VLAN module implements data-plane functionality but does not configure the S
 VLANs are supported on these platforms:
 
 | Operating system      | Access<br>VLANs | VLAN<br>interfaces | Routed<br>subinterfaces | Trunk<br>ports | Native<br>VLAN |
-| --------------------- | :-: | :-: |:-: | :-: | :-: |
+| --------------------- | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Aruba AOS-CX          | ✅  | ✅  | ❌  | ✅ | ✅ |
+| Aruba AOS-CX          | ✅  | ✅  |  ❌  | ✅ | ✅ |
 | Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco IOSvL2 [❗](caveats-iosv) | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Cisco IOL             | ❌   |  ❌  | ✅ | ✅ | ✅ |
 | Cisco IOL L2 [❗](caveats-iol) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco Catalyst 8000v  | ✅  | ✅  | ❌[❗](caveats-csr)   | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅  | ✅  | ❌[❗](caveats-csr)   | ✅ | ✅ |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅ | ✅ |
+| Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ❌[❗](caveats-cumulus)  | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ |
