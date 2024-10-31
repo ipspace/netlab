@@ -121,6 +121,14 @@ def post_transform(topology: Box) -> None:
   link_transform("post_transform",topology)
   reorder_node_modules(topology)               # Make sure modules are configured in dependency order (#86)
 
+"""
+cleanup: execute final cleanup actions
+"""
+def cleanup(topology: Box) -> None:
+  module_transform("cleanup",topology)
+  node_transform("cleanup",topology)
+  link_transform("cleanup",topology)
+
 # Set default list of modules for nodes without specific module list
 #
 def augment_node_module(topology: Box) -> None:

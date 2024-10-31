@@ -104,11 +104,12 @@ The data transformation has three major steps:
 
 * Execute **post_transform** plugin hooks
 * Merge group-level and node-level [custom deployment templates](custom-config) (`netsim.augment.groups.node_config_template`)
-* Cleanup node data in `augment.nodes.cleanup` function -- at the moment, the function prunes the `_daemon_config` dictionary.
+* Cleanup node data in `augment.nodes.cleanup` function (prune the `_daemon_config` dictionary, check for duplicate ifname/ifindex)
 * Execute **post_transform** primary provider hook and node-specific **node_post_transform** provider hooks.
 * Process device quirks
 * Cleanup links: remove empty **links** list and **_linkname** attribute from individual links
 * Cleanup groups: remove settings (keys starting with '\_') from **groups** dictionary
+* Execute **cleanup** module hooks
 * Execute **cleanup** plugin hooks
 * Delete temporary data structures from the topology: list of plugin modules, addressing pools, and pointers to provider modules.
 
