@@ -114,6 +114,17 @@ def create_network_template(topology: Box) -> str:
     return tfile.name
 
 def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
+  v_status = external_commands.run_command(
+      ['vagrant','status','--machine-readable'],check_result=True,ignore_errors=True,return_stdout=True)
+
+  if isinstance(v_status,str) and ('state,running' in v_status):
+    log.error(
+      f'Vagrant virtual machines are already running, skipping the management network setup',
+      category=Warning,
+      skip_header=True,
+      module='libvirt')
+    return
+
   mgmt_net = topology.addressing.mgmt._network if topology is not None else ''
   mgmt_net = mgmt_net or LIBVIRT_MANAGEMENT_NETWORK_NAME
   mgmt_br  = topology.addressing.mgmt._bridge if topology is not None else ''
