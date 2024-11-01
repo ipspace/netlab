@@ -1,3 +1,4 @@
+(module-vlan)=
 # VLANs
 
 The VLAN configuration module implements VLANs and VLAN-related interfaces including:

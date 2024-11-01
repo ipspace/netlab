@@ -308,6 +308,7 @@ provider: clab
 defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 ```
 
+(clab-prefix)=
 ### Changing Container Names
 
 By default, Netlab uses `clab` as the [containerlab naming prefix](https://containerlab.dev/manual/topo-def-file/#prefix),

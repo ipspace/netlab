@@ -12,6 +12,7 @@ The module supports statically configured anycast gateway IPv4 address and VRRPv
    :backlinks: none
 ```
 
+(gateway-support)=
 ## Platform Support
 
 The module is supported on these platforms:
@@ -31,6 +32,7 @@ The module is supported on these platforms:
 | Nokia SR Linux        | ✅  | ❌  | ❌  |
 | VyOS                  | ❌  | ✅  | ✅  |
 
+(gateway-global)=
 ## Global Parameters
 
 The module supports the following global parameters:
@@ -38,10 +40,12 @@ The module supports the following global parameters:
 * **gateway.protocol** (default: *anycast*) -- the first-hop gateway resolution protocol. The supported values are *anycast* and *vrrp*.
 * **gateway.id** (default: -2) -- the IP address within the subnet used for the gateway IP address. The **gateway.id** could be a positive number (a fixed IP address within a subnet using the *gateway* module) or a negative number specifying the offset from the end of the subnet. The default value specifies a subnet's last valid IP address (-1 is the broadcast address).
 
+(gateway-link)=
 ## Link Parameters
 
 The Gateway configuration module is enabled on all links that have the **gateway** attribute set to *True* or to a dictionary of valid parameters. You can change most global parameters on a per-link basis.
 
+(gateway-intf)=
 ## Interface Parameters
 
 You can specify **gateway: True** or a dictionary of valid parameters on [individual interfaces](link-interface-attribute) (nodes-on-a-link data).

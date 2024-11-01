@@ -1,8 +1,10 @@
+(module-stp)=
 # STP Configuration Module
 
 This configuration module enables support for Spanning Tree Protocol (STP) to avoid loops by dynamically blocking ports.
 Many platforms already support and enable STP by default; this module provides explicit control over those settings
 
+(stp-platform)=
 ## Platform Support
 
 The following table describes per-platform support of individual STP features:

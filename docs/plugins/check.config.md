@@ -1,3 +1,4 @@
+(plugin-check-config)=
 # Check Custom Configuration Templates
 
 The **check.config** plugin verifies that the multi-platform custom configuration templates exist for the devices used in the current lab topology. Use it in lab topologies that provide custom configuration templates for a subset of *netlab*-supported devices to prevent errors in the **[netlab initial](netlab-initial-custom)** Ansible playbook.

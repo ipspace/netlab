@@ -94,6 +94,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
 ```
 
+(libvirt-vm-settings)=
 ### Modifying VM Settings
 
 The following node parameters influence the VM configuration created by *vagrant-libvirt*:

@@ -62,6 +62,7 @@ The DHCP module supports the following node parameters:
 You have to set **‌dhcp.vrf** to _False_ on a Cisco IOS XE DHCP server when you use it with Arista EOS VRF-aware relays ([more details](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html)).
 ```
 
+(dhcp-parameters-link)=
 ## Link Parameters
 
 You can enable the DHCP client on all non-relaying devices attached to a link with the boolean **dhcp.client.ipv4** link attribute and the DHCPv6 client with the boolean **dhcp.client.ipv6** attribute.

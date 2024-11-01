@@ -1,3 +1,4 @@
+(module-lag)=
 # Link Aggregation Group (LAG) Configuration Module
 
 This configuration module configures link bonding parameters, for LAGs between 2 devices (i.e. not MC-LAG)
