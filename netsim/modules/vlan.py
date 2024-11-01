@@ -316,7 +316,7 @@ def check_link_interface_attributes(link: Box, intf: Box, topology: Box) -> None
       vlan_fwd = topology.vlans[vname].get('mode','')
       #
       # Do we have a bridge/IRB device connected to a routed VLAN (and do we care)?
-      if vlan_fwd == 'route' and topology.defaults.vlan.warnings.mixed_fwd:
+      if vlan_fwd == 'route' and topology.defaults.vlan.warnings.mixed_fwd_check:
         log.error(
           f"Node {intf.node} using VLAN forwarding mode {vlan_mode} is connected to global routed VLAN {vname} " +\
           f"on {link._linkname}",
